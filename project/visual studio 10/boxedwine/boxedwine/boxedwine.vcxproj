@@ -51,7 +51,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\..\..\..\png;..\..\..\..\zlib;..\..\..\..\dosbox\include;..\..\..\..\dosbox\src\platform\visualc;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\..\sdl_net\include;..\..\..\..\sdl\include;..\..\..\..\png;..\..\..\..\zlib;..\..\..\..\dosbox\include;..\..\..\..\dosbox\src\platform\visualc;</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
