@@ -72,12 +72,12 @@ struct work_item
     PVOID context;
 };
 
-static inline LONG interlocked_inc( PLONG dest )
+static INLINE LONG interlocked_inc( PLONG dest )
 {
     return interlocked_xchg_add( dest, 1 ) + 1;
 }
 
-static inline LONG interlocked_dec( PLONG dest )
+static INLINE LONG interlocked_dec( PLONG dest )
 {
     return interlocked_xchg_add( dest, -1 ) - 1;
 }
@@ -314,7 +314,7 @@ NTSTATUS WINAPI RtlSetIoCompletionCallback(HANDLE FileHandle, PRTL_OVERLAPPED_CO
     return NtSetInformationFile( FileHandle, &iosb, &info, sizeof(info), FileCompletionInformation );
 }
 
-static inline PLARGE_INTEGER get_nt_timeout( PLARGE_INTEGER pTime, ULONG timeout )
+static INLINE PLARGE_INTEGER get_nt_timeout( PLARGE_INTEGER pTime, ULONG timeout )
 {
     if (timeout == INFINITE) return NULL;
     pTime->QuadPart = (ULONGLONG)timeout * -10000;
@@ -603,7 +603,7 @@ static DWORD WINAPI timer_callback_wrapper(LPVOID p)
     return 0;
 }
 
-static inline ULONGLONG queue_current_time(void)
+static INLINE ULONGLONG queue_current_time(void)
 {
     LARGE_INTEGER now;
     NtQuerySystemTime(&now);
@@ -636,7 +636,7 @@ static void queue_add_timer(struct queue_timer *t, ULONGLONG time,
         NtSetEvent(q->event, NULL);
 }
 
-static inline void queue_move_timer(struct queue_timer *t, ULONGLONG time,
+static INLINE void queue_move_timer(struct queue_timer *t, ULONGLONG time,
                                     BOOL set_event)
 {
     /* We MUST hold the queue cs while calling this function.  */

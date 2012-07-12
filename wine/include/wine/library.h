@@ -114,31 +114,31 @@ extern struct __wine_ldt_copy
 #define WINE_LDT_FLAGS_ALLOCATED 0x80  /* Segment is allocated (no longer free) */
 
 /* helper functions to manipulate the LDT_ENTRY structure */
-static inline void wine_ldt_set_base( LDT_ENTRY *ent, const void *base )
+static INLINE void wine_ldt_set_base( LDT_ENTRY *ent, const void *base )
 {
     ent->BaseLow               = (WORD)(ULONG_PTR)base;
     ent->HighWord.Bits.BaseMid = (BYTE)((ULONG_PTR)base >> 16);
     ent->HighWord.Bits.BaseHi  = (BYTE)((ULONG_PTR)base >> 24);
 }
-static inline void wine_ldt_set_limit( LDT_ENTRY *ent, unsigned int limit )
+static INLINE void wine_ldt_set_limit( LDT_ENTRY *ent, unsigned int limit )
 {
     if ((ent->HighWord.Bits.Granularity = (limit >= 0x100000))) limit >>= 12;
     ent->LimitLow = (WORD)limit;
     ent->HighWord.Bits.LimitHi = (limit >> 16);
 }
-static inline void *wine_ldt_get_base( const LDT_ENTRY *ent )
+static INLINE void *wine_ldt_get_base( const LDT_ENTRY *ent )
 {
     return (void *)(ent->BaseLow |
                     (ULONG_PTR)ent->HighWord.Bits.BaseMid << 16 |
                     (ULONG_PTR)ent->HighWord.Bits.BaseHi << 24);
 }
-static inline unsigned int wine_ldt_get_limit( const LDT_ENTRY *ent )
+static INLINE unsigned int wine_ldt_get_limit( const LDT_ENTRY *ent )
 {
     unsigned int limit = ent->LimitLow | (ent->HighWord.Bits.LimitHi << 16);
     if (ent->HighWord.Bits.Granularity) limit = (limit << 12) | 0xfff;
     return limit;
 }
-static inline void wine_ldt_set_flags( LDT_ENTRY *ent, unsigned char flags )
+static INLINE void wine_ldt_set_flags( LDT_ENTRY *ent, unsigned char flags )
 {
     ent->HighWord.Bits.Dpl         = 3;
     ent->HighWord.Bits.Pres        = 1;
@@ -147,13 +147,13 @@ static inline void wine_ldt_set_flags( LDT_ENTRY *ent, unsigned char flags )
     ent->HighWord.Bits.Reserved_0  = 0;
     ent->HighWord.Bits.Default_Big = (flags & WINE_LDT_FLAGS_32BIT) != 0;
 }
-static inline unsigned char wine_ldt_get_flags( const LDT_ENTRY *ent )
+static INLINE unsigned char wine_ldt_get_flags( const LDT_ENTRY *ent )
 {
     unsigned char ret = ent->HighWord.Bits.Type;
     if (ent->HighWord.Bits.Default_Big) ret |= WINE_LDT_FLAGS_32BIT;
     return ret;
 }
-static inline int wine_ldt_is_empty( const LDT_ENTRY *ent )
+static INLINE int wine_ldt_is_empty( const LDT_ENTRY *ent )
 {
     const DWORD *dw = (const DWORD *)ent;
     return (dw[0] | dw[1]) == 0;
@@ -170,10 +170,10 @@ static inline int wine_ldt_is_empty( const LDT_ENTRY *ent )
     { __asm__("movw %w0,%%" #seg : : "r" (val)); }
 # elif defined(_MSC_VER)
 #  define __DEFINE_GET_SEG(seg) \
-    static inline unsigned short wine_get_##seg(void) \
+    static INLINE unsigned short wine_get_##seg(void) \
     { unsigned short res; __asm { mov res, seg } return res; }
 #  define __DEFINE_SET_SEG(seg) \
-    static inline void wine_set_##seg(unsigned short val) { __asm { mov seg, val } }
+    static INLINE void wine_set_##seg(unsigned short val) { __asm { mov seg, val } }
 # else  /* __GNUC__ || _MSC_VER */
 #  define __DEFINE_GET_SEG(seg) extern unsigned short wine_get_##seg(void);
 #  define __DEFINE_SET_SEG(seg) extern void wine_set_##seg(unsigned int);

@@ -66,7 +66,7 @@ typedef struct pf_flags_t
  * returns -1 if the string doesn't fit in the output buffer
  * return the length of the string if all characters were written
  */
-static inline int pf_output_stringW( pf_output *out, LPCWSTR str, int len )
+static INLINE int pf_output_stringW( pf_output *out, LPCWSTR str, int len )
 {
     int space = out->len - out->used;
 
@@ -104,7 +104,7 @@ static inline int pf_output_stringW( pf_output *out, LPCWSTR str, int len )
     return -1;
 }
 
-static inline int pf_output_stringA( pf_output *out, LPCSTR str, int len )
+static INLINE int pf_output_stringA( pf_output *out, LPCSTR str, int len )
 {
     int space = out->len - out->used;
 
@@ -143,7 +143,7 @@ static inline int pf_output_stringA( pf_output *out, LPCSTR str, int len )
 }
 
 /* pf_fill: takes care of signs, alignment, zero and field padding */
-static inline int pf_fill( pf_output *out, int len, pf_flags *flags, char left )
+static INLINE int pf_fill( pf_output *out, int len, pf_flags *flags, char left )
 {
     int i, r = 0;
 
@@ -175,7 +175,7 @@ static inline int pf_fill( pf_output *out, int len, pf_flags *flags, char left )
     return r;
 }
 
-static inline int pf_output_format_W( pf_output *out, LPCWSTR str,
+static INLINE int pf_output_format_W( pf_output *out, LPCWSTR str,
                                       int len, pf_flags *flags )
 {
     int r = 0;
@@ -197,7 +197,7 @@ static inline int pf_output_format_W( pf_output *out, LPCWSTR str,
     return r;
 }
 
-static inline int pf_output_format_A( pf_output *out, LPCSTR str,
+static INLINE int pf_output_format_A( pf_output *out, LPCSTR str,
                                       int len, pf_flags *flags )
 {
     int r = 0;
@@ -239,7 +239,7 @@ static int pf_handle_string_format( pf_output *out, const void* str, int len,
         return pf_output_format_W( out, str, len, flags);
 }
 
-static inline BOOL pf_is_integer_format( char fmt )
+static INLINE BOOL pf_is_integer_format( char fmt )
 {
     static const char float_fmts[] = "diouxX";
     if (!fmt)
@@ -247,7 +247,7 @@ static inline BOOL pf_is_integer_format( char fmt )
     return strchr( float_fmts, fmt ) ? TRUE : FALSE;
 }
 
-static inline BOOL pf_is_double_format( char fmt )
+static INLINE BOOL pf_is_double_format( char fmt )
 {
     static const char float_fmts[] = "aeEfgG";
     if (!fmt)
@@ -255,7 +255,7 @@ static inline BOOL pf_is_double_format( char fmt )
     return strchr( float_fmts, fmt ) ? TRUE : FALSE;
 }
 
-static inline BOOL pf_is_valid_format( char fmt )
+static INLINE BOOL pf_is_valid_format( char fmt )
 {
     static const char float_fmts[] = "acCdeEfgGinouxX";
     if (!fmt)

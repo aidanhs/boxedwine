@@ -88,7 +88,7 @@ static const char *io2str( DWORD io )
 /******************************************************************
  *      TAPE_GetStatus
  */
-static inline NTSTATUS TAPE_GetStatus( int error )
+static INLINE NTSTATUS TAPE_GetStatus( int error )
 {
     if (!error) return STATUS_SUCCESS;
     return FILE_GetNtStatus();

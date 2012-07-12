@@ -35,7 +35,7 @@
 #endif
 #include "wine/library.h"
 
-static const char server_config_dir[] = "/.wine";        /* config dir relative to $HOME */
+static const char server_config_dir[] = PATH_SEP_STR ".wine";        /* config dir relative to $HOME */
 static const char server_root_prefix[] = "/tmp/.wine-";  /* prefix for server root dir */
 static const char server_dir_prefix[] = "/server-";      /* prefix for server dir */
 
@@ -109,18 +109,30 @@ static inline int strendswith( const char* str, const char* end )
 static inline void remove_trailing_slashes( char *path )
 {
     int len = strlen( path );
-    while (len > 1 && path[len-1] == '/') path[--len] = 0;
+    while (len > 1 && path[len-1] == PATH_SEP) path[--len] = 0;
 }
 
 /* build a path from the specified dir and name */
 static char *build_path( const char *dir, const char *name )
 {
     size_t len = strlen(dir);
-    char *ret = xmalloc( len + strlen(name) + 2 );
+    char *ret = xmalloc( len + strlen(name) + 2);
 
     memcpy( ret, dir, len );
-    if (len && ret[len-1] != '/') ret[len++] = '/';
+    if (len && ret[len-1] != PATH_SEP) ret[len++] = PATH_SEP;
+    strcpy( ret + len, name );	
+    return ret;
+}
+
+static char *build_path_exe( const char *dir, const char *name )
+{
+    size_t len = strlen(dir);
+    char *ret = xmalloc( len + strlen(name) + 2 + strlen(EXE));
+
+    memcpy( ret, dir, len );
+    if (len && ret[len-1] != PATH_SEP) ret[len++] = PATH_SEP;
     strcpy( ret + len, name );
+	strcat( ret, EXE);
     return ret;
 }
 
@@ -169,12 +181,12 @@ static char *get_runtime_bindir( const char *argv0 )
     free( bindir );
 #endif
 
-    if (!(p = strrchr( argv0, '/' ))) return NULL;
+    if (!(p = strrchr( argv0, PATH_SEP ))) return NULL;
 
     len = p - argv0;
     if (!len) len++;  /* include leading slash */
 
-    if (argv0[0] == '/')  /* absolute path */
+    if (argv0[0] == PATH_SEP || argv0[1] == ':')  /* absolute path */
     {
         bindir = xmalloc( len + 1 );
         memcpy( bindir, argv0, len );
@@ -190,7 +202,7 @@ static char *get_runtime_bindir( const char *argv0 )
             {
                 bindir = cwd;
                 cwd += strlen(cwd);
-                *cwd++ = '/';
+                *cwd++ = PATH_SEP;
                 memcpy( cwd, argv0, len );
                 cwd[len] = 0;
                 break;
@@ -270,7 +282,7 @@ static void init_paths(void)
     {
         config_dir = xstrdup( prefix );
         remove_trailing_slashes( config_dir );
-        if (config_dir[0] != '/')
+        if (config_dir[0] != WINE_DIR)
             fatal_error( "invalid directory %s in WINEPREFIX: not an absolute path\n", prefix );
         if (stat( config_dir, &st ) == -1)
         {
@@ -281,7 +293,7 @@ static void init_paths(void)
     else
     {
         if (!home) fatal_error( "could not determine your home directory\n" );
-        if (home[0] != '/') fatal_error( "your home directory %s is not an absolute path\n", home );
+        if (home[0] != WINE_DIR) fatal_error( "your home directory %s is not an absolute path\n", home );
         config_dir = xmalloc( strlen(home) + sizeof(server_config_dir) );
         strcpy( config_dir, home );
         remove_trailing_slashes( config_dir );
@@ -304,7 +316,7 @@ static void init_paths(void)
 static int is_valid_bindir( const char *bindir )
 {
     struct stat st;
-    char *path = build_path( bindir, "wineserver" );
+    char *path = build_path_exe( bindir, "wineserver" );
     int ret = (stat( path, &st ) != -1);
     free( path );
     return ret;
@@ -334,8 +346,8 @@ static char *running_from_build_dir( const char *basedir )
 
     /* remove last component from basedir */
     p = basedir + strlen(basedir) - 1;
-    while (p > basedir && *p == '/') p--;
-    while (p > basedir && *p != '/') p--;
+    while (p > basedir && *p == PATH_SEP) p--;
+    while (p > basedir && *p != PATH_SEP) p--;
     if (p == basedir) return NULL;
     path = xmalloc( p - basedir + sizeof("/dlls/ntdll/ntdll.dll.so") );
     memcpy( path, basedir, p - basedir );
@@ -343,8 +355,8 @@ static char *running_from_build_dir( const char *basedir )
     if (!is_valid_build_dir( path, p - basedir ))
     {
         /* remove another component */
-        while (p > basedir && *p == '/') p--;
-        while (p > basedir && *p != '/') p--;
+        while (p > basedir && *p == PATH_SEP) p--;
+        while (p > basedir && *p != PATH_SEP) p--;
         if (p == basedir || !is_valid_build_dir( path, p - basedir ))
         {
             free( path );
@@ -360,7 +372,7 @@ void wine_init_argv0_path( const char *argv0 )
     const char *basename;
     char *libdir;
 
-    if (!(basename = strrchr( argv0, '/' ))) basename = argv0;
+    if (!(basename = strrchr( argv0, PATH_SEP ))) basename = argv0;
     else basename++;
 
     bindir = get_runtime_bindir( argv0 );
@@ -463,7 +475,7 @@ static void preloader_exec( char **argv, int use_preloader )
         char *p, *full_name;
         char **last_arg = argv, **new_argv;
 
-        if (!(p = strrchr( argv[0], '/' ))) p = argv[0];
+        if (!(p = strrchr( argv[0], PATH_SEP ))) p = argv[0];
         else p++;
 
         full_name = xmalloc( p - argv[0] + sizeof(preloader64) );
@@ -499,7 +511,7 @@ void wine_exec_wine_binary( const char *name, char **argv, const char *env_var )
     use_preloader = 0;
 #endif
 
-    if ((ptr = strrchr( name, '/' )))
+    if ((ptr = strrchr( name, PATH_SEP )))
     {
         /* if we are in build dir and name contains a path, try that */
         if (build_dir)

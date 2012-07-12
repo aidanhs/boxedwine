@@ -51,7 +51,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include <pthread.h>
 #else
-extern char **environ;
+#define environ getEnviron()
 #endif
 
 /* argc/argv for the Windows application */
@@ -245,7 +245,7 @@ static char *first_dll_path( const char *name, int win16, struct dll_path_contex
 {
     char *p;
     int namelen = strlen( name );
-    const char *ext = win16 ? "16" : ".so";
+    const char *ext = win16 ? "16" : "";
 
     context->buffer = malloc( dll_path_maxlen + 2 * namelen + strlen(ext) + 3 );
     context->index = build_dir ? 0 : 2;  /* if no build dir skip all the build dir magic cases */
@@ -255,7 +255,7 @@ static char *first_dll_path( const char *name, int win16, struct dll_path_contex
 
     /* store the name at the end of the buffer, followed by extension */
     p = context->name;
-    *p++ = '/';
+    *p++ = PATH_SEP;
     memcpy( p, name, namelen );
     strcpy( p + namelen, ext );
     return next_dll_path( context );

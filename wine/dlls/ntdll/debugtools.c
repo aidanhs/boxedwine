@@ -46,7 +46,7 @@ static struct __wine_debug_functions default_funcs;
 /* ---------------------------------------------------------------------- */
 
 /* get the debug info pointer for the current thread */
-static inline struct debug_info *get_info(void)
+static INLINE struct debug_info *get_info(void)
 {
     return ntdll_get_thread_data()->debug_info;
 }

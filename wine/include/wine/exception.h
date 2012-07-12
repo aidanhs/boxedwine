@@ -201,7 +201,7 @@ typedef struct __tagWINE_FRAME
 
 #endif /* USE_COMPILER_EXCEPTIONS */
 
-static inline EXCEPTION_REGISTRATION_RECORD *__wine_push_frame( EXCEPTION_REGISTRATION_RECORD *frame )
+static INLINE EXCEPTION_REGISTRATION_RECORD *__wine_push_frame( EXCEPTION_REGISTRATION_RECORD *frame )
 {
 #if defined(__GNUC__) && defined(__i386__)
     EXCEPTION_REGISTRATION_RECORD *prev;
@@ -218,7 +218,7 @@ static inline EXCEPTION_REGISTRATION_RECORD *__wine_push_frame( EXCEPTION_REGIST
 #endif
 }
 
-static inline EXCEPTION_REGISTRATION_RECORD *__wine_pop_frame( EXCEPTION_REGISTRATION_RECORD *frame )
+static INLINE EXCEPTION_REGISTRATION_RECORD *__wine_pop_frame( EXCEPTION_REGISTRATION_RECORD *frame )
 {
 #if defined(__GNUC__) && defined(__i386__)
     __asm__ __volatile__(".byte 0x64\n\tmovl %0,(0)"
@@ -232,7 +232,7 @@ static inline EXCEPTION_REGISTRATION_RECORD *__wine_pop_frame( EXCEPTION_REGISTR
 #endif
 }
 
-static inline EXCEPTION_REGISTRATION_RECORD *__wine_get_frame(void)
+static INLINE EXCEPTION_REGISTRATION_RECORD *__wine_get_frame(void)
 {
 #if defined(__GNUC__) && defined(__i386__)
     EXCEPTION_REGISTRATION_RECORD *ret;

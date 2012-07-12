@@ -40,20 +40,24 @@
 WINE_DEFAULT_DEBUG_CHANNEL(ntdll);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 
-static inline LONG interlocked_inc( PLONG dest )
+static INLINE LONG interlocked_inc( PLONG dest )
 {
     return interlocked_xchg_add( dest, 1 ) + 1;
 }
 
-static inline LONG interlocked_dec( PLONG dest )
+static INLINE LONG interlocked_dec( PLONG dest )
 {
     return interlocked_xchg_add( dest, -1 ) - 1;
 }
 
-static inline void small_pause(void)
+static INLINE void small_pause(void)
 {
 #ifdef __i386__
+#if defined(_MSC_VER)
+	_asm nop;
+#else
     __asm__ __volatile__( "rep;nop" : : : "memory" );
+#endif
 #else
     __asm__ __volatile__( "" : : : "memory" );
 #endif
@@ -64,17 +68,17 @@ static inline void small_pause(void)
 static int wait_op = 128; /*FUTEX_WAIT|FUTEX_PRIVATE_FLAG*/
 static int wake_op = 129; /*FUTEX_WAKE|FUTEX_PRIVATE_FLAG*/
 
-static inline int futex_wait( int *addr, int val, struct timespec *timeout )
+static INLINE int futex_wait( int *addr, int val, struct timespec *timeout )
 {
     return syscall( SYS_futex, addr, wait_op, val, timeout, 0, 0 );
 }
 
-static inline int futex_wake( int *addr, int val )
+static INLINE int futex_wake( int *addr, int val )
 {
     return syscall( SYS_futex, addr, wake_op, val, NULL, 0, 0 );
 }
 
-static inline int use_futexes(void)
+static INLINE int use_futexes(void)
 {
     static int supported = -1;
 
@@ -92,7 +96,7 @@ static inline int use_futexes(void)
     return supported;
 }
 
-static inline NTSTATUS fast_wait( RTL_CRITICAL_SECTION *crit, int timeout )
+static INLINE NTSTATUS fast_wait( RTL_CRITICAL_SECTION *crit, int timeout )
 {
     int val;
     struct timespec timespec;
@@ -111,7 +115,7 @@ static inline NTSTATUS fast_wait( RTL_CRITICAL_SECTION *crit, int timeout )
     return STATUS_WAIT_0;
 }
 
-static inline NTSTATUS fast_wake( RTL_CRITICAL_SECTION *crit )
+static INLINE NTSTATUS fast_wake( RTL_CRITICAL_SECTION *crit )
 {
     if (!use_futexes()) return STATUS_NOT_IMPLEMENTED;
 
@@ -120,7 +124,7 @@ static inline NTSTATUS fast_wake( RTL_CRITICAL_SECTION *crit )
     return STATUS_SUCCESS;
 }
 
-static inline void close_semaphore( RTL_CRITICAL_SECTION *crit )
+static INLINE void close_semaphore( RTL_CRITICAL_SECTION *crit )
 {
     if (!use_futexes()) NtClose( crit->LockSemaphore );
 }
@@ -203,7 +207,7 @@ static inline void close_semaphore( RTL_CRITICAL_SECTION *crit )
 /***********************************************************************
  *           get_semaphore
  */
-static inline HANDLE get_semaphore( RTL_CRITICAL_SECTION *crit )
+static INLINE HANDLE get_semaphore( RTL_CRITICAL_SECTION *crit )
 {
     HANDLE ret = crit->LockSemaphore;
     if (!ret)
@@ -221,7 +225,7 @@ static inline HANDLE get_semaphore( RTL_CRITICAL_SECTION *crit )
 /***********************************************************************
  *           wait_semaphore
  */
-static inline NTSTATUS wait_semaphore( RTL_CRITICAL_SECTION *crit, int timeout )
+static INLINE NTSTATUS wait_semaphore( RTL_CRITICAL_SECTION *crit, int timeout )
 {
     NTSTATUS ret;
 

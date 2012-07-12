@@ -90,7 +90,7 @@ typedef long            HRESULT;
 typedef int             HRESULT;
 # endif
 #endif
-static inline HRESULT HRESULT_FROM_WIN32(unsigned int x)
+static INLINE HRESULT HRESULT_FROM_WIN32(unsigned int x)
 {
     return (HRESULT)x > 0 ? ((HRESULT) ((x & 0x0000FFFF) | (FACILITY_WIN32 << 16) | 0x80000000)) : (HRESULT)x;
 }

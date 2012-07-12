@@ -618,7 +618,7 @@ BOOLEAN WINAPI RtlGetNtProductType( LPDWORD type )
 }
 
 
-static inline NTSTATUS version_compare_values(ULONG left, ULONG right, UCHAR condition)
+static INLINE NTSTATUS version_compare_values(ULONG left, ULONG right, UCHAR condition)
 {
     switch (condition) {
         case VER_EQUAL:

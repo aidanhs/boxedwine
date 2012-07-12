@@ -42,6 +42,8 @@ typedef struct tagIMCCInternal
     DWORD dwSize;
 } IMCCInternal;
 
+
+
 #define MAKE_FUNCPTR(f) typeof(f) * p##f
 typedef struct _tagImmHkl{
     struct list entry;
@@ -52,22 +54,22 @@ typedef struct _tagImmHkl{
     ULONG       uSelected;
 
     /* Function Pointers */
-    MAKE_FUNCPTR(ImeInquire);
-    MAKE_FUNCPTR(ImeConfigure);
-    MAKE_FUNCPTR(ImeDestroy);
-    MAKE_FUNCPTR(ImeEscape);
-    MAKE_FUNCPTR(ImeSelect);
-    MAKE_FUNCPTR(ImeSetActiveContext);
-    MAKE_FUNCPTR(ImeToAsciiEx);
-    MAKE_FUNCPTR(NotifyIME);
-    MAKE_FUNCPTR(ImeRegisterWord);
-    MAKE_FUNCPTR(ImeUnregisterWord);
-    MAKE_FUNCPTR(ImeEnumRegisterWord);
-    MAKE_FUNCPTR(ImeSetCompositionString);
-    MAKE_FUNCPTR(ImeConversionList);
-    MAKE_FUNCPTR(ImeProcessKey);
-    MAKE_FUNCPTR(ImeGetRegisterWordStyle);
-    MAKE_FUNCPTR(ImeGetImeMenuItems);
+    BOOL (*pImeInquire)(LPIMEINFO, LPWSTR, LPCWSTR lpszOptions);
+	BOOL (*pImeConfigure) (HKL, HWND, DWORD, LPVOID);
+	BOOL (*pImeDestroy)(UINT);
+	LRESULT (*pImeEscape)(HIMC, UINT, LPVOID);
+	BOOL (*pImeSelect)(HIMC, BOOL);
+	BOOL (*pImeSetActiveContext)(HIMC, BOOL);
+	UINT (*pImeToAsciiEx)(UINT, UINT, CONST LPBYTE, LPDWORD, UINT, HIMC);
+	BOOL (*pNotifyIME)(HIMC, DWORD, DWORD, DWORD);
+	BOOL (*pImeRegisterWord)(LPCWSTR, DWORD, LPCWSTR);
+	BOOL (*pImeUnregisterWord)(LPCWSTR, DWORD, LPCWSTR);
+	UINT (*pImeEnumRegisterWord)(REGISTERWORDENUMPROCW, LPCWSTR, DWORD, LPCWSTR, LPVOID);
+	BOOL (*pImeSetCompositionString)(HIMC, DWORD, LPCVOID, DWORD, LPCVOID, DWORD);
+	DWORD (*pImeConversionList)(HIMC, LPCWSTR, LPCANDIDATELIST,DWORD,UINT);
+	BOOL (*pImeProcessKey)(HIMC, UINT, LPARAM, CONST LPBYTE);
+	UINT (*pImeGetRegisterWordStyle)(UINT, LPSTYLEBUFW);
+	DWORD (*pImeGetImeMenuItems)(HIMC, DWORD, DWORD, LPIMEMENUITEMINFOW, LPIMEMENUITEMINFOW, DWORD);
 } ImmHkl;
 #undef MAKE_FUNCPTR
 

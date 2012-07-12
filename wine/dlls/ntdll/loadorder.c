@@ -89,7 +89,7 @@ static const WCHAR *get_basename( const WCHAR *name )
  *
  * Remove extension if it is ".dll".
  */
-static inline void remove_dll_ext( WCHAR *ext )
+static INLINE void remove_dll_ext( WCHAR *ext )
 {
     if (ext[0] == '.' &&
         toupperW(ext[1]) == 'D' &&
@@ -276,7 +276,7 @@ static void init_load_order(void)
  *
  * Get the load order for a given module from the WINEDLLOVERRIDES environment variable.
  */
-static inline enum loadorder get_env_load_order( const WCHAR *module )
+static INLINE enum loadorder get_env_load_order( const WCHAR *module )
 {
     module_loadorder_t tmp, *res;
 

@@ -1858,7 +1858,7 @@ static BOOL matching_pattern_format( dib_info *dib, dib_info *pattern )
 
 static BOOL select_pattern_brush( dibdrv_physdev *pdev, dib_brush *brush, BOOL *needs_reselect )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     RGBQUAD color_table[2];
     RECT rect;

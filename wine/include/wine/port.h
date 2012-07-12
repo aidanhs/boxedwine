@@ -325,7 +325,7 @@ int usleep (unsigned int useconds);
 #endif /* !defined(HAVE_USLEEP) */
 
 #ifdef __i386__
-static inline void *memcpy_unaligned( void *dst, const void *src, size_t size )
+static INLINE void *memcpy_unaligned( void *dst, const void *src, size_t size )
 {
     return memcpy( dst, src, size );
 }

@@ -121,19 +121,19 @@ static FARPROC find_named_export( HMODULE module, const IMAGE_EXPORT_DIRECTORY *
                                   DWORD exp_size, const char *name, int hint, LPCWSTR load_path );
 
 /* convert PE image VirtualAddress to Real Address */
-static inline void *get_rva( HMODULE module, DWORD va )
+static INLINE void *get_rva( HMODULE module, DWORD va )
 {
     return (void *)((char *)module + va);
 }
 
 /* check whether the file name contains a path */
-static inline int contains_path( LPCWSTR name )
+static INLINE int contains_path( LPCWSTR name )
 {
     return ((*name && (name[1] == ':')) || strchrW(name, '/') || strchrW(name, '\\'));
 }
 
 /* convert from straight ASCII to Unicode without depending on the current codepage */
-static inline void ascii_to_unicode( WCHAR *dst, const char *src, size_t len )
+static INLINE void ascii_to_unicode( WCHAR *dst, const char *src, size_t len )
 {
     while (len--) *dst++ = (unsigned char)*src++;
 }

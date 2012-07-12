@@ -1,0 +1,122 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\libs">
+      <UniqueIdentifier>{bb224a24-a60d-453e-a061-641fd915b00d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libs\port">
+      <UniqueIdentifier>{ef862287-8f10-4e2e-8137-af207bcf0614}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crt0">
+      <UniqueIdentifier>{60bb4a25-1771-4dbf-b54a-f5eb290bdd1e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\advapi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\cred.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt_arc4.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt_des.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt_lmhash.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt_md4.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt_md5.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\crypt_sha.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\eventlog.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\lsa.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\registry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\security.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\advapi32\service.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="svcctl_c.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\libs\port\interlocked.c">
+      <Filter>Source Files\libs\port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\winecrt0\exception.c">
+      <Filter>Source Files\crt0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\winecrt0\dll_main.c">
+      <Filter>Source Files\crt0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\winecrt0\dll_entry.c">
+      <Filter>Source Files\crt0</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\winecrt0\init.c">
+      <Filter>Source Files\crt0</Filter>
+    </ClCompile>
+    <ClCompile Include="advapi32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="..\..\..\..\wine\dlls\advapi32\svcctl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\wtypes.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\unknwn.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\objidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\oaidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\oleidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\propidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\wine\include\iads.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="advapi32.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

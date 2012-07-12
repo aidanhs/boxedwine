@@ -1,0 +1,176 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\libs">
+      <UniqueIdentifier>{9767ee3b-13f2-4604-a9f8-f3246e5ffb13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\libs\port">
+      <UniqueIdentifier>{a0560813-f2c6-499a-baa5-80dfe9f8f9b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\dibdrv">
+      <UniqueIdentifier>{b7825060-537f-4b39-8dd4-e461f818254c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\mfdrv">
+      <UniqueIdentifier>{ddf200e2-5ba9-48bd-b2e8-0d168dda935d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\enhmfdrv">
+      <UniqueIdentifier>{d842e5e2-57a3-4d42-a221-e9feac391437}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\crt0">
+      <UniqueIdentifier>{53b12ea5-7592-4d81-8843-bcda89546a87}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\bitblt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\bitmap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\brush.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\clipping.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dib.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\driver.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmetafile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\font.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\freetype.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\gdiobj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\icm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mapping.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\metafile.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\opengl.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\painting.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\palette.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\path.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\pen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\printdrv.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\region.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\libs\port\interlocked.c">
+      <Filter>Source Files\libs\port</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\bitblt.c">
+      <Filter>Source Files\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\dc.c">
+      <Filter>Source Files\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\graphics.c">
+      <Filter>Source Files\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\objects.c">
+      <Filter>Source Files\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\primitives.c">
+      <Filter>Source Files\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\bidi.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\bitblt.c">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\dc.c">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\graphics.c">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\init.c">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\objects.c">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\text.c">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\bitblt.c">
+      <Filter>Source Files\enhmfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\dc.c">
+      <Filter>Source Files\enhmfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\graphics.c">
+      <Filter>Source Files\enhmfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\init.c">
+      <Filter>Source Files\enhmfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\objects.c">
+      <Filter>Source Files\enhmfdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\winecrt0\exception.c">
+      <Filter>Source Files\crt0</Filter>
+    </ClCompile>
+    <ClCompile Include="gdi32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\wine\dlls\gdi32\dibdrv\dibdrv.h">
+      <Filter>Source Files\dibdrv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\wine\dlls\gdi32\mfdrv\metafiledrv.h">
+      <Filter>Source Files\mfdrv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\enhmetafiledrv.h">
+      <Filter>Source Files\enhmfdrv</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="gdi32.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>

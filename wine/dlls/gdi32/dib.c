@@ -453,7 +453,7 @@ INT nulldrv_StretchDIBits( PHYSDEV dev, INT xDst, INT yDst, INT widthDst, INT he
                            BITMAPINFO *src_info, UINT coloruse, DWORD rop )
 {
     DC *dc = get_nulldrv_dc( dev );
-    char dst_buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char dst_buffer[BITMAP256_SIZE];
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_buffer;
     struct bitblt_coords src, dst;
     struct gdi_image_bits src_bits;
@@ -600,7 +600,7 @@ INT WINAPI StretchDIBits(HDC hdc, INT xDst, INT yDst, INT widthDst, INT heightDs
                          INT xSrc, INT ySrc, INT widthSrc, INT heightSrc, const void *bits,
                          const BITMAPINFO *bmi, UINT coloruse, DWORD rop )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     DC *dc;
     INT ret = 0;
@@ -647,9 +647,9 @@ INT WINAPI SetDIBits( HDC hdc, HBITMAP hbitmap, UINT startscan,
 		      UINT coloruse )
 {
     BITMAPOBJ *bitmap;
-    char src_bmibuf[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char src_bmibuf[BITMAP256_SIZE];
     BITMAPINFO *src_info = (BITMAPINFO *)src_bmibuf;
-    char dst_bmibuf[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char dst_bmibuf[BITMAP256_SIZE];
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_bmibuf;
     INT result = 0;
     DWORD err;
@@ -754,7 +754,7 @@ INT nulldrv_SetDIBitsToDevice( PHYSDEV dev, INT x_dst, INT y_dst, DWORD cx, DWOR
                                const void *bits, BITMAPINFO *src_info, UINT coloruse )
 {
     DC *dc = get_nulldrv_dc( dev );
-    char dst_buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char dst_buffer[BITMAP256_SIZE];
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_buffer;
     struct bitblt_coords src, dst;
     struct gdi_image_bits src_bits;
@@ -872,7 +872,7 @@ INT WINAPI SetDIBitsToDevice(HDC hdc, INT xDest, INT yDest, DWORD cx,
                            UINT lines, LPCVOID bits, const BITMAPINFO *bmi,
                            UINT coloruse )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     INT ret = 0;
     DC *dc;
@@ -1159,7 +1159,7 @@ void get_ddb_bitmapinfo( BITMAPOBJ *bmp, BITMAPINFO *info )
 
 BITMAPINFO *copy_packed_dib( const BITMAPINFO *src_info, UINT usage )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *ret, *info = (BITMAPINFO *)buffer;
     unsigned int info_size;
 
@@ -1197,9 +1197,9 @@ INT WINAPI GetDIBits(
     BITMAPOBJ * bmp;
     int i, dst_to_src_offset, ret = 0;
     DWORD err;
-    char dst_bmibuf[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char dst_bmibuf[BITMAP256_SIZE];
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_bmibuf;
-    char src_bmibuf[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char src_bmibuf[BITMAP256_SIZE];
     BITMAPINFO *src_info = (BITMAPINFO *)src_bmibuf;
     struct gdi_image_bits src_bits;
     struct bitblt_coords src, dst;
@@ -1461,7 +1461,7 @@ HBITMAP WINAPI CreateDIBitmap( HDC hdc, const BITMAPINFOHEADER *header,
 HBITMAP WINAPI CreateDIBSection(HDC hdc, CONST BITMAPINFO *bmi, UINT usage,
                                 VOID **bits, HANDLE section, DWORD offset)
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     HBITMAP ret = 0;
     BITMAPOBJ *bmp;

@@ -44,7 +44,7 @@ extern "C" {
 #endif
 
 #ifndef WINE_UNICODE_INLINE
-#define WINE_UNICODE_INLINE static inline
+#define WINE_UNICODE_INLINE static INLINE
 #endif
 
 /* code page info common to SBCS and DBCS */

@@ -247,7 +247,7 @@ static void read_reply_data( void *buffer, size_t size )
  *
  * Wait for a reply from the server.
  */
-static inline unsigned int wait_reply( struct __server_request_info *req )
+static INLINE unsigned int wait_reply( struct __server_request_info *req )
 {
     read_reply_data( &req->u.reply, sizeof(req->u.reply) );
     if (req->u.reply.reply_header.reply_size)
@@ -446,7 +446,7 @@ struct fd_cache_entry
 static struct fd_cache_entry *fd_cache[FD_CACHE_ENTRIES];
 static struct fd_cache_entry fd_cache_initial_block[FD_CACHE_BLOCK_SIZE];
 
-static inline unsigned int handle_to_index( HANDLE handle, unsigned int *entry )
+static INLINE unsigned int handle_to_index( HANDLE handle, unsigned int *entry )
 {
     unsigned int idx = (wine_server_obj_handle(handle) >> 2) - 1;
     *entry = idx / FD_CACHE_BLOCK_SIZE;
@@ -497,7 +497,7 @@ static int add_fd_to_cache( HANDLE handle, int fd, enum server_fd_type type,
  *
  * Caller must hold fd_cache_section.
  */
-static inline int get_cached_fd( HANDLE handle, enum server_fd_type *type,
+static INLINE int get_cached_fd( HANDLE handle, enum server_fd_type *type,
                                  unsigned int *access, unsigned int *options )
 {
     unsigned int entry, idx = handle_to_index( handle, &entry );

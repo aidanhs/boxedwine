@@ -54,7 +54,7 @@ static const WCHAR UncPfxW[] = {'U','N','C','\\',0};
  *
  * Remove the last component of the path. Helper for find_drive_rootA.
  */
-static inline unsigned int remove_last_componentA( const char *path, unsigned int len )
+static INLINE unsigned int remove_last_componentA( const char *path, unsigned int len )
 {
     int level = 0;
 
@@ -145,7 +145,7 @@ static NTSTATUS find_drive_rootA( LPCSTR *ppath, unsigned int len, int *drive_re
  *
  * Remove the last component of the path. Helper for find_drive_rootW.
  */
-static inline int remove_last_componentW( const WCHAR *path, int len )
+static INLINE int remove_last_componentW( const WCHAR *path, int len )
 {
     int level = 0;
 
@@ -502,7 +502,7 @@ ULONG WINAPI RtlDosSearchPath_U(LPCWSTR paths, LPCWSTR search, LPCWSTR ext,
  * Helper for RtlGetFullPathName_U.
  * Get rid of . and .. components in the path.
  */
-static inline void collapse_path( WCHAR *path, UINT mark )
+static INLINE void collapse_path( WCHAR *path, UINT mark )
 {
     WCHAR *p, *next;
 

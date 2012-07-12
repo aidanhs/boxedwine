@@ -252,23 +252,23 @@ static WCHAR *xmlstrdupW(const xmlstr_t* str)
     return strW;
 }
 
-static inline BOOL xmlstr_cmp(const xmlstr_t* xmlstr, const WCHAR *str)
+static INLINE BOOL xmlstr_cmp(const xmlstr_t* xmlstr, const WCHAR *str)
 {
     return !strncmpW(xmlstr->ptr, str, xmlstr->len) && !str[xmlstr->len];
 }
 
-static inline BOOL xmlstr_cmpi(const xmlstr_t* xmlstr, const WCHAR *str)
+static INLINE BOOL xmlstr_cmpi(const xmlstr_t* xmlstr, const WCHAR *str)
 {
     return !strncmpiW(xmlstr->ptr, str, xmlstr->len) && !str[xmlstr->len];
 }
 
-static inline BOOL xmlstr_cmp_end(const xmlstr_t* xmlstr, const WCHAR *str)
+static INLINE BOOL xmlstr_cmp_end(const xmlstr_t* xmlstr, const WCHAR *str)
 {
     return (xmlstr->len && xmlstr->ptr[0] == '/' &&
             !strncmpW(xmlstr->ptr + 1, str, xmlstr->len - 1) && !str[xmlstr->len - 1]);
 }
 
-static inline BOOL xml_elem_cmp(const xmlstr_t *elem, const WCHAR *str, const WCHAR *namespace)
+static INLINE BOOL xml_elem_cmp(const xmlstr_t *elem, const WCHAR *str, const WCHAR *namespace)
 {
     UINT len = strlenW( namespace );
 
@@ -277,7 +277,7 @@ static inline BOOL xml_elem_cmp(const xmlstr_t *elem, const WCHAR *str, const WC
             !strncmpW(elem->ptr + len, str, elem->len - len) && !str[elem->len - len]);
 }
 
-static inline BOOL xml_elem_cmp_end(const xmlstr_t *elem, const WCHAR *str, const WCHAR *namespace)
+static INLINE BOOL xml_elem_cmp_end(const xmlstr_t *elem, const WCHAR *str, const WCHAR *namespace)
 {
     if (elem->len && elem->ptr[0] == '/')
     {
@@ -289,17 +289,17 @@ static inline BOOL xml_elem_cmp_end(const xmlstr_t *elem, const WCHAR *str, cons
     return FALSE;
 }
 
-static inline BOOL isxmlspace( WCHAR ch )
+static INLINE BOOL isxmlspace( WCHAR ch )
 {
     return (ch == ' ' || ch == '\r' || ch == '\n' || ch == '\t');
 }
 
-static inline const char* debugstr_xmlstr(const xmlstr_t* str)
+static INLINE const char* debugstr_xmlstr(const xmlstr_t* str)
 {
     return debugstr_wn(str->ptr, str->len);
 }
 
-static inline const char* debugstr_version(const struct assembly_version *ver)
+static INLINE const char* debugstr_version(const struct assembly_version *ver)
 {
     return wine_dbg_sprintf("%u.%u.%u.%u", ver->major, ver->minor, ver->build, ver->revision);
 }
@@ -546,7 +546,7 @@ static WCHAR *build_assembly_dir(struct assembly_identity* ai)
     return ret;
 }
 
-static inline void append_string( WCHAR *buffer, const WCHAR *prefix, const WCHAR *str )
+static INLINE void append_string( WCHAR *buffer, const WCHAR *prefix, const WCHAR *str )
 {
     WCHAR *p = buffer;
 
@@ -610,7 +610,7 @@ static ACTIVATION_CONTEXT *check_actctx( HANDLE h )
     return ret;
 }
 
-static inline void actctx_addref( ACTIVATION_CONTEXT *actctx )
+static INLINE void actctx_addref( ACTIVATION_CONTEXT *actctx )
 {
     interlocked_xchg_add( &actctx->ref_count, 1 );
 }

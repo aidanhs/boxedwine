@@ -1,0 +1,6 @@
+LIBRARY WINECRT
+EXPORTS
+_ftol2=ftol
+_ftol2_sse=ftol
+strcasecmp
+strncasecmp

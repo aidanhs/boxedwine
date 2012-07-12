@@ -84,14 +84,14 @@ static const WCHAR **debug_from_snoop_includelist;
 static BOOL init_done;
 
 /* compare an ASCII and a Unicode string without depending on the current codepage */
-static inline int strcmpAW( const char *strA, const WCHAR *strW )
+static INLINE int strcmpAW( const char *strA, const WCHAR *strW )
 {
     while (*strA && ((unsigned char)*strA == *strW)) { strA++; strW++; }
     return (unsigned char)*strA - *strW;
 }
 
 /* compare an ASCII and a Unicode string without depending on the current codepage */
-static inline int strncmpiAW( const char *strA, const WCHAR *strW, int n )
+static INLINE int strncmpiAW( const char *strA, const WCHAR *strW, int n )
 {
     int ret = 0;
     for ( ; n > 0; n--, strA++, strW++)
@@ -302,7 +302,7 @@ static BOOL check_from_module( const WCHAR **includelist, const WCHAR **excludel
 /***********************************************************************
  *           RELAY_PrintArgs
  */
-static inline void RELAY_PrintArgs( const INT_PTR *args, int nb_args, unsigned int typemask )
+static INLINE void RELAY_PrintArgs( const INT_PTR *args, int nb_args, unsigned int typemask )
 {
     while (nb_args--)
     {

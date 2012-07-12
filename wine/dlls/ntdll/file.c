@@ -496,7 +496,7 @@ static NTSTATUS get_io_timeouts( HANDLE handle, enum server_fd_type type, ULONG 
 
 
 /* retrieve the timeout for the next wait, in milliseconds */
-static inline int get_next_io_timeout( const struct io_timeouts *timeouts, ULONG already )
+static INLINE int get_next_io_timeout( const struct io_timeouts *timeouts, ULONG already )
 {
     int ret = -1;
 
@@ -1558,7 +1558,7 @@ NTSTATUS WINAPI NtSetVolumeInformationFile(
 	return 0;
 }
 
-static inline void get_file_times( const struct stat *st, LARGE_INTEGER *mtime, LARGE_INTEGER *ctime,
+static INLINE void get_file_times( const struct stat *st, LARGE_INTEGER *mtime, LARGE_INTEGER *ctime,
                                    LARGE_INTEGER *atime, LARGE_INTEGER *creation )
 {
     RtlSecondsSince1970ToTime( st->st_mtime, mtime );
@@ -2300,7 +2300,7 @@ static inline void get_device_info_fstatfs( FILE_FS_DEVICE_INFORMATION *info, co
 }
 #endif
 
-static inline int is_device_placeholder( int fd )
+static INLINE int is_device_placeholder( int fd )
 {
     static const char wine_placeholder[] = "Wine device placeholder";
     char buffer[sizeof(wine_placeholder)-1];

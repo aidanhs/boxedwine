@@ -353,7 +353,7 @@ NTSTATUS WINAPI RtlExpandEnvironmentStrings_U(PCWSTR renv, const UNICODE_STRING*
 }
 
 
-static inline void normalize( void *base, WCHAR **ptr )
+static INLINE void normalize( void *base, WCHAR **ptr )
 {
     if (*ptr) *ptr = (WCHAR *)((char *)base + (UINT_PTR)*ptr);
 }
@@ -379,7 +379,7 @@ PRTL_USER_PROCESS_PARAMETERS WINAPI RtlNormalizeProcessParams( RTL_USER_PROCESS_
 }
 
 
-static inline void denormalize( const void *base, WCHAR **ptr )
+static INLINE void denormalize( const void *base, WCHAR **ptr )
 {
     if (*ptr) *ptr = (WCHAR *)(UINT_PTR)((char *)*ptr - (const char *)base);
 }

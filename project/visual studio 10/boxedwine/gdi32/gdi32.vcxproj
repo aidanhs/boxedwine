@@ -1,0 +1,226 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{AB8247B1-505D-4FB6-8C9F-F1773972E749}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>gdi32</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath>..\..\..\..\wine\include;..\..\..\..\source\wine\include</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath>..\..\..\..\wine\include;..\..\..\..\source\wine\include</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN_WINE;WINECRT=__declspec(dllimport);_GDI32_;DOSHAL=__declspec(dllexport);WINE_UNICODE_API=/* */;DECLSPEC_NORETURN=/* */;_MSC_VER=1200;__linux__;__WINESRC__;__i386__;INLINE=__inline;__ms_va_list=char*;_NORMALIZE_;__ms_va_start=va_start;__ms_va_end=va_end</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\wine\dlls\gdi32</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996;4018;4244</DisableSpecificWarnings>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>gdi32.def</ModuleDefinitionFile>
+      <EntryPointSymbol>DllMain</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WINECRT=__declspec(dllimport);_GDI32_;DOSHAL=__declspec(dllexport);WINE_UNICODE_API=/* */;DECLSPEC_NORETURN=/* */;_MSC_VER=1200;__linux__;__WINESRC__;__i386__;INLINE=__inline;__ms_va_list=char*;_NORMALIZE_;__ms_va_start=va_start;__ms_va_end=va_end</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\wine\dlls\gdi32</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996;4018;244</DisableSpecificWarnings>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>gdi32.def</ModuleDefinitionFile>
+      <EntryPointSymbol>DllMain</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\bidi.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\bitblt.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\bitmap.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\brush.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\clipping.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dc.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dib.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\bitblt.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\..\wine\dlls\gdi32</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\..\wine\dlls\gdi32</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\dc.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\graphics.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\objects.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\dibdrv\primitives.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\dibdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\driver.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmetafile.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\bitblt.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\dc.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\graphics.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\init.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\objects.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\enhmfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\font.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\freetype.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\gdiobj.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\icm.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mapping.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\metafile.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\bitblt.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\dc.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\graphics.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\init.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\objects.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\mfdrv\text.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)\mfdrv\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\opengl.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\painting.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\palette.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\path.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\pen.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\printdrv.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\gdi32\region.c" />
+    <ClCompile Include="..\..\..\..\wine\dlls\winecrt0\exception.c" />
+    <ClCompile Include="..\..\..\..\wine\libs\port\interlocked.c" />
+    <ClCompile Include="gdi32.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\wine\dlls\gdi32\dibdrv\dibdrv.h" />
+    <ClInclude Include="..\..\..\..\wine\dlls\gdi32\enhmfdrv\enhmetafiledrv.h" />
+    <ClInclude Include="..\..\..\..\wine\dlls\gdi32\mfdrv\metafiledrv.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\advapi32\advapi32.vcxproj">
+      <Project>{40517a7d-e93e-4ff0-9976-71f51923081f}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\doshal\doshal.vcxproj">
+      <Project>{9a7980be-a4c8-4ce9-8390-bd43975a7a4e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\kernel32\kernel32.vcxproj">
+      <Project>{5392268c-99f1-41fc-8697-09027ed111aa}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libwine\libwine.vcxproj">
+      <Project>{be5e5997-70df-4374-b609-90aa11b9dc36}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\ntdll\ntdll.vcxproj">
+      <Project>{701b962c-9d0c-4553-862a-76ee97a18fff}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\usp10\usp10.vcxproj">
+      <Project>{bc7af65f-5b21-4267-81e5-1c0a9cf8f545}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\winecrt\winecrt.vcxproj">
+      <Project>{46b0fbbe-9e69-4f4a-973d-375740f71253}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="gdi32.def" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

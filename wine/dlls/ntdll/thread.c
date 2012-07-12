@@ -72,7 +72,7 @@ static int nb_threads = 1;
  *
  * Copy a unicode string from the startup info.
  */
-static inline void get_unicode_string( UNICODE_STRING *str, WCHAR **src, WCHAR **dst, UINT len )
+static INLINE void get_unicode_string( UNICODE_STRING *str, WCHAR **src, WCHAR **dst, UINT len )
 {
     str->Buffer = *dst;
     str->Length = len;
@@ -740,7 +740,7 @@ NTSTATUS WINAPI NtSetContextThread( HANDLE handle, const CONTEXT *context )
 
 
 /* convert CPU-specific flags to generic server flags */
-static inline unsigned int get_server_context_flags( DWORD flags )
+static INLINE unsigned int get_server_context_flags( DWORD flags )
 {
     unsigned int ret = 0;
 

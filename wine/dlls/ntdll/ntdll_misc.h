@@ -19,6 +19,7 @@
 #ifndef __WINE_NTDLL_MISC_H
 #define __WINE_NTDLL_MISC_H
 
+#include "config.h"
 #include <stdarg.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -230,7 +231,7 @@ struct ntdll_thread_data
 #endif
 };
 
-static inline struct ntdll_thread_data *ntdll_get_thread_data(void)
+static INLINE struct ntdll_thread_data *ntdll_get_thread_data(void)
 {
     return (struct ntdll_thread_data *)NtCurrentTeb()->SpareBytes1;
 }

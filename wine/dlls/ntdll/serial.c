@@ -1045,7 +1045,7 @@ static NTSTATUS xmit_immediate(HANDLE hDevice, int fd, const char* ptr)
  *
  *
  */
-static inline NTSTATUS io_control(HANDLE hDevice, 
+static INLINE NTSTATUS io_control(HANDLE hDevice, 
                                   HANDLE hEvent, PIO_APC_ROUTINE UserApcRoutine,
                                   PVOID UserApcContext, 
                                   PIO_STATUS_BLOCK piosb, 

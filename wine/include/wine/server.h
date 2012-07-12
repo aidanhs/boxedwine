@@ -56,7 +56,7 @@ extern int CDECL wine_server_handle_to_fd( HANDLE handle, unsigned int access, i
 extern void CDECL wine_server_release_fd( HANDLE handle, int unix_fd );
 
 /* do a server call and set the last error code */
-static inline unsigned int wine_server_call_err( void *req_ptr )
+static INLINE unsigned int wine_server_call_err( void *req_ptr )
 {
     unsigned int res = wine_server_call( req_ptr );
     if (res) SetLastError( RtlNtStatusToDosError(res) );
@@ -64,13 +64,13 @@ static inline unsigned int wine_server_call_err( void *req_ptr )
 }
 
 /* get the size of the variable part of the returned reply */
-static inline data_size_t wine_server_reply_size( const void *reply )
+static INLINE data_size_t wine_server_reply_size( const void *reply )
 {
     return ((const struct reply_header *)reply)->reply_size;
 }
 
 /* add some data to be sent along with the request */
-static inline void wine_server_add_data( void *req_ptr, const void *ptr, data_size_t size )
+static INLINE void wine_server_add_data( void *req_ptr, const void *ptr, data_size_t size )
 {
     struct __server_request_info * const req = req_ptr;
     if (size)
@@ -82,7 +82,7 @@ static inline void wine_server_add_data( void *req_ptr, const void *ptr, data_si
 }
 
 /* set the pointer and max size for the reply var data */
-static inline void wine_server_set_reply( void *req_ptr, void *ptr, data_size_t max_size )
+static INLINE void wine_server_set_reply( void *req_ptr, void *ptr, data_size_t max_size )
 {
     struct __server_request_info * const req = req_ptr;
     req->reply_data = ptr;
@@ -90,32 +90,32 @@ static inline void wine_server_set_reply( void *req_ptr, void *ptr, data_size_t 
 }
 
 /* convert an object handle to a server handle */
-static inline obj_handle_t wine_server_obj_handle( HANDLE handle )
+static INLINE obj_handle_t wine_server_obj_handle( HANDLE handle )
 {
     if ((int)(INT_PTR)handle != (INT_PTR)handle) return 0xfffffff0;  /* some invalid handle */
     return (INT_PTR)handle;
 }
 
 /* convert a user handle to a server handle */
-static inline user_handle_t wine_server_user_handle( HANDLE handle )
+static INLINE user_handle_t wine_server_user_handle( HANDLE handle )
 {
     return (UINT_PTR)handle;
 }
 
 /* convert a server handle to a generic handle */
-static inline HANDLE wine_server_ptr_handle( obj_handle_t handle )
+static INLINE HANDLE wine_server_ptr_handle( obj_handle_t handle )
 {
     return (HANDLE)(INT_PTR)(int)handle;
 }
 
 /* convert a client pointer to a server client_ptr_t */
-static inline client_ptr_t wine_server_client_ptr( const void *ptr )
+static INLINE client_ptr_t wine_server_client_ptr( const void *ptr )
 {
     return (client_ptr_t)(ULONG_PTR)ptr;
 }
 
 /* convert a server client_ptr_t to a real pointer */
-static inline void *wine_server_get_ptr( client_ptr_t ptr )
+static INLINE void *wine_server_get_ptr( client_ptr_t ptr )
 {
     return (void *)(ULONG_PTR)ptr;
 }

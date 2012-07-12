@@ -805,9 +805,20 @@ static  ULONGLONG cpuHz = 1000000000; /* default to a 1GHz */
 /* Calls cpuid with an eax of 'ax' and returns the 16 bytes in *p
  * We are compiled with -fPIC, so we can't clobber ebx.
  */
-static inline void do_cpuid(unsigned int ax, unsigned int *p)
+static INLINE void do_cpuid(unsigned int ax, unsigned int *p)
 {
 #ifdef __i386__
+#if defined(_MSC_VER)
+	_asm {
+		push ebx
+		cpuid
+		mov [p + 0], eax
+		mov [p + 1], ebx
+		mov [p + 2], ecx
+		mov [p + 3], edx
+		pop ebx
+	}
+#else
 	__asm__("pushl %%ebx\n\t"
                 "cpuid\n\t"
                 "movl %%ebx, %%esi\n\t"
@@ -815,12 +826,33 @@ static inline void do_cpuid(unsigned int ax, unsigned int *p)
                 : "=a" (p[0]), "=S" (p[1]), "=c" (p[2]), "=d" (p[3])
                 :  "0" (ax));
 #endif
+#endif
 }
 
 /* From xf86info havecpuid.c 1.11 */
-static inline int have_cpuid(void)
+static INLINE int have_cpuid(void)
 {
 #ifdef __i386__
+# if defined(_MSC_VER)
+	int i;
+	_asm {
+		pushfd
+		pop eax
+		mov ecx, eax
+		xor eax, 0x200000
+		push eax
+		popfd
+		pushfd ; and test
+		pop eax
+		xor eax, ecx
+		shr eax, 21
+		and eax, 1
+		mov i, eax
+		push ecx
+		popfd
+	}
+	return i;
+#else
 	unsigned int f1, f2;
 	__asm__("pushfl\n\t"
                 "pushfl\n\t"
@@ -835,12 +867,13 @@ static inline int have_cpuid(void)
                 : "=&r" (f1), "=&r" (f2)
                 : "ir" (0x00200000));
 	return ((f1^f2) & 0x00200000) != 0;
+#endif
 #else
         return 0;
 #endif
 }
 
-static inline void get_cpuinfo(SYSTEM_CPU_INFORMATION* info)
+static INLINE void get_cpuinfo(SYSTEM_CPU_INFORMATION* info)
 {
     unsigned int regs[4], regs2[4];
 

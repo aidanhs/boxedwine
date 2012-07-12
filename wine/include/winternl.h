@@ -2593,7 +2593,7 @@ NTSYSAPI NTSTATUS CDECL wine_unix_to_nt_file_name( const ANSI_STRING *name, UNIC
 #define RtlRetrieveUlonglong(p,s) memcpy((p), (s), sizeof(ULONGLONG))
 #define RtlZeroMemory(Destination,Length) memset((Destination),0,(Length))
 
-static inline BOOLEAN RtlCheckBit(PCRTL_BITMAP lpBits, ULONG ulBit)
+static INLINE BOOLEAN RtlCheckBit(PCRTL_BITMAP lpBits, ULONG ulBit)
 {
     if (lpBits && ulBit < lpBits->SizeOfBitMap &&
         lpBits->Buffer[ulBit >> 5] & (1 << (ulBit & 31)))
@@ -2602,11 +2602,11 @@ static inline BOOLEAN RtlCheckBit(PCRTL_BITMAP lpBits, ULONG ulBit)
 }
 
 /* These are implemented as __fastcall, so we can't let Winelib apps link with them */
-static inline USHORT RtlUshortByteSwap(USHORT s)
+static INLINE USHORT RtlUshortByteSwap(USHORT s)
 {
     return (s >> 8) | (s << 8);
 }
-static inline ULONG RtlUlongByteSwap(ULONG i)
+static INLINE ULONG RtlUlongByteSwap(ULONG i)
 {
 #if defined(__i386__) && defined(__GNUC__)
     ULONG ret;
@@ -2623,7 +2623,7 @@ static inline ULONG RtlUlongByteSwap(ULONG i)
 #define InsertTailList(le,e)    do { PLIST_ENTRY b = (le)->Blink; (e)->Flink = (le); (e)->Blink = b; b->Flink = (e); (le)->Blink = (e); } while (0)
 #define IsListEmpty(le)         ((le)->Flink == (le))
 #define RemoveEntryList(e)      do { PLIST_ENTRY f = (e)->Flink, b = (e)->Blink; f->Blink = b; b->Flink = f; (e)->Flink = (e)->Blink = NULL; } while (0)
-static inline PLIST_ENTRY RemoveHeadList(PLIST_ENTRY le)
+static INLINE PLIST_ENTRY RemoveHeadList(PLIST_ENTRY le)
 {
     PLIST_ENTRY f, b, e;
 
@@ -2636,7 +2636,7 @@ static inline PLIST_ENTRY RemoveHeadList(PLIST_ENTRY le)
     if (e != le) e->Flink = e->Blink = NULL;
     return e;
 }
-static inline PLIST_ENTRY RemoveTailList(PLIST_ENTRY le)
+static INLINE PLIST_ENTRY RemoveTailList(PLIST_ENTRY le)
 {
     PLIST_ENTRY f, b, e;
 
@@ -2660,7 +2660,7 @@ typedef struct
     DWORD        vm86_pending;
 } WINE_VM86_TEB_INFO;
 
-static inline WINE_VM86_TEB_INFO *get_vm86_teb_info(void)
+static INLINE WINE_VM86_TEB_INFO *get_vm86_teb_info(void)
 {
     return (WINE_VM86_TEB_INFO *)&NtCurrentTeb()->GdiTebBatch;
 }

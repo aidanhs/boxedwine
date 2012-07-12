@@ -29,6 +29,12 @@
 #include "wingdi.h"
 #include "wine/gdi_driver.h"
 
+#ifdef _MSC_VER
+#define BITMAP256_SIZE (sizeof(BITMAPINFOHEADER)+sizeof(RGBQUAD)*256)
+#else
+#define BITMAP256_SIZE FIELD_OFFSET( BITMAPINFO, bmiColors[256] )
+#endif
+
 /* Metafile defines */
 #define META_EOF 0x0000
 /* values of mtType in METAHEADER.  Note however that the disk image of a disk

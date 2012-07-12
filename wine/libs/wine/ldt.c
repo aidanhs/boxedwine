@@ -33,7 +33,7 @@
 #include "winbase.h"
 #include "wine/library.h"
 
-#if defined(__i386__) && !defined(__MINGW32__) && !defined(_MSC_VER)
+#if defined(__i386__) && !defined(__MINGW32__)
 
 #ifdef __linux__
 
@@ -368,7 +368,9 @@ unsigned short wine_ldt_alloc_fs(void)
 {
     if (global_fs_sel == -1)
     {
-#ifdef __linux__
+#ifdef _MSC_VER
+		global_fs_sel = 0x17;
+#elif defined __linux__
         struct modify_ldt_s ldt_info;
         int ret;
 
@@ -405,7 +407,10 @@ void wine_ldt_init_fs( unsigned short sel, const LDT_ENTRY *entry )
 {
     if ((sel & ~3) == (global_fs_sel & ~3))
     {
-#ifdef __linux__
+#ifdef _MSC_VER
+		int ret;
+		if ((ret = set_thread_area( entry ) < 0)) perror( "set_thread_area" );
+#elif defined __linux__
         struct modify_ldt_s ldt_info;
         int ret;
 

@@ -178,7 +178,7 @@ static RTL_CRITICAL_SECTION dir_section = { &critsect_debug, -1, 0, 0, 0, 0 };
 
 
 /* check if a given Unicode char is OK in a DOS short name */
-static inline BOOL is_invalid_dos_char( WCHAR ch )
+static INLINE BOOL is_invalid_dos_char( WCHAR ch )
 {
     static const WCHAR invalid_chars[] = { INVALID_DOS_CHARS,'~','.',0 };
     if (ch > 0x7f) return TRUE;
@@ -186,7 +186,7 @@ static inline BOOL is_invalid_dos_char( WCHAR ch )
 }
 
 /* check if the device can be a mounted volume */
-static inline int is_valid_mounted_device( const struct stat *st )
+static INLINE int is_valid_mounted_device( const struct stat *st )
 {
 #if defined(linux) || defined(__sun__)
     return S_ISBLK( st->st_mode );
@@ -196,7 +196,7 @@ static inline int is_valid_mounted_device( const struct stat *st )
 #endif
 }
 
-static inline void ignore_file( const char *name )
+static INLINE void ignore_file( const char *name )
 {
     struct stat st;
     assert( ignored_files_count < MAX_IGNORED_FILES );
@@ -208,12 +208,12 @@ static inline void ignore_file( const char *name )
     }
 }
 
-static inline BOOL is_same_file( const struct file_identity *file, const struct stat *st )
+static INLINE BOOL is_same_file( const struct file_identity *file, const struct stat *st )
 {
     return st->st_dev == file->dev && st->st_ino == file->ino;
 }
 
-static inline BOOL is_ignored_file( const struct stat *st )
+static INLINE BOOL is_ignored_file( const struct stat *st )
 {
     unsigned int i;
 
@@ -222,7 +222,7 @@ static inline BOOL is_ignored_file( const struct stat *st )
     return FALSE;
 }
 
-static inline unsigned int dir_info_size( FILE_INFORMATION_CLASS class, unsigned int len )
+static INLINE unsigned int dir_info_size( FILE_INFORMATION_CLASS class, unsigned int len )
 {
     switch (class)
     {
@@ -242,7 +242,7 @@ static inline unsigned int dir_info_size( FILE_INFORMATION_CLASS class, unsigned
     }
 }
 
-static inline unsigned int max_dir_info_size( FILE_INFORMATION_CLASS class )
+static INLINE unsigned int max_dir_info_size( FILE_INFORMATION_CLASS class )
 {
     return dir_info_size( class, MAX_DIR_ENTRY_LEN );
 }
@@ -1985,7 +1985,7 @@ done:
 }
 
 
-static inline WCHAR *mempbrkW( const WCHAR *ptr, const WCHAR *accept, size_t n )
+static INLINE WCHAR *mempbrkW( const WCHAR *ptr, const WCHAR *accept, size_t n )
 {
     const WCHAR *end;
     for (end = ptr + n; ptr < end; ptr++) if (strchrW( accept, *ptr )) return (WCHAR *)ptr;
@@ -2529,7 +2529,7 @@ static NTSTATUS get_dos_device( const WCHAR *name, UINT name_len, ANSI_STRING *u
 
 
 /* return the length of the DOS namespace prefix if any */
-static inline int get_dos_prefix_len( const UNICODE_STRING *name )
+static INLINE int get_dos_prefix_len( const UNICODE_STRING *name )
 {
     static const WCHAR nt_prefixW[] = {'\\','?','?','\\'};
     static const WCHAR dosdev_prefixW[] = {'\\','D','o','s','D','e','v','i','c','e','s','\\'};

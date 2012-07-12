@@ -135,7 +135,7 @@ HBITMAP WINAPI CreateBitmap( INT width, INT height, UINT planes,
  */
 HBITMAP WINAPI CreateCompatibleBitmap( HDC hdc, INT width, INT height)
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *bi = (BITMAPINFO *)buffer;
     DIBSECTION dib;
 
@@ -283,7 +283,7 @@ LONG WINAPI GetBitmapBits(
     LONG count,        /* [in]  Number of bytes to copy */
     LPVOID bits)       /* [out] Pointer to buffer to receive bits */
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     struct gdi_image_bits src_bits;
     struct bitblt_coords src;
@@ -352,7 +352,7 @@ LONG WINAPI SetBitmapBits(
     LONG count,        /* [in] Number of bytes in bitmap array */
     LPCVOID bits)      /* [in] Address of array with bitmap bits */
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[BITMAP256_SIZE];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     BITMAPOBJ *bmp;
     DWORD err;
@@ -454,9 +454,9 @@ LONG WINAPI SetBitmapBits(
 
 static void set_initial_bitmap_bits( HBITMAP hbitmap, BITMAPOBJ *bmp )
 {
-    char src_bmibuf[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char src_bmibuf[BITMAP256_SIZE];
     BITMAPINFO *src_info = (BITMAPINFO *)src_bmibuf;
-    char dst_bmibuf[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char dst_bmibuf[BITMAP256_SIZE];
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_bmibuf;
     DWORD err;
     struct gdi_image_bits bits;

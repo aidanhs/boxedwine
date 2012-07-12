@@ -280,7 +280,7 @@ static struct file_view *VIRTUAL_FindView( const void *addr, size_t size )
 /***********************************************************************
  *           get_mask
  */
-static inline UINT_PTR get_mask( ULONG zero_bits )
+static INLINE UINT_PTR get_mask( ULONG zero_bits )
 {
     if (!zero_bits) return 0xffff;  /* allocations are aligned to 64K by default */
     if (zero_bits < page_shift) zero_bits = page_shift;
@@ -413,7 +413,7 @@ static void remove_reserved_area( void *addr, size_t size )
  *
  * Check if an address range goes beyond a given limit.
  */
-static inline int is_beyond_limit( const void *addr, size_t size, const void *limit )
+static INLINE int is_beyond_limit( const void *addr, size_t size, const void *limit )
 {
     return (addr >= limit || (const char *)addr + size > (const char *)limit);
 }
@@ -425,7 +425,7 @@ static inline int is_beyond_limit( const void *addr, size_t size, const void *li
  * Unmap an area, or simply replace it by an empty mapping if it is
  * in a reserved area. The csVirtual section must be held by caller.
  */
-static inline void unmap_area( void *addr, size_t size )
+static INLINE void unmap_area( void *addr, size_t size )
 {
     if (wine_mmap_is_in_reserved_area( addr, size ))
         wine_anon_mmap( addr, size, PROT_NONE, MAP_NORESERVE | MAP_FIXED );
@@ -704,7 +704,7 @@ static void reset_write_watches( struct file_view *view, void *base, SIZE_T size
  *
  * Release the extra memory while keeping the range starting on the granularity boundary.
  */
-static inline void *unmap_extra_space( void *ptr, size_t total_size, size_t wanted_size, size_t mask )
+static INLINE void *unmap_extra_space( void *ptr, size_t total_size, size_t wanted_size, size_t mask )
 {
     if ((ULONG_PTR)ptr & mask)
     {

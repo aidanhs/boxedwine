@@ -593,8 +593,8 @@ BOOL BIDI_Reorder(
         if (lpGlyphs && doGlyphs)
         {
             int j;
-            BYTE runOrder[maxItems];
-            int visOrder[maxItems];
+            BYTE* runOrder = (BYTE*)HeapAlloc(GetProcessHeap(),0, maxItems * sizeof(BYTE));
+            int* visOrder = (int*)HeapAlloc(GetProcessHeap(),0, maxItems * sizeof(int));
             SCRIPT_ITEM *curItem;
 
             for (j = 0; j < nItems; j++)
@@ -624,6 +624,8 @@ BOOL BIDI_Reorder(
                         HeapFree(GetProcessHeap(), 0, psva);
                         HeapFree(GetProcessHeap(), 0, pwLogClust);
                         HeapFree(GetProcessHeap(), 0, *lpGlyphs);
+						HeapFree(GetProcessHeap(), 0, runOrder);
+						HeapFree(GetProcessHeap(), 0, visOrder);
                         ScriptFreeCache(&psc);
                         *lpGlyphs = NULL;
                         return FALSE;
@@ -652,6 +654,8 @@ BOOL BIDI_Reorder(
                     glyph_i += cOutGlyphs;
                 }
             }
+			HeapFree(GetProcessHeap(), 0, runOrder);
+			HeapFree(GetProcessHeap(), 0, visOrder);
         }
 
         done += i;

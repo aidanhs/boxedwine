@@ -478,7 +478,7 @@ extern DWORD EXC_CallHandler( EXCEPTION_RECORD *record, EXCEPTION_REGISTRATION_R
 /***********************************************************************
  *           dispatch_signal
  */
-static inline int dispatch_signal(unsigned int sig)
+static INLINE int dispatch_signal(unsigned int sig)
 {
     if (handlers[sig] == NULL) return 0;
     return handlers[sig](sig);
@@ -490,7 +490,7 @@ static inline int dispatch_signal(unsigned int sig)
  *
  * Get the trap code for a signal.
  */
-static inline enum i386_trap_code get_trap_code( const SIGCONTEXT *sigcontext )
+static INLINE enum i386_trap_code get_trap_code( const SIGCONTEXT *sigcontext )
 {
 #ifdef TRAP_sig
     return TRAP_sig(sigcontext);
@@ -504,7 +504,7 @@ static inline enum i386_trap_code get_trap_code( const SIGCONTEXT *sigcontext )
  *
  * Get the error code for a signal.
  */
-static inline WORD get_error_code( const SIGCONTEXT *sigcontext )
+static INLINE WORD get_error_code( const SIGCONTEXT *sigcontext )
 {
 #ifdef ERROR_sig
     return ERROR_sig(sigcontext);
@@ -518,7 +518,7 @@ static inline WORD get_error_code( const SIGCONTEXT *sigcontext )
  *
  * Get the base of the signal stack for the current thread.
  */
-static inline void *get_signal_stack(void)
+static INLINE void *get_signal_stack(void)
 {
     return (char *)NtCurrentTeb() + 4096;
 }
@@ -529,10 +529,16 @@ static inline void *get_signal_stack(void)
  *
  * Get the current teb based on the stack pointer.
  */
-static inline TEB *get_current_teb(void)
+static INLINE TEB *get_current_teb(void)
 {
     unsigned long esp;
+#if defined(_MSC_VER)
+	unsigned long i;
+	_asm mov i, esp;
+	esp = i;
+#else
     __asm__("movl %%esp,%0" : "=g" (esp) );
+#endif
     return (TEB *)(esp & ~signal_stack_mask);
 }
 
@@ -540,7 +546,7 @@ static inline TEB *get_current_teb(void)
 /*******************************************************************
  *         is_valid_frame
  */
-static inline BOOL is_valid_frame( void *frame )
+static INLINE BOOL is_valid_frame( void *frame )
 {
     if ((ULONG_PTR)frame & 3) return FALSE;
     return (frame >= NtCurrentTeb()->Tib.StackLimit &&
@@ -889,7 +895,7 @@ __ASM_GLOBAL_FUNC( clear_alignment_flag,
  * Handler initialization when the full context is not needed.
  * Return the stack pointer to use for pushing the exception data.
  */
-static inline void *init_handler( const SIGCONTEXT *sigcontext, WORD *fs, WORD *gs )
+static INLINE void *init_handler( const SIGCONTEXT *sigcontext, WORD *fs, WORD *gs )
 {
     TEB *teb = get_current_teb();
 
@@ -936,7 +942,7 @@ static inline void *init_handler( const SIGCONTEXT *sigcontext, WORD *fs, WORD *
  *
  * Save the thread FPU context.
  */
-static inline void save_fpu( CONTEXT *context )
+static INLINE void save_fpu( CONTEXT *context )
 {
 #ifdef __GNUC__
     context->ContextFlags |= CONTEXT_FLOATING_POINT;
@@ -950,7 +956,7 @@ static inline void save_fpu( CONTEXT *context )
  *
  * Save the thread FPU extended context.
  */
-static inline void save_fpux( CONTEXT *context )
+static INLINE void save_fpux( CONTEXT *context )
 {
 #ifdef __GNUC__
     /* we have to enforce alignment by hand */
@@ -969,7 +975,7 @@ static inline void save_fpux( CONTEXT *context )
  *
  * Restore the FPU context to a sigcontext.
  */
-static inline void restore_fpu( const CONTEXT *context )
+static INLINE void restore_fpu( const CONTEXT *context )
 {
     FLOATING_SAVE_AREA float_status = context->FloatSave;
     /* reset the current interrupt status */
@@ -985,7 +991,7 @@ static inline void restore_fpu( const CONTEXT *context )
  *
  * Restore the FPU extended context to a sigcontext.
  */
-static inline void restore_fpux( const CONTEXT *context )
+static INLINE void restore_fpux( const CONTEXT *context )
 {
 #ifdef __GNUC__
     /* we have to enforce alignment by hand */
@@ -1051,7 +1057,7 @@ static void fpux_to_fpu( FLOATING_SAVE_AREA *fpu, const XMM_SAVE_AREA32 *fpux )
  *
  * Build a context structure from the signal info.
  */
-static inline void save_context( CONTEXT *context, const SIGCONTEXT *sigcontext, WORD fs, WORD gs )
+static INLINE void save_context( CONTEXT *context, const SIGCONTEXT *sigcontext, WORD fs, WORD gs )
 {
     struct ntdll_thread_data * const regs = ntdll_get_thread_data();
     FLOATING_SAVE_AREA *fpu = FPU_sig(sigcontext);
@@ -1103,7 +1109,7 @@ static inline void save_context( CONTEXT *context, const SIGCONTEXT *sigcontext,
  *
  * Restore the signal info from the context.
  */
-static inline void restore_context( const CONTEXT *context, SIGCONTEXT *sigcontext )
+static INLINE void restore_context( const CONTEXT *context, SIGCONTEXT *sigcontext )
 {
     struct ntdll_thread_data * const regs = ntdll_get_thread_data();
     FLOATING_SAVE_AREA *fpu = FPU_sig(sigcontext);
@@ -1449,7 +1455,7 @@ NTSTATUS context_from_server( CONTEXT *to, const context_t *from )
  * Check if the fault location is a privileged instruction.
  * Based on the instruction emulation code in dlls/kernel/instr.c.
  */
-static inline DWORD is_privileged_instr( CONTEXT *context )
+static INLINE DWORD is_privileged_instr( CONTEXT *context )
 {
     const BYTE *instr;
     unsigned int prefix_count = 0;
@@ -1669,7 +1675,7 @@ static EXCEPTION_RECORD *setup_exception( SIGCONTEXT *sigcontext, raise_func fun
  *
  * Get a pointer to the context built by setup_exception.
  */
-static inline CONTEXT *get_exception_context( EXCEPTION_RECORD *rec )
+static INLINE CONTEXT *get_exception_context( EXCEPTION_RECORD *rec )
 {
     return (CONTEXT *)rec - 1;  /* cf. stack_layout structure */
 }
@@ -1680,7 +1686,7 @@ static inline CONTEXT *get_exception_context( EXCEPTION_RECORD *rec )
  *
  * Get the FPU exception code from the FPU status.
  */
-static inline DWORD get_fpu_code( const CONTEXT *context )
+static INLINE DWORD get_fpu_code( const CONTEXT *context )
 {
     DWORD status = context->FloatSave.StatusWord & ~(context->FloatSave.ControlWord & 0x3f);
 
@@ -2203,7 +2209,11 @@ void signal_init_thread( TEB *teb )
 #ifdef __GNUC__
     __asm__ volatile ("fninit; fldcw %0" : : "m" (fpu_cw));
 #else
-    FIXME("FPU setup not implemented for this platform.\n");
+	__asm {
+		fninit
+		fldcw [fpu_cw]
+	}
+    //FIXME("FPU setup not implemented for this platform.\n");
 #endif
 }
 
