@@ -810,7 +810,7 @@ void wine_init( int argc, char *argv[], char *error, int error_size )
     __wine_main_argc = argc;
     __wine_main_argv = argv;
     __wine_main_environ = __wine_get_main_environment();
-    mmap_init();
+    //mmap_init();
 
     for (path = first_dll_path( "ntdll.dll", 0, &context ); path; path = next_dll_path( &context ))
     {

@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <io.h>
 
 typedef unsigned int ssize_t;
 typedef unsigned int off_t;
@@ -9,35 +10,27 @@ typedef unsigned int size_t;
 int* getErrno();
 void msvcrt_set_errno(int err);
 
-int (*NtSetLdtEntries)(DWORD, DWORD, DWORD, DWORD, DWORD, DWORD);
+unsigned char *getTib()
+{
+    unsigned char *pTib;
+    __asm {
+        mov EAX, FS:[0x18]
+        mov pTib, EAX
+    }
+    return pTib;
+}
 
 long int hal_syscall (long int sysno, ...) 
 {
 	if (sysno == 243) { // SYS_set_thread_area
 		LDT_ENTRY *p;
-		int ret;
 		va_list vl;
-		LDT_ENTRY ll;
-        int base = 0;
-
-		if (!NtSetLdtEntries)
-			*(FARPROC*)(&NtSetLdtEntries) = GetProcAddress(LoadLibrary("ntdll.dll"), "NtSetLdtEntries");						
+		
+		int* tls = (int*)(getTib() + 0xF00);
 		va_start(vl,sysno);
 		p=va_arg(vl,LDT_ENTRY*);
 		
-		ll.BaseLow = base & 0xFFFF;
-        ll.HighWord.Bytes.BaseMid = base >> 16;
-        ll.HighWord.Bytes.BaseHi = base >> 24;
-        ll.LimitLow = 400;     
-        ll.HighWord.Bits.LimitHi = 0;
-        ll.HighWord.Bits.Granularity = 0;
-        ll.HighWord.Bits.Default_Big = 1; 
-        ll.HighWord.Bits.Reserved_0 = 0;
-        ll.HighWord.Bits.Sys = 0; 
-        ll.HighWord.Bits.Pres = 1;
-        ll.HighWord.Bits.Dpl = 3; 
-        ll.HighWord.Bits.Type = 0x13; 
-		ret = NtSetLdtEntries(0x80, *(DWORD*)(&ll), *((DWORD*)(&ll)+1),0,0,0);
+		*tls = p->BaseLow | (p->HighWord.Bytes.BaseMid << 16) | (p->HighWord.Bytes.BaseHi << 24);
 
 		va_end(vl);
 	}
@@ -60,12 +53,20 @@ ssize_t hal_pwrite( int fd, const void *buf, size_t count, off_t offset )
 
 ssize_t hal_write(int fildes, const void *buf, size_t nbyte)
 {
-	return 0;
+	if (fildes<=2)
+		return write(fildes, buf, nbyte);
+	else {
+		DWORD written = 0;
+		WriteFile(fildes, buf, nbyte,  &written, NULL);
+		return written;
+	}
 }
 
 ssize_t hal_read(int fildes, void *buf, size_t nbyte)
 {
-	return 0;
+	DWORD read = 0;
+	ReadFile(fildes, buf, nbyte, &read, NULL);
+	return read;
 }
 
 off_t hal_lseek(int fildes, off_t offset, int whence)

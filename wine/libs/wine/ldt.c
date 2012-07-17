@@ -410,6 +410,7 @@ void wine_ldt_init_fs( unsigned short sel, const LDT_ENTRY *entry )
 #ifdef _MSC_VER
 		int ret;
 		if ((ret = set_thread_area( entry ) < 0)) perror( "set_thread_area" );
+		return;
 #elif defined __linux__
         struct modify_ldt_s ldt_info;
         int ret;

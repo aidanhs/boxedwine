@@ -2124,7 +2124,8 @@ static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
 {
   struct _TEB *teb;
   __asm mov eax, fs:[0x18];
-  __asm mov teb, eax;
+  __asm mov eax, [eax+0xF00]; // for WINE on Windows, WINE TEB is in Windows TLS
+  __asm mov teb, eax; 
   return teb;
 }
 #elif defined(__x86_64__) && defined(__GNUC__)

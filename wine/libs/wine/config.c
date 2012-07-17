@@ -293,7 +293,7 @@ static void init_paths(void)
     else
     {
         if (!home) fatal_error( "could not determine your home directory\n" );
-        if (home[0] != WINE_DIR) fatal_error( "your home directory %s is not an absolute path\n", home );
+        //if (home[0] != WINE_DIR) fatal_error( "your home directory %s is not an absolute path\n", home );
         config_dir = xmalloc( strlen(home) + sizeof(server_config_dir) );
         strcpy( config_dir, home );
         remove_trailing_slashes( config_dir );

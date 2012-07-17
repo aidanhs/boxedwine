@@ -47,9 +47,9 @@ WINECRT int printf(const char * fmt, ...)
 
 WINECRT int sprintf(char * sp, const char * fmt, ...)
 {
-static FILE  string[1] =
+FILE  string[1] =
 {
-   {0, 0, (char*)(unsigned) -1, 0, (char*) (unsigned) -1, -1,
+   {sp, sp, sp, sp, (char*) (unsigned) -1, -1,
     _IOFBF | __MODE_WRITE}
 };
 
@@ -80,9 +80,9 @@ WINECRT int vprintf(const char* fmt, va_list ap)
 
 WINECRT int vsprintf(char* sp, const char* fmt, va_list ap)
 {
-static FILE  string[1] =
+FILE  string[1] =
 {
-   {0, 0, (unsigned char*)(unsigned) -1, 0, (unsigned char*) (unsigned) -1, -1,
+   {sp, sp, sp, sp, (unsigned char*) (unsigned) -1, -1,
     _IOFBF | __MODE_WRITE}
 };
 
@@ -96,20 +96,12 @@ static FILE  string[1] =
 WINECRT int vsnprintf(char * buf, size_t size, const char * format, va_list arg)
 {
 	int rv;
-	static FILE  string[1] =
+	FILE  string[1] =
 {
-   {0, 0, (unsigned char*)(unsigned) -1, 0, (unsigned char*) (unsigned) -1, -1,
+   {buf, buf, buf, buf, buf+size, -1,
     _IOFBF | __MODE_WRITE}
 };
-
-	rv = vfprintf(string, format, arg);
-	if (size) {
-		if (string->bufpos == string->bufend) {
-		--string->bufpos;
-		}
-		*string->bufpos = 0;
-	}
-	return rv;
+	return vfprintf(string, format, arg);
 }
 
 WINECRT int snprintf(char * buf, size_t size, const char * format, ...)
