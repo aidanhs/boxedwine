@@ -73,6 +73,7 @@ DOSHAL struct cmsghdr *__cmsg_nxthdr (struct msghdr *__mhdr, struct cmsghdr *__c
 #define	SO_ERROR    0x1007
 
 #define SHUT_RD 0
+#define SHUT_WR 1
 #define SHUT_RDWR 2
 
 #define	AF_UNIX 1

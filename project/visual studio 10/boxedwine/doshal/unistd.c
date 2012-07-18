@@ -10,6 +10,9 @@ typedef unsigned int size_t;
 int* getErrno();
 void msvcrt_set_errno(int err);
 
+int isSocket(int fd);
+void removeSocket(int fd);
+
 unsigned char *getTib()
 {
     unsigned char *pTib;
@@ -76,6 +79,10 @@ off_t hal_lseek(int fildes, off_t offset, int whence)
 
 int hal_close(int fildes)
 {
+	if (isSocket(fildes)) {
+		removeSocket(fildes);
+		return closesocket(fildes);
+	}
 	return 0;
 }
 

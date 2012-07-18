@@ -22,5 +22,3 @@ BOOL WINAPI DECLSPEC_HIDDEN DllMain( HINSTANCE inst, DWORD reason, LPVOID reserv
 }
 
 int _fltused=1;
-
-char* wine_build = "1";

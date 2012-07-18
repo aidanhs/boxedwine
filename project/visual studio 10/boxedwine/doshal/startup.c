@@ -25,5 +25,9 @@ void getArgs(int* argc, char* argv[10]) {
 		}
         cmdline++;
     }
+	if (len>0) {
+		count++;
+		argv[count] = args[count];
+	}
 	*argc = count;
 }

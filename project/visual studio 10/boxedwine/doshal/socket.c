@@ -1,6 +1,59 @@
+#include <string.h>
+
+#include <winsock2.h>
+#include <windows.h>
+#include <io.h>
+
 typedef unsigned int ssize_t;
 typedef unsigned int size_t;
 typedef unsigned int socklen_t;
+
+int initialized = 0;
+
+// :TODO: replace with hashmap
+#define MAX_SOCKETS 100
+int sockets[MAX_SOCKETS];
+
+void addSocket(int fd) {
+	int i;
+	for (i=0;i<MAX_SOCKETS;i++) {
+		if (!sockets[i]) {
+			sockets[i] = fd;
+			break;
+		}
+	}
+}
+
+void removeSocket(int fd) {
+	int i;
+	for (i=0;i<MAX_SOCKETS;i++) {
+		if (sockets[i] == fd) {
+			sockets[i] = 0;
+			break;
+		}
+	}
+}
+
+int isSocket(int fd) {
+	int i;
+	for (i=0;i<MAX_SOCKETS;i++) {
+		if (sockets[i] == fd)
+			return 1;
+	}
+	return 0;
+}
+
+void init() {
+	if (!initialized) {
+		WSADATA wsaData;
+		WSAStartup(MAKEWORD(2, 2), &wsaData);
+		initialized = 1;
+	}
+}
+
+int socketPoll(struct pollfd* fds, int count, int timeout) {
+	return WSAPoll(fds, count, timeout);
+}
 
 ssize_t hal_send(int socket, const void *buffer, size_t length, int flags)
 {
@@ -14,7 +67,7 @@ ssize_t hal_recv(int socket, void *buffer, size_t length, int flags)
 
 int hal_shutdown(int socket, int how) 
 {
-	return 0;
+	return shutdown(socket, how);
 }
 
 int hal_accept(int socket, struct sockaddr* address, socklen_t *raddress_len) 
@@ -61,9 +114,100 @@ int hal_connect(int socket, const struct sockaddr *address, socklen_t address_le
 	return 0;
 }
 
-int hal_socketpair(int domain, int type, int protocol, int socket_vector[2])
+/* socketpair.c
+ * Copyright 2007 by Nathan C. Myers <ncm@cantrip.org>; all rights reserved.
+ * This code is Free Software.  It may be copied freely, in original or 
+ * modified form, subject only to the restrictions that (1) the author is
+ * relieved from all responsibilities for any use for any purpose, and (2)
+ * this copyright notice must be retained, unchanged, in its entirety.  If
+ * for any reason the author might be held responsible for any consequences
+ * of copying or use, license is withheld.  
+ */
+
+/* Changes:
+ * 2007-04-25:
+ *   preserve value of WSAGetLastError() on all error returns.
+ * 2007-04-22:  (Thanks to Matthew Gregan <kinetik@flim.org>)
+ *   s/EINVAL/WSAEINVAL/ fix trivial compile failure
+ *   s/socket/WSASocket/ enable creation of sockets suitable as stdin/stdout
+ *     of a child process.
+ *   add argument make_overlapped
+ */
+
+/* socketpair:
+ *   If make_overlapped is nonzero, both sockets created will be usable for
+ *   "overlapped" operations via WSASend etc.  If make_overlapped is zero,
+ *   socks[0] (only) will be usable with regular ReadFile etc., and thus 
+ *   suitable for use as stdin or stdout of a child process.  Note that the
+ *   sockets must be closed with closesocket() regardless.
+ */
+
+int hal_socketpair(int af, int type, int protocol, int socks[2])
 {
-	return 0;
+	struct sockaddr_in addr;
+    SOCKET listener;
+    int e;
+    int addrlen = sizeof(addr);
+    DWORD flags = 0; //(make_overlapped ? WSA_FLAG_OVERLAPPED : 0);
+
+	init();
+    if (socks == 0)
+    {
+        WSASetLastError(WSAEINVAL);
+        return SOCKET_ERROR;
+    }
+	if (af == AF_UNIX)
+		af = AF_INET;
+    socks[0] = socks[1] = INVALID_SOCKET;
+    if ((listener = socket(af, type, 0)) == INVALID_SOCKET)
+        return SOCKET_ERROR;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = htonl(0x7f000001);
+    addr.sin_port = 0;
+
+    e = bind(listener, (const struct sockaddr*) &addr, sizeof(addr));
+    if (e == SOCKET_ERROR)
+    {
+        e = WSAGetLastError();
+        closesocket(listener);
+        WSASetLastError(e);
+        return SOCKET_ERROR;
+    }
+    e = getsockname(listener, (struct sockaddr*) &addr, &addrlen);
+    if (e == SOCKET_ERROR)
+    {
+        e = WSAGetLastError();
+        closesocket(listener);
+        WSASetLastError(e);
+        return SOCKET_ERROR;
+    }
+
+    do
+    {
+        if (listen(listener, 1) == SOCKET_ERROR)
+            break;
+        if ((socks[0] = WSASocket(af, type, 0, NULL, 0, flags)) == INVALID_SOCKET)
+            break;
+        if (connect(socks[0], (const struct sockaddr*) &addr, sizeof(addr)) == SOCKET_ERROR)
+            break;
+        if ((socks[1] = accept(listener, NULL, NULL)) == INVALID_SOCKET)
+            break;
+
+		addSocket(socks[0]);
+		addSocket(socks[1]);
+        closesocket(listener);
+        return 0;
+
+    } while (0);
+
+    e = WSAGetLastError();
+    closesocket(listener);
+    closesocket(socks[0]);
+    closesocket(socks[1]);
+    WSASetLastError(e);
+    return SOCKET_ERROR;
 }
 
 struct msghdr
@@ -78,15 +222,6 @@ struct msghdr
     socklen_t msg_controllen;	/* Ancillary data buffer length.  */
 
     int msg_flags;		/* Flags in received message.  */
-  };
-
-struct cmsghdr
-  {
-    socklen_t cmsg_len;		/* Length of data in cmsg_data plus length
-				   of cmsghdr structure.  */
-    int cmsg_level;		/* Originating protocol.  */
-    int cmsg_type;		/* Protocol specific type.  */
-    unsigned char __cmsg_data[]; /* Ancillary data.  */
   };
 
 #define CMSG_ALIGN(len) (((len) + sizeof (size_t) - 1) & (size_t) ~(sizeof (size_t) - 1))

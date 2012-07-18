@@ -460,9 +460,8 @@ const char *wine_get_version(void)
 
 /* return the build id string */
 const char *wine_get_build_id(void)
-{
-    extern const char wine_build[];
-    return wine_build;
+{    
+    return "1";
 }
 
 /* exec a binary using the preloader if requested; helper for wine_exec_wine_binary */
