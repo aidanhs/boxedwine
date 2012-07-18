@@ -20,6 +20,8 @@ typedef int ptrdiff_t;
 
 #define va_list char*
 
+#define caddr_t void*
+
 #ifndef NULL
 #define NULL 0
 #endif

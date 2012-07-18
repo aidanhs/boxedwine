@@ -35,6 +35,11 @@ void *hal_malloc(size_t size)
 	return malloc(size);
 }
 
+void *hal_calloc(size_t nelem, size_t elsize) 
+{
+	return calloc(nelem,elsize);
+}
+
 void hal_free(void *ptr)
 {
 	free(ptr);

@@ -90,6 +90,9 @@
     <ClCompile Include="errno.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="startup.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="doshal.def">

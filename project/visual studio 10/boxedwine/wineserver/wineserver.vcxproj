@@ -1,0 +1,168 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{56E23E10-2FDE-49B1-B1A6-86A83B4BF366}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>wineserver</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IncludePath />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <IncludePath />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN_WINE;WINECRT=__declspec(dllimport);DOSHAL=__declspec(dllimport);WINE_UNICODE_API=/* */;USE_COMPILER_EXCEPTIONS;DECLSPEC_NORETURN=/* */;_MSC_VER=1200;__linux__;__WINESRC__;__i386__;INLINE=__inline;__ms_va_list=char*;_NORMALIZE_;__ms_va_start=va_start;__ms_va_end=va_end;snprintf=_snprintf</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\wine\include;..\..\..\..\source\wine\include</AdditionalIncludeDirectories>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <AdditionalOptions>/Gs200000 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <EntryPointSymbol>startup</EntryPointSymbol>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN_WINE;WINECRT=__declspec(dllimport);DOSHAL=__declspec(dllimport);WINE_UNICODE_API=/* */;USE_COMPILER_EXCEPTIONS;DECLSPEC_NORETURN=/* */;_MSC_VER=1200;__linux__;__WINESRC__;__i386__;INLINE=__inline;__ms_va_list=char*;_NORMALIZE_;__ms_va_start=va_start;__ms_va_end=va_end;snprintf=_snprintf</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..\..\..\..\wine\include;..\..\..\..\source\wine\include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EntryPointSymbol>startup</EntryPointSymbol>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>false</DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\wine\libs\port\interlocked.c" />
+    <ClCompile Include="..\..\..\..\wine\server\async.c" />
+    <ClCompile Include="..\..\..\..\wine\server\atom.c" />
+    <ClCompile Include="..\..\..\..\wine\server\change.c" />
+    <ClCompile Include="..\..\..\..\wine\server\class.c" />
+    <ClCompile Include="..\..\..\..\wine\server\clipboard.c" />
+    <ClCompile Include="..\..\..\..\wine\server\completion.c" />
+    <ClCompile Include="..\..\..\..\wine\server\console.c" />
+    <ClCompile Include="..\..\..\..\wine\server\debugger.c" />
+    <ClCompile Include="..\..\..\..\wine\server\device.c" />
+    <ClCompile Include="..\..\..\..\wine\server\directory.c" />
+    <ClCompile Include="..\..\..\..\wine\server\event.c" />
+    <ClCompile Include="..\..\..\..\wine\server\fd.c" />
+    <ClCompile Include="..\..\..\..\wine\server\file.c" />
+    <ClCompile Include="..\..\..\..\wine\server\handle.c" />
+    <ClCompile Include="..\..\..\..\wine\server\hook.c" />
+    <ClCompile Include="..\..\..\..\wine\server\mach.c" />
+    <ClCompile Include="..\..\..\..\wine\server\mailslot.c" />
+    <ClCompile Include="..\..\..\..\wine\server\main.c" />
+    <ClCompile Include="..\..\..\..\wine\server\mapping.c" />
+    <ClCompile Include="..\..\..\..\wine\server\mutex.c" />
+    <ClCompile Include="..\..\..\..\wine\server\named_pipe.c" />
+    <ClCompile Include="..\..\..\..\wine\server\object.c" />
+    <ClCompile Include="..\..\..\..\wine\server\process.c" />
+    <ClCompile Include="..\..\..\..\wine\server\procfs.c" />
+    <ClCompile Include="..\..\..\..\wine\server\ptrace.c" />
+    <ClCompile Include="..\..\..\..\wine\server\queue.c" />
+    <ClCompile Include="..\..\..\..\wine\server\region.c" />
+    <ClCompile Include="..\..\..\..\wine\server\registry.c" />
+    <ClCompile Include="..\..\..\..\wine\server\request.c" />
+    <ClCompile Include="..\..\..\..\wine\server\semaphore.c" />
+    <ClCompile Include="..\..\..\..\wine\server\serial.c" />
+    <ClCompile Include="..\..\..\..\wine\server\signal.c" />
+    <ClCompile Include="..\..\..\..\wine\server\snapshot.c" />
+    <ClCompile Include="..\..\..\..\wine\server\sock.c" />
+    <ClCompile Include="..\..\..\..\wine\server\symlink.c" />
+    <ClCompile Include="..\..\..\..\wine\server\thread.c" />
+    <ClCompile Include="..\..\..\..\wine\server\timer.c" />
+    <ClCompile Include="..\..\..\..\wine\server\token.c" />
+    <ClCompile Include="..\..\..\..\wine\server\trace.c" />
+    <ClCompile Include="..\..\..\..\wine\server\unicode.c" />
+    <ClCompile Include="..\..\..\..\wine\server\user.c" />
+    <ClCompile Include="..\..\..\..\wine\server\window.c" />
+    <ClCompile Include="..\..\..\..\wine\server\winstation.c" />
+    <ClCompile Include="wineserver.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\wine\server\file.h" />
+    <ClInclude Include="..\..\..\..\wine\server\handle.h" />
+    <ClInclude Include="..\..\..\..\wine\server\object.h" />
+    <ClInclude Include="..\..\..\..\wine\server\process.h" />
+    <ClInclude Include="..\..\..\..\wine\server\request.h" />
+    <ClInclude Include="..\..\..\..\wine\server\security.h" />
+    <ClInclude Include="..\..\..\..\wine\server\thread.h" />
+    <ClInclude Include="..\..\..\..\wine\server\unicode.h" />
+    <ClInclude Include="..\..\..\..\wine\server\user.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\..\wine\server\Makefile.in" />
+    <None Include="..\..\..\..\wine\server\protocol.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\doshal\doshal.vcxproj">
+      <Project>{9a7980be-a4c8-4ce9-8390-bd43975a7a4e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libwine\libwine.vcxproj">
+      <Project>{be5e5997-70df-4374-b609-90aa11b9dc36}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\winecrt\winecrt.vcxproj">
+      <Project>{46b0fbbe-9e69-4f4a-973d-375740f71253}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

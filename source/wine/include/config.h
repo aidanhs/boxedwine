@@ -226,7 +226,7 @@ __declspec(dllimport) void _chkstk();
 #undef HAVE_GETNETBYNAME
 
 /* Define to 1 if you have the <getopt.h> header file. */
-#undef HAVE_GETOPT_H
+#define HAVE_GETOPT_H 1
 
 /* Define to 1 if you have the `getopt_long' function. */
 #undef HAVE_GETOPT_LONG

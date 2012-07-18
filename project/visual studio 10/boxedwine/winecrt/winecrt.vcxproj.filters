@@ -60,6 +60,9 @@
     <ClCompile Include="..\..\..\..\wine\libs\port\strncasecmp.c">
       <Filter>Source Files\libs\ports</Filter>
     </ClCompile>
+    <ClCompile Include="getopt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="winecrt.h">

@@ -33,6 +33,8 @@ rmdir=hal_rmdir
 chdir=hal_chdir
 getpid=hal_getpid
 getEnviron=hal_getEnviron
+alarm=hal_alarm
+fsync=hal_fsync
 
 tcgetattr=hal_tcgetattr
 tcsetattr=hal_tcsetattr
@@ -49,6 +51,7 @@ putenv=hal_putenv
 abort=hal_abort
 system=hal_system
 malloc=hal_malloc
+calloc=hal_calloc
 free=hal_free
 realloc=hal_realloc
 
@@ -58,6 +61,8 @@ sigemptyset=hal_sigemptyset
 sigaddset=hal_sigaddset
 sigaction=hal_sigaction
 sigaltstack=hal_sigaltstack
+sigprocmask=hal_sigprocmask
+kill=hal_kill
 
 sigsetjmp=hal_sigsetjmp
 siglongjmp=hal_siglongjmp
@@ -99,6 +104,7 @@ readdir=hal_readdir
 closedir=hal_closedir
 
 waitpid=hal_waitpid
+wait4=hal_wait4
 
 writev=hal_writev
 
@@ -125,6 +131,12 @@ mkdir=hal_mkdir
 
 send=hal_send
 recv=hal_recv
+shutdown=hal_shutdown
+accept=hal_accept
+bind=hal_bind
+listen=hal_listen
+getsockopt=hal_getsockopt
+setsockopt=hal_setsockopt
 sendmsg=hal_sendmsg
 recvmsg=hal_recvmsg
 socket=hal_socket
@@ -147,3 +159,5 @@ ntohs=hal_ntohs
 
 strerror=hal_strerror
 getErrno
+
+getArgs

@@ -640,26 +640,26 @@ struct token *token_create_admin( void )
     {
         const LUID_AND_ATTRIBUTES admin_privs[] =
         {
-            { SeChangeNotifyPrivilege        , SE_PRIVILEGE_ENABLED },
-            { SeSecurityPrivilege            , 0                    },
-            { SeBackupPrivilege              , 0                    },
-            { SeRestorePrivilege             , 0                    },
-            { SeSystemtimePrivilege          , 0                    },
-            { SeShutdownPrivilege            , 0                    },
-            { SeRemoteShutdownPrivilege      , 0                    },
-            { SeTakeOwnershipPrivilege       , 0                    },
-            { SeDebugPrivilege               , 0                    },
-            { SeSystemEnvironmentPrivilege   , 0                    },
-            { SeSystemProfilePrivilege       , 0                    },
-            { SeProfileSingleProcessPrivilege, 0                    },
-            { SeIncreaseBasePriorityPrivilege, 0                    },
-            { SeLoadDriverPrivilege          , SE_PRIVILEGE_ENABLED },
-            { SeCreatePagefilePrivilege      , 0                    },
-            { SeIncreaseQuotaPrivilege       , 0                    },
-            { SeUndockPrivilege              , 0                    },
-            { SeManageVolumePrivilege        , 0                    },
-            { SeImpersonatePrivilege         , SE_PRIVILEGE_ENABLED },
-            { SeCreateGlobalPrivilege        , SE_PRIVILEGE_ENABLED },
+			{ {SeChangeNotifyPrivilege.LowPart, SeChangeNotifyPrivilege.HighPart}				, SE_PRIVILEGE_ENABLED },
+			{ {SeSecurityPrivilege.LowPart, SeSecurityPrivilege.HighPart}						, 0                    },
+			{ {SeBackupPrivilege.LowPart, SeBackupPrivilege.HighPart}							, 0                    },
+			{ {SeRestorePrivilege.LowPart, SeRestorePrivilege.HighPart}							, 0                    },
+			{ {SeSystemtimePrivilege.LowPart, SeSystemtimePrivilege.HighPart}					, 0                    },
+			{ {SeShutdownPrivilege.LowPart, SeShutdownPrivilege.HighPart}						, 0                    },
+			{ {SeRemoteShutdownPrivilege.LowPart, SeRemoteShutdownPrivilege.HighPart}			, 0                    },
+			{ {SeTakeOwnershipPrivilege.LowPart, SeTakeOwnershipPrivilege.HighPart}				, 0                    },
+			{ {SeDebugPrivilege.LowPart, SeDebugPrivilege.HighPart}								, 0                    },
+			{ {SeSystemEnvironmentPrivilege.LowPart, SeSystemEnvironmentPrivilege.HighPart}		, 0                    },
+			{ {SeSystemProfilePrivilege.LowPart, SeSystemProfilePrivilege.HighPart}				, 0                    },
+			{ {SeProfileSingleProcessPrivilege.LowPart, SeProfileSingleProcessPrivilege.HighPart}, 0                    },
+			{ {SeIncreaseBasePriorityPrivilege.LowPart, SeIncreaseBasePriorityPrivilege.HighPart}, 0                    },
+			{ {SeLoadDriverPrivilege.LowPart, SeLoadDriverPrivilege.HighPart}					, SE_PRIVILEGE_ENABLED },
+			{ {SeCreatePagefilePrivilege.LowPart, SeCreatePagefilePrivilege.HighPart}			, 0                    },
+			{ {SeIncreaseQuotaPrivilege.LowPart, SeIncreaseQuotaPrivilege.HighPart}				, 0                    },
+			{ {SeUndockPrivilege.LowPart, SeUndockPrivilege.HighPart}							, 0                    },
+			{ {SeManageVolumePrivilege.LowPart, SeManageVolumePrivilege.HighPart}				, 0                    },
+			{ {SeImpersonatePrivilege.LowPart, SeImpersonatePrivilege.HighPart}					, SE_PRIVILEGE_ENABLED },
+			{ {SeCreateGlobalPrivilege.LowPart, SeCreateGlobalPrivilege.HighPart}				, SE_PRIVILEGE_ENABLED },
         };
         /* note: we don't include non-builtin groups here for the user -
          * telling us these is the job of a client-side program */
@@ -855,8 +855,11 @@ static unsigned int token_access_check( struct token *token,
      * is only granted if specifically asked for */
     if (desired_access & ACCESS_SYSTEM_SECURITY)
     {
-        const LUID_AND_ATTRIBUTES security_priv = { SeSecurityPrivilege, 0 };
-        LUID_AND_ATTRIBUTES retpriv = security_priv;
+		const LUID_AND_ATTRIBUTES security_priv = { {SeSecurityPrivilege.LowPart, SeSecurityPrivilege.HighPart}, 0 };
+        LUID_AND_ATTRIBUTES retpriv;
+		retpriv.Attributes = security_priv.Attributes;
+		retpriv.Luid = security_priv.Luid;
+
         if (token_check_privileges( token, TRUE, &security_priv, 1, &retpriv ))
         {
             if (priv_count)

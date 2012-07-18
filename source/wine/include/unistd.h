@@ -14,7 +14,8 @@ DOSHAL pid_t getpid(void);
 #define SYS_gettid 186
 #define SYS_futex		240
 #define SYS_set_thread_area 243
-
+#define SYS_tgkill 262
+#define SYS_tkill 270
 
 DOSHAL long int syscall (long int __sysno, ...);
 DOSHAL ssize_t pread( int fd, void *buf, size_t count, off_t offset );
@@ -43,6 +44,8 @@ DOSHAL int dup(int fildes);
 DOSHAL void _exit(int status);
 DOSHAL int unlink(const char *path);
 DOSHAL int dup2(int fildes, int fildes2);
+DOSHAL unsigned alarm(unsigned seconds);
+DOSHAL int fsync(int fildes);
 
 #define isatty(fildes) (fildes>=0 && fildes<=2)
 

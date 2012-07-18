@@ -4,6 +4,7 @@
 #include <sys/types.h>
 
 #define SOCK_STREAM 1
+#define SOCK_DGRAM 2
 
 #define PF_UNIX 1
 
@@ -67,7 +68,19 @@ DOSHAL struct cmsghdr *__cmsg_nxthdr (struct msghdr *__mhdr, struct cmsghdr *__c
 
 #define	SOL_SOCKET	0xffff
 
+#define SO_SNDBUF	0x1001		/* send buffer size */
+#define SO_RCVBUF	0x1002		/* receive buffer size */
+#define	SO_ERROR    0x1007
+
+#define SHUT_RD 0
+#define SHUT_RDWR 2
+
 #define	AF_UNIX 1
+
+struct sockaddr {
+        unsigned short sa_family;              /* address family */
+        char    sa_data[14];            /* up to 14 bytes of direct address */
+};
 
 DOSHAL int socketpair(int domain, int type, int protocol, int socket_vector[2]);
 DOSHAL ssize_t send(int socket, const void *buffer, size_t length, int flags);
@@ -76,5 +89,10 @@ DOSHAL ssize_t sendmsg(int socket, const struct msghdr *message, int flags);
 DOSHAL ssize_t recvmsg(int socket, struct msghdr *message, int flags);
 DOSHAL int socket(int domain, int type, int protocol);
 DOSHAL int connect(int socket, const struct sockaddr *address, socklen_t address_len);
-
+DOSHAL int shutdown(int socket, int how);
+DOSHAL int getsockopt(int socket, int level, int option_name, void *option_value, socklen_t *option_len);
+DOSHAL int setsockopt(int socket, int level, int option_name, const void *option_value, socklen_t option_len);
+DOSHAL int accept(int socket, struct sockaddr* address, socklen_t *raddress_len);
+DOSHAL int bind(int socket, const struct sockaddr *address, socklen_t address_len);
+DOSHAL int listen(int socket, int backlog);
 #endif

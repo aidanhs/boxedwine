@@ -37,7 +37,7 @@
 #define	S_IRWXO	(S_IRWXG >> 3)
 
 /* Read, write, and execute by owner.  */
-#define	S_IRWXU	(__S_IREAD|__S_IWRITE|__S_IEXEC)
+#define	S_IRWXU	(S_IREAD|S_IWRITE|S_IEXEC)
 
 #define	__S_ISTYPE(mode, mask)	(((mode) & _S_IFMT) == (mask))
 

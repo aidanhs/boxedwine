@@ -29,6 +29,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "winecrt", "winecrt\winecrt.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libwine", "libwine\libwine.vcxproj", "{BE5E5997-70DF-4374-B609-90AA11B9DC36}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wineserver", "wineserver\wineserver.vcxproj", "{56E23E10-2FDE-49B1-B1A6-86A83B4BF366}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -91,6 +93,10 @@ Global
 		{BE5E5997-70DF-4374-B609-90AA11B9DC36}.Debug|Win32.Build.0 = Debug|Win32
 		{BE5E5997-70DF-4374-B609-90AA11B9DC36}.Release|Win32.ActiveCfg = Release|Win32
 		{BE5E5997-70DF-4374-B609-90AA11B9DC36}.Release|Win32.Build.0 = Release|Win32
+		{56E23E10-2FDE-49B1-B1A6-86A83B4BF366}.Debug|Win32.ActiveCfg = Debug|Win32
+		{56E23E10-2FDE-49B1-B1A6-86A83B4BF366}.Debug|Win32.Build.0 = Debug|Win32
+		{56E23E10-2FDE-49B1-B1A6-86A83B4BF366}.Release|Win32.ActiveCfg = Release|Win32
+		{56E23E10-2FDE-49B1-B1A6-86A83B4BF366}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

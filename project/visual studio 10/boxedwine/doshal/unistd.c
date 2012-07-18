@@ -201,3 +201,11 @@ pid_t hal_getpid(void) {
 char** hal_getEnviron() {
 	return environ;
 }
+
+unsigned hal_alarm(unsigned seconds) {
+	return 0;
+}
+
+int hal_fsync(int fildes) {
+	return 0;
+}

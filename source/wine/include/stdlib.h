@@ -7,6 +7,7 @@ DOSHAL void exit(int status);
 DOSHAL char* getenv(const char * name);
 DOSHAL int putenv(char *string);
 DOSHAL void *malloc(size_t size);
+DOSHAL void *calloc(size_t nelem, size_t elsize);
 DOSHAL void free(void *ptr);
 DOSHAL unsigned long strtoul(const char * str, char ** endptr, int base);
 WINECRT void *bsearch(const void *key, const void *base, size_t nel, size_t width, int (*compar)(const void *, const void *));

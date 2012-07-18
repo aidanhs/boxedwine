@@ -12,6 +12,35 @@ ssize_t hal_recv(int socket, void *buffer, size_t length, int flags)
 	return 0;
 }
 
+int hal_shutdown(int socket, int how) 
+{
+	return 0;
+}
+
+int hal_accept(int socket, struct sockaddr* address, socklen_t *raddress_len) 
+{
+	return 0;
+}
+
+int hal_bind(int socket, const struct sockaddr *address, socklen_t address_len)
+{
+	return 0;
+}
+
+int hal_listen(int socket, int backlog) {
+	return 0;
+}
+
+int hal_getsockopt(int socket, int level, int option_name, void *option_value, socklen_t *option_len) 
+{
+	return 0;
+}
+
+int hal_setsockopt(int socket, int level, int option_name, const void *option_value, socklen_t option_len)
+{
+	return 0;
+}
+
 ssize_t hal_sendmsg(int socket, const struct msghdr *message, int flags)
 {
 	return 0;

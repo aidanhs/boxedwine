@@ -398,7 +398,7 @@ int fread(char* buf, int size, int nelm, FILE* fp)
  * 
  * Again this ignores __MODE__IOTRAN.
  */
-int fwrite(char* buf, int size, int nelm, FILE* fp)
+WINECRT int fwrite(char* buf, int size, int nelm, FILE* fp)
 {
    register int v;
    int   len;
@@ -708,6 +708,10 @@ int fclose(FILE* fp)
       fp->mode = 0;
 
    return rv;
+}
+
+int setvbuf(FILE * stream, char * buf, int type, size_t size) {
+	return 0;
 }
 
 void setbuffer(FILE* fp, char* buf, int size)

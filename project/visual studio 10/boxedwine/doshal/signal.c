@@ -31,3 +31,12 @@ int hal_sigaltstack(const stack_t * ss, stack_t * oss)
 {
 	return 0;
 }
+
+int hal_kill(int pid, int sig) 
+{
+	return 0;
+}
+
+int hal_sigprocmask(int how, const sigset_t *set, sigset_t *oset) {
+	return 0;
+}

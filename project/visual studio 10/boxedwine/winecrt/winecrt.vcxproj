@@ -93,6 +93,7 @@
     <ClCompile Include="..\..\..\..\wine\libs\port\strcasecmp.c" />
     <ClCompile Include="..\..\..\..\wine\libs\port\strncasecmp.c" />
     <ClCompile Include="ctype.c" />
+    <ClCompile Include="getopt.c" />
     <ClCompile Include="locale.c" />
     <ClCompile Include="ltostr.c" />
     <ClCompile Include="main.c" />

@@ -107,6 +107,7 @@
     <ClCompile Include="setjmp.c" />
     <ClCompile Include="signal.c" />
     <ClCompile Include="socket.c" />
+    <ClCompile Include="startup.c" />
     <ClCompile Include="stat.c" />
     <ClCompile Include="statfs.c" />
     <ClCompile Include="statvfs.c" />

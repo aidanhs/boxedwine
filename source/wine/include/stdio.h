@@ -76,6 +76,7 @@ WINECRT int fputc(int, FILE*);
 WINECRT int fclose(FILE *stream);
 WINECRT int fflush(FILE* stream);
 WINECRT int fread(char* buf, int size, int nelm, FILE* fp);
+WINECRT int fwrite(const void * ptr, int size, int nitems, FILE* stream);
 WINECRT char *fgets(char * s, size_t n, FILE * stream);
 WINECRT FILE *__fopen(char*, int, FILE*, char*);
 
@@ -89,7 +90,7 @@ WINECRT void rewind(FILE*);
 WINECRT int fputs(char*, FILE*);
 WINECRT int puts(char*);
 WINECRT void setbuf(FILE * stream, char * buf);
-
+WINECRT int setvbuf(FILE * stream, char * buf, int type, size_t size);
 WINECRT int printf(const char*, ...);
 WINECRT int fprintf(FILE*, const char*, ...);
 WINECRT int sprintf(char*, const char*, ...);

@@ -2083,8 +2083,8 @@ DECL_HANDLER(load_registry)
 
     const LUID_AND_ATTRIBUTES privs[] =
     {
-        { SeBackupPrivilege,  0 },
-        { SeRestorePrivilege, 0 },
+		{ {SeBackupPrivilege.LowPart, SeBackupPrivilege.HighPart}, 0 },
+		{ {SeRestorePrivilege.LowPart, SeRestorePrivilege.HighPart}, 0 },
     };
 
     if (!token || !token_check_privileges( token, TRUE, privs,
@@ -2114,8 +2114,8 @@ DECL_HANDLER(unload_registry)
 
     const LUID_AND_ATTRIBUTES privs[] =
     {
-        { SeBackupPrivilege,  0 },
-        { SeRestorePrivilege, 0 },
+		{ {SeBackupPrivilege.LowPart, SeBackupPrivilege.HighPart},  0 },
+		{ {SeRestorePrivilege.LowPart, SeRestorePrivilege.HighPart}, 0 },
     };
 
     if (!token || !token_check_privileges( token, TRUE, privs,

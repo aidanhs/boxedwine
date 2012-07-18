@@ -75,7 +75,9 @@ extern int check_object_access( struct object *obj, unsigned int *access );
 static inline int thread_single_check_privilege( struct thread *thread, const LUID *priv)
 {
     struct token *token = thread_get_impersonation_token( thread );
-    const LUID_AND_ATTRIBUTES privs = { *priv, 0 };
+    LUID_AND_ATTRIBUTES privs;
+	privs.Luid = *priv;
+	privs.Attributes = 0;
 
     if (!token) return FALSE;
 

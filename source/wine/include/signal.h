@@ -94,6 +94,7 @@ enum
 #define SIGILL 4
 
 #define SIGPIPE 13
+#define SIGSTOP 19
 
 typedef	void SIG_FUNC_TYP(int);
 typedef	SIG_FUNC_TYP *SIG_TYP;
@@ -107,13 +108,16 @@ typedef	SIG_FUNC_TYP *SIG_TYP;
 #define SIGINT   2 /* interrupt */
 #define SIGILL   4 /* illegal instruction (not reset when caught) */
 #define SIGFPE   8 /* floating point exception */
+#define	SIGKILL	 9 /* kill (cannot be caught or ignored) */
 #define SIGSEGV  11 /* segmentation violation */
 #define	SIGALRM	 14	/* alarm clock */
 #define SIGTERM  15 /* software termination signal from kill */
+#define SIGCONT  19 /* continue a stopped process */
 #define	SIGCHLD	 20	/* to parent on child stop or exit */
 #define SIGBREAK 21
 #define SIGABRT  22
 #define	SIGIO	 23	/* input/output possible signal */
+#define SIGXFSZ  25 /* exceeded file size limit */
 #define SIGUSR1  30	/* user defined signal 1 */
 #define SIGUSR2  31	/* user defined signal 2 */
 
@@ -121,6 +125,23 @@ DOSHAL int sigemptyset(sigset_t *set);
 DOSHAL int sigaddset(sigset_t *set, int signo);
 DOSHAL int sigaction(int sig, const struct sigaction * act, struct sigaction * oact);
 DOSHAL int sigaltstack(const stack_t * ss, stack_t * oss);
+DOSHAL int kill(pid_t pid, int sig);
+DOSHAL int sigprocmask(int how, const sigset_t *set, sigset_t *oset);
+
 WINECRT __sighandler_t signal(int sig, __sighandler_t func);
+
+#define WEXITSTATUS(status) (((status)  & 0xff00) >> 8)
+#define WIFSTOPPED(status) (((status) & 0xff) == 0x7f)
+#define WIFSIGNALED(status) (!WIFSTOPPED(status) && !WIFEXITED(status))
+#define WSTOPSIG(status) WEXITSTATUS(status)
+
+#define WNOHANG		1	/* dont hang in wait */
+#define WUNTRACED	2	/* tell about stopped, untraced children */
+
+/*
+ * Flags for sigprocmask:
+ */
+#define	SIG_BLOCK	1	/* block specified signal set */
+#define	SIG_UNBLOCK	2	/* unblock specified signal set */
 
 #endif
