@@ -4,12 +4,11 @@ import wine.builtin.libc.Libc;
 import wine.builtin.libdl.Libdl;
 import wine.builtin.libm.Libm;
 import wine.builtin.libpthread.LibPThread;
-import wine.builtin.winhost.WinHost;
+import wine.emulation.CPU;
 import wine.loader.elf.ElfSymbol;
 import wine.system.*;
 import wine.system.io.FSNode;
 import wine.system.io.FileSystem;
-import wine.util.Log;
 import wine.util.Path;
 
 import java.util.Hashtable;
@@ -88,9 +87,7 @@ public class Loader {
 
     private Module load_builtin_module(String name) {
         BuiltinModule module = null;
-        if (name.equalsIgnoreCase("winhost.dll")) {
-            module = new WinHost(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libdl.so.2")) {
+        if (name.equalsIgnoreCase("libdl.so.2")) {
             module = new Libdl(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libm.so.6")) {
             module = new Libm(name, process, WineSystem.nextid++);
@@ -117,6 +114,10 @@ public class Loader {
 
     // thread can be null if this is the main module
     public Module loadModule(WineThread thread, String name) {
+        if (name.endsWith("kernel32.dll.so")) {
+            CPU.log = true;
+            BuiltinModule.log = true;
+        }
         return internalLoadModule(thread, name);
     }
 

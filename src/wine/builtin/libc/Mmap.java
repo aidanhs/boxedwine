@@ -109,9 +109,6 @@ public class Mmap {
 
     // void *mmap64(void *addr, size_t length, int prot, int flags, int fd, off64_t offset)
     static public int mmap64(int address, int len, int prot, int flags, int fildes, long off) {
-        if (address==0x7bc10000) {
-            int ii=0;
-        }
         WineThread thread = WineThread.getCurrent();
         boolean shared = (flags & MAP_SHARED)!=0;
         boolean priv = (flags & MAP_PRIVATE)!=0;

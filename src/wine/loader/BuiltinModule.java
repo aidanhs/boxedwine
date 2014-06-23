@@ -18,6 +18,7 @@ public class BuiltinModule extends Module {
     private Hashtable ordinalToName = new Hashtable();
     private Hashtable<String, ElfSymbol> symbols = new Hashtable<String, ElfSymbol>();
     private Hashtable<String, Integer> data = new Hashtable<String, Integer>();
+    static public boolean log = false;
 
     public BuiltinModule(String name, WineProcess process, int id) {
         super(name, process, id);
@@ -63,7 +64,7 @@ public class BuiltinModule extends Module {
         }
 
         public void call(CPU cpu) {
-            boolean shouldLog = false;
+            boolean shouldLog = log;
             StringBuilder builder = null;
             if (shouldLog) {
                 builder = new StringBuilder();

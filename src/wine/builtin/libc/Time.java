@@ -53,8 +53,13 @@ public class Time {
             memory.writed(address, tm_isdst);
         }
 
-        public Calendar getCalendar() {
-            Calendar c = Calendar.getInstance();
+        public Calendar getCalendar(TimeZone tz) {
+            Calendar c;
+            if (tz==null)
+                c = Calendar.getInstance();
+            else
+                c = Calendar.getInstance(tz);
+
             c.set(Calendar.SECOND, tm_sec);
             c.set(Calendar.MINUTE, tm_min);
             c.set(Calendar.HOUR, tm_hour);
@@ -90,7 +95,7 @@ public class Time {
         if (thread.process.asctime==0) {
             thread.process.asctime = thread.process.alloc(32);
         }
-        Calendar c = new tm(thread.process.memory, tm).getCalendar();
+        Calendar c = new tm(thread.process.memory, tm).getCalendar(null);
         SimpleDateFormat format = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy");
         String formatedDate = format.format(c.getTime())+"\n";
         thread.process.memory.writeCString(thread.process.asctime, formatedDate);
@@ -205,7 +210,7 @@ public class Time {
     // time_t mktime(struct tm *timeptr)
     static public int mktime(int tm) {
         tm t = new tm(WineThread.getCurrent().process.memory, tm);
-        return (int)(t.getCalendar().getTimeInMillis()/1000);
+        return (int)(t.getCalendar(null).getTimeInMillis()/1000);
     }
 
     // int settimeofday(const struct timeval *tv, const struct timezone *tz)
@@ -222,5 +227,11 @@ public class Time {
             WineThread.getCurrent().process.memory.writed(tloc, result);
         }
         return result;
+    }
+
+    // time_t timegm(struct tm *tm)
+    static public int timegm(int tm) {
+        tm t = new tm(WineThread.getCurrent().process.memory, tm);
+        return (int)(t.getCalendar(TimeZone.getTimeZone("UTC")).getTimeInMillis()/1000);
     }
 }

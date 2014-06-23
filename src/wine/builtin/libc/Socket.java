@@ -6,6 +6,8 @@ import wine.system.*;
 import wine.system.io.*;
 import wine.util.Log;
 
+import java.net.InetAddress;
+
 public class Socket {
     static public final int	SOCK_STREAM	= 1;
     static public final int SOCK_DGRAM  = 2;
@@ -150,6 +152,63 @@ public class Socket {
             return -1;
         }
         return fd.getSocket().connect(SocketAddress.parse(address, len));
+    }
+
+//    struct hostent
+//    {
+//        char *h_name;                 /* Official name of host.  */
+//        char **h_aliases;             /* Alias list.  */
+//        int h_addrtype;               /* Host address type.  */
+//        int h_length;                 /* Length of address.  */
+//        char **h_addr_list;           /* List of addresses from name server.  */
+//    };
+
+    static public final int HOST_NOT_FOUND = 1;
+    // int gethostbyname_r(const char *name, struct hostent *ret, char *buf, size_t buflen, struct hostent **result, int *h_errnop)
+    static public int gethostbyname_r(int pName, int ret, int buf, int buflen, int result, int errno) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        String name = memory.readCString(pName);
+        try {
+            InetAddress[] addresses = java.net.InetAddress.getAllByName(name);
+            if (addresses==null || addresses.length==0) {
+                if (errno!=0)
+                    memory.writed(errno, HOST_NOT_FOUND);
+                if (result!=0)
+                    memory.writed(result, 0);
+                return 0;
+            }
+            int pos=(addresses.length+1)*8; // h_aliases and h_addr_list
+            if (pos>=buflen) {
+                return Errno.ERANGE;
+            }
+            memory.writed(buf+addresses.length*4, 0); // h_aliases is null terminated
+            int addrPos = buf+addresses.length*4+4;
+            memory.writed(addrPos+addresses.length*4, 0); // h_addr_list is null terminated
+            memory.writed(ret+8, AF_INET);
+            memory.writed(ret+12, 4);
+            for (int i=0;i<addresses.length;i++) {
+                String hostName = addresses[i].getHostName();
+                byte[] hostAddr = addresses[i].getAddress();
+                if (pos+hostName.length()+1>=buflen) {
+                    return Errno.ERANGE;
+                }
+                memory.writeCString(buf+pos, hostName);
+                if (i==0) {
+                    memory.writed(ret, pos);
+                }
+                memory.writed(buf+i*4, pos);
+                memory.memcpy(addrPos+i*4, hostAddr, 0, 4);
+            }
+            memory.writed(result, ret);
+            return 0;
+        } catch (Exception e) {
+            if (errno!=0)
+                memory.writed(errno, HOST_NOT_FOUND);
+            if (result!=0)
+                memory.writed(result, 0);
+            return 0;
+        }
     }
 
     // int getsockopt(int socket, int level, int option_name, void * option_value, int * option_len)

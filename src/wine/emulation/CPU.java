@@ -338,10 +338,6 @@ public class CPU {
         while (true) {
             block=getBlock(eip, cs.dword);
             while (block!=null) {
-                if (eip==0x8049b20) {
-                    int ii=0;
-                    //log = true;
-                }
                 block = block.op.callAndLog(this);
             }
         }

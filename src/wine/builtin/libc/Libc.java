@@ -114,6 +114,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Socket.class, "accept");
         add_cdecl(Socket.class, "bind");
         add_cdecl(Socket.class, "connect");
+        add_cdecl(Socket.class, "gethostbyname_r");
         add_cdecl(Socket.class, "getsockopt");
         add_cdecl(Socket.class, "listen");
         add_cdecl(Socket.class, "recv");
@@ -233,6 +234,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Time.class, "mktime");
         add_cdecl(Time.class, "settimeofday");
         add_cdecl(Time.class, "time");
+        add_cdecl(Time.class, "timegm");
 
         add_cdecl(Times.class, "times");
 
