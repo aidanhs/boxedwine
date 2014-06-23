@@ -13,8 +13,6 @@ import java.lang.reflect.Method;
 import java.util.Hashtable;
 
 public class BuiltinModule extends Module {
-    static public final String log = "wine";
-
     private Hashtable functions = new Hashtable();
     private Hashtable registeredCallbacks = new Hashtable();
     private Hashtable ordinalToName = new Hashtable();
@@ -65,7 +63,7 @@ public class BuiltinModule extends Module {
         }
 
         public void call(CPU cpu) {
-            boolean shouldLog = true;
+            boolean shouldLog = false;
             StringBuilder builder = null;
             if (shouldLog) {
                 builder = new StringBuilder();

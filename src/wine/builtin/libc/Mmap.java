@@ -208,18 +208,32 @@ public class Mmap {
             }
         } else {
             for (int i = 0; i < pageCount; i++) {
-                handlers[pageStart + i].close();
-                if ((read | exec) && write)
-                    handlers[pageStart + i] = new RAMHandler(thread.process.memory, RAM.allocPage(), true, shared);
-                else if (read | exec)
-                    handlers[pageStart + i] = new RAMHandlerRO(thread.process.memory, RAM.allocPage(), true, shared);
-                else if (write)
-                    handlers[pageStart + i] = new RAMHandlerWO(thread.process.memory, RAM.allocPage(), true, shared);
+                if (read || exec || write) {
+                    PageHandler handler = handlers[pageStart + i];
+                    int page = 0;
+                    boolean zero = true;
+                    if (handler instanceof RAMHandler) {
+                        RAMHandler r = (RAMHandler) handler;
+                        page = r.physicalPage;
+                        r.refCount++; // don't free page when closing
+                        zero = false;
+                    }
+                    handlers[pageStart + i].close();
+                    if (page == 0) {
+                        page = RAM.allocPage();
+                    }
+                    if ((read | exec) && write)
+                        handlers[pageStart + i] = new RAMHandler(thread.process.memory, page, true, shared);
+                    else if (read | exec)
+                        handlers[pageStart + i] = new RAMHandlerRO(thread.process.memory, page, true, shared);
+                    else
+                        handlers[pageStart + i] = new RAMHandlerWO(thread.process.memory, page, true, shared);
+                    if (zero)
+                        thread.process.memory.zero((pageStart+i)<<12, 4096);
+                }
                 else
                     handlers[pageStart + i] = new RAMHandlerNone(thread.process.memory, 0, true, shared);
             }
-            if (read || exec || write)
-                thread.process.memory.zero(pageStart<<12, pageCount<<12);
         }
         return address;
     }

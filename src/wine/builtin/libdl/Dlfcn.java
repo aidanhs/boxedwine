@@ -19,6 +19,7 @@ public class Dlfcn {
     // int dladdr(const void * addr, Dl_info * dlip) {
     static public int dladdr(int address, int dlip) {
         WineThread thread = WineThread.getCurrent();
+        Log.warn("dladdr only partially implemented");
         for (Module module: thread.process.loader.modulesByHandle.values()) {
             if (module instanceof ElfModule) {
                 ElfModule elf = (ElfModule)module;
@@ -31,7 +32,6 @@ public class Dlfcn {
                     thread.process.memory.writed(dlip+4, elf.getAddress());
                     thread.process.memory.writed(dlip+8, 0);
                     thread.process.memory.writed(dlip+12, address);
-                    Log.warn("dladdr only partially implemented");
                     return 1;
                 }
             }
