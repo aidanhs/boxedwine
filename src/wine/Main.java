@@ -19,7 +19,7 @@ public class Main {
 
         RAM.init(128 * 1024 * 1024);
         createWineServer();
-        if (WineProcess.create(new String[] {"wine", "version"}, new String[] {"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib", "WINEDEBUG=+all"})==null) {
+        if (WineProcess.create(new String[] {"wine", "unzip.exe"}, new String[] {"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib", "WINEDEBUG=+all"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }

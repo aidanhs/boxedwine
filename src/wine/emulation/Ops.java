@@ -3538,24 +3538,24 @@ class Ops {
         }
     }
 
-    static public final class Jcxz32 extends JumpOp {
-        public Jcxz32(int offset) {
+    static public final class Jecxz extends JumpOp {
+        public Jecxz(int offset) {
             super(offset);
         }
         public Block call(CPU cpu) {
-            return jump(cpu, cpu.ecx.dword!=0);
+            return jump(cpu, cpu.ecx.dword==0);
         }
         public String toString() {
-            return "jcxz "+Integer.toHexString(offset);
+            return "jecxz "+Integer.toHexString(offset);
         }
     }
 
-    static public final class Jcxz16 extends JumpOp {
-        public Jcxz16(int offset) {
+    static public final class Jcxz extends JumpOp {
+        public Jcxz(int offset) {
             super(offset);
         }
         public Block call(CPU cpu) {
-            return jump(cpu, cpu.ecx.u16()!=0);
+            return jump(cpu, cpu.ecx.u16()==0);
         }
         public String toString() {
             return "jcxz "+Integer.toHexString(offset);

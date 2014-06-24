@@ -73,9 +73,10 @@ public class Strings {
         Memory memory = WineThread.getCurrent().process.memory;
         while (true) {
             int c1 = memory.readb(s2++);
-            memory.writeb(s1++, c1);
+            memory.writeb(s1, c1);
             if (c1==0)
                 break;
+            s1++;
         }
         return s1;
     }

@@ -15,7 +15,6 @@ import java.util.Hashtable;
 public class BuiltinModule extends Module {
     private Hashtable functions = new Hashtable();
     private Hashtable registeredCallbacks = new Hashtable();
-    private Hashtable ordinalToName = new Hashtable();
     private Hashtable<String, ElfSymbol> symbols = new Hashtable<String, ElfSymbol>();
     private Hashtable<String, Integer> data = new Hashtable<String, Integer>();
     static public boolean log = false;

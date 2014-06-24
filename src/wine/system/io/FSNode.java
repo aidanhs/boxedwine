@@ -1,6 +1,5 @@
 package wine.system.io;
 
-import wine.loader.BuiltinModule;
 import wine.system.WineThread;
 import wine.util.Path;
 
@@ -20,12 +19,12 @@ abstract public class FSNode {
             localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
         }
         for (int i=0;i<FileSystem.paths.size();i++) {
-            Path path = (Path) FileSystem.paths.elementAt(i);
+            Path path = FileSystem.paths.elementAt(i);
             if (localPath.startsWith(path.localPath)) {
                 String nativePath = path.nativePath + localPath.substring(path.localPath.length());
                 if (File.separator.equals("\\"))
                     nativePath=nativePath.replace('/', '\\');
-                FSNode node = (FSNode) FileSystem.openNodes.get(localPath);
+                FSNode node = FileSystem.openNodes.get(localPath);
                 if (node == null) {
                     node = new FSNodeFile(new File(nativePath), localPath, nativePath);
                     synchronized (FileSystem.openNodes) {

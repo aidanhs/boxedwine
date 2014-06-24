@@ -2842,9 +2842,9 @@ class Decoder {
         decoder[0x0e3] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
                 if ((cpu.prefixes & CPU.PREFIX_ADDR)!=0) {
-                    prev.next = new Ops.Jcxz32(cpu.fetchbs());
+                    prev.next = new Ops.Jecxz(cpu.fetchbs());
                 } else {
-                    prev.next = new Ops.Jcxz16(cpu.fetchbs());
+                    prev.next = new Ops.Jcxz(cpu.fetchbs());
                 }
                 return false;
             }
