@@ -2,7 +2,6 @@ package wine.system.io;
 
 import wine.builtin.libc.Errno;
 import wine.builtin.libc.Socket;
-import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -468,7 +467,6 @@ public class KernelUnixSocket extends KernelSocket {
         stat.st_size = 0;
         stat.st_blocks = 0;
         stat.st_rdev = 1;
-        CPU.log = true;
         return true;
     }
 }

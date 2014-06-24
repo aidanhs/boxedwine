@@ -2,11 +2,11 @@ package wine.loader;
 
 import wine.emulation.CPU;
 import wine.loader.elf.ElfSymbol;
+import wine.system.Callback;
 import wine.system.ExitThreadException;
+import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
-import wine.system.Callback;
-import wine.system.WineProcess;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -42,6 +42,7 @@ public class BuiltinModule extends Module {
         }
         symbol = new ElfSymbol();
         symbol.st_value = address.intValue() & 0xFFFFFFFFl;
+        symbol.name = name;
         return symbol;
     }
 

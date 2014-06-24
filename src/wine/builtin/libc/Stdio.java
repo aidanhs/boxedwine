@@ -49,6 +49,8 @@ public class Stdio {
 
         public String getNextString() {
             int p = getNextInt();
+            if (p==0)
+                return "(null)";
             return memory.readCString(p);
         }
 

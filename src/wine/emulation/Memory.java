@@ -27,7 +27,7 @@ public class Memory {
         return v1 | (v2 << 32);
     }
     public int unalignedReadd(int address) {
-        return readb(address) | (readb(address+1)<<8) | (readb(address+2)<<16) | (readb(address+1)<<24);
+        return readb(address) | (readb(address+1)<<8) | (readb(address+2)<<16) | (readb(address+3)<<24);
     }
     public int readw(int address) {
         return handlers[(address>>>12)].readw(address);
@@ -120,17 +120,5 @@ public class Memory {
             writeb(address++, value.charAt(i));
         }
         writeb(address, 0);
-    }
-
-
-    public String readCStringW(int address, int len) {
-        StringBuffer result = new StringBuffer();
-        int i;
-        for (i=0;i<len;i++) {
-            char c = (char)readw(address);
-            address+=2;
-            result.append(c);
-        }
-        return result.toString();
     }
 }

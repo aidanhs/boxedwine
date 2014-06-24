@@ -206,6 +206,11 @@ public class Sprintf {
                                     value = value.substring(0, dec+1+precision);
                                 }
                             }
+                        } else if (c == 'p') {
+                            value = Integer.toHexString(getter.getNextInt());
+                            value="0x"+value.toLowerCase();
+                        } else {
+                            Log.panic("Unknown type in sprintf: "+c);
                         }
 
                         if (negnumber) {

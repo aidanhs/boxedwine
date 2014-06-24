@@ -1,7 +1,7 @@
 package wine.builtin.libc;
 
-import wine.system.io.FileDescriptor;
 import wine.system.WineThread;
+import wine.system.io.FileDescriptor;
 import wine.system.io.FileLock;
 import wine.system.io.KernelFile;
 import wine.util.Log;
@@ -136,6 +136,10 @@ public class Fcntl {
         if (path.equals("."))
             path = thread.process.currentDirectory;
         FileDescriptor fd = thread.process.getFile(path);
+        if (fd==null) {
+            thread.setErrno(Errno.ENOENT);
+            return -1;
+        }
         KernelFile file = fd.getFile();
 
         fd.accessFlags = oflag & O_ACCMODE;

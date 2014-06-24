@@ -4,9 +4,11 @@ import wine.builtin.libc.Libc;
 import wine.builtin.libdl.Libdl;
 import wine.builtin.libm.Libm;
 import wine.builtin.libpthread.LibPThread;
-import wine.emulation.CPU;
 import wine.loader.elf.ElfSymbol;
-import wine.system.*;
+import wine.system.Callback;
+import wine.system.WineProcess;
+import wine.system.WineSystem;
+import wine.system.WineThread;
 import wine.system.io.FSNode;
 import wine.system.io.FileSystem;
 import wine.util.Path;
@@ -114,10 +116,6 @@ public class Loader {
 
     // thread can be null if this is the main module
     public Module loadModule(WineThread thread, String name) {
-        if (name.endsWith("kernel32.dll.so")) {
-            CPU.log = true;
-            BuiltinModule.log = true;
-        }
         return internalLoadModule(thread, name);
     }
 

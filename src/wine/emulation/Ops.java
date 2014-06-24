@@ -4278,4 +4278,114 @@ class Ops {
             return "CPUID";
         }
     }
+
+    final static class CmpxchgEdGd_reg extends Op {
+        final private Reg gd;
+        final private Reg ed;
+
+        public CmpxchgEdGd_reg(Reg ed, Reg gd) {
+            this.gd = gd;
+            this.ed = ed;
+        }
+        public Block call(CPU cpu) {
+            Instructions.subd.run(cpu, ed.dword, cpu.eax.dword);
+            cpu.fillFlags();
+            if (cpu.eax.dword == ed.dword) {
+                ed.dword=gd.dword;
+                cpu.flags|=CPU.ZF;
+            } else {
+                cpu.eax.dword=ed.dword;
+                cpu.flags&=~CPU.ZF;
+            }
+
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmpxchg "+ed.name32+", "+gd.name32;
+        }
+    }
+
+    final static class CmpxchgEdGd_mem extends Op {
+        final private Reg gd;
+        final private EaaBase ed;
+
+        public CmpxchgEdGd_mem(EaaBase ed, Reg gd) {
+            this.gd = gd;
+            this.ed = ed;
+        }
+        public Block call(CPU cpu) {
+            int eaa=ed.call(cpu);
+            Memory memory = cpu.memory;
+            int val = memory.readd(eaa);
+            Instructions.subd.run(cpu, val, cpu.eax.dword);
+            cpu.fillFlags();
+            if (cpu.eax.dword == val) {
+                memory.writed(eaa,gd.dword);
+                cpu.flags|=CPU.ZF;
+            } else {
+                memory.writed(eaa,val);	// cmpxchg always issues a write
+                cpu.eax.dword=val;
+                cpu.flags&=~CPU.ZF;
+            }
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmpxchg "+ed.toString32()+", "+gd.name32;
+        }
+    }
+
+    final static class CmpxchgEwGw_reg extends Op {
+        final private Reg gw;
+        final private Reg ew;
+
+        public CmpxchgEwGw_reg(Reg ew, Reg gw) {
+            this.gw = gw;
+            this.ew = ew;
+        }
+        public Block call(CPU cpu) {
+            Instructions.subw.run(cpu, ew.u16(), cpu.eax.u16());
+            cpu.fillFlags();
+            if (cpu.eax.u16() == ew.u16()) {
+                ew.u16(gw.u16());
+                cpu.flags|=CPU.ZF;
+            } else {
+                cpu.eax.u16(ew.u16());
+                cpu.flags&=~CPU.ZF;
+            }
+
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmpxchg "+ew.name16+", "+gw.name16;
+        }
+    }
+
+    final static class CmpxchgEwGw_mem extends Op {
+        final private Reg gw;
+        final private EaaBase ew;
+
+        public CmpxchgEwGw_mem(EaaBase ew, Reg gw) {
+            this.gw = gw;
+            this.ew = ew;
+        }
+        public Block call(CPU cpu) {
+            int eaa=ew.call(cpu);
+            Memory memory = cpu.memory;
+            int val = memory.readw(eaa);
+            Instructions.subw.run(cpu, val, cpu.eax.u16());
+            cpu.fillFlags();
+            if (cpu.eax.u16() == val) {
+                memory.writew(eaa,gw.u16());
+                cpu.flags|=CPU.ZF;
+            } else {
+                memory.writew(eaa,val);	// cmpxchg always issues a write
+                cpu.eax.u16(val);
+                cpu.flags&=~CPU.ZF;
+            }
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmpxchg "+ew.toString16()+", "+gw.name16;
+        }
+    }
 }

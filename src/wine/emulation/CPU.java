@@ -88,7 +88,7 @@ public class CPU {
         this.fpu = new FPU(this, memory);
 
         // intentionally every other page to catch overflow
-        this.gs.dword = (int)this.thread.process.addressSpace.getNextAddress(WineProcess.ADDRESS_PER_CPU, 4096, true);
+        this.gs.dword = (int)this.thread.process.addressSpace.getNextAddress(WineProcess.ADDRESS_PER_CPU, 8192, true)+4096;
         this.thread.process.allocPages(this.gs.dword, 1, false);
         memory.writed(this.gs.dword+20, new Random().nextInt()); // stack canary
     }

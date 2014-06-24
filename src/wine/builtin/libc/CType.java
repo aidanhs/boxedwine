@@ -3,13 +3,12 @@ package wine.builtin.libc;
 import wine.emulation.RAM;
 import wine.system.WineProcess;
 import wine.system.WineThread;
-import wine.util.Log;
 
 public class CType {
     static private int ramPage = -1;
 
     static private short X(int i) {
-        return (short)i;
+        return (short)(((i & 0xFF) << 8)|((i>> 8) & 0xFF));
     }
     static private final short ctypeTable[] = {
             0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -52,7 +51,7 @@ public class CType {
             }
             process.p_ctype_b_loc = process.mapPage(ramPage);
             process.pp_ctype_b_loc = process.alloc(4);
-            process.memory.writed(process.pp_ctype_b_loc, process.p_ctype_b_loc+128);
+            process.memory.writed(process.pp_ctype_b_loc, process.p_ctype_b_loc+256);
         }
         return process.pp_ctype_b_loc;
     }
@@ -94,7 +93,7 @@ public class CType {
             }
             process.p_ctype_toupper_loc = process.mapPage(ramPage);
             process.pp_ctype_toupper_loc = process.alloc(4);
-            process.memory.writed(process.pp_ctype_toupper_loc, process.p_ctype_toupper_loc+128);
+            process.memory.writed(process.pp_ctype_toupper_loc, process.p_ctype_toupper_loc+256);
         }
         return process.pp_ctype_toupper_loc;
     }

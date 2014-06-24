@@ -1,9 +1,6 @@
 package wine.system;
 
-import wine.emulation.CPU;
-import wine.emulation.Memory;
-import wine.emulation.PageHandler;
-import wine.emulation.RAM;
+import wine.emulation.*;
 import wine.util.Log;
 
 import java.util.Enumeration;
@@ -63,10 +60,11 @@ public class WineThread {
             this.stackBottom = this.stackTop;
 
             int pages = (stackSizeCommit + 0xFFF) >> 12;
-            growStack(pages);
+            growStack(pages+1);
+            process.memory.zero(this.stackTop, 0);
         }
         this.cpu = new CPU(this, process.callReturnEip);
-        cpu.esp.dword = stackTop;
+        cpu.esp.dword = stackTop-4096;
         process.threads.put(new Integer(id), this);
 
     }
@@ -147,14 +145,14 @@ public class WineThread {
         int address = stackTop - stackSize - (pages << 12);
         if (stackSize>0) {
             ThreadHandlerCheck check = (ThreadHandlerCheck)process.memory.handlers[this.stackBottom>>>12];
-            process.memory.handlers[this.stackBottom>>>12] = new ThreadHandler(check.offset, check.physicalPage);
+            process.memory.handlers[this.stackBottom>>>12] = new ThreadHandler(process.memory, check.physicalPage);
         }
         int pageStart = address>>>12;
         int page = RAM.allocPage();
-        process.memory.handlers[pageStart] = new ThreadHandlerCheck((pageStart-page)<<12, page);
+        process.memory.handlers[pageStart] = new ThreadHandlerCheck(process.memory, page);
         for (int i=1;i<pages;i++) {
             page = RAM.allocPage();
-            process.memory.handlers[pageStart+i] = new ThreadHandler((pageStart-page)<<12, page);
+            process.memory.handlers[pageStart+i] = new ThreadHandler(process.memory, page);
         }
 
         stackSize+=(pages << 12);
@@ -172,75 +170,42 @@ public class WineThread {
         process.memory.writed(this.errnoPtr, errno);
     }
 
-    final private class ThreadHandlerCheck extends PageHandler {
-        private int offset;
-        private int physicalPage;
-
-        public ThreadHandlerCheck(int offset, int physicalPage) {
-            this.offset = offset;
-            this.physicalPage = physicalPage;
+    final private class ThreadHandlerCheck extends ThreadHandler {
+        public ThreadHandlerCheck(Memory memory, int physicalPage) {
+            super(memory, physicalPage);
         }
         private void grow() {
             growStack(4);
         }
-        public void close() {
-            RAM.freePage(physicalPage);
-        }
         public int readd(int address) {
             grow();
-            return RAM.readd(address-offset);
+            return super.readd(address);
         }
         public int readw(int address) {
             grow();
-            return RAM.readw(address-offset);
+            return super.readw(address);
         }
         public int readb(int address) {
             grow();
-            return RAM.readb(address-offset);
+            return super.readb(address);
         }
         public void writed(int address, int value) {
             grow();
-            RAM.writed(address-offset, value);
+            super.writed(address, value);
         }
         public void writew(int address, int value) {
             grow();
-            RAM.writew(address-offset, value);
+            super.writew(address, value);
         }
         public void writeb(int address, int value) {
             grow();
-            RAM.writeb(address-offset, value);
+            super.writeb(address, value);
         }
     }
 
-    final private class ThreadHandler extends PageHandler {
-        private int offset;
-        private int physicalPage;
-
-        public ThreadHandler(int offset, int physicalPage) {
-            this.offset = offset;
-            this.physicalPage = physicalPage;
-        }
-        public void close() {
-            RAM.freePage(physicalPage);
-        }
-        public int readd(int address) {
-            return RAM.readd(address-offset);
-        }
-        public int readw(int address) {
-            return RAM.readw(address-offset);
-        }
-        public int readb(int address) {
-            return RAM.readb(address-offset);
-        }
-        public void writed(int address, int value) {
-            RAM.writed(address-offset, value);
-        }
-        public void writew(int address, int value) {
-            RAM.writew(address-offset, value);
-        }
-        public void writeb(int address, int value) {
-            RAM.writeb(address-offset, value);
+    private class ThreadHandler extends RAMHandler {
+        public ThreadHandler(Memory memory, int physicalPage) {
+            super(memory, physicalPage, false, false);
         }
     }
-
 }

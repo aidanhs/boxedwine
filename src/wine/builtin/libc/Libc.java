@@ -10,12 +10,12 @@ public class Libc extends BuiltinModule {
     public Libc(String name, WineProcess process, int id) {
         super(name, process, id);
 
-        addData("stdin", 0);
-        addData("stdout", 1);
-        addData("stderr", 2);
-        addData("environ", process.environ);
-        addData("_environ", process.environ);
-        addData("__environ", process.environ);
+        addData("stdin", process.stdin);
+        addData("stdout", process.stdout);
+        addData("stderr", process.stderr);
+        addData("environ", process.ppenviron);
+        addData("_environ", process.ppenviron);
+        addData("__environ", process.ppenviron);
         addData("optind", process.optind);
         addData("optarg", process.optarg);
 

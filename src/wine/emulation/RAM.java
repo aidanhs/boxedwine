@@ -106,11 +106,4 @@ public class RAM {
         int val = local[index] & mask | (value & 0xFF) << off;
         local[index] = val;
     }
-    static public int readws(int address) {
-        return (short)(readw(address));
-    }
-    static public int readbs(int address) {
-        return (byte) (bytes[(address >> 2)] >>> ((address & 0x3) << 3));
-    }
-
 }

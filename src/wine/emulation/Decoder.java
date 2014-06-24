@@ -3282,6 +3282,32 @@ class Decoder {
             }
         };
 
+        /* CMPXCHG Ew,Gw */
+        decoder[0x1b1] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.CmpxchgEwGw_reg(ew(cpu, rm), gw(cpu, rm));
+                } else {
+                    prev.next = new Ops.CmpxchgEwGw_mem(getEaa(cpu, rm), gw(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+        /* CMPXCHG Ed,Gd */
+        decoder[0x3b1] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.CmpxchgEdGd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.CmpxchgEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
         /* MOVZX Gd,Eb */
         decoder[0x3b6] = new Decode() {
             public boolean call(CPU cpu, Op prev) {

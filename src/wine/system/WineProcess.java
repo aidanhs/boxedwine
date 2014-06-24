@@ -43,9 +43,13 @@ public class WineProcess {
     public final int id;
     public final int eipThreadReturn;
     public final int passwd;
-    public final int environ;
+    public final int penviron;
+    public final int ppenviron;
     public final int optind;
     public final int optarg;
+    public final int stdin;
+    public final int stdout;
+    public final int stderr;
     private int[] env;
     public final Hashtable<String, String> envByNameValue = new Hashtable<String, String>();
     public final Hashtable<String, Integer> envByNamePos = new Hashtable<String, Integer>();
@@ -97,12 +101,20 @@ public class WineProcess {
         memory.writed(passwd+16, 0); // shell
 
         addressSpace.alloc(ADDRESS_PROCESS_HEAP_START, 0x100000000l-ADDRESS_PROCESS_HEAP_START-4096);
-        optind = alloc(4096);
-        memory.zero(optind, 4096);
+        int data = alloc(4096);
+        memory.zero(data, 4096);
+        optind = data;data+=4;
         memory.writed(optind, 1);
-        optarg = optind+4;
-        environ = optarg+100;
-
+        optarg = data;data+=4;
+        stdin = data;data+=4;
+        memory.writeb(stdin, 0);
+        stderr = data;data+=4;
+        memory.writeb(stderr, 2);
+        stdout = data;data+=4;
+        memory.writeb(stdout, 1);
+        ppenviron = data;data+=4;
+        penviron = data;
+        memory.writed(ppenviron, penviron);
         for (int i=0;i<envs.length;i++)
             setenv(envs[i]);
         setenv("HOME="+homeDirectory);
@@ -155,7 +167,7 @@ public class WineProcess {
     }
 
     public int mapPage(int page) {
-        long address = addressSpace.alloc(ADDRESS_PROCESS_SHARED_START, 4096);
+        long address = addressSpace.getNextAddress(ADDRESS_PROCESS_SHARED_START, 4096, true);
         memory.handlers[(int)(address>>>12)] = new RAMHandler(memory, page, false, false);
         return (int)address;
     }
@@ -235,6 +247,7 @@ public class WineProcess {
         pos = 0;
         pos+=envByNameValue.size()*4+4;
         int index=0;
+        int environ = memory.readd(ppenviron);
         while (keys.hasMoreElements()) {
             key = keys.nextElement();
             value = envByNameValue.get(key);

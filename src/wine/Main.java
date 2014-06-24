@@ -1,8 +1,8 @@
 package wine;
 
 import wine.emulation.RAM;
-import wine.system.io.*;
 import wine.system.WineProcess;
+import wine.system.io.*;
 import wine.util.Path;
 
 public class Main {
@@ -19,7 +19,7 @@ public class Main {
 
         RAM.init(128 * 1024 * 1024);
         createWineServer();
-        if (WineProcess.create(new String[] {"wine", "version"}, new String[] {"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib"})==null) {
+        if (WineProcess.create(new String[] {"wine", "version"}, new String[] {"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib", "WINEDEBUG=+all"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }
@@ -64,5 +64,6 @@ public class Main {
             System.out.println("wineserver failed to create master socket within 10 seconds");
             System.exit(-1);
         }
+        try {Thread.sleep(2000);} catch (Exception e){}
     }
 }
