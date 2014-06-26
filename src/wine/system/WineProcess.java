@@ -89,7 +89,7 @@ public class WineProcess {
         WineSystem.processes.put(id, this);
         eipThreadReturn = loader.registerFunction(WineThread.wineThreadReturn);
 
-        String homeDirectory = ((Path)FileSystem.paths.elementAt(0)).localPath;
+        String homeDirectory = ((Path)FileSystem.paths.elementAt(1)).localPath;
         String userName = "User";
         passwd = alloc(20+userName.length()+1+homeDirectory.length()+1);
         memory.writeCString(passwd+20, "User");

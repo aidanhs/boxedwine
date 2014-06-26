@@ -9,6 +9,7 @@ public class Main {
 
     static public void main(String[] args) {
         // the first entry should be the default process current directory
+        FileSystem.paths.add(new Path("c:\\wine\\.wine\\drive_c", "/home/boxedwine/.wine/dosdevices/c:"));
         FileSystem.paths.add(new Path("c:\\wine", "/home/boxedwine"));
         FileSystem.paths.add(new Path("c:\\wine\\lib", "/lib"));
         FileSystem.paths.add(new Path("c:\\wine\\bin", "/bin"));

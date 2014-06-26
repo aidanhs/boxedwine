@@ -129,29 +129,17 @@ public class Strings {
     // char *strcat(char *restrict s1, const char *restrict s2)
     static public int strcat(int s1, int s2) {
         int address = s1+strlen(s1);
-        Memory memory = WineThread.getCurrent().process.memory;
-        while (true) {
-            int c1 = memory.readb(s2++);
-            memory.writeb(address++, c1);
-            if (c1==0)
-                break;
-        }
+        strcpy(address, s2);
         return s1;
     }
 
     // char *strncat(char * s1, const char * s2, size_t n)
     static public int strncat(int s1, int s2, int n) {
         int address = s1+strlen(s1);
-        Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<n-1;i++) {
-            int c1 = memory.readb(s2++);
-            memory.writeb(address++, c1);
-            if (c1==0)
-                return s1;
-        }
-        memory.writeb(address, 0);
+        strncpy(address, s2, n);
         return s1;
     }
+
     // char *strchr(const char *s, int c)
     static public int strchr(int s, int c) {
         Memory memory = WineThread.getCurrent().process.memory;
