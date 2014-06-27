@@ -212,7 +212,7 @@ public class KernelUnixSocket extends KernelSocket {
                 while (len>0 && data.size()>0) {
                     byte[] d = (byte[]) data.getFirst();
                     int read = Math.min(len, d.length - dataPos);
-                    memory.memcpy(buffer, d, dataPos, read);
+                    memory.memcpy(buffer+result, d, dataPos, read);
                     if (read+dataPos==d.length) {
                         data.removeFirst();
                         dataPos=0;

@@ -10,6 +10,7 @@ import wine.util.Log;
 public class KernelFile extends KernelObject {
     final public FSNode node;
     public FSNodeAccess io;
+    private long seekPos = 0;
 
     public KernelFile(FSNode fs) {
         this.node = fs;
@@ -299,6 +300,16 @@ public class KernelFile extends KernelObject {
     }
 
     synchronized public long seek(int whence, long offset) {
+        if (io==null) {
+            if (whence == Stdio.SEEK_SET) {
+                seekPos = offset;
+            } else if (whence == Stdio.SEEK_CUR) {
+                seekPos += offset;
+            } else {
+                return -Errno.EINVAL;
+            }
+            return seekPos;
+        }
         long pos = 0;
         if (whence == Stdio.SEEK_SET) {
             pos = offset;

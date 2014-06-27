@@ -10,6 +10,7 @@ public class Sprintf {
         public double getNextDouble();
     }
     public static String sprintf(String format, SprintfGetter getter) {
+        String originalFormat=format;
         int pos = format.indexOf('%');
         if (pos>=0) {
             StringBuffer buffer = new StringBuffer();
@@ -79,21 +80,30 @@ public class Sprintf {
                                 return buffer.toString();
                             }
 
-                            String p = "";
-                            while (true) {
-                                if (c>='0' && c<='9') {
-                                    p+=c;
-                                } else {
-                                    break;
-                                }
-                                if (pos+1<format.length()) {
+                            if (c=='*') {
+                                precision = getter.getNextInt();
+                                if (pos + 1 < format.length()) {
                                     c = format.charAt(++pos);
                                 } else {
                                     return buffer.toString();
                                 }
-                            }
-                            if (p.length()>0) {
-                                precision = Integer.parseInt(p);
+                            } else {
+                                String p = "";
+                                while (true) {
+                                    if (c >= '0' && c <= '9') {
+                                        p += c;
+                                    } else {
+                                        break;
+                                    }
+                                    if (pos + 1 < format.length()) {
+                                        c = format.charAt(++pos);
+                                    } else {
+                                        return buffer.toString();
+                                    }
+                                }
+                                if (p.length() > 0) {
+                                    precision = Integer.parseInt(p);
+                                }
                             }
                         }
 
@@ -210,7 +220,7 @@ public class Sprintf {
                             value = Integer.toHexString(getter.getNextInt());
                             value="0x"+value.toLowerCase();
                         } else {
-                            Log.panic("Unknown type in sprintf: "+c);
+                            Log.panic("Unknown type in sprintf: "+c+" in ("+originalFormat+")");
                         }
 
                         if (negnumber) {

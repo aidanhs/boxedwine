@@ -65,6 +65,9 @@ public class BuiltinModule extends Module {
 
         public void call(CPU cpu) {
             boolean shouldLog = log;
+            if (name.contains("printf")) {
+                shouldLog = false;
+            }
             StringBuilder builder = null;
             if (shouldLog) {
                 builder = new StringBuilder();

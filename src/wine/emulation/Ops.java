@@ -300,6 +300,90 @@ class Ops {
         }
     }
 
+    final static class Instruction_Reg16_Reg16_Value_3 extends Op {
+        final private Instruction instruction;
+        final private Reg dest;
+        final private Reg src;
+        final private int value;
+
+        public Instruction_Reg16_Reg16_Value_3(Instruction instruction, Reg dest, Reg src, int value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            dest.u16(instruction.run(cpu, dest.u16(), src.u16(), value));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.name16+", "+src.name16+", "+value;
+        }
+    }
+
+    final static class Instruction_Reg32_Reg32_Reg8 extends Op {
+        final private Instruction instruction;
+        final private Reg dest;
+        final private Reg src;
+        final private Reg value;
+
+        public Instruction_Reg32_Reg32_Reg8(Instruction instruction, Reg dest, Reg src, Reg value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            dest.dword=instruction.run(cpu, dest.dword, src.dword, value.u8());
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.name32+", "+src.name32+", "+value.name8;
+        }
+    }
+
+    final static class Instruction_Reg16_Reg16_Reg8 extends Op {
+        final private Instruction instruction;
+        final private Reg dest;
+        final private Reg src;
+        final private Reg value;
+
+        public Instruction_Reg16_Reg16_Reg8(Instruction instruction, Reg dest, Reg src, Reg value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            dest.u16(instruction.run(cpu, dest.u16(), src.u16(), value.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.name16+", "+src.name16+", "+value.name8;
+        }
+    }
+
+    final static class Instruction_Reg32_Reg32_Value_3 extends Op {
+        final private Instruction instruction;
+        final private Reg dest;
+        final private Reg src;
+        final private int value;
+
+        public Instruction_Reg32_Reg32_Value_3(Instruction instruction, Reg dest, Reg src, int value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            dest.dword=instruction.run(cpu, dest.dword, src.dword, value);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.name32+", "+src.name32+", "+value;
+        }
+    }
+
     final static class Instruction_Mem8 extends Op {
         final private Instruction instruction;
         final private EaaBase dest;
@@ -562,6 +646,94 @@ class Ops {
         }
         public String toString() {
             return instruction.toString()+" "+dest.toString32()+", "+src.name32;
+        }
+    }
+
+    final static class Instruction_Mem16_Reg16_Reg8 extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private Reg value;
+
+        public Instruction_Mem16_Reg16_Reg8(Instruction instruction, EaaBase dest, Reg src, Reg value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            cpu.memory.writew(eaa, instruction.run(cpu, cpu.memory.readw(eaa), src.u16(), value.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value.name8;
+        }
+    }
+
+    final static class Instruction_Mem32_Reg32_Reg8 extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private Reg value;
+
+        public Instruction_Mem32_Reg32_Reg8(Instruction instruction, EaaBase dest, Reg src, Reg value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            cpu.memory.writed(eaa, instruction.run(cpu, cpu.memory.readd(eaa), src.dword, value.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value.name8;
+        }
+    }
+
+    final static class Instruction_Mem16_Reg16_Value_3 extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private int value;
+
+        public Instruction_Mem16_Reg16_Value_3(Instruction instruction, EaaBase dest, Reg src, int value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            cpu.memory.writew(eaa, instruction.run(cpu, cpu.memory.readw(eaa), src.u16(), value));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value;
+        }
+    }
+
+    final static class Instruction_Mem32_Reg32_Value_3 extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private int value;
+
+        public Instruction_Mem32_Reg32_Value_3(Instruction instruction, EaaBase dest, Reg src, int value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            cpu.memory.writed(eaa, instruction.run(cpu, cpu.memory.readd(eaa), src.dword, value));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value;
         }
     }
 
@@ -3972,7 +4144,7 @@ class Ops {
             if (condition.test(cpu))
                 cpu.memory.writeb(eaa.call(cpu), 1);
             else
-                cpu.memory.writeb(eaa.call(cpu), 1);
+                cpu.memory.writeb(eaa.call(cpu), 0);
             return next.callAndLog(cpu);
         }
         public String toString() {

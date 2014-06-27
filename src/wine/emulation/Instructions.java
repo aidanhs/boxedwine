@@ -497,7 +497,7 @@ class Instructions {
 
     static final private class ImulD2 extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            long res=((long)value1) * ((short)value2);
+            long res=((long)value1) * value2;
             cpu.fillFlagsNoCFOF();
             if ((res & 0xFFFFFFFF00000000l) != 0) {
                 cpu.flags|=CPU.CF | CPU.OF;
@@ -1731,4 +1731,47 @@ class Instructions {
         public String toString() {return "imul";}
     }
     static public final Instruction dimuld = new DImuld();
+
+    static final private class Dshrd extends Instruction {
+        public int run(CPU cpu, int value1, int value2, int value3) {
+            value3&=0x1f;
+            if (value3==0)
+                return value1; // don't change flags
+            cpu.right = value3;
+            cpu.left = value1;
+            cpu.result = (value1 >>> value3) | (value2 << (32-value3));
+            cpu.lazyFlags = this;
+            return cpu.result;
+        }
+
+        public boolean CF(CPU cpu) {return ((cpu.left >>> (cpu.right - 1)) & 1) != 0;}
+        public boolean AF(CPU cpu) {return false;}
+        public boolean SF(CPU cpu) {return (cpu.result&0x80000000)!= 0;}
+        public boolean OF(CPU cpu) {return ((cpu.result ^ cpu.left) & 0x80000000) != 0;}
+        public String toString() {return "shrd";}
+    }
+    static public final Instruction dshrd = new Dshrd();
+
+    static final private class Dshrw extends Instruction {
+        public int run(CPU cpu, int value1, int value2, int value3) {
+            value3&=0x1f;
+            if (value3==0)
+                return value1; // don't change flags
+            cpu.right = value3;
+            int var1=(value2<<16)|value1;
+            cpu.left = var1;
+            int tempd=var1 >>> value3;
+            if (value3>16) tempd |= (value2 << (32-value3 ));
+            cpu.result = tempd;
+            cpu.lazyFlags = this;
+            return cpu.result;
+        }
+
+        public boolean CF(CPU cpu) {return ((cpu.left >>> (cpu.right - 1)) & 1) != 0;}
+        public boolean AF(CPU cpu) {return false;}
+        public boolean SF(CPU cpu) {return (cpu.result&0x8000)!= 0;}
+        public boolean OF(CPU cpu) {return ((cpu.result ^ cpu.left) & 0x8000) != 0;}
+        public String toString() {return "shrd";}
+    }
+    static public final Instruction dshrw = new Dshrw();
 }
