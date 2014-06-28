@@ -106,4 +106,7 @@ public class RAM {
         int val = local[index] & mask | (value & 0xFF) << off;
         local[index] = val;
     }
+    static public void copy(int srcPage, int destPage) {
+        System.arraycopy(bytes, srcPage*1024, bytes, destPage*1024, 1024);
+    }
 }

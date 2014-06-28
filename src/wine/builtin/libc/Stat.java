@@ -2,9 +2,11 @@ package wine.builtin.libc;
 
 import wine.emulation.Memory;
 import wine.system.WineProcess;
-import wine.system.WineSystem;
 import wine.system.WineThread;
-import wine.system.io.*;
+import wine.system.io.FSNode;
+import wine.system.io.FileDescriptor;
+import wine.system.io.KernelFile;
+import wine.system.io.KernelStat;
 import wine.util.Log;
 
 public class Stat {

@@ -1,7 +1,8 @@
 package wine.builtin.libc;
 
 import wine.emulation.*;
-import wine.system.*;
+import wine.system.WineProcess;
+import wine.system.WineThread;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
@@ -19,6 +20,14 @@ public class Mmap {
         }
         public void writeb(int address, int value) {
             pf();
+        }
+        public PageHandler fork(WineProcess process) {
+            MMapHandlerRO handler = new MMapHandlerRO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
+            handler.dirty = this.dirty;
+            if (shared) {
+                Log.panic("forked mmap shared mapped files not implemented");
+            }
+            return handler;
         }
     }
 
@@ -38,6 +47,15 @@ public class Mmap {
         public int readb(int address) {
             pf();
             return 0;
+        }
+
+        public PageHandler fork(WineProcess process) {
+            MMapHandlerWO handler = new MMapHandlerWO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
+            handler.dirty = this.dirty;
+            if (shared) {
+                Log.panic("forked mmap shared mapped files not implemented");
+            }
+            return handler;
         }
     }
 
@@ -65,6 +83,15 @@ public class Mmap {
         public int readb(int address) {
             pf();
             return 0;
+        }
+
+        public PageHandler fork(WineProcess process) {
+            MMapHandlerNone handler = new MMapHandlerNone(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
+            handler.dirty = this.dirty;
+            if (shared) {
+                Log.panic("forked mmap shared mapped files not implemented");
+            }
+            return handler;
         }
     }
 
@@ -104,6 +131,9 @@ public class Mmap {
     }
 
     final static class WaitingMMHandler extends InvalidHandler {
+        public PageHandler fork(WineProcess process) {
+            return this;
+        }
     }
     final static private WaitingMMHandler waitingHandler = new WaitingMMHandler();
 

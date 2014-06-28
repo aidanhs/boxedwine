@@ -73,9 +73,10 @@ public class Syscall {
             case __NR_tkill:
                 Log.panic("syscall __NR_tkill not implemented");
                 break;
-            case __NR_futex:
-                Log.panic("syscall __NR_futex not implemented");
-                break;
+            case __NR_futex: {
+                thread.setErrno(Errno.ENOSYS);
+                return -1;
+            }
             case __NR_set_thread_area: {
                 modify_ldt_s ldt = new modify_ldt_s(memory,thread.cpu.peek32(1));
                 if (ldt.entry_number==-1) {

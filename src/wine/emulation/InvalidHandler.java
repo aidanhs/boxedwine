@@ -1,5 +1,6 @@
 package wine.emulation;
 
+import wine.system.WineProcess;
 import wine.util.Log;
 
 public class InvalidHandler extends PageHandler {
@@ -32,5 +33,9 @@ public class InvalidHandler extends PageHandler {
 
     public void writeb(int address, int value) {
         Log.panic("PF: "+Integer.toHexString(address));
+    }
+
+    public PageHandler fork(WineProcess process) {
+        return this;
     }
 }

@@ -1,5 +1,7 @@
 package wine.emulation;
 
+import wine.system.WineProcess;
+
 public class RAMHandler extends PageHandler {
     private final int offset;
     public final int physicalPage;
@@ -27,7 +29,7 @@ public class RAMHandler extends PageHandler {
 
     public int readd(int address) {
         if ((address & 0xFFF)<0xFFD) {
-            return RAM.readd(offset+(address & 0xFFF));
+            return RAM.readd(offset + (address & 0xFFF));
         }
         return memory.unalignedReadd(address);
     }
@@ -42,7 +44,7 @@ public class RAMHandler extends PageHandler {
     }
     public void writed(int address, int value) {
         if ((address & 0xFFF)<0xFFD) {
-            RAM.writed(offset+(address & 0xFFF), value);
+            RAM.writed(offset + (address & 0xFFF), value);
         } else {
             memory.unalignedWrited(address, value);
         }
@@ -56,5 +58,20 @@ public class RAMHandler extends PageHandler {
     }
     public void writeb(int address, int value) {
         RAM.writeb(offset+(address & 0xFFF), value);
+    }
+
+    public PageHandler fork(WineProcess process) {
+        int page;
+        if (shared) {
+            page = physicalPage;
+            RAM.incrementRef(page);
+        } else {
+            page = RAM.allocPage();
+        }
+        RAMHandler handler = new RAMHandler(memory, page, mmap, shared);
+        if (!shared) {
+            RAM.copy(physicalPage, page);
+        }
+        return handler;
     }
 }

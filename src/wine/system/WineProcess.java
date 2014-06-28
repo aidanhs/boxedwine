@@ -10,7 +10,6 @@ import wine.loader.Loader;
 import wine.system.io.*;
 import wine.util.Heap;
 import wine.util.Log;
-import wine.util.Path;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -30,16 +29,16 @@ public class WineProcess {
     static public final int STATE_STARTED = 1;
     static public final int STATE_DONE = 2;
 
-    final public Heap addressSpace = new Heap(0x1000, 0xFFFFFFFFl);
-    final public Memory memory = new Memory();
-    final public Hashtable threads = new Hashtable();
-    final public Hashtable memoryMaps = new Hashtable();
+    // if new variables are addedd, make sure they are accounted for in fork
+    final public Heap addressSpace;
+    final public Memory memory;
+    final public Hashtable<Integer, WineThread> threads = new Hashtable<Integer, WineThread>();
     final public SigAction[] sigActions = SigAction.create(64);
 
     public ElfModule mainModule;
     final public Loader loader;
     public String currentDirectory;
-    public Hashtable fileDescriptors = new Hashtable();
+    public Hashtable<Integer, FileDescriptor> fileDescriptors = new Hashtable<Integer, FileDescriptor>();
     public final int id;
     public final int eipThreadReturn;
     public final int passwd;
@@ -51,10 +50,10 @@ public class WineProcess {
     public final int stdout;
     public final int stderr;
     private int[] env;
-    public final Hashtable<String, String> envByNameValue = new Hashtable<String, String>();
-    public final Hashtable<String, Integer> envByNamePos = new Hashtable<String, Integer>();
+    public final Hashtable<String, String> envByNameValue;
+    public final Hashtable<String, Integer> envByNamePos;
     public int startData;
-    final private Heap heap = new Heap(ADDRESS_PROCESS_HEAP_START, ADDRESS_PROCESS_HEAP_START); // it will grow
+    final private Heap heap;
     public final int callReturnEip;
     public int asctime;
     public int tm;
@@ -70,26 +69,85 @@ public class WineProcess {
     public int pp_ctype_tolower_loc;
     public int state = STATE_INIT;
     public String name;
+    private Hashtable<Integer, Vector<ExitFunction>> exitFunctions = new Hashtable<Integer, Vector<ExitFunction>>();
+    // if new variables are addedd, make sure they are accounted for in fork
 
-    static private class ExitFunctions {
-        public ExitFunctions(int func, int arg) {
+    static private class ExitFunction {
+        public ExitFunction(int func, int arg) {
             this.func = func;
             this.arg = arg;
         }
         public int func;
         public int arg;
     }
-    private Hashtable<Integer, Vector<ExitFunctions>> exitFunctions = new Hashtable<Integer, Vector<ExitFunctions>>();
+
+    private WineProcess(int id, WineProcess process) {
+        loader = process.loader.fork(this);
+        this.mainModule = loader.main;
+        this.addressSpace = process.addressSpace.deepCopy();
+        this.heap = process.heap.deepCopy();
+        this.currentDirectory = process.currentDirectory;
+        for (FileDescriptor fd : process.fileDescriptors.values()) {
+            if (fd.canFork()) {
+                FileDescriptor f = fd.fork();
+                this.fileDescriptors.put(f.handle, f);
+            }
+        }
+        // must come after fd
+        this.memory = process.memory.fork(this);
+        this.id = id;
+        this.eipThreadReturn = process.eipThreadReturn;
+        this.passwd = process.passwd;
+        this.penviron = process.penviron;
+        this.ppenviron = process.ppenviron;
+        this.optind = process.optind;
+        this.optarg = process.optarg;
+        this.stdin = process.stdin;
+        this.stdout = process.stdout;
+        this.stderr = process.stderr;
+        this.callReturnEip = process.callReturnEip;
+        this.env = process.env.clone();
+        this.envByNameValue = (Hashtable<String, String>)process.envByNameValue.clone();
+        this.envByNamePos = (Hashtable<String, Integer>)process.envByNamePos.clone();
+        this.startData = process.startData;
+
+        this.asctime = process.asctime;
+        this.tm = process.tm;
+        this.exitCode = process.exitCode;
+        this.terminated = process.terminated;
+        this.signaled = process.signaled;
+        this.perCPUIndex = 0;
+        this.p_ctype_b_loc = process.p_ctype_b_loc;
+        this.pp_ctype_b_loc = process.pp_ctype_b_loc;
+        this.p_ctype_toupper_loc = process.p_ctype_toupper_loc;
+        this.pp_ctype_toupper_loc = process.pp_ctype_toupper_loc;
+        this.p_ctype_tolower_loc = process.p_ctype_tolower_loc;
+        this.pp_ctype_tolower_loc = process.pp_ctype_tolower_loc;
+        this.state = process.state;
+        this.name = process.name;
+        for (Integer module : exitFunctions.keySet()) {
+            Vector<ExitFunction> funcs = exitFunctions.get(module);
+            for (ExitFunction func : funcs) {
+                addExitFunction(module, func.func, func.arg);
+            }
+        }
+        WineSystem.processes.put(id, this);
+    }
 
     public WineProcess(String name, int id, String envs[]) {
+        memory  = new Memory();
         loader = new Loader(this);
+        addressSpace = new Heap(0x1000, 0xFFFFFFFFl);
+        heap = new Heap(ADDRESS_PROCESS_HEAP_START, ADDRESS_PROCESS_HEAP_START); // it will grow
+        this.envByNameValue= new Hashtable<String, String>();
         callReturnEip=CPU.registerCallReturnEip(loader);
-        currentDirectory = ((Path) FileSystem.paths.elementAt(0)).localPath;
+        envByNamePos = new Hashtable<String, Integer>();
+        currentDirectory = FileSystem.paths.elementAt(0).localPath;
         this.id = id;
         WineSystem.processes.put(id, this);
         eipThreadReturn = loader.registerFunction(WineThread.wineThreadReturn);
 
-        String homeDirectory = ((Path)FileSystem.paths.elementAt(1)).localPath;
+        String homeDirectory = FileSystem.paths.elementAt(1).localPath;
         String userName = "User";
         passwd = alloc(20+userName.length()+1+homeDirectory.length()+1);
         memory.writeCString(passwd+20, "User");
@@ -129,6 +187,10 @@ public class WineProcess {
 
         mainModule = (ElfModule)loader.loadModule(thread, name);
         this.name = mainModule.name;
+    }
+
+    private void cleanup() {
+        memory.close();
     }
 
     public int alloc(int size) {
@@ -212,8 +274,25 @@ public class WineProcess {
         return true;
     }
 
+    public void exitThread(WineThread thread) {
+        synchronized (this) {
+            threads.remove(thread.id);
+            if (threads.size()==0) {
+                this.terminated = true;
+                cleanup();
+                this.notifyAll();
+            }
+        }
+    }
+
     public void _exit(int status) {
-        // :TODO: don't run exit functions
+        this.exitCode = status;
+        for (Integer threadId :threads.keySet()) {
+            WineThread thread = threads.get(threadId);
+            if (thread.jThread!=Thread.currentThread())
+                thread.jThread.stop(new ExitThreadException());
+        }
+        Thread.currentThread().stop(new ExitThreadException());
     }
 
     public void exit(int status) {
@@ -279,19 +358,21 @@ public class WineProcess {
 
     public void waitForPid() {
         synchronized (this) {
-            if (isStopped() || isTerminated())
+            if (isStopped() || isTerminated()) {
+                WineSystem.processes.remove(id);
                 return;
+            }
             try {this.wait();} catch (Exception e){}
         }
     }
 
     public void addExitFunction(int module, int func, int arg) {
-        Vector<ExitFunctions> funcs = exitFunctions.get(module);
+        Vector<ExitFunction> funcs = exitFunctions.get(module);
         if (funcs == null) {
-            funcs = new Vector<ExitFunctions>();
+            funcs = new Vector<ExitFunction>();
             exitFunctions.put(module, funcs);
         }
-        funcs.add(new ExitFunctions(func, arg));
+        funcs.add(new ExitFunction(func, arg));
     }
 
     public static WineProcess create(final String[] args, final String[] env) {
@@ -376,8 +457,28 @@ public class WineProcess {
             state = STATE_STARTED;
         }
         thread.cpu.run();
-        synchronized (this) {
-            state = STATE_DONE;
+        thread.done();
+    }
+
+    // INHERITED
+    // file descriptors
+    // current thread
+    //
+    // NOT INHERITED
+    // file locks
+    // directory change notification
+    // timers
+    // other threads
+    public WineProcess fork(int eip) {
+        if (threads.size()>1) {
+            // :TODO: what should we do if we have more than one thread, do we clean up the memory the other threads allocated?
+            Log.panic("fork doesn't handle a process with more than one thread");
         }
+        WineProcess process = new WineProcess(WineSystem.nextid++, this);
+        WineThread thread = WineThread.getCurrent().fork(process);
+        thread.cpu.eip = eip;
+        thread.cpu.eax.dword = 0;
+        thread.jThread.start();
+        return process;
     }
 }

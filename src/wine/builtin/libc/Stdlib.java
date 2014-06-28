@@ -6,8 +6,6 @@ import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
 
-import java.lang.*;
-import java.lang.Math;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -15,7 +13,7 @@ public class Stdlib {
     // void abort(void)
     static public void abort() {
         WineThread thread = WineThread.getCurrent();
-        Log.panic("Abort "+thread.process.mainModule.name);
+        Log.panic("Abort "+thread.process.name);
     }
 
     // int abs(int i)
@@ -199,7 +197,7 @@ public class Stdlib {
             if (neg)
                 result=-result;
             return result;
-        } catch (Exception e) {
+        } catch (NumberFormatException e) {
             return 0;
         }
     }

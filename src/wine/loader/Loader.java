@@ -5,10 +5,7 @@ import wine.builtin.libdl.Libdl;
 import wine.builtin.libm.Libm;
 import wine.builtin.libpthread.LibPThread;
 import wine.loader.elf.ElfSymbol;
-import wine.system.Callback;
-import wine.system.WineProcess;
-import wine.system.WineSystem;
-import wine.system.WineThread;
+import wine.system.*;
 import wine.system.io.FSNode;
 import wine.system.io.FileSystem;
 import wine.util.Path;
@@ -19,9 +16,9 @@ import java.util.Vector;
 public class Loader {
     public Hashtable<String, Module> modulesByName = new Hashtable<String, Module>();
     public Hashtable<Integer, Module> modulesByHandle = new Hashtable<Integer, Module>();
-    private ElfModule main;
+    public ElfModule main;
     private int callbackPages;
-    private Vector callbacks = new Vector();
+    private Vector<Callback> callbacks = new Vector<Callback>();
 
     final private WineProcess process;
 
@@ -29,8 +26,23 @@ public class Loader {
         this.process = process;
     }
 
+    public Loader fork(WineProcess process) {
+        Loader loader = new Loader(process);
+        loader.callbacks = (Vector<Callback>)callbacks.clone();
+        loader.callbackPages = callbackPages;
+        for (String name : modulesByName.keySet()) {
+            Module module = modulesByName.get(name);
+            Module forked = module.fork(process);
+            if (module == main) {
+                loader.main = (ElfModule)forked;
+            }
+            loader.modulesByName.put(name, forked);
+            loader.modulesByHandle.put(module.id, forked);
+        }
+        return loader;
+    }
     public Callback getCallback(int index) {
-        return (Callback)callbacks.elementAt(index);
+        return callbacks.elementAt(index);
     }
 
     public int registerFunction(Callback callback) {
@@ -81,6 +93,8 @@ public class Loader {
                 module.init(thread);
                 return module;
             }
+        } catch (ExitThreadException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }

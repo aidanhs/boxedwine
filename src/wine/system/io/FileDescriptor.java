@@ -91,4 +91,19 @@ public class FileDescriptor {
         flags = fd.flags;
         accessFlags = fd.accessFlags;
     }
+
+    public boolean canFork() {
+        return object.canFork();
+    }
+
+    public FileDescriptor fork() {
+        FileDescriptor fd = new FileDescriptor(handle, object, accessFlags);
+        fd.flags = this.flags;
+        fd.object.incrementRefCount();
+        fd.ref = this.ref;
+        if (readDirData!=null) {
+            fd.readDirData = readDirData.copy();
+        }
+        return fd;
+    }
 }

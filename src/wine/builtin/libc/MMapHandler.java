@@ -2,6 +2,7 @@ package wine.builtin.libc;
 
 import wine.emulation.PageHandler;
 import wine.emulation.RAM;
+import wine.system.WineProcess;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
@@ -16,6 +17,7 @@ public class MMapHandler extends PageHandler {
     public int physicalPage;
     final public boolean shared;
     public boolean dirty;
+    private int refCount = 1;
 
     protected void alloc() {
         physicalPage = RAM.allocPage();
@@ -49,10 +51,13 @@ public class MMapHandler extends PageHandler {
     }
 
     public void close() {
-        sync(Mmap.MS_SYNC);
-        file.close();
-        if (this.physicalPage != 0) {
-            RAM.freePage(physicalPage);
+        refCount--;
+        if (refCount==0) {
+            sync(Mmap.MS_SYNC);
+            file.close();
+            if (this.physicalPage != 0) {
+                RAM.freePage(physicalPage);
+            }
         }
     }
 
@@ -94,5 +99,14 @@ public class MMapHandler extends PageHandler {
         }
         dirty=true;
         RAM.writeb(address-addressOffset, value);
+    }
+
+    public PageHandler fork(WineProcess process) {
+        MMapHandler handler = new MMapHandler(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
+        handler.dirty = this.dirty;
+        if (shared) {
+            Log.panic("forked mmap shared mapped files not implemented");
+        }
+        return handler;
     }
 }

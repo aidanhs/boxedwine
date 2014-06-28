@@ -71,14 +71,13 @@ public class PThread {
 
     // int pthread_join(pthread_t thread, void **value_ptr);
     static public int pthread_join(int threadId, int value_ptr) {
-        WineThread thread = (WineThread)WineThread.getCurrent().process.threads.get(new Integer(threadId));
+        WineThread thread = WineThread.getCurrent().process.threads.get(new Integer(threadId));
         if (thread==null)
             return Errno.ESRCH;
         try {thread.jThread.join();} catch (InterruptedException e){}
         if (value_ptr!=0) {
             WineThread.getCurrent().process.memory.writed(value_ptr, thread.exitValue);
         }
-        thread.close();
         return 0;
     }
 

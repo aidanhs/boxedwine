@@ -13,14 +13,24 @@ import java.lang.reflect.Method;
 import java.util.Hashtable;
 
 public class BuiltinModule extends Module {
-    private Hashtable functions = new Hashtable();
-    private Hashtable registeredCallbacks = new Hashtable();
+    private Hashtable<String, Callback> functions = new Hashtable<String, Callback>();
+    private Hashtable<String, Integer> registeredCallbacks = new Hashtable<String, Integer>();
     private Hashtable<String, ElfSymbol> symbols = new Hashtable<String, ElfSymbol>();
     private Hashtable<String, Integer> data = new Hashtable<String, Integer>();
     static public boolean log = false;
 
     public BuiltinModule(String name, WineProcess process, int id) {
         super(name, process, id);
+    }
+
+    public Module fork(WineProcess process) {
+        BuiltinModule lib = new BuiltinModule(name, process, id);
+        // shallow copies of Callback and ElfSymbol are ok since they don't change after they are created
+        lib.functions = (Hashtable<String, Callback>)functions.clone();
+        lib.registeredCallbacks = (Hashtable<String, Integer>)registeredCallbacks.clone();
+        lib.symbols = (Hashtable<String, ElfSymbol>)symbols.clone();
+        lib.data = (Hashtable<String, Integer>)data.clone();
+        return lib;
     }
 
     public ElfSymbol getSymbol(String name) {
@@ -30,9 +40,9 @@ public class BuiltinModule extends Module {
         }
         Integer address = data.get(name);
         if (address == null)
-            address = (Integer)registeredCallbacks.get(name);
+            address = registeredCallbacks.get(name);
         if (address == null) {
-            Callback handler = (Callback)functions.get(name);
+            Callback handler = functions.get(name);
             if (handler == null) {
                 return null;
             }
@@ -162,7 +172,7 @@ public class BuiltinModule extends Module {
     }
 
     protected void addData(String name, int value) {
-        data.put(name, new Integer(value));
+        data.put(name, value);
     }
 
     protected void add(Class c, String methodName) {
@@ -192,20 +202,5 @@ public class BuiltinModule extends Module {
             functions.put(handler.toString().substring(name.length() + 1), handler);
         else
             functions.put(handler.toString(), handler);
-    }
-
-    public int getProcAddress(final String functionName) {
-        Integer result = (Integer)registeredCallbacks.get(functionName);
-        if (result != null)
-            return result;
-
-        Callback handler = (Callback)functions.get(functionName);
-        if (handler == null) {
-            Log.panic("Unknown " + name + " function: " + functionName);
-            return 0;
-        }
-        int address =  process.loader.registerFunction(handler);
-        registeredCallbacks.put(functionName, address);
-        return address;
     }
 }

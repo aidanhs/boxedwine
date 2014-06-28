@@ -179,4 +179,7 @@ abstract public class KernelObject {
         WineThread.getCurrent().setErrno(Errno.ENOTTY);
         return -1;
     }
+    public boolean canFork() {
+        return true;
+    }
 }

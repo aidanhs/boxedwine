@@ -1232,4 +1232,16 @@ public class FPU {
         FPU_SET_TOP(top);
         cpu.eax.u16(sw);
     }
+
+    public FPU deepCopy(CPU cpu, Memory memory) {
+        FPU fpu = new FPU(cpu, memory);
+        fpu.regs = regs.clone();
+        fpu.tags = tags.clone();
+        fpu.cw = cw;
+        fpu.cw_mask_all = cw_mask_all;
+        fpu.sw = sw;
+        fpu.top = top;
+        fpu.round = round;
+        return fpu;
+    }
 }

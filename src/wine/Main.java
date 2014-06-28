@@ -65,6 +65,5 @@ public class Main {
             System.out.println("wineserver failed to create master socket within 10 seconds");
             System.exit(-1);
         }
-        try {Thread.sleep(2000);} catch (Exception e){}
     }
 }

@@ -5,10 +5,10 @@ import wine.emulation.RAM;
 import wine.system.WineProcess;
 import wine.system.WineSystem;
 import wine.system.WineThread;
-import wine.system.io.*;
+import wine.system.io.FSNode;
+import wine.system.io.FileDescriptor;
+import wine.system.io.KernelFile;
 import wine.util.Log;
-
-import java.io.IOException;
 
 public class Unistd {
     // int alarm(int seconds)
@@ -112,8 +112,11 @@ public class Unistd {
 
     // pid_t fork(void)
     static public int fork() {
-        Log.panic("fork not implemented");
-        return 0;
+        WineThread thread = WineThread.getCurrent();
+        WineProcess process = thread.process.fork(thread.cpu.peek32(-1)); // eip was already popped before we got here
+        if (process!=null)
+            return process.id;
+        return -1;
     }
 
     // int fsync(int fildes)

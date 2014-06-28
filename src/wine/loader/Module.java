@@ -15,4 +15,5 @@ abstract public class Module {
     }
 
     abstract public ElfSymbol getSymbol(String name);
+    abstract public Module fork(WineProcess process);
 }

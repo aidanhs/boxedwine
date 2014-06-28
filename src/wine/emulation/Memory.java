@@ -1,5 +1,7 @@
 package wine.emulation;
 
+import wine.system.WineProcess;
+
 // one per process
 public class Memory {
     final public PageHandler[] handlers = new PageHandler[0x100000]; // 1 million, this uses 4MB per process just to track paging
@@ -120,5 +122,20 @@ public class Memory {
             writeb(address++, value.charAt(i));
         }
         writeb(address, 0);
+    }
+
+    public Memory fork(WineProcess process) {
+        Memory memory = new Memory();
+        for (int i=0;i<handlers.length;i++) {
+            memory.handlers[i] = handlers[i].fork(process);
+        }
+        return memory;
+    }
+
+    public void close() {
+        for (int i=0;i<handlers.length;i++) {
+            handlers[i].close();
+            handlers[i]=null;
+        }
     }
 }

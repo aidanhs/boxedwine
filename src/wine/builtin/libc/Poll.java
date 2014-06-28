@@ -1,9 +1,9 @@
 package wine.builtin.libc;
 
 import wine.emulation.Memory;
-import wine.system.io.FileDescriptor;
 import wine.system.WineProcess;
 import wine.system.WineThread;
+import wine.system.io.FileDescriptor;
 
 public class Poll {
 //    struct pollfd

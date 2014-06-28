@@ -73,6 +73,13 @@ public class Dirent {
         public void onClose() {
             WineThread.getCurrent().process.free(pDirent);
         }
+        public ReadDirData copy() {
+            ReadDirData result = new ReadDirData();
+            result.dirs = this.dirs.clone();
+            result.index = this.index;
+            result.pDirent = this.pDirent;
+            return result;
+        }
     }
     // struct dirent *readdir(DIR *dir)
     static public int readdir(int dir) {

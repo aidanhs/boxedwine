@@ -1,12 +1,13 @@
 package wine.builtin.libc;
 
-import wine.emulation.CPU;
 import wine.emulation.Memory;
-import wine.system.*;
+import wine.system.WineProcess;
+import wine.system.WineThread;
 import wine.system.io.*;
 import wine.util.Log;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class Socket {
     static public final int	SOCK_STREAM	= 1;
@@ -202,7 +203,7 @@ public class Socket {
             }
             memory.writed(result, ret);
             return 0;
-        } catch (Exception e) {
+        } catch (UnknownHostException e) {
             if (errno!=0)
                 memory.writed(errno, HOST_NOT_FOUND);
             if (result!=0)

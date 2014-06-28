@@ -1,13 +1,8 @@
 package wine.loader.elf;
 
-import wine.emulation.Memory;
 import wine.util.LittleEndian;
-import wine.util.LittleEndianStream;
-import wine.util.Log;
-import wine.util.MemoryStream;
 
 import java.io.IOException;
-import java.util.Vector;
 
 public class ElfSection {
     static public final int SIZE = 40;

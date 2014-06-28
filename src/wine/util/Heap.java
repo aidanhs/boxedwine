@@ -8,9 +8,9 @@ public class Heap {
 
     private long start;
     private long end;
-    private ArrayList itemsBySize = new ArrayList();
-    private ArrayList itemsByAddress = new ArrayList();
-    private Hashtable usedMemory = new Hashtable();
+    private ArrayList<HeapItem> itemsBySize = new ArrayList<HeapItem>();
+    private ArrayList<HeapItem> itemsByAddress = new ArrayList<HeapItem>();
+    private Hashtable<Long, HeapItem> usedMemory = new Hashtable<Long, HeapItem>();
 
     private static class HeapItem implements Comparable {
         public int compareTo(Object o) {
@@ -24,6 +24,10 @@ public class Heap {
         public HeapItem(long address, long size) {
             this.address = address;
             this.size = size;
+        }
+
+        public HeapItem deepCopy() {
+            return new HeapItem(address, size);
         }
         public long address;
         public long size;
@@ -41,8 +45,8 @@ public class Heap {
         while (lo <= hi) {
             // Key is in a[lo..hi] or not present.
             int mid = lo + (hi - lo) / 2;
-            if      (key < ((HeapItem)itemsBySize.get(mid)).size) hi = mid - 1;
-            else if (key > ((HeapItem)itemsBySize.get(mid)).size) lo = mid + 1;
+            if      (key < (itemsBySize.get(mid)).size) hi = mid - 1;
+            else if (key > (itemsBySize.get(mid)).size) lo = mid + 1;
             else return mid;
         }
         HeapItem item = getLargestItem();
@@ -57,8 +61,8 @@ public class Heap {
         while (lo <= hi) {
             // Key is in a[lo..hi] or not present.
             int mid = lo + (hi - lo) / 2;
-            if      (key < ((HeapItem)itemsByAddress.get(mid)).address) hi = mid - 1;
-            else if (key > ((HeapItem)itemsByAddress.get(mid)).address) lo = mid + 1;
+            if      (key < (itemsByAddress.get(mid)).address) hi = mid - 1;
+            else if (key > (itemsByAddress.get(mid)).address) lo = mid + 1;
             else return mid;
         }
         HeapItem item = getLastItem();
@@ -83,13 +87,13 @@ public class Heap {
     private HeapItem getLastItem() {
         if (itemsByAddress.size()==0)
             return null;
-        return (HeapItem)itemsByAddress.get(itemsByAddress.size()-1);
+        return itemsByAddress.get(itemsByAddress.size()-1);
     }
 
     private HeapItem getLargestItem() {
         if (itemsBySize.size() == 0)
             return null;
-        return (HeapItem)itemsBySize.get(itemsBySize.size()-1);
+        return itemsBySize.get(itemsBySize.size()-1);
     }
 
     private void removeItem(HeapItem item) {
@@ -113,7 +117,7 @@ public class Heap {
             index--;
         int first = index;
         while (index<itemsByAddress.size()) {
-            HeapItem next = (HeapItem)itemsByAddress.get(index++);
+            HeapItem next = itemsByAddress.get(index++);
             long a = next.address;
             if (pageAlign) {
                 a = (a + 0xFFF) & ~0xFFF;
@@ -126,7 +130,7 @@ public class Heap {
         }
         index = first;
         while (index<itemsByAddress.size()) {
-            HeapItem next = (HeapItem)itemsByAddress.get(index++);
+            HeapItem next = itemsByAddress.get(index++);
             long a = next.address;
             if (pageAlign) {
                 a = (a + 0xFFF) & ~0xFFF;
@@ -149,13 +153,13 @@ public class Heap {
             last.size = address - last.address;
             if (last.size != 0)
                 insertItem(last);
-            usedMemory.put(new Long(address), new HeapItem(address, size));
+            usedMemory.put(address, new HeapItem(address, size));
             if (address+size<end)
                 insertItem(new HeapItem(address+size, end-(address+size)));
         } else {
-            HeapItem free = (HeapItem)itemsByAddress.get(index);
+            HeapItem free = itemsByAddress.get(index);
             if (free.address > address && index>0)
-                free = (HeapItem)itemsByAddress.get(index-1); // getNextAddress aligned it into this slot
+                free = itemsByAddress.get(index-1); // getNextAddress aligned it into this slot
             if (address<free.address || address+size>free.address+free.size) {
                 return 0;
             }
@@ -166,7 +170,7 @@ public class Heap {
             free.size-=newAddress-free.address;
             long oldAddress = free.address;
             free.address = newAddress;
-            usedMemory.put(new Long(address), new HeapItem(address, size));
+            usedMemory.put(address, new HeapItem(address, size));
             if (oldAddress<address && oldAddress>=start) {
                 insertItem(new HeapItem(oldAddress, address-oldAddress));
             }
@@ -184,7 +188,7 @@ public class Heap {
         if (pageAlign) {
             boolean found = false;
             for (int i=index;i<itemsBySize.size();i++) {
-                item = (HeapItem)itemsBySize.get(i);
+                item = itemsBySize.get(i);
                 long address = item.address;
                 if ((address & 0xFFF)!=0) {
                     address+=0xFFF;
@@ -207,7 +211,7 @@ public class Heap {
                 return 0;
             }
         } else {
-            item = (HeapItem)itemsBySize.get(index);
+            item = itemsBySize.get(index);
             removeItem(item);
         }
 
@@ -217,7 +221,7 @@ public class Heap {
             insertItem(newItem);
             item.size-=newSize;
         }
-        usedMemory.put(new Long(item.address), item);
+        usedMemory.put(item.address, item);
         return item.address;
     }
 
@@ -234,7 +238,7 @@ public class Heap {
         long p = address & 0xFFFFFFFFl;
         if (p == 0)
             return 0;
-        HeapItem item = (HeapItem)usedMemory.get(new Long(p));
+        HeapItem item = usedMemory.get(new Long(p));
         if (item == null) {
             System.out.println("Heap is corrupt, tried to free 0x"+Long.toString(p, 16));
             System.exit(0);
@@ -246,15 +250,16 @@ public class Heap {
         long p = p1 & 0xFFFFFFFFl;
         if (p == 0)
             return 0;
-        HeapItem item = (HeapItem)usedMemory.remove(new Long(p));
+        HeapItem item = usedMemory.remove(new Long(p));
         if (item == null) {
             Log.panic("Heap is corrupt, tried to free 0x"+Long.toString(p, 16));
+            return -1;
         }
         long size = item.size;
         int index = findIndexByAddress(p);
         if (index>=0) {
             if (index>0) {
-                HeapItem before = (HeapItem)itemsByAddress.get(index-1);
+                HeapItem before = itemsByAddress.get(index-1);
                 if (before.address+before.size==item.address) {
                     removeItem(before);
                     before.size+=item.size;
@@ -262,7 +267,7 @@ public class Heap {
                 }
             }
             if (index<itemsByAddress.size()) {
-                HeapItem after = (HeapItem)itemsByAddress.get(index);
+                HeapItem after = itemsByAddress.get(index);
                 if (item.address+item.size==after.address) {
                     removeItem(after);
                     after.address=item.address;
@@ -274,6 +279,20 @@ public class Heap {
             insertItem(item);
         }
         return size;
+    }
+
+    public Heap deepCopy() {
+        Heap result = new Heap(start, end);
+        for (HeapItem item: itemsBySize) {
+            result.itemsBySize.add(item.deepCopy());
+        }
+        for (HeapItem item: itemsByAddress) {
+            result.itemsByAddress.add(item.deepCopy());
+        }
+        for (Long address:usedMemory.keySet()) {
+            result.usedMemory.put(address, usedMemory.get(address));
+        }
+        return result;
     }
 }
 

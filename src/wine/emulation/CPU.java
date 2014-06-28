@@ -81,6 +81,46 @@ public class CPU {
     static public int registerCallReturnEip(Loader loader) {
         return loader.registerFunction(CallReturn);
     }
+
+    private CPU(WineThread thread, int callReturnEip, CPU cpu) {
+        eax.dword = cpu.eax.dword;
+        ecx.dword = cpu.ecx.dword;
+        edx.dword = cpu.edx.dword;
+        ebx.dword = cpu.ebx.dword;
+        esp.dword = cpu.esp.dword;
+        ebp.dword = cpu.ebp.dword;
+        edi.dword = cpu.edi.dword;
+        esi.dword = cpu.esi.dword;
+        es.dword = cpu.es.dword;
+        cs.dword = cpu.cs.dword;
+        ss.dword = cpu.ss.dword;
+        ds.dword = cpu.ds.dword;
+        fs.dword = cpu.fs.dword;
+        gs.dword = cpu.gs.dword;
+        esValue.dword = cpu.esValue.dword;
+        csValue.dword = cpu.csValue.dword;
+        ssValue.dword = cpu.ssValue.dword;
+        dsValue.dword = cpu.dsValue.dword;
+        fsValue.dword = cpu.fsValue.dword;
+        gsValue.dword = cpu.gsValue.dword;
+        ldt = cpu.ldt.clone();
+
+        base_ds=cpu.base_ds;
+        base_ss=cpu.base_ss;
+        flags=cpu.flags;
+        eip=cpu.eip;
+        cseip=cpu.cseip;
+        big = cpu.big;
+        op_index = cpu.op_index;
+        prefixes = cpu.prefixes;
+        repeat_zero = cpu.repeat_zero;
+        callIndex = cpu.callIndex;
+
+        this.callReturnEip = callReturnEip;
+        this.memory = thread.process.memory;
+        this.thread = thread;
+        fpu = cpu.fpu.deepCopy(cpu, memory);
+    }
     public CPU(WineThread thread, int callReturnEip) {
         this.callReturnEip = callReturnEip;
         this.memory = thread.process.memory;
@@ -351,6 +391,8 @@ public class CPU {
         try {
             run();
         } catch (CallReturnException e) {
+        } catch (ExitThreadException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -368,6 +410,8 @@ public class CPU {
         try {
             run();
         } catch (CallReturnException e) {
+        } catch (ExitThreadException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -386,6 +430,8 @@ public class CPU {
         try {
             run();
         } catch (CallReturnException e) {
+        } catch (ExitThreadException e) {
+            throw e;
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -434,5 +480,9 @@ public class CPU {
         builder.append(" edi=0x");
         builder.append(Integer.toHexString(edi.dword));
         return builder.toString();
+    }
+    
+    public CPU deepCopy(WineThread thread, int callReturnEip) {
+        return new CPU(thread, callReturnEip, this);
     }
 }

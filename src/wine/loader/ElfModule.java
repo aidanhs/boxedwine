@@ -1,11 +1,12 @@
 package wine.loader;
 
-import wine.builtin.libc.Mmap;
 import wine.loader.elf.*;
 import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.system.io.FSNode;
-import wine.util.*;
+import wine.util.LittleEndianStream;
+import wine.util.Log;
+import wine.util.MemoryStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,15 +14,9 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 public class ElfModule extends Module {
-    private static final byte[] ELF_IDENT = {
-            (byte) 0x7F, (byte) 'E', (byte) 'L', (byte) 'F',
-    };
-
     private ElfHeader header = new ElfHeader();
     private Vector<ElfSection> sections = new Vector<ElfSection>();
     private Vector<ElfProgram> programs = new Vector<ElfProgram>();
-    private ElfSection symtab;
-    private ElfSection strtab;
     private long address;
     private long imageSize;
     private long originalAddress;
@@ -37,6 +32,27 @@ public class ElfModule extends Module {
 
     public ElfModule(String name, WineProcess process, int id) {
         super(name, process, id);
+    }
+
+    public Module fork(WineProcess process) {
+        ElfModule module = new ElfModule(name, process, id);
+        module.header = header;
+        module.sections = sections;
+        module.programs = programs;
+        module.address = address;
+        module.imageSize = imageSize;
+        module.originalAddress = originalAddress;
+        module.addressDelta = addressDelta;
+        module.reloc = reloc;
+        module.initFunctions = (Vector<Integer>)initFunctions.clone();
+        module.finiFunctions = (Vector<Integer>)finiFunctions.clone();
+        for (String name : symbolsByName.keySet()) {
+            module.symbolsByName.put(name, symbolsByName.get(name));
+        }
+        module.hasSymbolic = hasSymbolic;
+        module.path = path;
+        module.fullPath = fullPath;
+        return module;
     }
 
     public int getEntryPoint() {
