@@ -185,7 +185,7 @@ class Decoder {
         }
     }
 
-    static private void GwEwIb(CPU cpu, Op prev, Instruction instruction) {
+    static private void GwEwS8(CPU cpu, Op prev, Instruction instruction) {
         int rm = cpu.fetchb();
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg16_Reg16_Value(instruction, gw(cpu, rm), ew(cpu, rm), cpu.fetchbs());
@@ -195,13 +195,13 @@ class Decoder {
         }
     }
 
-    static private void GwEwIw(CPU cpu, Op prev, Instruction instruction) {
+    static private void GwEwS16(CPU cpu, Op prev, Instruction instruction) {
         int rm = cpu.fetchb();
         if (rm >= 0xc0 ) {
-            prev.next = new Ops.Instruction_Reg16_Reg16_Value(instruction, gw(cpu, rm), ew(cpu, rm), cpu.fetchw());
+            prev.next = new Ops.Instruction_Reg16_Reg16_Value(instruction, gw(cpu, rm), ew(cpu, rm), cpu.fetchws());
         } else {
             EaaBase eaa = getEaa(cpu, rm);
-            prev.next = new Ops.Instruction_Reg16_Mem16_Value(instruction, gw(cpu, rm), eaa, cpu.fetchw());
+            prev.next = new Ops.Instruction_Reg16_Mem16_Value(instruction, gw(cpu, rm), eaa, cpu.fetchws());
         }
     }
 
@@ -214,7 +214,7 @@ class Decoder {
         }
     }
 
-    static private void GdEdIb(CPU cpu, Op prev, Instruction instruction) {
+    static private void GdEdS8(CPU cpu, Op prev, Instruction instruction) {
         int rm = cpu.fetchb();
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg32_Reg32_Value(instruction, gd(cpu, rm), ed(cpu, rm), cpu.fetchbs());
@@ -730,7 +730,7 @@ class Decoder {
             final int rm = i;
             decoder[offset+i] = new Decode() {
                 public boolean call(CPU cpu, Op prev) {
-                    prev.next = new Ops.Instruction_Reg32(instruction, ew(cpu, rm));
+                    prev.next = new Ops.Instruction_Reg32(instruction, ed(cpu, rm));
                     return true;
                 }
             };
@@ -959,7 +959,7 @@ class Decoder {
         /* IMUL Gw,Ew,Iw */
         decoder[0x69] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
-                GwEwIw(cpu, prev, Instructions.imulw2);
+                GwEwS16(cpu, prev, Instructions.imulw2);
                 return true;
             }
         };
@@ -991,7 +991,7 @@ class Decoder {
         /* IMUL Gw,Ew,Ib */
         decoder[0x6b] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
-                GwEwIb(cpu, prev, Instructions.imulw2);
+                GwEwS8(cpu, prev, Instructions.imulw2);
                 return true;
             }
         };
@@ -999,7 +999,7 @@ class Decoder {
         /* IMUL Gd,Ed,Ib */
         decoder[0x26b] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
-                GdEdIb(cpu, prev, Instructions.imuld2);
+                GdEdS8(cpu, prev, Instructions.imuld2);
                 return true;
             }
         };
@@ -1156,7 +1156,7 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Exchange_Reg8_Reg8(eb(cpu,rm), gb(cpu,rm));
                 } else {
-                    prev.next = new Ops.Exchange_Mem8_Reg8(getEaa(cpu, rm), gw(cpu,rm));
+                    prev.next = new Ops.Exchange_Mem8_Reg8(getEaa(cpu, rm), gb(cpu,rm));
                 }
                 return true;
             }
@@ -1181,9 +1181,9 @@ class Decoder {
             public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
                 if (rm >= 0xc0 ) {
-                    prev.next = new Ops.Exchange_Reg32_Reg32(ew(cpu,rm), gw(cpu,rm));
+                    prev.next = new Ops.Exchange_Reg32_Reg32(ed(cpu,rm), gd(cpu,rm));
                 } else {
-                    prev.next = new Ops.Exchange_Mem32_Reg32(getEaa(cpu, rm), gw(cpu,rm));
+                    prev.next = new Ops.Exchange_Mem32_Reg32(getEaa(cpu, rm), gd(cpu,rm));
                 }
                 return true;
             }
@@ -1221,9 +1221,9 @@ class Decoder {
             public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
                 if (rm >= 0xc0 ) {
-                    prev.next = new Ops.Mov_Reg32_Reg32(ew(cpu, rm), gw(cpu, rm));
+                    prev.next = new Ops.Mov_Reg32_Reg32(ed(cpu, rm), gd(cpu, rm));
                 } else {
-                    prev.next = new Ops.Mov_Mem32_Reg32(getEaa(cpu, rm), gw(cpu, rm));
+                    prev.next = new Ops.Mov_Mem32_Reg32(getEaa(cpu, rm), gd(cpu, rm));
                 }
                 return true;
             }
@@ -1902,7 +1902,7 @@ class Decoder {
                         if ((value & 0x7)==0) {
                             prev.next = null; // don't set flags
                             if ((value & 0x18)!=0) {
-                                EbGb(cpu, prev, Instructions.rolb_check, (rm & 7) | (1 << 3));
+                                EbIb(cpu, prev, Instructions.rolb_check, rm, value);
                             }
                         }
                         break;
@@ -1911,7 +1911,7 @@ class Decoder {
                         if ((value & 0x7)==0) {
                             prev.next = null; // don't set flags
                             if ((value & 0x18)!=0) {
-                                EbGb(cpu, prev, Instructions.rolb_check, (rm & 7) | (1 << 3));
+                                EbIb(cpu, prev, Instructions.rorb_check, rm, value);
                             }
                         }
                         break;
@@ -1969,7 +1969,7 @@ class Decoder {
                         if ((value & 0xf)==0) {
                             prev.next = null; // don't set flags
                             if ((value & 0x10)!=0) {
-                                EwGw(cpu, prev, Instructions.rolw_check, (rm & 7) | (1 << 3));
+                                EwIw(cpu, prev, Instructions.rolw_check, rm, value);
                             }
                         }
                         break;
@@ -1978,7 +1978,7 @@ class Decoder {
                         if ((value & 0xf)==0) {
                             prev.next = null; // don't set flags
                             if ((value & 0x10)!=0) {
-                                EwGw(cpu, prev, Instructions.rorw_check, (rm & 7) | (1 << 3));
+                                EwIw(cpu, prev, Instructions.rorw_check, rm, value);
                             }
                         }
                         break;
@@ -2175,7 +2175,6 @@ class Decoder {
             public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
                 int which=(rm>>3)&7;
-                int value;
                 switch (which) {
                     case 0x00:
                         EbIb(cpu, prev, Instructions.rolb, rm, 1);
@@ -2212,7 +2211,6 @@ class Decoder {
             public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
                 int which=(rm>>3)&7;
-                int value;
                 switch (which) {
                     case 0x00:
                         EwIw(cpu, prev, Instructions.rolw, rm, 1);
@@ -2248,7 +2246,6 @@ class Decoder {
             public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
                 int which=(rm>>3)&7;
-                int value;
                 switch (which) {
                     case 0x00:
                         EdId(cpu, prev, Instructions.rold, rm, 1);
@@ -3255,7 +3252,8 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Instruction_Reg16_Reg16_Value_3(Instructions.dshrw, ew(cpu, rm), gw(cpu, rm), cpu.fetchb());
                 } else {
-                    prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshrw, getEaa(cpu, rm), gw(cpu, rm), cpu.fetchb());
+                    EaaBase eaa = getEaa(cpu, rm);
+                    prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshrw, eaa, gw(cpu, rm), cpu.fetchb());
                 }
                 return true;
             }
@@ -3268,7 +3266,8 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Instruction_Reg32_Reg32_Value_3(Instructions.dshrd, ed(cpu, rm), gd(cpu, rm), cpu.fetchb());
                 } else {
-                    prev.next = new Ops.Instruction_Mem32_Reg32_Value_3(Instructions.dshrd, getEaa(cpu, rm), gd(cpu, rm), cpu.fetchb());
+                    EaaBase eaa = getEaa(cpu, rm);
+                    prev.next = new Ops.Instruction_Mem32_Reg32_Value_3(Instructions.dshrd, eaa, gd(cpu, rm), cpu.fetchb());
                 }
                 return true;
             }

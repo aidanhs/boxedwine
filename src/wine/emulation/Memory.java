@@ -12,13 +12,6 @@ public class Memory {
     public Memory() {
     }
 
-    public void resetPages(int pageStart, int pages) {
-        for (int i=pageStart;i<pageStart+pages;i++) {
-            handlers[i].close();
-            handlers[i] = invalidHandler;
-        }
-    }
-
     public int readd(int address) {
         return handlers[(address>>>12)].readd(address);
     }
@@ -112,7 +105,7 @@ public class Memory {
     }
 
     public String readCString(int address, int len) {
-        StringBuffer result = new StringBuffer();
+        StringBuilder result = new StringBuilder();
         for (int i=0;i<len;i++) {
             char c = (char)readb(address++); // :TODO: need to research converting according to 1252
             if (c == 0)

@@ -66,8 +66,8 @@ public class Syscall {
                 Log.panic("syscall __NR_modify_ldt not implemented");
                 break;
             case __NR_getdents64:
-                Log.panic("syscall __NR_getdents64 not implemented");
-                break;
+                thread.setErrno(Errno.ENOSYS);
+                return -1;
             case __NR_gettid:
                 return WineThread.getCurrent().id;
             case __NR_tkill:

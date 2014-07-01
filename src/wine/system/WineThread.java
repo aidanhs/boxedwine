@@ -115,7 +115,9 @@ public class WineThread {
     public void out(String msg) {
         if (stdoutBuffer.length()==0) {
             stdoutBuffer.append(process.mainModule.name);
-            stdoutBuffer.append(": ");
+            stdoutBuffer.append(":");
+            stdoutBuffer.append(process.id);
+            stdoutBuffer.append(" ");
         }
         stdoutBuffer.append(msg);
         if (msg.indexOf('\n')>=0) {

@@ -29,14 +29,31 @@ public class KernelUnixSocket extends KernelSocket {
     }
 
     protected void onDelete() {
-        if (connection!=null)
-            connection.connection=null;
-        connection=null;
+        if (connection!=null) {
+            connection.connection = null;
+            connection.outClosed = true;
+            connection.inClosed = true;
+            synchronized (connection.data) {
+                connection.data.notifyAll();
+            }
+            synchronized (connection.msgs) {
+                connection.msgs.notify();
+            }
+            connection=null;
+        }
+        outClosed = true;
+        inClosed = true;
+        if (node!=null) {
+            FSNode.remove(node);
+        }
         synchronized(FileDescriptor.lock) {
             FileDescriptor.lock.notifyAll();
         }
-        if (node!=null) {
-            FSNode.remove(node);
+        synchronized (data) {
+            data.notifyAll();
+        }
+        synchronized (msgs) {
+            msgs.notifyAll();
         }
     }
 
@@ -51,11 +68,10 @@ public class KernelUnixSocket extends KernelSocket {
     public boolean isReadReady() {
         if (listening) {
             return waitingConnections.size()>0;
-        } else if (connection!=null) {
+        } else {
             // in data.size==0 & inClosed then returning 0 from a read won't block and should generate a POLLIN
             return data.size()!=0 || msgs.size()!=0 || inClosed;
         }
-        return false;
     }
 
     public boolean isWriteReady() {
