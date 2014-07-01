@@ -39,6 +39,19 @@ public class Heap {
         insertItem(new HeapItem(start & 0xFFFFFFFFl, end-start));
     }
 
+    public void clear() {
+        itemsBySize.clear();
+        itemsByAddress.clear();
+        usedMemory.clear();
+        insertItem(new HeapItem(start & 0xFFFFFFFFl, end-start));
+    }
+
+    public void clear(long start, long end) {
+        this.start = start;
+        this.end = end;
+        clear();
+    }
+
     private int findIndexBySize(long key) {
         int lo = 0;
         int hi = itemsBySize.size() - 1;
@@ -270,8 +283,7 @@ public class Heap {
                 HeapItem after = itemsByAddress.get(index);
                 if (item.address+item.size==after.address) {
                     removeItem(after);
-                    after.address=item.address;
-                    after.size+=item.size;
+                    item.size+=after.size;
                 }
             }
             insertItem(item);

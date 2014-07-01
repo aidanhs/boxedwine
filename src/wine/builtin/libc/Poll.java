@@ -68,7 +68,6 @@ public class Poll {
     static public int internalPoll(WineProcess process, pollfd[] data, int timeout) {
         int result = 0;
         long startTime = System.nanoTime();
-        Memory memory = WineThread.getCurrent().process.memory;
         while (true) {
             result = 0;
             synchronized (FileDescriptor.lock) {

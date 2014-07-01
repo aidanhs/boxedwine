@@ -26,6 +26,14 @@ public class Loader {
         this.process = process;
     }
 
+    public void init() {
+        modulesByHandle.clear();
+        modulesByName.clear();
+        main = null;
+        callbacks.clear();
+        callbackPages = 0;
+    }
+
     public Loader fork(WineProcess process) {
         Loader loader = new Loader(process);
         loader.callbacks = (Vector<Callback>)callbacks.clone();
@@ -67,10 +75,8 @@ public class Loader {
             }
             if (explicitPath==null) {
                 for (Path path : FileSystem.paths) {
-                    FSNode node = FSNode.getNode(path.localPath+"/"+name);
-                    if (!node.exists() || node.isDirectory()) {
-                        FSNode.remove(node);
-                    } else {
+                    FSNode node = FSNode.getNode(path.localPath+"/"+name, true);
+                    if (node!=null && !node.isDirectory()) {
                         explicitPath = node.localPath;
                         break;
                     }

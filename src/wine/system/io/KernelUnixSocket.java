@@ -82,9 +82,6 @@ public class KernelUnixSocket extends KernelSocket {
             }
             connection = (KernelUnixSocket)this.waitingConnections.removeFirst();
         }
-        synchronized (connection) {
-            connection.notify();
-        }
         KernelUnixSocket result = new KernelUnixSocket(this.type, this.protocol);
         connection.connection = result;
         connection.inClosed = false;
@@ -92,6 +89,9 @@ public class KernelUnixSocket extends KernelSocket {
         result.connection = connection;
         result.inClosed = false;
         result.outClosed = false;
+        synchronized (connection) {
+            connection.notify();
+        }
         return result.createNewFileDescriptor(thread.process).handle;
     }
 
@@ -100,7 +100,7 @@ public class KernelUnixSocket extends KernelSocket {
         String path = address.name;
         if (!path.startsWith("/"))
             path = thread.process.currentDirectory+"/"+path;
-        FSNode node = FSNode.getNode(path);
+        FSNode node = FSNode.getNode(path, false);
         if (node.exists()) {
             thread.setErrno(Errno.EADDRINUSE);
             return -1;
@@ -120,7 +120,7 @@ public class KernelUnixSocket extends KernelSocket {
             this.destAddress = address;
             return 0;
         } else if (type == Socket.SOCK_STREAM) {
-            FSNode node = FSNode.getNode(address.name);
+            FSNode node = FSNode.getNode(address.name, true);
             KernelUnixSocket dest = null;
 
             if (node!=null && node instanceof UnixSocketFSNode) {
@@ -137,7 +137,7 @@ public class KernelUnixSocket extends KernelSocket {
                 FileDescriptor.lock.notifyAll();
             }
             synchronized (this) {
-                if (connection==null) {
+                while (connection==null) {
                     try {this.wait(10000000);} catch (InterruptedException e) {}
                 }
             }
@@ -275,7 +275,7 @@ public class KernelUnixSocket extends KernelSocket {
                 thread.setErrno(Errno.EDESTADDRREQ);
                 return -1;
             }
-            FSNode node = FSNode.getNode(address.name);
+            FSNode node = FSNode.getNode(address.name, true);
             dest = null;
             if (node!=null && node instanceof UnixSocketFSNode) {
                 dest = ((UnixSocketFSNode)node).socket;
@@ -318,7 +318,7 @@ public class KernelUnixSocket extends KernelSocket {
                 thread.setErrno(Errno.EDESTADDRREQ);
                 return -1;
             }
-            FSNode node = FSNode.getNode(address.name);
+            FSNode node = FSNode.getNode(address.name, true);
             dest = null;
             if (node!=null && node instanceof UnixSocketFSNode) {
                 dest = ((UnixSocketFSNode)node).socket;
@@ -357,7 +357,7 @@ public class KernelUnixSocket extends KernelSocket {
                 thread.setErrno(Errno.EDESTADDRREQ);
                 return -1;
             }
-            FSNode node = FSNode.getNode(address.name);
+            FSNode node = FSNode.getNode(address.name, true);
             dest = null;
             if (node!=null && node instanceof UnixSocketFSNode) {
                 dest = ((UnixSocketFSNode)node).socket;

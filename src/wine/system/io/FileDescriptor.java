@@ -22,7 +22,7 @@ public class FileDescriptor {
         this.handle = handle;
         this.object = object;
         ref=1;
-        WineThread.getCurrent().process.fileDescriptors.put(new Integer(handle), this);
+        WineThread.getCurrent().process.fileDescriptors.put(handle, this);
     }
 
     public FileDescriptor(int handle, KernelObject object, int accessFlags) {
@@ -42,7 +42,7 @@ public class FileDescriptor {
                 readDirData.onClose();
             }
             object.close();
-            WineThread.getCurrent().process.fileDescriptors.remove(new Integer(handle));
+            WineThread.getCurrent().process.fileDescriptors.remove(handle);
         }
     }
 
@@ -62,6 +62,10 @@ public class FileDescriptor {
 
     public boolean canWrite() {
         return (accessFlags & Fcntl.O_ACCMODE)==Fcntl.O_WRONLY || (accessFlags & Fcntl.O_ACCMODE)==Fcntl.O_RDWR;
+    }
+
+    public boolean closeOnExec() {
+        return (flags & Fcntl.FD_CLOEXEC)!=0;
     }
 
     public KernelFile getFile() {

@@ -30,7 +30,7 @@ public class RAMHandlerNone extends RAMHandler {
 
     public PageHandler fork(WineProcess process) {
         if (physicalPage==0)
-            return new RAMHandlerNone(memory, 0, mmap, shared);
+            return new RAMHandlerNone(process.memory, 0, mmap, shared);
         int page;
         if (shared) {
             page = physicalPage;
@@ -38,7 +38,7 @@ public class RAMHandlerNone extends RAMHandler {
         } else {
             page = RAM.allocPage();
         }
-        RAMHandler handler = new RAMHandlerNone(memory, page, mmap, shared);
+        RAMHandler handler = new RAMHandlerNone(process.memory, page, mmap, shared);
         if (!shared) {
             RAM.copy(physicalPage, page);
         }

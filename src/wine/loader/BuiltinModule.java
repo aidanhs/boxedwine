@@ -1,6 +1,7 @@
 package wine.loader;
 
 import wine.emulation.CPU;
+import wine.emulation.RestartThreadException;
 import wine.loader.elf.ElfSymbol;
 import wine.system.Callback;
 import wine.system.ExitThreadException;
@@ -156,10 +157,14 @@ public class BuiltinModule extends Module {
                 }
             } catch (ExitThreadException e) {
                 throw e;
+            } catch (RestartThreadException e) {
+                throw e;
             } catch (Exception e) {
                 if (e instanceof InvocationTargetException) {
                     if (((InvocationTargetException)e).getTargetException() instanceof ExitThreadException)
                         throw new ExitThreadException();
+                    if (((InvocationTargetException)e).getTargetException() instanceof RestartThreadException)
+                        throw new RestartThreadException();
                 }
                 e.printStackTrace();
                 Log.panic(toString() + " failed to execute: " + e.getMessage());

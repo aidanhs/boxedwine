@@ -9,6 +9,7 @@ public class WineSystem {
     final static public Hashtable sharedMemoryMaps = new Hashtable();
     final static public int uid = 1;
     final static public int gid = 2;
+    final static public String homeDirectory = "/home/boxedwine";
 
     static public String hostName() {
         if (System.getProperty("os.name").startsWith("Windows")) {

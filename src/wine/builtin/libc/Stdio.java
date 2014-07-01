@@ -248,8 +248,8 @@ public class Stdio {
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;
         Memory memory = process.memory;
-        FSNode from = FSNode.getNode(memory.readCString(old));
-        FSNode to = FSNode.getNode(memory.readCString(newName));
+        FSNode from = FSNode.getNode(memory.readCString(old), true);
+        FSNode to = FSNode.getNode(memory.readCString(newName), false);
         if (from==null || !from.exists() || to==null) {
             thread.setErrno(Errno.ENOENT);
             return -1;

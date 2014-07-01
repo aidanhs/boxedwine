@@ -20,15 +20,14 @@ public class Unistd {
     // int chdir(const char *path);
     static public int chdir(int path) {
         WineThread thread = WineThread.getCurrent();
-        FSNode node = FSNode.getNode(thread.process.memory.readCString(path));
-        if (node.exists() && node.isDirectory()) {
+        FSNode node = FSNode.getNode(thread.process.memory.readCString(path), true);
+        if (node==null) {
+            thread.setErrno(Errno.ENOENT);
+        } else if (node.isDirectory()) {
             thread.process.currentDirectory = node.localPath;
             return 0;
-        }
-        if (node.exists()) {
-            thread.setErrno(Errno.ENOTDIR);
         } else {
-            thread.setErrno(Errno.ENOENT);
+            thread.setErrno(Errno.ENOTDIR);
         }
         return -1;
     }
@@ -78,14 +77,14 @@ public class Unistd {
 
     // int execv(const char *path, char *const argv[])
     static public int execv(int path, int argv) {
-        Log.panic("execv not implement");
-        return 0;
+        WineProcess process = WineThread.getCurrent().process;
+        return process.exec(process.memory.readCStringArray(argv), null);
     }
 
     // int execve(const char *path, char *const argv[], char *const envp[])
     static public int execve(int path, int argv, int envp) {
-        Log.panic("execve not implemented");
-        return 0;
+        WineProcess process = WineThread.getCurrent().process;
+        return process.exec(process.memory.readCStringArray(argv), process.memory.readCStringArray(envp));
     }
 
     // void exit(int status)
@@ -345,7 +344,7 @@ public class Unistd {
     // int rmdir(const char *path)
     static public int rmdir(int path) {
         WineThread thread = WineThread.getCurrent();
-        FSNode node = FSNode.getNode(thread.process.memory.readCString(path));
+        FSNode node = FSNode.getNode(thread.process.memory.readCString(path), true);
         if (node == null) {
             thread.setErrno(Errno.ENOENT);
             return -1;
@@ -400,7 +399,7 @@ public class Unistd {
     static public int unlink(int path) {
         WineThread thread = WineThread.getCurrent();
         String p = thread.process.memory.readCString(path);
-        FSNode node = FSNode.getNode(p);
+        FSNode node = FSNode.getNode(p, true);
         if (node==null || !node.exists()) {
             thread.setErrno(Errno.ENOENT);
             return -1;

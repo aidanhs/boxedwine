@@ -29,7 +29,7 @@ public class Wait {
                 s|=((process.exitCode & 0xFF) << 8);
                 s|=(process.signaled & 0x7F);
             }
-            process.memory.writed(status, s);
+            WineThread.getCurrent().process.memory.writed(status, s);
         }
         return pid;
     }

@@ -75,19 +75,16 @@ public class ElfModule extends Module {
 
     private boolean loadHeaderAndSections() {
         InputStream fis = null;
-        FSNode node = FSNode.getNode(path);
+        FSNode node = FSNode.getNode(path, true);
+        if (node==null)
+            return false;
         try {
             fis = node.getInputStream();
             LittleEndianStream is = new LittleEndianStream(fis);
             header.load(is);
-            if (header.e_ident[0] != (byte) 0x7F || header.e_ident[1] != (byte) 'E' || header.e_ident[2] != (byte) 'L' || header.e_ident[3] != (byte) 'F') {
-                Log.panic(name + " not a valid ELF file");
-            }
-            if (header.e_ident[4] != 1) {
-                Log.panic(name + " not a 32-bit ELF file");
-            }
-            if (header.e_ident[5] != 1) {
-                Log.panic(name + " not a little endian ELF file");
+            String err = header.isValid();
+            if (err!=null) {
+                Log.panic(name+" "+err);
             }
             long pos = ElfHeader.SIZE;
             if (header.e_phoff>pos) {
@@ -158,6 +155,8 @@ public class ElfModule extends Module {
 
             if (reloc) {
                 System.out.println(process.mainModule.name+": relocating "+name+" "+Long.toHexString(originalAddress)+ " -> "+Long.toHexString(address));
+            } else {
+                System.out.println(process.mainModule.name+": loading "+name+" "+Long.toHexString(originalAddress)+"-"+Long.toHexString(originalAddress+size));
             }
             fis.close();
             fis = node.getInputStream();

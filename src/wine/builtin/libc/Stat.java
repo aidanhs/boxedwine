@@ -14,7 +14,7 @@ public class Stat {
     static public int chmod(int path, int mode) {
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;
-        FileDescriptor fd = process.getFile(process.memory.readCString(path));
+        FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         KernelFile file = null;
         if (fd!=null)
             file = fd.getFile();
@@ -66,7 +66,7 @@ public class Stat {
     static public int stat(int path, int buf) {
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;
-        FileDescriptor fd = process.getFile(process.memory.readCString(path));
+        FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         if (fd == null) {
             thread.setErrno(Errno.ENOENT);
             return -1;
@@ -80,7 +80,7 @@ public class Stat {
     static public int __xstat64(int ver, int path, int buf) {
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;
-        FileDescriptor fd = process.getFile(process.memory.readCString(path));
+        FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         if (fd == null) {
             thread.setErrno(Errno.ENOENT);
             return -1;
@@ -116,7 +116,7 @@ public class Stat {
         // :TODO: handle links
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;
-        FileDescriptor fd = process.getFile(process.memory.readCString(path));
+        FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         if (fd == null) {
             thread.setErrno(Errno.ENOENT);
             return -1;
@@ -162,7 +162,7 @@ public class Stat {
     static public int statfs64(int path, int buf) {
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;
-        FileDescriptor fd = process.getFile(process.memory.readCString(path));
+        FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         if (fd == null) {
             thread.setErrno(Errno.ENOENT);
             return -1;
@@ -209,7 +209,7 @@ public class Stat {
     // int mkdir(const char *path, int mode)
     static public int mkdir(int path, int mode) {
         WineThread thread = WineThread.getCurrent();
-        FSNode node = FSNode.getNode(thread.process.memory.readCString(path));
+        FSNode node = FSNode.getNode(thread.process.memory.readCString(path), false);
         if (node.exists()) {
             thread.setErrno(Errno.EEXIST);
             return -1;

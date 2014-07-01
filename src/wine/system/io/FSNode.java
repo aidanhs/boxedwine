@@ -14,7 +14,7 @@ abstract public class FSNode {
     final public Vector locks = new Vector(); // there can only be one write lock per byte and only one read lock per byte per process
     final public int id;
 
-    static public FSNode getNode(String localPath) {
+    static public FSNode getNode(String localPath, boolean existing) {
         if (!localPath.startsWith("/")) {
             localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
         }
@@ -25,8 +25,9 @@ abstract public class FSNode {
                 if (File.separator.equals("\\"))
                     nativePath=nativePath.replace('/', '\\');
                 FSNode node = FileSystem.openNodes.get(localPath);
-                if (node == null) {
-                    node = new FSNodeFile(new File(nativePath), localPath, nativePath);
+                File nativeFile = new File(nativePath);
+                if (node == null && (nativeFile.exists() || !existing)) {
+                    node = new FSNodeFile(nativeFile, localPath, nativePath);
                     synchronized (FileSystem.openNodes) {
                         FileSystem.openNodes.put(localPath, node);
                         FileSystem.openNodes.notifyAll();
@@ -86,7 +87,7 @@ abstract public class FSNode {
             String[] s = file.list();
             FSNode[] result = new FSNode[s.length];
             for (int i=0;i<s.length;i++) {
-                result[i] = getNode(localPath+"/"+s);
+                result[i] = getNode(localPath+"/"+s, true);
             }
             return result;
         }

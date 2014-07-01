@@ -75,7 +75,7 @@ public class CPU {
     final static public int PREFIX_REP = 0x2;
     final static public int PREFIX_LOCK = 0x4;
 
-    public final int callReturnEip;
+    public int callReturnEip;
     public final FPU fpu;
 
     static public int registerCallReturnEip(Loader loader) {
@@ -121,16 +121,19 @@ public class CPU {
         this.thread = thread;
         fpu = cpu.fpu.deepCopy(cpu, memory);
     }
-    public CPU(WineThread thread, int callReturnEip) {
-        this.callReturnEip = callReturnEip;
+    public CPU(WineThread thread) {
         this.memory = thread.process.memory;
         this.thread = thread;
         this.fpu = new FPU(this, memory);
+    }
 
+    public void init(int callReturnEip) {
+        this.callReturnEip = callReturnEip;
         // intentionally every other page to catch overflow
         this.gs.dword = (int)this.thread.process.addressSpace.getNextAddress(WineProcess.ADDRESS_PER_CPU, 8192, true)+4096;
         this.thread.process.allocPages(this.gs.dword, 1, false);
         memory.writed(this.gs.dword+20, new Random().nextInt()); // stack canary
+        blocks.clear();
     }
     static private class CallReturnException extends RuntimeException {
     }
@@ -376,9 +379,15 @@ public class CPU {
         Block block;
 
         while (true) {
-            block=getBlock(eip, cs.dword);
-            while (block!=null) {
-                block = block.op.callAndLog(this);
+            try {
+                while (true) {
+                    block = getBlock(eip, cs.dword);
+                    while (block != null) {
+                        block = block.op.callAndLog(this);
+                    }
+                }
+            } catch (RestartThreadException e) {
+
             }
         }
     }

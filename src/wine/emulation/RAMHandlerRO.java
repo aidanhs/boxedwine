@@ -23,7 +23,7 @@ public class RAMHandlerRO extends RAMHandler {
         } else {
             page = RAM.allocPage();
         }
-        RAMHandler handler = new RAMHandler(memory, page, mmap, shared);
+        RAMHandler handler = new RAMHandler(process.memory, page, mmap, shared);
         if (!shared) {
             RAM.copy(physicalPage, page);
         }

@@ -2,15 +2,14 @@ package wine.emulation;
 
 import wine.system.WineProcess;
 
+import java.util.Vector;
+
 // one per process
 public class Memory {
     final public PageHandler[] handlers = new PageHandler[0x100000]; // 1 million, this uses 4MB per process just to track paging
     static final public PageHandler invalidHandler = new InvalidHandler();
 
     public Memory() {
-        for (int i=0;i<handlers.length;i++) {
-            handlers[i] = invalidHandler;
-        }
     }
 
     public void resetPages(int pageStart, int pages) {
@@ -98,6 +97,20 @@ public class Memory {
         return readCString(address, Integer.MAX_VALUE);
     }
 
+    public String[] readCStringArray(int address) {
+        Vector<String> results = new Vector<String>();
+        while (true) {
+            int p = readd(address);
+            address+=4;
+            if (p==0)
+                break;
+            results.add(readCString(p));
+        }
+        String[] s = new String[results.size()];
+        results.copyInto(s);
+        return s;
+    }
+
     public String readCString(int address, int len) {
         StringBuffer result = new StringBuffer();
         for (int i=0;i<len;i++) {
@@ -124,18 +137,24 @@ public class Memory {
         writeb(address, 0);
     }
 
-    public Memory fork(WineProcess process) {
-        Memory memory = new Memory();
+    public void fork(WineProcess process) {
         for (int i=0;i<handlers.length;i++) {
-            memory.handlers[i] = handlers[i].fork(process);
+            process.memory.handlers[i] = handlers[i].fork(process);
         }
-        return memory;
     }
 
     public void close() {
         for (int i=0;i<handlers.length;i++) {
             handlers[i].close();
             handlers[i]=null;
+        }
+    }
+
+    public void init() {
+        for (int i=0;i<handlers.length;i++) {
+            if (handlers[i]!=null)
+                handlers[i].close();
+            handlers[i] = invalidHandler;
         }
     }
 }

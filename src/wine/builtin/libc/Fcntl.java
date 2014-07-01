@@ -135,7 +135,7 @@ public class Fcntl {
         String path = thread.process.memory.readCString(pPath);
         if (path.equals("."))
             path = thread.process.currentDirectory;
-        FileDescriptor fd = thread.process.getFile(path);
+        FileDescriptor fd = thread.process.getFile(path, false);
         if (fd==null) {
             thread.setErrno(Errno.ENOENT);
             return -1;

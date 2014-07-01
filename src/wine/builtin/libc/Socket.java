@@ -286,22 +286,26 @@ public class Socket {
         FileDescriptorMsg[][] objects = new FileDescriptorMsg[1][];
         int result = s.recvmsg(objects, msgs, flags);
         if (msghdr.msg_control!=0) {
-            for (int i=0;i<objects[0].length;i++) {
-                CMsgHdr cmsg = new CMsgHdr();
-                cmsg.cmsg_level = SOL_SOCKET;
-                cmsg.cmsg_type = SCM_RIGHTS;
-                cmsg.cmsg_len = CMsgHdr.SIZE + 4;
-                cmsg.write(memory, msghdr.msg_control);
-                process.memory.writed(msghdr.msg_control + i*(CMsgHdr.SIZE + 4)+CMsgHdr.SIZE, objects[0][i].createNewFileDescriptor(process).handle);
+            if (objects[0]==null) {
+                process.memory.writed(message + 20, 0);
+            } else {
+                for (int i = 0; i < objects[0].length; i++) {
+                    CMsgHdr cmsg = new CMsgHdr();
+                    cmsg.cmsg_level = SOL_SOCKET;
+                    cmsg.cmsg_type = SCM_RIGHTS;
+                    cmsg.cmsg_len = CMsgHdr.SIZE + 4;
+                    cmsg.write(memory, msghdr.msg_control);
+                    process.memory.writed(msghdr.msg_control + i * (CMsgHdr.SIZE + 4) + CMsgHdr.SIZE, objects[0][i].createNewFileDescriptor(process).handle);
+                }
+                // msg_controllen
+                process.memory.writed(message + 20, objects[0].length * (CMsgHdr.SIZE + 4));
             }
-            // msg_controllen
-            process.memory.writed(message+20, objects[0].length*(CMsgHdr.SIZE + 4));
         }
         for (int i=0;i<msghdr.msg_iovlen;i++) {
             int p = process.memory.readd(iov+8*i);
+            int len = process.memory.readd(iov+8*i+4);
             process.memory.memcpy(p, msgs[i], 0, msgs[i].length);
         }
-
         return result;
     }
 
@@ -384,7 +388,6 @@ public class Socket {
             process.memory.memcpy(msg, 0, msg.length, p);
             msgs[i] = msg;
         }
-
         return s.sendmsg(objects, msgs, flags);
     }
 

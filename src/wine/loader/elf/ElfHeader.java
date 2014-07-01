@@ -37,4 +37,17 @@ public class ElfHeader {
         e_shnum = is.readUnsignedShort();
         e_shstrndx = is.readUnsignedShort();
     }
+
+    public String isValid() {
+        if (e_ident[0] != (byte) 0x7F || e_ident[1] != (byte) 'E' || e_ident[2] != (byte) 'L' || e_ident[3] != (byte) 'F') {
+            return "not a valid ELF file";
+        }
+        if (e_ident[4] != 1) {
+            return "not a 32-bit ELF file";
+        }
+        if (e_ident[5] != 1) {
+            return "not a little endian ELF file";
+        }
+        return null;
+    }
 }

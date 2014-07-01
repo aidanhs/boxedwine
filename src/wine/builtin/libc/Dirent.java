@@ -35,7 +35,7 @@ public class Dirent {
     static public int opendir(int name) {
         WineThread thread = WineThread.getCurrent();
         String dirName = thread.process.memory.readCString(name);
-        FileDescriptor fd = thread.process.getFile(dirName);
+        FileDescriptor fd = thread.process.getFile(dirName, true);
         if (fd == null) {
             thread.setErrno(Errno.ENOENT);
             return 0;
