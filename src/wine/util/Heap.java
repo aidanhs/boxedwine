@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 
 public class Heap {
-    static private final int SMALLEST_SIZE_FOR_SPLIT = 4;
+    static private final int SMALLEST_SIZE_FOR_SPLIT = 1;
 
     private long start;
     private long end;

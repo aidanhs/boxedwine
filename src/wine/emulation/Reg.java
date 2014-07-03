@@ -9,11 +9,13 @@ public class Reg {
         name8=name;
         name16=name;
         name32=name;
+        parent=null;
     }
     public Reg(String name8, String name16, String name32) {
         this.name8=name8;
         this.name16=name16;
         this.name32=name32;
+        parent=null;
     }
     public Reg(String name8, Reg parent) {
         this.name8=name8;
@@ -53,5 +55,5 @@ public class Reg {
     }
 
     public int dword;
-    private Reg parent;
+    final public Reg parent;
 }

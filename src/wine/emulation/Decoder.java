@@ -6,7 +6,7 @@ class Decoder {
     private interface Decode {
         public boolean call(CPU cpu, Op prev);
     }
-    private static Reg eb(CPU cpu, int rm) {
+    static Reg eb(CPU cpu, int rm) {
         switch (rm & 7) {
             case 0: return cpu.eax;
             case 1: return cpu.ecx;
@@ -19,10 +19,10 @@ class Decoder {
         }
         throw new RuntimeException("eb");
     }
-    private static Reg gb(CPU cpu, int rm) {
+    static Reg gb(CPU cpu, int rm) {
         return eb(cpu, (rm >> 3));
     }
-    private static Reg ew(CPU cpu, int rm) {
+    static Reg ew(CPU cpu, int rm) {
         switch (rm & 7) {
             case 0: return cpu.eax;
             case 1: return cpu.ecx;
@@ -35,13 +35,13 @@ class Decoder {
         }
         throw new RuntimeException("ew");
     }
-    private static Reg gw(CPU cpu, int rm) {
+    static Reg gw(CPU cpu, int rm) {
         return ew(cpu, (rm >> 3));
     }
-    private static Reg ed(CPU cpu, int rm) {
+    static Reg ed(CPU cpu, int rm) {
         return ew(cpu, rm);
     }
-    private static Reg gd(CPU cpu, int rm) {
+    static Reg gd(CPU cpu, int rm) {
         return ew(cpu, (rm >> 3));
     }
     private static EaaBase getEaa32(CPU cpu, int rm) {

@@ -152,7 +152,7 @@ class Instructions {
             return r;
         }
 
-        public boolean CF(CPU cpu) {return ((cpu.result & 0xFFFFFFFFl) < (cpu.left & 0xFFFFFFFFl)) || (cpu.oldcf && (cpu.result == cpu.right));}
+        public boolean CF(CPU cpu) {return ((cpu.result & 0xFFFFFFFFl) < (cpu.left & 0xFFFFFFFFl)) || (cpu.oldcf && (cpu.result == cpu.left));}
         public boolean AF(CPU cpu) {return (((cpu.left ^ cpu.right) ^ cpu.result) & 0x10) != 0;}
         public boolean SF(CPU cpu) {return (cpu.result & 0x80000000)!= 0;}
         public boolean OF(CPU cpu) {return (((cpu.left ^ cpu.right ^ 0x80000000) & (cpu.result ^ cpu.right)) & 0x80000000) != 0;}

@@ -127,6 +127,13 @@ public class CPU {
         this.fpu = new FPU(this, memory);
     }
 
+    // used for unit testing
+    CPU(Memory memory) {
+        this.memory = memory;
+        this.thread = null; // only needed for call backs and loggin
+        this.fpu = new FPU(this, memory);
+    }
+
     public void init(int callReturnEip) {
         this.callReturnEip = callReturnEip;
         // intentionally every other page to catch overflow
@@ -350,7 +357,7 @@ public class CPU {
         }
     }
 
-    private Hashtable<Integer, Block> blocks = new Hashtable<Integer, Block>();
+    Hashtable<Integer, Block> blocks = new Hashtable<Integer, Block>();
 
     Block getBlock(int eip, int cs) {
         int ip = eip+cs;

@@ -1,11 +1,8 @@
 package wine.emulation;
 
 abstract class Op {
-    static public final int RESULT_JMP = 0;
-    static public final int RESULT_JMP_CONDITION_1 = 1;
-    static public final int RESULT_JMP_CONDITION_2 = 2;
-
     public Op next;
+    // :TODO: both of these should be necessary, that is a lot of data to carry around for each op
     public int eip_count;
     public int eip;
 
