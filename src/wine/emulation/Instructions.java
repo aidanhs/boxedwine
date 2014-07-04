@@ -479,10 +479,10 @@ class Instructions {
         public int run(CPU cpu, int value1, int value2) {
             int res=((short)value1) * ((short)value2);
             cpu.fillFlagsNoCFOF();
-            if ((res & 0xFFFF0000)!=0) {
-                cpu.flags|=CPU.CF | CPU.OF;
-            } else {
+            if (res >= -32768  && res <= 32767) {
                 cpu.flags&=~(CPU.CF | CPU.OF);
+            } else {
+                cpu.flags|=CPU.CF | CPU.OF;
             }
             return (res & 0xffff);
         }
@@ -499,10 +499,10 @@ class Instructions {
         public int run(CPU cpu, int value1, int value2) {
             long res=((long)value1) * value2;
             cpu.fillFlagsNoCFOF();
-            if ((res & 0xFFFFFFFF00000000l) != 0) {
-                cpu.flags|=CPU.CF | CPU.OF;
-            } else {
+            if ((res >= -2147483648l) && (res <= 2147483647l)) {
                 cpu.flags&=~(CPU.CF | CPU.OF);
+            } else {
+                cpu.flags|=CPU.CF | CPU.OF;
             }
             return (int)res;
         }

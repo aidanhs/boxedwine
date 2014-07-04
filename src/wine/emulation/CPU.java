@@ -319,11 +319,13 @@ public class CPU {
 
     int pop16() {
         if (big) {
+            int result = memory.readw(ss.dword + esp.dword);
             esp.dword+=2;
-            return memory.readw(ss.dword + esp.dword);
+            return result;
         } else {
+            int result = memory.readw(ss.dword + esp.u16());
             esp.u16(esp.u16()+2);
-            return memory.readw(ss.dword + esp.u16());
+            return result;
         }
     }
 
