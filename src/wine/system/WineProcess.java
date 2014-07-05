@@ -2,7 +2,10 @@ package wine.system;
 
 import wine.builtin.libc.Errno;
 import wine.builtin.libc.Fcntl;
-import wine.emulation.*;
+import wine.emulation.CPU;
+import wine.emulation.Memory;
+import wine.emulation.RAM;
+import wine.emulation.RAMHandler;
 import wine.loader.ElfModule;
 import wine.loader.Loader;
 import wine.loader.elf.ElfHeader;
@@ -140,7 +143,7 @@ public class WineProcess {
         WineSystem.processes.put(id, this);
     }
 
-    public WineProcess(String currentDirectory, String name, int id, String envs[]) {
+    public WineProcess(String currentDirectory, String name, int id, int tid, String envs[]) {
         memory  = new Memory();
         loader = new Loader(this);
         addressSpace = new Heap(0x1000, 0xFFFFFFFFl);
@@ -150,7 +153,7 @@ public class WineProcess {
         this.currentDirectory = currentDirectory;
         this.id = id;
         WineSystem.processes.put(id, this);
-        WineThread thread = new WineThread(this, 0, 0, 0, 0);
+        WineThread thread = new WineThread(this, 0, 0, 0, 0, tid);
         thread.jThread = Thread.currentThread();
         thread.registerThread();
         init(name, envs, thread);
@@ -400,15 +403,15 @@ public class WineProcess {
     }
 
     public static WineProcess create(final String currentDirectory, final String[] args, final String[] env) {
-        return create(currentDirectory, args, env, WineSystem.nextid++, null);
+        return create(currentDirectory, args, env, WineSystem.nextid++, WineSystem.nextid++, null);
     }
 
-    private static WineProcess create(final String currentDirectory, final String[] args, final String[] env, final int pid, final Object waitToStart) {
+    private static WineProcess create(final String currentDirectory, final String[] args, final String[] env, final int pid, final int tid, final Object waitToStart) {
         final Object[] result = new Object[1];
 
         Thread thread = new Thread(new Runnable() {
             public void run() {
-                final WineProcess process = new WineProcess(currentDirectory, args[0], pid, env);
+                final WineProcess process = new WineProcess(currentDirectory, args[0], pid, tid, env);
                 if (process.mainModule==null) {
                     synchronized (result) {
                         result.notify();
@@ -418,16 +421,19 @@ public class WineProcess {
                 result[0] = process;
                 args[0] = process.mainModule.fullPath();
                 try {
-                    synchronized (result) {
-                        result.notify();
-                    }
-                    if (waitToStart==null)
-                        process.start(WineThread.getCurrent(), args, true);
-                    else {
+                    if (waitToStart!=null) {
                         synchronized (waitToStart) {
-                            process.start(WineThread.getCurrent(), args, true);
+                            synchronized (result) {
+                                result.notify();
+                            }
+                            waitToStart.wait();
+                        }
+                    } else {
+                        synchronized (result) {
+                            result.notify();
                         }
                     }
+                    process.start(WineThread.getCurrent(), args, true);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -555,28 +561,32 @@ public class WineProcess {
             thread.setErrno(Errno.ENOEXEC);
             return -1;
         }
+        memory.close(); // free up memory before allocating new process
 
+        final Object waitToStart = new Object();
+        WineProcess process = WineProcess.create(currentDirectory, args, env, id, thread.id, waitToStart);
+        for (FileDescriptor fd : ((Hashtable<Integer, FileDescriptor>)fileDescriptors.clone()).values()) {
+            if (!fd.closeOnExec()) {
+                process.fileDescriptors.put(fd.handle, fd);
+                fileDescriptors.remove(fd.handle);
+            } else {
+                fd.close();
+            }
+        }
+        synchronized (waitToStart) {
+            waitToStart.notify();
+        }
+        synchronized (this) {
+            this.notify(); // wake up any waitForPid's so that they can wait on the new WineProcess
+        }
         for (Integer threadId :threads.keySet()) {
             WineThread t = threads.get(threadId);
             if (t.jThread!=Thread.currentThread())
                 t.jThread.stop(new ExitThreadException());
         }
-
-        for (int i=0;i<sigActions.length;i++) {
-            if (sigActions[i].sa_handler>1) {
-                sigActions[i].sa_handler=SigAction.SIG_DFL;
-            }
-        }
-        for (FileDescriptor fd : ((Hashtable<Integer, FileDescriptor>)fileDescriptors.clone()).values()) {
-            if (fd.closeOnExec()) {
-                fd.close();
-            }
-        }
-        init(args[0], env, thread);
-        args[0]=mainModule.fullPath();
-        start(WineThread.getCurrent(), args, false);
-
-        Thread.currentThread().stop(new RestartThreadException());
+        thread.id = -1;
+        threads.clear();
+        Thread.currentThread().stop(new ExitThreadException());
         return -1; // can't reach here
     }
 }

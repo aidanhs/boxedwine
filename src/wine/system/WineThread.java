@@ -7,7 +7,7 @@ import java.util.Hashtable;
 
 public class WineThread {
     public CPU cpu;
-    public final Integer id;
+    public int id;
     public int entryPoint;
     public int stackTop;
     public int stackBottom;
@@ -69,11 +69,10 @@ public class WineThread {
         process.threads.put(id, this);
     }
 
-    public WineThread(WineProcess process, long startAddress, int stackAddress, int stackSizeCommit, int stackSizeReserved) {
-        id = WineSystem.nextid++;
+    public WineThread(WineProcess process, long startAddress, int stackAddress, int stackSizeCommit, int stackSizeReserved, int id) {
         entryPoint = (int)startAddress;
         this.process = process;
-
+        this.id = id;
         if (stackSizeReserved==0)
             stackSizeReserved = 1024*1024;
         if (stackSizeReserved<stackSizeCommit)

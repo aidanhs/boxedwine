@@ -14,12 +14,18 @@ public class Wait {
         if (pid<=0) {
             Log.panic("waitpid not fully implemented. pid="+pid);
         }
-        WineProcess process = WineSystem.processes.get(pid);
-        if (process == null) {
-            WineThread.getCurrent().setErrno(Errno.ECHILD);
-            return -1;
+        WineProcess process = null;
+        while (true) {
+            process = WineSystem.processes.get(pid);
+            if (process == null) {
+                WineThread.getCurrent().setErrno(Errno.ECHILD);
+                return -1;
+            }
+            process.waitForPid();
+            if (process.isStopped() || process.isTerminated()) {
+                break;
+            }
         }
-        process.waitForPid();
         if (status!=0) {
             int s = 0;
             if (process.isStopped()) {

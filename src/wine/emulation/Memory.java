@@ -138,7 +138,8 @@ public class Memory {
 
     public void close() {
         for (int i=0;i<handlers.length;i++) {
-            handlers[i].close();
+            if (handlers[i]!=null)
+                handlers[i].close();
             handlers[i]=null;
         }
     }

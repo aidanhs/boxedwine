@@ -3,6 +3,8 @@ package wine.emulation;
 import wine.util.Heap;
 import wine.util.Log;
 
+import java.util.Arrays;
+
 public class RAM {
     static private int[] bytes;
     static private Heap usedPages;
@@ -27,6 +29,8 @@ public class RAM {
             Log.panic("RAM logic error");
         }
         pageRefCount[result]++;
+        int start = result<<10;
+        Arrays.fill(bytes, start, start+1024, 0);
         return result;
     }
 

@@ -4,6 +4,7 @@ import wine.builtin.libc.Errno;
 import wine.emulation.Memory;
 import wine.system.ExitThreadException;
 import wine.system.WineProcess;
+import wine.system.WineSystem;
 import wine.system.WineThread;
 
 public class PThread {
@@ -56,7 +57,7 @@ public class PThread {
             stackAddress = memory.readd(attr+4);
             stackSize = memory.readd(attr+8);
         }
-        WineThread thread = new WineThread(WineThread.getCurrent().process, start_routine, stackAddress, 0, stackSize);
+        WineThread thread = new WineThread(WineThread.getCurrent().process, start_routine, stackAddress, 0, stackSize, WineSystem.nextid++);
         memory.writed(pThreadId, thread.id);
         thread.start(arg);
         return 0;

@@ -8,7 +8,6 @@ import wine.system.WineThread;
 import wine.util.Log;
 
 import java.util.Hashtable;
-import java.util.Random;
 
 public class CPU {
     public Reg eax=new Reg("AL", "AX", "EAX");
@@ -139,7 +138,7 @@ public class CPU {
         // intentionally every other page to catch overflow
         this.gs.dword = (int)this.thread.process.addressSpace.getNextAddress(WineProcess.ADDRESS_PER_CPU, 8192, true)+4096;
         this.thread.process.allocPages(this.gs.dword, 1, false);
-        memory.writed(this.gs.dword+20, new Random().nextInt()); // stack canary
+        memory.writed(this.gs.dword+20, 0x4512AB78); // stack canary
         blocks.clear();
     }
     static private class CallReturnException extends RuntimeException {
