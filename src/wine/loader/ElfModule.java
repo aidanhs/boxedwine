@@ -135,11 +135,14 @@ public class ElfModule extends Module {
                 reloc = true;
             }
             long size = maxAddress - originalAddress;
-            size = (size + 0xFFF) & 0xFFFFF000l;
+            size = (size + 0xFFFF) & 0xFFFF0000l;
             address = process.addressSpace.getNextAddress(pageAddress, size, true);
-            if (address != pageAddress) {
+            if (address != pageAddress && !reloc) {
                 address = process.addressSpace.getNextAddress(WineProcess.ADDRESS_PROCESS_DLL_START, size, true);
                 reloc = true;
+            }
+            if (reloc) {
+                address=(address+0xFFFF) & 0xFFFF0000l;
             }
             imageSize=size;
             addressDelta=address-originalAddress;

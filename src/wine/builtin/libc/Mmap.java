@@ -137,6 +137,24 @@ public class Mmap {
     }
     final static private WaitingMMHandler waitingHandler = new WaitingMMHandler();
 
+    static private boolean isMapped(WineThread thread, PageHandler handlers[], int pageStart, int pageCount) {
+        // :TODO: what about holes?  can we alloc just the holes to create one section?
+        for (int i = 0; i < pageCount; i++) {
+            PageHandler handler = handlers[pageStart+i];
+            if (handler!=waitingHandler) {
+                if (handler instanceof RAMHandler) {
+                    if (!((RAMHandler)handler).mmap) {
+                        thread.setErrno(Errno.ENOMEM);
+                        return false;
+                    }
+                } else if (!(handler instanceof MMapHandler)) {
+                    thread.setErrno(Errno.ENOMEM);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
     // void *mmap64(void *addr, size_t length, int prot, int flags, int fd, off64_t offset)
     static public int mmap64(int address, int len, int prot, int flags, int fildes, long off) {
         WineThread thread = WineThread.getCurrent();
@@ -149,8 +167,10 @@ public class Mmap {
         boolean exec = (prot & PROT_EXEC)!=0;
         final PageHandler handlers[] = thread.process.memory.handlers;
         if ((address & 0xFFFFFFFFl) > 0xE0000000l) {
-            thread.setErrno(Errno.ENOMEM);
-            return MAP_FAILED;
+            int pageStart = address>>>12;
+            int pageCount = (len+0xFFF)>>>12;
+            if (!isMapped(thread, handlers, pageStart, pageCount))
+                return MAP_FAILED;
         }
         if ((shared && priv) || (!shared && !priv)) {
             thread.setErrno(Errno.EINVAL);
@@ -189,20 +209,8 @@ public class Mmap {
                 int pageStart = address>>>12;
                 int pageCount = (len+0xFFF)>>>12;
 
-                // :TODO: what about holes?  can we alloc just the holes to create one section?
-                for (int i = 0; i < pageCount; i++) {
-                    PageHandler handler = handlers[pageStart+i];
-                    if (handler!=waitingHandler) {
-                        if (handler instanceof RAMHandler) {
-                            if (!((RAMHandler)handler).mmap) {
-                                thread.setErrno(Errno.ENOMEM);
-                                return MAP_FAILED;
-                            }
-                        } else if (!(handler instanceof MMapHandler)) {
-                            thread.setErrno(Errno.ENOMEM);
-                            return MAP_FAILED;
-                        }
-                    }
+                if (!isMapped(thread, handlers, pageStart, pageCount)) {
+                    return MAP_FAILED;
                 }
                 // if we made it here then all page requested were already mapped.  since MAP_FIXED is specified,
                 // that means we can just replace those pages
@@ -242,10 +250,10 @@ public class Mmap {
                     if (handler instanceof RAMHandler) {
                         RAMHandler r = (RAMHandler) handler;
                         page = r.physicalPage;
-                        r.refCount++; // don't free page when closing
                         zero = false;
+                    } else {
+                        handlers[pageStart + i].close();
                     }
-                    handlers[pageStart + i].close();
                     if (page == 0) {
                         page = RAM.allocPage();
                     }
