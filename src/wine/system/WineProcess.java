@@ -561,9 +561,21 @@ public class WineProcess {
             thread.setErrno(Errno.ENOEXEC);
             return -1;
         }
-        memory.close(); // free up memory before allocating new process
 
         final Object waitToStart = new Object();
+        for (int i=0;i<env.length;i++) {
+            setenv(env[i]);
+        }
+        Vector<String> envTmp = new Vector<String>();
+        for (String name : this.envByNameValue.keySet()) {
+            if (!name.equals("WINEPRELOADRESERVE"))
+                envTmp.add(name+"="+this.envByNameValue.get(name));
+        }
+        env = new String[envTmp.size()];
+        envTmp.copyInto(env);
+
+        memory.close(); // free up memory before allocating new process
+
         WineProcess process = WineProcess.create(currentDirectory, args, env, id, thread.id, waitToStart);
         for (FileDescriptor fd : ((Hashtable<Integer, FileDescriptor>)fileDescriptors.clone()).values()) {
             if (!fd.closeOnExec()) {

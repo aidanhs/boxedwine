@@ -44,7 +44,7 @@ public class WineThread {
         this.process = process;
         this.errnoPtr = forkedThread.errnoPtr;
         this.strerror = forkedThread.strerror;
-        this.id = forkedThread.id;
+        this.id = WineSystem.nextid++;
         this.entryPoint = forkedThread.entryPoint;
         this.stackAddress = forkedThread.stackAddress;
         this.stackBottom = forkedThread.stackBottom;

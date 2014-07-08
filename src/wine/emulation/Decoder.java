@@ -3245,6 +3245,34 @@ class Decoder {
             }
         };
 
+        /* SHLD Ew,Gw,Ib */
+        decoder[0x1a4] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Instruction_Reg16_Reg16_Value_3(Instructions.dshlw, ew(cpu, rm), gw(cpu, rm), cpu.fetchb());
+                } else {
+                    EaaBase eaa = getEaa(cpu, rm);
+                    prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshlw, eaa, gw(cpu, rm), cpu.fetchb());
+                }
+                return true;
+            }
+        };
+
+        /* SHLD Ed,Gd,Ib */
+        decoder[0x3a4] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Instruction_Reg32_Reg32_Value_3(Instructions.dshld, ed(cpu, rm), gd(cpu, rm), cpu.fetchb());
+                } else {
+                    EaaBase eaa = getEaa(cpu, rm);
+                    prev.next = new Ops.Instruction_Mem32_Reg32_Value_3(Instructions.dshld, eaa, gd(cpu, rm), cpu.fetchb());
+                }
+                return true;
+            }
+        };
+
         /* SHRD Ew,Gw,Ib */
         decoder[0x1ac] = new Decode() {
             public boolean call(CPU cpu, Op prev) {

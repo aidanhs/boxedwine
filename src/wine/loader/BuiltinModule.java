@@ -76,7 +76,7 @@ public class BuiltinModule extends Module {
 
         public void call(CPU cpu) {
             boolean shouldLog = log;
-            if (name.contains("printf")) {
+            if (name.contains("printf") || name.contains("put") || name.contains("fwrite")) {
                 shouldLog = false;
             }
             StringBuilder builder = null;
