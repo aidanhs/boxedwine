@@ -80,12 +80,14 @@ public class BuiltinModule extends Module {
                 shouldLog = false;
             }
             StringBuilder builder = null;
+            cpu.eip = cpu.pop32();
             if (shouldLog) {
                 builder = new StringBuilder();
+                builder.append(Integer.toHexString(cpu.eip));
+                builder.append(" ");
                 builder.append(name);
                 builder.append(" ");
             }
-            cpu.eip = cpu.pop32();
             int index = 0;
             for (int i=0;i<args.length;i++) {
                 if (shouldLog) {
@@ -101,6 +103,17 @@ public class BuiltinModule extends Module {
                     args[i] = new Integer(v);
                     if (shouldLog) {
                         builder.append(Integer.toHexString(v));
+                    }
+                    index++;
+                } else if (params[i].getName().equals("float") || params[i].getName().equals(Float.class.getName())) {
+                    int v;
+                    if (pop)
+                        v = cpu.pop32();
+                    else
+                        v = cpu.peek32(index);
+                    args[i] = Float.intBitsToFloat(v);
+                    if (shouldLog) {
+                        builder.append(args[i]);
                     }
                     index++;
                 } else if (params[i].getName().equals("double") || params[i].getName().equals(Double.class.getName())) {
@@ -152,7 +165,20 @@ public class BuiltinModule extends Module {
                             builder.append(Long.toHexString(r));
                         }
                     } else if (result instanceof Double) {
-                        //cpu.fpu.push(((Double) result).doubleValue());
+                        double r = ((Double) result).doubleValue();
+                        long v = Double.doubleToRawLongBits(r);
+                        cpu.eax.dword = (int)v;
+                        cpu.edx.dword = (int)(v >>> 32);
+                        if (shouldLog) {
+                            builder.append(" result=");
+                            builder.append(r);
+                        }
+                    } else if (result instanceof Float) {
+                        cpu.eax.dword = Float.floatToRawIntBits((Float)result);
+                        if (shouldLog) {
+                            builder.append(" result=");
+                            builder.append(result);
+                        }
                     }
                 }
             } catch (ExitThreadException e) {

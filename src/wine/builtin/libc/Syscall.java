@@ -1,6 +1,8 @@
 package wine.builtin.libc;
 
 import wine.emulation.Memory;
+import wine.system.WineProcess;
+import wine.system.WineSystem;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -99,9 +101,22 @@ public class Syscall {
             case __NR_epoll_wait:
                 Log.panic("syscall __NR_epoll_wait not implemented");
                 break;
-            case __NR_tgkill:
-                Log.panic("syscall __NR_tgkill not implemented");
-                break;
+            case __NR_tgkill: {
+                int threadGroupId = thread.cpu.peek32(1);
+                int threadId = thread.cpu.peek32(2);
+                int sig = thread.cpu.peek32(3);
+                WineProcess process = WineSystem.processes.get(threadGroupId);
+                if (process==null) {
+                    thread.setErrno(Errno.ESRCH);
+                    return -1;
+                }
+                WineThread target = process.threads.get(threadId);
+                if (target==null) {
+                    thread.setErrno(Errno.ESRCH);
+                    return -1;
+                }
+                return target.signal(sig);
+            }
             case __NR_inotify_init:
                 Log.panic("syscall __NR_inotify_init not implemented");
                 break;

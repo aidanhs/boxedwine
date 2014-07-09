@@ -4,10 +4,12 @@ import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.system.WineProcess;
 import wine.system.WineThread;
+import wine.system.io.FSNode;
 import wine.util.Log;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 public class Stdlib {
     // void abort(void)
@@ -106,6 +108,14 @@ public class Stdlib {
         memory.memcpy(base, tmp, nel*width);
         thread.process.free(tmp);
     }
+
+    // int rand(void)
+    static private Random random = new Random();
+
+    static public int rand() {
+        return random.nextInt();
+    }
+
     // void *realloc(void *ptr, size_t size)
     static public int realloc(int ptr, int size) {
         if (size==0) {
@@ -124,6 +134,15 @@ public class Stdlib {
             process.free(ptr);
         }
         return result;
+    }
+
+    // char *realpath(const char file_name, char resolved_name)
+    static public int realpath(int file_name, int resolved_name) {
+        WineThread thread = WineThread.getCurrent();
+        String fileName = thread.process.memory.readCString(file_name);
+        FSNode node = FSNode.getNode(fileName, true);
+        Log.panic("realpath not implemented");
+        return resolved_name;
     }
 
     // long strtol(const char * str, char ** endptr, int base)

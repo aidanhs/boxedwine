@@ -293,6 +293,11 @@ public class Stdio {
         return result.length();
     }
 
+    static public int __isoc99_sscanf(int s, int format) {
+        Log.panic("__isoc99_sscanf not implemented");
+        return 0;
+    }
+
     // int sscanf(const char * s, const char * format, ... )
     static public int sscanf(int s, int format) {
         Log.panic("sscanf not implemented");

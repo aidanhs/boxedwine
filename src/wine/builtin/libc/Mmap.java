@@ -13,13 +13,13 @@ public class Mmap {
             super(fd, file, addressOffset, fileOffset, shared);
         }
         public void writed(int address, int value) {
-            pf();
+            pf(address);
         }
         public void writew(int address, int value) {
-            pf();
+            pf(address);
         }
         public void writeb(int address, int value) {
-            pf();
+            pf(address);
         }
         public PageHandler fork(WineProcess process) {
             MMapHandlerRO handler = new MMapHandlerRO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
@@ -37,15 +37,15 @@ public class Mmap {
         }
 
         public int readd(int address) {
-            pf();
+            pf(address);
             return 0;
         }
         public int readw(int address) {
-            pf();
+            pf(address);
             return 0;
         }
         public int readb(int address) {
-            pf();
+            pf(address);
             return 0;
         }
 
@@ -64,24 +64,24 @@ public class Mmap {
             super(fd, file, addressOffset, fileOffset, shared);
         }
         public void writed(int address, int value) {
-            pf();
+            pf(address);
         }
         public void writew(int address, int value) {
-            pf();
+            pf(address);
         }
         public void writeb(int address, int value) {
-            pf();
+            pf(address);
         }
         public int readd(int address) {
-            pf();
+            pf(address);
             return 0;
         }
         public int readw(int address) {
-            pf();
+            pf(address);
             return 0;
         }
         public int readb(int address) {
-            pf();
+            pf(address);
             return 0;
         }
 
@@ -386,7 +386,7 @@ public class Mmap {
         int pageStart = address>>>12;
         int pageCount = (len+0xFFF)>>>12;
         WineThread thread = WineThread.getCurrent();
-        thread.process.addressSpace.free(address);
+        thread.process.addressSpace.free(address, len);
 
         PageHandler[] handlers = thread.process.memory.handlers;
 

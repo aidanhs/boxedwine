@@ -259,6 +259,70 @@ public class Heap {
         return (int)item.size;
     }
 
+    synchronized public void free(int p1, int l) {
+        long p = p1 & 0xFFFFFFFFl;
+        if (p == 0)
+            return;
+        long len = l & 0xFFFFFFFFl;
+
+        while (true) {
+            HeapItem item = usedMemory.get(new Long(p));
+            if (item!=null) {
+                if (item.size<=len) {
+                    int old = (int)p;
+                    p+=item.size;
+                    len-=item.size;
+                    free(old);
+                    if (len==0)
+                        return;
+                    continue;
+                }
+            } else {
+                int index = findIndexByAddress(p);
+                if (index<0)
+                    return;
+
+                item = itemsByAddress.get(index);
+                if (item.address>=p+len) {
+                    if (index==0) {
+                        return;
+                    } else {
+                        item = itemsByAddress.get(index-1);
+                        if (item.address+item.size<p)
+                            return;
+                    }
+                }
+
+                long result = 0;
+                long end = p+len;
+                for (HeapItem i : usedMemory.values()) {
+                    if (i.address>=p && i.address<end) {
+                        if (result == 0 || (i.address<result)) {
+                            result = i.address;
+                        }
+                    }
+                }
+                if (result==0) {
+                    return;
+                }
+                len-=(result-p);
+                p = result;
+                continue;
+            }
+
+            if (item.size>len) {
+                usedMemory.remove(new Long(p));
+                usedMemory.put(p, new HeapItem(p, len));
+                item.address=p+len;
+                item.size-=len;
+                usedMemory.put(item.address, item);
+                free((int)p);
+                return;
+            }
+
+        }
+    }
+
     synchronized public long free(int p1) {
         long p = p1 & 0xFFFFFFFFl;
         if (p == 0)

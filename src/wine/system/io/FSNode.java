@@ -87,7 +87,7 @@ abstract public class FSNode {
             String[] s = file.list();
             FSNode[] result = new FSNode[s.length];
             for (int i=0;i<s.length;i++) {
-                result[i] = getNode(localPath+"/"+s, true);
+                result[i] = getNode(localPath+"/"+s[i], true);
             }
             return result;
         }

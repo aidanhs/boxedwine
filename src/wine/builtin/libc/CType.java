@@ -43,12 +43,14 @@ public class CType {
         if (process.p_ctype_b_loc==0) {
             if (ramPage==-1) {
                 ramPage = RAM.allocPage();
+                int ramAddress = ramPage << 12;
+                for (int i=0;i<ctypeTable.length;i++) {
+                    RAM.writew(ramAddress, ctypeTable[i]);
+                    ramAddress+=2;
+                }
             }
-            int ramAddress = ramPage << 12;
-            for (int i=0;i<ctypeTable.length;i++) {
-                RAM.writew(ramAddress, ctypeTable[i]);
-                ramAddress+=2;
-            }
+            RAM.incrementRef(ramPage);
+
             process.p_ctype_b_loc = process.mapPage(ramPage);
             process.pp_ctype_b_loc = process.alloc(4);
             process.memory.writed(process.pp_ctype_b_loc, process.p_ctype_b_loc+256);
@@ -84,13 +86,14 @@ public class CType {
         if (process.p_ctype_toupper_loc==0) {
             if (ramPage==-1) {
                 ramPage = RAM.allocPage();
+                int ramAddress = ramPage << 12;
+                ramAddress+=ctypeTable.length*2;
+                for (int i=0;i<upperTable.length;i++) {
+                    RAM.writed(ramAddress, upperTable[i]);
+                    ramAddress+=4;
+                }
             }
-            int ramAddress = ramPage << 12;
-            ramAddress+=ctypeTable.length*2;
-            for (int i=0;i<upperTable.length;i++) {
-                RAM.writed(ramAddress, upperTable[i]);
-                ramAddress+=4;
-            }
+            RAM.incrementRef(ramPage);
             process.p_ctype_toupper_loc = process.mapPage(ramPage);
             process.pp_ctype_toupper_loc = process.alloc(4);
             process.memory.writed(process.pp_ctype_toupper_loc, process.p_ctype_toupper_loc+256);
@@ -126,13 +129,14 @@ public class CType {
         if (process.p_ctype_tolower_loc==0) {
             if (ramPage==-1) {
                 ramPage = RAM.allocPage();
+                int ramAddress = ramPage << 12;
+                ramAddress+=ctypeTable.length*2+upperTable.length*4;
+                for (int i=0;i<lowerTabletable.length;i++) {
+                    RAM.writed(ramAddress, lowerTabletable[i]);
+                    ramAddress+=4;
+                }
             }
-            int ramAddress = ramPage << 12;
-            ramAddress+=ctypeTable.length*2+upperTable.length*4;
-            for (int i=0;i<lowerTabletable.length;i++) {
-                RAM.writed(ramAddress, lowerTabletable[i]);
-                ramAddress+=4;
-            }
+            RAM.incrementRef(ramPage);
             process.p_ctype_tolower_loc = process.mapPage(ramPage);
             process.pp_ctype_tolower_loc = process.alloc(4);
             process.memory.writed(process.pp_ctype_tolower_loc, process.p_ctype_tolower_loc+128);

@@ -34,16 +34,15 @@ public class PThread {
     // int pthread_attr_destroy(pthread_attr_t *attr);
     static public int pthread_attr_destroy(int attr) {
         WineProcess process = WineThread.getCurrent().process;
-        process.free(attr);
+        process.memory.writed(attr, 0);
         return 0;
     }
 
     // int pthread_attr_init(pthread_attr_t *attr);
     static public int pthread_attr_init(int attr) {
         WineProcess process = WineThread.getCurrent().process;
-        int address = process.alloc(28);
-        process.memory.writed(attr, address);
-        process.memory.zero(address, 12);
+        process.memory.zero(attr, 12);
+        process.memory.writed(attr, 1);
         return 0;
     }
 
@@ -59,6 +58,7 @@ public class PThread {
         }
         WineThread thread = new WineThread(WineThread.getCurrent().process, start_routine, stackAddress, 0, stackSize, WineSystem.nextid++);
         memory.writed(pThreadId, thread.id);
+        thread.init();
         thread.start(arg);
         return 0;
     }

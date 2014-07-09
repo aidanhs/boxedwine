@@ -155,6 +155,17 @@ public class Socket {
         return fd.getSocket().connect(SocketAddress.parse(address, len));
     }
 
+    // void freeaddrinfo(struct addrinfo *ai)
+    static public void freeaddrinfo(int ai) {
+        Log.warn("freeaddrinfo not implemented");
+    }
+
+    // int getaddrinfo(const char * nodename, const char * servname, const struct addrinfo * hints, struct addrinfo ** res)
+    static public int getaddrinfo(int nodename, int servname, int hints, int res) {
+        Log.panic("getaddrinfo not implemented");
+        return -1;
+    }
+
 //    struct hostent
 //    {
 //        char *h_name;                 /* Official name of host.  */
@@ -210,6 +221,19 @@ public class Socket {
                 memory.writed(result, 0);
             return 0;
         }
+    }
+
+    // int getnameinfo(const struct sockaddr * sa, socklen_t salen, char * node, socklen_t nodelen, char * service, socklen_t servicelen, int flags)
+    static public int getnameinfo(int sa, int salen, int node, int nodelen, int service, int servicelen, int flags) {
+        Log.panic("getnameinfo not implemented");
+        return -1;
+    }
+
+    // int getsockname(int socket, struct sockaddr *address, socklen_t *address_len)
+    static public int getsockname(int socket, int address, int address_len) {
+        Log.warn("getsockname not implemented");
+        WineThread.getCurrent().setErrno(Errno.EOPNOTSUPP);
+        return -1;
     }
 
     // int getsockopt(int socket, int level, int option_name, void * option_value, int * option_len)

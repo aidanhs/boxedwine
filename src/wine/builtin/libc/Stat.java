@@ -7,7 +7,6 @@ import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.system.io.KernelStat;
-import wine.util.Log;
 
 public class Stat {
     // int chmod(const char *path, int mode);
@@ -172,6 +171,21 @@ public class Stat {
         return result;
     }
 
+//    struct statfs64 {
+//        __statfs_word f_type;
+//        __statfs_word f_bsize;
+//        __u64 f_blocks;
+//        __u64 f_bfree;
+//        __u64 f_bavail;
+//        __u64 f_files;
+//        __u64 f_ffree;
+//        __kernel_fsid_t f_fsid;
+//        __statfs_word f_namelen;
+//        __statfs_word f_frsize;
+//        __statfs_word f_flags;
+//        __statfs_word f_spare[4];
+//    } ARCH_PACK_STATFS64;
+
     // int fstatfs64(int fd, struct statfs64 *buf)
     static public int fstatfs64(int fd, int buf) {
         FileDescriptor f = WineThread.getCurrent().process.getFileDescriptor(fd);
@@ -186,7 +200,6 @@ public class Stat {
         WineProcess process = thread.process;
         Memory memory = process.memory;
         // This seems to be the only fields WINE looks at
-        Log.warn("fstatfs64: Need to trace this to make sure the offsets are correct");
         memory.writed(buf, 0xEF53); // f_type (EXT3)
         memory.writed(buf+60, 512); // f_frsize
         memory.writed(buf+4, 512); // f_bsize

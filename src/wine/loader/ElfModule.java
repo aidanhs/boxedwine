@@ -151,7 +151,7 @@ public class ElfModule extends Module {
                 for (ElfSection section: sections) {
                     if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0) {
                         section.orig_addr = section.sh_addr;
-                        section.sh_addr = section.sh_offset+addressDelta;
+                        section.sh_addr = section.sh_addr+addressDelta;
                     }
                 }
             }

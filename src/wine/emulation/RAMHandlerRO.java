@@ -7,13 +7,13 @@ public class RAMHandlerRO extends RAMHandler {
         super(memory, physicalPage, mmap, shared);
     }
     public void writed(int address, int value) {
-        pf();
+        pf(address);
     }
     public void writew(int address, int value) {
-        pf();
+        pf(address);
     }
     public void writeb(int address, int value) {
-        pf();
+        pf(address);
     }
     public PageHandler fork(WineProcess process) {
         int page;

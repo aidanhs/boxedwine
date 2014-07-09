@@ -134,4 +134,18 @@ public class Dirent {
         }
         return 0;
     }
+
+    // void rewinddir(DIR *dirp);
+    static public void rewinddir(int dir) {
+        WineThread thread = WineThread.getCurrent();
+        FileDescriptor fd = thread.process.getFileDescriptor(dir);
+        KernelFile file = null;
+        if (fd!=null) {
+            file = fd.getFile();
+        }
+        if (file != null && fd.readDirData!=null) {
+            fd.readDirData = new ReadDirData();
+            fd.readDirData.dirs = file.node.list();
+        }
+    }
 }

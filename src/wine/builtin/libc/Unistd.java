@@ -191,7 +191,9 @@ public class Unistd {
         memory.writed(process.optind, index+1);
         int a = memory.readd(argv + index * 4);
         String s = memory.readCString(a);
-        if (s.equals("-v"))
+        if (s.equals("--init")) {
+            return 'i';
+        } else if (s.equals("-v"))
             return (int) 'v';
         else if (s.equals("-h"))
             return (int) 'h';

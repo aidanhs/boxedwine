@@ -7,25 +7,25 @@ public class RAMHandlerNone extends RAMHandler {
         super(memory, physicalPage, mmap, shared);
     }
     public int readd(int address) {
-        pf();
+        pf(address);
         return 0;
     }
     public int readw(int address) {
-        pf();
+        pf(address);
         return 0;
     }
     public int readb(int address) {
-        pf();
+        pf(address);
         return 0;
     }
     public void writed(int address, int value) {
-        pf();
+        pf(address);
     }
     public void writew(int address, int value) {
-        pf();
+        pf(address);
     }
     public void writeb(int address, int value) {
-        pf();
+        pf(address);
     }
 
     public PageHandler fork(WineProcess process) {

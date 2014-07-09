@@ -526,13 +526,13 @@ public class WineProcess {
             System.arraycopy(args, 1, t, 0, t.length);
             args = t;
             if (env==null) {
-                env = new String[]{"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib", "WINEDEBUG=+all"};
+                env = new String[]{"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib"};
             } else {
-                t = new String[env.length+3];
+                t = new String[env.length+2];
                 System.arraycopy(env, 0, t, 0, env.length);
                 t[env.length]="WINELOADERNOEXEC=1";
                 t[env.length+1]="WINEDLLPATH=/lib";
-                t[env.length+2]="WINEDEBUG=+all";
+                //t[env.length+2]="WINEDEBUG=+all";
             }
         }
         FSNode node = FSNode.getNode(args[0], true);
@@ -540,7 +540,11 @@ public class WineProcess {
             thread.setErrno(Errno.ENOENT);
             return -1;
         }
-
+        System.out.print("exec");
+        for (int i=0;i<args.length;i++) {
+            System.out.print(" "+args[i]);
+        }
+        System.out.println();
         InputStream fis = null;
         boolean valid = false;
         try {
@@ -563,8 +567,10 @@ public class WineProcess {
         }
 
         final Object waitToStart = new Object();
-        for (int i=0;i<env.length;i++) {
-            setenv(env[i]);
+        if (env!=null) {
+            for (int i = 0; i < env.length; i++) {
+                setenv(env[i]);
+            }
         }
         Vector<String> envTmp = new Vector<String>();
         for (String name : this.envByNameValue.keySet()) {

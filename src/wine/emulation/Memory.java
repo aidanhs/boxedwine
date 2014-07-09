@@ -114,6 +114,17 @@ public class Memory {
         }
         return result.toString();
     }
+    public String readCStringW(int address) {
+        StringBuilder result = new StringBuilder();
+        while (true) {
+            char c = (char)readw(address);
+            address+=2;
+            if (c == 0)
+                break;
+            result.append(c);
+        }
+        return result.toString();
+    }
     public void writeCString(int address, String value, int len) {
         if (len<1)
             return;

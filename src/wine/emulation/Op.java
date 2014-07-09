@@ -8,7 +8,7 @@ abstract class Op {
 
     abstract public Block call(CPU cpu);
     private void log(CPU cpu) {
-        if (cpu.thread.process!=null && cpu.thread.process.name!=null && cpu.thread.process.name.equals("wineboot.exe")) {
+        if (cpu.thread.process!=null && cpu.thread.process.name!=null) {
             StringBuilder builder = new StringBuilder();
             builder.append(cpu.thread.process.name).append(":").append(cpu.thread.id).append(" ");
             builder.append(Integer.toHexString(eip)).append(" ");

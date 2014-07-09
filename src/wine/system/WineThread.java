@@ -80,7 +80,8 @@ public class WineThread {
         if (stackSizeCommit==0)
             stackSizeCommit = 4096;
         this.stackSizeCommit = stackSizeCommit;
-        stackSizeReserved+=4096*4; // padding for how ThreadHandlerCheck works
+        if (stackAddress==0)
+            stackSizeReserved+=4096*4; // padding for how ThreadHandlerCheck works
         this.stackSizeReserved = stackSizeReserved;
 
         this.initialStackAddress = stackAddress;
@@ -102,6 +103,10 @@ public class WineThread {
             int pages = (stackSizeCommit + 0xFFF) >> 12;
             growStack(pages+1);
             process.memory.zero(this.stackTop, 0);
+        } else {
+            this.stackBottom = initialStackAddress;
+            this.stackTop = this.stackBottom+this.stackSizeReserved;
+            this.stackSize = this.stackSizeReserved;
         }
         if (this.cpu==null)
             this.cpu = new CPU(this);
@@ -204,6 +209,17 @@ public class WineThread {
 
     public void setErrno(int errno) {
         process.memory.writed(this.errnoPtr, errno);
+    }
+
+    public int signal(int signal) {
+        Log.panic("tgkill not implemented yet");
+        SigAction action = process.sigActions[signal];
+        if (action.sa_handler==SigAction.SIG_DFL) {
+
+        } else if (action.sa_handler != SigAction.SIG_IGN) {
+
+        }
+        return 0;
     }
 
     final private class ThreadHandlerCheck extends ThreadHandler {

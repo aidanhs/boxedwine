@@ -1,8 +1,15 @@
 package wine.builtin.libm;
 
+import wine.emulation.Memory;
+import wine.system.WineThread;
+
 public class Math {
     static public double atan(double x) {
         return java.lang.Math.atan(x);
+    }
+
+    static public double atan2(double y, double x) {
+        return java.lang.Math.atan2(y, x);
     }
 
     static public double ceil(double x) {
@@ -21,8 +28,16 @@ public class Math {
         return java.lang.Math.floor(x);
     }
 
+    static public double hypot(double x, double y) {
+        return java.lang.Math.hypot(x, y);
+    }
+
     static public double log(double x) {
         return java.lang.Math.log(x);
+    }
+
+    static public float logf(float x) {
+        return (float)java.lang.Math.log((double)x);
     }
 
     static public double pow(double x, double y) {
@@ -31,6 +46,12 @@ public class Math {
 
     static public double sin(double x) {
         return java.lang.Math.sin(x);
+    }
+
+    static public void sincos(double x, int psin, int pcos) {
+        Memory memory = WineThread.getCurrent().process.memory;
+        memory.writeq(psin, Double.doubleToRawLongBits(sin(x)));
+        memory.writeq(pcos, Double.doubleToRawLongBits(cos(x)));
     }
 
     static public double tan(double x) {

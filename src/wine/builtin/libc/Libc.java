@@ -51,6 +51,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Dirent.class, "closedir");
         add_cdecl(Dirent.class, "readdir");
         add_cdecl(Dirent.class, "readdir64");
+        add_cdecl(Dirent.class, "rewinddir");
 
         add_cdecl(Epoll.class, "epoll_create");
         add_cdecl(Epoll.class, "epoll_ctl");
@@ -63,7 +64,11 @@ public class Libc extends BuiltinModule {
         add_cdecl(Fcntl.class, "open");
         add_cdecl(Fcntl.class, "open64");
 
+        add_cdecl(Grp.class, "getgrgid");
+
         add_cdecl(In.class, "ntohs");
+
+        add_cdecl(Inet.class, "inet_ntop");
 
         add_cdecl(INotify.class, "inotify_add_watch");
         add_cdecl(INotify.class, "inotify_init");
@@ -83,6 +88,8 @@ public class Libc extends BuiltinModule {
         add_cdecl(Mmap.class, "munmap");
 
         add_cdecl(Mntent.class, "getmntent");
+
+        add_cdecl(Netdb.class, "gai_strerror");
 
         add_cdecl(Poll.class, "poll");
 
@@ -114,7 +121,11 @@ public class Libc extends BuiltinModule {
         add_cdecl(Socket.class, "accept");
         add_cdecl(Socket.class, "bind");
         add_cdecl(Socket.class, "connect");
+        add_cdecl(Socket.class, "freeaddrinfo");
+        add_cdecl(Socket.class, "getaddrinfo");
         add_cdecl(Socket.class, "gethostbyname_r");
+        add_cdecl(Socket.class, "getnameinfo");
+        add_cdecl(Socket.class, "getsockname");
         add_cdecl(Socket.class, "getsockopt");
         add_cdecl(Socket.class, "listen");
         add_cdecl(Socket.class, "recv");
@@ -165,6 +176,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdio.class, "setvbuf");
         add_cdecl(Stdio.class, "snprintf");
         add_cdecl(Stdio.class, "sprintf");
+        add_cdecl(Stdio.class, "__isoc99_sscanf");
         add_cdecl(Stdio.class, "sscanf");
         add_cdecl(Stdio.class, "vfprintf");
         add_cdecl(Stdio.class, "vsnprintf");
@@ -182,7 +194,9 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "malloc");
         add_cdecl(Stdlib.class, "putenv");
         add_cdecl(Stdlib.class, "qsort");
+        add_cdecl(Stdlib.class, "rand");
         add_cdecl(Stdlib.class, "realloc");
+        add_cdecl(Stdlib.class, "realpath");
         add_cdecl(Stdlib.class, "strtol");
         add_cdecl(Stdlib.class, "strtoll");
         add_cdecl(Stdlib.class, "strtoul");
