@@ -2,6 +2,7 @@ package wine.system;
 
 import java.net.InetAddress;
 import java.util.Hashtable;
+import java.util.Vector;
 
 public class WineSystem {
     final static public Hashtable<Integer, WineProcess> processes = new Hashtable<Integer, WineProcess>();
@@ -10,6 +11,7 @@ public class WineSystem {
     final static public int uid = 1;
     final static public int gid = 2;
     final static public String homeDirectory = "/home/boxedwine";
+    final static public Vector<String> libDirs = new Vector<String>();
 
     static public String hostName() {
         if (System.getProperty("os.name").startsWith("Windows")) {

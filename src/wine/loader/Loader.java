@@ -7,8 +7,6 @@ import wine.builtin.libpthread.LibPThread;
 import wine.loader.elf.ElfSymbol;
 import wine.system.*;
 import wine.system.io.FSNode;
-import wine.system.io.FileSystem;
-import wine.util.Path;
 
 import java.util.Hashtable;
 import java.util.Vector;
@@ -74,8 +72,8 @@ public class Loader {
                 name = name.substring(pos+1);
             }
             if (explicitPath==null) {
-                for (Path path : FileSystem.paths) {
-                    FSNode node = FSNode.getNode(path.localPath+"/"+name, true);
+                for (String path : WineSystem.libDirs) {
+                    FSNode node = FSNode.getNode(path+"/"+name, true);
                     if (node!=null && !node.isDirectory()) {
                         explicitPath = node.localPath;
                         break;

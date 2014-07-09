@@ -15,12 +15,15 @@ abstract public class FSNode {
     final public int id;
 
     static public FSNode getNode(String localPath, boolean existing) {
+        if (localPath.endsWith("wine.inf")) {
+            int ii=0;
+        }
         if (!localPath.startsWith("/")) {
             localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
         }
         for (int i=0;i<FileSystem.paths.size();i++) {
             Path path = FileSystem.paths.elementAt(i);
-            if (localPath.startsWith(path.localPath)) {
+            if (path.localPath.length()==0 || localPath.startsWith(path.localPath)) {
                 String nativePath = path.nativePath + localPath.substring(path.localPath.length());
                 if (File.separator.equals("\\"))
                     nativePath=nativePath.replace('/', '\\');

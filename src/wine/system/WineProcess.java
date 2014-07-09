@@ -521,19 +521,10 @@ public class WineProcess {
     // should only return if there is an error
     public int exec(String[] args, String[] env) {
         WineThread thread = WineThread.getCurrent();
-        if (args[0].equals("/bin/wine-preloader")) {
+        if (args[0].endsWith("wine-preloader")) {
             String[] t = new String[args.length-1];
             System.arraycopy(args, 1, t, 0, t.length);
             args = t;
-            if (env==null) {
-                env = new String[]{"WINELOADERNOEXEC=1", "WINEDLLPATH=/lib"};
-            } else {
-                t = new String[env.length+2];
-                System.arraycopy(env, 0, t, 0, env.length);
-                t[env.length]="WINELOADERNOEXEC=1";
-                t[env.length+1]="WINEDLLPATH=/lib";
-                //t[env.length+2]="WINEDEBUG=+all";
-            }
         }
         FSNode node = FSNode.getNode(args[0], true);
         if (node!=null && !node.exists()) {
