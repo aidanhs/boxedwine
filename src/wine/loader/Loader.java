@@ -1,5 +1,7 @@
 package wine.loader;
 
+import wine.builtin.libX11.LibX11;
+import wine.builtin.libXext.LibXext;
 import wine.builtin.libc.Libc;
 import wine.builtin.libdl.Libdl;
 import wine.builtin.libm.Libm;
@@ -115,6 +117,10 @@ public class Loader {
             module = new Libc(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libpthread.so.0")) {
             module = new LibPThread(name, process, WineSystem.nextid++);
+        } else if (name.equalsIgnoreCase("libX11.so.6")) {
+            module = new LibX11(name, process, WineSystem.nextid++);
+        } else if (name.equalsIgnoreCase("libXext.so.6")) {
+            module = new LibXext(name, process, WineSystem.nextid++);
         }
         if (module != null) {
             modulesByName.put(name.toLowerCase(), module);

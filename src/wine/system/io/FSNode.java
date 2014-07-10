@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.Vector;
 
 abstract public class FSNode {
-    static private int nextId=10; // 1 stdout, 2 stdin, 3 stderr
+    static private int nextId=10;
 
     final public String localPath;
     final public String nativePath;
@@ -15,9 +15,6 @@ abstract public class FSNode {
     final public int id;
 
     static public FSNode getNode(String localPath, boolean existing) {
-        if (localPath.endsWith("wine.inf")) {
-            int ii=0;
-        }
         if (!localPath.startsWith("/")) {
             localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
         }
@@ -27,8 +24,17 @@ abstract public class FSNode {
                 String nativePath = path.nativePath + localPath.substring(path.localPath.length());
                 if (File.separator.equals("\\"))
                     nativePath=nativePath.replace('/', '\\');
-                FSNode node = FileSystem.openNodes.get(localPath);
                 File nativeFile = new File(nativePath);
+                // remove the ../../ etc
+                try {
+                    nativePath = nativeFile.getCanonicalPath();
+                    localPath = path.localPath+nativePath.substring(path.nativePath.length());
+                    if (File.separator.equals("\\"))
+                        localPath=localPath.replace('\\', '/');
+                    nativeFile = new File(nativePath);
+                } catch (IOException e) {
+                }
+                FSNode node = FileSystem.openNodes.get(localPath);
                 if (node == null && (nativeFile.exists() || !existing)) {
                     node = new FSNodeFile(nativeFile, localPath, nativePath);
                     synchronized (FileSystem.openNodes) {

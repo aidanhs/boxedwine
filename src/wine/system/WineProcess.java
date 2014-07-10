@@ -598,4 +598,11 @@ public class WineProcess {
         Thread.currentThread().stop(new ExitThreadException());
         return -1; // can't reach here
     }
+
+    public String[] paths() {
+        String values = envByNameValue.get("PATH");
+        if (values==null || values.length()==0)
+            return new String[0];
+        return values.split(";");
+    }
 }

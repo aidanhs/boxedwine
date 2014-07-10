@@ -81,6 +81,22 @@ public class Unistd {
         return process.exec(process.memory.readCStringArray(argv), null);
     }
 
+    static public int execvp(int pFile, int argv) {
+        WineProcess process = WineThread.getCurrent().process;
+        String[] args = process.memory.readCStringArray(argv);
+        String file = process.memory.readCString(pFile);
+        if (!file.startsWith("/")) {
+            for (String path:process.paths()) {
+                FSNode node = FSNode.getNode(path+"/"+file, true);
+                if (node!=null) {
+                    args[0]=node.localPath;
+                    break;
+                }
+            }
+        }
+        return process.exec(args, null);
+    }
+
     // int execve(const char *path, char *const argv[], char *const envp[])
     static public int execve(int path, int argv, int envp) {
         WineProcess process = WineThread.getCurrent().process;

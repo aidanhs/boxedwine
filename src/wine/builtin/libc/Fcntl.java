@@ -147,32 +147,32 @@ public class Fcntl {
         if (file.node.exists()) {
             if ((oflag & O_CREAT) != 0 && (oflag & O_EXCL) != 0) {
                 thread.setErrno(Errno.EEXIST);
-                file.close();
+                fd.close();
                 return -1;
             }
         } else {
             if ((oflag & O_CREAT) == 0) {
                 thread.setErrno(Errno.ENOENT);
-                file.close();
+                fd.close();
                 return -1;
             }
         }
         if (file.node.isDirectory()) {
             if ((oflag & O_WRONLY) != 0 || (oflag & O_RDWR) != 0) {
                 thread.setErrno(Errno.EISDIR);
-                file.close();
+                fd.close();
                 return -1;
             }
             return fd.handle;
         }
         String mode;
 
-        if ((oflag & O_RDONLY) != 0) {
+        if (fd.accessFlags ==O_RDONLY) {
             mode = "r";
-        } else if ((oflag & O_WRONLY) != 0 || ((oflag & O_RDWR) != 0)) {
+        } else if (fd.accessFlags ==O_WRONLY || fd.accessFlags ==O_RDWR) {
             mode = "rw";
         } else {
-            file.close();
+            fd.close();
             thread.setErrno(Errno.EINVAL);
             return -1;
         }

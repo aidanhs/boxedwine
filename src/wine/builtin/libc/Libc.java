@@ -109,6 +109,11 @@ public class Libc extends BuiltinModule {
         add_cdecl(Setjmp.class, "siglongjmp");
         add_cdecl(Setjmp.class, "__sigsetjmp");
 
+        add_cdecl(Shm.class, "shmat");
+        add_cdecl(Shm.class, "shmctl");
+        add_cdecl(Shm.class, "shmdt");
+        add_cdecl(Shm.class, "shmget");
+
         add_cdecl(Signal.class, "kill");
         add_cdecl(Signal.class, "pthread_sigmask");
         add_cdecl(Signal.class, "sigaddset");
@@ -261,6 +266,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Unistd.class, "dup2");
         add_cdecl(Unistd.class, "execv");
         add_cdecl(Unistd.class, "execve");
+        add_cdecl(Unistd.class, "execvp");
         add_cdecl(Unistd.class, "_exit");
         add_cdecl(Unistd.class, "fchdir");
         add_cdecl(Unistd.class, "fork");

@@ -17,9 +17,9 @@ public class Main {
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable");
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable/wine");
 
-        RAM.init(128 * 1024 * 1024);
+        RAM.init(192 * 1024 * 1024);
         // not necessary to create this up front, but it allows debug msg's to go to stdout
-        createWineServer();
+        //createWineServer();
         if (WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/wine-unstable/bin/wine", "unzip.exe"}, new String[] {"WINELOADERNOEXEC=1","WINEDEBUG=+all"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);

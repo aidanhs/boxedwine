@@ -2196,7 +2196,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.memory.writeb(cpu.es.dword + cpu.edi.dword, cpu.memory.readb(base.dword + cpu.esi.dword));
                 cpu.edi.dword += add_index;
@@ -2238,7 +2238,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.memory.writeb(cpu.es.dword + cpu.edi.dword, cpu.memory.readb(base.dword + cpu.esi.dword));
                 cpu.edi.u16(cpu.edi.u16()+add_index);
@@ -2280,7 +2280,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.memory.writew(cpu.es.dword + cpu.edi.dword, cpu.memory.readw(base.dword + cpu.esi.dword));
                 cpu.edi.dword += add_index;
@@ -2322,7 +2322,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.memory.writew(cpu.es.dword + cpu.edi.dword, cpu.memory.readw(base.dword + cpu.esi.dword));
                 cpu.edi.u16(cpu.edi.u16()+add_index);
@@ -2364,7 +2364,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.memory.writed(cpu.es.dword + cpu.edi.dword, cpu.memory.readd(base.dword + cpu.esi.dword));
                 cpu.edi.dword += add_index;
@@ -2406,7 +2406,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.memory.writed(cpu.es.dword + cpu.edi.dword, cpu.memory.readd(base.dword + cpu.esi.dword));
                 cpu.edi.u16(cpu.edi.u16()+add_index);
@@ -2452,7 +2452,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             if (count>0) {
                 int v1=0;
                 int v2=0;
@@ -2509,7 +2509,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             if (count>0) {
                 int v1=0;
                 int v2=0;
@@ -2567,7 +2567,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             if (count>0) {
                 int v1=0;
                 int v2=0;
@@ -2624,7 +2624,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             if (count>0) {
                 int v1=0;
                 int v2=0;
@@ -2682,7 +2682,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             if (count>0) {
                 int v1=0;
                 int v2=0;
@@ -2739,7 +2739,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             if (count>0) {
                 int v1=0;
                 int v2=0;
@@ -2788,7 +2788,7 @@ class Ops {
             this.add_index = add_index;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.memory.writeb(cpu.es.dword + cpu.edi.dword, cpu.eax.dword);
                 cpu.edi.dword += add_index;
@@ -2824,7 +2824,7 @@ class Ops {
             this.add_index = add_index;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.memory.writeb(cpu.es.dword + cpu.edi.dword, cpu.eax.dword);
                 cpu.edi.u16(cpu.edi.u16()+add_index);
@@ -2860,7 +2860,7 @@ class Ops {
             this.add_index = add_index << 1;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.memory.writew(cpu.es.dword + cpu.edi.dword, cpu.eax.dword);
                 cpu.edi.dword += add_index;
@@ -2896,7 +2896,7 @@ class Ops {
             this.add_index = add_index << 1;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.memory.writew(cpu.es.dword + cpu.edi.dword, cpu.eax.dword);
                 cpu.edi.u16(cpu.edi.u16()+add_index);
@@ -2932,7 +2932,7 @@ class Ops {
             this.add_index = add_index << 2;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.memory.writed(cpu.es.dword + cpu.edi.dword, cpu.eax.dword);
                 cpu.edi.dword += add_index;
@@ -2968,7 +2968,7 @@ class Ops {
             this.add_index = add_index << 2;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.memory.writed(cpu.es.dword + cpu.edi.dword, cpu.eax.dword);
                 cpu.edi.u16(cpu.edi.u16()+add_index);
@@ -2991,7 +2991,7 @@ class Ops {
         }
         public Block call(CPU cpu) {
             cpu.eax.u8(cpu.memory.readb(base.dword + cpu.esi.dword));
-            cpu.edi.dword+=add_index;
+            cpu.esi.dword+=add_index;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -3008,10 +3008,10 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.eax.u8(cpu.memory.readb(base.dword + cpu.esi.dword));
-                cpu.edi.dword += add_index;
+                cpu.esi.dword += add_index;
                 cpu.ecx.dword--;
             }
             return next.callAndLog(cpu);
@@ -3048,7 +3048,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.eax.u8(cpu.memory.readb(base.dword + cpu.esi.u16()));
                 cpu.esi.u16(cpu.esi.u16()+add_index);
@@ -3071,7 +3071,6 @@ class Ops {
         }
         public Block call(CPU cpu) {
             cpu.eax.u16(cpu.memory.readw(base.dword + cpu.esi.dword));
-            cpu.edi.dword+=add_index;
             cpu.esi.dword+=add_index;
             return next.callAndLog(cpu);
         }
@@ -3089,10 +3088,9 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.eax.u16(cpu.memory.readw(base.dword + cpu.esi.dword));
-                cpu.edi.dword += add_index;
                 cpu.esi.dword += add_index;
                 cpu.ecx.dword--;
             }
@@ -3113,7 +3111,6 @@ class Ops {
         }
         public Block call(CPU cpu) {
             cpu.eax.u16(cpu.memory.readw(base.dword + cpu.esi.u16()));
-            cpu.edi.u16(cpu.edi.u16()+add_index);
             cpu.esi.u16(cpu.esi.u16()+add_index);
             return next.callAndLog(cpu);
         }
@@ -3131,10 +3128,9 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.eax.u16(cpu.memory.readw(base.dword + cpu.esi.u16()));
-                cpu.edi.u16(cpu.edi.u16()+add_index);
                 cpu.esi.u16(cpu.esi.u16()+add_index);
                 cpu.ecx.u16(cpu.ecx.u16()-1);
             }
@@ -3155,7 +3151,6 @@ class Ops {
         }
         public Block call(CPU cpu) {
             cpu.eax.dword=cpu.memory.readd(base.dword + cpu.esi.dword);
-            cpu.edi.dword+=add_index;
             cpu.esi.dword+=add_index;
             return next.callAndLog(cpu);
         }
@@ -3173,10 +3168,9 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             for (int i=0;i<count;i++) {
                 cpu.eax.dword=cpu.memory.readd(base.dword + cpu.esi.dword);
-                cpu.edi.dword += add_index;
                 cpu.esi.dword += add_index;
                 cpu.ecx.dword--;
             }
@@ -3197,7 +3191,6 @@ class Ops {
         }
         public Block call(CPU cpu) {
             cpu.eax.dword=cpu.memory.readd(base.dword + cpu.esi.u16());
-            cpu.edi.u16(cpu.edi.u16()+add_index);
             cpu.esi.u16(cpu.esi.u16()+add_index);
             return next.callAndLog(cpu);
         }
@@ -3215,10 +3208,9 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             for (int i=0;i<count;i++) {
                 cpu.eax.dword=cpu.memory.readd(base.dword + cpu.esi.u16());
-                cpu.edi.u16(cpu.edi.u16()+add_index);
                 cpu.esi.u16(cpu.esi.u16()+add_index);
                 cpu.ecx.u16(cpu.ecx.u16()-1);
             }
@@ -3255,7 +3247,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             if (count>0) {
                 int v2=0;
                 int eax=cpu.eax.u8();
@@ -3263,7 +3255,6 @@ class Ops {
                 for (int i = 0; i < count; i++) {
                     v2 = cpu.memory.readb(cpu.es.dword + cpu.edi.dword);
                     cpu.edi.dword += add_index;
-                    cpu.esi.dword += add_index;
                     cpu.ecx.dword--;
                     if ((eax==v2)!=repeat_zero)
                         break;
@@ -3288,7 +3279,6 @@ class Ops {
         public Block call(CPU cpu) {
             int v2 = cpu.memory.readb(cpu.es.dword + cpu.edi.u16());
             cpu.edi.u16(cpu.edi.u16()+add_index);
-            cpu.esi.u16(cpu.esi.u16()+add_index);
             Instructions.subb.run(cpu, cpu.eax.u8(), v2);
             return next.callAndLog(cpu);
         }
@@ -3306,16 +3296,14 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             if (count>0) {
                 int v2=0;
                 int eax=cpu.eax.u8();
 
                 for (int i = 0; i < count; i++) {
                     v2 = cpu.memory.readb(cpu.es.dword + cpu.edi.u16());
-
                     cpu.edi.u16(cpu.edi.u16() + add_index);
-                    cpu.esi.u16(cpu.esi.u16() + add_index);
                     cpu.ecx.u16(cpu.ecx.u16() - 1);
                     if ((eax == v2) != repeat_zero)
                         break;
@@ -3340,7 +3328,6 @@ class Ops {
         public Block call(CPU cpu) {
             int v2 = cpu.memory.readw(cpu.es.dword + cpu.edi.dword);
             cpu.edi.dword+=add_index;
-            cpu.esi.dword+=add_index;
             Instructions.subw.run(cpu, cpu.eax.u16(), v2);
             return next.callAndLog(cpu);
         }
@@ -3358,7 +3345,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             if (count>0) {
                 int v2=0;
                 int eax = cpu.eax.u16();
@@ -3366,7 +3353,6 @@ class Ops {
                 for (int i = 0; i < count; i++) {
                     v2 = cpu.memory.readw(cpu.es.dword + cpu.edi.dword);
                     cpu.edi.dword += add_index;
-                    cpu.esi.dword += add_index;
                     cpu.ecx.dword--;
                     if ((eax==v2)!=repeat_zero)
                         break;
@@ -3391,7 +3377,6 @@ class Ops {
         public Block call(CPU cpu) {
             int v2 = cpu.memory.readw(cpu.es.dword + cpu.edi.u16());
             cpu.edi.u16(cpu.edi.u16()+add_index);
-            cpu.esi.u16(cpu.esi.u16()+add_index);
             Instructions.subw.run(cpu, cpu.eax.u16(), v2);
             return next.callAndLog(cpu);
         }
@@ -3409,16 +3394,14 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             if (count>0) {
                 int v2=0;
                 int eax=cpu.eax.u16();
 
                 for (int i = 0; i < count; i++) {
                     v2 = cpu.memory.readw(cpu.es.dword + cpu.edi.u16());
-
                     cpu.edi.u16(cpu.edi.u16() + add_index);
-                    cpu.esi.u16(cpu.esi.u16() + add_index);
                     cpu.ecx.u16(cpu.ecx.u16() - 1);
                     if ((eax == v2) != repeat_zero)
                         break;
@@ -3443,7 +3426,6 @@ class Ops {
         public Block call(CPU cpu) {
             int v2 = cpu.memory.readd(cpu.es.dword + cpu.edi.dword);
             cpu.edi.dword+=add_index;
-            cpu.esi.dword+=add_index;
             Instructions.subd.run(cpu, cpu.eax.dword, v2);
             return next.callAndLog(cpu);
         }
@@ -3461,7 +3443,7 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            long count = cpu.ecx.dword & 0xFFFFFFFFl;
             if (count>0) {
                 int v2=0;
                 int eax=cpu.eax.dword;
@@ -3469,7 +3451,6 @@ class Ops {
                 for (int i = 0; i < count; i++) {
                     v2 = cpu.memory.readd(cpu.es.dword + cpu.edi.dword);
                     cpu.edi.dword += add_index;
-                    cpu.esi.dword += add_index;
                     cpu.ecx.dword--;
                     if ((eax==v2)!=repeat_zero)
                         break;
@@ -3494,7 +3475,6 @@ class Ops {
         public Block call(CPU cpu) {
             int v2 = cpu.memory.readd(cpu.es.dword + cpu.edi.u16());
             cpu.edi.u16(cpu.edi.u16()+add_index);
-            cpu.esi.u16(cpu.esi.u16()+add_index);
             Instructions.subd.run(cpu, cpu.eax.dword, v2);
             return next.callAndLog(cpu);
         }
@@ -3512,16 +3492,14 @@ class Ops {
             this.repeat_zero = repeat_zero;
         }
         public Block call(CPU cpu) {
-            int count = cpu.ecx.dword;
+            int count = cpu.ecx.u16();
             if (count>0) {
                 int v2=0;
                 int eax=cpu.eax.dword;
 
                 for (int i = 0; i < count; i++) {
                     v2 = cpu.memory.readd(cpu.es.dword + cpu.edi.u16());
-
                     cpu.edi.u16(cpu.edi.u16() + add_index);
-                    cpu.esi.u16(cpu.esi.u16() + add_index);
                     cpu.ecx.u16(cpu.ecx.u16() - 1);
                     if ((eax == v2) != repeat_zero)
                         break;
