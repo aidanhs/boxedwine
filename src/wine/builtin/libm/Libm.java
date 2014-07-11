@@ -21,5 +21,6 @@ public class Libm extends BuiltinModule {
         add_cdecl(Math.class, "sincos");
         add_cdecl(Math.class, "tan");
         add_cdecl(Math.class, "sqrt");
+        add_cdecl(Math.class, "sqrtf");
     }
 }

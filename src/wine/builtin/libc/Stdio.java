@@ -8,6 +8,7 @@ import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
 import wine.util.Sprintf;
+import wine.util.Sscanf;
 
 // I don't think wine.exe or wineserver.exe really need buffered i/o, so FILE* will just be a File Descriptor id
 public class Stdio {
@@ -294,14 +295,15 @@ public class Stdio {
     }
 
     static public int __isoc99_sscanf(int s, int format) {
-        Log.panic("__isoc99_sscanf not implemented");
-        return 0;
+        return sscanf(s, format);
     }
 
     // int sscanf(const char * s, const char * format, ... )
-    static public int sscanf(int s, int format) {
+    static public int sscanf(int s, int pFormat) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
         Log.panic("sscanf not implemented");
-        return 0;
+        return Sscanf.sscanf(memory, memory.readCString(s), memory.readCString(pFormat), new StackGetter(memory, thread.cpu.esp.dword + 8));
     }
 
     // int vfprintf(FILE * stream, const char * format, va_list ap)

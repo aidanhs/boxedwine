@@ -61,4 +61,8 @@ public class Math {
     static public double sqrt(double x) {
         return java.lang.Math.sqrt(x);
     }
+
+    static public float sqrtf(float x) {
+        return (float)java.lang.Math.sqrt(x);
+    }
 }

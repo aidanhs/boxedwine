@@ -71,7 +71,12 @@ public class Sprintf {
                         if (w.length()>0) {
                             width = Integer.parseInt(w);
                         }
-
+                        if (c=='*') {
+                            if (pos+1<format.length()) {
+                                c = format.charAt(++pos);
+                            }
+                            width = getter.getNextInt();
+                        }
                         // precision
                         if (c=='.') {
                             if (pos+1<format.length()) {

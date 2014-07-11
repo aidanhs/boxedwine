@@ -42,7 +42,7 @@ public class Dlfcn {
     // void *dlopen(const char *file, int mode)
     static public int dlopen(int file, int mode) {
         if (mode != RTLD_NOW) {
-            Log.panic("dlopen mode "+mode+" not implemented");
+            Log.warn("dlopen mode "+mode+" not implemented");
         }
         WineThread thread = WineThread.getCurrent();
         String name = thread.process.memory.readCString(file);
@@ -68,7 +68,8 @@ public class Dlfcn {
         String name = thread.process.memory.readCString(pName);
         ElfSymbol symbol = module.getSymbol(name);
         if (symbol==null) {
-            Log.log("dlsym: could not find "+module.name+":"+name);
+            Log.warn("dlsym: could not find "+module.name+":"+name);
+            return 0;
         }
         return (int)symbol.st_value;
     }
