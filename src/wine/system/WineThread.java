@@ -25,6 +25,7 @@ public class WineThread {
     public int alternateStack;
     public int alternateStackSize;
     public int sigMask;
+    public int strtok_last;
     private StringBuilder stdoutBuffer = new StringBuilder();
 
     static public WineThread getCurrent() {

@@ -18,6 +18,7 @@ public class ElfDynamic {
     static public final int DT_RELENT      = 19;
     static public final int DT_PLTREL      = 20;
     static public final int DT_DEBUG       = 21;
+    static public final int DT_TEXTREL     = 22;
     static public final int DT_JMPREL      = 23;
     static public final int DT_INIT_ARRAY  = 25;
     static public final int DT_FINI_ARRAY  = 26;

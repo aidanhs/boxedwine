@@ -155,7 +155,6 @@ public class ElfModule extends Module {
                     }
                 }
             }
-
             if (reloc) {
                 System.out.println(process.mainModule.name+": relocating "+name+" "+Long.toHexString(originalAddress)+ " -> "+Long.toHexString(address));
             } else {
@@ -263,6 +262,9 @@ public class ElfModule extends Module {
                             }
                             break;
                         case ElfDynamic.DT_DEBUG:
+                            break;
+                        case ElfDynamic.DT_TEXTREL:
+                            // PIC was not enabled, thus the code pages can not be shared
                             break;
                         case ElfDynamic.DT_JMPREL:
                             pltRel = value+(int)addressDelta;
@@ -449,5 +451,13 @@ public class ElfModule extends Module {
 
     public String fullPath() {
         return path;
+    }
+
+    public void unload() {
+        WineThread thread = WineThread.getCurrent();
+        for (Integer func : finiFunctions) {
+            thread.cpu.call(func);
+        }
+        process.freePages((int)address, (int)(imageSize >> 12));
     }
 }

@@ -4,6 +4,10 @@ import wine.emulation.Memory;
 import wine.system.WineThread;
 
 public class Math {
+    static public float acosf(float x) {
+        return (float)java.lang.Math.acos(x);
+    }
+
     static public double atan(double x) {
         return java.lang.Math.atan(x);
     }
@@ -12,8 +16,16 @@ public class Math {
         return java.lang.Math.atan2(y, x);
     }
 
+    static public double cbrt(double x) {
+        return java.lang.Math.cbrt(x);
+    }
+
     static public double ceil(double x) {
         return java.lang.Math.ceil(x);
+    }
+
+    static public float ceilf(float x) {
+        return (float)java.lang.Math.ceil(x);
     }
 
     static public double cos(double x) {
@@ -28,12 +40,24 @@ public class Math {
         return java.lang.Math.floor(x);
     }
 
+    static public float floorf(float x) {
+        return (float)java.lang.Math.floor(x);
+    }
+
+    static public double fmod(double numer, double denom) {
+        return numer % denom;
+    }
+
     static public double hypot(double x, double y) {
         return java.lang.Math.hypot(x, y);
     }
 
     static public double log(double x) {
         return java.lang.Math.log(x);
+    }
+
+    static public double log10 (double x) {
+        return java.lang.Math.log10(x);
     }
 
     static public float logf(float x) {

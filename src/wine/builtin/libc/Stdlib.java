@@ -141,8 +141,93 @@ public class Stdlib {
         WineThread thread = WineThread.getCurrent();
         String fileName = thread.process.memory.readCString(file_name);
         FSNode node = FSNode.getNode(fileName, true);
-        Log.panic("realpath not implemented");
+        if (resolved_name == 0)
+            resolved_name = malloc(node.localPath.length()+1);
+        thread.process.memory.writeCString(resolved_name, node.localPath);
         return resolved_name;
+    }
+
+    // double strtod(const char * nptr, char ** endptr)
+    static public double strtod(int str, int endptr) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        String s = memory.readCString(str).toLowerCase();
+        StringBuffer buf = new StringBuffer();
+        int i;
+        int base = 0;
+        boolean neg = false;
+        boolean period = false;
+
+        for (i=0;i<s.length();i++) {
+            char c = s.charAt(i);
+            if (Character.isSpaceChar(c)) {
+                if (buf.length()==0)
+                    continue;
+                else
+                    break;
+            }
+            if (buf.length()==0) {
+                if (c=='-') {
+                    neg = true;
+                    continue;
+                } else if (c=='+') {
+                    continue;
+                }
+                if (s.toUpperCase().contains("INF")) {
+                    if (neg)
+                        return Double.NEGATIVE_INFINITY;
+                    return Double.POSITIVE_INFINITY;
+                }
+                if (s.toUpperCase().contains("NAN"))
+                    return Double.NaN;
+                if (base==0 || base==16) {
+                    if (c == '0') {
+                        if (i + 1 < s.length()) {
+                            char c1 = s.charAt(i + 1);
+                            if (c1 == 'x' || c1 == 'X') {
+                                i++;
+                                base = 16;
+                                Log.panic("strtod hex not supported");
+                                continue;
+                            }
+                        }
+                        if (base==0) {
+                            Log.panic("strtod base 8 not supported");
+                            base = 8;
+                        }
+                        continue;
+                    }
+                }
+                base = 10;
+            }
+            if (c == '.' && !period) {
+                period = true;
+            } else if (c=='E' || c=='e' || c=='-') {
+                // :TODO: should limit where these can be found
+            } else if (base<=10) {
+                if (c < '0' || c > '0' + base - 1) {
+                    break;
+                }
+            } else {
+                if (c < '0' || c > '9') {
+                    if (c<'A' || c>'A'+base-11 && (c<'A' || c>'A'+base-11)) {
+                        break;
+                    }
+                }
+            }
+            buf.append(c);
+        }
+        if (endptr!=0) {
+            memory.writed(endptr, str+i);
+        }
+        try {
+            double result = Double.parseDouble(buf.toString());
+            if (neg)
+                result=-result;
+            return result;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     // long strtol(const char * str, char ** endptr, int base)
@@ -182,16 +267,16 @@ public class Stdlib {
                     if (c == '0') {
                         if (i + 1 < s.length()) {
                             char c1 = s.charAt(i + 1);
-                            if (c1 == 'x') {
+                            if (c1 == 'x' || c1 == 'X') {
                                 i++;
                                 base = 16;
                                 continue;
                             }
                         }
+                        if (base==0)
+                            base=8;
+                        continue;
                     }
-                    if (base==0)
-                        base=8;
-                    continue;
                 }
                 base = 10;
             }
@@ -201,7 +286,7 @@ public class Stdlib {
                 }
             } else {
                 if (c < '0' || c > '9') {
-                    if (c<'a' || c>'a'+base-11) {
+                    if (c<'A' || c>'A'+base-11 && (c<'A' || c>'A'+base-11)) {
                         break;
                     }
                 }
@@ -217,6 +302,7 @@ public class Stdlib {
                 result=-result;
             return result;
         } catch (NumberFormatException e) {
+            Log.panic("strtoll did not handle "+buf.toString());
             return 0;
         }
     }
@@ -228,6 +314,11 @@ public class Stdlib {
         if (result<0)
             result = 0;
         return (int)result;
+    }
+
+    // unsigned long long int strtoull(const char * str, char ** endptr, int base)
+    static public long strtoull(int str, int endptr, int base) {
+        return strtoll(str, endptr, base);
     }
 
     // int system(const char *command)

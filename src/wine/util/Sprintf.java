@@ -224,6 +224,8 @@ public class Sprintf {
                         } else if (c == 'p') {
                             value = Integer.toHexString(getter.getNextInt());
                             value="0x"+value.toLowerCase();
+                        } else if (c == 'o') {
+                            value=Integer.toOctalString(getter.getNextInt());
                         } else {
                             Log.panic("Unknown type in sprintf: "+c+" in ("+originalFormat+")");
                         }

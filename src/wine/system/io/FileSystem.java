@@ -7,5 +7,6 @@ import java.util.Vector;
 
 public class FileSystem {
     final static public Vector<Path> paths = new Vector<Path>();
+    final static public Vector<Path> links = new Vector<Path>();
     final public static Hashtable<String, FSNode> openNodes = new Hashtable<String, FSNode>();
 }

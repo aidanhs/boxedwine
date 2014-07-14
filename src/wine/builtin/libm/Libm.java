@@ -7,14 +7,20 @@ public class Libm extends BuiltinModule {
     public Libm(String name, WineProcess process, int id) {
         super(name, process, id);
 
+        add_cdecl(Math.class, "acosf");
         add_cdecl(Math.class, "atan");
         add_cdecl(Math.class, "atan2");
+        add_cdecl(Math.class, "cbrt");
         add_cdecl(Math.class, "ceil");
+        add_cdecl(Math.class, "ceilf");
         add_cdecl(Math.class, "cos");
         add_cdecl(Math.class, "fabs");
         add_cdecl(Math.class, "floor");
+        add_cdecl(Math.class, "floorf");
+        add_cdecl(Math.class, "fmod");
         add_cdecl(Math.class, "hypot");
         add_cdecl(Math.class, "log");
+        add_cdecl(Math.class, "log10");
         add_cdecl(Math.class, "logf");
         add_cdecl(Math.class, "pow");
         add_cdecl(Math.class, "sin");

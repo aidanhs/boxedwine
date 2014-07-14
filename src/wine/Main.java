@@ -9,18 +9,20 @@ import wine.util.Path;
 public class Main {
 
     static public void main(String[] args) {
-        FileSystem.paths.add(new Path("c:\\wine\\root\\home\\boxedwine\\.wine\\drive_c", "/home/boxedwine/.wine/dosdevices/c:"));
-        FileSystem.paths.add(new Path("c:\\wine\\root", "/home/boxedwine/.wine/dosdevices/z:"));
+        FileSystem.links.add(new Path("/home/boxedwine/.wine/drive_c", "/home/boxedwine/.wine/dosdevices/c:"));
+        FileSystem.links.add(new Path("/", "/home/boxedwine/.wine/dosdevices/z:"));
         FileSystem.paths.add(new Path("c:\\wine\\root", ""));
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull());
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero());
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable");
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable/wine");
+        WineSystem.libDirs.add("/usr/lib/i386-linux-gnu");
 
         RAM.init(192 * 1024 * 1024);
         // not necessary to create this up front, but it allows debug msg's to go to stdout
-        //createWineServer();
-        if (WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/wine-unstable/bin/wine", "unzip.exe"}, new String[] {"WINELOADERNOEXEC=1","WINEDEBUG=+all"})==null) {
+        createWineServer();
+        //WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/libz.so.1"}, new String[0]);
+        if (WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/wine-unstable/bin/wine", "unzip.exe"}, new String[] {"WINELOADERNOEXEC=1"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }

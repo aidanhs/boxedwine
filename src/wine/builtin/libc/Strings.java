@@ -325,4 +325,52 @@ public class Strings {
             return 0;
         return s1+pos;
     }
+
+    // char *strtok(char *s1, const char *s2)
+    static public int strtok(int s, int delim) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+
+        if (s==0) {
+            s = thread.strtok_last;
+            if (s==0)
+                return 0;
+        }
+
+        int sourceChar = memory.readb(s++);
+        int delimIndex = delim;
+        while (true) {
+            int delimChar = memory.readb(delimIndex+delim);
+            delimIndex++;
+            if (sourceChar == delimChar) {
+                sourceChar = memory.readb(s++);
+                delimIndex = 0;
+            } else if (delimChar==0) {
+                break;
+            }
+        }
+
+        if (sourceChar == 0) {
+            thread.strtok_last = 0;
+            return 0;
+        }
+        int result = s - 1;
+
+        while(true) {
+            sourceChar = memory.readb(s++);
+            delimIndex = 0;
+            do {
+                int delimChar = memory.readb(delimIndex+delim);
+                if (delimChar == sourceChar) {
+                    if (sourceChar == 0) {
+                        thread.strtok_last = 0;
+                    } else {
+                        memory.writeb(s - 1, 0);
+                        thread.strtok_last = s;
+                    }
+                    return result;
+                }
+            } while (sourceChar != 0);
+        }
+    }
 }

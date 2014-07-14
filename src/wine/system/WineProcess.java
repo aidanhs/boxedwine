@@ -78,6 +78,7 @@ public class WineProcess {
     public int state = STATE_INIT;
     public String name;
     private Hashtable<Integer, Vector<ExitFunction>> exitFunctions = new Hashtable<Integer, Vector<ExitFunction>>();
+    public WineProcess parent;
     // if new variables are addedd, make sure they are accounted for in fork and exec
 
     static private class ExitFunction {
@@ -249,6 +250,15 @@ public class WineProcess {
         }
     }
 
+    public void freePages(int address, int pages) {
+        int pageStart = address>>>12;
+        for (int i=0;i<pages;i++) {
+            memory.handlers[pageStart+i].close();
+            memory.handlers[pageStart+i] = Memory.invalidHandler;
+        }
+        addressSpace.free(address);
+    }
+
     public int mapPage(int page) {
         long address = addressSpace.getNextAddress(ADDRESS_PROCESS_SHARED_START, 4096, true);
         memory.handlers[(int)(address>>>12)] = new RAMHandler(memory, page, false, false);
@@ -284,7 +294,7 @@ public class WineProcess {
     }
 
     public FileDescriptor getFileDescriptor(int handle) {
-        return (FileDescriptor)fileDescriptors.get(new Integer(handle));
+        return fileDescriptors.get(new Integer(handle));
     }
 
     public boolean closeFileDescriptor(int handle) {
@@ -299,6 +309,7 @@ public class WineProcess {
         synchronized (this) {
             threads.remove(thread.id);
             if (threads.size()==0) {
+                thread.out("Process Terminated");
                 this.terminated = true;
                 cleanup();
                 // :TODO: need to track parent process
@@ -313,6 +324,7 @@ public class WineProcess {
     }
 
     public void _exit(int status) {
+        WineThread.getCurrent().out("_exit "+status);
         this.exitCode = status;
         for (Integer threadId :threads.keySet()) {
             WineThread thread = threads.get(threadId);
@@ -323,12 +335,17 @@ public class WineProcess {
     }
 
     public void exit(int status) {
-        // :TODO: run at exit function
+        WineThread thread = WineThread.getCurrent();
+        for (Vector<ExitFunction> funcs : exitFunctions.values()) {
+            for (ExitFunction func : funcs) {
+                thread.cpu.call(func.func, func.arg);
+            }
+        }
         _exit(status);
     }
 
     public void runAtExit(int func) {
-        // :TODO:
+        addExitFunction(this.id, func, 0);
     }
 
     public int setenv(String env) {
@@ -511,6 +528,7 @@ public class WineProcess {
             Log.panic("fork doesn't handle a process with more than one thread");
         }
         WineProcess process = new WineProcess(WineSystem.nextid++, this);
+        process.parent = this;
         WineThread thread = WineThread.getCurrent().fork(process);
         thread.cpu.eip = eip;
         thread.cpu.eax.dword = 0;

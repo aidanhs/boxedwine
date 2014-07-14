@@ -234,4 +234,10 @@ public class BuiltinModule extends Module {
         else
             functions.put(handler.toString(), handler);
     }
+
+    public void unload() {
+        for (Integer func : registeredCallbacks.values()) {
+            process.loader.unregisterFunction(func);
+        }
+    }
 }

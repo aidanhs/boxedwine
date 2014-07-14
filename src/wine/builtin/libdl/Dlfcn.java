@@ -77,11 +77,12 @@ public class Dlfcn {
     // int dlclose(void *handle)
     static public int dlclose(int handle) {
         WineThread thread = WineThread.getCurrent();
-        Module module = (Module)thread.process.loader.modulesByHandle.get(new Integer(handle));
+        Module module = thread.process.loader.modulesByHandle.get(new Integer(handle));
         if (module == null) {
             return -1;
         }
-        Log.log("dlclose not implement: "+module.name);
-        return 0;
+        if (thread.process.loader.unload(module))
+            return 0;
+        return -1;
     }
 }

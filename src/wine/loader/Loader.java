@@ -65,6 +65,10 @@ public class Loader {
         return address;
     }
 
+    public void unregisterFunction(int address) {
+        callbacks.set((address-(int)WineProcess.ADDRESS_PROCESS_CALLBACK_START)/4, null);
+    }
+
     private Module load_native_module(WineThread thread, String name) {
         try {
             int pos = name.lastIndexOf('/');
@@ -153,5 +157,12 @@ public class Loader {
         if (main!=null)
             symbol = main.getSymbol(name);
         return symbol;
+    }
+
+    public boolean unload(Module module) {
+        modulesByName.remove(module.name);
+        modulesByHandle.remove(module.id);
+        module.unload();
+        return true;
     }
 }

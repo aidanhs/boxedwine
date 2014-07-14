@@ -236,6 +236,19 @@ public class Stdio {
         thread.out(thread.process.memory.readCString(s));
     }
 
+    // int printf(const char *restrict format, ...)
+    static public int printf(int format) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword+4));
+        FileDescriptor fd = thread.process.getFileDescriptor(thread.process.stdout);
+        if (fd==null || !fd.canWrite()) {
+            thread.setErrno(Errno.EBADF);
+            return -1;
+        }
+        return fd.object.write(result);
+    }
+
     // int puts(const char *s)
     static public int puts(int s) {
         WineProcess process = WineThread.getCurrent().process;
@@ -302,7 +315,6 @@ public class Stdio {
     static public int sscanf(int s, int pFormat) {
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
-        Log.panic("sscanf not implemented");
         return Sscanf.sscanf(memory, memory.readCString(s), memory.readCString(pFormat), new StackGetter(memory, thread.cpu.esp.dword + 8));
     }
 

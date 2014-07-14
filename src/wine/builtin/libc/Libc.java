@@ -22,13 +22,18 @@ public class Libc extends BuiltinModule {
         add_cdecl(Libc.class, "__assert_fail");
         add_cdecl(Libc.class, "__cxa_atexit");
         add_cdecl(Libc.class, "__cxa_finalize");
+        add_cdecl(Libc.class, "__fdelt_chk");
+        add_cdecl(Libc.class, "__fprintf_chk");
         add_cdecl(Libc.class, "__gmon_start__");
         add_cdecl(Libc.class, "_Jv_RegisterClasses");
         add_cdecl(Libc.class, "_ITM_deregisterTMCloneTable");
         add_cdecl(Libc.class, "_ITM_registerTMCloneTable");
         add_cdecl(Libc.class, "__libc_start_main");
+        add_cdecl(Libc.class, "__pow_finite");
+        add_cdecl(Libc.class, "__snprintf_chk");
         add_cdecl(Libc.class, "__stack_chk_fail");
         add_cdecl(Libc.class, "strerror");
+        add_cdecl(Libc.class, "__vsnprintf_chk");
 
         add_cdecl(CType.class, "__ctype_b_loc");
         add_cdecl(CType.class, "__ctype_tolower_loc");
@@ -175,6 +180,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdio.class, "fscanf");
         add_cdecl(Stdio.class, "fwrite");
         add_cdecl(Stdio.class, "perror");
+        add_cdecl(Stdio.class, "printf");
         add_cdecl(Stdio.class, "puts");
         add_cdecl(Stdio.class, "rename");
         add_cdecl(Stdio.class, "setbuf");
@@ -202,9 +208,11 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "rand");
         add_cdecl(Stdlib.class, "realloc");
         add_cdecl(Stdlib.class, "realpath");
+        add_cdecl(Stdlib.class, "strtod");
         add_cdecl(Stdlib.class, "strtol");
         add_cdecl(Stdlib.class, "strtoll");
         add_cdecl(Stdlib.class, "strtoul");
+        add_cdecl(Stdlib.class, "strtoull");
         add_cdecl(Stdlib.class, "system");
         add_cdecl(Stdlib.class, "unsetenv");
 
@@ -231,6 +239,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Strings.class, "strrchr");
         add_cdecl(Strings.class, "strspn");
         add_cdecl(Strings.class, "strstr");
+        add_cdecl(Strings.class, "strtok");
 
         add_cdecl(Syscall.class, "syscall");
 
@@ -264,6 +273,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Unistd.class, "close");
         add_cdecl(Unistd.class, "dup");
         add_cdecl(Unistd.class, "dup2");
+        add_cdecl(Unistd.class, "execl");
         add_cdecl(Unistd.class, "execv");
         add_cdecl(Unistd.class, "execve");
         add_cdecl(Unistd.class, "execvp");
@@ -316,6 +326,19 @@ public class Libc extends BuiltinModule {
     static public void __cxa_finalize(int d) {
     }
 
+    static public int __fdelt_chk(int d)
+    {
+        if (d >= 1024)
+            Log.panic("__fdelt_chk failed");
+
+        return d / 32;
+    }
+
+    // int __fprintf_chk(FILE * stream, int flag, const char * format)
+    static public int __fprintf_chk(int stream, int flag, int format) {
+        return Stdio.fprintf(stream, format);
+    }
+
     static public void __gmon_start__() {
     }
 
@@ -329,6 +352,15 @@ public class Libc extends BuiltinModule {
 
     // void _ITM_registerTMCloneTable(void*, void*)
     static public void _ITM_registerTMCloneTable(int v, int v1) {
+    }
+
+    static public double __pow_finite(double a, double b) {
+        return Math.pow(a, b);
+    }
+
+    // int __snprintf_chk(char * str, size_t maxlen, int flag, size_t strlen, const char * format)
+    static public int __snprintf_chk(int str, int maxlen, int flag, int strlen, int format) {
+        return Stdio.vsnprintf(str, strlen, format, WineThread.getCurrent().cpu.esp.dword+20);
     }
 
     // int __libc_start_main(int (*main) (int, char * *, char * *), int argc, char * * ubp_av, void (*init) (void), void (*fini) (void), void (*rtld_fini) (void), void (* stack_end))
@@ -355,5 +387,10 @@ public class Libc extends BuiltinModule {
         }
         thread.process.memory.writeCString(thread.strerror, "Error: "+errnum);
         return thread.strerror;
+    }
+
+    // int __vsnprintf_chk(char * s, size_t maxlen, int flag, size_t slen, const char * format, va_list args)
+    static public int __vsnprintf_chk(int str, int maxlen, int flag, int strlen, int format, int args) {
+        return Stdio.vsnprintf(str, strlen, format, args);
     }
 }

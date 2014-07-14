@@ -75,6 +75,13 @@ public class Unistd {
         return fildes2;
     }
 
+    // int execl(const char *path, const char *arg, ...)
+    static public int execl(int path, int arg) {
+        WineThread thread = WineThread.getCurrent();
+        WineProcess process = thread.process;
+        return process.exec(process.memory.readCStringArray(thread.cpu.esp.dword+4), null);
+    }
+
     // int execv(const char *path, char *const argv[])
     static public int execv(int path, int argv) {
         WineProcess process = WineThread.getCurrent().process;

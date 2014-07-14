@@ -18,6 +18,13 @@ abstract public class FSNode {
         if (!localPath.startsWith("/")) {
             localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
         }
+        for (int i=0;i<FileSystem.links.size();i++) {
+            Path path = FileSystem.links.elementAt(i);
+            if (localPath.startsWith(path.localPath)) {
+                localPath = path.nativePath+localPath.substring(path.localPath.length());
+                break;
+            }
+        }
         for (int i=0;i<FileSystem.paths.size();i++) {
             Path path = FileSystem.paths.elementAt(i);
             if (path.localPath.length()==0 || localPath.startsWith(path.localPath)) {
