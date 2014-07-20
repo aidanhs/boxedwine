@@ -20,7 +20,7 @@ public class Main {
 
         RAM.init(192 * 1024 * 1024);
         // not necessary to create this up front, but it allows debug msg's to go to stdout
-        createWineServer();
+        //createWineServer();
         //WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/libz.so.1"}, new String[0]);
         if (WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/wine-unstable/bin/wine", "unzip.exe"}, new String[] {"WINELOADERNOEXEC=1"})==null) {
             System.out.println("Failed to start wine");

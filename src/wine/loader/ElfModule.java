@@ -130,23 +130,32 @@ public class ElfModule extends Module {
             reloc = false;
             long pageAddress = originalAddress;
 
-            if (pageAddress==0) {
-                pageAddress = WineProcess.ADDRESS_PROCESS_DLL_START;
-                reloc = true;
-            }
             long size = maxAddress - originalAddress;
-            size = (size + 0xFFFF) & 0xFFFF0000l;
-            address = process.addressSpace.getNextAddress(pageAddress, size, true);
-            if (address != pageAddress && !reloc) {
-                address = process.addressSpace.getNextAddress(WineProcess.ADDRESS_PROCESS_DLL_START, size, true);
-                reloc = true;
+            size = (size + 0xFFF) & 0xFFFFF000l;
+            if ((pageAddress & 0xFFF)!=0) {
+                Log.panic("Wasn't expecting load address to be unaligned to page boundary");
             }
-            if (reloc) {
-                address=(address+0xFFFF) & 0xFFFF0000l;
+            int pageStart = (int)(pageAddress >>> 12);
+            int pageCount = (int)(size >>> 12);
+            synchronized (process.addressSpace) {
+                if (pageStart==0) {
+                    pageStart = WineProcess.ADDRESS_PROCESS_DLL_START;
+                    reloc = true;
+                }
+                int page = process.addressSpace.getNextPage(pageStart, pageCount+16); // +16 so that we can realign the address bound to 64k
+                if (page!=pageStart) {
+                    reloc = true;
+                }
+                if (reloc) {
+                    // There is no reason to align to 64k, I just find it easier to debug this way
+                    page = (page+0xF) & ~0xF;
+                }
+                pageStart = page;
+                imageSize = size;
+                address = (long)pageStart << 12;
+                addressDelta = address - originalAddress;
+                process.allocPages(pageStart, pageCount, true);
             }
-            imageSize=size;
-            addressDelta=address-originalAddress;
-            process.allocPages((int)address, (int)(size >> 12), true);
             if (reloc) {
                 for (ElfSection section: sections) {
                     if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0) {
@@ -156,9 +165,9 @@ public class ElfModule extends Module {
                 }
             }
             if (reloc) {
-                System.out.println(process.mainModule.name+": relocating "+name+" "+Long.toHexString(originalAddress)+ " -> "+Long.toHexString(address));
+                System.out.println(process.mainModule.name+":"+process.id+" relocating "+name+" "+Long.toHexString(originalAddress)+ " -> "+Long.toHexString(address)+"(page="+Integer.toHexString(pageStart)+" pageCount="+pageCount+")");
             } else {
-                System.out.println(process.mainModule.name+": loading "+name+" "+Long.toHexString(originalAddress)+"-"+Long.toHexString(originalAddress+size));
+                System.out.println(process.mainModule.name+":"+process.id+" loading "+name+" "+Long.toHexString(originalAddress)+"-"+Long.toHexString(originalAddress+size)+"(page="+Integer.toHexString(pageStart)+" pageCount="+pageCount+")");
             }
             fis.close();
             fis = node.getInputStream();
@@ -454,10 +463,14 @@ public class ElfModule extends Module {
     }
 
     public void unload() {
-        WineThread thread = WineThread.getCurrent();
-        for (Integer func : finiFunctions) {
-            thread.cpu.call(func);
-        }
-        process.freePages((int)address, (int)(imageSize >> 12));
+        // :TODO: this is broken for some reason
+//        WineThread thread = WineThread.getCurrent();
+//        for (Integer func : finiFunctions) {
+//            thread.cpu.call(func);
+//        }
+        int pageStart = (int)(address>>>12);
+        int pageCount = (int)(imageSize >> 12);
+//        process.freePages(pageStart, pageCount);
+        System.out.println(process.mainModule.name+":"+process.id+" unloading "+name+" "+Long.toHexString(address)+"(page="+Integer.toHexString(pageStart)+" pageCount="+pageCount+")");
     }
 }

@@ -1,30 +1,34 @@
 package wine.emulation;
 
-import wine.util.Heap;
 import wine.util.Log;
 
 import java.util.Arrays;
 
 public class RAM {
     static private int[] bytes;
-    static private Heap usedPages;
+    static private int[] freePages;
     static private int[] pageRefCount;
+    static public int freePageCount;
 
     static public void init(int size) {
         bytes = new int[size>>2];
-        usedPages = new Heap(1, size>>12);
-        pageRefCount = new int[size>>>12];
+        freePageCount = size >>> 12;
+        freePages = new int[freePageCount];
+        for (int i=0;i<freePageCount;i++) {
+            freePages[i]=i;
+        }
+        pageRefCount = new int[freePageCount];
     }
 
     static public int pageCount() {
         return pageRefCount.length;
     }
 
-    static public int allocPage() {
-        int result = (int)usedPages.alloc(1, false);
-        if (result==0) {
+    synchronized static public int allocPage() {
+        if (freePageCount==0) {
             Log.panic("Ran out of RAM pages: todo: need to implement unloading of memory mapped files");
         }
+        int result = freePages[--freePageCount];
         if (pageRefCount[result]!=0) {
             Log.panic("RAM logic error");
         }
@@ -35,16 +39,16 @@ public class RAM {
     }
 
     // must match what was returned in allocPages, you can't free random pages
-    static public void freePage(int page) {
+    synchronized static public void freePage(int page) {
         pageRefCount[page]--;
         if (pageRefCount[page]==0) {
-            usedPages.free(page);
+            freePages[freePageCount++]=page;
         } else if (pageRefCount[page]<0) {
             Log.panic("RAM logic error");
         }
     }
 
-    static public void incrementRef(int page) {
+    synchronized static public void incrementRef(int page) {
         if (pageRefCount[page]==0) {
             Log.panic("RAM logic error");
         }

@@ -56,17 +56,17 @@ public class Loader {
     public int registerFunction(Callback callback) {
         int page = (callbacks.size()*4) >>> 12;
         if (page>=callbackPages) {
-            process.allocPages((int)WineProcess.ADDRESS_PROCESS_CALLBACK_START + 0x1000 * page, 1, false);
+            process.allocPages(WineProcess.ADDRESS_PROCESS_CALLBACK_START + page, 1, false);
             callbackPages++;
         }
-        int address = (int)WineProcess.ADDRESS_PROCESS_CALLBACK_START+0x1000*page+(callbacks.size()*4 & 0xFFF);
+        int address = ((WineProcess.ADDRESS_PROCESS_CALLBACK_START+page)<<12)+(callbacks.size()*4 & 0xFFF);
         process.memory.writed(address, 0x38FE+(callbacks.size()<<16));
         callbacks.add(callback);
         return address;
     }
 
     public void unregisterFunction(int address) {
-        callbacks.set((address-(int)WineProcess.ADDRESS_PROCESS_CALLBACK_START)/4, null);
+        callbacks.set((address-WineProcess.ADDRESS_PROCESS_CALLBACK_START)/4, null);
     }
 
     private Module load_native_module(WineThread thread, String name) {

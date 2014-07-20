@@ -200,34 +200,34 @@ public class Mmap {
                 return MAP_FAILED;
             }
         }
-        if ((flags & MAP_FIXED)!=0) {
-            if (address == 0 || (address & 0xFFF)!=0) {
-                thread.setErrno(Errno.EINVAL);
-                return MAP_FAILED;
-            }
-            if (thread.process.addressSpace.alloc(address, len)!=address) {
-                int pageStart = address>>>12;
-                int pageCount = (len+0xFFF)>>>12;
-
-                if (!isMapped(thread, handlers, pageStart, pageCount)) {
-                    return MAP_FAILED;
-                }
-                // if we made it here then all page requested were already mapped.  since MAP_FIXED is specified,
-                // that means we can just replace those pages
-            }
-        } else {
-            if (address == 0)
-                address = (int)WineProcess.ADDRESS_PROCESS_MMAP_START;
-            address = (int)thread.process.addressSpace.getNextAddress(address, len, true);
-            if (address==0) {
-                // :TODO: what erro
-                return MAP_FAILED;
-            }
-            thread.process.addressSpace.alloc(address, len);
-        }
-
         int pageStart = address>>>12;
         int pageCount = (len+0xFFF)>>>12;
+
+        synchronized (thread.process.addressSpace) {
+            if ((flags & MAP_FIXED) != 0) {
+                if (address == 0 || (address & 0xFFF) != 0) {
+                    thread.setErrno(Errno.EINVAL);
+                    return MAP_FAILED;
+                }
+                if (!thread.process.addressSpace.allocPages(pageStart, pageCount)) {
+                    if (!isMapped(thread, handlers, pageStart, pageCount)) {
+                        return MAP_FAILED;
+                    }
+                    // if we made it here then all page requested were already mapped.  since MAP_FIXED is specified,
+                    // that means we can just replace those pages
+                }
+            } else {
+                if (pageStart == 0)
+                    pageStart = WineProcess.ADDRESS_PROCESS_MMAP_START;
+                pageStart = thread.process.addressSpace.getNextPage(pageStart, pageCount);
+                if (pageStart == 0) {
+                    // :TODO: what erro
+                    return MAP_FAILED;
+                }
+                thread.process.addressSpace.allocPages(pageStart, pageCount);
+                address = pageStart << 12;
+            }
+        }
 
         if (file!=null) {
             for (int i = 0; i < pageCount; i++) {
@@ -386,7 +386,7 @@ public class Mmap {
         int pageStart = address>>>12;
         int pageCount = (len+0xFFF)>>>12;
         WineThread thread = WineThread.getCurrent();
-        thread.process.addressSpace.free(address, len);
+        thread.process.addressSpace.freePages(pageStart, pageCount);
 
         PageHandler[] handlers = thread.process.memory.handlers;
 

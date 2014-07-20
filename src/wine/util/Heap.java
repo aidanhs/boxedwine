@@ -1,373 +1,89 @@
 package wine.util;
 
-import java.util.ArrayList;
-import java.util.Hashtable;
+import wine.emulation.Memory;
+import wine.system.WineThread;
 
+import java.util.BitSet;
+
+// This is a very simple ineffecient implementation, it could use some work
 public class Heap {
-    static private final int SMALLEST_SIZE_FOR_SPLIT = 1;
-
-    private long start;
-    private long end;
-    private ArrayList<HeapItem> itemsBySize = new ArrayList<HeapItem>();
-    private ArrayList<HeapItem> itemsByAddress = new ArrayList<HeapItem>();
-    private Hashtable<Long, HeapItem> usedMemory = new Hashtable<Long, HeapItem>();
-
-    private static class HeapItem implements Comparable {
-        public int compareTo(Object o) {
-            if (((HeapItem)o).size == size)
-                return 0;
-            if (((HeapItem)o).size < size)
-                return -1;
-            return 1;
-        }
-
-        public HeapItem(long address, long size) {
-            this.address = address;
-            this.size = size;
-        }
-
-        public HeapItem deepCopy() {
-            return new HeapItem(address, size);
-        }
-        public long address;
-        public long size;
-    }
-
-    public Heap(long start, long end) {
-        this.start = start;
-        this.end = end;
-        insertItem(new HeapItem(start & 0xFFFFFFFFl, end-start));
+    private BitSet blocks;
+    private int start;
+    private int end;
+    private int blockSize;
+    private static final int BLOCK_HEADER_SIZE = 8;
+    private int blockCount;
+    public Heap(int start, int end, int blockSize) {
+        this.blockSize=blockSize;
+        clear(start, end);
     }
 
     public void clear() {
-        itemsBySize.clear();
-        itemsByAddress.clear();
-        usedMemory.clear();
-        insertItem(new HeapItem(start & 0xFFFFFFFFl, end-start));
+        blocks = new BitSet(blockCount);
     }
 
-    public void clear(long start, long end) {
+    public void clear(int start, int end) {
         this.start = start;
         this.end = end;
+        this.blockCount = (end-start)/blockSize;
         clear();
     }
 
-    private int findIndexBySize(long key) {
-        int lo = 0;
-        int hi = itemsBySize.size() - 1;
-        while (lo <= hi) {
-            // Key is in a[lo..hi] or not present.
-            int mid = lo + (hi - lo) / 2;
-            if      (key < (itemsBySize.get(mid)).size) hi = mid - 1;
-            else if (key > (itemsBySize.get(mid)).size) lo = mid + 1;
-            else return mid;
-        }
-        HeapItem item = getLargestItem();
-        if (item==null || key>item.size)
-            return -1;
-        return lo;
-    }
-
-    private int findIndexByAddress(long key) {
-        int lo = 0;
-        int hi = itemsByAddress.size() - 1;
-        while (lo <= hi) {
-            // Key is in a[lo..hi] or not present.
-            int mid = lo + (hi - lo) / 2;
-            if      (key < (itemsByAddress.get(mid)).address) hi = mid - 1;
-            else if (key > (itemsByAddress.get(mid)).address) lo = mid + 1;
-            else return mid;
-        }
-        HeapItem item = getLastItem();
-        if (item==null || key>item.address)
-            return -1;
-        return lo;
-    }
-
-    private void insertItem(HeapItem item) {
-        int index = findIndexBySize(item.size);
-        if (index<0)
-            itemsBySize.add(item);
-        else
-            itemsBySize.add(index, item);
-        index = findIndexByAddress(item.address);
-        if (index<0)
-            itemsByAddress.add(item);
-        else
-            itemsByAddress.add(index, item);
-    }
-
-    private HeapItem getLastItem() {
-        if (itemsByAddress.size()==0)
-            return null;
-        return itemsByAddress.get(itemsByAddress.size()-1);
-    }
-
-    private HeapItem getLargestItem() {
-        if (itemsBySize.size() == 0)
-            return null;
-        return itemsBySize.get(itemsBySize.size()-1);
-    }
-
-    private void removeItem(HeapItem item) {
-        itemsBySize.remove(item);
-        itemsByAddress.remove(item);
-    }
-
-    synchronized public long getNextAddress(long address, long size, boolean pageAlign) {
-        address&=0xFFFFFFFFl;
-        int index = findIndexByAddress(address);
-        if (pageAlign) {
-            address = (address + 0xFFF) & ~0xFFF;
-        }
-        if (index<0) {
-            HeapItem last = getLastItem();
-            if (last.address+last.size>=address+size)
-                return address;
+    synchronized public int alloc(int size) {
+        int blockStart = 0;
+        int blockCount = (size+blockSize-1+BLOCK_HEADER_SIZE)/blockSize;
+        int pos = blocks.nextClearBit(blockStart);
+        if (pos+blockCount>this.blockCount)
             return 0;
-        }
-        if (index>0)
-            index--;
-        int first = index;
-        while (index<itemsByAddress.size()) {
-            HeapItem next = itemsByAddress.get(index++);
-            long a = next.address;
-            if (pageAlign) {
-                a = (a + 0xFFF) & ~0xFFF;
-            }
-            if (next.address<=address && next.address+next.size>=address+size)
-                return address;
-            if (a>=address && next.size-(a-next.address)>=size) {
-                return a;
-            }
-        }
-        index = first;
-        while (index<itemsByAddress.size()) {
-            HeapItem next = itemsByAddress.get(index++);
-            long a = next.address;
-            if (pageAlign) {
-                a = (a + 0xFFF) & ~0xFFF;
-            }
-            if (a-next.address+next.size>=size) {
-                return a;
-            }
-        }
-        return 0;
-    }
-
-    synchronized public long alloc(long address, long size) {
-        address&=0xFFFFFFFFl;
-        int index = findIndexByAddress(address);
-        if (index<0) {
-            HeapItem last = getLastItem();
-            if (address<last.address)
-                return 0;
-            removeItem(last);
-            last.size = address - last.address;
-            if (last.size != 0)
-                insertItem(last);
-            usedMemory.put(address, new HeapItem(address, size));
-            if (address+size<end)
-                insertItem(new HeapItem(address+size, end-(address+size)));
-        } else {
-            HeapItem free = itemsByAddress.get(index);
-            if (free.address > address && index>0)
-                free = itemsByAddress.get(index-1); // getNextAddress aligned it into this slot
-            if (address<free.address || address+size>free.address+free.size) {
-                return 0;
-            }
-            removeItem(free);
-            long newAddress = address+size;
-            if (free.size==newAddress-free.address)
-                removeItem(free);
-            free.size-=newAddress-free.address;
-            long oldAddress = free.address;
-            free.address = newAddress;
-            usedMemory.put(address, new HeapItem(address, size));
-            if (oldAddress<address && oldAddress>=start) {
-                insertItem(new HeapItem(oldAddress, address-oldAddress));
-            }
-            insertItem(free);
-        }
-        return address;
-    }
-
-    synchronized public long alloc(long size, boolean pageAlign) {
-        int index = findIndexBySize(size);
-        if (index<0) {
-            return 0;
-        }
-        HeapItem item = null;
-        if (pageAlign) {
-            boolean found = false;
-            for (int i=index;i<itemsBySize.size();i++) {
-                item = itemsBySize.get(i);
-                long address = item.address;
-                if ((address & 0xFFF)!=0) {
-                    address+=0xFFF;
-                    address&=~0xFFF;
-                }
-                if (item.address+item.size>=address+size) {
-                    removeItem(item);
-                    int newSize = (int)(address-item.address);
-                    if (newSize>0) {
-                        HeapItem newItem = new HeapItem(item.address, newSize);
-                        insertItem(newItem);
-                        item.address+=newSize;
-                        item.size-=newSize;
-                    }
-                    found = true;
+        if (blockCount>1) {
+            while (true) {
+                int found = blocks.nextSetBit(pos);
+                if (found<0) {
                     break;
                 }
+                if (found>=pos+blockCount) {
+                    break;
+                }
+                pos = blocks.nextClearBit(found);
+                if (pos+blockCount>this.blockCount)
+                    return 0;
             }
-            if (!found) {
-                return 0;
-            }
-        } else {
-            item = itemsBySize.get(index);
-            removeItem(item);
         }
-
-        if (item.size-size>=SMALLEST_SIZE_FOR_SPLIT) {
-            long newSize = item.size-size;
-            HeapItem newItem = new HeapItem(item.address+size, newSize);
-            insertItem(newItem);
-            item.size-=newSize;
-        }
-        usedMemory.put(item.address, item);
-        return item.address;
+        blocks.set(pos, pos+blockCount);
+        Memory memory = WineThread.getCurrent().process.memory;
+        int result = pos*blockSize+start+BLOCK_HEADER_SIZE;
+        memory.writed(result-4, size);
+        memory.writed(result-8, blockCount);
+        return result;
     }
 
     // returns start of grown address
-    synchronized public long grow(int size) {
-        HeapItem newItem = new HeapItem(end, size);
-        long result = this.end;
-        this.end+=size;
-        insertItem(newItem);
+    synchronized public int grow(int size) {
+        int result = end;
+        end+=size;
+        this.blockCount = (end-start)/blockSize;
         return result;
     }
 
     synchronized public int getSize(int address) {
-        long p = address & 0xFFFFFFFFl;
-        if (p == 0)
-            return 0;
-        HeapItem item = usedMemory.get(new Long(p));
-        if (item == null) {
-            System.out.println("Heap is corrupt, tried to free 0x"+Long.toString(p, 16));
-            System.exit(0);
-        }
-        return (int)item.size;
+        return WineThread.getCurrent().process.memory.readd(address-4);
     }
 
-    synchronized public void free(int p1, int l) {
-        long p = p1 & 0xFFFFFFFFl;
-        if (p == 0)
-            return;
-        long len = l & 0xFFFFFFFFl;
-
-        while (true) {
-            HeapItem item = usedMemory.get(new Long(p));
-            if (item!=null) {
-                if (item.size<=len) {
-                    int old = (int)p;
-                    p+=item.size;
-                    len-=item.size;
-                    free(old);
-                    if (len==0)
-                        return;
-                    continue;
-                }
-            } else {
-                int index = findIndexByAddress(p);
-                if (index<0)
-                    return;
-
-                item = itemsByAddress.get(index);
-                if (item.address>=p+len) {
-                    if (index==0) {
-                        return;
-                    } else {
-                        item = itemsByAddress.get(index-1);
-                        if (item.address+item.size<p)
-                            return;
-                    }
-                }
-
-                long result = 0;
-                long end = p+len;
-                for (HeapItem i : usedMemory.values()) {
-                    if (i.address>=p && i.address<end) {
-                        if (result == 0 || (i.address<result)) {
-                            result = i.address;
-                        }
-                    }
-                }
-                if (result==0) {
-                    return;
-                }
-                len-=(result-p);
-                p = result;
-                continue;
+    synchronized public void free(int address) {
+        Memory memory = WineThread.getCurrent().process.memory;
+        int blockCount = memory.readd(address-8);
+        int blockStart = (address-start-BLOCK_HEADER_SIZE)/blockSize;
+        for (int i=blockStart;i<blockStart+blockCount;i++) {
+            if (!blocks.get(i)) {
+                Log.panic("heap.free tried to free block that wasn't allocated");
             }
-
-            if (item.size>len) {
-                usedMemory.remove(new Long(p));
-                usedMemory.put(p, new HeapItem(p, len));
-                item.address=p+len;
-                item.size-=len;
-                usedMemory.put(item.address, item);
-                free((int)p);
-                return;
-            }
-
+            blocks.clear(i);
         }
-    }
-
-    synchronized public long free(int p1) {
-        long p = p1 & 0xFFFFFFFFl;
-        if (p == 0)
-            return 0;
-        HeapItem item = usedMemory.remove(new Long(p));
-        if (item == null) {
-            Log.panic("Heap is corrupt, tried to free 0x"+Long.toString(p, 16));
-            return -1;
-        }
-        long size = item.size;
-        int index = findIndexByAddress(p);
-        if (index>=0) {
-            if (index>0) {
-                HeapItem before = itemsByAddress.get(index-1);
-                if (before.address+before.size==item.address) {
-                    removeItem(before);
-                    before.size+=item.size;
-                    item = before;
-                }
-            }
-            if (index<itemsByAddress.size()) {
-                HeapItem after = itemsByAddress.get(index);
-                if (item.address+item.size==after.address) {
-                    removeItem(after);
-                    item.size+=after.size;
-                }
-            }
-            insertItem(item);
-        } else {
-            insertItem(item);
-        }
-        return size;
     }
 
     public Heap deepCopy() {
-        Heap result = new Heap(start, end);
-        for (HeapItem item: itemsBySize) {
-            result.itemsBySize.add(item.deepCopy());
-        }
-        for (HeapItem item: itemsByAddress) {
-            result.itemsByAddress.add(item.deepCopy());
-        }
-        for (Long address:usedMemory.keySet()) {
-            result.usedMemory.put(address, usedMemory.get(address));
-        }
+        Heap result = new Heap(start, end, blockSize);
+        result.blocks = (BitSet)blocks.clone();
         return result;
     }
 }

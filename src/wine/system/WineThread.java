@@ -95,8 +95,12 @@ public class WineThread {
 
     public void init() {
         if (initialStackAddress==0) {
-            this.stackAddress = (int) process.addressSpace.getNextAddress(WineProcess.ADDRESS_PROCESS_STACK_START, stackSizeReserved, true) + stackSizeReserved;
-            process.addressSpace.alloc(this.stackAddress, stackSizeReserved);
+            synchronized (process.addressSpace) {
+                int pageCount = stackSizeReserved>>>12;
+                int page = process.addressSpace.getNextPage(WineProcess.ADDRESS_PROCESS_STACK_START, pageCount);
+                this.stackAddress = page << 12;
+                process.addressSpace.allocPages(page, pageCount);
+            }
             this.stackSize = 0;
             this.stackTop = this.stackAddress+stackSizeReserved;
             this.stackBottom = this.stackTop;
@@ -139,16 +143,18 @@ public class WineThread {
         process.free(this.errnoPtr);
         this.errnoPtr = 0;
 
-        int pageStart = this.stackAddress>>>12;
-        int pageCount = this.stackSize >>> 12;
-        for (int i=0;i<pageCount;i++) {
-            PageHandler handler = process.memory.handlers[pageStart+i];
-            if (handler instanceof ThreadHandler) {
-                RAM.freePage(((ThreadHandler)handler).physicalPage);
+        if (stackAddress!=0) {
+            int pageStart = this.stackAddress >>> 12;
+            int pageCount = this.stackSize >>> 12;
+            for (int i = 0; i < pageCount; i++) {
+                PageHandler handler = process.memory.handlers[pageStart + i];
+                if (handler instanceof ThreadHandler) {
+                    RAM.freePage(((ThreadHandler) handler).physicalPage);
+                }
+                process.memory.handlers[i + pageStart] = Memory.invalidHandler;
             }
-            process.memory.handlers[i+pageStart] = Memory.invalidHandler;
+            process.addressSpace.freePages(pageStart, pageCount);
         }
-        process.addressSpace.free(this.stackAddress);
         threadToWineThread.remove(Thread.currentThread());
         process.exitThread(this);
     }

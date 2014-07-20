@@ -13,6 +13,7 @@ import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.system.io.KernelObject;
+import wine.util.AddressSpace;
 import wine.util.Heap;
 import wine.util.LittleEndianStream;
 import wine.util.Log;
@@ -25,20 +26,20 @@ import java.util.Vector;
 
 public class WineProcess {
     // the values don't really matter too much, it just makes it easier to debug if we know what might be in a particular address
-    static public long ADDRESS_PROCESS_STACK_START =    0xE0000000l;
-    static public long ADDRESS_PER_CPU =                0xE1000000l;
-    static public long ADDRESS_PROCESS_CALLBACK_START = 0xE2000000l;
-    static public long ADDRESS_PROCESS_SHARED_START =   0xE3000000l;
-    static public long ADDRESS_PROCESS_DLL_START =      0xE4000000l;
-    static public long ADDRESS_PROCESS_MMAP_START =     0xE4000000l;
-    static public long ADDRESS_PROCESS_HEAP_START =     0xF0000000l; // this needs a continuous space, hopefully wine won't use more than 256MB
+    static public int ADDRESS_PROCESS_STACK_START =    0xE0000;
+    static public int ADDRESS_PER_CPU =                0xE1000;
+    static public int ADDRESS_PROCESS_CALLBACK_START = 0xE2000;
+    static public int ADDRESS_PROCESS_SHARED_START =   0xE3000;
+    static public int ADDRESS_PROCESS_DLL_START =      0xE4000;
+    static public int ADDRESS_PROCESS_MMAP_START =     0xE4000;
+    static public int ADDRESS_PROCESS_HEAP_START =     0xF0000; // this needs a continuous space, hopefully wine won't use more than 256MB
 
     static public final int STATE_INIT = 0;
     static public final int STATE_STARTED = 1;
     static public final int STATE_DONE = 2;
 
     // if new variables are addedd, make sure they are accounted for in fork and exec
-    final public Heap addressSpace;
+    final public AddressSpace addressSpace;
     final public Memory memory;
     final public Hashtable<Integer, WineThread> threads = new Hashtable<Integer, WineThread>();
     final public SigAction[] sigActions = SigAction.create(64);
@@ -147,8 +148,8 @@ public class WineProcess {
     public WineProcess(String currentDirectory, String name, int id, int tid, String envs[]) {
         memory  = new Memory();
         loader = new Loader(this);
-        addressSpace = new Heap(0x1000, 0xFFFFFFFFl);
-        heap = new Heap(ADDRESS_PROCESS_HEAP_START, ADDRESS_PROCESS_HEAP_START); // it will grow
+        addressSpace = new AddressSpace();
+        heap = new Heap(ADDRESS_PROCESS_HEAP_START<<12, ADDRESS_PROCESS_HEAP_START<<12, 64); // it will grow
         this.envByNameValue= new Hashtable<String, String>();
         envByNamePos = new Hashtable<String, Integer>();
         this.currentDirectory = currentDirectory;
@@ -164,7 +165,7 @@ public class WineProcess {
         memory.init();
         loader.init();
         addressSpace.clear();
-        heap.clear(ADDRESS_PROCESS_HEAP_START, ADDRESS_PROCESS_HEAP_START);
+        heap.clear(ADDRESS_PROCESS_HEAP_START<<12, ADDRESS_PROCESS_HEAP_START<<12);
         envByNameValue.clear();
         callReturnEip=CPU.registerCallReturnEip(loader);
         envByNamePos.clear();
@@ -179,7 +180,7 @@ public class WineProcess {
         memory.writed(passwd+12, passwd+20+userName.length()+1);
         memory.writed(passwd+16, 0); // shell
 
-        addressSpace.alloc(ADDRESS_PROCESS_HEAP_START, 0x100000000l-ADDRESS_PROCESS_HEAP_START-4096);
+        addressSpace.allocPages(ADDRESS_PROCESS_HEAP_START, 0x100000 - ADDRESS_PROCESS_HEAP_START - 1);
         int data = alloc(4096);
         memory.zero(data, 4096);
         optind = data;data+=4;
@@ -217,16 +218,16 @@ public class WineProcess {
 
     public int alloc(int size) {
         synchronized (heap) {
-            int result = (int) heap.alloc(size, false);
+            int result = heap.alloc(size);
             if (result == 0) {
-                int pages = (size + 0xFFF) >>> 12;
-                int address = (int) heap.grow(pages << 12);
+                int pages = ((size + 0xFFF) >>> 12) + 1;
+                int address = heap.grow(pages << 12);
                 int pageStart = address >>> 12;
                 for (int i = 0; i < pages; i++) {
                     int page = RAM.allocPage();
                     memory.handlers[pageStart + i] = new RAMHandler(memory, page, false, false);
                 }
-                result = (int) heap.alloc(size, false);
+                result = heap.alloc(size);
             }
             if (result == 0) {
                 Log.panic("Out of memory");
@@ -239,40 +240,38 @@ public class WineProcess {
         return heap.getSize(address);
     }
 
-    public void allocPages(int address, int pages, boolean map) {
-        if (addressSpace.alloc(address, pages<<12)==0) {
-            Log.panic("Failed to find address for " + pages+" pages @0x" + Integer.toHexString(address));
+    public void allocPages(int pageStart, int pages, boolean map) {
+        if (!addressSpace.allocPages(pageStart, pages)) {
+            Log.panic("Failed to find address for " + pages+" pages @0x" + Integer.toHexString(pageStart<<12));
         }
-        int pageStart = address>>>12;
         for (int i=0;i<pages;i++) {
             int page = RAM.allocPage();
             memory.handlers[pageStart+i] = new RAMHandler(memory, page, map, false);
         }
     }
 
-    public void freePages(int address, int pages) {
-        int pageStart = address>>>12;
+    public void freePages(int pageStart, int pages) {
         for (int i=0;i<pages;i++) {
             memory.handlers[pageStart+i].close();
             memory.handlers[pageStart+i] = Memory.invalidHandler;
         }
-        addressSpace.free(address);
+        addressSpace.freePages(pageStart, pages);
     }
 
     public int mapPage(int page) {
-        long address = addressSpace.getNextAddress(ADDRESS_PROCESS_SHARED_START, 4096, true);
-        memory.handlers[(int)(address>>>12)] = new RAMHandler(memory, page, false, false);
-        return (int)address;
+        synchronized (addressSpace) {
+            int pageStart = addressSpace.getNextPage(ADDRESS_PROCESS_SHARED_START, 1);
+            addressSpace.allocPages(pageStart, 1);
+            memory.handlers[pageStart] = new RAMHandler(memory, page, false, false);
+            return pageStart<<12;
+        }
     }
 
     public void free(int address) {
         if (address==0)
             return;
         synchronized (heap) {
-            int size = (int) heap.free(address);
-            if (size <= 0) {
-                Log.panic("Tried to free invalid address 0x" + Integer.toHexString(address));
-            }
+            heap.free(address);
         }
     }
 
@@ -589,7 +588,7 @@ public class WineProcess {
         env = new String[envTmp.size()];
         envTmp.copyInto(env);
 
-        memory.close(); // free up memory before allocating new process
+        //memory.close(); // free up memory before allocating new process
 
         WineProcess process = WineProcess.create(currentDirectory, args, env, id, thread.id, waitToStart);
         for (FileDescriptor fd : ((Hashtable<Integer, FileDescriptor>)fileDescriptors.clone()).values()) {

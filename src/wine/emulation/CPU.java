@@ -136,8 +136,13 @@ public class CPU {
     public void init(int callReturnEip) {
         this.callReturnEip = callReturnEip;
         // intentionally every other page to catch overflow
-        this.gs.dword = (int)this.thread.process.addressSpace.getNextAddress(WineProcess.ADDRESS_PER_CPU, 8192, true)+4096;
-        this.thread.process.allocPages(this.gs.dword, 1, false);
+        int page;
+        synchronized (this.thread.process.addressSpace) {
+            page = this.thread.process.addressSpace.getNextPage(WineProcess.ADDRESS_PER_CPU, 2)+1;
+            this.thread.process.allocPages(page, 1, false);
+            this.thread.process.addressSpace.allocPages(page-1,1);
+        }
+        this.gs.dword = page << 12;
         memory.writed(this.gs.dword+20, 0x4512AB78); // stack canary
         blocks.clear();
     }
