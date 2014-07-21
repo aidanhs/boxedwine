@@ -256,15 +256,7 @@ public class Stat {
             thread.setErrno(Errno.EBADF);
             return -1;
         }
-        long pos = file.getFilePointer();
-        if (pos<0) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        file.seek(Stdio.SEEK_CUR, offset);
-        int result = file.read(buf, count);
-        file.seek(Stdio.SEEK_CUR, pos);
-        return result;
+        return file.pread(buf, count, offset);
     }
 
     // int pwrite( int fd, const void *buf, int count, int offset )
@@ -290,15 +282,7 @@ public class Stat {
             thread.setErrno(Errno.EBADF);
             return -1;
         }
-        long pos = file.getFilePointer();
-        if (pos<0) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        file.seek(Stdio.SEEK_CUR, offset);
-        int result = file.write(buf, count);
-        file.seek(Stdio.SEEK_CUR, pos);
-        return result;
+        return file.pwrite(buf, count, offset);
     }
 
     // int umask(int cmask)

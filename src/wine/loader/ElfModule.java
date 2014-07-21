@@ -84,7 +84,7 @@ public class ElfModule extends Module {
             header.load(is);
             String err = header.isValid();
             if (err!=null) {
-                Log.panic(name+" "+err);
+                return false;
             }
             long pos = ElfHeader.SIZE;
             if (header.e_phoff>pos) {
@@ -108,7 +108,7 @@ public class ElfModule extends Module {
                 section.load(is);
                 sections.add(section);
 
-                if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0) {
+                if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0 && section.sh_type!=ElfSection.SHT_NOTE) {
                     if (section.sh_addr < start) {
                         start = section.sh_addr;
                         originalAddress = section.sh_addr-section.sh_offset;
@@ -123,9 +123,6 @@ public class ElfModule extends Module {
                         skip = true;
                     }
                 }
-            }
-            if (gaps) {
-                Log.panic(name + ": Wasn't expecting a gap in the program sections");
             }
             reloc = false;
             long pageAddress = originalAddress;
@@ -174,7 +171,7 @@ public class ElfModule extends Module {
             pos = 0;
 
             for (ElfSection section: sections) {
-                if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0) {
+                if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0 && section.sh_type!=ElfSection.SHT_NOTE) {
                     byte[] buffer = new byte[(int)section.sh_size];
                     if (section.sh_offset>pos) {
                         fis.skip(section.sh_offset-pos);

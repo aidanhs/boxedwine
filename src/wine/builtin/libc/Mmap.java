@@ -191,12 +191,8 @@ public class Mmap {
                 thread.setErrno(Errno.EINVAL);
                 return MAP_FAILED;
             }
-            if ((!fd.canRead() && read) || (!fd.canWrite() && write)) {
+            if ((!fd.canRead() && read) || (!priv && (!fd.canWrite() && write))) {
                 thread.setErrno(Errno.EACCES);
-                return MAP_FAILED;
-            }
-            if (file.node.length()<off+len) {
-                thread.setErrno(Errno.EINVAL);
                 return MAP_FAILED;
             }
         }
@@ -205,7 +201,7 @@ public class Mmap {
 
         synchronized (thread.process.addressSpace) {
             if ((flags & MAP_FIXED) != 0) {
-                if (address == 0 || (address & 0xFFF) != 0) {
+                if ((address & 0xFFF) != 0) {
                     thread.setErrno(Errno.EINVAL);
                     return MAP_FAILED;
                 }

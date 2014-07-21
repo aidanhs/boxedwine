@@ -229,6 +229,26 @@ public class KernelFile extends KernelObject {
         return io.getFilePointer();
     }
 
+    synchronized public int pread(int buffer, int len, long offset) {
+        WineThread thread = WineThread.getCurrent();
+        if (io==null) {
+            thread.setErrno(Errno.EBADF);
+            return -1;
+        }
+        byte[] b = new byte[len];
+        thread.process.memory.memcpy(b, 0, len, buffer);
+        long pos = io.getFilePointer();
+        if (!io.seek(offset)) {
+            thread.setErrno(Errno.EIO);
+            return -1;
+        }
+        int read = io.read(b);
+        thread.process.memory.memcpy(buffer, b, 0, read);
+        if (pos>=0) {
+            io.seek(pos);
+        }
+        return read;
+    }
     synchronized public int pwrite(int buffer, int len, long offset) {
         WineThread thread = WineThread.getCurrent();
         if (io==null) {

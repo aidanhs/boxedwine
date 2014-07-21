@@ -4538,4 +4538,37 @@ class Ops {
             return "cmpxchg "+ew.toString16()+", "+gw.name16;
         }
     }
+
+    static public class RegGetter implements wine.builtin.libc.Syscall.SyscallGetter {
+        CPU cpu;
+        int pos=-1;
+        public RegGetter(CPU cpu) {
+            this.cpu = cpu;
+        }
+
+        public int next() {
+            pos++;
+            switch (pos) {
+                case 0:return cpu.ebx.dword;
+                case 1:return cpu.ecx.dword;
+                case 2:return cpu.edx.dword;
+                case 3:return cpu.esi.dword;
+                case 4:return cpu.edi.dword;
+                case 5:return cpu.ebp.dword;
+                default:
+                    Log.panic("Oops, something went wrong with int 80 sys call");
+            }
+            return 0;
+        }
+    }
+
+    static public final class Syscall extends Op {
+        public Block call(CPU cpu) {
+            cpu.eax.dword = wine.builtin.libc.Syscall.syscall(cpu.eax.dword, new RegGetter(cpu));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "syscall";
+        }
+    }
 }

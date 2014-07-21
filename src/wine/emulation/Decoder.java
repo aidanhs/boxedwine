@@ -2170,6 +2170,20 @@ class Decoder {
             }
         };
 
+        /* INT Ib */
+        decoder[0x0cd] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int n = cpu.fetchb();
+                if (n==0x80) {
+                    prev.next = new Ops.Syscall();
+                } else {
+                    Log.panic("Unhandled interrupt "+Integer.toHexString(n));
+                }
+                return true;
+            }
+        };
+        decoder[0x2cd] = decoder[0x0cd];
+
         /* GRP2 Eb,1 */
         decoder[0xd0] = new Decode() {
             public boolean call(CPU cpu, Op prev) {

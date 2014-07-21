@@ -7,7 +7,14 @@ import wine.system.WineThread;
 import wine.util.Log;
 
 public class Syscall {
+    static public final int __NR_exit = 1;
+    static public final int __NR_read = 3;
+    static public final int __NR_write = 4;
+    static public final int __NR_open = 5;
+    static public final int __NR_close = 6;
+    static public final int __NR_mmap = 90;
     static public final int __NR_modify_ldt = 123;
+    static public final int __NR_mprotect = 125;
     static public final int __NR_getdents64 = 220;
     static public final int __NR_gettid = 224;
     static public final int __NR_tkill = 238;
@@ -59,11 +66,79 @@ public class Syscall {
 //        unsigned int  garbage : 25;
     }
 
+    static public interface SyscallGetter {
+        public int next();
+    }
+
+    static private class StackGetter implements SyscallGetter {
+        final private Memory memory;
+        private int address;
+
+        public StackGetter(Memory memory, int address) {
+            this.memory = memory;
+            this.address = address;
+        }
+        public int next() {
+            int result = memory.readd(address);
+            address+=4;
+            return result;
+        }
+    }
+
     // long syscall(long number, ...)
     static public int syscall(int number) {
         WineThread thread = WineThread.getCurrent();
+        return syscall(number, new StackGetter(thread.process.memory,thread.cpu.esp.dword+4));
+    }
+
+    static public int syscall(int number, SyscallGetter getter) {
+        WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
         switch (number) {
+            case __NR_exit: {
+                Unistd._exit(getter.next());
+                return 0;
+            }
+            case __NR_read: {
+                int fd = getter.next();
+                int buf = getter.next();
+                int len = getter.next();
+                return Unistd.read(fd, buf, len);
+            }
+            case __NR_write: {
+                int fd = getter.next();
+                int buf = getter.next();
+                int len = getter.next();
+                return Unistd.write(fd, buf, len);
+            }
+            case __NR_open: {
+                int name = getter.next();
+                int flags = getter.next();
+                int result = Fcntl.open(name, flags);
+                System.out.println("Open "+memory.readCString(name)+" fd="+result);
+                return result;
+            }
+            case __NR_close: {
+                int fd = getter.next();
+                System.out.println("Close "+fd);
+                return Unistd.close(fd);
+            }
+            case __NR_mmap: {
+                int args = getter.next();
+                int address = memory.readd(args);
+                int len = memory.readd(args+4);
+                int prot = memory.readd(args+8);
+                int flags = memory.readd(args+12);
+                int fd = memory.readd(args+16);
+                int offset = memory.readd(args+20);
+                return Mmap.mmap(address, len, prot, flags, fd, offset);
+            }
+            case __NR_mprotect: {
+                int address = getter.next();
+                int len = getter.next();
+                int prot = getter.next();
+                return Mmap.mprotect(address, len, prot);
+            }
             case __NR_modify_ldt:
                 Log.panic("syscall __NR_modify_ldt not implemented");
                 break;
@@ -80,10 +155,11 @@ public class Syscall {
                 return -1;
             }
             case __NR_set_thread_area: {
-                modify_ldt_s ldt = new modify_ldt_s(memory,thread.cpu.peek32(1));
+                int address = getter.next();
+                modify_ldt_s ldt = new modify_ldt_s(memory,address);
                 if (ldt.entry_number==-1) {
                     ldt.entry_number=9;
-                    ldt.write(memory, thread.cpu.peek32(1));
+                    ldt.write(memory, address);
                 } else {
                     if (ldt.base_addr==0) {
                         Log.panic("__NR_set_thread_area base_addr wasn't expected to 0");
@@ -102,9 +178,9 @@ public class Syscall {
                 Log.panic("syscall __NR_epoll_wait not implemented");
                 break;
             case __NR_tgkill: {
-                int threadGroupId = thread.cpu.peek32(1);
-                int threadId = thread.cpu.peek32(2);
-                int sig = thread.cpu.peek32(3);
+                int threadGroupId = getter.next();
+                int threadId = getter.next();
+                int sig = getter.next();
                 WineProcess process = WineSystem.processes.get(threadGroupId);
                 if (process==null) {
                     thread.setErrno(Errno.ESRCH);
