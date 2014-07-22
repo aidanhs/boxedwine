@@ -236,7 +236,6 @@ public class KernelFile extends KernelObject {
             return -1;
         }
         byte[] b = new byte[len];
-        thread.process.memory.memcpy(b, 0, len, buffer);
         long pos = io.getFilePointer();
         if (!io.seek(offset)) {
             thread.setErrno(Errno.EIO);

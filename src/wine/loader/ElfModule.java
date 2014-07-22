@@ -161,10 +161,12 @@ public class ElfModule extends Module {
                     }
                 }
             }
-            if (reloc) {
-                System.out.println(process.mainModule.name+":"+process.id+" relocating "+name+" "+Long.toHexString(originalAddress)+ " -> "+Long.toHexString(address)+"(page="+Integer.toHexString(pageStart)+" pageCount="+pageCount+")");
-            } else {
-                System.out.println(process.mainModule.name+":"+process.id+" loading "+name+" "+Long.toHexString(originalAddress)+"-"+Long.toHexString(originalAddress+size)+"(page="+Integer.toHexString(pageStart)+" pageCount="+pageCount+")");
+            if (Log.level>Log.LEVEL_NONE) {
+                if (reloc) {
+                    System.out.println(process.mainModule.name + ":" + process.id + " relocating " + name + " " + Long.toHexString(originalAddress) + " -> " + Long.toHexString(address) + "(page=" + Integer.toHexString(pageStart) + " pageCount=" + pageCount + ")");
+                } else {
+                    System.out.println(process.mainModule.name + ":" + process.id + " loading " + name + " " + Long.toHexString(originalAddress) + "-" + Long.toHexString(originalAddress + size) + "(page=" + Integer.toHexString(pageStart) + " pageCount=" + pageCount + ")");
+                }
             }
             fis.close();
             fis = node.getInputStream();
@@ -461,13 +463,15 @@ public class ElfModule extends Module {
 
     public void unload() {
         // :TODO: this is broken for some reason
-//        WineThread thread = WineThread.getCurrent();
-//        for (Integer func : finiFunctions) {
-//            thread.cpu.call(func);
-//        }
+        WineThread thread = WineThread.getCurrent();
+        for (Integer func : finiFunctions) {
+            thread.cpu.call(func);
+        }
         int pageStart = (int)(address>>>12);
         int pageCount = (int)(imageSize >> 12);
 //        process.freePages(pageStart, pageCount);
-        System.out.println(process.mainModule.name+":"+process.id+" unloading "+name+" "+Long.toHexString(address)+"(page="+Integer.toHexString(pageStart)+" pageCount="+pageCount+")");
+        if (Log.level>Log.LEVEL_NONE) {
+            System.out.println(process.mainModule.name + ":" + process.id + " unloading " + name + " " + Long.toHexString(address) + "(page=" + Integer.toHexString(pageStart) + " pageCount=" + pageCount + ")");
+        }
     }
 }

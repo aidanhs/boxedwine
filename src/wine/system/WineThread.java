@@ -122,7 +122,7 @@ public class WineThread {
     }
 
     public void out(String msg) {
-        if (stdoutBuffer.length()==0) {
+        if (Log.level>Log.LEVEL_NONE && stdoutBuffer.length()==0) {
             stdoutBuffer.append(process.name);
             stdoutBuffer.append(":");
             stdoutBuffer.append(process.id);

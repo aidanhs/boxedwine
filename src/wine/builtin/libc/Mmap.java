@@ -287,7 +287,7 @@ public class Mmap {
             if (handler instanceof MMapHandler) {
                 MMapHandler mhandler = (MMapHandler) handler;
                 if ((read | exec) && write) {
-                    if (!mhandler.fd.canWrite() || !mhandler.fd.canRead()) {
+                    if ((!mhandler.fd.canWrite() && mhandler.shared) || !mhandler.fd.canRead()) {
                         WineThread.getCurrent().setErrno(Errno.EACCES);
                         return -1;
                     }
@@ -297,7 +297,7 @@ public class Mmap {
                         return -1;
                     }
                 } else if (write) {
-                    if (!mhandler.fd.canWrite()) {
+                    if (!mhandler.fd.canWrite() && !mhandler.shared) {
                         WineThread.getCurrent().setErrno(Errno.EACCES);
                         return -1;
                     }
@@ -328,6 +328,7 @@ public class Mmap {
                 }
                 ((MMapHandler)handlers[i + pageStart]).dirty = mhandler.dirty;
                 ((MMapHandler)handlers[i + pageStart]).physicalPage = mhandler.physicalPage;
+                ((MMapHandler)handlers[i + pageStart]).addressTranslation = mhandler.addressTranslation;
                 mhandler.file.close(); // MMapHandlerNone constructor added a new reference count
             } else if (handler instanceof RAMHandler) {
                 RAMHandler rhandler = (RAMHandler)handler;

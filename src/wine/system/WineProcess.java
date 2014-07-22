@@ -2,6 +2,7 @@ package wine.system;
 
 import wine.builtin.libc.Errno;
 import wine.builtin.libc.Fcntl;
+import wine.builtin.libc.Signal;
 import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.emulation.RAM;
@@ -308,8 +309,12 @@ public class WineProcess {
         synchronized (this) {
             threads.remove(thread.id);
             if (threads.size()==0) {
-                thread.out("Process Terminated");
+                if (Log.level>Log.LEVEL_NONE)
+                    thread.out("Process Terminated");
                 this.terminated = true;
+                if (parent!=null && !parent.terminated && parent.sigActions[Signal.SIGCHLD].sa_handler>1) {
+                    parent.sigActions[Signal.SIGCHLD].call();
+                }
                 cleanup();
                 // :TODO: need to track parent process
 //                if (sigActions[Signal.SIGCHLD].sa_handler==SigAction.SIG_IGN) {
@@ -323,7 +328,8 @@ public class WineProcess {
     }
 
     public void _exit(int status) {
-        WineThread.getCurrent().out("_exit "+status);
+        if (Log.level>Log.LEVEL_NONE)
+            WineThread.getCurrent().out("_exit "+status);
         this.exitCode = status;
         for (Integer threadId :threads.keySet()) {
             WineThread thread = threads.get(threadId);
@@ -548,11 +554,13 @@ public class WineProcess {
             thread.setErrno(Errno.ENOENT);
             return -1;
         }
-        System.out.print("exec");
-        for (int i=0;i<args.length;i++) {
-            System.out.print(" "+args[i]);
+        if (Log.level>Log.LEVEL_NONE) {
+            System.out.print("exec");
+            for (int i = 0; i < args.length; i++) {
+                System.out.print(" " + args[i]);
+            }
+            System.out.println();
         }
-        System.out.println();
         InputStream fis = null;
         boolean valid = false;
         try {
@@ -582,8 +590,7 @@ public class WineProcess {
         }
         Vector<String> envTmp = new Vector<String>();
         for (String name : this.envByNameValue.keySet()) {
-            if (!name.equals("WINEPRELOADRESERVE"))
-                envTmp.add(name+"="+this.envByNameValue.get(name));
+            envTmp.add(name+"="+this.envByNameValue.get(name));
         }
         env = new String[envTmp.size()];
         envTmp.copyInto(env);

@@ -4,6 +4,8 @@ import wine.builtin.libX11.LibX11;
 import wine.builtin.libXext.LibXext;
 import wine.builtin.libc.Libc;
 import wine.builtin.libdl.Libdl;
+import wine.builtin.libfontconfig.Libfontconfig;
+import wine.builtin.libfreetype.Libfreetype;
 import wine.builtin.libm.Libm;
 import wine.builtin.libpthread.LibPThread;
 import wine.loader.elf.ElfSymbol;
@@ -66,7 +68,7 @@ public class Loader {
     }
 
     public void unregisterFunction(int address) {
-        callbacks.set((address-WineProcess.ADDRESS_PROCESS_CALLBACK_START)/4, null);
+        callbacks.set((address-(WineProcess.ADDRESS_PROCESS_CALLBACK_START<<12))/4, null);
     }
 
     private Module load_native_module(WineThread thread, String name) {
@@ -125,6 +127,10 @@ public class Loader {
             module = new LibX11(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libXext.so.6")) {
             module = new LibXext(name, process, WineSystem.nextid++);
+        } else if (name.equalsIgnoreCase("libfreetype.so.6")) {
+            module = new Libfreetype(name, process, WineSystem.nextid++);
+        } else if (name.equalsIgnoreCase("libfontconfig.so.1")) {
+            module = new Libfontconfig(name, process, WineSystem.nextid++);
         }
         if (module != null) {
             modulesByName.put(name.toLowerCase(), module);

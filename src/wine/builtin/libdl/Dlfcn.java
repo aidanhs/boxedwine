@@ -48,6 +48,8 @@ public class Dlfcn {
         String name = thread.process.memory.readCString(file);
         Module module = thread.process.loader.loadModule(thread, name);
         if (module==null) {
+            if (Log.level>Log.LEVEL_NONE)
+                thread.out("Did not find "+name);
             return 0;
         }
         return module.id.intValue();

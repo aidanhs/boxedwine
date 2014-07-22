@@ -7,13 +7,12 @@ import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
 
-import java.util.Arrays;
-
 public class MMapHandler extends PageHandler {
     final public KernelFile file;
     final public FileDescriptor fd;
     final public int addressOffset;
     final public long fileOffset;
+    public int addressTranslation;
     public int physicalPage;
     final public boolean shared;
     public boolean dirty;
@@ -21,17 +20,23 @@ public class MMapHandler extends PageHandler {
 
     protected void alloc() {
         physicalPage = RAM.allocPage();
-        byte[] buffer = new byte[4096];
-        int read = file.io.read(buffer);
-        if (read<=0) {
-            Log.panic("This should not happen, maybe the user messed with the file while running wine");
-        }
-        if (read<buffer.length) {
-            Arrays.fill(buffer, read, buffer.length - 1, (byte) 0);
-        }
-        int address = physicalPage<<12;
-        for (int i=0;i<buffer.length;i++) {
-            RAM.writeb(address++, buffer[i]);
+        addressTranslation = (physicalPage<<12)-addressOffset;
+
+        synchronized (file) {
+            byte[] b = new byte[4096];
+            long pos = file.io.getFilePointer();
+            if (!file.io.seek(fileOffset)) {
+                Log.panic("Oops");
+            }
+            int read = file.io.read(b);
+            int a = physicalPage << 12;
+            // to use read, use b.length, so that 0's will fill the end of the page
+            for (int i = 0; i < b.length; i++) {
+                RAM.writeb(a++, b[i]);
+            }
+            if (pos >= 0) {
+                file.io.seek(pos);
+            }
         }
     }
 
@@ -65,40 +70,40 @@ public class MMapHandler extends PageHandler {
         if (physicalPage==0) {
             alloc();
         }
-        return RAM.readd(address-addressOffset);
+        return RAM.readd(address+addressTranslation);
     }
     public int readw(int address) {
         if (physicalPage==0) {
             alloc();
         }
-        return RAM.readw(address-addressOffset);
+        return RAM.readw(address+addressTranslation);
     }
     public int readb(int address) {
         if (physicalPage==0) {
             alloc();
         }
-        return RAM.readb(address-addressOffset);
+        return RAM.readb(address+addressTranslation);
     }
     public void writed(int address, int value) {
         if (physicalPage==0) {
             alloc();
         }
         dirty=true;
-        RAM.writed(address-addressOffset, value);
+        RAM.writed(address+addressTranslation, value);
     }
     public void writew(int address, int value) {
         if (physicalPage==0) {
             alloc();
         }
         dirty=true;
-        RAM.writew(address-addressOffset, value);
+        RAM.writew(address+addressTranslation, value);
     }
     public void writeb(int address, int value) {
         if (physicalPage==0) {
             alloc();
         }
         dirty=true;
-        RAM.writeb(address-addressOffset, value);
+        RAM.writeb(address+addressTranslation, value);
     }
 
     public PageHandler fork(WineProcess process) {

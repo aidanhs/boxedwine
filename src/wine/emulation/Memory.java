@@ -13,12 +13,7 @@ public class Memory {
     }
 
     public int readd(int address) {
-        try {
-            return handlers[(address >>> 12)].readd(address);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+        return handlers[(address >>> 12)].readd(address);
     }
     public long readq(int address) {
         long v1=handlers[(address>>>12)].readd(address) & 0xFFFFFFFFl;
