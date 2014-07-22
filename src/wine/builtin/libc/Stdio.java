@@ -88,7 +88,8 @@ public class Stdio {
             thread.setErrno(Errno.EBADF);
             return -1;
         }
-        fd.incrementRef();
+        // The file descriptor is not dup'ed, and will be closed when the stream created by fdopen() is closed.
+        // fd.incrementRef();
         return fildes;
     }
 
