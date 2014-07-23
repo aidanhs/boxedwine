@@ -9,6 +9,8 @@ public class Sscanf {
 
         StringBuilder result = new StringBuilder();
         boolean negative = false;
+        if (valuePos>=value.length())
+            return valuePos;
         if (value.charAt(valuePos)=='-') {
             negative=true;
             valuePos++;
@@ -34,7 +36,7 @@ public class Sscanf {
         if (width.length()>0)
             w = Integer.parseInt(width);
         for (int i=0;i<w && valuePos<value.length();i++) {
-            int c = value.charAt(valuePos);
+            char c = value.charAt(valuePos);
             if (base == 8) {
                 if (c>='0' && c<='7') {
                     result.append(c);
@@ -105,11 +107,12 @@ public class Sscanf {
                 while (valuePos < value.length() && CType.isspace(value.charAt(valuePos)) != 0) {
                     valuePos++;
                 }
+                continue;
             }
             if (c != '%') {
                 if (valuePos >= value.length())
                     return (conversions != 0 ? assigned : -1);
-                if (value.charAt(valuePos)!=format.charAt(formatPos))
+                if (value.charAt(valuePos)!=c)
                     return assigned;
                 valuePos++;
             } else {

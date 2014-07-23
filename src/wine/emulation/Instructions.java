@@ -1539,7 +1539,7 @@ class Instructions {
 
     static final private class IMuld extends Instruction {
         public void runCustom(CPU cpu, int value) {
-            long result = cpu.eax.dword * value;
+            long result = (long)cpu.eax.dword * value;
             cpu.eax.dword=(int)result;
             cpu.edx.dword=(int)(result >>> 32);
             cpu.fillFlagsNoCFOF();

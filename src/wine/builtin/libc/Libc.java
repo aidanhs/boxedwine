@@ -198,10 +198,12 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "atexit");
         add_cdecl(Stdlib.class, "atoi");
         add_cdecl(Stdlib.class, "calloc");
+        add_cdecl(Stdlib.class, "div");
         add_cdecl(Stdlib.class, "exit");
         add_cdecl(Stdlib.class, "free");
         add_cdecl(Stdlib.class, "getenv");
         add_cdecl(Stdlib.class, "labs");
+        add_cdecl(Stdlib.class, "ldiv");
         add_cdecl(Stdlib.class, "malloc");
         add_cdecl(Stdlib.class, "putenv");
         add_cdecl(Stdlib.class, "qsort");
@@ -210,6 +212,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "realpath");
         add_cdecl(Stdlib.class, "strtod");
         add_cdecl(Stdlib.class, "strtol");
+        add_cdecl(Stdlib.class, "strtold");
         add_cdecl(Stdlib.class, "strtoll");
         add_cdecl(Stdlib.class, "strtoul");
         add_cdecl(Stdlib.class, "strtoull");
@@ -240,6 +243,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Strings.class, "strspn");
         add_cdecl(Strings.class, "strstr");
         add_cdecl(Strings.class, "strtok");
+        add_cdecl(Strings.class, "strxfrm");
 
         add_cdecl(Syscall.class, "syscall");
 

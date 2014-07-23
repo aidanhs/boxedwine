@@ -141,6 +141,10 @@ abstract public class FSNode {
                 this.io = io;
             }
 
+            public boolean open(String mode) {
+                return true;
+            }
+
             public boolean setLength(long length) {
                 try {
                     io.setLength(length);

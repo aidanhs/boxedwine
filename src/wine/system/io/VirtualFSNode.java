@@ -44,7 +44,9 @@ public class VirtualFSNode extends FSNode {
     }
 
     public FSNodeAccess open(String mode) {
-        return access;
+        if (access.open(mode))
+            return access;
+        return null;
     }
 
     public boolean mkdir() {

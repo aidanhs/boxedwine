@@ -3,6 +3,7 @@ package wine.builtin.libc;
 import wine.emulation.Memory;
 import wine.system.WineProcess;
 import wine.system.WineThread;
+import wine.util.Log;
 
 import java.util.HashSet;
 
@@ -372,5 +373,11 @@ public class Strings {
                 }
             } while (sourceChar != 0);
         }
+    }
+
+    // size_t strxfrm(char * s1, const char * s2, size_t n)
+    static public int strxfrm(int s1, int s2, int n) {
+        Log.panic("strxfrm not implemented");
+        return 0;
     }
 }

@@ -5,6 +5,9 @@ public class DevNull implements FSNodeAccess {
         return false;
     }
 
+    public boolean open(String mode) {
+        return true;
+    }
     public long getFilePointer() {
         return 0;
     }

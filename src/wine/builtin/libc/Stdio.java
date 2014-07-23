@@ -117,14 +117,14 @@ public class Stdio {
         Memory memory = thread.process.memory;
         FileDescriptor fd = thread.process.getFileDescriptor(stream);
 
-        if (fd==null || !fd.canWrite()) {
+        if (fd==null || !fd.canRead()) {
             thread.setErrno(Errno.EBADF);
             return -1;
         }
         for (int i=0;i<n;i++) {
             if (fd.object.read(s + i, 1) != 1) {
                 memory.writeb(s + i, 0);
-                return s;
+                return 0;
             }
             char c = (char)(memory.readb(s+i) & 0xFF);
             if (c=='\n') {

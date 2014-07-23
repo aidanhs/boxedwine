@@ -43,6 +43,13 @@ public class Stdlib {
         return result;
     }
 
+    // div_t div (int numer, int denom)
+    static public long div(int numer, int denom) {
+        int result = numer / denom;
+        int remainder = numer % denom;
+        return result  | ((long)remainder << 32);
+    }
+
     // void exit(int status)
     static public void exit(int status) {
         WineThread thread = WineThread.getCurrent();
@@ -64,6 +71,13 @@ public class Stdlib {
     // long labs(long i)
     static public int labs(int i) {
         return abs(i);
+    }
+
+    // ldiv_t ldiv (long int numer, long int denom)
+    static public long ldiv(int numer, int denom) {
+        int result = numer / denom;
+        int remainder = numer % denom;
+        return result  | ((long)remainder << 32);
     }
 
     // void *malloc(size_t size)
@@ -228,6 +242,12 @@ public class Stdlib {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    // long double strtold(const char * nptr, char ** endptr)
+    static public double strtold(int str, int endptr) {
+        Log.panic("Not sure if strtold returns back a 64-bit double or what?");
+        return strtod(str, endptr);
     }
 
     // long strtol(const char * str, char ** endptr, int base)

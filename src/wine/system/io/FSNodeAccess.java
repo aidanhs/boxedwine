@@ -7,4 +7,5 @@ public interface FSNodeAccess {
     public int read(byte[] b);
     public boolean write(byte[] b);
     public void close();
+    public boolean open(String mode);
 }

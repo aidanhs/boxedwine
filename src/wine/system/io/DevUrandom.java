@@ -1,16 +1,17 @@
 package wine.system.io;
 
-import java.util.Arrays;
+import java.util.Random;
 
-public class DevZero implements FSNodeAccess {
-    public boolean open(String mode) {
-        return true;
-    }
+public class DevUrandom implements FSNodeAccess {
+    Random random = new Random(System.currentTimeMillis());
 
     public boolean setLength(long length) {
         return false;
     }
 
+    public boolean open(String mode) {
+        return true;
+    }
     public long getFilePointer() {
         return 0;
     }
@@ -20,7 +21,7 @@ public class DevZero implements FSNodeAccess {
     }
 
     public int read(byte[] b) {
-        Arrays.fill(b, (byte) 0);
+        random.nextBytes(b);
         return b.length;
     }
 
@@ -31,3 +32,4 @@ public class DevZero implements FSNodeAccess {
     public void close() {
     }
 }
+

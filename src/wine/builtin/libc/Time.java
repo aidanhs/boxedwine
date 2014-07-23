@@ -152,10 +152,12 @@ public class Time {
         if (tz!=0) {
             Log.panic("gettimeofday tz not implemented");
         }
-        long ms = Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTimeInMillis();
+        long ms = System.currentTimeMillis();
+        long s = ms/1000;
+        long us = (ms-s*1000)*1000;
         Memory memory = WineThread.getCurrent().process.memory;
-        memory.writed(tv, (int)(ms/1000));
-        memory.writed(tv+4, (int)(ms%1000)*1000);
+        memory.writed(tv, (int)s);
+        memory.writed(tv+4, (int)us);
         return 0;
     }
 //    #define FD_SETSIZE 64
