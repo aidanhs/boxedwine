@@ -1,8 +1,15 @@
 package wine.builtin.libX11;
 
+import wine.emulation.CPU;
+import wine.emulation.Memory;
 import wine.loader.BuiltinModule;
 import wine.system.WineProcess;
+import wine.system.WineSystem;
+import wine.system.WineThread;
+import wine.system.io.FileDescriptor;
 import wine.util.Log;
+
+import java.util.Vector;
 
 public class LibX11 extends BuiltinModule {
     public LibX11(String name, WineProcess process, int id) {
@@ -173,6 +180,14 @@ public class LibX11 extends BuiltinModule {
         add_cdecl(LibX11.class, "XWithdrawWindow");
     }
 
+    static private Display getDisplay(int address) {
+        WineThread thread = WineThread.getCurrent();
+        FileDescriptor fd = thread.process.getFileDescriptor(thread.process.memory.readd(address+8));
+        if (fd==null)
+            return null;
+        return (Display)fd.object;
+    }
+
     // XClassHint *XAllocClassHint()
     static public int XAllocClassHint() {
         Log.panic("XAllocClassHint not implemented");
@@ -287,9 +302,13 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Colormap XCreateColormap(Display *display, Window w, Visual *visual, int alloc)
-    static public int XCreateColormap(int display, int w, int visual, int alloc) {
-        Log.panic("XCreateColormap not implemented");
-        return 0;
+    static public int XCreateColormap(int address, int w, int visual, int alloc) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
+        if (window == null)
+            return 0;
+        Screen screen = window.screen;
+        return new Colormap(display, screen).id;
     }
 
     // Cursor XCreateFontCursor(Display *display, unsigned int shape);
@@ -459,10 +478,9 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
-    // int XFree(void *data)
-    static public int XFree(int data) {
-        Log.panic("XFree not implemented");
-        return 0;
+    // void XFree(void *data)
+    static public void XFree(int data) {
+        WineThread.getCurrent().process.free(data);
     }
 
     // int XFreeColormap(Display *display, Colormap colormap)
@@ -589,9 +607,61 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
+    static public final int VisualNoMask            = 0x0;
+    static public final int VisualIDMask            = 0x1;
+    static public final int VisualScreenMask        = 0x2;
+    static public final int VisualDepthMask         = 0x4;
+    static public final int VisualClassMask         = 0x8;
+    static public final int VisualRedMaskMask       = 0x10;
+    static public final int VisualGreenMaskMask     = 0x20;
+    static public final int VisualBlueMaskMask      = 0x40;
+    static public final int VisualColormapSizeMask  = 0x80;
+    static public final int VisualBitsPerRGBMask    = 0x100;
+    static public final int VisualAllMask           = 0x1FF;
+
     // XVisualInfo *XGetVisualInfo(Display *display, long vinfo_mask, XVisualInfo *vinfo_template, int *nitems_return)
-    static public int XGetVisualInfo(int display, int vinfo_mask, int vinfo_template, int nitems_return) {
-        Log.panic("XGetVisualInfo not implemented");
+    static public int XGetVisualInfo(int address, int vinfo_mask, int vinfo_template, int nitems_return) {
+        WineThread thread = WineThread.getCurrent();
+        WineProcess process = thread.process;
+        Memory memory = process.memory;
+        Display display = getDisplay(address);
+        Vector<Visual> visuals = new Vector<Visual>();
+        XVisualInfo template = new XVisualInfo(memory, vinfo_template);
+
+        for (Screen screen : display.screens) {
+            for (Depth depth : screen.depths) {
+                for (Visual visual : depth.visuals) {
+                    if ((vinfo_mask & VisualIDMask)!=0 && visual.visualid!=template.visualid)
+                        continue;
+                    if ((vinfo_mask & VisualScreenMask)!=0 && screen.id!=template.screen)
+                        continue;
+                    if ((vinfo_mask & VisualDepthMask)!=0 && depth.depth!=template.depth)
+                        continue;
+                    if ((vinfo_mask & VisualClassMask)!=0 && visual.c_class!=template.c_class)
+                        continue;
+                    if ((vinfo_mask & VisualRedMaskMask)!=0 && visual.red_mask!=template.red_mask)
+                        continue;
+                    if ((vinfo_mask & VisualGreenMaskMask)!=0 && visual.green_mask!=template.green_mask)
+                        continue;
+                    if ((vinfo_mask & VisualBlueMaskMask)!=0 && visual.blue_mask!=template.blue_mask)
+                        continue;
+                    if ((vinfo_mask & VisualColormapSizeMask)!=0 && visual.map_entries!=template.colormap_size)
+                        continue;
+                    if ((vinfo_mask & VisualBitsPerRGBMask)!=0 && visual.bits_per_rgb!=template.bits_per_rgb)
+                        continue;
+                    visuals.add(visual);
+                }
+            }
+            if (visuals.size()==0)
+                return 0;
+            int result = process.alloc(visuals.size()*XVisualInfo.SIZE);
+            int p = result;
+            for (Visual visual : visuals) {
+                XVisualInfo.write(memory, p, visual.address, visual.visualid, visual.depth.screen.address, visual.depth.depth, visual.c_class, visual.red_mask, visual.green_mask, visual.blue_mask, visual.map_entries, visual.bits_per_rgb);
+                p+=XVisualInfo.SIZE;
+            }
+            return result;
+        }
         return 0;
     }
 
@@ -602,9 +672,19 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XGetWindowProperty(Display *display, Window w, Atom property, long long_offset, long long_length, Bool delete, Atom req_type, Atom *actual_type_return, int *actual_format_return, unsigned long *nitems_return, unsigned long *bytes_after_return, unsigned char **prop_return)
-    static public int XGetWindowProperty(int display, int w, int property, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
-        Log.panic("XGetWindowProperty not implemented");
-        return 0;
+    static public int XGetWindowProperty(int address, int w, int property, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
+        Display display = getDisplay(address);
+        String propertyName = display.getAtom(property);
+        Window window = display.getWindow(w);
+        if (window == null) {
+            Log.warn("XGetWindowProperty with invalid window");
+            return 1;
+        }
+        if (propertyName ==null) {
+            Log.warn("XGetWindowProperty with invalid property");
+            return 1;
+        }
+        return window.XGetWindowProperty(propertyName, long_offset, long_length, delete, req_type, actual_type_return, actual_format_return, nitems_return, bytes_after_return, prop_return);
     }
 
     // int XGrabPointer(Display *display, Window grab_window, Bool owner_events, unsigned int event_mask, int pointer_mode, int keyboard_mode, Window confine_to, Cursor cursor, Time time)
@@ -627,7 +707,6 @@ public class LibX11 extends BuiltinModule {
 
     // Status XInitThreads(void)
     static public int XInitThreads() {
-        Log.warn("XInitThreads not implemented");
         return 1;
     }
 
@@ -644,9 +723,20 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Status XInternAtoms(Display *display, char **names, int count, Bool only_if_exists, Atom *atoms_return)
-    static public int XInternAtoms(int display, int names, int count, int only_if_exists, int atoms_return) {
-        Log.panic("XInternAtoms not implemented");
-        return 0;
+    static public int XInternAtoms(int address, int names, int count, int only_if_exists, int atoms_return) {
+        Display display = getDisplay(address);
+        Memory memory = WineThread.getCurrent().process.memory;
+        String[] s = memory.readCStringArray(names, count);
+        int i=0;
+        boolean missing = false;
+        for (String name : s) {
+            int result = display.setAtom(name, only_if_exists!=0);
+            if (result==0)
+                missing=true;
+            memory.writed(atoms_return+i, result);
+            i+=4;
+        }
+        return (missing?0:1);
     }
 
     // KeySym XkbKeycodeToKeysym(Display *dpy, KeyCode kc, unsigned int group, unsigned int level)
@@ -668,9 +758,13 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Bool XkbUseExtension(Display *dpy,int *major_rtrn,int *minor_rtrn)
-    static public int XkbUseExtension(int display, int major_rtrn, int minor_rtrn) {
-        Log.panic("XkbUseExtension not implemented");
-        return 0;
+    static public int XkbUseExtension(int address, int major_rtrn, int minor_rtrn) {
+        Display display = getDisplay(address);
+        if (major_rtrn!=0 || minor_rtrn!=0) {
+            Log.panic("XkbUseExtension not fully implemented");
+        }
+        display.kbUseExtension = true;
+        return 1;
     }
 
     // KeyCode XKeysymToKeycode(Display *display, KeySym keysym)
@@ -686,9 +780,11 @@ public class LibX11 extends BuiltinModule {
     }
 
     // XPixmapFormatValues *XListPixmapFormats(Display *display, int *count_return)
-    static public int XListPixmapFormats(int display, int count_return) {
-        Log.panic("XListPixmapFormats not implemented");
-        return 0;
+    static public int XListPixmapFormats(int address, int count_return) {
+        Display display = getDisplay(address);
+        if (count_return!=0)
+            WineThread.getCurrent().process.memory.writed(count_return, display.pixmapFormatValues.length);
+        return display.pixmapFormatValuesAddress;
     }
 
     // char *XLocaleOfIM(XIM im)
@@ -764,8 +860,43 @@ public class LibX11 extends BuiltinModule {
 
     // Display *XOpenDisplay(char *display_name)
     static public int XOpenDisplay(int display_name) {
-        Log.warn("XOpenDisplay not implemented");
-        return 0;
+        WineThread thread = WineThread.getCurrent();
+        WineProcess process = thread.process;
+        Display display = new Display();
+        Screen screen = new Screen(0, display);
+        Depth depth24 = new Depth(screen);
+        depth24.depth = 24;
+        depth24.visuals = new Visual[]{new Visual(depth24, 1, Visual.TrueColor, 0xFF0000, 0xFF00, 0xFF, 8, 256)};
+        Depth depth32 = new Depth(screen);
+        depth32.depth = 32;
+        depth32.visuals = new Visual[]{new Visual(depth32, 2, Visual.TrueColor, 0xFF0000, 0xFF00, 0xFF, 8, 256)};
+        screen.depths = new Depth[] {depth24, depth32};
+        screen.root = new RootWindow(display, screen).id;
+        screen.width = WineSystem.SCREEN_WIDTH;
+        screen.height = WineSystem.SCREEN_HEIGHT;
+        screen.white_pixel = 0x00FFFFFF;
+        screen.black_pixel = 0x00000000;
+        screen.root_depth = 32;
+        screen.root_visual = depth32.visuals[0];
+        screen.max_maps = 1;
+        screen.min_maps = 1;
+        screen.cmap = new Colormap(display, screen).id;
+        FileDescriptor fd = new FileDescriptor(process.getNextFileDescriptor(), display);
+        display.fd = fd.handle;
+        display.proto_major_version=11;
+        display.proto_minor_version=0;
+        display.vendor = "Boxed Wine";
+        display.byte_order = 0;
+        display.bitmap_unit = 32;
+        display.bitmap_pad = 32;
+        display.bitmap_bit_order = 0;
+        display.screenFormats = new ScreenFormat[]{new ScreenFormat(24, 32, 32)};
+        display.display_name = ":0.0";
+        display.default_screen = screen.id;
+        display.screens = new Screen[] {screen};
+        display.pixmapFormatValues = new XPixmapFormatValues[] {new XPixmapFormatValues(24, 32, 32), new XPixmapFormatValues(32, 32, 32)};
+        CPU.log = true;
+        return display.allocDisplay(process);
     }
 
     // XIM XOpenIM(Display *display, XrmDatabase db, char *res_name, char *res_class)
@@ -836,8 +967,7 @@ public class LibX11 extends BuiltinModule {
 
     // XrmQuark XrmUniqueQuark(void)
     static public int XrmUniqueQuark() {
-        Log.panic("XrmUniqueQuark not implemented");
-        return 0;
+        return Display.getNextId();
     }
 
     // int XSaveContext(Display *display, XID rid, XContext context, XPointer data)
@@ -895,8 +1025,10 @@ public class LibX11 extends BuiltinModule {
 
     // int (*XSetErrorHandler(int (*handler)(Display *, XErrorEvent *)))()
     static public int XSetErrorHandler(int handler) {
-        Log.panic("XSetErrorHandler not implemented");
-        return 0;
+        WineProcess process = WineThread.getCurrent().process;
+        int result = process.xerrorHandler;
+        process.xerrorHandler = handler;
+        return result;
     }
 
     // int XSetFillStyle(Display *display, GC gc, int fill_style)

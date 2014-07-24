@@ -12,6 +12,8 @@ public class WineSystem {
     final static public int gid = 2;
     final static public String homeDirectory = "/home/boxedwine";
     final static public Vector<String> libDirs = new Vector<String>();
+    final static public int SCREEN_WIDTH = 1024;
+    final static public int SCREEN_HEIGHT = 768;
 
     static public String hostName() {
         if (System.getProperty("os.name").startsWith("Windows")) {

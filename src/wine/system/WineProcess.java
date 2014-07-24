@@ -81,6 +81,8 @@ public class WineProcess {
     public String name;
     private Hashtable<Integer, Vector<ExitFunction>> exitFunctions = new Hashtable<Integer, Vector<ExitFunction>>();
     public WineProcess parent;
+    public int xerrorHandler;
+
     // if new variables are addedd, make sure they are accounted for in fork and exec
 
     static private class ExitFunction {

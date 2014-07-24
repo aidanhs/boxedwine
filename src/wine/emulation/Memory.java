@@ -91,8 +91,11 @@ public class Memory {
     }
 
     public String[] readCStringArray(int address) {
+        return readCStringArray(address, Integer.MAX_VALUE);
+    }
+    public String[] readCStringArray(int address, int count) {
         Vector<String> results = new Vector<String>();
-        while (true) {
+        for (int i=0;i<count;i++) {
             int p = readd(address);
             address+=4;
             if (p==0)
