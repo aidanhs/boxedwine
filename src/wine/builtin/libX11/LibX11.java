@@ -1,6 +1,5 @@
 package wine.builtin.libX11;
 
-import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.loader.BuiltinModule;
 import wine.system.WineProcess;
@@ -324,9 +323,13 @@ public class LibX11 extends BuiltinModule {
     }
 
     // GC XCreateGC(Display *display, Drawable d, unsigned long valuemask, XGCValues *values)
-    static public int XCreateGC(int display, int d, int valuemask, int values) {
-        Log.panic("XCreateGC not implemented");
-        return 0;
+    static public int XCreateGC(int address, int d, int valuemask, int values) {
+        Display display = getDisplay(address);
+        GC gc = display.createNewGC();
+        if (valuemask!=0 || values!=0) {
+            Log.panic("XCreateGC not fully implemented");
+        }
+        return gc.id;
     }
 
     // XIC XCreateIC(XIM im, ...)
@@ -342,9 +345,11 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Pixmap XCreatePixmap(Display *display, Drawable d, unsigned int width, unsigned int height, unsigned int depth)
-    static public int XCreatePixmap(int display, int d, int width, int height, int depth) {
-        Log.panic("XCreatePixmap not implemented");
-        return 0;
+    static public int XCreatePixmap(int address, int d, int width, int height, int depth) {
+        Display display = getDisplay(address);
+        Pixmap pixmap = display.createNewPixmap();
+        pixmap.create(width, height, depth);
+        return pixmap.id;
     }
 
     // Cursor XCreatePixmapCursor(Display *display, Pixmap source, Pixmap mask, XColor *foreground_color, XColor *background_color, unsigned int x, unsigned int y)
@@ -388,10 +393,11 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
-    // int XDisplayKeycodes(Display *display, int *min_keycodes_return, int *max_keycodes_return);
-    static public int XDisplayKeycodes(int display, int min_keycodes_return, int max_keycodes_return) {
-        Log.panic("XDisplayKeycodes not implemented");
-        return 0;
+    // void XDisplayKeycodes(Display *display, int *min_keycodes_return, int *max_keycodes_return);
+    static public void XDisplayKeycodes(int display, int min_keycodes_return, int max_keycodes_return) {
+        Memory memory = WineThread.getCurrent().process.memory;
+        memory.writeb(min_keycodes_return, KeySym.keyMin);
+        memory.writeb(max_keycodes_return, KeySym.keyMax);
     }
 
     // char *XDisplayName(char *string)
@@ -467,14 +473,18 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XFindContext(Display *display, XID rid, XContext context, XPointer *data_return)
-    static public int XFindContext(int display, int rid, int context, int data_return) {
-        Log.panic("XFindContext not implemented");
-        return 0;
+    static public int XFindContext(int address, int rid, int context, int data_return) {
+        Display display = getDisplay(address);
+        Integer data = display.contextData.get(((long)rid << 32) | context);
+        if (data!=null) {
+            WineThread.getCurrent().process.memory.writed(data_return, data);
+            return 0;
+        }
+        return 1;
     }
 
     // int XFlush(Display *display)
     static public int XFlush(int display) {
-        Log.panic("XFlush not implemented");
         return 0;
     }
 
@@ -513,15 +523,20 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XFreeGC(Display *display, GC gc)
-    static public int XFreeGC(int display, int gc) {
-        Log.panic("XFreeGC not implemented");
-        return 0;
+    static public int XFreeGC(int address, int gc) {
+        Display display = getDisplay(address);
+        GC g = display.gcById.get(gc);
+        if (g!=null) {
+            g.close();
+            display.gcById.remove(gc);
+            return 0;
+        }
+        return 1;
     }
 
-    // int XFreeModifiermap(XModifierKeymap *modmap)
-    static public int XFreeModifiermap(int modmap) {
-        Log.panic("XFreeModifiermap not implemented");
-        return 0;
+    // void XFreeModifiermap(XModifierKeymap *modmap)
+    static public void XFreeModifiermap(int modmap) {
+        WineThread.getCurrent().process.free(modmap);
     }
 
     // int XFreePixmap(Display *display, Pixmap pixmap)
@@ -571,8 +586,21 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
+//    typedef struct {
+//        unsigned short count_styles;
+//        XIMStyle *supported_styles;
+//    } XIMStyles;
+
     // char *XGetIMValues(XIM im, ...)
     static public int XGetIMValues(int im) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        String arg1 = memory.readCString(thread.cpu.peek32(1));
+        if (arg1.equals("queryInputStyle")) {
+            int styles = thread.cpu.peek32(2);
+            int arg3 = thread.cpu.peek32(3);
+
+        }
         Log.panic("XGetIMValues not implemented");
         return 0;
     }
@@ -585,14 +613,47 @@ public class LibX11 extends BuiltinModule {
 
     // KeySym *XGetKeyboardMapping(Display *display, KeyCode first_keycode, int keycode_count, int *keysyms_per_keycode_return)
     static public int XGetKeyboardMapping(int display, int first_keycode, int keycode_count, int keysyms_per_keycode_return) {
-        Log.panic("XGetKeyboardMapping not implemented");
-        return 0;
+        WineProcess process = WineThread.getCurrent().process;
+        int len = keycode_count*KeySym.keySymsPerKeyCode*4;
+        int result = process.alloc(len);
+        process.memory.zero(result, len);
+        for (int i=first_keycode;i<first_keycode+keycode_count;i++) {
+            KeySym keySym = KeySym.x11KeyCodeToKeySym.get(i);
+            if (keySym!=null) {
+                int address = (i-first_keycode)*4*KeySym.keySymsPerKeyCode+result;
+                for (int j=0;j<KeySym.keySymsPerKeyCode;j++)
+                    process.memory.writed(address+4*j, keySym.keySym[j]);
+            }
+        }
+        if (keysyms_per_keycode_return!=0)
+            process.memory.writed(keysyms_per_keycode_return, KeySym.keySymsPerKeyCode);
+        return result;
     }
 
     // XModifierKeymap *XGetModifierMapping(Display *display)
     static public int XGetModifierMapping(int display) {
-        Log.panic("XGetModifierMapping not implemented");
-        return 0;
+        WineProcess process = WineThread.getCurrent().process;
+        int result = process.alloc(72); // (max_keypermod*8)*4 + 4 to hold modifiermap + 4 to hold max_keypermod
+        process.memory.zero(result, 64);
+
+        process.memory.writed(result, 2); // max_keypermod
+        process.memory.writed(result+4, result+8); // modifiermap
+
+        process.memory.writed(result+8, KeySym.LEFT_SHIFT_KEYCODE);
+        process.memory.writed(result+12, KeySym.RIGHT_SHIFT_KEYCODE);
+
+        process.memory.writed(result+16, KeySym.CAPS_LOCK_KEYCODE);
+
+        process.memory.writed(result+24, KeySym.LEFT_CONTROL_KEYCODE);
+        process.memory.writed(result+28, KeySym.RIGHT_CONTROL_KEYCODE);
+
+        // mod 1
+        process.memory.writed(result+32, KeySym.NUM_LOCK_KEYCODE);
+
+        // mod 2
+        process.memory.writed(result+40, KeySym.SCROLL_LOCK_KEYCODE);
+
+        return result;
     }
 
     // Window XGetSelectionOwner(Display *display, Atom selection)
@@ -741,19 +802,36 @@ public class LibX11 extends BuiltinModule {
 
     // KeySym XkbKeycodeToKeysym(Display *dpy, KeyCode kc, unsigned int group, unsigned int level)
     static public int XkbKeycodeToKeysym(int display, int kc, int group, int level) {
-        Log.panic("XkbKeycodeToKeysym not implemented");
-        return 0;
+        if (group!=0) {
+            Log.panic("XkbKeycodeToKeysym not fully implemented");
+        }
+        KeySym sym = KeySym.x11KeyCodeToKeySym.get(kc);
+        if (sym == null)
+            return 0;
+        return sym.keySym[level];
     }
 
     // Bool XkbSetDetectableAutoRepeat (Display *display, Bool detectable, Bool *supported_rtrn)
-    static public int XkbSetDetectableAutoRepeat(int display, int detectable, int supported_rtrn) {
-        Log.panic("XkbSetDetectableAutoRepeat not implemented");
-        return 0;
+    static public int XkbSetDetectableAutoRepeat(int address, int detectable, int supported_rtrn) {
+        Display display = getDisplay(address);
+        display.autoRepeatKeyWithoutKeyRelease = detectable!=0;
+        if (supported_rtrn!=0) {
+            Log.panic("XkbSetDetectableAutoRepeat not fully implemented");
+        }
+        return 1;
     }
 
     // int XkbTranslateKeySym(Display *dpy, KeySym *sym_inout, unsigned int mods, char *buf, int nbytes, int *extra_rtrn)
     static public int XkbTranslateKeySym(int display, int sym_inout, int mods, int buf, int nbytes, int extra_rtrn) {
-        Log.panic("XkbTranslateKeySym not implemented");
+        Memory memory = WineThread.getCurrent().process.memory;
+        KeySym sym = KeySym.x11KeySymToKeySym.get(memory.readd(sym_inout));
+        if (sym==null)
+            return 0;
+        memory.writed(sym_inout, sym.translate(mods));
+        if (buf!=0) {
+            memory.writeb(buf, sym.getChar(mods));
+            return 1;
+        }
         return 0;
     }
 
@@ -775,8 +853,11 @@ public class LibX11 extends BuiltinModule {
 
     // char *XKeysymToString(KeySym keysym)
     static public int XKeysymToString(int keysym) {
-        Log.panic("XKeysymToString not implemented");
-        return 0;
+        WineProcess process = WineThread.getCurrent().process;
+        String s = KeySym.x11KeySymToString.get(keysym);
+        if (s==null)
+            return 0;
+        return process.getString(s);
     }
 
     // XPixmapFormatValues *XListPixmapFormats(Display *display, int *count_return)
@@ -800,14 +881,25 @@ public class LibX11 extends BuiltinModule {
 
     // KeySym XLookupKeysym(XKeyEvent *key_event, int index)
     static public int XLookupKeysym(int key_event, int index) {
-        Log.panic("XLookupKeysym not implemented");
-        return 0;
+        Memory memory = WineThread.getCurrent().process.memory;
+        XKeyEvent event = new XKeyEvent(memory, key_event);
+        KeySym sym = KeySym.x11KeyCodeToKeySym.get(event.keycode);
+        if (sym==null)
+            return 0;
+        return sym.keySym[index];
     }
 
     // int XLookupString(XKeyEvent *event_struct, char *buffer_return, int bytes_buffer, KeySym *keysym_return, XComposeStatus *status_in_out)
     static public int XLookupString(int event_struct, int buffer_return, int bytes_buffer, int keysym_return, int status_in_out) {
-        Log.panic("XLookupString not implemented");
-        return 0;
+        Memory memory = WineThread.getCurrent().process.memory;
+        XKeyEvent event = new XKeyEvent(memory, event_struct);
+        KeySym sym = KeySym.x11KeyCodeToKeySym.get(event.keycode);
+        if (sym==null)
+            return 0;
+        memory.writeb(buffer_return, sym.getChar(event.state));
+        if (keysym_return!=0)
+            memory.writeb(keysym_return, sym.translate(event.state));
+        return 1;
     }
 
     // int XMapWindow(Display *display, Window w)
@@ -895,7 +987,8 @@ public class LibX11 extends BuiltinModule {
         display.default_screen = screen.id;
         display.screens = new Screen[] {screen};
         display.pixmapFormatValues = new XPixmapFormatValues[] {new XPixmapFormatValues(24, 32, 32), new XPixmapFormatValues(32, 32, 32)};
-        CPU.log = true;
+        display.min_keycode = KeySym.keyMin;
+        display.max_keycode = KeySym.keyMax;
         return display.allocDisplay(process);
     }
 
@@ -1005,9 +1098,10 @@ public class LibX11 extends BuiltinModule {
         Log.panic("XSetClassHint not implemented");
     }
 
-    // int XSetClipMask(Display *display, GC gc, Pixmap pixmap)
+    // void XSetClipMask(Display *display, GC gc, Pixmap pixmap)
     static public int XSetClipMask(int display, int gc, int pixmap) {
-        Log.panic("XSetClipMask not implemented");
+        if (pixmap!=0)
+            Log.panic("XSetClipMask not fully implemented");
         return 0;
     }
 
@@ -1049,10 +1143,10 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
-    // int XSetGraphicsExposures(Display *display, GC gc, Bool graphics_exposures)
-    static public int XSetGraphicsExposures(int display, int gc, int graphics_exposures) {
-        Log.panic("XSetGraphicsExposures not implemented");
-        return 0;
+    // void XSetGraphicsExposures(Display *display, GC gc, Bool graphics_exposures)
+    static public void XSetGraphicsExposures(int address, int gc, int graphics_exposures) {
+        Display display = getDisplay(address);
+        display.gcById.get(gc).graphicsExposures= graphics_exposures!=0;
     }
 
     // void XSetICFocus(XIC ic)
@@ -1068,8 +1162,10 @@ public class LibX11 extends BuiltinModule {
 
     // char *XSetLocaleModifiers(char *modifier_list)
     static public int XSetLocaleModifiers(int modifier_list) {
-        Log.panic("XSetLocaleModifiers not implemented");
-        return 0;
+        String list = WineThread.getCurrent().process.memory.readCString(modifier_list);
+        if (list.length()!=0)
+            Log.panic("XSetLocaleModifiers not fully implemented");
+        return modifier_list;
     }
 
     // int XSetScreenSaver(Display *display, int timeout, int interval, int prefer_blanking, int allow_exposures)
@@ -1089,10 +1185,10 @@ public class LibX11 extends BuiltinModule {
         Log.panic("XSetTextProperty not implemented");
     }
 
-    // int XSetSubwindowMode(Display *display, GC gc, int subwindow_mode)
-    static public int XSetSubwindowMode(int display, int gc, int subwindow_mode) {
-        Log.panic("XSetSubwindowMode not implemented");
-        return 0;
+    // void XSetSubwindowMode(Display *display, GC gc, int subwindow_mode)
+    static public void XSetSubwindowMode(int address, int gc, int subwindow_mode) {
+        Display display = getDisplay(address);
+        display.gcById.get(gc).subwindowMode = subwindow_mode;
     }
 
     // int XSetTransientForHint(Display *display, Window w, Window prop_window)
@@ -1185,8 +1281,7 @@ public class LibX11 extends BuiltinModule {
 
     // Bool XSupportsLocale(void)
     static public int XSupportsLocale() {
-        Log.panic("XSupportsLocale not implemented");
-        return 0;
+        return 1;
     }
 
     // int (*XSynchronize(Display *display, Bool onoff))();

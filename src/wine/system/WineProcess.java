@@ -32,7 +32,8 @@ public class WineProcess {
     static public int ADDRESS_PROCESS_CALLBACK_START = 0xE2000;
     static public int ADDRESS_PROCESS_SHARED_START =   0xE3000;
     static public int ADDRESS_PROCESS_DLL_START =      0xE4000;
-    static public int ADDRESS_PROCESS_MMAP_START =     0xE4000;
+    static public int ADDRESS_PER_PROCESS =            0xE5000;
+    static public int ADDRESS_PROCESS_MMAP_START =     0xE6000;
     static public int ADDRESS_PROCESS_HEAP_START =     0xF0000; // this needs a continuous space, hopefully wine won't use more than 256MB
 
     static public final int STATE_INIT = 0;
@@ -82,7 +83,9 @@ public class WineProcess {
     private Hashtable<Integer, Vector<ExitFunction>> exitFunctions = new Hashtable<Integer, Vector<ExitFunction>>();
     public WineProcess parent;
     public int xerrorHandler;
-
+    private Hashtable<String, Integer> stringMap = new Hashtable<String, Integer>();
+    private int stringPage;
+    private int stringPagePos;
     // if new variables are addedd, make sure they are accounted for in fork and exec
 
     static private class ExitFunction {
@@ -145,6 +148,9 @@ public class WineProcess {
                 addExitFunction(module, func.func, func.arg);
             }
         }
+        this.stringMap = (Hashtable<String, Integer>)process.stringMap.clone();
+        this.stringPage = process.stringPage;
+        this.stringPagePos = process.stringPagePos;
         WineSystem.processes.put(id, this);
     }
 
@@ -630,5 +636,23 @@ public class WineProcess {
         if (values==null || values.length()==0)
             return new String[0];
         return values.split(";");
+    }
+
+    public int getString(String string) {
+        Integer address = stringMap.get(string);
+        if (address == null) {
+            byte[] bytes = string.getBytes();
+            int len = bytes.length+1;
+            if (len>4096-stringPagePos) {
+                int page = addressSpace.getNextPage(WineProcess.ADDRESS_PER_PROCESS, 1);
+                allocPages(page, 1, false);
+                stringPage = page << 12;
+                stringPagePos = 0;
+            }
+            address = stringPage+stringPagePos;
+            stringPagePos+=len;
+            memory.writeCString(address, string);
+        }
+        return address;
     }
 }

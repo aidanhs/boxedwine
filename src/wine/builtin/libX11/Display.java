@@ -12,10 +12,14 @@ import java.util.Hashtable;
 public class Display extends KernelObject {
     int address;
     public int errorHandler;
+    public boolean autoRepeatKeyWithoutKeyRelease = false;
     public Hashtable<Integer, Window> windows = new Hashtable<Integer, Window>();
     public Hashtable<Integer, Colormap> colormaps = new Hashtable<Integer, Colormap>();
     public Hashtable<String, Integer> atomsByName = new Hashtable<String, Integer>();
     public Hashtable<Integer, String> atomsById = new Hashtable<Integer, String>();
+    public Hashtable<Integer, Pixmap> pixmapsById = new Hashtable<Integer, Pixmap>();
+    public Hashtable<Integer, GC> gcById = new Hashtable<Integer, GC>();
+    public Hashtable<Long, Integer> contextData = new Hashtable<Long, Integer>();
     static private int nextid = 1;
     public boolean kbUseExtension = false;
 
@@ -24,6 +28,18 @@ public class Display extends KernelObject {
     }
 
     public Display() {
+    }
+
+    public Pixmap createNewPixmap() {
+        Pixmap pixmap = new Pixmap(getNextId());
+        pixmapsById.put(pixmap.id, pixmap);
+        return pixmap;
+    }
+
+    public GC createNewGC() {
+        GC gc = new GC(getNextId());
+        gcById.put(gc.id, gc);
+        return gc;
     }
 
     public int setAtom(String name, boolean onlyIfExists) {
@@ -161,8 +177,8 @@ public class Display extends KernelObject {
     // public int screens; // Screen *
 //    unsigned long 	motion_buffer
 //    unsigned long 	private16
-//    int 	min_keycode
-//    int 	max_keycode
+    public int min_keycode;
+    public int max_keycode;
 //    XPointer 	private17
 //    XPointer 	private18
 //    int 	private19
@@ -226,7 +242,13 @@ public class Display extends KernelObject {
     }
 
     public boolean stat(KernelStat stat) {
-        Log.panic("What should this do");
-        return false;
+        stat.mtime = System.currentTimeMillis();
+        stat.st_ino = 0;
+        stat.st_dev = 1;
+        stat.st_mode = KernelStat.S_IFSOCK|KernelStat._S_IWRITE|KernelStat._S_IREAD;
+        stat.st_size = 0;
+        stat.st_blocks = 0;
+        stat.st_rdev = 1;
+        return true;
     }
 }
