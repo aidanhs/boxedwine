@@ -1,12 +1,15 @@
 package wine.builtin.libX11;
 
-public class Pixmap {
-    public final int id;
-    public Pixmap(int id) {
-        this.id = id;
+import wine.emulation.Memory;
+
+public class Pixmap extends Drawable {
+    static public Pixmap getPixmap(int id) {
+        XID result = xids.get(id);
+        if (result instanceof Pixmap)
+            return (Pixmap)result;
+        return null;
     }
 
-    public void create(int width, int height, int depth) {
-
+    public Pixmap() {
     }
 }

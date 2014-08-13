@@ -1,5 +1,6 @@
 package wine.system;
 
+import wine.builtin.libX11.X11PerProcessData;
 import wine.builtin.libc.Errno;
 import wine.builtin.libc.Fcntl;
 import wine.builtin.libc.Signal;
@@ -87,6 +88,7 @@ public class WineProcess {
     private int stringPage;
     private int stringPagePos;
     // if new variables are addedd, make sure they are accounted for in fork and exec
+    public X11PerProcessData x11 = new X11PerProcessData();
 
     static private class ExitFunction {
         public ExitFunction(int func, int arg) {
@@ -344,7 +346,7 @@ public class WineProcess {
             if (thread.jThread!=Thread.currentThread())
                 thread.jThread.stop(new ExitThreadException());
         }
-        Thread.currentThread().stop(new ExitThreadException());
+        throw new ExitThreadException();
     }
 
     public void exit(int status) {
@@ -627,8 +629,7 @@ public class WineProcess {
         }
         thread.id = -1;
         threads.clear();
-        Thread.currentThread().stop(new ExitThreadException());
-        return -1; // can't reach here
+        throw new ExitThreadException();
     }
 
     public String[] paths() {

@@ -78,10 +78,10 @@ public class Poll {
                     if (!fd.object.isOpen()) {
                         p.revents = POLLHUP;
                     } else {
-                        if (fd.object.isReadReady() && (p.events & POLLIN) != 0) {
+                        if ((p.events & POLLIN) != 0 && fd.object.isReadReady()) {
                             p.revents |= POLLIN;
                         }
-                        if (fd.object.isWriteReady() && (p.events & POLLOUT) != 0) {
+                        if ((p.events & POLLOUT) != 0 && fd.object.isWriteReady()) {
                             p.revents |= POLLOUT;
                         }
                     }

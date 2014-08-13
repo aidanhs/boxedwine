@@ -13,25 +13,22 @@ public class Display extends KernelObject {
     int address;
     public int errorHandler;
     public boolean autoRepeatKeyWithoutKeyRelease = false;
-    public Hashtable<Integer, Window> windows = new Hashtable<Integer, Window>();
     public Hashtable<Integer, Colormap> colormaps = new Hashtable<Integer, Colormap>();
-    public Hashtable<String, Integer> atomsByName = new Hashtable<String, Integer>();
-    public Hashtable<Integer, String> atomsById = new Hashtable<Integer, String>();
+    static public Hashtable<String, Integer> atomsByName = new Hashtable<String, Integer>();
+    static public Hashtable<Integer, String> atomsById = new Hashtable<Integer, String>();
     public Hashtable<Integer, Pixmap> pixmapsById = new Hashtable<Integer, Pixmap>();
     public Hashtable<Integer, GC> gcById = new Hashtable<Integer, GC>();
     public Hashtable<Long, Integer> contextData = new Hashtable<Long, Integer>();
     static private int nextid = 1;
+    static private int nextAtom = XAtom.XA_LAST_PREDEFINED+1;
     public boolean kbUseExtension = false;
-
-    public Window getWindow(int id) {
-        return windows.get(id);
-    }
+    public WineProcess process;
 
     public Display() {
     }
 
     public Pixmap createNewPixmap() {
-        Pixmap pixmap = new Pixmap(getNextId());
+        Pixmap pixmap = new Pixmap();
         pixmapsById.put(pixmap.id, pixmap);
         return pixmap;
     }
@@ -42,19 +39,19 @@ public class Display extends KernelObject {
         return gc;
     }
 
-    public int setAtom(String name, boolean onlyIfExists) {
+    static synchronized public int setAtom(String name, boolean onlyIfExists) {
         Integer result = atomsByName.get(name);
         if (result == null) {
             if (onlyIfExists)
                 return 0;
-            result = nextid++;
+            result = nextAtom++;
             atomsByName.put(name, result);
             atomsById.put(result, name);
         }
         return result;
     }
 
-    public String getAtom(int atom) {
+    static public String getAtom(int atom) {
         return atomsById.get(atom);
     }
 
@@ -64,6 +61,7 @@ public class Display extends KernelObject {
 
     public int allocDisplay(WineProcess process) {
         int size = Display.SIZE;
+        this.process = process;
         size+=vendor.length()+1;
         size+=display_name.length()+1;
         size+=screenFormats.length*ScreenFormat.SIZE;
@@ -214,7 +212,7 @@ public class Display extends KernelObject {
     }
 
     public boolean isReadReady() {
-        return false;
+        return process.x11.hasEvents();
     }
 
     public boolean isWriteReady() {
