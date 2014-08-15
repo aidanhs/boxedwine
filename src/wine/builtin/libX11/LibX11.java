@@ -1,5 +1,7 @@
 package wine.builtin.libX11;
 
+import wine.builtin.libX11.events.XConfigureEvent;
+import wine.builtin.libX11.events.XReparentEvent;
 import wine.builtin.libc.Strings;
 import wine.emulation.Memory;
 import wine.loader.BuiltinModule;
@@ -233,41 +235,14 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
-//    typedef struct {
-//        long flags;	/* marks which fields in this structure are defined */
-//        int x, y;		/* obsolete for new window mgrs, but clients */
-//        int width, height;	/* should set so old wm's don't mess up */
-//        int min_width, min_height;
-//        int max_width, max_height;
-//        int width_inc, height_inc;
-//        struct {
-//            int x;	/* numerator */
-//            int y;	/* denominator */
-//        } min_aspect, max_aspect;
-//        int base_width, base_height;		/* added by ICCCM version 1 */
-//        int win_gravity;			/* added by ICCCM version 1 */
-//    } XSizeHints;
-
     // XSizeHints *XAllocSizeHints(void)
     static public int XAllocSizeHints() {
-        return WineThread.getCurrent().process.alloc(72);
+        return WineThread.getCurrent().process.alloc(XSizeHints.SIZE);
     }
-
-//    typedef struct {
-//        long flags;	/* marks which fields in this structure are defined */
-//        Bool input;	/* does this application rely on the window manager to
-//			get keyboard input? */
-//        int initial_state;	/* see below */
-//        Pixmap icon_pixmap;	/* pixmap to be used as icon */
-//        Window icon_window; 	/* window to be used as icon */
-//        int icon_x, icon_y; 	/* initial position of icon */
-//        Pixmap icon_mask;	/* icon mask bitmap */
-//        XID window_group;	/* id of related window group */
-//    } XWMHints;
 
     // XWMHints *XAllocWMHints(void)
     static public int XAllocWMHints() {
-        return WineThread.getCurrent().process.alloc(36);
+        return WineThread.getCurrent().process.alloc(XWMHints.SIZE);
     }
 
     // int XBell(Display *display, int percent)
@@ -291,7 +266,7 @@ public class LibX11 extends BuiltinModule {
         if (mode!=0) {
             Log.panic("XChangeProperty does not support mode: "+mode);
         }
-        Window.Property p = new Window.Property(type, format);
+        Property p = new Property(type, format);
         p.setIndexesByAddress(WineThread.getCurrent().process.memory, data, nelements);
 
         window.setProperty(property, p);
@@ -337,8 +312,39 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XConfigureWindow(Display *display, Window w, unsigned value_mask, XWindowChanges *changes)
-    static public int XConfigureWindow(int display, int w, int value_mask, int changes) {
-        Log.panic("XConfigureWindow not implemented");
+    static public int XConfigureWindow(int display, int w, int value_mask, int address) {
+        Window window = Window.getWindow(w);
+        if (window == null)
+            return BadWindow;
+        Memory memory = WineThread.getCurrent().process.memory;
+        XWindowChanges changes = new XWindowChanges(memory, address);
+        if ((value_mask & XWindowChanges.CWX)!=0 && (value_mask & XWindowChanges.CWY)!=0) {
+            window.move(changes.x, changes.y);
+        } else if ((value_mask & XWindowChanges.CWX)!=0) {
+            window.setX(changes.x);
+        } else if ((value_mask & XWindowChanges.CWY)!=0) {
+            window.setY(changes.y);
+        }
+        boolean exposed = false;
+        if ((value_mask & XWindowChanges.CWWidth)!=0 && (value_mask & XWindowChanges.CWHeight)!=0) {
+            exposed = window.resize(changes.width, changes.height);
+        } else if ((value_mask & XWindowChanges.CWWidth)!=0) {
+            window.setX(changes.width);
+        } else if ((value_mask & XWindowChanges.CWHeight)!=0) {
+            window.setY(changes.height);
+        }
+        if ((value_mask & XWindowChanges.CWBorderWidth)!=0) {
+            window.setBorderWidth(changes.border_width);
+        }
+        if ((value_mask & XWindowChanges.CWStackMode)!=0) {
+            window.setStackMode(changes.stack_mode);
+        }
+        if ((value_mask & XWindowChanges.CWSibling)!=0) {
+            Log.panic("XConfigureWindow CWSibling not implemented");
+        }
+        window.configurationChanged();
+        if (exposed)
+            window.sendExposeEvent();
         return 0;
     }
 
@@ -410,7 +416,10 @@ public class LibX11 extends BuiltinModule {
     // GC XCreateGC(Display *display, Drawable d, unsigned long valuemask, XGCValues *values)
     static public int XCreateGC(int address, int d, int valuemask, int values) {
         Display display = getDisplay(address);
-        GC gc = display.createNewGC();
+        Drawable drawable = Drawable.getDrawable(d);
+        if (drawable == null)
+            return BadDrawable;
+        GC gc = display.createNewGC(drawable);
         if (valuemask!=0 || values!=0) {
             Log.panic("XCreateGC not fully implemented");
         }
@@ -1128,6 +1137,7 @@ public class LibX11 extends BuiltinModule {
     // int XMoveResizeWindow(Display *display, Window w, int x, int y, unsigned width, unsigned height)
     static public int XMoveResizeWindow(int display, int w, int x, int y, int width, int height) {
         Log.panic("XMoveResizeWindow not implemented");
+        // :TODO: XConfigureEvent
         return 0;
     }
 
@@ -1272,8 +1282,9 @@ public class LibX11 extends BuiltinModule {
         } else if ((value_mask & CWY)!=0) {
             window.setY(memory.readd(values + 4));
         }
+        boolean exposed = false;
         if ((value_mask & CWHeight)!=0 && (value_mask & CWWidth)!=0) {
-            window.resize(memory.readd(values + 8), memory.readd(values + 12));
+            exposed = window.resize(memory.readd(values + 8), memory.readd(values + 12));
         } else if ((value_mask & CWWidth)!=0) {
             window.setWidth(memory.readd(values + 8));
         } else if ((value_mask & CWHeight)!=0) {
@@ -1288,6 +1299,9 @@ public class LibX11 extends BuiltinModule {
         if ((value_mask & CWStackMode)!=0) {
             window.setStackMode(memory.readd(values + 24));
         }
+        window.configurationChanged();
+        if (exposed)
+            window.sendExposeEvent();
         return Success;
     }
 

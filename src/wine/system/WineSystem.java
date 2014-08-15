@@ -6,7 +6,7 @@ import java.util.Vector;
 
 public class WineSystem {
     final static public Hashtable<Integer, WineProcess> processes = new Hashtable<Integer, WineProcess>();
-    static public int nextid = 1;
+    static public int nextid = 100;
     final static public Hashtable sharedMemoryMaps = new Hashtable();
     final static public int uid = 1;
     final static public int gid = 2;

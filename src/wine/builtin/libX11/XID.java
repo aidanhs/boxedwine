@@ -3,7 +3,7 @@ package wine.builtin.libX11;
 import java.util.Hashtable;
 
 public class XID {
-    static private int nextId = 1;
+    static private int nextId = 100;
     static public Hashtable<Integer, XID> xids = new Hashtable<Integer, XID>();
 
     public int id;

@@ -8,17 +8,18 @@ import wine.util.Log;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.LinkedList;
 
 public class Window extends Drawable {
     public Window parent;
-    public LinkedList<Window> children = new LinkedList<Window>();
+    public ArrayList<Window> children = new ArrayList<Window>();
     public JPanel panel;
     final public int display;
     final public WineProcess process;
     public int x;
     public int y;
+    public int borderWidth;
 
     static public final int WithdrawnState = 0;
     static public final int NormalState = 1;
@@ -31,83 +32,231 @@ public class Window extends Drawable {
         return null;
     }
 
-    static public class Property {
-        public Property(int type, int format) {
-            this.type = type;
-            this.format = format;
+    private Hashtable<Integer, Property> properties = new Hashtable<Integer, Property>();
+
+    public Window(Window parent, int display, WineProcess process) {
+        this.parent = parent;
+        this.display = display;
+        this.process = process;
+
+        if (parent == null) {
+            panel = new JPanel();
+        } else {
+            panel = new WindowPanel();
         }
-        public Property(int type, int format, int v1, int v2, int v3, int v4) {
-            this.type = type;
-            this.format = format;
-            this.data = new byte[format/2];
-            setIndex(0, v1);
-            setIndex(1, v2);
-            setIndex(2, v3);
-            setIndex(3, v4);
+        panel.setLayout(null);
+        if (parent!=null) {
+            this.parent.children.add(this);
         }
-        public Property(int type, int format, int v1, int v2) {
-            this.type = type;
-            this.format = format;
-            this.data = new byte[format/4];
-            setIndex(0, v1);
-            setIndex(1, v2);
+        setProperty(Display.setAtom("WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
+    }
+
+    protected void onDataChanged() {
+        this.panel.repaint();
+    }
+
+    private class WindowPanel extends JPanel {
+        public void paintComponent(Graphics g) {
+            g.drawImage(image, 0, 0, null);
         }
-        public void setIndexesByAddress(Memory memory, int address, int count) {
-            data = new byte[format/8*count];
-            for (int i=0;i<count;i++) {
-                switch (format) {
-                    case 32:
-                        setIndex32(i, memory.readd(address));
-                        address+=4;
-                        break;
-                    case 16:
-                        setIndex16(i, memory.readw(address));
-                        address+=2;
-                        break;
-                    case 8:
-                        setIndex8(i, memory.readb(address));
-                        address++;
-                        break;
-                    default:
-                        Log.panic("Window.Property unknown format: "+format);
-                }
+    }
+
+    public void setProperty(Integer atom, Property property) {
+        properties.put(atom, property);
+        if (process!=null && (eventMask & PropertyChangeMask)!=0) {
+            XPropertyEvent event = new XPropertyEvent(display, id, atom, XPropertyEvent.NewValue);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public void deleteProperty(int atom) {
+        properties.remove(atom);
+        if (process!=null && (eventMask & PropertyChangeMask)!=0) {
+            XPropertyEvent event = new XPropertyEvent(display, id, atom, XPropertyEvent.Delete);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public int XGetWindowProperty(int name, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
+        Property property = properties.get(name);
+        WineProcess process = WineThread.getCurrent().process;
+        Memory memory = process.memory;
+        if (property==null) {
+            memory.writed(actual_type_return, 0);
+            memory.writed(actual_format_return, 0);
+            memory.writed(bytes_after_return, 0);
+            return 1;
+        }
+        if (property.type != req_type && req_type != 0) {
+            Log.panic("Window Property " + name + " requested a different type");
+            memory.writed(actual_type_return, property.type);
+            memory.writed(actual_format_return, property.format);
+            memory.writed(bytes_after_return, property.data.length);
+            return 1;
+        }
+        int toCopy = Math.max(long_length, property.data.length)-long_offset;
+        int result = process.alloc(toCopy+1);
+        int remaining = property.data.length-long_offset-toCopy;
+
+        memory.memcpy(result, property.data, long_offset, toCopy);
+        memory.writeb(result + toCopy, 0);
+        memory.writed(actual_type_return, property.type);
+        memory.writed(actual_format_return, property.format);
+        memory.writed(nitems_return, toCopy*8/property.format);
+        memory.writed(bytes_after_return, remaining);
+        memory.writed(prop_return, result);
+        if (delete!=0 && remaining==0) {
+            properties.remove(name);
+        }
+        return 0;
+    }
+
+    public void setClassHint(String res_name, String res_class) {
+
+    }
+
+    public void map() {
+        if (parent!=null) {
+            this.parent.panel.add(this.panel);
+            panel.setBounds(x, y, width, height);
+            panel.repaint();
+        }
+        if (process!=null) {
+            if ((eventMask & StructureNotifyMask)!=0) {
+                XMapEvent event = new XMapEvent(display, id, id);
+                process.x11.addEvent(process, event);
+            }
+            // :TODO: is this right?
+            configurationChanged();
+            sendExposeEvent();
+        }
+    }
+
+    public void unmap() {
+        if (parent!=null) {
+            this.parent.panel.remove(this.panel);
+        }
+        if (process!=null && (eventMask & StructureNotifyMask)!=0) {
+            XUnmapEvent event = new XUnmapEvent(display, id, id);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public void setCursor(Cursor cursor) {
+
+    }
+
+    public void move(int x, int y) {
+        this.x = x;
+        this.y = y;
+        this.panel.setBounds(x, y, width, height);
+        // don't handle XConfigureEvent here
+    }
+
+    public void setX(int x) {
+        move(x, y);
+    }
+
+    public void setY(int y) {
+        move(x, y);
+    }
+
+    public void setWidth(int width) {
+        resize(width, height);
+    }
+
+    public void setHeight(int height) {
+        resize(width, height);
+    }
+
+    public boolean resize(int width, int height) {
+        boolean expose = false;
+        if (width>this.width || height>this.height) {
+            expose = true;
+        }
+        this.width = width;
+        this.height = height;
+        this.panel.setBounds(x, y, width, height);
+        create(width, height, depth);
+        // don't handle XConfigureEvent here
+        return expose;
+    }
+
+    public int above() {
+        if (this.parent!=null) {
+            int index = this.parent.children.indexOf(this);
+            if (index == 0)
+                return 0;
+            Window window = this.parent.children.get(index-1);
+            return window.id;
+        }
+        return 0;
+    }
+
+    public void sendExposeEvent() {
+        if (process!=null) {
+            if ((eventMask & ExposureMask)!=0) {
+                XExposeEvent event = new XExposeEvent(display, id, 0, 0, width, height);
+                process.x11.addEvent(process, event);
             }
         }
-        public void setIndex(int index, int value) {
-            switch (format) {
-                case 32:
-                    setIndex32(index, value);
-                    break;
-                case 16:
-                    setIndex16(index, value);
-                    break;
-                case 8:
-                    setIndex8(index, value);
-                    break;
-                default:
-                    Log.panic("Window.Property unknown format: "+format);
+    }
+    public void configurationChanged() {
+        if (process!=null) {
+            if ((eventMask & StructureNotifyMask) != 0) {
+                XConfigureEvent event = new XConfigureEvent(display, id, id, x, y, width, height, borderWidth, above());
+                process.x11.addEvent(process, event);
             }
         }
+    }
 
-        public void setIndex32(int index, int value) {
-            data[index*4] = (byte)value;
-            data[index*4+1] = (byte)(value >> 8);
-            data[index*4+2] = (byte)(value >> 16);
-            data[index*4+3] = (byte)(value >>> 24);
+    public void setBorderWidth(int borderWidth) {
+        this.borderWidth = borderWidth;
+        // don't handle XConfigureEvent here
+    }
+
+    public void setSibling(int sibling) {
+
+    }
+
+//    #define Above	0
+//    #define Below	1
+//    #define TopIf	2
+//    #define BottomIf	3
+
+    public void setStackMode(int stackMode) {
+
+    }
+
+    public void selectInput(int mask) {
+        if ((mask & SubstructureNotifyMask)!=0) {
+            Log.panic("XSelectInput SubstructureNotifyMask not implemented");
         }
+        Log.log("EventMask: " + getEventMask(mask));
+        this.eventMask = mask;
+    }
 
-        public void setIndex16(int index, int value) {
-            data[index*2] = (byte)value;
-            data[index*2+1] = (byte)(value >> 8);
+    public void setAttributes(int mask, XSetWindowAttributes attributes) {
+        Log.log("XSetAttributes "+XSetWindowAttributes.getAttributeMask(mask));
+        if ((mask & XSetWindowAttributes.CWEventMask)!=0) {
+            selectInput(attributes.event_mask);
         }
-
-        public void setIndex8(int index, int value) {
-            data[index] = (byte)value;
+        if ((mask & XSetWindowAttributes.CWBackPixel)!=0) {
+            panel.setBackground(new Color(attributes.background_pixel));
         }
+    }
 
-        public byte[] data;
-        public int type;
-        public int format; // 8, 16, or 32
+    public void setParent(Window parent, int x, int y) {
+        this.parent.children.remove(this);
+        this.parent.panel.remove(this.panel);
+        this.parent = parent;
+        this.parent.children.add(this);
+        if ((eventMask & StructureNotifyMask)!=0) {
+            XReparentEvent event = new XReparentEvent(display, id, id, parent.id, x, y);
+            process.x11.addEvent(process, event);
+        }
+        move(x, y);
+        map();
     }
 
     static public final int KeyPressMask	        = (1<<0);
@@ -171,171 +320,5 @@ public class Window extends Drawable {
         addMask(mask, Button1MotionMask, "Button1MotionMask", builder);
         addMask(mask, Button2MotionMask, "Button2MotionMask", builder);
         return builder.toString();
-    }
-
-    private Hashtable<Integer, Property> properties = new Hashtable<Integer, Property>();
-
-    public Window(Window parent, int display, WineProcess process) {
-        this.parent = parent;
-        this.display = display;
-        this.process = process;
-
-        panel = new JPanel();
-        panel.setBackground(Color.WHITE);
-        panel.setLayout(null);
-        if (parent!=null) {
-            this.parent.children.addLast(this);
-            this.parent.panel.add(this.panel);
-        }
-        setProperty(Display.setAtom("WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
-    }
-
-    public void setProperty(Integer atom, Property property) {
-        properties.put(atom, property);
-        if (process!=null && (eventMask & PropertyChangeMask)!=0) {
-            XPropertyEvent event = new XPropertyEvent(display, id, atom, XPropertyEvent.NewValue);
-            process.x11.addEvent(process, event);
-        }
-    }
-
-    public void deleteProperty(int atom) {
-        properties.remove(atom);
-        if (process!=null && (eventMask & PropertyChangeMask)!=0) {
-            XPropertyEvent event = new XPropertyEvent(display, id, atom, XPropertyEvent.Delete);
-            process.x11.addEvent(process, event);
-        }
-    }
-
-    public int XGetWindowProperty(int name, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
-        Property property = properties.get(name);
-        WineProcess process = WineThread.getCurrent().process;
-        Memory memory = process.memory;
-        if (property==null) {
-            memory.writed(actual_type_return, 0);
-            memory.writed(actual_format_return, 0);
-            memory.writed(bytes_after_return, 0);
-            return 1;
-        }
-        if (property.type != req_type && req_type != 0) {
-            Log.panic("Window Property " + name + " requested a different type");
-            memory.writed(actual_type_return, property.type);
-            memory.writed(actual_format_return, property.format);
-            memory.writed(bytes_after_return, property.data.length);
-            return 1;
-        }
-        int toCopy = Math.max(long_length, property.data.length)-long_offset;
-        int result = process.alloc(toCopy+1);
-        int remaining = property.data.length-long_offset-toCopy;
-
-        memory.memcpy(result, property.data, long_offset, toCopy);
-        memory.writeb(result + toCopy, 0);
-        memory.writed(actual_type_return, property.type);
-        memory.writed(actual_format_return, property.format);
-        memory.writed(nitems_return, toCopy*8/property.format);
-        memory.writed(bytes_after_return, remaining);
-        memory.writed(prop_return, result);
-        if (delete!=0 && remaining==0) {
-            properties.remove(name);
-        }
-        return 0;
-    }
-
-    public void setClassHint(String res_name, String res_class) {
-
-    }
-
-    public void map() {
-        if (process!=null) {
-            if ((eventMask & StructureNotifyMask)!=0) {
-                XMapEvent event = new XMapEvent(display, id, id);
-                process.x11.addEvent(process, event);
-            }
-            if ((eventMask & ExposureMask)!=0) {
-                XExposeEvent event = new XExposeEvent(display, id, 0, 0, width, height);
-                process.x11.addEvent(process, event);
-            }
-        }
-    }
-
-    public void unmap() {
-        if (process!=null && (eventMask & StructureNotifyMask)!=0) {
-            XUnmapEvent event = new XUnmapEvent(display, id, id);
-            process.x11.addEvent(process, event);
-        }
-    }
-
-    public void setCursor(Cursor cursor) {
-
-    }
-
-    public void move(int x, int y) {
-        this.x = x;
-        this.y = y;
-        this.panel.setBounds(x, y, width, height);
-    }
-
-    public void setX(int x) {
-        move(x, y);
-    }
-
-    public void setY(int y) {
-        move(x, y);
-    }
-
-    public void setWidth(int width) {
-        resize(width, height);
-    }
-
-    public void setHeight(int height) {
-        resize(width, height);
-    }
-
-    public void resize(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.panel.setBounds(x, y, width, height);
-        this.data = new int[width*height];
-    }
-
-    public void setBorderWidth(int borderWidth) {
-
-    }
-
-    public void setSibling(int sibling) {
-
-    }
-
-    public void setStackMode(int stackMode) {
-
-    }
-
-    public void selectInput(int mask) {
-        if ((mask & SubstructureNotifyMask)!=0) {
-            Log.panic("XSelectInput SubstructureNotifyMask not implemented");
-        }
-        Log.log("EventMask: " + getEventMask(mask));
-        this.eventMask = mask;
-    }
-
-    public void setAttributes(int mask, XSetWindowAttributes attributes) {
-        Log.log("XSetAttributes "+XSetWindowAttributes.getAttributeMask(mask));
-        if ((mask & XSetWindowAttributes.CWEventMask)!=0) {
-            selectInput(attributes.event_mask);
-        }
-    }
-
-    public void setParent(Window parent, int x, int y) {
-        this.parent.children.remove(this);
-        this.parent.panel.remove(this.panel);
-        this.parent = parent;
-        this.parent.children.addLast(this);
-        this.parent.panel.add(this.panel);
-
-        if ((eventMask & StructureNotifyMask)!=0) {
-            XReparentEvent event = new XReparentEvent(display, id, id, parent.id, x, y);
-            process.x11.addEvent(process, event);
-        }
-        move(x, y);
-        map();
     }
 }

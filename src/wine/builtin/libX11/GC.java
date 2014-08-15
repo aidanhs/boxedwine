@@ -11,7 +11,7 @@ public class GC {
 
     public boolean ignore = false;
 
-    public GC(int id) {
+    public GC(Drawable drawable, int id) {
         this.id = id;
     }
 

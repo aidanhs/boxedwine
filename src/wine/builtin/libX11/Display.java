@@ -19,7 +19,7 @@ public class Display extends KernelObject {
     public Hashtable<Integer, Pixmap> pixmapsById = new Hashtable<Integer, Pixmap>();
     public Hashtable<Integer, GC> gcById = new Hashtable<Integer, GC>();
     public Hashtable<Long, Integer> contextData = new Hashtable<Long, Integer>();
-    static private int nextid = 1;
+    static private int nextid = 100;
     static private int nextAtom = XAtom.XA_LAST_PREDEFINED+1;
     public boolean kbUseExtension = false;
     public WineProcess process;
@@ -33,8 +33,8 @@ public class Display extends KernelObject {
         return pixmap;
     }
 
-    public GC createNewGC() {
-        GC gc = new GC(getNextId());
+    public GC createNewGC(Drawable drawable) {
+        GC gc = new GC(drawable, getNextId());
         gcById.put(gc.id, gc);
         return gc;
     }

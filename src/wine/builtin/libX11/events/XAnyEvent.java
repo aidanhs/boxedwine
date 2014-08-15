@@ -3,7 +3,7 @@ package wine.builtin.libX11.events;
 import wine.emulation.Memory;
 
 public class XAnyEvent extends XEvent {
-    static private int nextId = 1;
+    static private int nextId = 100;
     public int serial = nextId++;
     public int send_event;
     public int display;

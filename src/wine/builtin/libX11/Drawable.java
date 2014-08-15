@@ -3,6 +3,9 @@ package wine.builtin.libX11;
 import wine.emulation.Memory;
 import wine.util.Log;
 
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
+
 public class Drawable extends XID {
     static public Drawable getDrawable(int id) {
         XID result = xids.get(id);
@@ -15,12 +18,18 @@ public class Drawable extends XID {
     public int width;
     public int height;
     public int[] data;
+    public BufferedImage image;
+
+    protected void onDataChanged() {
+    }
 
     public void create(int width, int height, int depth) {
         this.width = width;
         this.height = height;
         this.depth = depth;
-        data = new int[width*height];
+        this.image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        DataBufferInt buf = (DataBufferInt)this.image.getRaster().getDataBuffer();
+        data = buf.getData();
     }
 
     public void putImage(Memory memory, XImage image, int src_x, int src_y, int dest_x, int dest_y, int width, int height) {
@@ -28,12 +37,14 @@ public class Drawable extends XID {
             Log.panic("XPutImage not implemented for depths other than 32");
         }
         read(memory, image.data, image.bytes_per_line, src_x, src_y, dest_x, dest_y, width, height);
+        onDataChanged();
     }
 
     public void read(Memory memory, int d, int bytes_per_line, int src_x, int src_y, int dest_x, int dest_y, int width, int height) {
-        for (int y=src_y;y<src_y+height && y<this.height;y++) {
-            for (int x=src_x;x<src_x+width && x<this.width;x++)
-                data[y*this.width+x] = memory.readd(d + bytes_per_line*y + 4*x);
+        for (int y=0;y<height && y+dest_y<this.height;y++) {
+            for (int x=0;x<width && x+dest_x<this.width;x++) {
+                data[(dest_y+y)*this.width+dest_x+x] = memory.readd(d + bytes_per_line*(y+src_y) + 4*(x+src_x));
+            }
         }
     }
 }
