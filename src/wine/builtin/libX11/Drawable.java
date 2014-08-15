@@ -31,9 +31,9 @@ public class Drawable extends XID {
     }
 
     public void read(Memory memory, int d, int bytes_per_line, int src_x, int src_y, int dest_x, int dest_y, int width, int height) {
-        for (int y=src_y;y<src_y+height;y++) {
-            for (int x=src_x;x<src_x+width;x++)
-                data[y*width+x] = memory.readd(d + bytes_per_line*y + 4*x);
+        for (int y=src_y;y<src_y+height && y<this.height;y++) {
+            for (int x=src_x;x<src_x+width && x<this.width;x++)
+                data[y*this.width+x] = memory.readd(d + bytes_per_line*y + 4*x);
         }
     }
 }

@@ -1,17 +1,25 @@
 package wine.builtin.libX11;
 
-import wine.builtin.libX11.events.XMapEvent;
-import wine.builtin.libX11.events.XPropertyEvent;
-import wine.builtin.libX11.events.XUnmapEvent;
+import wine.builtin.libX11.events.*;
 import wine.emulation.Memory;
 import wine.system.WineProcess;
-import wine.system.WineSystem;
 import wine.system.WineThread;
 import wine.util.Log;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.Hashtable;
+import java.util.LinkedList;
 
 public class Window extends Drawable {
+    public Window parent;
+    public LinkedList<Window> children = new LinkedList<Window>();
+    public JPanel panel;
+    final public int display;
+    final public WineProcess process;
+    public int x;
+    public int y;
+
     static public final int WithdrawnState = 0;
     static public final int NormalState = 1;
     static public final int IconicState = 3;
@@ -102,10 +110,6 @@ public class Window extends Drawable {
         public int format; // 8, 16, or 32
     }
 
-    final public int parent;
-    final public int display;
-    final public WineProcess process;
-
     static public final int KeyPressMask	        = (1<<0);
     static public final int KeyReleaseMask	        = (1<<1);
     static public final int Button3MotionMask	    = (1<<10);
@@ -132,12 +136,57 @@ public class Window extends Drawable {
     static public final int Button2MotionMask       = (1<<9);
     private int eventMask;
 
+    static private void addMask(int mask, int value, String name, StringBuilder builder) {
+        if ((mask & value)!=0) {
+            if (builder.length()>0)
+                builder.append("|");
+            builder.append(name);
+        }
+    }
+
+    static public String getEventMask(int mask) {
+        StringBuilder builder = new StringBuilder();
+        addMask(mask, KeyPressMask, "KeyPressMask", builder);
+        addMask(mask, KeyReleaseMask, "KeyReleaseMask", builder);
+        addMask(mask, Button3MotionMask, "Button3MotionMask", builder);
+        addMask(mask, Button4MotionMask, "Button4MotionMask", builder);
+        addMask(mask, Button5MotionMask, "Button5MotionMask", builder);
+        addMask(mask, ButtonMotionMask, "ButtonMotionMask", builder);
+        addMask(mask, KeymapStateMask, "KeymapStateMask", builder);
+        addMask(mask, ExposureMask, "ExposureMask", builder);
+        addMask(mask, VisibilityChangeMask, "VisibilityChangeMask", builder);
+        addMask(mask, StructureNotifyMask, "StructureNotifyMask", builder);
+        addMask(mask, ResizeRedirectMask, "ResizeRedirectMask", builder);
+        addMask(mask, SubstructureNotifyMask, "SubstructureNotifyMask", builder);
+        addMask(mask, ButtonPressMask, "ButtonPressMask", builder);
+        addMask(mask, SubstructureRedirectMask, "SubstructureRedirectMask", builder);
+        addMask(mask, FocusChangeMask, "FocusChangeMask", builder);
+        addMask(mask, PropertyChangeMask, "PropertyChangeMask", builder);
+        addMask(mask, ColormapChangeMask, "ColormapChangeMask", builder);
+        addMask(mask, ButtonReleaseMask, "ButtonReleaseMask", builder);
+        addMask(mask, EnterWindowMask, "EnterWindowMask", builder);
+        addMask(mask, LeaveWindowMask, "LeaveWindowMask", builder);
+        addMask(mask, PointerMotionMask, "PointerMotionMask", builder);
+        addMask(mask, PointerMotionHintMask, "PointerMotionHintMask", builder);
+        addMask(mask, Button1MotionMask, "Button1MotionMask", builder);
+        addMask(mask, Button2MotionMask, "Button2MotionMask", builder);
+        return builder.toString();
+    }
+
     private Hashtable<Integer, Property> properties = new Hashtable<Integer, Property>();
 
-    public Window(int parent, int display, WineProcess process) {
+    public Window(Window parent, int display, WineProcess process) {
         this.parent = parent;
         this.display = display;
         this.process = process;
+
+        panel = new JPanel();
+        panel.setBackground(Color.WHITE);
+        panel.setLayout(null);
+        if (parent!=null) {
+            this.parent.children.addLast(this);
+            this.parent.panel.add(this.panel);
+        }
         setProperty(Display.setAtom("WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
     }
 
@@ -157,7 +206,7 @@ public class Window extends Drawable {
         }
     }
 
-    public int XGetWindowProperty(String name, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
+    public int XGetWindowProperty(int name, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
         Property property = properties.get(name);
         WineProcess process = WineThread.getCurrent().process;
         Memory memory = process.memory;
@@ -196,9 +245,15 @@ public class Window extends Drawable {
     }
 
     public void map() {
-        if (process!=null && (eventMask & StructureNotifyMask)!=0) {
-            XMapEvent event = new XMapEvent(display, id, id);
-            process.x11.addEvent(process, event);
+        if (process!=null) {
+            if ((eventMask & StructureNotifyMask)!=0) {
+                XMapEvent event = new XMapEvent(display, id, id);
+                process.x11.addEvent(process, event);
+            }
+            if ((eventMask & ExposureMask)!=0) {
+                XExposeEvent event = new XExposeEvent(display, id, 0, 0, width, height);
+                process.x11.addEvent(process, event);
+            }
         }
     }
 
@@ -213,20 +268,33 @@ public class Window extends Drawable {
 
     }
 
-    public void setX(int x) {
+    public void move(int x, int y) {
+        this.x = x;
+        this.y = y;
+        this.panel.setBounds(x, y, width, height);
+    }
 
+    public void setX(int x) {
+        move(x, y);
     }
 
     public void setY(int y) {
-
+        move(x, y);
     }
 
     public void setWidth(int width) {
-
+        resize(width, height);
     }
 
     public void setHeight(int height) {
+        resize(width, height);
+    }
 
+    public void resize(int width, int height) {
+        this.width = width;
+        this.height = height;
+        this.panel.setBounds(x, y, width, height);
+        this.data = new int[width*height];
     }
 
     public void setBorderWidth(int borderWidth) {
@@ -245,6 +313,29 @@ public class Window extends Drawable {
         if ((mask & SubstructureNotifyMask)!=0) {
             Log.panic("XSelectInput SubstructureNotifyMask not implemented");
         }
+        Log.log("EventMask: " + getEventMask(mask));
         this.eventMask = mask;
+    }
+
+    public void setAttributes(int mask, XSetWindowAttributes attributes) {
+        Log.log("XSetAttributes "+XSetWindowAttributes.getAttributeMask(mask));
+        if ((mask & XSetWindowAttributes.CWEventMask)!=0) {
+            selectInput(attributes.event_mask);
+        }
+    }
+
+    public void setParent(Window parent, int x, int y) {
+        this.parent.children.remove(this);
+        this.parent.panel.remove(this.panel);
+        this.parent = parent;
+        this.parent.children.addLast(this);
+        this.parent.panel.add(this.panel);
+
+        if ((eventMask & StructureNotifyMask)!=0) {
+            XReparentEvent event = new XReparentEvent(display, id, id, parent.id, x, y);
+            process.x11.addEvent(process, event);
+        }
+        move(x, y);
+        map();
     }
 }

@@ -300,8 +300,11 @@ public class LibX11 extends BuiltinModule {
 
     // int XChangeWindowAttributes(Display *display, Window w, unsigned long valuemask, XSetWindowAttributes *attributes)
     static public int XChangeWindowAttributes(int display, int w, int valuemask, int attributes) {
-        Log.panic("XChangeWindowAttributes not implemented");
-        return 0;
+        Window window = Window.getWindow(w);
+        if (window == null)
+            return BadWindow;
+        window.setAttributes(valuemask, new XSetWindowAttributes(WineThread.getCurrent().process.memory, attributes));
+        return Success;
     }
 
     // Bool XCheckIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(), XPointer arg)
@@ -382,8 +385,9 @@ public class LibX11 extends BuiltinModule {
 
     // Cursor XCreateFontCursor(Display *display, unsigned int shape);
     static public int XCreateFontCursor(int display, int shape) {
-        Log.panic("XCreateFontCursor not implemented");
-        return 0;
+        Cursor cursor = new Cursor();
+        Log.warn("XCreateFontCursor not implemented");
+        return cursor.id;
     }
 
     // XFontSet XCreateFontSet(Display *display, char *base_font_name_list, char ***missing_charset_list_return, int *missing_charset_count_return, char **def_string_return)
@@ -478,8 +482,14 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Window XCreateWindow(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes)
-    static public int XCreateWindow(int address, int parent, int x, int y, int width, int height, int border_width, int depth, int klass, int visual, int valuemask, int attributes) {
-        Window window = new Window(parent, address, WineThread.getCurrent().process);
+    static public int XCreateWindow(int address, int p, int x, int y, int width, int height, int border_width, int depth, int klass, int visual, int valuemask, int attributes) {
+        WineProcess process = WineThread.getCurrent().process;
+        Window parent = Window.getWindow(p);
+        Window window = new Window(parent, address, process);
+        window.move(x, y);
+        window.resize(width, height);
+        if (attributes!=0)
+            window.setAttributes(valuemask, new XSetWindowAttributes(process.memory, attributes));
         return window.id;
     }
 
@@ -886,7 +896,7 @@ public class LibX11 extends BuiltinModule {
             Log.warn("XGetWindowProperty with invalid property");
             return BadAtom;
         }
-        return window.XGetWindowProperty(propertyName, long_offset, long_length, delete, req_type, actual_type_return, actual_format_return, nitems_return, bytes_after_return, prop_return);
+        return window.XGetWindowProperty(property, long_offset, long_length, delete, req_type, actual_type_return, actual_format_return, nitems_return, bytes_after_return, prop_return);
     }
 
     // int XGrabPointer(Display *display, Window grab_window, Bool owner_events, unsigned int event_mask, int pointer_mode, int keyboard_mode, Window confine_to, Cursor cursor, Time time)
@@ -1254,16 +1264,19 @@ public class LibX11 extends BuiltinModule {
         Memory memory = WineThread.getCurrent().process.memory;
         if (window==null)
             return BadWindow;
-        if ((value_mask & CWX)!=0) {
+
+        if ((value_mask & CWX)!=0 && (value_mask & CWY)!=0) {
+            window.move(memory.readd(values), memory.readd(values+4));
+        } else if ((value_mask & CWX)!=0) {
             window.setX(memory.readd(values));
-        }
-        if ((value_mask & CWY)!=0) {
+        } else if ((value_mask & CWY)!=0) {
             window.setY(memory.readd(values + 4));
         }
-        if ((value_mask & CWWidth)!=0) {
+        if ((value_mask & CWHeight)!=0 && (value_mask & CWWidth)!=0) {
+            window.resize(memory.readd(values + 8), memory.readd(values + 12));
+        } else if ((value_mask & CWWidth)!=0) {
             window.setWidth(memory.readd(values + 8));
-        }
-        if ((value_mask & CWHeight)!=0) {
+        } else if ((value_mask & CWHeight)!=0) {
             window.setHeight(memory.readd(values + 12));
         }
         if ((value_mask & CWBorderWidth)!=0) {
@@ -1291,9 +1304,13 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XReparentWindow(Display *display, Window w, Window parent, int x, int y);
-    static public int XReparentWindow(int display, int w, int parent, int x, int y) {
-        Log.panic("XReparentWindow not implemented");
-        return 0;
+    static public int XReparentWindow(int display, int w, int p, int x, int y) {
+        Window window = Window.getWindow(w);
+        Window parent = Window.getWindow(p);
+        if (window == null || parent == null)
+            return BadWindow;
+        window.setParent(parent, x, y);
+        return Success;
     }
 
     // XrmQuark XrmUniqueQuark(void)
@@ -1511,7 +1528,7 @@ public class LibX11 extends BuiltinModule {
 
     // void XShapeCombineMask(Display *dpy, XID dest, int destKind, int xOff, int yOff, Pixmap src, int op)
     static public void XShapeCombineMask(int display, int dest, int destKind, int xOff, int yOff, int src, int op) {
-        Log.panic("XShapeCombineMask not implemented");
+        Log.warn("XShapeCombineMask not implemented");
     }
 
     // #define ShapeBounding 0
@@ -1531,7 +1548,7 @@ public class LibX11 extends BuiltinModule {
         if (op!=0) {
             Log.panic("XShapeCombineRectangles only supports ShapeSet");
         }
-        Log.log("XShapeCombineRectangles not implemented yet");
+        Log.warn("XShapeCombineRectangles not implemented yet");
         Memory memory = WineThread.getCurrent().process.memory;
         for (int i=0;i<n_rects;i++) {
             Log.log("  Rect "+memory.readw(rects+i*8)+","+memory.readw(rects+i*8+2)+" "+memory.readw(rects+i*8+4)+","+memory.readw(rects+i*8+6));
@@ -1575,8 +1592,14 @@ public class LibX11 extends BuiltinModule {
 
     // Bool XShmPutImage(Display *display, Drawable d, GC gc, XImage *image, int src_x, src_y, dest_x, dest_y, unsigned int width, height, bool send_event);
     static public int XShmPutImage(int display, int d, int gc, int image, int src_x, int src_y, int dest_x, int dest_y, int width, int height, int send_event) {
-        Log.panic("XShmPutImage not implemented");
-        return 0;
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        XImage xImage = new XImage(memory, image);
+        Drawable drawable = Drawable.getDrawable(d);
+        if (drawable == null)
+            return BadDrawable;
+        drawable.putImage(memory, xImage, src_x, src_y, dest_x, dest_y, width, height);
+        return Success;
     }
 
     // int XStoreColor(Display *display, Colormap colormap, XColor *color)

@@ -2557,12 +2557,13 @@ class Decoder {
                         case 3: prev.next = new FPUOps.FCMOV_ST0_STj_PF(rm); break;
                         case 5:
                         {
-                            if ((rm & 7)==5) {
+                            if ((rm & 7)==1) {
                                 prev.next = new FPUOps.FUCOMPP();
                             } else {
                                 prev.next = null;
                                 Log.warn("ESC 2:Unhandled group " + ((rm >> 3) & 7) + " subfunction " + (rm & 7));
                             }
+                            break;
                         }
                         default:
                             prev.next = null;
