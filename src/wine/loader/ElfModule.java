@@ -161,7 +161,7 @@ public class ElfModule extends Module {
                     }
                 }
             }
-            if (Log.level>Log.LEVEL_NONE) {
+            if (Log.level>=Log.LEVEL_DEBUG) {
                 if (reloc) {
                     System.out.println(process.mainModule.name + ":" + process.id + " relocating " + name + " " + Long.toHexString(originalAddress) + " -> " + Long.toHexString(address) + "(page=" + Integer.toHexString(pageStart) + " pageCount=" + pageCount + ")");
                 } else {
@@ -470,7 +470,7 @@ public class ElfModule extends Module {
         int pageStart = (int)(address>>>12);
         int pageCount = (int)(imageSize >> 12);
 //        process.freePages(pageStart, pageCount);
-        if (Log.level>Log.LEVEL_NONE) {
+        if (Log.level>=Log.LEVEL_DEBUG) {
             System.out.println(process.mainModule.name + ":" + process.id + " unloading " + name + " " + Long.toHexString(address) + "(page=" + Integer.toHexString(pageStart) + " pageCount=" + pageCount + ")");
         }
     }

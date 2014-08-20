@@ -3,14 +3,14 @@ package wine.emulation;
 import wine.system.WineProcess;
 
 public class RAMHandlerNone extends RAMHandler {
-    public RAMHandlerNone(Memory memory, int physicalPage, boolean mmap, boolean shared) {
-        super(memory, physicalPage, mmap, shared);
+    public RAMHandlerNone(int physicalPage, boolean mmap, boolean shared) {
+        super(physicalPage, mmap, shared);
     }
-    public int readd(int address) {
+    public int readd(Memory memory, int address) {
         pf(address);
         return 0;
     }
-    public int readw(int address) {
+    public int readw(Memory memory, int address) {
         pf(address);
         return 0;
     }
@@ -18,10 +18,10 @@ public class RAMHandlerNone extends RAMHandler {
         pf(address);
         return 0;
     }
-    public void writed(int address, int value) {
+    public void writed(Memory memory, int address, int value) {
         pf(address);
     }
-    public void writew(int address, int value) {
+    public void writew(Memory memory, int address, int value) {
         pf(address);
     }
     public void writeb(int address, int value) {
@@ -29,18 +29,18 @@ public class RAMHandlerNone extends RAMHandler {
     }
 
     public PageHandler fork(WineProcess process) {
-        if (physicalPage==0)
-            return new RAMHandlerNone(process.memory, 0, mmap, shared);
+        if (getPhysicalPage() ==0)
+            return new RAMHandlerNone(0, isMmap(), isShared());
         int page;
-        if (shared) {
-            page = physicalPage;
+        if (isShared()) {
+            page = getPhysicalPage();
             RAM.incrementRef(page);
         } else {
             page = RAM.allocPage();
         }
-        RAMHandler handler = new RAMHandlerNone(process.memory, page, mmap, shared);
-        if (!shared) {
-            RAM.copy(physicalPage, page);
+        RAMHandler handler = new RAMHandlerNone(page, isMmap(), isShared());
+        if (!isShared()) {
+            RAM.copy(getPhysicalPage(), page);
         }
         return handler;
     }

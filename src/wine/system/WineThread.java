@@ -122,7 +122,7 @@ public class WineThread {
     }
 
     public void out(String msg) {
-        if (Log.level>Log.LEVEL_NONE && stdoutBuffer.length()==0) {
+        if (Log.level>=Log.LEVEL_DEBUG && stdoutBuffer.length()==0) {
             stdoutBuffer.append(process.name);
             stdoutBuffer.append(":");
             stdoutBuffer.append(process.id);
@@ -149,7 +149,7 @@ public class WineThread {
             for (int i = 0; i < pageCount; i++) {
                 PageHandler handler = process.memory.handlers[pageStart + i];
                 if (handler instanceof ThreadHandler) {
-                    RAM.freePage(((ThreadHandler) handler).physicalPage);
+                    RAM.freePage(((ThreadHandler) handler).getPhysicalPage());
                 }
                 process.memory.handlers[i + pageStart] = Memory.invalidHandler;
             }
@@ -193,7 +193,7 @@ public class WineThread {
         int address = stackTop - stackSize - (pages << 12);
         if (stackSize>0) {
             ThreadHandlerCheck check = (ThreadHandlerCheck)process.memory.handlers[this.stackBottom>>>12];
-            process.memory.handlers[this.stackBottom>>>12] = new ThreadHandler(process.memory, check.physicalPage);
+            process.memory.handlers[this.stackBottom>>>12] = new ThreadHandler(process.memory, check.getPhysicalPage());
         }
         int pageStart = address>>>12;
         int page = RAM.allocPage();
@@ -236,25 +236,25 @@ public class WineThread {
         private void grow() {
             growStack(4);
         }
-        public int readd(int address) {
+        public int readd(Memory memory, int address) {
             grow();
-            return super.readd(address);
+            return super.readd(memory, address);
         }
-        public int readw(int address) {
+        public int readw(Memory memory, int address) {
             grow();
-            return super.readw(address);
+            return super.readw(memory, address);
         }
         public int readb(int address) {
             grow();
             return super.readb(address);
         }
-        public void writed(int address, int value) {
+        public void writed(Memory memory, int address, int value) {
             grow();
-            super.writed(address, value);
+            super.writed(memory, address, value);
         }
-        public void writew(int address, int value) {
+        public void writew(Memory memory, int address, int value) {
             grow();
-            super.writew(address, value);
+            super.writew(memory, address, value);
         }
         public void writeb(int address, int value) {
             grow();
@@ -263,19 +263,19 @@ public class WineThread {
         public PageHandler fork(WineProcess process) {
             int page = RAM.allocPage();
             ThreadHandlerCheck handler = new ThreadHandlerCheck(process.memory, page);
-            RAM.copy(physicalPage, page);
+            RAM.copy(getPhysicalPage(), page);
             return handler;
         }
     }
 
     private class ThreadHandler extends RAMHandler {
         public ThreadHandler(Memory memory, int physicalPage) {
-            super(memory, physicalPage, false, false);
+            super(physicalPage, false, false);
         }
         public PageHandler fork(WineProcess process) {
             int page = RAM.allocPage();
             ThreadHandler handler = new ThreadHandler(process.memory, page);
-            RAM.copy(physicalPage, page);
+            RAM.copy(getPhysicalPage(), page);
             return handler;
         }
     }

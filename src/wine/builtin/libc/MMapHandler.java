@@ -1,5 +1,6 @@
 package wine.builtin.libc;
 
+import wine.emulation.Memory;
 import wine.emulation.PageHandler;
 import wine.emulation.RAM;
 import wine.system.WineProcess;
@@ -66,13 +67,13 @@ public class MMapHandler extends PageHandler {
         }
     }
 
-    public int readd(int address) {
+    public int readd(Memory memory, int address) {
         if (physicalPage==0) {
             alloc();
         }
         return RAM.readd(address+addressTranslation);
     }
-    public int readw(int address) {
+    public int readw(Memory memory, int address) {
         if (physicalPage==0) {
             alloc();
         }
@@ -84,14 +85,14 @@ public class MMapHandler extends PageHandler {
         }
         return RAM.readb(address+addressTranslation);
     }
-    public void writed(int address, int value) {
+    public void writed(Memory memory, int address, int value) {
         if (physicalPage==0) {
             alloc();
         }
         dirty=true;
         RAM.writed(address+addressTranslation, value);
     }
-    public void writew(int address, int value) {
+    public void writew(Memory memory, int address, int value) {
         if (physicalPage==0) {
             alloc();
         }

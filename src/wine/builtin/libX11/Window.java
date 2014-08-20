@@ -232,12 +232,10 @@ public class Window extends Drawable {
         if ((mask & SubstructureNotifyMask)!=0) {
             Log.panic("XSelectInput SubstructureNotifyMask not implemented");
         }
-        Log.log("EventMask: " + getEventMask(mask));
         this.eventMask = mask;
     }
 
     public void setAttributes(int mask, XSetWindowAttributes attributes) {
-        Log.log("XSetAttributes "+XSetWindowAttributes.getAttributeMask(mask));
         if ((mask & XSetWindowAttributes.CWEventMask)!=0) {
             selectInput(attributes.event_mask);
         }

@@ -13,18 +13,18 @@ public class Memory {
     }
 
     public int readd(int address) {
-        return handlers[(address >>> 12)].readd(address);
+        return handlers[(address >>> 12)].readd(this, address);
     }
     public long readq(int address) {
-        long v1=handlers[(address>>>12)].readd(address) & 0xFFFFFFFFl;
-        long v2=handlers[(address>>>12)].readd(address+4) & 0xFFFFFFFFl;
+        long v1=handlers[(address>>>12)].readd(this, address) & 0xFFFFFFFFl;
+        long v2=handlers[(address>>>12)].readd(this, address+4) & 0xFFFFFFFFl;
         return v1 | (v2 << 32);
     }
     public int unalignedReadd(int address) {
         return readb(address) | (readb(address+1)<<8) | (readb(address+2)<<16) | (readb(address+3)<<24);
     }
     public int readw(int address) {
-        return handlers[(address>>>12)].readw(address);
+        return handlers[(address>>>12)].readw(this, address);
     }
     public int unalignedReadw(int address) {
         return readb(address) | (readb(address+1)<<8);
@@ -33,11 +33,11 @@ public class Memory {
         return handlers[(address>>>12)].readb(address);
     }
     public void writed(int address, int value) {
-        handlers[(address>>>12)].writed(address, value);
+        handlers[(address>>>12)].writed(this, address, value);
     }
     public void writeq(int address, long value) {
-        handlers[(address>>>12)].writed(address, (int)value);
-        handlers[(address>>>12)].writed(address+4, (int)(value>>>32));
+        handlers[(address>>>12)].writed(this, address, (int)value);
+        handlers[(address>>>12)].writed(this, address+4, (int)(value>>>32));
     }
     public void unalignedWrited(int address, int value) {
         writeb(address, value);
@@ -46,7 +46,7 @@ public class Memory {
         writeb(address+3, value>>24);
     }
     public void writew(int address, int value) {
-        handlers[(address>>>12)].writew(address, value);
+        handlers[(address>>>12)].writew(this, address, value);
     }
     public void unalignedWritew(int address, int value) {
         writeb(address, value);

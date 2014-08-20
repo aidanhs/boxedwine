@@ -12,10 +12,10 @@ public class Mmap {
         public MMapHandlerRO(FileDescriptor fd, KernelFile file, int addressOffset, long fileOffset, boolean shared) {
             super(fd, file, addressOffset, fileOffset, shared);
         }
-        public void writed(int address, int value) {
+        public void writed(Memory memory, int address, int value) {
             pf(address);
         }
-        public void writew(int address, int value) {
+        public void writew(Memory memory, int address, int value) {
             pf(address);
         }
         public void writeb(int address, int value) {
@@ -36,11 +36,11 @@ public class Mmap {
             super(fd, file, addressOffset, fileOffset, shared);
         }
 
-        public int readd(int address) {
+        public int readd(Memory memory, int address) {
             pf(address);
             return 0;
         }
-        public int readw(int address) {
+        public int readw(Memory memory, int address) {
             pf(address);
             return 0;
         }
@@ -63,20 +63,20 @@ public class Mmap {
         public MMapHandlerNone(FileDescriptor fd, KernelFile file, int addressOffset, long fileOffset, boolean shared) {
             super(fd, file, addressOffset, fileOffset, shared);
         }
-        public void writed(int address, int value) {
+        public void writed(Memory memory, int address, int value) {
             pf(address);
         }
-        public void writew(int address, int value) {
+        public void writew(Memory memory, int address, int value) {
             pf(address);
         }
         public void writeb(int address, int value) {
             pf(address);
         }
-        public int readd(int address) {
+        public int readd(Memory memory, int address) {
             pf(address);
             return 0;
         }
-        public int readw(int address) {
+        public int readw(Memory memory, int address) {
             pf(address);
             return 0;
         }
@@ -143,7 +143,7 @@ public class Mmap {
             PageHandler handler = handlers[pageStart+i];
             if (handler!=waitingHandler) {
                 if (handler instanceof RAMHandler) {
-                    if (!((RAMHandler)handler).mmap) {
+                    if (!((RAMHandler)handler).isMmap()) {
                         thread.setErrno(Errno.ENOMEM);
                         return false;
                     }
@@ -245,7 +245,7 @@ public class Mmap {
                     boolean zero = true;
                     if (handler instanceof RAMHandler) {
                         RAMHandler r = (RAMHandler) handler;
-                        page = r.physicalPage;
+                        page = r.getPhysicalPage();
                         zero = false;
                     } else {
                         handlers[pageStart + i].close();
@@ -254,16 +254,16 @@ public class Mmap {
                         page = RAM.allocPage();
                     }
                     if ((read | exec) && write)
-                        handlers[pageStart + i] = new RAMHandler(thread.process.memory, page, true, shared);
+                        handlers[pageStart + i] = new RAMHandler(page, true, shared);
                     else if (read | exec)
-                        handlers[pageStart + i] = new RAMHandlerRO(thread.process.memory, page, true, shared);
+                        handlers[pageStart + i] = new RAMHandlerRO(page, true, shared);
                     else
-                        handlers[pageStart + i] = new RAMHandlerWO(thread.process.memory, page, true, shared);
+                        handlers[pageStart + i] = new RAMHandlerWO(page, true, shared);
                     if (zero)
                         thread.process.memory.zero((pageStart+i)<<12, 4096);
                 }
                 else
-                    handlers[pageStart + i] = new RAMHandlerNone(thread.process.memory, 0, true, shared);
+                    handlers[pageStart + i] = new RAMHandlerNone(0, true, shared);
             }
         }
         return address;
@@ -304,7 +304,7 @@ public class Mmap {
                 }
             } else if (handler instanceof RAMHandler) {
                 RAMHandler rhandler = (RAMHandler)handler;
-                if (!rhandler.mmap) {
+                if (!rhandler.isMmap()) {
                     WineThread.getCurrent().setErrno(Errno.ENOMEM);
                     return -1;
                 }
@@ -334,23 +334,23 @@ public class Mmap {
                 RAMHandler rhandler = (RAMHandler)handler;
 
                 if ((read | exec) && write) {
-                    int page = rhandler.physicalPage;
+                    int page = rhandler.getPhysicalPage();
                     if (page==0)
                         page=RAM.allocPage();
-                    handlers[pageStart + i] = new RAMHandler(rhandler.memory, page, true, rhandler.shared);
+                    handlers[pageStart + i] = new RAMHandler(page, true, rhandler.isShared());
                 } else if (read | exec) {
-                    int page = rhandler.physicalPage;
+                    int page = rhandler.getPhysicalPage();
                     if (page==0)
                         page=RAM.allocPage();
-                    handlers[pageStart + i] = new RAMHandlerRO(rhandler.memory, page, true, rhandler.shared);
+                    handlers[pageStart + i] = new RAMHandlerRO(page, true, rhandler.isShared());
                 } else if (write) {
-                    int page = rhandler.physicalPage;
+                    int page = rhandler.getPhysicalPage();
                     if (page==0)
                         page=RAM.allocPage();
-                    handlers[pageStart + i] = new RAMHandlerWO(rhandler.memory, page, true, rhandler.shared);
+                    handlers[pageStart + i] = new RAMHandlerWO(page, true, rhandler.isShared());
                 } else {
                     // :TODO: free this page?
-                    handlers[pageStart + i] = new RAMHandlerNone(rhandler.memory, rhandler.physicalPage, true, rhandler.shared);
+                    handlers[pageStart + i] = new RAMHandlerNone(rhandler.getPhysicalPage(), true, rhandler.isShared());
                 }
             }
         }

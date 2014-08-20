@@ -19,7 +19,7 @@ public class Main {
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable/wine");
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu");
 
-        RAM.init(192 * 1024 * 1024);
+        RAM.init(170 * 1024 * 1024);
         // not necessary to create this up front, but it allows debug msg's to go to stdout
         //createWineServer();
         //WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/libz.so.1"}, new String[0]);
@@ -27,7 +27,7 @@ public class Main {
         System.arraycopy(args, 0, t, 1, args.length);
         args = t;
         args[0]="/usr/lib/i386-linux-gnu/wine-unstable/bin/wine";
-        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32","WINEDEBUG=+bitblt,+gdi"})==null) {
+        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32","WINEDEBUG=+bitblt"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }

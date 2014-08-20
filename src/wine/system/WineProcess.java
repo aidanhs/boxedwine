@@ -236,7 +236,7 @@ public class WineProcess {
                 int pageStart = address >>> 12;
                 for (int i = 0; i < pages; i++) {
                     int page = RAM.allocPage();
-                    memory.handlers[pageStart + i] = new RAMHandler(memory, page, false, false);
+                    memory.handlers[pageStart + i] = new RAMHandler(page, false, false);
                 }
                 result = heap.alloc(size);
             }
@@ -257,7 +257,7 @@ public class WineProcess {
         }
         for (int i=0;i<pages;i++) {
             int page = RAM.allocPage();
-            memory.handlers[pageStart+i] = new RAMHandler(memory, page, map, false);
+            memory.handlers[pageStart+i] = new RAMHandler(page, map, false);
         }
     }
 
@@ -273,7 +273,7 @@ public class WineProcess {
         synchronized (addressSpace) {
             int pageStart = addressSpace.getNextPage(ADDRESS_PROCESS_SHARED_START, 1);
             addressSpace.allocPages(pageStart, 1);
-            memory.handlers[pageStart] = new RAMHandler(memory, page, false, false);
+            memory.handlers[pageStart] = new RAMHandler(page, false, false);
             return pageStart<<12;
         }
     }
@@ -319,7 +319,7 @@ public class WineProcess {
         synchronized (this) {
             threads.remove(thread.id);
             if (threads.size()==0) {
-                if (Log.level>Log.LEVEL_NONE)
+                if (Log.level>=Log.LEVEL_DEBUG)
                     thread.out("Process Terminated");
                 this.terminated = true;
                 if (parent!=null && !parent.terminated && parent.sigActions[Signal.SIGCHLD].sa_handler>1) {
@@ -338,7 +338,7 @@ public class WineProcess {
     }
 
     public void _exit(int status) {
-        if (Log.level>Log.LEVEL_NONE)
+        if (Log.level>=Log.LEVEL_DEBUG)
             WineThread.getCurrent().out("_exit "+status);
         this.exitCode = status;
         for (Integer threadId :threads.keySet()) {
@@ -564,7 +564,7 @@ public class WineProcess {
             thread.setErrno(Errno.ENOENT);
             return -1;
         }
-        if (Log.level>Log.LEVEL_NONE) {
+        if (Log.level>=Log.LEVEL_DEBUG) {
             System.out.print("exec");
             for (int i = 0; i < args.length; i++) {
                 System.out.print(" " + args[i]);

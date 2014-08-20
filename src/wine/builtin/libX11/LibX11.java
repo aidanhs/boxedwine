@@ -250,9 +250,12 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XChangeGC(Display *display, GC gc, unsigned long valuemask, XGCValues *values)
-    static public int XChangeGC(int display, int gc, int valuemask, int values) {
-        Log.panic("XChangeGC not implemented");
-        return 0;
+    static public int XChangeGC(int address, int gc, int valuemask, int values) {
+        Display display = getDisplay(address);
+        GC g = display.gcById.get(gc);
+        if (g == null)
+            return BadGC;
+        return g.values.merge(WineThread.getCurrent().process.memory, values, valuemask);
     }
 
     // int XChangeProperty(Display *display, Window w, Atom property, Atom type, int format, int mode, unsigned char *data, int nelements)
@@ -598,9 +601,16 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XFillRectangle(Display *display, Drawable d, GC gc, int x, int y, unsigned int width, unsigned int height)
-    static public int XFillRectangle(int display, int d, int gc, int x, int y, int width, int height) {
-        Log.panic("XFillRectangle not implemented");
-        return 0;
+    static public int XFillRectangle(int address, int d, int gc, int x, int y, int width, int height) {
+        Display display = getDisplay(address);
+        GC g = display.gcById.get(gc);
+        if (g == null)
+            return BadGC;
+        Drawable drawable = Drawable.getDrawable(d);
+        if (drawable == null)
+            return BadDrawable;
+        drawable.fillRect(g, x, y, width, height);
+        return Success;
     }
 
     // int XFillRectangles(Display *display, Drawable d, GC gc, XRectangle *rectangles, int nrectangles)
@@ -1198,12 +1208,12 @@ public class LibX11 extends BuiltinModule {
         }
 
         WineThread thread = WineThread.getCurrent();
-
-        int address = thread.process.alloc(IM.SIZE+3); // 3 for locale
+        String locale = "en";
+        int address = thread.process.alloc(IM.SIZE+locale.length()+1);
         IM im = new IM();
         im.display = display;
         im.locale = address+IM.SIZE;
-        thread.process.memory.writeCString(im.locale, "en");
+        thread.process.memory.writeCString(im.locale, locale);
         im.write(thread.process.memory, address);
         return address;
     }
@@ -1422,15 +1432,19 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XSetFunction(Display *display, GC gc, int function)
-    static public int XSetFunction(int display, int gc, int function) {
-        Log.panic("XSetFunction not implemented");
-        return 0;
+    static public int XSetFunction(int address, int gc, int function) {
+        Display display = getDisplay(address);
+        GC g = display.gcById.get(gc);
+        if (g == null)
+            return BadGC;
+        g.values.function = function;
+        return Success;
     }
 
     // void XSetGraphicsExposures(Display *display, GC gc, Bool graphics_exposures)
     static public void XSetGraphicsExposures(int address, int gc, int graphics_exposures) {
         Display display = getDisplay(address);
-        display.gcById.get(gc).graphicsExposures= graphics_exposures!=0;
+        display.gcById.get(gc).values.graphics_exposures = graphics_exposures;
     }
 
     // void XSetICFocus(XIC ic)
@@ -1472,7 +1486,7 @@ public class LibX11 extends BuiltinModule {
     // void XSetSubwindowMode(Display *display, GC gc, int subwindow_mode)
     static public void XSetSubwindowMode(int address, int gc, int subwindow_mode) {
         Display display = getDisplay(address);
-        display.gcById.get(gc).subwindowMode = subwindow_mode;
+        display.gcById.get(gc).values.subwindow_mode = subwindow_mode;
     }
 
     // int XSetTransientForHint(Display *display, Window w, Window prop_window)
