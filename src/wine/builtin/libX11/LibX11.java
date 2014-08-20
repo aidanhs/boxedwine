@@ -1,7 +1,5 @@
 package wine.builtin.libX11;
 
-import wine.builtin.libX11.events.XConfigureEvent;
-import wine.builtin.libX11.events.XReparentEvent;
 import wine.builtin.libc.Strings;
 import wine.emulation.Memory;
 import wine.loader.BuiltinModule;

@@ -123,6 +123,11 @@ public class FPU {
         regs[top] = in;
     }
 
+    public void push(double value) {
+        FPU_PREP_PUSH();
+        regs[top] = value;
+    }
+
     private void FPU_PREP_PUSH() {
         top = (top - 1) & 7;
         tags[top] = TAG_Valid;

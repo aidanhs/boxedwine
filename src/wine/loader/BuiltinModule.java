@@ -165,16 +165,13 @@ public class BuiltinModule extends Module {
                             builder.append(Long.toHexString(r));
                         }
                     } else if (result instanceof Double) {
-                        double r = ((Double) result).doubleValue();
-                        long v = Double.doubleToRawLongBits(r);
-                        cpu.eax.dword = (int)v;
-                        cpu.edx.dword = (int)(v >>> 32);
+                        cpu.fpu.push(((Double)result).doubleValue());
                         if (shouldLog) {
                             builder.append(" result=");
-                            builder.append(r);
+                            builder.append(result);
                         }
                     } else if (result instanceof Float) {
-                        cpu.eax.dword = Float.floatToRawIntBits((Float)result);
+                        cpu.fpu.push(((Float)result).floatValue());
                         if (shouldLog) {
                             builder.append(" result=");
                             builder.append(result);

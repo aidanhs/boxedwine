@@ -139,13 +139,13 @@ public class ElfModule extends Module {
                     pageStart = WineProcess.ADDRESS_PROCESS_DLL_START;
                     reloc = true;
                 }
-                int page = process.addressSpace.getNextPage(pageStart, pageCount+16); // +16 so that we can realign the address bound to 64k
+                int page = process.addressSpace.getNextPage(pageStart, pageCount+256); // +256 so that we can realign the address bound to 1MB
                 if (page!=pageStart) {
                     reloc = true;
                 }
                 if (reloc) {
-                    // There is no reason to align to 64k, I just find it easier to debug this way
-                    page = (page+0xF) & ~0xF;
+                    // There is no reason to align to 1MB, I just find it easier to debug this way
+                    page = (page+0xFF) & ~0xFF;
                 }
                 pageStart = page;
                 imageSize = size;
