@@ -6,8 +6,10 @@ public class XFocusChangeEvent extends XAnyEvent {
     public int mode;
     public int detail;
 
-    public XFocusChangeEvent(int display, int window, int type) {
+    public XFocusChangeEvent(int display, int window, int type, int mode, int detail) {
         super(display, window, type);
+        this.mode = mode;
+        this.detail = detail;
     }
 
     public int write(Memory memory, int address) {

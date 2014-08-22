@@ -207,7 +207,10 @@ public class LibX11 extends BuiltinModule {
     static public final int BadFont         = 7;
     static public final int BadMatch        = 8;
     static public final int BadDrawable     = 9;
-    
+
+    static public final int True = -1;
+    static public final int False = 0;
+
     static private Display getDisplay(int address) {
         WineThread thread = WineThread.getCurrent();
         FileDescriptor fd = thread.process.getFileDescriptor(thread.process.memory.readd(address+8));
@@ -429,8 +432,32 @@ public class LibX11 extends BuiltinModule {
 
     // XIC XCreateIC(XIM im, ...)
     static public int XCreateIC(int im) {
-        Log.panic("XCreateIC not implemented");
-        return 0;
+        WineThread thread = WineThread.getCurrent();
+        int index = 1;
+        XIC xic = new XIC(WineSystem.nextid++);
+
+        while (true) {
+            int arg = thread.cpu.peek32(index++);
+            if (arg==0)
+                break;
+            String cmd = thread.process.memory.readCString(arg);
+            if (cmd.equals("inputStyle")) {
+                xic.inputStyle = thread.cpu.peek32(index++);
+            } else if (cmd.equals("clientWindow")) {
+                xic.clientWindow = Window.getWindow(thread.cpu.peek32(index++));
+                if (xic.clientWindow == null)
+                    return BadWindow;
+            } else if (cmd.equals("focusWindow")) {
+                xic.focusWindow = Window.getWindow(thread.cpu.peek32(index++));
+                if (xic.focusWindow == null)
+                    return BadWindow;
+            } else if (cmd.equals("destroyCallback")) {
+                xic.destroyCallback = new IM.IMCallback(thread.process.memory, thread.cpu.peek32(index++));
+            } else {
+                Log.panic("XCreateIC cmd not implemented: "+cmd);
+            }
+        }
+        return xic.id;
     }
 
     // XImage *XCreateImage(Display *display, Visual *visual, unsigned int depth, int format, int offset, char *data, unsigned int width, unsigned int height, int bitmap_pad, int bytes_per_line)
@@ -519,10 +546,17 @@ public class LibX11 extends BuiltinModule {
         return Success;
     }
 
+    static public final int XCSUCCESS = 0;
+    static public final int XCNOMEM = 1;
+    static public final int XCNOENT = 2;
+
     // int XDeleteContext(Display *display, XID rid, XContext context)
-    static public int XDeleteContext(int display, int rid, int context) {
-        Log.panic("XDeleteContext not implemented");
-        return 0;
+    static public int XDeleteContext(int address, int rid, int context) {
+        Display display = getDisplay(address);
+        Integer data = display.contextData.remove(((long)rid << 32) | context);
+        if (data==null)
+            return XCNOENT;
+        return XCSUCCESS;
     }
 
     // int XDeleteProperty(Display *display, Window w, Atom property)
@@ -541,8 +575,11 @@ public class LibX11 extends BuiltinModule {
 
     // int XDestroyWindow(Display *display, Window w)
     static public int XDestroyWindow(int display, int w) {
-        Log.panic("XDestroyWindow not implemented");
-        return 0;
+        Window window = Window.getWindow(w);
+        if (window == null)
+            return BadWindow;
+        window.destroy();
+        return Success;
     }
 
     // void XDisplayKeycodes(Display *display, int *min_keycodes_return, int *max_keycodes_return);
@@ -636,9 +673,9 @@ public class LibX11 extends BuiltinModule {
         Integer data = display.contextData.get(((long)rid << 32) | context);
         if (data!=null) {
             WineThread.getCurrent().process.memory.writed(data_return, data);
-            return 0;
+            return XCSUCCESS;
         }
-        return 1;
+        return XCNOENT;
     }
 
     // int XFlush(Display *display)
@@ -1156,7 +1193,7 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Display *XOpenDisplay(char *display_name)
-    static public Window rootWindow;
+    static public RootWindow rootWindow;
 
     static public int XOpenDisplay(int display_name) {
         WineThread thread = WineThread.getCurrent();
@@ -1449,7 +1486,7 @@ public class LibX11 extends BuiltinModule {
 
     // void XSetICFocus(XIC ic)
     static public void XSetICFocus(int ic) {
-        Log.panic("XSetICFocus not implemented");
+        Log.warn("XSetICFocus not implemented");
     }
 
     // char * XSetICValues(XIC ic, ...)
@@ -1515,8 +1552,17 @@ public class LibX11 extends BuiltinModule {
 
     // int XSetInputFocus(Display *display, Window focus, int revert_to, Time time)
     static public int XSetInputFocus(int display, int focus, int revert_to, int time) {
-        Log.panic("XSetInputFocus not implemented");
-        return 0;
+        Window window = Window.getWindow(focus);
+        if (window == null) {
+            return BadWindow;
+        }
+        if (rootWindow.keyboardFocus!=null) {
+            rootWindow.keyboardFocus.sendFocusOutEvent();
+        }
+        window.sendFocusInEvent();
+        rootWindow.keyboardFocus = window;
+        rootWindow.focusRevertTo = revert_to;
+        return Success;
     }
 
     // int XSetWMHints(Display *display, Window w, XWMHints *wmhints)
@@ -1652,8 +1698,42 @@ public class LibX11 extends BuiltinModule {
 
     // Bool XTranslateCoordinates(Display *display, Window src_w, dest_w, int src_x, int src_y, int *dest_x_return, int *dest_y_return, Window *child_return);
     static public int XTranslateCoordinates(int display, int src_w, int dest_w, int src_x, int src_y, int dest_x_return, int dest_y_return, int child_return) {
-        Log.panic("XTranslateCoordinates not implemented");
-        return 0;
+        Window src = Window.getWindow(src_w);
+        Window dst = Window.getWindow(dest_w);
+        if (src == null || dst == null)
+            return BadWindow;
+        if (src_w<0 || src_w>=src.width)
+            return False;
+        if (src_y<0 || src_y>=src.height)
+            return False;
+        Window parent = src;
+        while (parent!=rootWindow) {
+            src_x+=parent.x;
+            src_y+=parent.y;
+            parent = parent.parent;
+        }
+        parent  = dst;
+        while (parent!=rootWindow) {
+            src_x-=parent.x;
+            src_y-=parent.y;
+            parent = parent.parent;
+        }
+        Memory memory = WineThread.getCurrent().process.memory;
+        if (dest_x_return!=0) {
+            memory.writed(dest_x_return, src_x);
+        }
+        if (dest_y_return!=0) {
+            memory.writed(dest_y_return, src_y);
+        }
+        if (child_return!=0) {
+            Window child = dst.findWindow(src_x, src_y);
+            if (child!=dst) {
+                memory.writed(child_return, child.id);
+            } else {
+                memory.writed(child_return, 0);
+            }
+        }
+        return True;
     }
 
     // int XUngrabPointer(Display *display, Time time)
@@ -1690,7 +1770,7 @@ public class LibX11 extends BuiltinModule {
 
     // void XUnsetICFocus(XIC ic)
     static public void XUnsetICFocus(int ic) {
-        Log.panic("XUnsetICFocus not implemented");
+        Log.warn("XUnsetICFocus not implemented");
     }
 
     // XVaNestedList XVaCreateNestedList(int dummy, ...)

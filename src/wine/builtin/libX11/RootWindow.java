@@ -1,12 +1,15 @@
 package wine.builtin.libX11;
 
 import wine.system.WineSystem;
+import wine.util.Log;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class RootWindow extends Window {
     public JFrame frame;
+    public Window keyboardFocus;
+    public int focusRevertTo;
 
     public RootWindow() {
         super(null, 0, null);
@@ -31,5 +34,15 @@ public class RootWindow extends Window {
                 frame.setVisible(true);
             }
         });
+    }
+
+    public void unmapped(Window window) {
+        if (window == keyboardFocus) {
+            window.sendFocusOutEvent();
+            keyboardFocus = null;
+            if (focusRevertTo!=Window.RevertToNone) {
+                Log.panic("Unmap window changed focus, not fully implemented");
+            }
+        }
     }
 }

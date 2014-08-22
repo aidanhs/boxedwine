@@ -7,8 +7,9 @@ public class XDestroyWindowEvent extends XAnyEvent {
 
     public int window1;
 
-    public XDestroyWindowEvent(int display, int window) {
-        super(display, window, TYPE);
+    public XDestroyWindowEvent(int display, int eventWindow, int window) {
+        super(display, eventWindow, TYPE);
+        this.window1 = window;
     }
 
     public int write(Memory memory, int address) {

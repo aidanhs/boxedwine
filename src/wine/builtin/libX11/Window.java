@@ -8,22 +8,28 @@ import wine.util.Log;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusEvent;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
 public class Window extends Drawable {
     public Window parent;
-    public ArrayList<Window> children = new ArrayList<Window>();
+    public ArrayList<Window> children = new ArrayList<Window>(); // last one is on top
     public JPanel panel;
     final public int display;
     final public WineProcess process;
     public int x;
     public int y;
     public int borderWidth;
+    public boolean isMapped;
 
     static public final int WithdrawnState = 0;
     static public final int NormalState = 1;
     static public final int IconicState = 3;
+
+    static public final int RevertToNone        = 0;
+    static public final int RevertToPointerRoot	= 1; //(int)PointerRoot
+    static public final int RevertToParent      = 2;
 
     static public Window getWindow(int id) {
         XID result = xids.get(id);
@@ -48,7 +54,7 @@ public class Window extends Drawable {
         if (parent!=null) {
             this.parent.children.add(this);
         }
-        setProperty(Display.setAtom("WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
+        setProperty(Display.setAtom("_NET_WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
     }
 
     protected void onDataChanged() {
@@ -94,7 +100,7 @@ public class Window extends Drawable {
             memory.writed(bytes_after_return, property.data.length);
             return 1;
         }
-        int toCopy = Math.max(long_length, property.data.length)-long_offset;
+        int toCopy = Math.min(long_length, property.data.length)-long_offset;
         int result = process.alloc(toCopy+1);
         int remaining = property.data.length-long_offset-toCopy;
 
@@ -116,6 +122,9 @@ public class Window extends Drawable {
     }
 
     public void map() {
+        if (isMapped)
+            return;
+        isMapped = true;
         if (parent!=null) {
             this.parent.panel.add(this.panel);
             panel.setBounds(x, y, width, height);
@@ -133,6 +142,9 @@ public class Window extends Drawable {
     }
 
     public void unmap() {
+        if (!isMapped)
+            return;
+        isMapped = false;
         if (parent!=null) {
             this.parent.panel.remove(this.panel);
         }
@@ -140,10 +152,23 @@ public class Window extends Drawable {
             XUnmapEvent event = new XUnmapEvent(display, id, id);
             process.x11.addEvent(process, event);
         }
+        LibX11.rootWindow.unmapped(this);
     }
 
     public void setCursor(Cursor cursor) {
 
+    }
+
+    public Window findWindow(int x, int y) {
+        for (int i=children.size()-1;i>=0;i--) {
+            Window child = children.get(i);
+            if (child.isMapped && x>=child.x && x<child.x+child.width && y>=child.y && y<child.y+child.height) {
+                return child.findWindow(x-child.x, y-child.y);
+            }
+        }
+        if (isMapped && x>=this.x && x<this.x+this.width && y>=this.y && y<this.y+this.height)
+            return this;
+        return null;
     }
 
     public void move(int x, int y) {
@@ -318,5 +343,45 @@ public class Window extends Drawable {
         addMask(mask, Button1MotionMask, "Button1MotionMask", builder);
         addMask(mask, Button2MotionMask, "Button2MotionMask", builder);
         return builder.toString();
+    }
+
+    static public final int NotifyNormal        = 0;
+    static public final int NotifyGrab          = 1;
+    static public final int NotifyHint          = 1;
+    static public final int NotifyUngrab        = 2;
+    static public final int NotifyWhileGrabbed  = 3;
+
+    static public final int NotifyAncestor      = 0;
+    static public final int NotifyVirtual       = 1;
+    static public final int NotifyInferior      = 2;
+    static public final int NotifyNonlinear     = 3;
+    static public final int NotifyNonlinearVirtual = 4;
+    static public final int NotifyPointer       = 5;
+    static public final int NotifyPointerRoot   = 6;
+    static public final int NotifyDetailNone    = 7;
+
+    public void sendFocusOutEvent() {
+        if ((eventMask & FocusChangeMask)!=0) {
+            XFocusOutEvent event = new XFocusOutEvent(display, id, NotifyNormal, NotifyDetailNone);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public void sendFocusInEvent() {
+        if ((eventMask & FocusChangeMask)!=0) {
+            XFocusInEvent event = new XFocusInEvent(display, id, NotifyNormal, NotifyDetailNone);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public void destroy() {
+        for (int i=children.size()-1;i>=0;i--) {
+            Window window = children.get(i);
+            window.destroy();
+        }
+        if ((eventMask & StructureNotifyMask)!=0) {
+            XDestroyWindowEvent event = new XDestroyWindowEvent(display, id, id);
+            process.x11.addEvent(process, event);
+        }
     }
 }
