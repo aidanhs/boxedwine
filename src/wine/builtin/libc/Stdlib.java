@@ -337,8 +337,10 @@ public class Stdlib {
                             base=8;
                         continue;
                     }
+                    if (base==0) {
+                        base = 10;
+                    }
                 }
-                base = 10;
             }
             if (base<=10) {
                 if (c < '0' || c > '0' + base - 1) {
@@ -346,7 +348,7 @@ public class Stdlib {
                 }
             } else {
                 if (c < '0' || c > '9') {
-                    if (c<'A' || c>'A'+base-11 && (c<'A' || c>'A'+base-11)) {
+                    if (c<'a' || c>'a'+base-11 && (c<'a' || c>'a'+base-11)) {
                         break;
                     }
                 }
@@ -357,7 +359,7 @@ public class Stdlib {
             memory.writed(endptr, str+i);
         }
         try {
-            long result = Long.parseLong(buf.toString());
+            long result = Long.parseLong(buf.toString(), base);
             if (neg)
                 result=-result;
             return result;

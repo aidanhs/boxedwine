@@ -23,6 +23,8 @@ public class Fcntl {
     static public final int	F_GETLK	   = 5;
     static public final int	F_SETLK	   = 6;
     static public final int	F_SETLKW   = 7;
+    static public final int F_SETSIG   = 10;
+    static public final int F_GETSIG   = 11;
     static public final int	F_GETLK64  = 12;
     static public final int	F_SETLK64  = 13;
     static public final int	F_SETLKW64  = 14;

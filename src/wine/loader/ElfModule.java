@@ -441,7 +441,7 @@ public class ElfModule extends Module {
                         process.memory.writed(rel, process.memory.readd(rel) + (int) addressDelta);
                         break;
                     default:
-                        Log.panic("Unknown relocation tye:" + (r_info & 0xFF) + " in " + name);
+                        Log.panic("Unknown relocation type:" + (r_info & 0xFF) + " in " + name);
                 }
             }
         } catch (IOException e) {

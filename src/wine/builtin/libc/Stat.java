@@ -7,6 +7,7 @@ import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.system.io.KernelStat;
+import wine.util.Log;
 
 public class Stat {
     // int chmod(const char *path, int mode);
@@ -135,9 +136,12 @@ public class Stat {
             thread.setErrno(Errno.ENOENT);
             return -1;
         }
+        if (!fd.object.name().endsWith(".fon")) {
+            Log.panic("Why does libfreetype expect the stat64 buffer for this call?");
+        }
         KernelStat stat = new KernelStat();
         if (fd.object.stat(stat)) {
-            stat.writeStat32(memory, buf);
+            stat.writeStat64(memory, buf);
         } else {
             thread.setErrno(Errno.ENOENT);
             return -1;

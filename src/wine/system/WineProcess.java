@@ -540,11 +540,12 @@ public class WineProcess {
     public WineProcess fork(int eip) {
         if (threads.size()>1) {
             // :TODO: what should we do if we have more than one thread, do we clean up the memory the other threads allocated?
-            Log.panic("fork doesn't handle a process with more than one thread");
+            Log.warn("fork doesn't handle a process with more than one thread correctly, memory was leaked");
         }
         WineProcess process = new WineProcess(WineSystem.nextid++, this);
         process.parent = this;
         WineThread thread = WineThread.getCurrent().fork(process);
+
         thread.cpu.eip = eip;
         thread.cpu.eax.dword = 0;
         thread.jThread.start();
