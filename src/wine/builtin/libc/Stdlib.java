@@ -68,6 +68,12 @@ public class Stdlib {
         return thread.process.getenv(thread.process.memory.readCString(name));
     }
 
+    // int initstate_r(unsigned int seed, char *statebuf, size_t statelen, struct random_data *buf)
+    static public int initstate_r(int seed, int statebuf, int statelen, int buf) {
+        Log.warn("initstate_r not implemented");
+        return 0;
+    }
+
     // long labs(long i)
     static public int labs(int i) {
         return abs(i);
@@ -84,6 +90,29 @@ public class Stdlib {
     static public int malloc(int size) {
         WineThread thread = WineThread.getCurrent();
         return thread.process.alloc(size);
+    }
+
+    // int mkostemp(char *template, int flags)
+    static public int mkostemp(int template, int flags) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        String t = memory.readCString(template);
+        if (!t.endsWith("XXXXXX")) {
+            thread.setErrno(Errno.EINVAL);
+            return -1;
+        }
+        int len = Strings.strlen(template);
+        while (true) {
+            for (int i=0;i<6;i++) {
+                memory.writeb(template+len-i-1, ((int)'A')+(rand() % 26));
+            }
+            int fd = Fcntl.open(template, Fcntl.O_CREAT | Fcntl.O_EXCL | flags);
+            if (fd>0)
+                return fd;
+        }
+    }
+    static public int mkostemp64(int template, int flags) {
+        return mkostemp(template, flags);
     }
 
     // int putenv(char *string)
@@ -126,8 +155,19 @@ public class Stdlib {
     // int rand(void)
     static private Random random = new Random();
 
+    // void srand (unsigned int seed);
+    static public void srand(int seed) {
+        random = new Random(seed);
+    }
+
     static public int rand() {
         return random.nextInt();
+    }
+
+    // int random_r(struct random_data *buf, int32_t *result)
+    static public int random_r(int buf, int result) {
+        WineThread.getCurrent().process.memory.writed(result, random.nextInt());
+        return 0;
     }
 
     // void *realloc(void *ptr, size_t size)

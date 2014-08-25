@@ -55,6 +55,12 @@ public class Strings {
         return s1;
     }
 
+    static public int __memcpy_chk(int s1, int s2, int n) {
+        Memory memory = WineThread.getCurrent().process.memory;
+        memory.memcpy(s1, s2, n);
+        return s1;
+    }
+
     // void *memmove(void *s1, const void *s2, size_t n)
     static public int memmove(int s1, int s2, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
@@ -176,7 +182,13 @@ public class Strings {
         }
     }
 
+    // char * __strcpy_chk(char * dest, const char * src, size_t destlen)
+    static public int __strcpy_chk(int s1, int s2, int s1len) {
+        return strcpy(s1, s2);
+    }
+
     // char *strcpy(char *restrict s1, const char *restrict s2)
+
     static public int strcpy(int s1, int s2) {
         stpcpy(s1, s2);
         return s1;
@@ -236,6 +248,10 @@ public class Strings {
     }
 
     // char *strncpy(char * s1, const char * s2, size_t n)
+    static public int __strncpy_chk(int s1, int s2, int n, int s1len) {
+        return strncpy(s1, s2, n);
+    }
+
     static public int strncpy(int s1, int s2, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
         int result = s1;

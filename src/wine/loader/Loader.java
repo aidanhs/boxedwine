@@ -5,7 +5,6 @@ import wine.builtin.libXext.LibXext;
 import wine.builtin.libc.Libc;
 import wine.builtin.libdl.Libdl;
 import wine.builtin.libfontconfig.Libfontconfig;
-import wine.builtin.libfreetype.Libfreetype;
 import wine.builtin.libm.Libm;
 import wine.builtin.libpthread.LibPThread;
 import wine.loader.elf.ElfSymbol;
@@ -127,8 +126,6 @@ public class Loader {
             module = new LibX11(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libXext.so.6")) {
             module = new LibXext(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libfreetype.so.6")) {
-            module = new Libfreetype(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libfontconfig.so.1")) {
             module = new Libfontconfig(name, process, WineSystem.nextid++);
         }

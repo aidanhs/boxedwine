@@ -11,6 +11,16 @@ import wine.system.io.KernelFile;
 import wine.util.Log;
 
 public class Unistd {
+    // int access(const char *filename, int flags)
+    static public int access(int filename, int flags) {
+        String path = WineThread.getCurrent().process.memory.readCString(filename);
+        FSNode node = FSNode.getNode(path, true);
+        if (node==null)
+            return 1;
+        Log.warn("access not fully implemented");
+        return 0;
+    }
+
     // int alarm(int seconds)
     static public int alarm(int seconds) {
         Log.panic("alarm not implemented");

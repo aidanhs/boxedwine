@@ -1,5 +1,7 @@
 package wine.builtin.libc;
 
+import wine.emulation.CPU;
+import wine.loader.BuiltinModule;
 import wine.system.WineThread;
 import wine.system.io.FileDescriptor;
 import wine.system.io.FileLock;
@@ -130,6 +132,10 @@ public class Fcntl {
     static public int open64(int pPath, int oflag) {
         return open(pPath, oflag);
     }
+    static public int __open64_2(int pPath, int oflag) {
+        return open(pPath, oflag);
+    }
+
     static public int open(int pPath, int oflag) {
         WineThread thread = WineThread.getCurrent();
         String path = thread.process.memory.readCString(pPath);
@@ -197,5 +203,10 @@ public class Fcntl {
             }
         }
         return fd.handle;
+    }
+
+    // int posix_fadvise64(int fd, off64_t offset, off64_t len, int advice)
+    static public int posix_fadvise64(int fd, long offset, long len, int advice) {
+        return 0;
     }
 }

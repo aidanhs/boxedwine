@@ -125,6 +125,26 @@ public class Stat {
         return result;
     }
 
+    static public int __fxstat(int ver, int fildes, int buf) {
+        WineThread thread = WineThread.getCurrent();
+        WineProcess process = thread.process;
+        Memory memory = process.memory;
+        FileDescriptor fd = process.getFileDescriptor(fildes);
+
+        if (fd == null) {
+            thread.setErrno(Errno.ENOENT);
+            return -1;
+        }
+        KernelStat stat = new KernelStat();
+        if (fd.object.stat(stat)) {
+            stat.writeStat32(memory, buf);
+        } else {
+            thread.setErrno(Errno.ENOENT);
+            return -1;
+        }
+        return 0;
+    }
+
     static public int __fxstat64(int ver, int fildes, int buf) {
         WineThread thread = WineThread.getCurrent();
         WineProcess process = thread.process;

@@ -4571,4 +4571,47 @@ class Ops {
             return "syscall";
         }
     }
+
+    static public final class ConditionalMov_Reg extends Op {
+        final Reg ed;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Reg(Condition cond, Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            if (cond.test(cpu))
+                gd.dword = ed.dword;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov";
+        }
+    }
+
+    static public final class ConditionalMov_Mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Mem(Condition cond, EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            int tmp = cpu.memory.readd(eaa.call(cpu));
+            if (cond.test(cpu))
+                gd.dword = tmp;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov";
+        }
+    }
 }

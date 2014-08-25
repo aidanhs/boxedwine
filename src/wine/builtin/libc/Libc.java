@@ -57,6 +57,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Dirent.class, "readdir");
         add_cdecl(Dirent.class, "readdir64");
         add_cdecl(Dirent.class, "rewinddir");
+        add_cdecl(Dirent.class, "scandir64");
 
         add_cdecl(Epoll.class, "epoll_create");
         add_cdecl(Epoll.class, "epoll_ctl");
@@ -68,6 +69,8 @@ public class Libc extends BuiltinModule {
         add_cdecl(Fcntl.class, "fcntl");
         add_cdecl(Fcntl.class, "open");
         add_cdecl(Fcntl.class, "open64");
+        add_cdecl(Fcntl.class, "__open64_2");
+        add_cdecl(Fcntl.class, "posix_fadvise64");
 
         add_cdecl(Grp.class, "getgrgid");
 
@@ -81,6 +84,7 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Ioctl.class, "ioctl");
 
+        add_cdecl(Locale.class, "localeconv");
         add_cdecl(Locale.class, "setlocale");
 
         add_cdecl(Mmap.class, "madvise");
@@ -104,6 +108,11 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Pwd.class, "getpwuid");
 
+        add_cdecl(Regex.class, "regcomp");
+        add_cdecl(Regex.class, "regerror");
+        add_cdecl(Regex.class, "regexec");
+        add_cdecl(Regex.class, "regfree");
+
         add_cdecl(Resource.class, "getrlimit64");
         add_cdecl(Resource.class, "setrlimit64");
 
@@ -111,6 +120,9 @@ public class Libc extends BuiltinModule {
         add_cdecl(Sched.class, "sched_setaffinity");
         add_cdecl(Sched.class, "sched_yield");
 
+        add_cdecl(Setjmp.class, "longjmp");
+        add_cdecl(Setjmp.class, "__longjmp_chk");
+        add_cdecl(Setjmp.class, "_setjmp");
         add_cdecl(Setjmp.class, "siglongjmp");
         add_cdecl(Setjmp.class, "__sigsetjmp");
 
@@ -152,6 +164,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stat.class, "stat");
         add_cdecl(Stat.class, "__xstat64");
         add_cdecl(Stat.class, "fstat");
+        add_cdecl(Stat.class, "__fxstat");
         add_cdecl(Stat.class, "__fxstat64");
         add_cdecl(Stat.class, "futimens");
         add_cdecl(Stat.class, "statfs64");
@@ -171,24 +184,30 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdio.class, "fdopen");
         add_cdecl(Stdio.class, "fdopen64");
         add_cdecl(Stdio.class, "feof");
+        add_cdecl(Stdio.class, "fflush");
         add_cdecl(Stdio.class, "fgets");
         add_cdecl(Stdio.class, "fopen");
         add_cdecl(Stdio.class, "fopen64");
         add_cdecl(Stdio.class, "fprintf");
         add_cdecl(Stdio.class, "fputc");
         add_cdecl(Stdio.class, "fputs");
+        add_cdecl(Stdio.class, "fread");
         add_cdecl(Stdio.class, "fscanf");
         add_cdecl(Stdio.class, "fwrite");
         add_cdecl(Stdio.class, "perror");
+        add_cdecl(Stdio.class, "__printf_chk");
         add_cdecl(Stdio.class, "printf");
+        add_cdecl(Stdio.class, "putchar");
         add_cdecl(Stdio.class, "puts");
         add_cdecl(Stdio.class, "rename");
         add_cdecl(Stdio.class, "setbuf");
         add_cdecl(Stdio.class, "setvbuf");
         add_cdecl(Stdio.class, "snprintf");
         add_cdecl(Stdio.class, "sprintf");
+        add_cdecl(Stdio.class, "__sprintf_chk");
         add_cdecl(Stdio.class, "__isoc99_sscanf");
         add_cdecl(Stdio.class, "sscanf");
+        add_cdecl(Stdio.class, "__vfprintf_chk");
         add_cdecl(Stdio.class, "vfprintf");
         add_cdecl(Stdio.class, "vsnprintf");
         add_cdecl(Stdio.class, "vsscanf");
@@ -202,14 +221,19 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "exit");
         add_cdecl(Stdlib.class, "free");
         add_cdecl(Stdlib.class, "getenv");
+        add_cdecl(Stdlib.class, "initstate_r");
         add_cdecl(Stdlib.class, "labs");
         add_cdecl(Stdlib.class, "ldiv");
         add_cdecl(Stdlib.class, "malloc");
+        add_cdecl(Stdlib.class, "mkostemp");
+        add_cdecl(Stdlib.class, "mkostemp64");
         add_cdecl(Stdlib.class, "putenv");
         add_cdecl(Stdlib.class, "qsort");
         add_cdecl(Stdlib.class, "rand");
+        add_cdecl(Stdlib.class, "random_r");
         add_cdecl(Stdlib.class, "realloc");
         add_cdecl(Stdlib.class, "realpath");
+        add_cdecl(Stdlib.class, "srand");
         add_cdecl(Stdlib.class, "strtod");
         add_cdecl(Stdlib.class, "strtol");
         add_cdecl(Stdlib.class, "strtold");
@@ -223,6 +247,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Strings.class, "memccpy");
         add_cdecl(Strings.class, "memchr");
         add_cdecl(Strings.class, "memcpy");
+        add_cdecl(Strings.class, "__memcpy_chk");
         add_cdecl(Strings.class, "memset");
         add_cdecl(Strings.class, "memmove");
         add_cdecl(Strings.class, "strcasecmp");
@@ -232,12 +257,14 @@ public class Libc extends BuiltinModule {
         add_cdecl(Strings.class, "strchr");
         add_cdecl(Strings.class, "stpcpy");
         add_cdecl(Strings.class, "strcmp");
+        add_cdecl(Strings.class, "__strcpy_chk");
         add_cdecl(Strings.class, "strcpy");
         add_cdecl(Strings.class, "strcspn");
         add_cdecl(Strings.class, "__strdup");
         add_cdecl(Strings.class, "strlen");
         add_cdecl(Strings.class, "strncmp");
         add_cdecl(Strings.class, "strncpy");
+        add_cdecl(Strings.class, "__strncpy_chk");
         add_cdecl(Strings.class, "strpbrk");
         add_cdecl(Strings.class, "strrchr");
         add_cdecl(Strings.class, "strspn");
@@ -272,6 +299,7 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Uio.class, "writev");
 
+        add_cdecl(Unistd.class, "access");
         add_cdecl(Unistd.class, "alarm");
         add_cdecl(Unistd.class, "chdir");
         add_cdecl(Unistd.class, "close");

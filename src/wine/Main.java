@@ -6,11 +6,13 @@ import wine.system.WineSystem;
 import wine.system.io.*;
 import wine.util.Path;
 
+import java.io.File;
+
 public class Main {
     static public void main(String[] args) {
         FileSystem.links.add(new Path("/home/boxedwine/.wine/drive_c", "/home/boxedwine/.wine/dosdevices/c:"));
         FileSystem.links.add(new Path("/", "/home/boxedwine/.wine/dosdevices/z:"));
-        FileSystem.paths.add(new Path("c:\\wine\\root", ""));
+        FileSystem.paths.add(new Path(System.getProperty("user.dir")+ File.separator+"root", ""));
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull());
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero());
         VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom());
@@ -27,7 +29,7 @@ public class Main {
         System.arraycopy(args, 0, t, 1, args.length);
         args = t;
         args[0]="/usr/lib/i386-linux-gnu/wine-unstable/bin/wine";
-        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32","WINEDEBUG=+bitblt"})==null) {
+        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }

@@ -7,6 +7,11 @@ public class LibPThread extends BuiltinModule {
     public LibPThread(String name, WineProcess process, int id) {
         super(name, process, id);
 
+        add_cdecl(PMutex.class, "pthread_mutex_destroy");
+        add_cdecl(PMutex.class, "pthread_mutex_init");
+        add_cdecl(PMutex.class, "pthread_mutex_lock");
+        add_cdecl(PMutex.class, "pthread_mutex_unlock");
+
         add_cdecl(PThread.class, "pthread_attr_destroy");
         add_cdecl(PThread.class, "pthread_attr_init");
         add_cdecl(PThread.class, "pthread_create");
