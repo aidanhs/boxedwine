@@ -5,6 +5,7 @@ abstract class Op {
     // :TODO: both of these should be necessary, that is a lot of data to carry around for each op
     public int eip_count;
     public int eip;
+    public boolean lock;
 
     abstract public Block call(CPU cpu);
     private void log(CPU cpu) {

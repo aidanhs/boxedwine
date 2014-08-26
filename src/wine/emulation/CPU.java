@@ -72,7 +72,6 @@ public class CPU {
 
     final static public int PREFIX_ADDR = 0x1;
     final static public int PREFIX_REP = 0x2;
-    final static public int PREFIX_LOCK = 0x4;
 
     public int callReturnEip;
     public final FPU fpu;

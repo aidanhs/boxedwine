@@ -3,11 +3,14 @@ package wine.emulation;
 import wine.system.WineProcess;
 
 import java.util.Vector;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 // one per process
 public class Memory {
     final public PageHandler[] handlers = new PageHandler[0x100000]; // 1 million, this uses 4MB per process just to track paging
     static final public PageHandler invalidHandler = new InvalidHandler();
+    final static private Object mutext = new Object();
+    static private ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 
     public Memory() {
     }
@@ -163,6 +166,21 @@ public class Memory {
             if (handlers[i]!=null)
                 handlers[i].close();
             handlers[i] = invalidHandler;
+        }
+    }
+
+    public void lock(int address, int count, boolean exclusive) {
+        if (exclusive)
+            lock.writeLock().lock();
+        else
+            lock.readLock().lock();
+    }
+
+    public void unlock(int address, int count, boolean exclusive) {
+        if (exclusive) {
+            lock.writeLock().unlock();
+        } else {
+            lock.readLock().unlock();
         }
     }
 }

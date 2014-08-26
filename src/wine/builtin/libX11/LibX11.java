@@ -1727,7 +1727,7 @@ public class LibX11 extends BuiltinModule {
         }
         if (child_return!=0) {
             Window child = dst.findWindow(src_x, src_y);
-            if (child!=dst) {
+            if (child!=null && child!=dst) {
                 memory.writed(child_return, child.id);
             } else {
                 memory.writed(child_return, 0);

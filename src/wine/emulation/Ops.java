@@ -394,7 +394,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writeb(address, instruction.run(cpu, cpu.memory.readb(address)));
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
+            memory.writeb(address, instruction.run(cpu, memory.readb(address)));
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -431,7 +434,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writeb(address, instruction.run(cpu, cpu.memory.readb(address), src));
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
+            memory.writeb(address, instruction.run(cpu, memory.readb(address), src));
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -449,7 +455,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address)));
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, instruction.run(cpu, memory.readw(address)));
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -486,7 +495,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address), src));
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src));
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -504,7 +516,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address)));
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, instruction.run(cpu, memory.readd(address)));
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -541,7 +556,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address), src));
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src));
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -561,7 +579,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writeb(address, instruction.run(cpu, cpu.memory.readb(address), src.u8()));
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
+            memory.writeb(address, instruction.run(cpu, memory.readb(address), src.u8()));
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -581,7 +602,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address), src.u8()));
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src.u8()));
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -601,7 +625,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address), src.u16()));
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src.u16()));
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -621,7 +648,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address), src.u8()));
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src.u8()));
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -641,7 +671,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address), src.dword));
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src.dword));
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -663,7 +696,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writew(eaa, instruction.run(cpu, cpu.memory.readw(eaa), src.u16(), value.u8()));
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 2, lock);
+            memory.writew(eaa, instruction.run(cpu, memory.readw(eaa), src.u16(), value.u8()));
+            memory.unlock(eaa, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -685,7 +721,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writed(eaa, instruction.run(cpu, cpu.memory.readd(eaa), src.dword, value.u8()));
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 4, lock);
+            memory.writed(eaa, instruction.run(cpu, memory.readd(eaa), src.dword, value.u8()));
+            memory.unlock(eaa, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -707,7 +746,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writew(eaa, instruction.run(cpu, cpu.memory.readw(eaa), src.u16(), value));
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 2, lock);
+            memory.writew(eaa, instruction.run(cpu, memory.readw(eaa), src.u16(), value));
+            memory.unlock(eaa, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -729,7 +771,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writed(eaa, instruction.run(cpu, cpu.memory.readd(eaa), src.dword, value));
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 4, lock);
+            memory.writed(eaa, instruction.run(cpu, memory.readd(eaa), src.dword, value));
+            memory.unlock(eaa, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1193,7 +1238,11 @@ class Ops {
         }
 
         public Block call(CPU cpu) {
-            cpu.memory.writew(dest.call(cpu), cpu.pop16());
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, cpu.pop16());
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1209,7 +1258,11 @@ class Ops {
         }
 
         public Block call(CPU cpu) {
-            cpu.memory.writed(dest.call(cpu), cpu.pop32());
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, cpu.pop32());
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1436,8 +1489,11 @@ class Ops {
         public Block call(CPU cpu) {
             int addresss = eaa.call(cpu);
             int tmp = reg.u8();
-            reg.u8(cpu.memory.readb(addresss));
-            cpu.memory.writeb(addresss, tmp);
+            Memory memory = cpu.memory;
+            memory.lock(addresss, 1, lock);
+            reg.u8(memory.readb(addresss));
+            memory.writeb(addresss, tmp);
+            memory.unlock(addresss, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1475,8 +1531,11 @@ class Ops {
         public Block call(CPU cpu) {
             int addresss = eaa.call(cpu);
             int tmp = reg.u16();
-            reg.u16(cpu.memory.readw(addresss));
-            cpu.memory.writew(addresss, tmp);
+            Memory memory = cpu.memory;
+            memory.lock(addresss, 2, lock);
+            reg.u16(memory.readw(addresss));
+            memory.writew(addresss, tmp);
+            memory.unlock(addresss, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1514,8 +1573,11 @@ class Ops {
         public Block call(CPU cpu) {
             int addresss = eaa.call(cpu);
             int tmp = reg.dword;
-            reg.dword=cpu.memory.readd(addresss);
-            cpu.memory.writed(addresss, tmp);
+            Memory memory = cpu.memory;
+            memory.lock(addresss, 4, lock);
+            reg.dword=memory.readd(addresss);
+            memory.writed(addresss, tmp);
+            memory.unlock(addresss, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1566,7 +1628,11 @@ class Ops {
             this.src = src;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writeb(eaa.call(cpu), src);
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
+            memory.writeb(address, src);
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1583,7 +1649,11 @@ class Ops {
             this.src = src;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writeb(eaa.call(cpu), src.u8());
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
+            memory.writeb(address, src.u8());
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1669,7 +1739,11 @@ class Ops {
             this.src = src;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writew(eaa.call(cpu), src);
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, src);
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1686,7 +1760,11 @@ class Ops {
             this.src = src;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writew(eaa.call(cpu), src.u16());
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, src.u16());
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1839,7 +1917,11 @@ class Ops {
             this.src = src;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writed(eaa.call(cpu), src);
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, src);
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1856,7 +1938,11 @@ class Ops {
             this.src = src;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writed(eaa.call(cpu), src.dword);
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, src.dword);
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2122,7 +2208,11 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writeb(base.dword + address, src.u8());
+            int address = base.dword + this.address;
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
+            memory.writeb(address, src.u8());
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2141,7 +2231,11 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writew(base.dword + address, src.u16());
+            int address = base.dword + this.address;
+            Memory memory = cpu.memory;
+            memory.lock(address, 2, lock);
+            memory.writew(address, src.u16());
+            memory.unlock(address, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2160,7 +2254,11 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writed(base.dword + address, src.dword);
+            int address = base.dword + this.address;
+            Memory memory = cpu.memory;
+            memory.lock(address, 4, lock);
+            memory.writed(address, src.dword);
+            memory.unlock(address, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4119,10 +4217,14 @@ class Ops {
             this.condition = condition;
         }
         public Block call(CPU cpu) {
+            int address = eaa.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock(address, 1, lock);
             if (condition.test(cpu))
-                cpu.memory.writeb(eaa.call(cpu), 1);
+                cpu.memory.writeb(address, 1);
             else
-                cpu.memory.writeb(eaa.call(cpu), 0);
+                cpu.memory.writeb(address, 0);
+            memory.unlock(address, 1, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4299,9 +4401,12 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa=eb.call(cpu);
-            int val = cpu.memory.readb(eaa);
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 1, lock);
+            int val = memory.readb(eaa);
             int result = Instructions.addb.run(cpu, gb.u8(), val);
-            cpu.memory.writeb(eaa,result);
+            memory.writeb(eaa,result);
+            memory.unlock(eaa, 1, lock);
             gb.u8(val);
             return next.callAndLog(cpu);
         }
@@ -4340,9 +4445,12 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa=ew.call(cpu);
-            int val = cpu.memory.readw(eaa);
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 2, lock);
+            int val = memory.readw(eaa);
             int result = Instructions.addw.run(cpu, gw.u16(), val);
-            cpu.memory.writew(eaa,result);
+            memory.writew(eaa,result);
+            memory.unlock(eaa, 2, lock);
             gw.u16(val);
             return next.callAndLog(cpu);
         }
@@ -4381,9 +4489,12 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa=ed.call(cpu);
-            int val = cpu.memory.readd(eaa);
+            Memory memory = cpu.memory;
+            memory.lock(eaa, 4, lock);
+            int val = memory.readd(eaa);
             int result = Instructions.addd.run(cpu, gd.dword, val);
-            cpu.memory.writed(eaa,result);
+            memory.writed(eaa,result);
+            memory.unlock(eaa, 4, lock);
             gd.dword=val;
             return next.callAndLog(cpu);
         }
@@ -4466,6 +4577,7 @@ class Ops {
         public Block call(CPU cpu) {
             int eaa=ed.call(cpu);
             Memory memory = cpu.memory;
+            memory.lock(eaa, 4, lock);
             int val = memory.readd(eaa);
             Instructions.subd.run(cpu, val, cpu.eax.dword);
             cpu.fillFlags();
@@ -4477,6 +4589,7 @@ class Ops {
                 cpu.eax.dword=val;
                 cpu.flags&=~CPU.ZF;
             }
+            memory.unlock(eaa, 4, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4521,6 +4634,7 @@ class Ops {
         public Block call(CPU cpu) {
             int eaa=ew.call(cpu);
             Memory memory = cpu.memory;
+            memory.lock(eaa, 2, lock);
             int val = memory.readw(eaa);
             Instructions.subw.run(cpu, val, cpu.eax.u16());
             cpu.fillFlags();
@@ -4532,6 +4646,7 @@ class Ops {
                 cpu.eax.u16(val);
                 cpu.flags&=~CPU.ZF;
             }
+            memory.unlock(eaa, 2, lock);
             return next.callAndLog(cpu);
         }
         public String toString() {

@@ -121,7 +121,7 @@ class Decoder {
     }
 
     private static EaaBase getEaa(CPU cpu, int rm) {
-        if (cpu.ea16()) 
+        if (cpu.ea16())
             return getEaa16(cpu, rm);
         return getEaa32(cpu, rm);
     }
@@ -2894,9 +2894,8 @@ class Decoder {
         /* LOCK */
         decoder[0x0f0] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
-                cpu.prefixes|=CPU.PREFIX_LOCK;
                 boolean result = decoder[cpu.op_index+cpu.fetchb()].call(cpu, prev);
-                cpu.prefixes&=~CPU.PREFIX_LOCK;
+                prev.next.lock = true;
                 return result;
             }
         };
