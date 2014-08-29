@@ -229,7 +229,7 @@ public class WineProcess {
 
     public int alloc(int size) {
         synchronized (heap) {
-            int result = heap.alloc(size);
+            int result = heap.alloc(memory, size);
             if (result == 0) {
                 int pages = ((size + 0xFFF) >>> 12) + 1;
                 int address = heap.grow(pages << 12);
@@ -238,7 +238,7 @@ public class WineProcess {
                     int page = RAM.allocPage();
                     memory.handlers[pageStart + i] = new RAMHandler(page, false, false);
                 }
-                result = heap.alloc(size);
+                result = heap.alloc(memory, size);
             }
             if (result == 0) {
                 Log.panic("Out of memory");
@@ -248,7 +248,7 @@ public class WineProcess {
     }
 
     public int getSizeOfAllocation(int address) {
-        return heap.getSize(address);
+        return heap.getSize(memory, address);
     }
 
     public void allocPages(int pageStart, int pages, boolean map) {
@@ -282,7 +282,7 @@ public class WineProcess {
         if (address==0)
             return;
         synchronized (heap) {
-            heap.free(address);
+            heap.free(memory, address);
         }
     }
 

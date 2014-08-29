@@ -53,6 +53,7 @@ public class KeySym {
     static public Hashtable<Integer, KeySym> x11KeyCodeToKeySym = new Hashtable<Integer, KeySym>();
     static public Hashtable<Integer, KeySym> x11KeySymToKeySym = new Hashtable<Integer, KeySym>();
     static public Hashtable<Integer, String> x11KeySymToString = new Hashtable<Integer, String>();
+    static public Hashtable<Integer, KeySym> javaKeyCodeToKeySym = new Hashtable<Integer, KeySym>();
 
     static private char noChar = (char)0;
 
@@ -69,6 +70,7 @@ public class KeySym {
         x11KeyCodeToKeySym.put(code, keySym);
         x11KeySymToKeySym.put(xk1, keySym);
         x11KeySymToKeySym.put(xk2, keySym);
+        javaKeyCodeToKeySym.put(jk, keySym);
         if (c1!=0)
             x11KeySymToString.put(xk1, String.valueOf(c1));
         if (c2!=0)

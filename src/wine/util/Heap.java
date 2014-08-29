@@ -1,7 +1,6 @@
 package wine.util;
 
 import wine.emulation.Memory;
-import wine.system.WineThread;
 
 import java.util.BitSet;
 
@@ -29,7 +28,7 @@ public class Heap {
         clear();
     }
 
-    synchronized public int alloc(int size) {
+    synchronized public int alloc(Memory memory, int size) {
         int blockStart = 0;
         int blockCount = (size+blockSize-1+BLOCK_HEADER_SIZE)/blockSize;
         int pos = blocks.nextClearBit(blockStart);
@@ -50,7 +49,6 @@ public class Heap {
             }
         }
         blocks.set(pos, pos+blockCount);
-        Memory memory = WineThread.getCurrent().process.memory;
         int result = pos*blockSize+start+BLOCK_HEADER_SIZE;
         memory.writed(result-4, size);
         memory.writed(result-8, blockCount);
@@ -65,12 +63,11 @@ public class Heap {
         return result;
     }
 
-    synchronized public int getSize(int address) {
-        return WineThread.getCurrent().process.memory.readd(address-4);
+    synchronized public int getSize(Memory memory, int address) {
+        return memory.readd(address-4);
     }
 
-    synchronized public void free(int address) {
-        Memory memory = WineThread.getCurrent().process.memory;
+    synchronized public void free(Memory memory, int address) {
         int blockCount = memory.readd(address-8);
         int blockStart = (address-start-BLOCK_HEADER_SIZE)/blockSize;
         for (int i=blockStart;i<blockStart+blockCount;i++) {

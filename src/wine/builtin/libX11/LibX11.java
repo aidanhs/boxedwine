@@ -1,5 +1,7 @@
 package wine.builtin.libX11;
 
+import wine.builtin.libX11.events.XKeyEvent;
+import wine.builtin.libX11.events.XKeyPressedEvent;
 import wine.builtin.libc.Strings;
 import wine.emulation.Memory;
 import wine.loader.BuiltinModule;
@@ -187,6 +189,21 @@ public class LibX11 extends BuiltinModule {
         add_cdecl(XImage.class, "add_pixel");
     }
 
+    static public final int ShiftMask	= (1<<0);
+    static public final int LockMask	= (1<<1);
+    static public final int ControlMask	= (1<<2);
+    static public final int Mod1Mask	= (1<<3);
+    static public final int Mod2Mask	= (1<<4);
+    static public final int Mod3Mask	= (1<<5);
+    static public final int Mod4Mask	= (1<<6);
+    static public final int Mod5Mask	= (1<<7);
+    static public final int Button1Mask	= (1<<8);
+    static public final int Button2Mask	= (1<<9);
+    static public final int Button3Mask	= (1<<10);
+    static public final int Button4Mask	= (1<<11);
+    static public final int Button5Mask	= (1<<12);
+
+
     static public final int Success	        = 0;
     static public final int BadRequest	    = 1;
     static public final int BadAccess	    = 10;
@@ -216,7 +233,9 @@ public class LibX11 extends BuiltinModule {
         FileDescriptor fd = thread.process.getFileDescriptor(thread.process.memory.readd(address+8));
         if (fd==null)
             return null;
-        return (Display)fd.object;
+        Display display = (Display)fd.object;
+        display.checkLock();
+        return display;
     }
 
     // XClassHint *XAllocClassHint()
@@ -258,12 +277,13 @@ public class LibX11 extends BuiltinModule {
         GC g = display.gcById.get(gc);
         if (g == null)
             return BadGC;
-        return g.values.merge(WineThread.getCurrent().process.memory, values, valuemask);
+        return g.values.merge(display, WineThread.getCurrent().process.memory, values, valuemask);
     }
 
     // int XChangeProperty(Display *display, Window w, Atom property, Atom type, int format, int mode, unsigned char *data, int nelements)
     static public int XChangeProperty(int address, int w, int property, int type, int format, int mode, int data, int nelements) {
-        Window window = Window.getWindow(w);
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         // PropModeReplace
@@ -278,8 +298,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XChangeWindowAttributes(Display *display, Window w, unsigned long valuemask, XSetWindowAttributes *attributes)
-    static public int XChangeWindowAttributes(int display, int w, int valuemask, int attributes) {
-        Window window = Window.getWindow(w);
+    static public int XChangeWindowAttributes(int address, int w, int valuemask, int attributes) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         window.setAttributes(valuemask, new XSetWindowAttributes(WineThread.getCurrent().process.memory, attributes));
@@ -287,9 +308,10 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Bool XCheckIfEvent(Display *display, XEvent *event_return, Bool (*predicate)(), XPointer arg)
-    static public int XCheckIfEvent(int display, int event_return, int predicate, int arg) {
+    static public int XCheckIfEvent(int address, int event_return, int predicate, int arg) {
+        Display display = getDisplay(address);
         WineThread thread = WineThread.getCurrent();
-        return thread.process.x11.checkIfEvent(thread, display, event_return, predicate, arg);
+        return thread.process.x11.checkIfEvent(thread, address, event_return, predicate, arg);
     }
 
     // Bool XCheckTypedWindowEvent(Display *display, Window w, int event_type, XEvent *event_return)
@@ -305,7 +327,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XCloseDisplay(Display *display)
-    static public int XCloseDisplay(int display) {
+    static public int XCloseDisplay(int address) {
+        Display display = getDisplay(address);
+        display.close();
         return 0;
     }
 
@@ -316,8 +340,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XConfigureWindow(Display *display, Window w, unsigned value_mask, XWindowChanges *changes)
-    static public int XConfigureWindow(int display, int w, int value_mask, int address) {
-        Window window = Window.getWindow(w);
+    static public int XConfigureWindow(int pDisplay, int w, int value_mask, int address) {
+        Display display = getDisplay(pDisplay);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         Memory memory = WineThread.getCurrent().process.memory;
@@ -374,20 +399,20 @@ public class LibX11 extends BuiltinModule {
     static public int XCreateBitmapFromData(int address, int d, int data, int width, int height) {
         Memory memory = WineThread.getCurrent().process.memory;
         Display display = getDisplay(address);
-        Drawable drawable = Drawable.getDrawable(d);
+        Drawable drawable = display.getDrawable(d);
         if (drawable==null) {
             return BadDrawable;
         }
         Pixmap pixmap = display.createNewPixmap();
         pixmap.create(width, height, drawable.depth);
-        pixmap.read(memory, data, width*4, 0, 0, 0, 0, width, height);
+        pixmap.read(memory, data, width * 4, 0, 0, 0, 0, width, height);
         return pixmap.id;
     }
 
     // Colormap XCreateColormap(Display *display, Window w, Visual *visual, int alloc)
     static public int XCreateColormap(int address, int w, int visual, int alloc) {
         Display display = getDisplay(address);
-        Window window = Window.getWindow(w);
+        Window window = display.getWindow(w);
         if (window == null)
             return 0;
         return new Colormap(display).id;
@@ -396,12 +421,61 @@ public class LibX11 extends BuiltinModule {
     // Cursor XCreateFontCursor(Display *display, unsigned int shape);
     static public int XCreateFontCursor(int display, int shape) {
         Cursor cursor = new Cursor();
-        Log.warn("XCreateFontCursor not implemented");
+        switch (shape) {
+            case 12: // XC_bottom_left_corner
+                cursor.type = java.awt.Cursor.SW_RESIZE_CURSOR;
+                break;
+            case 14: // XC_bottom_right_corner
+                cursor.type = java.awt.Cursor.SE_RESIZE_CURSOR;
+                break;
+            case 16: // XC_bottom_side
+                cursor.type = java.awt.Cursor.S_RESIZE_CURSOR;
+                break;
+            case 30: // XC_cross
+                cursor.type = java.awt.Cursor.CROSSHAIR_CURSOR;
+                break;
+            case 52: // XC_fleur
+                cursor.type = java.awt.Cursor.MOVE_CURSOR;
+                break;
+            case 58: // XC_hand1
+            case 60: // XC_hand2
+                cursor.type = java.awt.Cursor.HAND_CURSOR;
+                break;
+            case 70: // XC_left_side
+                cursor.type = java.awt.Cursor.W_RESIZE_CURSOR;
+                break;
+            case 96: // XC_right_side
+                cursor.type = java.awt.Cursor.E_RESIZE_CURSOR;
+                break;
+            case 68: // XC_left_ptr
+            case 132: // XC_top_left_arrow
+                cursor.type = java.awt.Cursor.DEFAULT_CURSOR;
+                break;
+            case 134: // XC_top_left_corner
+                cursor.type = java.awt.Cursor.NW_RESIZE_CURSOR;
+                break;
+            case 136: // XC_top_right_corner
+                cursor.type = java.awt.Cursor.NE_RESIZE_CURSOR;
+                break;
+            case 138: // XC_top_side
+                cursor.type = java.awt.Cursor.N_RESIZE_CURSOR;
+                break;
+            case 150: // XC_watch
+                cursor.type = java.awt.Cursor.WAIT_CURSOR;
+                break;
+            case 152: // XC_xterm
+                cursor.type = java.awt.Cursor.TEXT_CURSOR;
+                break;
+            default:
+                cursor.type = java.awt.Cursor.DEFAULT_CURSOR;
+                Log.warn("XCreateFontCursor not implemented for shape: "+shape);
+        }
         return cursor.id;
     }
 
     // XFontSet XCreateFontSet(Display *display, char *base_font_name_list, char ***missing_charset_list_return, int *missing_charset_count_return, char **def_string_return)
-    static public int XCreateFontSet(int display, int base_font_name_list, int missing_charset_list_return, int missing_charset_count_return, int def_string_return) {
+    static public int XCreateFontSet(int address, int base_font_name_list, int missing_charset_list_return, int missing_charset_count_return, int def_string_return) {
+        Display display = getDisplay(address);
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
         XFontSet fontset = new XFontSet();
@@ -420,7 +494,7 @@ public class LibX11 extends BuiltinModule {
     // GC XCreateGC(Display *display, Drawable d, unsigned long valuemask, XGCValues *values)
     static public int XCreateGC(int address, int d, int valuemask, int values) {
         Display display = getDisplay(address);
-        Drawable drawable = Drawable.getDrawable(d);
+        Drawable drawable = display.getDrawable(d);
         if (drawable == null)
             return BadDrawable;
         GC gc = display.createNewGC(drawable);
@@ -431,8 +505,11 @@ public class LibX11 extends BuiltinModule {
     }
 
     // XIC XCreateIC(XIM im, ...)
-    static public int XCreateIC(int im) {
+    static public int XCreateIC(int address) {
         WineThread thread = WineThread.getCurrent();
+        IM im = new IM();
+        im.read(thread.process.memory, address);
+        Display display = getDisplay(im.display);
         int index = 1;
         XIC xic = new XIC(WineSystem.nextid++);
 
@@ -444,11 +521,11 @@ public class LibX11 extends BuiltinModule {
             if (cmd.equals("inputStyle")) {
                 xic.inputStyle = thread.cpu.peek32(index++);
             } else if (cmd.equals("clientWindow")) {
-                xic.clientWindow = Window.getWindow(thread.cpu.peek32(index++));
+                xic.clientWindow = display.getWindow(thread.cpu.peek32(index++));
                 if (xic.clientWindow == null)
                     return BadWindow;
             } else if (cmd.equals("focusWindow")) {
-                xic.focusWindow = Window.getWindow(thread.cpu.peek32(index++));
+                xic.focusWindow = display.getWindow(thread.cpu.peek32(index++));
                 if (xic.focusWindow == null)
                     return BadWindow;
             } else if (cmd.equals("destroyCallback")) {
@@ -461,7 +538,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // XImage *XCreateImage(Display *display, Visual *visual, unsigned int depth, int format, int offset, char *data, unsigned int width, unsigned int height, int bitmap_pad, int bytes_per_line)
-    static public int XCreateImage(int display, int visual, int depth, int format, int offset, int data, int width, int height, int bitmap_pad, int bytes_per_line) {
+    static public int XCreateImage(int address, int visual, int depth, int format, int offset, int data, int width, int height, int bitmap_pad, int bytes_per_line) {
+        Display display = getDisplay(address);
         if (data!=0) {
             Log.panic("Not sure what to do");
         }
@@ -492,15 +570,16 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Cursor XCreatePixmapCursor(Display *display, Pixmap source, Pixmap mask, XColor *foreground_color, XColor *background_color, unsigned int x, unsigned int y)
-    static public int XCreatePixmapCursor(int display, int source, int mask, int foreground_color, int background_color, int x, int y) {
-        Pixmap pixmap = Pixmap.getPixmap(source);
+    static public int XCreatePixmapCursor(int address, int source, int mask, int foreground_color, int background_color, int x, int y) {
+        Display display = getDisplay(address);
+        Pixmap pixmap = display.getPixmap(source);
         Pixmap pixmapMask = null;
 
         if (pixmap==null)
             return BadPixmap;
 
         if (mask!=0) {
-            pixmapMask = Pixmap.getPixmap(mask);
+            pixmapMask = display.getPixmap(mask);
             if (pixmapMask == null)
                 return BadPixmap;
             if (pixmap.width!=pixmapMask.width || pixmap.height!=pixmapMask.height)
@@ -520,8 +599,9 @@ public class LibX11 extends BuiltinModule {
 
     // Window XCreateWindow(Display *display, Window parent, int x, int y, unsigned int width, unsigned int height, unsigned int border_width, int depth, unsigned int class, Visual *visual, unsigned long valuemask, XSetWindowAttributes *attributes)
     static public int XCreateWindow(int address, int p, int x, int y, int width, int height, int border_width, int depth, int klass, int visual, int valuemask, int attributes) {
+        Display display = getDisplay(address);
         WineProcess process = WineThread.getCurrent().process;
-        Window parent = Window.getWindow(p);
+        Window parent = display.getWindow(p);
         Window window = new Window(parent, address, process);
         window.move(x, y);
         window.resize(width, height);
@@ -531,8 +611,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XDefineCursor(Display *display, Window w, Cursor cursor)
-    static public int XDefineCursor(int display, int w, int cursor) {
-        Window window = Window.getWindow(w);
+    static public int XDefineCursor(int address, int w, int cursor) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
 
@@ -560,8 +641,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XDeleteProperty(Display *display, Window w, Atom property)
-    static public int XDeleteProperty(int display, int w, int property) {
-        Window window = Window.getWindow(w);
+    static public int XDeleteProperty(int address, int w, int property) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window==null)
             return BadWindow;
         window.deleteProperty(property);
@@ -574,8 +656,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XDestroyWindow(Display *display, Window w)
-    static public int XDestroyWindow(int display, int w) {
-        Window window = Window.getWindow(w);
+    static public int XDestroyWindow(int address, int w) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         window.destroy();
@@ -583,7 +666,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // void XDisplayKeycodes(Display *display, int *min_keycodes_return, int *max_keycodes_return);
-    static public void XDisplayKeycodes(int display, int min_keycodes_return, int max_keycodes_return) {
+    static public void XDisplayKeycodes(int address, int min_keycodes_return, int max_keycodes_return) {
+        Display display = getDisplay(address);
         Memory memory = WineThread.getCurrent().process.memory;
         memory.writeb(min_keycodes_return, KeySym.keyMin);
         memory.writeb(max_keycodes_return, KeySym.keyMax);
@@ -643,7 +727,7 @@ public class LibX11 extends BuiltinModule {
         GC g = display.gcById.get(gc);
         if (g == null)
             return BadGC;
-        Drawable drawable = Drawable.getDrawable(d);
+        Drawable drawable = display.getDrawable(d);
         if (drawable == null)
             return BadDrawable;
         drawable.fillRect(g, x, y, width, height);
@@ -735,8 +819,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XFreePixmap(Display *display, Pixmap pixmap)
-    static public int XFreePixmap(int display, int pixmap) {
-        Pixmap p = Pixmap.getPixmap(pixmap);
+    static public int XFreePixmap(int address, int pixmap) {
+        Display display = getDisplay(address);
+        Pixmap p = display.getPixmap(pixmap);
         if (p == null)
             return BadPixmap;
         p.remove();
@@ -817,7 +902,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // KeySym *XGetKeyboardMapping(Display *display, KeyCode first_keycode, int keycode_count, int *keysyms_per_keycode_return)
-    static public int XGetKeyboardMapping(int display, int first_keycode, int keycode_count, int keysyms_per_keycode_return) {
+    static public int XGetKeyboardMapping(int address, int first_keycode, int keycode_count, int keysyms_per_keycode_return) {
+        Display display = getDisplay(address);
         WineProcess process = WineThread.getCurrent().process;
         int len = keycode_count*KeySym.keySymsPerKeyCode*4;
         int result = process.alloc(len);
@@ -825,9 +911,9 @@ public class LibX11 extends BuiltinModule {
         for (int i=first_keycode;i<first_keycode+keycode_count;i++) {
             KeySym keySym = KeySym.x11KeyCodeToKeySym.get(i);
             if (keySym!=null) {
-                int address = (i-first_keycode)*4*KeySym.keySymsPerKeyCode+result;
+                int p = (i-first_keycode)*4*KeySym.keySymsPerKeyCode+result;
                 for (int j=0;j<KeySym.keySymsPerKeyCode;j++)
-                    process.memory.writed(address+4*j, keySym.keySym[j]);
+                    process.memory.writed(p+4*j, keySym.keySym[j]);
             }
         }
         if (keysyms_per_keycode_return!=0)
@@ -836,7 +922,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // XModifierKeymap *XGetModifierMapping(Display *display)
-    static public int XGetModifierMapping(int display) {
+    static public int XGetModifierMapping(int address) {
+        Display display = getDisplay(address);
         WineProcess process = WineThread.getCurrent().process;
         int result = process.alloc(72); // (max_keypermod*8)*4 + 4 to hold modifiermap + 4 to hold max_keypermod
         process.memory.zero(result, 64);
@@ -863,7 +950,7 @@ public class LibX11 extends BuiltinModule {
 
     // Window XGetSelectionOwner(Display *display, Atom selection)
     static public int XGetSelectionOwner(int display, int selection) {
-        Log.panic("XGetSelectionOwner not implemented");
+        Log.warn("XGetSelectionOwner not implemented");
         return 0;
     }
 
@@ -941,7 +1028,7 @@ public class LibX11 extends BuiltinModule {
     static public int XGetWindowProperty(int address, int w, int property, int long_offset, int long_length, int delete, int req_type, int actual_type_return, int actual_format_return, int nitems_return, int bytes_after_return, int prop_return) {
         Display display = getDisplay(address);
         String propertyName = display.getAtom(property);
-        Window window = Window.getWindow(w);
+        Window window = display.getWindow(w);
         if (window == null) {
             Log.warn("XGetWindowProperty with invalid window");
             return BadWindow;
@@ -954,9 +1041,13 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XGrabPointer(Display *display, Window grab_window, Bool owner_events, unsigned int event_mask, int pointer_mode, int keyboard_mode, Window confine_to, Cursor cursor, Time time)
-    static public int XGrabPointer(int display, int grab_window, int owner_events, int event_mask, int pointer_mode, int keyboard_mode, int confine_to, int cursor, int time) {
-        Log.panic("XGrabPointer not implemented");
-        return 0;
+    static public int XGrabPointer(int address, int grab_window, int owner_events, int event_mask, int pointer_mode, int keyboard_mode, int confine_to, int cursor, int time) {
+        Display display = getDisplay(address);
+        Window w = display.getWindow(grab_window);
+        if (w==null)
+            return BadWindow;
+        rootWindow.capture = w;
+        return Success;
     }
 
     // int XGrabServer(Display *display)
@@ -1006,7 +1097,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // KeySym XkbKeycodeToKeysym(Display *dpy, KeyCode kc, unsigned int group, unsigned int level)
-    static public int XkbKeycodeToKeysym(int display, int kc, int group, int level) {
+    static public int XkbKeycodeToKeysym(int address, int kc, int group, int level) {
+        Display display = getDisplay(address);
         if (group!=0) {
             Log.panic("XkbKeycodeToKeysym not fully implemented");
         }
@@ -1027,7 +1119,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XkbTranslateKeySym(Display *dpy, KeySym *sym_inout, unsigned int mods, char *buf, int nbytes, int *extra_rtrn)
-    static public int XkbTranslateKeySym(int display, int sym_inout, int mods, int buf, int nbytes, int extra_rtrn) {
+    static public int XkbTranslateKeySym(int address, int sym_inout, int mods, int buf, int nbytes, int extra_rtrn) {
+        Display display = getDisplay(address);
         Memory memory = WineThread.getCurrent().process.memory;
         KeySym sym = KeySym.x11KeySymToKeySym.get(memory.readd(sym_inout));
         if (sym==null)
@@ -1080,8 +1173,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // void XLockDisplay(Display *display)
-    static public void XLockDisplay(int display) {
-        Log.panic("XLockDisplay not implemented");
+    static public void XLockDisplay(int address) {
+        Display display = getDisplay(address);
+        display.lock();
     }
 
     // KeySym XLookupKeysym(XKeyEvent *key_event, int index)
@@ -1108,8 +1202,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XMapWindow(Display *display, Window w)
-    static public int XMapWindow(int display, int w) {
-        Window window = Window.getWindow(w);
+    static public int XMapWindow(int address, int w) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         window.map();
@@ -1122,10 +1217,44 @@ public class LibX11 extends BuiltinModule {
         return 0;
     }
 
+    static public final int XBufferOverflow     = -1;
+    static public final int XLookupNone         = 1;
+    static public final int XLookupChars        = 2;
+    static public final int XLookupKeySym       = 3;
+    static public final int XLookupBoth         = 4;
+
     // int XmbLookupString(XIC ic, XKeyPressedEvent *event, char *buffer_return, int bytes_buffer, KeySym *keysym_return, Status *status_return)
     static public int XmbLookupString(int ic, int event, int buffer_return, int bytes_buffer, int keysym_return, int status_return) {
-        Log.panic("XmbLookupString not implemented");
-        return 0;
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        XKeyEvent keyEvent = new XKeyEvent(memory, event);
+        KeySym keySym = KeySym.x11KeyCodeToKeySym.get(keyEvent.keycode);
+        int status = XLookupNone;
+        int result = 0;
+
+        if (buffer_return!=0 && bytes_buffer>=2) {
+            char c = keySym.getChar(keyEvent.state);
+            if (c!=0) {
+                memory.writeb(buffer_return, keySym.getChar(keyEvent.state));
+                memory.writeb(buffer_return + 1, 0);
+                status = XLookupChars;
+                result = 1;
+            }
+        }
+        if (keysym_return!=0) {
+            int sym = keySym.translate(keyEvent.state);
+            if (sym!=0) {
+                memory.writed(keysym_return, sym);
+                if (status== XLookupChars)
+                    status = XLookupBoth;
+                else
+                    status = XLookupKeySym;
+            }
+        }
+        if (status_return!=0) {
+            memory.writed(status_return, status);
+        }
+        return result;
     }
 
     // char *XmbResetIC(XIC ic)
@@ -1147,7 +1276,8 @@ public class LibX11 extends BuiltinModule {
 //    } XTextProperty;
 
     // int XmbTextListToTextProperty(Display *display, char **list, int count, XICCEncodingStyle style, XTextProperty *text_prop_return)
-    static public int XmbTextListToTextProperty(int display, int list, int count, int style, int text_prop_return) {
+    static public int XmbTextListToTextProperty(int address, int list, int count, int style, int text_prop_return) {
+        Display display = getDisplay(address);
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
         StringBuilder buffer = new StringBuilder();
@@ -1239,16 +1369,16 @@ public class LibX11 extends BuiltinModule {
     }
 
     // XIM XOpenIM(Display *display, XrmDatabase db, char *res_name, char *res_class)
-    static public int XOpenIM(int display, int db, int res_name, int res_class) {
+    static public int XOpenIM(int pDisplay, int db, int res_name, int res_class) {
         if (db!=0 || res_name!=0 || res_class!=0) {
             Log.warn("XOpenIM not fully implemented");
         }
-
+        Display display = getDisplay(pDisplay);
         WineThread thread = WineThread.getCurrent();
         String locale = "en";
         int address = thread.process.alloc(IM.SIZE+locale.length()+1);
         IM im = new IM();
-        im.display = display;
+        im.display = pDisplay;
         im.locale = address+IM.SIZE;
         thread.process.memory.writeCString(im.locale, locale);
         im.write(thread.process.memory, address);
@@ -1256,11 +1386,12 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XPutImage(Display *display, Drawable d, GC gc, XImage *image, int src_x, int src_y, int dest_x, int dest_y, unsigned int width, unsigned int height);
-    static public int XPutImage(int display, int d, int gc, int image, int src_x, int src_y, int dest_x, int dest_y, int width, int height) {
+    static public int XPutImage(int address, int d, int gc, int image, int src_x, int src_y, int dest_x, int dest_y, int width, int height) {
+        Display display = getDisplay(address);
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
         XImage xImage = new XImage(memory, image);
-        Drawable drawable = Drawable.getDrawable(d);
+        Drawable drawable = display.getDrawable(d);
         if (drawable == null)
             return BadDrawable;
         drawable.putImage(memory, xImage, src_x, src_y, dest_x, dest_y, width, height);
@@ -1314,8 +1445,9 @@ public class LibX11 extends BuiltinModule {
     static public final int CWStackMode = (1<<6);
 
     // Status XReconfigureWMWindow(Display *display, Window w, int screen_number, unsigned int value_mask, XWindowChanges *values)
-    static public int XReconfigureWMWindow(int display, int w, int screen_number, int value_mask, int values) {
-        Window window = Window.getWindow(w);
+    static public int XReconfigureWMWindow(int address, int w, int screen_number, int value_mask, int values) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         Memory memory = WineThread.getCurrent().process.memory;
         if (window==null)
             return BadWindow;
@@ -1363,9 +1495,10 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XReparentWindow(Display *display, Window w, Window parent, int x, int y);
-    static public int XReparentWindow(int display, int w, int p, int x, int y) {
-        Window window = Window.getWindow(w);
-        Window parent = Window.getWindow(p);
+    static public int XReparentWindow(int address, int w, int p, int x, int y) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
+        Window parent = display.getWindow(p);
         if (window == null || parent == null)
             return BadWindow;
         window.setParent(parent, x, y);
@@ -1385,8 +1518,9 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XSelectInput(Display *display, Window w, long event_mask)
-    static public int XSelectInput(int display, int w, int event_mask) {
-        Window window = Window.getWindow(w);
+    static public int XSelectInput(int address, int w, int event_mask) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         window.selectInput(event_mask);
@@ -1412,10 +1546,11 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XSetClassHint(Display *display, Window w, XClassHint *class_hints)
-    static public int XSetClassHint(int display, int w, int class_hints) {
+    static public int XSetClassHint(int address, int w, int class_hints) {
+        Display display = getDisplay(address);
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
-        Window window = Window.getWindow(w);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         String res_name = memory.readCString(memory.readd(class_hints));
@@ -1425,7 +1560,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // void XSetClipMask(Display *display, GC gc, Pixmap pixmap)
-    static public int XSetClipMask(int display, int gc, int pixmap) {
+    static public int XSetClipMask(int address, int gc, int pixmap) {
+        Display display = getDisplay(address);
         if (pixmap!=0)
             Log.panic("XSetClipMask not fully implemented");
         return 0;
@@ -1528,8 +1664,7 @@ public class LibX11 extends BuiltinModule {
 
     // int XSetTransientForHint(Display *display, Window w, Window prop_window)
     static public int XSetTransientForHint(int display, int w, int prop_window) {
-        Log.panic("XSetTransientForHint not implemented");
-        return 0;
+        return XChangeProperty(display, w, XAtom.XA_WM_TRANSIENT_FOR, XAtom.XA_WINDOW, 32, 0, prop_window, 1);
     }
 
     // char *XSetIMValues(XIM im, ...)
@@ -1537,8 +1672,9 @@ public class LibX11 extends BuiltinModule {
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
         IM im = new IM(memory, pim);
-
+        Display display = getDisplay(im.display);
         String cmd = memory.readCString(pCmd);
+
         if (cmd.equals("destroyCallback")) {
             int pXIMCallback = thread.cpu.peek32(2);
             im.onDestroyData = memory.readd(pXIMCallback);
@@ -1551,8 +1687,10 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XSetInputFocus(Display *display, Window focus, int revert_to, Time time)
-    static public int XSetInputFocus(int display, int focus, int revert_to, int time) {
-        Window window = Window.getWindow(focus);
+    static public int XSetInputFocus(int address, int focus, int revert_to, int time) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(focus);
+
         if (window == null) {
             return BadWindow;
         }
@@ -1592,7 +1730,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XSetWMProperties(Display *display, Window w, XTextProperty *window_name, XTextProperty *icon_name, char **argv, int argc, XSizeHints *normal_hints, XWMHints *wm_hints, XClassHint *class_hints)
-    static public int XSetWMProperties(int display, int w, int window_name, int icon_name, int argv, int argc, int normal_hints, int wm_hints, int class_hints) {
+    static public int XSetWMProperties(int address, int w, int window_name, int icon_name, int argv, int argc, int normal_hints, int wm_hints, int class_hints) {
+        Display display = getDisplay(address);
         if (window_name != 0 || icon_name != 0 || argv != 0 || argc !=0 || normal_hints !=0 || wm_hints != 0 || class_hints !=0)
             Log.panic("XSetWMProperties not implemented");
         return Success;
@@ -1613,7 +1752,8 @@ public class LibX11 extends BuiltinModule {
 //    #define ShapeInvert 4
 
     // void XShapeCombineRectangles(Display *dpy, XID dest, int destKind, int xOff, int yOff, XRectangle *rects, int n_rects, int op, int ordering)
-    static public void XShapeCombineRectangles(int display, int dest, int destKind, int xOff, int yOff, int rects, int n_rects, int op, int ordering) {
+    static public void XShapeCombineRectangles(int address, int dest, int destKind, int xOff, int yOff, int rects, int n_rects, int op, int ordering) {
+        Display display = getDisplay(address);
         if (destKind!=0) {
             Log.panic("XShapeCombineRectangles only supports ShapeBounding");
         }
@@ -1638,7 +1778,8 @@ public class LibX11 extends BuiltinModule {
     }
 
     // XImage *XShmCreateImage(Display *display, Visual *visual, unsigned int depth, int format, char *data, XShmSegmentInfo *shminfo, unsigned int width, height)
-    static public int XShmCreateImage(int display, int visual, int depth, int format, int data, int shminfo, int width, int height) {
+    static public int XShmCreateImage(int address, int visual, int depth, int format, int data, int shminfo, int width, int height) {
+        Display display = getDisplay(address);
         WineProcess process = WineThread.getCurrent().process;
         XImage xImage = new XImage(process);
         xImage.depth = depth;
@@ -1663,11 +1804,12 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Bool XShmPutImage(Display *display, Drawable d, GC gc, XImage *image, int src_x, src_y, dest_x, dest_y, unsigned int width, height, bool send_event);
-    static public int XShmPutImage(int display, int d, int gc, int image, int src_x, int src_y, int dest_x, int dest_y, int width, int height, int send_event) {
+    static public int XShmPutImage(int address, int d, int gc, int image, int src_x, int src_y, int dest_x, int dest_y, int width, int height, int send_event) {
+        Display display = getDisplay(address);
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
         XImage xImage = new XImage(memory, image);
-        Drawable drawable = Drawable.getDrawable(d);
+        Drawable drawable = display.getDrawable(d);
         if (drawable == null)
             return BadDrawable;
         drawable.putImage(memory, xImage, src_x, src_y, dest_x, dest_y, width, height);
@@ -1697,9 +1839,10 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Bool XTranslateCoordinates(Display *display, Window src_w, dest_w, int src_x, int src_y, int *dest_x_return, int *dest_y_return, Window *child_return);
-    static public int XTranslateCoordinates(int display, int src_w, int dest_w, int src_x, int src_y, int dest_x_return, int dest_y_return, int child_return) {
-        Window src = Window.getWindow(src_w);
-        Window dst = Window.getWindow(dest_w);
+    static public int XTranslateCoordinates(int address, int src_w, int dest_w, int src_x, int src_y, int dest_x_return, int dest_y_return, int child_return) {
+        Display display = getDisplay(address);
+        Window src = display.getWindow(src_w);
+        Window dst = display.getWindow(dest_w);
         if (src == null || dst == null)
             return BadWindow;
         if (src_w<0 || src_w>=src.width)
@@ -1737,9 +1880,10 @@ public class LibX11 extends BuiltinModule {
     }
 
     // int XUngrabPointer(Display *display, Time time)
-    static public int XUngrabPointer(int display, int time) {
-        Log.panic("XUngrabPointer not implemented");
-        return 0;
+    static public int XUngrabPointer(int address, int time) {
+        Display display = getDisplay(address);
+        rootWindow.capture = null;
+        return Success;
     }
 
     // int XUngrabServer(Display *display)
@@ -1749,13 +1893,15 @@ public class LibX11 extends BuiltinModule {
     }
 
     // void XUnlockDisplay(Display *display)
-    static public void XUnlockDisplay(int display) {
-        Log.panic("XUnlockDisplay not implemented");
+    static public void XUnlockDisplay(int address) {
+        Display display = getDisplay(address);
+        display.unlock();
     }
 
     // int XUnmapWindow(Display *display, Window w)
-    static public int XUnmapWindow(int display, int w) {
-        Window window = Window.getWindow(w);
+    static public int XUnmapWindow(int address, int w) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
         if (window == null)
             return BadWindow;
         window.unmap();

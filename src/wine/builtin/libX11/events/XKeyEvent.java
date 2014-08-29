@@ -16,6 +16,25 @@ public class XKeyEvent extends XAnyEvent {
         super(display, window, type);
     }
 
+    public XKeyEvent(Memory memory, int address) {
+        read(memory, address);
+    }
+
+    public int read(Memory memory, int address) {
+        address = super.read(memory, address);
+        root = memory.readd(address); address += 4;
+        subwindow = memory.readd(address); address += 4;
+        time = memory.readd(address); address += 4;
+        x = memory.readd(address); address += 4;
+        y = memory.readd(address); address += 4;
+        x_root = memory.readd(address); address += 4;
+        y_root = memory.readd(address); address += 4;
+        state = memory.readd(address); address += 4;
+        keycode = memory.readd(address); address += 4;
+        same_screen = memory.readd(address); address += 4;
+        return address;
+    }
+
     public int write(Memory memory, int address) {
         address = super.write(memory, address);
         memory.writed(address, root); address += 4;

@@ -99,7 +99,7 @@ public class XGCValues {
 	public int dash_offset = 0;         /* patterned/dashed line information */
 	public int dashes = 4;
 
-    public int merge(Memory memory, int address, int mask) {
+    public int merge(Display display, Memory memory, int address, int mask) {
         if ((mask & GCFunction)!=0)
             function = memory.readd(address);
         if ((mask & GCPlaneMask)!=0)
@@ -127,7 +127,7 @@ public class XGCValues {
             if (id==0)
                 tile = null;
             else {
-                tile = Pixmap.getPixmap(id);
+                tile = display.getPixmap(id);
                 if (tile == null)
                     return LibX11.BadPixmap;
             }
@@ -137,7 +137,7 @@ public class XGCValues {
             if (id==0)
                 stipple = null;
             else {
-                stipple = Pixmap.getPixmap(id);
+                stipple = display.getPixmap(id);
                 if (stipple == null)
                     return LibX11.BadPixmap;
             }
@@ -163,7 +163,7 @@ public class XGCValues {
             if (id==0)
                 clip_mask = null;
             else {
-                clip_mask = Pixmap.getPixmap(id);
+                clip_mask = display.getPixmap(id);
                 if (clip_mask == null)
                     return LibX11.BadPixmap;
             }

@@ -3,7 +3,7 @@ package wine.builtin.libX11.events;
 import wine.emulation.Memory;
 
 public class XMotionEvent extends XAnyEvent {
-    static public final int TYPE = 5;
+    static public final int TYPE = 6;
 
     public int root; /* root window that the event occurred on */
     public int subwindow; /* child window */
@@ -14,8 +14,15 @@ public class XMotionEvent extends XAnyEvent {
     public byte is_hint; /* detail */
     public int same_screen; /* same screen flag */
 
-    public XMotionEvent(int display, int window) {
+    public XMotionEvent(int display, int window, int root, int subwindow, int x, int y, int state) {
         super(display, window, TYPE);
+        this.root = root;
+        this.subwindow = subwindow;
+        this.x = x;
+        this.y = y;
+        this.state = state;
+        this.is_hint = 0;
+        this.same_screen = 1;
     }
 
     public int write(Memory memory, int address) {

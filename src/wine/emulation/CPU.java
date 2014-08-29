@@ -463,7 +463,7 @@ public class CPU {
 
     public int call(int func, int param1, int param2, int param3) {
         int esp = this.esp.dword;
-        push32(param2);
+        push32(param3);
         push32(param2);
         push32(param1);
         push32(callReturnEip);

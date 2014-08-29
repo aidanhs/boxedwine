@@ -397,6 +397,7 @@ public class ElfModule extends Module {
             symbol=getSymbol(name);
         if (symbol==null) {
             Log.panic(this.name + ": unresolved symbol: " + name);
+            return new ElfSymbol();
         }
         return symbol;
     }
