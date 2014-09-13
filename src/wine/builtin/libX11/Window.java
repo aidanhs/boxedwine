@@ -108,7 +108,7 @@ public class Window extends Drawable {
         if (parent!=null) {
             this.parent.children.add(this);
         }
-        setProperty(Display.setAtom("_NET_WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
+        setState(WithdrawnState);
     }
 
     public void translateToRoot(Point p) {
@@ -226,8 +226,13 @@ public class Window extends Drawable {
             configurationChanged();
             sendExposeEvent();
         }
+        setState(NormalState);
     }
 
+    private void setState(int state) {
+        int atom = Display.setAtom("WM_STATE", false);
+        setProperty(atom, new Property(atom, 32, state, 0));
+    }
     public void unmap() {
         if (!isMapped)
             return;
@@ -240,6 +245,7 @@ public class Window extends Drawable {
             process.x11.addEvent(process, event);
         }
         LibX11.rootWindow.unmapped(this);
+        setState(WithdrawnState);
     }
 
     public void setCursor(Cursor cursor) {

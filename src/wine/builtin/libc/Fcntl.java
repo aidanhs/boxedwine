@@ -123,6 +123,10 @@ public class Fcntl {
                 }
                 return fd.object.setLockW(lock);
             }
+            case F_SETSIG: {
+                Log.warn("fcntl F_SETSIG not implemented");
+                return -1;
+            }
             default:
                 Log.warn("fcntl: unknown command: "+cmd);
                 thread.setErrno(Errno.EINVAL);

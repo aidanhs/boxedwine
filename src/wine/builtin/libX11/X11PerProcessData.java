@@ -19,9 +19,6 @@ public class X11PerProcessData {
     synchronized public int checkIfEvent(WineThread thread, int display, int event_return, int predicate, int arg) {
         for (Integer event : events) {
             thread.cpu.call(predicate, display, event, arg);
-            if (thread.process.memory.readd(event)==4) {
-                int ii=0;
-            }
             if (thread.cpu.eax.dword!=0) {
                 thread.process.memory.memcpy(event_return, event, EVENT_SIZE );
                 freeEvents.addLast(event);

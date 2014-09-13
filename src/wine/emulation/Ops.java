@@ -4729,4 +4729,163 @@ class Ops {
             return "cmov";
         }
     }
+
+    static public final class BtcEdGd_reg extends Op {
+        final Reg ed;
+        final Reg gd;
+
+        public BtcEdGd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword^=mask;
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "btc";
+        }
+    }
+
+    static public final class BtcEdGd_mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BtcEdGd_mem(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            int address=eaa.call(cpu);
+            address+=(gd.dword>>5)*4; // intentional signed shift
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old ^ mask);
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "btc";
+        }
+    }
+
+    static public final class BsfGdEd_reg extends Op {
+        final Reg ed;
+        final Reg gd;
+
+        public BsfGdEd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int value=ed.dword;
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 0;
+                while ((value & 0x01)==0) { result++; value>>>=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsf";
+        }
+    }
+
+    static public final class BsfGdEd_mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BsfGdEd_mem(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            int address=eaa.call(cpu);
+            int value=cpu.memory.readd(address);
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 0;
+                while ((value & 0x01)==0) { result++; value>>>=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsf";
+        }
+    }
+
+    static public final class BsrGdEd_reg extends Op {
+        final Reg ed;
+        final Reg gd;
+
+        public BsrGdEd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int value=ed.dword;
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 31;	// Operandsize-1
+                while ((value & 0x80000000)==0) { result--; value<<=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsr";
+        }
+    }
+
+    static public final class BsrGdEd_mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BsrGdEd_mem(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            int address=eaa.call(cpu);
+            int value=cpu.memory.readd(address);
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 31;	// Operandsize-1
+                while ((value & 0x80000000)==0) { result--; value<<=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsr";
+        }
+    }
 }

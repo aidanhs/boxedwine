@@ -3,6 +3,7 @@ package wine.builtin.libX11;
 import wine.builtin.libX11.events.XKeyEvent;
 import wine.builtin.libX11.events.XKeyPressedEvent;
 import wine.builtin.libc.Strings;
+import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.loader.BuiltinModule;
 import wine.system.WineProcess;
@@ -297,6 +298,20 @@ public class LibX11 extends BuiltinModule {
         return Success;
     }
 
+    static private int XChangePropertyInt(int address, int w, int property, int type, int format, int mode, int data) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
+        if (window == null)
+            return BadWindow;
+        // PropModeReplace
+        if (mode!=0) {
+            Log.panic("XChangeProperty does not support mode: "+mode);
+        }
+        Property p = new Property(type, format, data);
+        window.setProperty(property, p);
+        return Success;
+    }
+
     // int XChangeWindowAttributes(Display *display, Window w, unsigned long valuemask, XSetWindowAttributes *attributes)
     static public int XChangeWindowAttributes(int address, int w, int valuemask, int attributes) {
         Display display = getDisplay(address);
@@ -553,6 +568,9 @@ public class LibX11 extends BuiltinModule {
         xImage.format = format;
         xImage.bitmap_bit_order = XImage.LSBFirst;
         xImage.byte_order = XImage.LSBFirst;
+        if (bytes_per_line==0) {
+            bytes_per_line = 4*width;
+        }
         xImage.bytes_per_line = bytes_per_line;
         xImage.bits_per_pixel = 32;
         xImage.bitmap_pad = bitmap_pad;
@@ -1664,7 +1682,7 @@ public class LibX11 extends BuiltinModule {
 
     // int XSetTransientForHint(Display *display, Window w, Window prop_window)
     static public int XSetTransientForHint(int display, int w, int prop_window) {
-        return XChangeProperty(display, w, XAtom.XA_WM_TRANSIENT_FOR, XAtom.XA_WINDOW, 32, 0, prop_window, 1);
+        return XChangePropertyInt(display, w, XAtom.XA_WM_TRANSIENT_FOR, XAtom.XA_WINDOW, 32, 0, prop_window);
     }
 
     // char *XSetIMValues(XIM im, ...)
@@ -1779,6 +1797,8 @@ public class LibX11 extends BuiltinModule {
 
     // XImage *XShmCreateImage(Display *display, Visual *visual, unsigned int depth, int format, char *data, XShmSegmentInfo *shminfo, unsigned int width, height)
     static public int XShmCreateImage(int address, int visual, int depth, int format, int data, int shminfo, int width, int height) {
+        return 0;
+        /*
         Display display = getDisplay(address);
         WineProcess process = WineThread.getCurrent().process;
         XImage xImage = new XImage(process);
@@ -1795,6 +1815,7 @@ public class LibX11 extends BuiltinModule {
         int result = process.alloc(XImage.SIZE);
         xImage.write(process.memory, result);
         return result;
+        */
     }
 
     // Bool XShmDetach(Display *display, XShmSegmentInfo *shminfo)
@@ -1938,8 +1959,12 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Status XWithdrawWindow(Display *display, Window w, int screen_number)
-    static public int XWithdrawWindow(int display, int w, int screen_number) {
-        Log.panic("XWithdrawWindow not implemented");
-        return 0;
+    static public int XWithdrawWindow(int address, int w, int screen_number) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
+        if (window == null)
+            return BadWindow;
+        window.unmap();
+        return 1;
     }
 }

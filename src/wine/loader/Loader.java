@@ -168,4 +168,17 @@ public class Loader {
         module.unload();
         return true;
     }
+
+    public String getModule(int eip) {
+        for (Module module: modulesByHandle.values()) {
+            if (module instanceof ElfModule) {
+                ElfModule elf = (ElfModule)module;
+                if (eip>=elf.getAddress() && eip<elf.getAddress()+elf.getImageSize()) {
+                    int offset = elf.getAddress() - elf.getOriginalAddress();
+                    return elf.name+" 0x"+Integer.toHexString(eip-offset);
+                }
+            }
+        }
+        return "";
+    }
 }

@@ -3424,6 +3424,45 @@ class Decoder {
             }
         };
 
+         /* BTC Ed,Gd */
+        decoder[0x3bb] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BtcEdGd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BtcEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+        /* BSF Gd,Ed */
+        decoder[0x3bc] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BsfGdEd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BsfGdEd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+        /* BSR Gd,Ed */
+        decoder[0x3bd] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BsrGdEd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BsrGdEd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
         /* MOVSX Gw,Eb */
         decoder[0x1be] = new Decode() {
             public boolean call(CPU cpu, Op prev) {

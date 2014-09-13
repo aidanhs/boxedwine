@@ -29,7 +29,7 @@ public class Main {
         System.arraycopy(args, 0, t, 1, args.length);
         args = t;
         args[0]="/usr/lib/i386-linux-gnu/wine-unstable/bin/wine";
-        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32","WINEDEBUG=+cursor"})==null) {
+        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32","WINEDEBUG=+x11drv"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }

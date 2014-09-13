@@ -73,6 +73,10 @@ public class ElfModule extends Module {
         return (int)imageSize;
     }
 
+    public int getOriginalAddress() {
+        return (int)originalAddress;
+    }
+
     private boolean loadHeaderAndSections() {
         InputStream fis = null;
         FSNode node = FSNode.getNode(path, true);
