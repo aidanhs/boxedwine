@@ -1,7 +1,9 @@
 package wine.builtin.libX11;
 
 import wine.builtin.libX11.events.*;
+import wine.emulation.CPU;
 import wine.emulation.Memory;
+import wine.loader.BuiltinModule;
 import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -187,17 +189,22 @@ public class Window extends Drawable {
             memory.writed(bytes_after_return, property.data.length);
             return 1;
         }
-        int toCopy = Math.min(long_length, property.data.length)-long_offset;
-        int result = process.alloc(toCopy+1);
+        int toCopy = property.data.length-long_offset;
+        if (long_length>0 && toCopy>long_length*4)
+            toCopy = long_length*4;
+
         int remaining = property.data.length-long_offset-toCopy;
 
-        memory.memcpy(result, property.data, long_offset, toCopy);
-        memory.writeb(result + toCopy, 0);
         memory.writed(actual_type_return, property.type);
         memory.writed(actual_format_return, property.format);
         memory.writed(nitems_return, toCopy*8/property.format);
         memory.writed(bytes_after_return, remaining);
+
+        int result = process.alloc(toCopy+1);
+        memory.memcpy(result, property.data, long_offset, toCopy);
+        memory.writeb(result + toCopy, 0);
         memory.writed(prop_return, result);
+
         if (delete!=0 && remaining==0) {
             properties.remove(name);
         }
@@ -224,7 +231,7 @@ public class Window extends Drawable {
             }
             // :TODO: is this right?
             configurationChanged();
-            sendExposeEvent();
+            sendExposeEvent(0, 0, width, height);
         }
         setState(NormalState);
     }
@@ -233,12 +240,19 @@ public class Window extends Drawable {
         int atom = Display.setAtom("WM_STATE", false);
         setProperty(atom, new Property(atom, 32, state, 0));
     }
+
+    private void remove(Window window) {
+        panel.remove(window.panel);
+        panel.repaint();
+        sendExposeEvent(window.x, window.y, window.height, window.width);
+    }
+
     public void unmap() {
         if (!isMapped)
             return;
         isMapped = false;
         if (parent!=null) {
-            this.parent.panel.remove(this.panel);
+            this.parent.remove(this);
         }
         if (process!=null && (eventMask & StructureNotifyMask)!=0) {
             XUnmapEvent event = new XUnmapEvent(display, id, id);
@@ -317,10 +331,10 @@ public class Window extends Drawable {
         return 0;
     }
 
-    public void sendExposeEvent() {
+    public void sendExposeEvent(int x, int y, int width, int height) {
         if (process!=null) {
             if ((eventMask & ExposureMask)!=0) {
-                XExposeEvent event = new XExposeEvent(display, id, 0, 0, width, height);
+                XExposeEvent event = new XExposeEvent(display, id, x, y, width, height);
                 process.x11.addEvent(process, event);
             }
         }
@@ -499,6 +513,7 @@ public class Window extends Drawable {
     }
 
     public void destroy() {
+        unmap();
         for (int i=children.size()-1;i>=0;i--) {
             Window window = children.get(i);
             window.destroy();
@@ -507,5 +522,6 @@ public class Window extends Drawable {
             XDestroyWindowEvent event = new XDestroyWindowEvent(display, id, id);
             process.x11.addEvent(process, event);
         }
+        setState(WithdrawnState);
     }
 }

@@ -388,7 +388,7 @@ public class LibX11 extends BuiltinModule {
         }
         window.configurationChanged();
         if (exposed)
-            window.sendExposeEvent();
+            window.sendExposeEvent(0, 0, window.width, window.height);
         return 0;
     }
 
@@ -1496,7 +1496,7 @@ public class LibX11 extends BuiltinModule {
         }
         window.configurationChanged();
         if (exposed)
-            window.sendExposeEvent();
+            window.sendExposeEvent(0, 0, window.width, window.height);
         return Success;
     }
 
