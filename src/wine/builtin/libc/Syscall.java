@@ -6,6 +6,8 @@ import wine.system.WineSystem;
 import wine.system.WineThread;
 import wine.util.Log;
 
+import java.util.Hashtable;
+
 public class Syscall {
     static public final int __NR_exit = 1;
     static public final int __NR_read = 3;
@@ -151,8 +153,47 @@ public class Syscall {
                 Log.panic("syscall __NR_tkill not implemented");
                 break;
             case __NR_futex: {
-                thread.setErrno(Errno.ENOSYS);
-                return -1;
+                int address = getter.next();
+                int op = getter.next();
+                if (op==128) {
+                    int value = getter.next();
+                    int pTime = getter.next();
+                    long startTime = System.currentTimeMillis();
+                    long stopTime;
+                    if (pTime == 0)
+                        stopTime = Long.MAX_VALUE;
+                    else {
+                        int seconds = memory.readd(pTime);
+                        int nano = memory.readd(pTime + 4);
+                        stopTime = seconds * 1000l + nano / 1000000l + startTime;
+                    }
+                    boolean changed = false;
+                    boolean timeout = false;
+                    while (true) {
+                        changed = memory.readd(address) != value;
+                        if (changed)
+                            break;
+                        timeout = System.currentTimeMillis() > stopTime;
+                        if (timeout)
+                            break;
+                        try {
+                            Thread.sleep(10);
+                        } catch (InterruptedException e) {
+                            return 0;
+                        }
+                    }
+                    if (timeout) {
+                        thread.setErrno(Errno.ETIMEDOUT);
+                        return -1;
+                    }
+                    return 0;
+                } else if (op==129) {
+                    int value = getter.next();
+                    return 0;
+                } else {
+                    Log.panic("syscall __NR_futex op "+op+" not implemented");
+                    return 0;
+                }
             }
             case __NR_set_thread_area: {
                 int address = getter.next();
