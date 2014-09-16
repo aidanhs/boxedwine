@@ -3398,6 +3398,19 @@ class Decoder {
             }
         };
 
+        /* MOVZX Gw,Eb */
+        decoder[0x1b6] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Mov_Reg16_Reg8(gd(cpu, rm), eb(cpu, rm));
+                } else {
+                    prev.next = new Ops.Mov_Reg16_Mem8(gd(cpu, rm), getEaa(cpu, rm));
+                }
+                return true;
+            }
+        };
+
         /* MOVZX Gd,Eb */
         decoder[0x3b6] = new Decode() {
             public boolean call(CPU cpu, Op prev) {

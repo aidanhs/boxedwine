@@ -1695,6 +1695,22 @@ class Ops {
         }
     }
 
+    final static class Mov_Reg16_Reg8 extends Op {
+        final private Reg dest;
+        final private Reg src;
+
+        public Mov_Reg16_Reg8(Reg dest, Reg src) {
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            dest.u16(src.u8());
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "mov "+dest.name32+", "+src.name8;
+        }
+    }
 
     final static class Mov_Reg16_Reg8_sx extends Op {
         final private Reg dest;
@@ -1769,6 +1785,23 @@ class Ops {
         }
         public String toString() {
             return "mov "+eaa.toString16()+", "+src.name16;
+        }
+    }
+
+    final static class Mov_Reg16_Mem8 extends Op {
+        final private EaaBase eaa;
+        final private Reg dest;
+
+        public Mov_Reg16_Mem8(Reg dest, EaaBase eaa) {
+            this.eaa = eaa;
+            this.dest = dest;
+        }
+        public Block call(CPU cpu) {
+            dest.u16(cpu.memory.readb(eaa.call(cpu)));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "mov "+dest.name32+", "+eaa.toString8();
         }
     }
 
