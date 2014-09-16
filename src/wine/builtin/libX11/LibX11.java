@@ -12,6 +12,8 @@ import wine.system.WineThread;
 import wine.system.io.FileDescriptor;
 import wine.util.Log;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.Vector;
 
 public class LibX11 extends BuiltinModule {
@@ -1435,9 +1437,47 @@ public class LibX11 extends BuiltinModule {
     }
 
     // Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return, int *win_x_return, int *win_y_return, unsigned int *mask_return)
-    static public int XQueryPointer(int display, int w, int root_return, int child_return, int root_x_return, int root_y_return, int win_x_return, int win_y_return, int mask_return) {
-        Log.panic("XQueryPointer not implemented");
-        return 0;
+    static public int XQueryPointer(int address, int w, int root_return, int child_return, int root_x_return, int root_y_return, int win_x_return, int win_y_return, int mask_return) {
+        Display display = getDisplay(address);
+        Window window = display.getWindow(w);
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+
+        if (window == null)
+            return BadWindow;
+        Point screenPos = MouseInfo.getPointerInfo().getLocation();
+        Point winPos = new Point(screenPos);
+        SwingUtilities.convertPointFromScreen(winPos, window.panel);
+        if (win_x_return!=0)
+            memory.writed(win_x_return, winPos.x);
+        if (win_y_return!=0)
+            memory.writed(win_y_return, winPos.y);
+
+        Window parent = window;
+        while (parent.parent!=null) {
+            parent = parent.parent;
+        }
+
+        Point rootPos = new Point(screenPos);
+        SwingUtilities.convertPointFromScreen(rootPos, parent.panel);
+        if (root_x_return!=0) {
+            memory.writed(root_x_return, rootPos.x);
+        }
+        if (root_y_return!=0) {
+            memory.writed(root_y_return, rootPos.y);
+        }
+        if (root_return!=0) {
+            memory.writed(root_return, parent.id);
+        }
+        if (child_return!=0) {
+            Window child = window.findWindow(winPos.x, winPos.y);
+            if (child!=null && child!=window) {
+                memory.writed(child_return, child.id);
+            } else {
+                memory.writed(child_return, 0);
+            }
+        }
+        return Success;
     }
 
     // Status XQueryTree(Display *display, Window w, Window *root_return, Window *parent_return, Window **children_return, unsigned int *nchildren_return);

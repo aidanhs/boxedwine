@@ -1,5 +1,6 @@
 package wine.builtin.libc;
 
+import wine.emulation.CPU;
 import wine.emulation.RAM;
 import wine.system.WineProcess;
 import wine.system.WineThread;
@@ -141,7 +142,7 @@ public class CType {
             process.pp_ctype_tolower_loc = process.alloc(4);
             process.memory.writed(process.pp_ctype_tolower_loc, process.p_ctype_tolower_loc+128);
         }
-        return process.pp_ctype_toupper_loc;
+        return process.pp_ctype_tolower_loc;
     }
 
     static public int isalnum(int c) {
