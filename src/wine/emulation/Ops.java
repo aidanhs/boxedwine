@@ -4921,4 +4921,25 @@ class Ops {
             return "bsr";
         }
     }
+
+    final static class PopSeg32 extends Op {
+        final private Reg segValue;
+        final private Reg segPhys;
+        final private String name;
+
+        public PopSeg32(Reg segValue, Reg segPhys, String name) {
+            this.segValue = segValue;
+            this.segPhys = segPhys;
+            this.name = name;
+        }
+
+        public Block call(CPU cpu) {
+            segValue.dword = cpu.pop32();
+            segPhys.dword = cpu.ldt[segValue.dword >> 3];
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "pop "+name;
+        }
+    }
 }

@@ -37,13 +37,14 @@ public class CPU {
     public Reg[] segPhys = new Reg[] {es, cs, ss, ds, fs, gs};
     public Reg[] segValue = new Reg[] {esValue, csValue, ssValue, dsValue, fsValue, gsValue};
     public int[] ldt = new int[32];
+    public boolean pmode = true;
 
     Reg zero=new Reg("0");
     Reg base_ds=ds;
     Reg base_ss=ss;
 
     // Flags
-    int flags;
+    int flags = VM | IOPL;
     Instruction lazyFlags;
     int left;
     int right;
@@ -59,6 +60,9 @@ public class CPU {
     int prefixes;
     boolean repeat_zero;
     public int callIndex;
+    public int stackMask = 0xFFFFFFFF;
+    public int stackNotMask = 0;
+    public int cpl;
 
     static final int CF = 0x00000001;
     static final int PF = 0x00000004;
@@ -67,6 +71,19 @@ public class CPU {
     static final int SF = 0x00000080;
     static final int DF = 0x00000400;
     static final int OF = 0x00000800;
+
+    static final int TF = 0x00000100;
+    static final int IF = 0x00000200;
+
+    static final int IOPL = 0x00003000;
+    static final int NT   = 0x00004000;
+    static final int VM   = 0x00020000;
+    static final int AC   = 0x00040000;
+    static final int ID   = 0x00200000;
+
+    static final int FMASK_TEST	=	(CF | PF | AF | ZF | SF | OF);
+    static final int FMASK_NORMAL=	(FMASK_TEST | DF | TF | IF);
+    static final int FMASK_ALL	=	(FMASK_NORMAL | IOPL | NT | AC | ID);
 
     static final int DIVIDE_ERROR = 0;
 
@@ -113,6 +130,10 @@ public class CPU {
         prefixes = cpu.prefixes;
         repeat_zero = cpu.repeat_zero;
         callIndex = cpu.callIndex;
+
+        stackMask = cpu.stackMask;
+        stackNotMask = cpu.stackNotMask;
+        cpl = cpu.cpl;
 
         this.callReturnEip = callReturnEip;
         this.memory = thread.process.memory;
@@ -505,5 +526,233 @@ public class CPU {
     
     public CPU deepCopy(WineThread thread, int callReturnEip) {
         return new CPU(thread, callReturnEip, this);
+    }
+
+    public void segSet16CS(int val) {
+        csValue.dword=val;
+        cs.dword=val << 4;
+    }
+
+    public void setFlags(int word, int mask) {
+        flags=(flags & ~mask)|(word & mask)|2;
+    }
+
+    public void setCPL(int newcpl) {
+        if (newcpl != cpl) {
+//            if (Paging.enabled) {
+//                if ( ((cpu.cpl < 3) && (newcpl == 3)) || ((cpu.cpl == 3) && (newcpl < 3)) )
+//                    Paging.PAGING_SwitchCPL(newcpl == 3);
+//            }
+            cpl = newcpl;
+        }
+    }
+
+    public void iret(boolean use32, /*Bitu*/int oldeip) {
+        if (!pmode) {	/* RealMode IRET */
+            if (use32) {
+                eip=pop32();
+                segSet16CS(pop32());
+                setFlags(pop32(), FMASK_ALL);
+            } else {
+                eip=pop16();
+                segSet16CS(pop16());
+                setFlags(pop16(), FMASK_ALL & 0xffff);
+            }
+            big=false;
+            lazyFlags = null;
+        } else {	/* Protected mode IRET */
+            if ((flags & VM)!=0) {
+                if ((flags & IOPL)!=IOPL) {
+                    // win3.x e
+                    //CPU_Exception(EXCEPTION_GP,0);
+                    Log.panic("Oops");
+                    return;
+                } else {
+                    if (use32) {
+                        int new_eip=memory.readd(ss.dword + (esp.dword & stackMask));
+                        int tempesp=(esp.dword & stackNotMask)|((esp.dword+4)&stackMask);
+                        int new_cs=memory.readd(ss.dword + (tempesp & stackMask));
+                        tempesp=(tempesp & stackNotMask) | ((tempesp+4) & stackMask);
+                        int new_flags=memory.readd(ss.dword + (tempesp & stackMask));
+                        esp.dword=(tempesp & stackNotMask) | ((tempesp+4) & stackMask);
+                        eip=new_eip;
+                        segSet16CS(new_cs & 0xffff);
+                        /* IOPL can not be modified in v86 mode by IRET */
+                        setFlags(new_flags, FMASK_NORMAL|NT);
+                    } else {
+                        int new_eip=memory.readw(ss.dword + (esp.dword & stackMask));
+                        int tempesp=(esp.dword & stackNotMask) | ((esp.dword + 2) & stackMask);
+                        int new_cs=memory.readw(ss.dword + (tempesp & stackMask));
+                        tempesp=(tempesp & stackNotMask) | ((tempesp+2) & stackMask);
+                        int new_flags=memory.readw(ss.dword + (tempesp & stackMask));
+                        esp.dword=(tempesp&stackNotMask)|((tempesp+2)&stackMask);
+                        eip=new_eip;
+                        segSet16CS(new_cs);
+                        /* IOPL can not be modified in v86 mode by IRET */
+                        setFlags(new_flags,FMASK_NORMAL|NT);
+                    }
+                    big=false;
+                    lazyFlags = null;
+                    return;
+                }
+            }
+            Log.panic("Oops");
+//            /* Check if this is task IRET */
+//            if ((flags & NT)!=0) {
+//                if ((flags & VM)!=0) Log.panic("Pmode IRET with VM bit set");
+//                if (CPU_CHECK_COND(!cpu_tss.IsValid(), "TASK Iret without valid TSS", EXCEPTION_TS,cpu_tss.selector & 0xfffc))
+//                    return;
+//                if (cpu_tss.desc.IsBusy()==0) {
+//                    Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_ERROR,"TASK Iret:TSS not busy");
+//                }
+//                int back_link=cpu_tss.Get_back();
+//                CPU_SwitchTask(back_link,TSwitchType.TSwitch_IRET,oldeip);
+//                return;
+//            }
+//            int n_cs_sel, n_flags;
+//            int n_eip;
+//            int tempesp;
+//            if (use32) {
+//                n_eip=memory.readd(ss.dword + (esp.dword & stackMask));
+//                tempesp=(esp.dword & stackNotMask)|((esp.dword + 4) & stackMask);
+//                n_cs_sel=memory.readd(ss.dword + (tempesp & stackMask)) & 0xffff;
+//                tempesp=(tempesp&stackNotMask)|((tempesp+4)&stackMask);
+//                n_flags=memory.readd(ss.dword + (tempesp & stackMask));
+//                tempesp=(tempesp&stackNotMask)|((tempesp+4)&stackMask);
+//                if ((n_flags & VM) != 0 && (cpl==0)) {
+//                    // commit point
+//                    esp.dword=tempesp;
+//                    eip=n_eip & 0xffff;
+//                    int n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
+//                    n_esp=pop32();
+//                    n_ss=pop32() & 0xffff;
+//                    n_es=pop32() & 0xffff;
+//                    n_ds=pop32() & 0xffff;
+//                    n_fs=pop32() & 0xffff;
+//                    n_gs=pop32() & 0xffff;
+//                    setFlags(n_flags, FMASK_ALL | VM);
+//                    lazyFlags = null;
+//                    setCPL(3);
+//                    CPU_SetSegGeneralSS(n_ss);
+//                    CPU_SetSegGeneralES(n_es);
+//                    CPU_SetSegGeneralDS(n_ds);
+//                    CPU_SetSegGeneralFS(n_fs);
+//                    CPU_SetSegGeneralGS(n_gs);
+//                    esp.dword=n_esp;
+//                    big=false;
+//                    segSet16CS(n_cs_sel);
+//                    if (Log.level<=LogSeverities.LOG_NORMAL) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_NORMAL, "IRET:Back to V86: CS:"+Integer.toString(CPU_Regs.reg_csVal.dword, 16)+" IP "+Integer.toString(CPU_Regs.reg_eip, 16)+" SS:"+Integer.toString(CPU_Regs.reg_ssVal.dword, 16)+" SP "+Integer.toString(CPU_Regs.reg_esp.dword, 16)+" FLAGS:%X"+Integer.toString(CPU_Regs.flags,16));
+//                    return;
+//                }
+//                if ((n_flags & VM)!=0) Log.panic("IRET from pmode to v86 with CPL!=0");
+//            } else {
+//                n_eip=memory.readw(ss.dword + (esp.dword & stackMask));
+//                tempesp=(esp.dword & stackNotMask) | ((esp.dword + 2) & stackMask);
+//                n_cs_sel=memory.readw(ss.dword + (tempesp & stackMask));
+//                tempesp=(tempesp&stackNotMask)|((tempesp+2)&stackMask);
+//                n_flags=memory.readw(ss.dword + (tempesp & stackMask));
+//                n_flags|=(flags & 0xffff0000);
+//                tempesp=(tempesp & stackNotMask) | ((tempesp+2) & stackMask);
+//                if ((n_flags & VM)!=0) Log.panic("VM Flag in 16-bit iret");
+//            }
+//            if (CPU_CHECK_COND((n_cs_sel & 0xfffc)==0, "IRET:CS selector zero", EXCEPTION_GP,0))
+//                return;
+//            int n_cs_rpl=n_cs_sel & 3;
+//            boolean success = cpu.gdt.GetDescriptor(n_cs_sel,n_cs_desc_2);
+//            if (CPU_CHECK_COND(!success, "IRET:CS selector beyond limits", EXCEPTION_GP,(n_cs_sel & 0xfffc))) {
+//                return;
+//            }
+//            if (CPU_CHECK_COND(n_cs_rpl<cpu.cpl, "IRET to lower privilege", EXCEPTION_GP,(n_cs_sel & 0xfffc))) {
+//                return;
+//            }
+//            switch (n_cs_desc_2.Type()) {
+//                case DESC_CODE_N_NC_A:	case DESC_CODE_N_NC_NA:
+//                case DESC_CODE_R_NC_A:	case DESC_CODE_R_NC_NA:
+//                    if (CPU_CHECK_COND(n_cs_rpl!=n_cs_desc_2.DPL(), "IRET:NC:DPL!=RPL", EXCEPTION_GP,(n_cs_sel & 0xfffc)))
+//                        return;
+//                    break;
+//                case DESC_CODE_N_C_A:	case DESC_CODE_N_C_NA:
+//                case DESC_CODE_R_C_A:	case DESC_CODE_R_C_NA:
+//                    if (CPU_CHECK_COND(n_cs_desc_2.DPL()>n_cs_rpl, "IRET:C:DPL>RPL", EXCEPTION_GP,(n_cs_sel & 0xfffc)))
+//                        return;
+//                    break;
+//                default:
+//                    Log.exit("IRET:Illegal descriptor type "+Integer.toString(n_cs_desc_2.Type(),16));
+//            }
+//            if (CPU_CHECK_COND(n_cs_desc_2.saved.seg.p()==0, "IRET with nonpresent code segment",EXCEPTION_NP,(n_cs_sel & 0xfffc)))
+//                return;
+//            if (n_cs_rpl==cpl) {
+//                /* Return to same level */
+//                // commit point
+//                CPU_Regs.reg_esp.dword=tempesp;
+//                CPU_Regs.reg_csPhys.dword=n_cs_desc_2.GetBase();
+//                cpu.code.big=n_cs_desc_2.Big()>0;
+//                CPU_Regs.reg_csVal.dword=n_cs_sel;
+//                CPU_Regs.reg_eip=n_eip;
+//                int mask=cpu.cpl !=0 ? (CPU_Regs.FMASK_NORMAL | CPU_Regs.NT) : CPU_Regs.FMASK_ALL;
+//                if (CPU_Regs.GETFLAG_IOPL()<cpu.cpl) mask &= (~CPU_Regs.IF);
+//                CPU_SetFlags(n_flags,mask);
+//                Flags.DestroyConditionFlags();
+//                //Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_NORMAL,"IRET:Same level:%X:%X big %b",n_cs_sel,n_eip,cpu.code.big);
+//            } else {
+//                /* Return to outer level */
+//                int n_ss;
+//                int n_esp;
+//                if (use32) {
+//                    n_esp=Memory.mem_readd(CPU_Regs.reg_ssPhys.dword + (tempesp & stackMask));
+//                    tempesp=(tempesp&stackNotMask)|((tempesp+4)&stackMask);
+//                    n_ss=Memory.mem_readd(CPU_Regs.reg_ssPhys.dword + (tempesp & stackMask)) & 0xffff;
+//                } else {
+//                    n_esp=Memory.mem_readw(CPU_Regs.reg_ssPhys.dword + (tempesp & stackMask));
+//                    tempesp=(tempesp&stackNotMask)|((tempesp+2)&stackMask);
+//                    n_ss=Memory.mem_readw(CPU_Regs.reg_ssPhys.dword + (tempesp & stackMask));
+//                }
+//                if (CPU_CHECK_COND((n_ss & 0xfffc)==0, "IRET:Outer level:SS selector zero", EXCEPTION_GP,0))
+//                    return;
+//                if (CPU_CHECK_COND((n_ss & 3)!=n_cs_rpl, "IRET:Outer level:SS rpl!=CS rpl", EXCEPTION_GP,n_ss & 0xfffc))
+//                    return;
+//                success = cpu.gdt.GetDescriptor(n_ss,n_ss_desc_2);
+//                if (CPU_CHECK_COND(!success, "IRET:Outer level:SS beyond limit", EXCEPTION_GP,n_ss & 0xfffc))
+//                    return;
+//                if (CPU_CHECK_COND(n_ss_desc_2.DPL()!=n_cs_rpl, "IRET:Outer level:SS dpl!=CS rpl", EXCEPTION_GP,n_ss & 0xfffc))
+//                    return;
+//                // check if stack segment is a writable data segment
+//                switch (n_ss_desc_2.Type()) {
+//                    case DESC_DATA_EU_RW_NA:	case DESC_DATA_EU_RW_A:
+//                    case DESC_DATA_ED_RW_NA:	case DESC_DATA_ED_RW_A:
+//                        break;
+//                    default:
+//                        Log.exit("IRET:Outer level:Stack segment not writable");	// or #GP(ss_sel)
+//                }
+//                if (CPU_CHECK_COND(n_ss_desc_2.saved.seg.p()==0, "IRET:Outer level:Stack segment not present", EXCEPTION_NP,n_ss & 0xfffc))
+//                    return;
+//                // commit point
+//                CPU_Regs.reg_csPhys.dword=n_cs_desc_2.GetBase();
+//                cpu.code.big=n_cs_desc_2.Big()>0;
+//                CPU_Regs.reg_csVal.dword=n_cs_sel;
+//                int mask=cpu.cpl!=0 ? (CPU_Regs.FMASK_NORMAL | CPU_Regs.NT) : CPU_Regs.FMASK_ALL;
+//                if (CPU_Regs.GETFLAG_IOPL()<cpu.cpl) mask &= (~CPU_Regs.IF);
+//                CPU_SetFlags(n_flags,mask);
+//                Flags.DestroyConditionFlags();
+//                CPU_SetCPL(n_cs_rpl);
+//                CPU_Regs.reg_eip=n_eip;
+//                CPU_Regs.reg_ssVal.dword=n_ss;
+//                CPU_Regs.reg_ssPhys.dword=n_ss_desc_2.GetBase();
+//                if (n_ss_desc_2.Big()!=0) {
+//                    cpu.stack.big=true;
+//                    stackMask=0xffffffff;
+//                    stackNotMask=0;
+//                    CPU_Regs.reg_esp.dword=n_esp;
+//                } else {
+//                    cpu.stack.big=false;
+//                    stackMask=0xffff;
+//                    stackNotMask=0xffff0000;
+//                    CPU_Regs.reg_esp.word((int)(n_esp & 0xffffl));
+//                }
+//                // borland extender, zrdx
+//                CPU_CheckSegments();
+//                if (Log.level<=LogSeverities.LOG_NORMAL) Log.log(LogTypes.LOG_CPU,LogSeverities.LOG_NORMAL, "IRET:Outer level:"+Integer.toString(n_cs_sel, 16)+":"+Long.toString(n_eip, 16)+" big "+cpu.code.big);
+//            }
+        }
     }
 }

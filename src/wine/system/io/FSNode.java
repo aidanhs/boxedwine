@@ -87,6 +87,8 @@ abstract public class FSNode {
     abstract public InputStream getInputStream() throws IOException;
     abstract public boolean setLastModifiedTime(long time);
     abstract public String name();
+    abstract public boolean canRead();
+    abstract public boolean canWrite();
 
     private static class FSNodeFile extends FSNode {
         private FSNodeFile(File file, String localPath, String nativePath) {
@@ -218,6 +220,14 @@ abstract public class FSNode {
 
         public String name() {
             return file.getName();
+        }
+
+        public boolean canRead() {
+            return file.canRead();
+        }
+
+        public boolean canWrite() {
+            return file.canWrite();
         }
 
         final private File file;

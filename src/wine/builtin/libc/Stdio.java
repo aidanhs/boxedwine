@@ -170,6 +170,20 @@ public class Stdio {
         return result;
     }
 
+    // int __fprintf_chk(FILE * stream, int flag, const char * format)
+    static public int __fprintf_chk(int stream, int flag, int format) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+
+        FileDescriptor fd = thread.process.getFileDescriptor(stream);
+        if (fd==null || !fd.canWrite()) {
+            thread.setErrno(Errno.EBADF);
+            return -1;
+        }
+        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword + 12));
+        return fd.object.write(result);
+    }
+
     // int fprintf(FILE * stream, const char * format, ...)
     static public int fprintf(int stream, int format) {
         WineThread thread = WineThread.getCurrent();
@@ -327,6 +341,11 @@ public class Stdio {
         return 0;
     }
 
+    // int __snprintf_chk(char * str, size_t maxlen, int flag, size_t strlen, const char * format)
+    static public int __snprintf_chk(int str, int maxlen, int flag, int strlen, int format) {
+        return Stdio.vsnprintf(str, strlen, format, WineThread.getCurrent().cpu.esp.dword+20);
+    }
+
     // int snprintf(char *s, size_t n, const char *format, /* args */ ...)
     static public int snprintf(int s, int n, int format) {
         WineThread thread = WineThread.getCurrent();
@@ -379,6 +398,11 @@ public class Stdio {
     // int __vfprintf_chk(FILE * fp, int flag, const char * format, va_list ap)
     static public int __vfprintf_chk(int fp, int flag, int format, int ap) {
         return vfprintf(fp, format, ap);
+    }
+
+    // int __vsnprintf_chk(char * s, size_t maxlen, int flag, size_t slen, const char * format, va_list args)
+    static public int __vsnprintf_chk(int str, int maxlen, int flag, int strlen, int format, int args) {
+        return Stdio.vsnprintf(str, strlen, format, args);
     }
 
     // int vsnprintf(char * s, size_t n, const char * format, va_list ap)

@@ -63,4 +63,12 @@ public class UnixSocketFSNode extends FSNode {
     public String name() {
         return localPath.substring(localPath.lastIndexOf('/')+1);
     }
+
+    public boolean canRead() {
+        return true;
+    }
+
+    public boolean canWrite() {
+        return true;
+    }
 }

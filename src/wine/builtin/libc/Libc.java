@@ -23,17 +23,14 @@ public class Libc extends BuiltinModule {
         add_cdecl(Libc.class, "__cxa_atexit");
         add_cdecl(Libc.class, "__cxa_finalize");
         add_cdecl(Libc.class, "__fdelt_chk");
-        add_cdecl(Libc.class, "__fprintf_chk");
         add_cdecl(Libc.class, "__gmon_start__");
         add_cdecl(Libc.class, "_Jv_RegisterClasses");
         add_cdecl(Libc.class, "_ITM_deregisterTMCloneTable");
         add_cdecl(Libc.class, "_ITM_registerTMCloneTable");
         add_cdecl(Libc.class, "__libc_start_main");
         add_cdecl(Libc.class, "__pow_finite");
-        add_cdecl(Libc.class, "__snprintf_chk");
         add_cdecl(Libc.class, "__stack_chk_fail");
         add_cdecl(Libc.class, "strerror");
-        add_cdecl(Libc.class, "__vsnprintf_chk");
 
         add_cdecl(CType.class, "__ctype_b_loc");
         add_cdecl(CType.class, "__ctype_tolower_loc");
@@ -188,6 +185,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdio.class, "fgets");
         add_cdecl(Stdio.class, "fopen");
         add_cdecl(Stdio.class, "fopen64");
+        add_cdecl(Stdio.class, "__fprintf_chk");
         add_cdecl(Stdio.class, "fprintf");
         add_cdecl(Stdio.class, "fputc");
         add_cdecl(Stdio.class, "fputs");
@@ -202,6 +200,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdio.class, "rename");
         add_cdecl(Stdio.class, "setbuf");
         add_cdecl(Stdio.class, "setvbuf");
+        add_cdecl(Stdio.class, "__snprintf_chk");
         add_cdecl(Stdio.class, "snprintf");
         add_cdecl(Stdio.class, "sprintf");
         add_cdecl(Stdio.class, "__sprintf_chk");
@@ -209,6 +208,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdio.class, "sscanf");
         add_cdecl(Stdio.class, "__vfprintf_chk");
         add_cdecl(Stdio.class, "vfprintf");
+        add_cdecl(Stdio.class, "__vsnprintf_chk");
         add_cdecl(Stdio.class, "vsnprintf");
         add_cdecl(Stdio.class, "vsscanf");
 
@@ -366,11 +366,6 @@ public class Libc extends BuiltinModule {
         return d / 32;
     }
 
-    // int __fprintf_chk(FILE * stream, int flag, const char * format)
-    static public int __fprintf_chk(int stream, int flag, int format) {
-        return Stdio.fprintf(stream, format);
-    }
-
     static public void __gmon_start__() {
     }
 
@@ -388,11 +383,6 @@ public class Libc extends BuiltinModule {
 
     static public double __pow_finite(double a, double b) {
         return Math.pow(a, b);
-    }
-
-    // int __snprintf_chk(char * str, size_t maxlen, int flag, size_t strlen, const char * format)
-    static public int __snprintf_chk(int str, int maxlen, int flag, int strlen, int format) {
-        return Stdio.vsnprintf(str, strlen, format, WineThread.getCurrent().cpu.esp.dword+20);
     }
 
     // int __libc_start_main(int (*main) (int, char * *, char * *), int argc, char * * ubp_av, void (*init) (void), void (*fini) (void), void (*rtld_fini) (void), void (* stack_end))
@@ -419,10 +409,5 @@ public class Libc extends BuiltinModule {
         }
         thread.process.memory.writeCString(thread.strerror, "Error: "+errnum);
         return thread.strerror;
-    }
-
-    // int __vsnprintf_chk(char * s, size_t maxlen, int flag, size_t slen, const char * format, va_list args)
-    static public int __vsnprintf_chk(int str, int maxlen, int flag, int strlen, int format, int args) {
-        return Stdio.vsnprintf(str, strlen, format, args);
     }
 }

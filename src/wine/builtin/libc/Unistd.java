@@ -15,9 +15,29 @@ public class Unistd {
     static public int access(int filename, int flags) {
         String path = WineThread.getCurrent().process.memory.readCString(filename);
         FSNode node = FSNode.getNode(path, true);
-        if (node==null)
-            return 1;
-        Log.warn("access not fully implemented");
+        WineThread thread = WineThread.getCurrent();
+
+        if (node==null) {
+            thread.setErrno(Errno.ENOENT);
+            return -1;
+        }
+        if (flags==0)
+            return 0;
+        if ((flags & 4)!=0) {
+            if (!node.canRead()) {
+                thread.setErrno(Errno.EACCES);
+                return -1;
+            }
+        }
+        if ((flags & 2)!=0) {
+            if (!node.canWrite()) {
+                thread.setErrno(Errno.EACCES);
+                return -1;
+            }
+        }
+        if ((flags & 1)!=0) {
+            Log.warn("access not fully implemented.  Can't test for executable permission");
+        }
         return 0;
     }
 

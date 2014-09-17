@@ -753,6 +753,15 @@ class Decoder {
             decoder[i] = new NullDecoder(i);
         }
         addInstructions(0x00, Instructions.addb, Instructions.addw, Instructions.addd);
+
+        /* POP ES */
+        decoder[0x207] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.esValue, cpu.es, "es");
+                return true;
+            }
+        };
+
         addInstructions(0x08, Instructions.orb, Instructions.orw, Instructions.ord);
 
         /* 2 byte opcodes*/
@@ -768,7 +777,25 @@ class Decoder {
         };
 
         addInstructions(0x10, Instructions.adcb, Instructions.adcw, Instructions.adcd);
+
+        /* POP SS */
+        decoder[0x217] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.ssValue, cpu.ss, "ss");
+                return true;
+            }
+        };
+
         addInstructions(0x18, Instructions.sbbb, Instructions.sbbw, Instructions.sbbd);
+
+        /* POP DS */
+        decoder[0x21f] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.dsValue, cpu.ds, "ds");
+                return true;
+            }
+        };
+
         addInstructions(0x20, Instructions.andb, Instructions.andw, Instructions.andd);
         addInstructions(0x28, Instructions.subb, Instructions.subw, Instructions.subd);
         addInstructions(0x30, Instructions.xorb, Instructions.xorw, Instructions.xord);
@@ -2184,6 +2211,14 @@ class Decoder {
         };
         decoder[0x2cd] = decoder[0x0cd];
 
+        /* IRET */
+        decoder[0x2cf] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new IRet();
+                return false;
+            }
+        };
+
         /* GRP2 Eb,1 */
         decoder[0xd0] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
@@ -3239,6 +3274,14 @@ class Decoder {
             decoder[0x390+i] = decoder[0x190+i];
         }
 
+        /* POP FS */
+        decoder[0x3a1] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.fsValue, cpu.fs, "fs");
+                return true;
+            }
+        };
+
         /* CPUID */
         decoder[0x1a2] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
@@ -3298,6 +3341,14 @@ class Decoder {
                     EaaBase eaa = getEaa(cpu, rm);
                     prev.next = new Ops.Instruction_Mem32_Reg32_Value_3(Instructions.dshld, eaa, gd(cpu, rm), cpu.fetchb());
                 }
+                return true;
+            }
+        };
+
+        /* POP GS */
+        decoder[0x3a9] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.gsValue, cpu.gs, "gs");
                 return true;
             }
         };

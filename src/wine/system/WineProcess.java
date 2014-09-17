@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.concurrent.locks.Lock;
 
 public class WineProcess {
     // the values don't really matter too much, it just makes it easier to debug if we know what might be in a particular address
@@ -89,6 +90,7 @@ public class WineProcess {
     private int stringPagePos;
     // if new variables are addedd, make sure they are accounted for in fork and exec
     public X11PerProcessData x11 = new X11PerProcessData();
+    public Vector<Lock> mutexes = new Vector<Lock>();
 
     static private class ExitFunction {
         public ExitFunction(int func, int arg) {

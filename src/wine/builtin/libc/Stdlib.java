@@ -104,9 +104,9 @@ public class Stdlib {
         int len = Strings.strlen(template);
         while (true) {
             for (int i=0;i<6;i++) {
-                memory.writeb(template+len-i-1, ((int)'A')+(rand() % 26));
+                memory.writeb(template+len-i-1, ((int)'A')+(Math.abs(rand()) % 26));
             }
-            int fd = Fcntl.open(template, Fcntl.O_CREAT | Fcntl.O_EXCL | flags);
+            int fd = Fcntl.open(template, Fcntl.O_CREAT | Fcntl.O_EXCL | Fcntl.O_RDWR | flags);
             if (fd>0)
                 return fd;
         }

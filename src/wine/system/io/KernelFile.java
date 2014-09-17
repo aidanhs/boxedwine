@@ -298,6 +298,9 @@ public class KernelFile extends KernelObject {
         byte[] b = new byte[len];
         int result = io.read(b);
         if (result<0) {
+            if (io.getFilePointer()==node.length()) {
+                return 0;
+            }
             thread.setErrno(Errno.EIO);
             return -1;
         }
