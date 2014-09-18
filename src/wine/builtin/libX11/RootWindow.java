@@ -23,6 +23,7 @@ public class RootWindow extends Window {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 frame = new JFrame("Wine");
+                frame.setFocusTraversalKeysEnabled(false); // don't eat tab keys
                 frame.addKeyListener(new KeyListener() {
                     public void keyTyped(KeyEvent e) {
 

@@ -8,6 +8,10 @@ public class IM {
             client_data = memory.readd(address);address+=4;
             callback = memory.readd(address);
         }
+        public void write(Memory memory, int address) {
+            memory.writed(address, client_data);
+            memory.writed(address+4, callback);
+        }
         public int client_data;
         public int callback;
     }

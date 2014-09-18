@@ -377,4 +377,9 @@ public class KernelFile extends KernelObject {
         stat.st_rdev = 1;
         return true;
     }
+
+    public int ioctl(int request) {
+        WineThread.getCurrent().setErrno(Errno.ENODEV);
+        return -1;
+    }
 }

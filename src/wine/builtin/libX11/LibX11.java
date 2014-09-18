@@ -528,7 +528,7 @@ public class LibX11 extends BuiltinModule {
         im.read(thread.process.memory, address);
         Display display = getDisplay(im.display);
         int index = 1;
-        XIC xic = new XIC(WineSystem.nextid++);
+        XIC xic = new XIC();
 
         while (true) {
             int arg = thread.cpu.peek32(index++);
@@ -538,12 +538,12 @@ public class LibX11 extends BuiltinModule {
             if (cmd.equals("inputStyle")) {
                 xic.inputStyle = thread.cpu.peek32(index++);
             } else if (cmd.equals("clientWindow")) {
-                xic.clientWindow = display.getWindow(thread.cpu.peek32(index++));
-                if (xic.clientWindow == null)
+                xic.clientWindow = thread.cpu.peek32(index++);
+                if (display.getWindow(xic.clientWindow) == null)
                     return BadWindow;
             } else if (cmd.equals("focusWindow")) {
-                xic.focusWindow = display.getWindow(thread.cpu.peek32(index++));
-                if (xic.focusWindow == null)
+                xic.focusWindow = thread.cpu.peek32(index++);
+                if (display.getWindow(xic.focusWindow) == null)
                     return BadWindow;
             } else if (cmd.equals("destroyCallback")) {
                 xic.destroyCallback = new IM.IMCallback(thread.process.memory, thread.cpu.peek32(index++));
@@ -551,7 +551,9 @@ public class LibX11 extends BuiltinModule {
                 Log.panic("XCreateIC cmd not implemented: "+cmd);
             }
         }
-        return xic.id;
+        int result = thread.process.alloc(XIC.SIZE);
+        xic.write(thread.process.memory, result);
+        return result;
     }
 
     // XImage *XCreateImage(Display *display, Visual *visual, unsigned int depth, int format, int offset, char *data, unsigned int width, unsigned int height, int bitmap_pad, int bytes_per_line)
@@ -627,6 +629,7 @@ public class LibX11 extends BuiltinModule {
         window.resize(width, height);
         if (attributes!=0)
             window.setAttributes(valuemask, new XSetWindowAttributes(process.memory, attributes));
+        System.out.println("XCreateWindow "+window.id+" ("+x+","+"y"+" "+width+"x"+height+")");
         return window.id;
     }
 
@@ -1213,11 +1216,32 @@ public class LibX11 extends BuiltinModule {
         Memory memory = WineThread.getCurrent().process.memory;
         XKeyEvent event = new XKeyEvent(memory, event_struct);
         KeySym sym = KeySym.x11KeyCodeToKeySym.get(event.keycode);
-        if (sym==null)
+        if (sym==null) {
+            if (status_in_out!=0) {
+                memory.writed(status_in_out, XLookupNone);
+            }
             return 0;
-        memory.writeb(buffer_return, sym.getChar(event.state));
-        if (keysym_return!=0)
-            memory.writeb(keysym_return, sym.translate(event.state));
+        }
+        char c = sym.getChar(event.state);
+        if (c!=0 && bytes_buffer>=2) {
+            memory.writeb(buffer_return, c);
+            memory.writeb(buffer_return + 1, 0);
+        }
+        if (keysym_return!=0) {
+            int s = sym.translate(event.state);
+            if (c==9 || c==0xd || c==0x1b || c==0)
+                s|=0xFF00;
+            memory.writed(keysym_return, s);
+        }
+        if (status_in_out!=0) {
+            if (c==0) {
+                memory.writed(status_in_out, XLookupKeySym);
+            } else {
+                memory.writed(status_in_out, XLookupBoth);
+            }
+        }
+        if (c==0)
+            return 0;
         return 1;
     }
 
@@ -1252,8 +1276,8 @@ public class LibX11 extends BuiltinModule {
         int status = XLookupNone;
         int result = 0;
 
+        char c = keySym.getChar(keyEvent.state);
         if (buffer_return!=0 && bytes_buffer>=2) {
-            char c = keySym.getChar(keyEvent.state);
             if (c!=0) {
                 memory.writeb(buffer_return, keySym.getChar(keyEvent.state));
                 memory.writeb(buffer_return + 1, 0);
@@ -1264,6 +1288,8 @@ public class LibX11 extends BuiltinModule {
         if (keysym_return!=0) {
             int sym = keySym.translate(keyEvent.state);
             if (sym!=0) {
+                if (c==9 || c==0xd || c==0x1b || c==0)
+                    sym|=0xFF00;
                 memory.writed(keysym_return, sym);
                 if (status== XLookupChars)
                     status = XLookupBoth;
@@ -1680,6 +1706,8 @@ public class LibX11 extends BuiltinModule {
 
     // void XSetICFocus(XIC ic)
     static public void XSetICFocus(int ic) {
+        WineThread thread = WineThread.getCurrent();
+        XIC xic = new XIC(thread.process.memory, ic);
         Log.warn("XSetICFocus not implemented");
     }
 

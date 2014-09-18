@@ -11,7 +11,7 @@ public class Strings {
     // int memcmp(const void *s1, const void *s2, size_t n);
     static public int memcmp(int s1, int s2, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<n;i++) {
+        for (int i=0;i<(n & 0xFFFFFFFFl);i++) {
             int c1 = memory.readb(s1++);
             int c2 = memory.readb(s2++);
 
@@ -26,7 +26,7 @@ public class Strings {
     // void *memccpy(void * s1, const void * s2, int c, size_t n)
     static public int memccpy(int s1, int s2, int c, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<n;i++) {
+        for (int i=0;i<(n & 0xFFFFFFFFl);i++) {
             int c2 = memory.readb(s2++);
             memory.writeb(s1++, c2);
             if (c2==c) {
@@ -39,7 +39,7 @@ public class Strings {
     // void *memchr(const void *s, int c, size_t n)
     static public int memchr(int s, int c, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<n;i++) {
+        for (int i=0;i<(n & 0xFFFFFFFFl);i++) {
             int v = memory.readb(s);
             if (v==c) {
                 return s;
@@ -113,7 +113,7 @@ public class Strings {
     // int strncasecmp(const char *s1, const char *s2, size_t n)
     static public int strncasecmp(int s1, int s2, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<n;i++) {
+        for (int i=0;i<(n & 0xFFFFFFFFl);i++) {
             int c1 = CType.tolower(memory.readb(s1++));
             int c2 = CType.tolower(memory.readb(s2++));
 
@@ -227,7 +227,7 @@ public class Strings {
     // int strncmp(const char *s1, const char *s2, size_t n)
     static public int strncmp(int s1, int s2, int n) {
         Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<n;i++) {
+        for (int i=0;i<(n & 0xFFFFFFFFl);i++) {
             int c1 = memory.readb(s1++);
             int c2 = memory.readb(s2++);
 

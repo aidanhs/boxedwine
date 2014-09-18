@@ -407,7 +407,7 @@ public class CPU {
         return (prefixes & PREFIX_ADDR)==0;
     }
 
-    static public boolean log = false;
+    public boolean log = false;
     public void run() {
         Block block;
 
