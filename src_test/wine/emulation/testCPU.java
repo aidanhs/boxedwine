@@ -3,23 +3,24 @@ package wine.emulation;
 import junit.framework.TestCase;
 
 public class testCPU extends TestCase {
-    static private CPU cpu;
-    static private Memory memory;
-    private int cseip;
+    static protected CPU cpu;
+    static protected Memory memory;
+    protected int cseip;
 
-    private static final int STACK_ADDRESS=0xE0001000;
-    private static final int HEAP_ADDRESS =0xF0000000;
-    private static final int CODE_ADDRESS =0xD0000000;
+    protected static final int STACK_ADDRESS=0xE0001000;
+    protected static final int HEAP_ADDRESS =0xF0000000;
+    protected static final int CODE_ADDRESS =0xD0000000;
 
     protected void setUp() throws java.lang.Exception {
         if (memory==null) {
             memory = new Memory();
             memory.init();
             this.cpu = new CPU(memory);
-            RAM.init(4096 * 4);
-            memory.handlers[(STACK_ADDRESS>>>12)-1] = new RAMHandler(memory, RAM.allocPage(), false, false);
-            memory.handlers[HEAP_ADDRESS>>>12] = new RAMHandler(memory, RAM.allocPage(), false, false);
-            memory.handlers[CODE_ADDRESS>>>12] = new RAMHandler(memory, RAM.allocPage(), false, false);
+            RAM.init(4096 * 5);
+            memory.handlers[(STACK_ADDRESS>>>12)-1] = new RAMHandler(RAM.allocPage(), false, false);
+            memory.handlers[(HEAP_ADDRESS-1)>>>12] = new RAMHandler(RAM.allocPage(), false, false);
+            memory.handlers[HEAP_ADDRESS>>>12] = new RAMHandler(RAM.allocPage(), false, false);
+            memory.handlers[CODE_ADDRESS>>>12] = new RAMHandler(RAM.allocPage(), false, false);
             cpu.cs.dword = CODE_ADDRESS;
             cpu.ds.dword = HEAP_ADDRESS;
             cpu.ss.dword = STACK_ADDRESS-4096;
@@ -31,26 +32,26 @@ public class testCPU extends TestCase {
         super.tearDown();
     }
 
-    private void pushCode8(int value) {
+    protected void pushCode8(int value) {
         memory.writeb(cseip, value);
         cseip++;
     }
 
-    private void pushCode16(int value) {
+    protected void pushCode16(int value) {
         memory.writew(cseip, value);
         cseip+=2;
     }
 
-    private void pushCode32(int value) {
+    protected void pushCode32(int value) {
         memory.writed(cseip, value);
         cseip+=4;
     }
 
-    private void newInstruction(int instruction, int rm, int flags) {
+    protected void newInstruction(int instruction, int rm, int flags) {
         newInstruction(instruction, flags);
         pushCode8(rm);
     }
-    private void newInstruction(int instruction, int flags) {
+    protected void newInstruction(int instruction, int flags) {
         cseip=CODE_ADDRESS;
         cpu.lazyFlags = null;
         cpu.flags = flags;
@@ -70,14 +71,14 @@ public class testCPU extends TestCase {
         pushCode8(instruction);
     }
 
-    static private class NullOp extends Op {
+    static protected class NullOp extends Op {
         public Block call(CPU cpu) {
             return null;
         }
     }
-    static private NullOp nullOp = new NullOp();
+    static protected NullOp nullOp = new NullOp();
 
-    private void runCPU() {
+    protected void runCPU() {
         pushCode8(0x70); // jump causes the decoder to stop building the block
         pushCode8(0);
         Block block = cpu.getBlock(cpu.eip, cpu.cs.dword);
@@ -85,7 +86,7 @@ public class testCPU extends TestCase {
         block.op.call(cpu);
     }
 
-    private void EbIb(int instruction, int which, Data[] data) {
+    protected void EbIb(int instruction, int which, Data[] data) {
         for (Data d : data) {
             for (int eb = 0; eb < 8; eb++) {
                 int rm = eb | (which << 3) | 0xC0;
@@ -120,7 +121,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EbGb(int instruction, Data[] data) {
+    protected void EbGb(int instruction, Data[] data) {
         for (Data d : data) {
             for (int eb = 0; eb < 8; eb++) {
                 for (int gb = 0; gb < 8; gb++) {
@@ -173,7 +174,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void GbEb(int instruction, Data[] data) {
+    protected void GbEb(int instruction, Data[] data) {
         for (Data d : data) {
             for (int eb = 0; eb < 8; eb++) {
                 for (int gb = 0; gb < 8; gb++) {
@@ -225,7 +226,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EwIx(int instruction, int which, Data[] data) {
+    protected void EwIx(int instruction, int which, Data[] data) {
         for (Data d : data) {
             if ((byte)(d.right & 0xFF) != (short)d.right) {
                 continue;
@@ -260,7 +261,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EwIw(int instruction, int which, Data[] data) {
+    protected void EwIw(int instruction, int which, Data[] data) {
         for (Data d : data) {
             for (int ew = 0; ew < 8; ew++) {
                 int rm = ew | (which << 3) | 0xC0;
@@ -292,7 +293,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EwGw(int instruction, Data[] data) {
+    protected void EwGw(int instruction, Data[] data) {
         for (Data d : data) {
             for (int ew = 0; ew < 8; ew++) {
                 for (int gw = 0; gw < 8; gw++) {
@@ -336,7 +337,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void GwEw(int instruction, Data[] data) {
+    protected void GwEw(int instruction, Data[] data) {
         for (Data d : data) {
             for (int ew = 0; ew < 8; ew++) {
                 for (int gw = 0; gw < 8; gw++) {
@@ -380,7 +381,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EdIx(int instruction, int which, Data[] data) {
+    protected void EdIx(int instruction, int which, Data[] data) {
         for (Data d : data) {
             if ((byte)(d.right & 0xFF) != d.right) {
                 continue;
@@ -414,7 +415,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EdId(int instruction, int which, Data[] data) {
+    protected void EdId(int instruction, int which, Data[] data) {
         for (Data d : data) {
             for (int ed = 0; ed < 8; ed++) {
                 int rm = ed | (which << 3) | 0xC0;
@@ -445,7 +446,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EdGd(int instruction, Data[] data) {
+    protected void EdGd(int instruction, Data[] data) {
         for (Data d : data) {
             for (int ed = 0; ed < 8; ed++) {
                 for (int gd = 0; gd < 8; gd++) {
@@ -485,7 +486,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void GdEd(int instruction, Data[] data) {
+    protected void GdEd(int instruction, Data[] data) {
         for (Data d : data) {
             for (int ed = 0; ed < 8; ed++) {
                 for (int gd = 0; gd < 8; gd++) {
@@ -525,7 +526,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void AlIb(int instruction, Data[] data) {
+    protected void AlIb(int instruction, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             pushCode8(d.right);
@@ -536,7 +537,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void AxIw(int instruction, Data[] data) {
+    protected void AxIw(int instruction, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             pushCode16(d.right);
@@ -547,7 +548,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void EaxId(int instruction, Data[] data) {
+    protected void EaxId(int instruction, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             pushCode32(d.right);
@@ -557,7 +558,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void Eb(int instruction, Reg reg, Data[] data) {
+    protected void Eb(int instruction, Reg reg, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             reg.dword = 0xABCDEF01;
@@ -567,7 +568,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void Ew(int instruction, Reg reg, Data[] data) {
+    protected void Ew(int instruction, Reg reg, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             reg.dword = 0xABCDEF01;
@@ -577,7 +578,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void Ed(int instruction, Reg reg, Data[] data) {
+    protected void Ed(int instruction, Reg reg, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             reg.dword = d.left;
@@ -586,7 +587,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    private void Push16(int instruction, Reg reg) {
+    protected void Push16(int instruction, Reg reg) {
         newInstruction(instruction, 0);
         reg.dword = 0xDDDD1234;
         cpu.esp.dword-=2;
@@ -600,7 +601,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-2)==0xBBBB);
     }
 
-    private void Push32(int instruction, Reg reg) {
+    protected void Push32(int instruction, Reg reg) {
         newInstruction(instruction, 0);
         reg.dword = 0x56781234;
         cpu.esp.dword-=4;
@@ -614,7 +615,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-4)==0xBBBBBBBB);
     }
 
-    private void Pop16(int instruction, Reg reg) {
+    protected void Pop16(int instruction, Reg reg) {
         newInstruction(instruction, 0);
         cpu.esp.dword-=2;
         reg.dword=0xDDDDDDDD;
@@ -629,7 +630,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-4)==0xBBBB);
     }
 
-    private void Pop32(int instruction, Reg reg) {
+    protected void Pop32(int instruction, Reg reg) {
         newInstruction(instruction, 0);
         cpu.esp.dword-=4;
         memory.writed(cpu.ss.dword+cpu.esp.dword, 0xAAAAAAAA);
@@ -643,7 +644,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-8)==0xBBBBBBBB);
     }
 
-    private void Push16(int instruction) {
+    protected void Push16(int instruction) {
         newInstruction(instruction, 0);
         pushCode16(0x1234);
         cpu.esp.dword-=2;
@@ -657,7 +658,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-2)==0xBBBB);
     }
 
-    private void Push32(int instruction) {
+    protected void Push32(int instruction) {
         newInstruction(instruction, 0);
         pushCode32(0x56781234);
         cpu.esp.dword-=4;
@@ -671,7 +672,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-4)==0xBBBBBBBB);
     }
 
-    private void Push16s8(int instruction) {
+    protected void Push16s8(int instruction) {
         newInstruction(instruction, 0);
         pushCode8(0xFC); // -4
         cpu.esp.dword-=2;
@@ -685,7 +686,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-2)==0xBBBB);
     }
 
-    private void Push32s8(int instruction) {
+    protected void Push32s8(int instruction) {
         newInstruction(instruction, 0);
         pushCode8(0xFC); // -4
         cpu.esp.dword-=4;
@@ -699,7 +700,7 @@ public class testCPU extends TestCase {
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-4)==0xBBBBBBBB);
     }
 
-    private class Data {
+    protected class Data {
         public Data(int left, int right, int result, int flags, boolean CF, boolean OF) {
             this.left = left;
             this.right = right;
@@ -764,7 +765,7 @@ public class testCPU extends TestCase {
             }
         }
 
-        private StringBuilder buildErrorMsg(CPU cpu, int instruction, int resultLeft, int resultRight, String leftRegName, String rightRegName) {
+        protected StringBuilder buildErrorMsg(CPU cpu, int instruction, int resultLeft, int resultRight, String leftRegName, String rightRegName) {
             StringBuilder builder = new StringBuilder();
             builder.append("op ");
             builder.append(Integer.toHexString(instruction));
