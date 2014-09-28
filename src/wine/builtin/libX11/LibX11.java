@@ -1168,7 +1168,13 @@ public class LibX11 extends BuiltinModule {
 
     // KeyCode XKeysymToKeycode(Display *display, KeySym keysym)
     static public int XKeysymToKeycode(int display, int keysym) {
-        Log.panic("XKeysymToKeycode not implemented");
+        KeySym k = KeySym.x11KeySymToKeySym.get(keysym);
+        if (k==null)
+            k = KeySym.x11KeySymToKeySym.get(new Integer(keysym & 0xFF));
+
+        if (k!=null) {
+            return k.keyCode;
+        }
         return 0;
     }
 

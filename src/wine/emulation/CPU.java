@@ -44,7 +44,7 @@ public class CPU {
     Reg base_ss=ss;
 
     // Flags
-    int flags = VM | IOPL;
+    int flags = VM | IOPL | ID | 1;
     Instruction lazyFlags;
     int left;
     int right;

@@ -11,6 +11,8 @@ public class testCPU extends TestCase {
     protected static final int HEAP_ADDRESS =0xF0000000;
     protected static final int CODE_ADDRESS =0xD0000000;
 
+    protected static final int DEFAULT =0xDEADBEEF;
+    
     protected void setUp() throws java.lang.Exception {
         if (memory==null) {
             memory = new Memory();
@@ -94,12 +96,13 @@ public class testCPU extends TestCase {
                 pushCode8(d.right);
                 Reg e = Decoder.eb(cpu, rm);
                 if (e.parent != null)
-                    e.parent.dword = 0xABCDEF01;
+                    e.parent.dword = DEFAULT;
                 else
-                    e.dword = 0xABCDEF01;
+                    e.dword = DEFAULT;
                 e.u8(d.left);
                 runCPU();
-                d.assertResult(cpu, instruction, e.u8(), 0, e.name8, null);
+                d.assertResult(cpu, instruction, e.u8(), 0, e.name8, null, e, null, 0, 8);
+
             }
 
             int rm = (which << 3);
@@ -113,11 +116,11 @@ public class testCPU extends TestCase {
             else
                 pushCode16(200);
             pushCode8(d.right);
-            memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+            memory.writed(cpu.ds.dword + 200, DEFAULT);
             memory.writeb(cpu.ds.dword + 200, d.left);
             runCPU();
             int result = memory.readb(cpu.ds.dword + 200);
-            d.assertResult(cpu, instruction, result, 0, null, null);
+            d.assertResult(cpu, instruction, result, 0, null, null, null, null, cpu.ds.dword + 200, 8);
         }
     }
 
@@ -133,17 +136,17 @@ public class testCPU extends TestCase {
                     Reg e = Decoder.eb(cpu, rm);
                     Reg g = Decoder.gb(cpu, rm);
                     if (e.parent != null)
-                        e.parent.dword = 0xABCDEF01;
+                        e.parent.dword = DEFAULT;
                     else
-                        e.dword = 0xABCDEF01;
+                        e.dword = DEFAULT;
                     if (g.parent != null)
-                        g.parent.dword = 0xABCDEF01;
+                        g.parent.dword = DEFAULT;
                     else
-                        g.dword = 0xABCDEF01;
+                        g.dword = DEFAULT;
                     e.u8(d.left);
                     g.u8(d.right);
                     runCPU();
-                    d.assertResult(cpu, instruction, e.u8(), g.u8(), e.name8, g.name8);
+                    d.assertResult(cpu, instruction, e.u8(), g.u8(), e.name8, g.name8, e, g, 0, 8);
                 }
             }
 
@@ -159,17 +162,17 @@ public class testCPU extends TestCase {
                 else
                     pushCode16(200);
                 d.pushConstant();
-                memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+                memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writeb(cpu.ds.dword + 200, d.left);
                 Reg g = Decoder.gb(cpu, rm);
                 if (g.parent != null)
-                    g.parent.dword = 0xABCDEF01;
+                    g.parent.dword = DEFAULT;
                 else
-                    g.dword = 0xABCDEF01;
+                    g.dword = DEFAULT;
                 g.u8(d.right);
                 runCPU();
                 int result = memory.readb(cpu.ds.dword + 200);
-                d.assertResult(cpu, instruction, result, g.u8(), null, g.name8);
+                d.assertResult(cpu, instruction, result, g.u8(), null, g.name8, g, null, cpu.ds.dword + 200, 8);
             }
         }
     }
@@ -186,17 +189,17 @@ public class testCPU extends TestCase {
                     Reg e = Decoder.eb(cpu, rm);
                     Reg g = Decoder.gb(cpu, rm);
                     if (e.parent != null)
-                        e.parent.dword = 0xABCDEF01;
+                        e.parent.dword = DEFAULT;
                     else
-                        e.dword = 0xABCDEF01;
+                        e.dword = DEFAULT;
                     if (g.parent != null)
-                        g.parent.dword = 0xABCDEF01;
+                        g.parent.dword = DEFAULT;
                     else
-                        g.dword = 0xABCDEF01;
+                        g.dword = DEFAULT;
                     e.u8(d.right);
                     g.u8(d.left);
                     runCPU();
-                    d.assertResult(cpu, instruction, g.u8(), e.u8(), g.name8, e.name8);
+                    d.assertResult(cpu, instruction, g.u8(), e.u8(), g.name8, e.name8, e, g, 0, 8);
                 }
             }
 
@@ -212,16 +215,16 @@ public class testCPU extends TestCase {
                 else
                     pushCode16(200);
                 d.pushConstant();
-                memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+                memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writeb(cpu.ds.dword + 200, d.right);
                 Reg g = Decoder.gb(cpu, rm);
                 if (g.parent != null)
-                    g.parent.dword = 0xABCDEF01;
+                    g.parent.dword = DEFAULT;
                 else
-                    g.dword = 0xABCDEF01;
+                    g.dword = DEFAULT;
                 g.u8(d.left);
                 runCPU();
-                d.assertResult(cpu, instruction, g.u8(), memory.readb(cpu.ds.dword + 200), g.name8, null);
+                d.assertResult(cpu, instruction, g.u8(), memory.readb(cpu.ds.dword + 200), g.name8, null, g, null, cpu.ds.dword + 200, 8);
             }
         }
     }
@@ -236,10 +239,10 @@ public class testCPU extends TestCase {
                 newInstruction(instruction, rm, d.flags);
                 pushCode8(d.right);
                 Reg e = Decoder.ew(cpu, rm);
-                e.dword = 0xABCDEF01;
+                e.dword = DEFAULT;
                 e.u16(d.left);
                 runCPU();
-                d.assertResult(cpu, instruction, e.u16(), 0, e.name16, null);
+                d.assertResult(cpu, instruction, e.u16(), 0, e.name16, null, e, null, 0, 16);
             }
 
             int rm = (which << 3);
@@ -253,11 +256,11 @@ public class testCPU extends TestCase {
             else
                 pushCode16(200);
             pushCode8(d.right);
-            memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+            memory.writed(cpu.ds.dword + 200, DEFAULT);
             memory.writew(cpu.ds.dword + 200, d.left);
             runCPU();
             int result = memory.readw(cpu.ds.dword + 200);
-            d.assertResult(cpu, instruction, result, 0, null, null);
+            d.assertResult(cpu, instruction, result, 0, null, null, null, null, cpu.ds.dword + 200, 16);
         }
     }
 
@@ -268,10 +271,10 @@ public class testCPU extends TestCase {
                 newInstruction(instruction, rm, d.flags);
                 pushCode16(d.right);
                 Reg e = Decoder.ew(cpu, rm);
-                e.dword = 0xABCDEF01;
+                e.dword = DEFAULT;
                 e.u16(d.left);
                 runCPU();
-                d.assertResult(cpu, instruction, e.u16(), 0, e.name16, null);
+                d.assertResult(cpu, instruction, e.u16(), 0, e.name16, null, e, null, 0, 16);
             }
 
             int rm = (which << 3);
@@ -285,11 +288,11 @@ public class testCPU extends TestCase {
             else
                 pushCode16(200);
             pushCode16(d.right);
-            memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+            memory.writed(cpu.ds.dword + 200, DEFAULT);
             memory.writew(cpu.ds.dword + 200, d.left);
             runCPU();
             int result = memory.readw(cpu.ds.dword + 200);
-            d.assertResult(cpu, instruction, result, 0, null, null);
+            d.assertResult(cpu, instruction, result, 0, null, null, null, null, cpu.ds.dword + 200, 16);
         }
     }
 
@@ -304,12 +307,12 @@ public class testCPU extends TestCase {
                     d.pushConstant();
                     Reg e = Decoder.ew(cpu, rm);
                     Reg g = Decoder.gw(cpu, rm);
-                    e.dword = 0xABCDEF01;
-                    g.dword = 0xABCDEF01;
+                    e.dword = DEFAULT;
+                    g.dword = DEFAULT;
                     e.u16(d.left);
                     g.u16(d.right);
                     runCPU();
-                    d.assertResult(cpu, instruction, e.u16(), g.u16(), e.name16, g.name16);
+                    d.assertResult(cpu, instruction, e.u16(), g.u16(), e.name16, g.name16, e, g, 0, 16);
                 }
             }
 
@@ -325,14 +328,56 @@ public class testCPU extends TestCase {
                 else
                     pushCode16(200);
                 d.pushConstant();
-                memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+                memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writew(cpu.ds.dword + 200, d.left);
                 Reg g = Decoder.gw(cpu, rm);
-                g.dword = 0xABCDEF01;
+                g.dword = DEFAULT;
                 g.u16(d.right);
                 runCPU();
                 int result = memory.readw(cpu.ds.dword + 200);
-                d.assertResult(cpu, instruction, result, g.u16(), null, g.name16);
+                d.assertResult(cpu, instruction, result, g.u16(), null, g.name16, g, null, cpu.ds.dword + 200, 16);
+            }
+        }
+    }
+
+    protected void EwSw(int instruction, Data[] data) {
+        for (Data d : data) {
+            for (int ew = 0; ew < 8; ew++) {
+                for (int gw = 0; gw < 6; gw++) {
+                    int rm = ew | (gw << 3) | 0xC0;
+                    newInstruction(instruction, rm, d.flags);
+                    d.pushConstant();
+                    Reg e = Decoder.ew(cpu, rm);
+                    Reg g = cpu.segValue[gw];
+                    e.dword = DEFAULT;
+                    g.dword = DEFAULT;
+                    e.u16(d.left);
+                    g.u16(d.right);
+                    runCPU();
+                    d.assertResult(cpu, instruction, e.u16(), g.u16(), e.name16, g.name16, e, null, 0, 16);
+                }
+            }
+
+            for (int gw = 0; gw < 6; gw++) {
+                int rm = (gw << 3);
+                if (cpu.big)
+                    rm += 5;
+                else
+                    rm += 6;
+                newInstruction(instruction, rm, d.flags);
+                if (cpu.big)
+                    pushCode32(200);
+                else
+                    pushCode16(200);
+                d.pushConstant();
+                memory.writed(cpu.ds.dword + 200, DEFAULT);
+                memory.writew(cpu.ds.dword + 200, d.left);
+                Reg g = cpu.segValue[gw];
+                g.dword = DEFAULT;
+                g.u16(d.right);
+                runCPU();
+                int result = memory.readw(cpu.ds.dword + 200);
+                d.assertResult(cpu, instruction, result, g.u16(), null, g.name16, null, null, cpu.ds.dword + 200, 16);
             }
         }
     }
@@ -348,12 +393,12 @@ public class testCPU extends TestCase {
                     d.pushConstant();
                     Reg e = Decoder.ew(cpu, rm);
                     Reg g = Decoder.gw(cpu, rm);
-                    e.dword = 0xABCDEF01;
-                    g.dword = 0xABCDEF01;
+                    e.dword = DEFAULT;
+                    g.dword = DEFAULT;
                     e.u16(d.right);
                     g.u16(d.left);
                     runCPU();
-                    d.assertResult(cpu, instruction, g.u16(), e.u16(), g.name16, e.name16);
+                    d.assertResult(cpu, instruction, g.u16(), e.u16(), g.name16, e.name16, e, g, 0, 16);
                 }
             }
 
@@ -369,14 +414,14 @@ public class testCPU extends TestCase {
                 else
                     pushCode16(200);
                 d.pushConstant();
-                memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
+                memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writew(cpu.ds.dword + 200, d.right);
                 Reg g = Decoder.gw(cpu, rm);
-                g.dword = 0xABCDEF01;
+                g.dword = DEFAULT;
                 g.u16(d.left);
                 runCPU();
                 int result = memory.readw(cpu.ds.dword + 200);
-                d.assertResult(cpu, instruction, g.u16(), result, g.name16, null);
+                d.assertResult(cpu, instruction, g.u16(), result, g.name16, null, g, null, cpu.ds.dword + 200, 16);
             }
         }
     }
@@ -393,7 +438,7 @@ public class testCPU extends TestCase {
                 Reg e = Decoder.ed(cpu, rm);
                 e.dword = d.left;
                 runCPU();
-                d.assertResult(cpu, instruction, e.dword, 0, e.name32, null);
+                d.assertResult(cpu, instruction, e.dword, 0, e.name32, null, null, null, 0, 0);
             }
 
             int rm = (which << 3);
@@ -407,11 +452,10 @@ public class testCPU extends TestCase {
             else
                 pushCode16(200);
             pushCode8(d.right);
-            memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
             memory.writed(cpu.ds.dword + 200, d.left);
             runCPU();
             int result = memory.readd(cpu.ds.dword + 200);
-            d.assertResult(cpu, instruction, result, 0, null, null);
+            d.assertResult(cpu, instruction, result, 0, null, null, null, null, 0, 0);
         }
     }
 
@@ -424,7 +468,7 @@ public class testCPU extends TestCase {
                 Reg e = Decoder.ed(cpu, rm);
                 e.dword = d.left;
                 runCPU();
-                d.assertResult(cpu, instruction, e.dword, 0, e.name32, null);
+                d.assertResult(cpu, instruction, e.dword, 0, e.name32, null, null, null, 0, 0);
             }
 
             int rm = (which << 3);
@@ -438,11 +482,10 @@ public class testCPU extends TestCase {
             else
                 pushCode16(200);
             pushCode32(d.right);
-            memory.writed(cpu.ds.dword + 200, 0xABCDEF01);
             memory.writed(cpu.ds.dword + 200, d.left);
             runCPU();
             int result = memory.readd(cpu.ds.dword + 200);
-            d.assertResult(cpu, instruction, result, 0, null, null);
+            d.assertResult(cpu, instruction, result, 0, null, null, null, null, 0, 0);
         }
     }
 
@@ -460,7 +503,7 @@ public class testCPU extends TestCase {
                     e.dword = d.left;
                     g.dword = d.right;
                     runCPU();
-                    d.assertResult(cpu, instruction, e.dword, g.dword, e.name32, g.name32);
+                    d.assertResult(cpu, instruction, e.dword, g.dword, e.name32, g.name32, null, null, 0, 0);
                 }
             }
 
@@ -481,7 +524,7 @@ public class testCPU extends TestCase {
                 g.dword = d.right;
                 runCPU();
                 int result = memory.readd(cpu.ds.dword + 200);
-                d.assertResult(cpu, instruction, result, g.dword, null, g.name16);
+                d.assertResult(cpu, instruction, result, g.dword, null, g.name16, null, null, 0, 0);
             }
         }
     }
@@ -500,7 +543,7 @@ public class testCPU extends TestCase {
                     e.dword = d.right;
                     g.dword = d.left;
                     runCPU();
-                    d.assertResult(cpu, instruction, g.dword, e.dword, g.name32, e.name32);
+                    d.assertResult(cpu, instruction, g.dword, e.dword, g.name32, e.name32, null, null, 0, 0);
                 }
             }
 
@@ -521,7 +564,7 @@ public class testCPU extends TestCase {
                 g.dword = d.left;
                 runCPU();
                 int result = memory.readd(cpu.ds.dword + 200);
-                d.assertResult(cpu, instruction, g.dword, result, g.name32, null);
+                d.assertResult(cpu, instruction, g.dword, result, g.name32, null, null, null, 0, 0);
             }
         }
     }
@@ -530,10 +573,10 @@ public class testCPU extends TestCase {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             pushCode8(d.right);
-            cpu.eax.dword = 0xABCDEF01;
+            cpu.eax.dword = DEFAULT;
             cpu.eax.u8(d.left);
             runCPU();
-            d.assertResult(cpu, instruction, cpu.eax.u8(), 0, cpu.eax.name8, null);
+            d.assertResult(cpu, instruction, cpu.eax.u8(), 0, cpu.eax.name8, null, cpu.eax, null, 0, 8);
         }
     }
 
@@ -541,10 +584,10 @@ public class testCPU extends TestCase {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
             pushCode16(d.right);
-            cpu.eax.dword = 0xABCDEF01;
+            cpu.eax.dword = DEFAULT;
             cpu.eax.u16(d.left);
             runCPU();
-            d.assertResult(cpu, instruction, cpu.eax.u16(), 0, cpu.eax.name16, null);
+            d.assertResult(cpu, instruction, cpu.eax.u16(), 0, cpu.eax.name16, null, cpu.eax, null, 0, 16);
         }
     }
 
@@ -554,27 +597,62 @@ public class testCPU extends TestCase {
             pushCode32(d.right);
             cpu.eax.dword = d.left;
             runCPU();
-            d.assertResult(cpu, instruction, cpu.eax.dword, 0, cpu.eax.name32, null);
+            d.assertResult(cpu, instruction, cpu.eax.dword, 0, cpu.eax.name32, null, null, null, 0, 0);
         }
     }
 
     protected void Eb(int instruction, Reg reg, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
-            reg.dword = 0xABCDEF01;
+            reg.dword = DEFAULT;
             reg.u8(d.left);
             runCPU();
-            d.assertResult(cpu, instruction, reg.u8(), 0, reg.name8, null);
+            d.assertResult(cpu, instruction, reg.u8(), 0, reg.name8, null, reg, null, 0, 8);
         }
     }
 
     protected void Ew(int instruction, Reg reg, Data[] data) {
         for (Data d : data) {
             newInstruction(instruction, d.flags);
-            reg.dword = 0xABCDEF01;
+            reg.dword = DEFAULT;
             reg.u16(d.left);
             runCPU();
-            d.assertResult(cpu, instruction, reg.u16(), 0, reg.name16, null);
+            d.assertResult(cpu, instruction, reg.u16(), 0, reg.name16, null, reg, null, 0, 16);
+        }
+    }
+
+    protected void LeaGw() {
+        for (int i=0;i<8;i++) {
+            if (i==6) {
+                continue;
+            }
+            newInstruction(0x8d, 0);
+            int rm = i<<3 | 0x44;
+            pushCode8(rm);
+            pushCode8(8);
+            Reg reg = Decoder.gw(cpu, rm);
+            reg.dword = DEFAULT;
+            cpu.esi.dword = DEFAULT;
+            cpu.esi.u16(0xABCD);
+            runCPU();
+            assertTrue(reg.u16()==(0xABCD+8));
+            assertTrue((reg.dword & 0xFFFF0000)==(DEFAULT & 0xFFFF0000));
+        }
+    }
+
+    protected void LeaGd() {
+        for (int i=0;i<8;i++) {
+            if (i==3) {
+                continue;
+            }
+            newInstruction(0x8d, 0);
+            int rm = i<<3 | 0x43;
+            pushCode8(rm);
+            pushCode8(8);
+            Reg reg = Decoder.gd(cpu, rm);
+            cpu.ebx.dword=0xABCD1234;
+            runCPU();
+            assertTrue(reg.dword==(0xABCD1234+8));
         }
     }
 
@@ -583,7 +661,29 @@ public class testCPU extends TestCase {
             newInstruction(instruction, d.flags);
             reg.dword = d.left;
             runCPU();
-            d.assertResult(cpu, instruction, reg.dword, 0, reg.name32, null);
+            d.assertResult(cpu, instruction, reg.dword, 0, reg.name32, null, null, null, 0, 0);
+        }
+    }
+
+    protected void Reg16Reg16(int instruction, Data[] data, Reg r1, Reg r2) {
+        for (Data d : data) {
+            newInstruction(instruction, d.flags);
+            r1.dword = DEFAULT;
+            r1.u16(d.left);
+            r2.dword = DEFAULT;
+            r2.u16(d.right);
+            runCPU();
+            d.assertResult(cpu, instruction, r1.u16(), r2.u16(), r1.name16, r2.name16, r1, r2, 0, 16);
+        }
+    }
+
+    protected void Reg32Reg32(int instruction, Data[] data, Reg r1, Reg r2) {
+        for (Data d : data) {
+            newInstruction(instruction, d.flags);
+            r1.dword = d.left;
+            r2.dword = d.right;
+            runCPU();
+            d.assertResult(cpu, instruction, r1.dword, r2.dword, r1.name32, r2.name32, null, null, 0, 0);
         }
     }
 
@@ -601,6 +701,20 @@ public class testCPU extends TestCase {
         assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-2)==0xBBBB);
     }
 
+    protected void Pushf(int instruction) {
+        newInstruction(instruction, 0);
+        cpu.flags = 0xDDDD1234;
+        cpu.esp.dword-=2;
+        memory.writew(cpu.ss.dword+cpu.esp.dword, 0xAAAA);
+        memory.writew(cpu.ss.dword+cpu.esp.dword-2, 0xCCCC);
+        memory.writew(cpu.ss.dword+cpu.esp.dword-4, 0xBBBB);
+        runCPU();
+        assertTrue(cpu.esp.dword==4092);
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword)==0x1235); // bit 1 is always set
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword+2)==0xAAAA);
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-2)==0xBBBB);
+    }
+
     protected void Push32(int instruction, Reg reg) {
         newInstruction(instruction, 0);
         reg.dword = 0x56781234;
@@ -611,6 +725,20 @@ public class testCPU extends TestCase {
         runCPU();
         assertTrue(cpu.esp.dword==4088);
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword)==0x56781234);
+        assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword+4)==0xAAAAAAAA);
+        assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-4)==0xBBBBBBBB);
+    }
+
+    protected void Pushfd(int instruction) {
+        newInstruction(instruction, 0);
+        cpu.flags = 0x56781234;
+        cpu.esp.dword-=4;
+        memory.writed(cpu.ss.dword+cpu.esp.dword, 0xAAAAAAAA);
+        memory.writed(cpu.ss.dword+cpu.esp.dword-4, 0xCCCCCCCC);
+        memory.writed(cpu.ss.dword+cpu.esp.dword-8, 0xBBBBBBBB);
+        runCPU();
+        assertTrue(cpu.esp.dword==4088);
+        assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword)==(0x56781235 & 0xFCFFFF)); // bit 1 is always set
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword+4)==0xAAAAAAAA);
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-4)==0xBBBBBBBB);
     }
@@ -630,6 +758,21 @@ public class testCPU extends TestCase {
         assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-4)==0xBBBB);
     }
 
+    protected void Popf(int instruction) {
+        newInstruction(instruction, 0);
+        cpu.esp.dword-=2;
+        cpu.flags=0xDDDDDDDD;
+        memory.writew(cpu.ss.dword+cpu.esp.dword, 0xAAAA);
+        memory.writew(cpu.ss.dword+cpu.esp.dword-2, 0x1234);
+        memory.writew(cpu.ss.dword+cpu.esp.dword-4, 0xBBBB);
+        cpu.esp.dword-=2;
+        runCPU();
+        assertTrue(cpu.esp.dword==4094);
+        assertTrue(cpu.flags == 0xDDDD1234);
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword)==0xAAAA);
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-4)==0xBBBB);
+    }
+
     protected void Pop32(int instruction, Reg reg) {
         newInstruction(instruction, 0);
         cpu.esp.dword-=4;
@@ -642,6 +785,106 @@ public class testCPU extends TestCase {
         assertTrue(reg.dword == 0x56781234);
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword)==0xAAAAAAAA);
         assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-8)==0xBBBBBBBB);
+    }
+
+    protected void Popfd(int instruction) {
+        newInstruction(instruction, 0);
+        cpu.esp.dword-=4;
+        memory.writed(cpu.ss.dword+cpu.esp.dword, 0xAAAAAAAA);
+        memory.writed(cpu.ss.dword+cpu.esp.dword-4, 0x56781234);
+        memory.writed(cpu.ss.dword+cpu.esp.dword-8, 0xBBBBBBBB);
+        cpu.esp.dword-=4;
+        runCPU();
+        assertTrue(cpu.esp.dword==4092);
+        assertTrue(cpu.flags == 0x56781234);
+        assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword)==0xAAAAAAAA);
+        assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-8)==0xBBBBBBBB);
+    }
+
+    protected void flags(int instruction, Data[] data, Reg reg) {
+        for (Data d:data) {
+            newInstruction(instruction, 0);
+            cpu.flags = d.left;
+            reg.dword = d.right;
+            runCPU();
+            assertTrue(reg.dword == d.resultRight);
+            assertTrue(cpu.flags == d.result);
+        }
+    }
+
+    protected void PopEw() {
+        for (int i=0;i<8;i++) {
+            if (i==4)
+                continue;
+            newInstruction(0x8f, 0);
+            pushCode8(i|0xC0);
+            Reg reg = Decoder.ew(cpu, i|0xC0);
+            cpu.esp.dword-=2;
+            reg.dword=0xDDDDDDDD;
+            memory.writew(cpu.ss.dword+cpu.esp.dword, 0xAAAA);
+            memory.writew(cpu.ss.dword+cpu.esp.dword-2, 0x1234);
+            memory.writew(cpu.ss.dword+cpu.esp.dword-4, 0xBBBB);
+            cpu.esp.dword-=2;
+            runCPU();
+            assertTrue(cpu.esp.dword==4094);
+            assertTrue(reg.dword == 0xDDDD1234);
+            assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword)==0xAAAA);
+            assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-4)==0xBBBB);
+        }
+
+        newInstruction(0x8f, 0);
+        pushCode8(6);
+        pushCode16(200);
+        memory.writed(cpu.ds.dword + 200, DEFAULT);
+
+        cpu.esp.dword-=2;
+        memory.writew(cpu.ss.dword+cpu.esp.dword, 0xAAAA);
+        memory.writew(cpu.ss.dword+cpu.esp.dword-2, 0x1234);
+        memory.writew(cpu.ss.dword+cpu.esp.dword-4, 0xBBBB);
+        cpu.esp.dword-=2;
+        runCPU();
+
+        assertTrue(cpu.esp.dword==4094);
+        assertTrue(memory.readd(cpu.ds.dword + 200) == ((DEFAULT & 0xFFFF0000) | 0x1234));
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword)==0xAAAA);
+        assertTrue(memory.readw(cpu.ss.dword+cpu.esp.dword-4)==0xBBBB);
+    }
+
+    protected void PopEd() {
+        for (int i=0;i<8;i++) {
+            if (i==4)
+                continue;
+            newInstruction(0x8f, 0);
+            pushCode8(i|0xC0);
+            Reg reg = Decoder.ew(cpu, i|0xC0);
+            cpu.esp.dword-=4;
+            memory.writed(cpu.ss.dword+cpu.esp.dword, 0xAAAAAAAA);
+            memory.writed(cpu.ss.dword+cpu.esp.dword-4, 0x56781234);
+            memory.writed(cpu.ss.dword+cpu.esp.dword-8, 0xBBBBBBBB);
+            cpu.esp.dword-=4;
+            runCPU();
+            assertTrue(cpu.esp.dword==4092);
+            assertTrue(reg.dword == 0x56781234);
+            assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword)==0xAAAAAAAA);
+            assertTrue(memory.readd(cpu.ss.dword+cpu.esp.dword-8)==0xBBBBBBBB);
+        }
+
+        newInstruction(0x8f, 0);
+        pushCode8(5);
+        pushCode32(200);
+        memory.writed(cpu.ds.dword + 200, DEFAULT);
+
+        cpu.esp.dword-=4;
+        memory.writed(cpu.ss.dword + cpu.esp.dword, 0xAAAAAAAA);
+        memory.writed(cpu.ss.dword + cpu.esp.dword - 4, 0x56781234);
+        memory.writed(cpu.ss.dword + cpu.esp.dword - 8, 0xBBBBBBBB);
+        cpu.esp.dword-=4;
+        runCPU();
+
+        assertTrue(cpu.esp.dword==4092);
+        assertTrue(memory.readd(cpu.ds.dword + 200) == 0x56781234);
+        assertTrue(memory.readd(cpu.ss.dword + cpu.esp.dword)==0xAAAAAAAA);
+        assertTrue(memory.readd(cpu.ss.dword + cpu.esp.dword - 8)==0xBBBBBBBB);
     }
 
     protected void Push16(int instruction) {
@@ -795,14 +1038,14 @@ public class testCPU extends TestCase {
             }
             return builder;
         }
-        public void assertResult(CPU cpu, int instruction, int resultLeft, int resultRight, String leftRegName, String rightRegName) {
+        public void assertResult(CPU cpu, int instruction, int resultLeft, int resultRight, String leftRegName, String rightRegName, Reg r1, Reg r2, int address, int bits) {
             if (useResultRight && this.resultRight!=resultRight) {
                 StringBuilder builder = buildErrorMsg(cpu, instruction, resultLeft, resultRight, leftRegName, rightRegName);
                 builder.append(" did not equal ");
                 builder.append(this.resultRight);
                 assertTrue(builder.toString(), false);
             }
-            if (!dontUseResultAndCheckSFZF && this.result != result) {
+            if (!dontUseResultAndCheckSFZF && this.result != resultLeft) {
                 StringBuilder builder = buildErrorMsg(cpu, instruction, resultLeft, resultRight, leftRegName, rightRegName);
                 builder.append(" did not equal ");
                 builder.append(this.result);
@@ -832,6 +1075,37 @@ public class testCPU extends TestCase {
                     builder.append(" expected ZF value: ");
                     builder.append(ZF);
                     assertTrue(builder.toString(), false);
+                }
+            }
+            if (bits==8) {
+                if (r1!=null) {
+                    if (r1.parent!=null)
+                        assertTrue((r1.parent.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
+                    else
+                        assertTrue((r1.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
+                }
+                if (r2!=null) {
+                    if (r2.parent!=null)
+                        assertTrue((r2.parent.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
+                    else
+                        assertTrue((r2.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
+                }
+                if (address!=0) {
+                    assertTrue((memory.readd(address) & 0xFFFFFF00) == (DEFAULT & 0xFFFFFF00));
+                }
+            }
+            if (bits==16) {
+                if (r1!=null) {
+                    if (!((r1.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000))) {
+                        int ii=0;
+                    }
+                    assertTrue((r1.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
+                }
+                if (r2!=null) {
+                    assertTrue((r2.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
+                }
+                if (address!=0) {
+                    assertTrue((memory.readd(address) & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
                 }
             }
         }
@@ -1228,6 +1502,60 @@ public class testCPU extends TestCase {
             new Data(0xFC150146, 0xAB38, 0xAB38, 0xFC150146)
     };
 
+    private Data[] movb = new Data[] {
+            new Data(0, 1, 1, 0, false, false),
+            new Data(0, 0, 0, 0, false, false),
+            new Data(0, 0xFF, 0xFF, 0, false, false),
+            new Data(0, 0x7F, 0x7F, 0, false, false)
+    };
+
+    private Data[] movw = new Data[] {
+            new Data(0, 1, 1, 0, false, false),
+            new Data(0, 0, 0, 0, false, false),
+            new Data(0, 0xFFFF, 0xFFFF, 0, false, false),
+            new Data(0, 0x7FFF, 0x7FFF, 0, false, false)
+    };
+
+    private Data[] movd = new Data[] {
+            new Data(0, 1, 1, 0, false, false),
+            new Data(0, 0, 0, 0, false, false),
+            new Data(0, 0xFFFF, 0xFFFF, 0, false, false),
+            new Data(0, 0x7FFF, 0x7FFF, 0, false, false),
+            new Data(0, 0xFFFFFFFF, 0xFFFFFFFF, 0, false, false),
+            new Data(0, 0x7FFFFFFF, 0x7FFFFFFF, 0, false, false),
+            new Data(0, 0x08080808, 0x08080808, 0, false, false)
+    };
+
+    private Data[] cbw = new Data[] {
+            new Data(0x1234, 0, 0x0034, 0, false, false),
+            new Data(0x12FE, 0, 0xFFFE, 0, false, false)
+    };
+
+    private Data[] cwde = new Data[] {
+            new Data(0x12345678, 0, 0x5678, 0, false, false),
+            new Data(0x1234FFFE, 0, 0xFFFFFFFE, 0, false, false)
+    };
+
+    private Data[] cwd = new Data[] {
+            new Data(0x1234, 0x1234, 0x1234, 0),
+            new Data(0xFFFE, 0x1234, 0xFFFE, 0xFFFF),
+    };
+
+    private Data[] cdq = new Data[] {
+            new Data(0x12345678, 0x12345678, 0x12345678, 0),
+            new Data(0xFFFFFFFE, 0x12345678, 0xFFFFFFFE, 0xFFFFFFFF),
+    };
+
+    private Data[] sahf = new Data[] {
+            new Data(0x12345600, 0x0000FF00, 0x123456D5, 0x0000FF00),
+            new Data(0xFFFFFFFF, 0x00000000, 0xFFFFFF2A, 0x00000000),
+    };
+
+    private Data[] lahf = new Data[] {
+            new Data(0x123456FF, 0x00000000, 0x123456FF, 0x0000D500),
+            new Data(0xFFFFFF00, 0xFFFFFFFF, 0xFFFFFF00, 0xFFFF01FF),
+    };
+
     public void testAdd0x000() {cpu.big = false;EbGb(0x00, addb);}
     public void testAdd0x200() {cpu.big = true;EbGb(0x00, addb);}
     public void testAdd0x001() {cpu.big = false;EwGw(0x01, addw);}
@@ -1493,4 +1821,56 @@ public class testCPU extends TestCase {
     public void testXchg0x286() {cpu.big = true;EbGb(0x86, xchgb);}
     public void testXchg0x087() {cpu.big = false;EwGw(0x87, xchgw);}
     public void testXchg0x287() {cpu.big = true;EdGd(0x87, xchgd);}
+
+    public void testMovEbGb0x088() {cpu.big = false;EbGb(0x88, movb);}
+    public void testMovEbGb0x288() {cpu.big = true;EbGb(0x88, movb);}
+    public void testMovEwGw0x089() {cpu.big = false;EwGw(0x89, movw);}
+    public void testMovEdGd0x289() {cpu.big = true;EdGd(0x89, movd);}
+
+    public void testMovEbGb0x08a() {cpu.big = false;GbEb(0x8a, movb);}
+    public void testMovEbGb0x28a() {cpu.big = true;GbEb(0x8a, movb);}
+    public void testMovEwGw0x08b() {cpu.big = false;GwEw(0x8b, movw);}
+    public void testMovEdGd0x28b() {cpu.big = true;GdEd(0x8b, movd);}
+
+    public void testMovEwWw0x08c() {cpu.big = false;EwSw(0x8c, movw);}
+    public void testMovEwWw0x28c() {cpu.big = true;EwSw(0x8c, movw);}
+
+    public void testLeaGw0x08d() {cpu.big = false;LeaGw();}
+    public void testLeaGd0x28d() {cpu.big = true;LeaGd();}
+
+    // :TODO: 0x08e
+    // :TODO: 0x28e
+
+    public void testPopEw0x08f() {cpu.big = false;PopEw();}
+    public void testPopEd0x28f() {cpu.big = true;PopEd();}
+
+    public void testXchgCxAx0x091() {cpu.big = false;Reg16Reg16(0x91, xchgw, cpu.eax, cpu.ecx);}
+    public void testXchgEcxEax0x291() {cpu.big = true;Reg32Reg32(0x91, xchgd, cpu.eax, cpu.ecx);}
+    public void testXchgDxAx0x092() {cpu.big = false;Reg16Reg16(0x92, xchgw, cpu.eax, cpu.edx);}
+    public void testXchgEdxEax0x292() {cpu.big = true;Reg32Reg32(0x92, xchgd, cpu.eax, cpu.edx);}
+    public void testXchgBxAx0x093() {cpu.big = false;Reg16Reg16(0x93, xchgw, cpu.eax, cpu.ebx);}
+    public void testXchgEbxEax0x293() {cpu.big = true;Reg32Reg32(0x93, xchgd, cpu.eax, cpu.ebx);}
+    public void testXchgSpAx0x094() {cpu.big = false;Reg16Reg16(0x94, xchgw, cpu.eax, cpu.esp);}
+    public void testXchgEspEax0x294() {cpu.big = true;Reg32Reg32(0x94, xchgd, cpu.eax, cpu.esp);}
+    public void testXchgBpAx0x095() {cpu.big = false;Reg16Reg16(0x95, xchgw, cpu.eax, cpu.ebp);}
+    public void testXchgEbpEax0x295() {cpu.big = true;Reg32Reg32(0x95, xchgd, cpu.eax, cpu.ebp);}
+    public void testXchgSiAx0x096() {cpu.big = false;Reg16Reg16(0x96, xchgw, cpu.eax, cpu.esi);}
+    public void testXchgEsiEax0x296() {cpu.big = true;Reg32Reg32(0x96, xchgd, cpu.eax, cpu.esi);}
+    public void testXchgDiAx0x097() {cpu.big = false;Reg16Reg16(0x97, xchgw, cpu.eax, cpu.edi);}
+    public void testXchgEdiEax0x297() {cpu.big = true;Reg32Reg32(0x97, xchgd, cpu.eax, cpu.edi);}
+
+    public void testCbw0x098() {cpu.big = false;Ew(0x98, cpu.eax, cbw);}
+    public void testCwde0x298() {cpu.big = true;Ed(0x298, cpu.eax, cwde);}
+    public void testCwd0x099() {cpu.big = false;Reg16Reg16(0x99, cwd, cpu.eax, cpu.edx);}
+    public void testCdq0x299() {cpu.big = true;Reg32Reg32(0x99, cdq, cpu.eax, cpu.edx);}
+
+    public void testPushf0x09c() {cpu.big = false;Pushf(0x9c);}
+    public void testPushf0x29c() {cpu.big = true;Pushfd(0x9c);}
+    public void testPopf0x09d() {cpu.big = false;Popf(0x9d);}
+    public void testPopf0x29d() {cpu.big = true;Popfd(0x9d);}
+
+    public void testSahf0x09e() {cpu.big = false;flags(0x9e, sahf, cpu.eax);}
+    public void testSahf0x29e() {cpu.big = true;flags(0x9e, sahf, cpu.eax);}
+    public void testLahf0x09f() {cpu.big = false;flags(0x9f, lahf, cpu.eax);}
+    public void testLahf0x29f() {cpu.big = true;flags(0x9f, lahf, cpu.eax);}
 }

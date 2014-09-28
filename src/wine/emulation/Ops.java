@@ -1356,11 +1356,7 @@ class Ops {
             this.dest = dest;
         }
         public Block call(CPU cpu) {
-            cpu.base_ds = cpu.zero;
-            cpu.base_ss = cpu.zero;
             dest.u16(eaa.call(cpu));
-            cpu.base_ds = cpu.ds;
-            cpu.base_ss = cpu.ss;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1377,11 +1373,7 @@ class Ops {
             this.dest = dest;
         }
         public Block call(CPU cpu) {
-            cpu.base_ds = cpu.zero;
-            cpu.base_ss = cpu.zero;
             dest.dword=eaa.call(cpu);
-            cpu.base_ds = cpu.ds;
-            cpu.base_ss = cpu.ss;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2111,7 +2103,7 @@ class Ops {
     final static class PushF16 extends Op {
         public Block call(CPU cpu) {
             cpu.fillFlags();
-            cpu.push16(cpu.flags);
+            cpu.push16(cpu.flags|1);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2122,7 +2114,7 @@ class Ops {
     final static class PushF32 extends Op {
         public Block call(CPU cpu) {
             cpu.fillFlags();
-            cpu.push32(cpu.flags);
+            cpu.push32((cpu.flags|1) & 0xFCFFFF);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2144,7 +2136,7 @@ class Ops {
     final static class PopF32 extends Op {
         public Block call(CPU cpu) {
             cpu.lazyFlags = null;
-            cpu.flags=cpu.pop32();
+            cpu.flags=(cpu.flags & CPU.VM) | (cpu.pop32() & ~CPU.VM);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2154,7 +2146,8 @@ class Ops {
 
     final static class Sahf extends Op {
         public Block call(CPU cpu) {
-            cpu.flags=(cpu.flags & 0xFFFFFF00) | cpu.ah.u8() | (cpu.OF()?CPU.OF:0);
+            int mask = CPU.SF|CPU.ZF|CPU.AF|CPU.PF|CPU.CF;
+            cpu.flags=(cpu.flags & (0xFFFFFF00 | (~mask))) | (cpu.ah.u8() & mask);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2165,7 +2158,8 @@ class Ops {
     final static class Lahf extends Op {
         public Block call(CPU cpu) {
             cpu.fillFlags();
-            cpu.ah.u8(cpu.flags);
+            int mask = CPU.SF|CPU.ZF|CPU.AF|CPU.PF|CPU.CF;
+            cpu.ah.u8((cpu.flags & mask)|1);
             return next.callAndLog(cpu);
         }
         public String toString() {

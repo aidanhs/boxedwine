@@ -375,7 +375,7 @@ class Instructions {
 
     static final private class Incb extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value+1;
+            int r = (value+1) & 0xFF;
             cpu.result = r;
             cpu.oldcf = cpu.CF();
             cpu.lazyFlags = this;
@@ -392,7 +392,7 @@ class Instructions {
 
     static final private class Incw extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value+1;
+            int r = (value+1) & 0xFFFF;
             cpu.result = r;
             cpu.oldcf = cpu.CF();
             cpu.lazyFlags = this;
@@ -426,7 +426,7 @@ class Instructions {
 
     static final private class Decb extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value-1;
+            int r = (value-1) & 0xFF;
             cpu.result = r;
             cpu.oldcf = cpu.CF();
             cpu.lazyFlags = this;
@@ -443,7 +443,7 @@ class Instructions {
 
     static final private class Decw extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value-1;
+            int r =(value-1) & 0xFFFF;
             cpu.result = r;
             cpu.oldcf = cpu.CF();
             cpu.lazyFlags = this;
