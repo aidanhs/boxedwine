@@ -855,9 +855,15 @@ class Instructions {
             cpu.left = value1;
             cpu.right = value2;
             if (cpu.CF()) {
-                result = (value1 << value2) | (1 << (value2 -1)) | (value1 >> (33-value2));
+                if (value2==1)
+                    result = (value1 << value2) | 1;
+                else
+                    result = (value1 << value2) | (1 << (value2 -1)) | (value1 >>> (33-value2));
             } else {
-                result = (value1 << value2) | (value1 >> (33-value2));
+                if (value2==1)
+                    result = (value1 << value2);
+                else
+                    result = (value1 << value2) | (value1 >>> (33-value2));
             }
             cpu.result = result;
             cpu.lazyFlags = this;
@@ -981,9 +987,15 @@ class Instructions {
             cpu.left = value1;
             cpu.right = value2;
             if (cpu.CF()) {
-                result = (value1 >> value2) | (1 << (32 - value2)) | (value1 << (33-value2));
+                if (value2==1)
+                    result = (value1 >>> value2) | 0x80000000;
+                else
+                    result = (value1 >>> value2) | (1 << (32 - value2)) | (value1 << (33-value2));
             } else {
-                result = (value1 >> value2) | (value1 << (33-value2));
+                if (value2==1)
+                    result = (value1 >>> value2);
+                else
+                    result = (value1 >>> value2) | (value1 << (33-value2));
             }
             cpu.result = result;
             cpu.lazyFlags = this;

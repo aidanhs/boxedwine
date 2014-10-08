@@ -1,6 +1,5 @@
 package wine.builtin.libc;
 
-import wine.emulation.CPU;
 import wine.emulation.RAM;
 import wine.system.WineProcess;
 import wine.system.WineThread;
@@ -85,19 +84,20 @@ public class CType {
     static public int __ctype_toupper_loc() {
         WineProcess process = WineThread.getCurrent().process;
         if (process.p_ctype_toupper_loc==0) {
+            int start = ctypeTable.length*2;
             if (ramPage==-1) {
                 ramPage = RAM.allocPage();
                 int ramAddress = ramPage << 12;
-                ramAddress+=ctypeTable.length*2;
+                ramAddress+=start;
                 for (int i=0;i<upperTable.length;i++) {
                     RAM.writed(ramAddress, upperTable[i]);
                     ramAddress+=4;
                 }
             }
             RAM.incrementRef(ramPage);
-            process.p_ctype_toupper_loc = process.mapPage(ramPage);
+            process.p_ctype_toupper_loc = process.mapPage(ramPage)+start;
             process.pp_ctype_toupper_loc = process.alloc(4);
-            process.memory.writed(process.pp_ctype_toupper_loc, process.p_ctype_toupper_loc+256);
+            process.memory.writed(process.pp_ctype_toupper_loc, process.p_ctype_toupper_loc+512);
         }
         return process.pp_ctype_toupper_loc;
     }
@@ -128,19 +128,20 @@ public class CType {
     static public int __ctype_tolower_loc() {
         WineProcess process = WineThread.getCurrent().process;
         if (process.p_ctype_tolower_loc==0) {
+            int start = ctypeTable.length*2+upperTable.length*4;
             if (ramPage==-1) {
                 ramPage = RAM.allocPage();
                 int ramAddress = ramPage << 12;
-                ramAddress+=ctypeTable.length*2+upperTable.length*4;
+                ramAddress+=start;
                 for (int i=0;i<lowerTabletable.length;i++) {
                     RAM.writed(ramAddress, lowerTabletable[i]);
                     ramAddress+=4;
                 }
             }
             RAM.incrementRef(ramPage);
-            process.p_ctype_tolower_loc = process.mapPage(ramPage);
+            process.p_ctype_tolower_loc = process.mapPage(ramPage)+start;
             process.pp_ctype_tolower_loc = process.alloc(4);
-            process.memory.writed(process.pp_ctype_tolower_loc, process.p_ctype_tolower_loc+128);
+            process.memory.writed(process.pp_ctype_tolower_loc, process.p_ctype_tolower_loc+512);
         }
         return process.pp_ctype_tolower_loc;
     }

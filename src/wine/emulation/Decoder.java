@@ -299,14 +299,14 @@ class Decoder {
         return value;
     }
 
-    static private int EbIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod) {
+    static private int EbIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod, int mask) {
         int value;
         if (rm >= 0xc0 ) {
-            value = cpu.fetchb() % mod;
+            value = (cpu.fetchb() & mask) % mod;
             prev.next = new Ops.Instruction_Reg8_value(instruction, eb(cpu, rm), value);
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchb()
-            value = cpu.fetchb() % mod;
+            value = (cpu.fetchb() & mask) % mod;
             prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
         }
         return value;
@@ -377,14 +377,14 @@ class Decoder {
         return value;
     }
 
-    static private int EwIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod) {
+    static private int EwIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod, int mask) {
         int value;
         if (rm >= 0xc0 ) {
-            value = cpu.fetchb() % mod;
+            value = (cpu.fetchb() & 0x1f) % mod;
             prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), value);
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchw()
-            value = cpu.fetchb() % mod;
+            value = (cpu.fetchb() & 0x1f) % mod;
             prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
         }
         return value;
@@ -1923,33 +1923,28 @@ class Decoder {
                 int rm=cpu.fetchb();
                 int which=(rm>>3)&7;
                 int value;
+
                 switch (which) {
                     case 0x00:
                         value = EbIbMaskOriginal(cpu, prev, Instructions.rolb, rm, 0x7);
-                        if ((value & 0x7)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x18)!=0) {
-                                EbIb(cpu, prev, Instructions.rolb_check, rm, value);
-                            }
                         }
                         break;
                     case 0x01:
                         value = EbIbMaskOriginal(cpu, prev, Instructions.rorb, rm, 0x7);
-                        if ((value & 0x7)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x18)!=0) {
-                                EbIb(cpu, prev, Instructions.rorb_check, rm, value);
-                            }
                         }
                         break;
                     case 0x02:
-                        value = EbIbMod(cpu, prev, Instructions.rclb, rm, 9);
+                        value = EbIbMod(cpu, prev, Instructions.rclb, rm, 9, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
                         break;
                     case 0x03:
-                        value = EbIbMod(cpu, prev, Instructions.rcrb, rm, 9);
+                        value = EbIbMod(cpu, prev, Instructions.rcrb, rm, 9, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
@@ -1993,30 +1988,24 @@ class Decoder {
                 switch (which) {
                     case 0x00:
                         value = EwIbMaskOriginal(cpu, prev, Instructions.rolw, rm, 0xf);
-                        if ((value & 0xf)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x10)!=0) {
-                                EwIw(cpu, prev, Instructions.rolw_check, rm, value);
-                            }
                         }
                         break;
                     case 0x01:
                         value = EwIbMaskOriginal(cpu, prev, Instructions.rorw, rm, 0xf);
-                        if ((value & 0xf)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x10)!=0) {
-                                EwIw(cpu, prev, Instructions.rorw_check, rm, value);
-                            }
                         }
                         break;
                     case 0x02:
-                        value = EwIbMod(cpu, prev, Instructions.rclw, rm, 17);
+                        value = EwIbMod(cpu, prev, Instructions.rclw, rm, 17, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
                         break;
                     case 0x03:
-                        value = EwIbMod(cpu, prev, Instructions.rcrw, rm, 17);
+                        value = EwIbMod(cpu, prev, Instructions.rcrw, rm, 17, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }

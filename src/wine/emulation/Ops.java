@@ -2092,7 +2092,7 @@ class Ops {
 
     final static class Cdq extends Op {
         public Block call(CPU cpu) {
-            if ((cpu.eax.dword & 0x80000000)!=0) cpu.edx.dword=0xffffffff; else cpu.edx.dword=0;
+            if (cpu.eax.dword<0) cpu.edx.dword=0xffffffff; else cpu.edx.dword=0;
             return next.callAndLog(cpu);
         }
         public String toString() {

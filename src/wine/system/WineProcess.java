@@ -647,7 +647,7 @@ public class WineProcess {
         if (address == null) {
             byte[] bytes = string.getBytes();
             int len = bytes.length+1;
-            if (len>4096-stringPagePos) {
+            if (stringPage==0 || len>4096-stringPagePos) {
                 int page = addressSpace.getNextPage(WineProcess.ADDRESS_PER_PROCESS, 1);
                 allocPages(page, 1, false);
                 stringPage = page << 12;

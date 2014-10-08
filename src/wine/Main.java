@@ -21,6 +21,9 @@ public class Main {
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable/wine");
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu");
 
+        if (args.length==0) {
+            args = new String[] {"explorer", "/desktop=name,1024x768", "notepad"};
+        }
         RAM.init(170 * 1024 * 1024);
         // not necessary to create this up front, but it allows debug msg's to go to stdout
         //createWineServer();
