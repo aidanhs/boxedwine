@@ -302,12 +302,12 @@ class Decoder {
     static private int EbIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod, int mask) {
         int value;
         if (rm >= 0xc0 ) {
-            value = (cpu.fetchb() & mask) % mod;
-            prev.next = new Ops.Instruction_Reg8_value(instruction, eb(cpu, rm), value);
+            value = cpu.fetchb() & mask;
+            prev.next = new Ops.Instruction_Reg8_value(instruction, eb(cpu, rm), value % mod);
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchb()
-            value = (cpu.fetchb() & mask) % mod;
-            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
+            value = cpu.fetchb() & mask;
+            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value % mod);
         }
         return value;
     }
@@ -380,12 +380,12 @@ class Decoder {
     static private int EwIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod, int mask) {
         int value;
         if (rm >= 0xc0 ) {
-            value = (cpu.fetchb() & 0x1f) % mod;
-            prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), value);
+            value = cpu.fetchb() & mask;
+            prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), value % mod);
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchw()
-            value = (cpu.fetchb() & 0x1f) % mod;
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
+            value = cpu.fetchb() & mask;
+            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value % mod);
         }
         return value;
     }

@@ -790,10 +790,11 @@ class Instructions {
 
     static final private class RclB_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 9;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2 = value2 % 9;
             return rclb.run(cpu, value1, value2);
         }
 
@@ -832,10 +833,11 @@ class Instructions {
 
     static final private class RclW_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 17;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2 = value2 % 17;
             return rclw.run(cpu, value1, value2);
         }
 
@@ -922,10 +924,11 @@ class Instructions {
 
     static final private class RcrB_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 9;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2 = value2 % 9;
             return rcrb.run(cpu, value1, value2);
         }
 
@@ -964,10 +967,11 @@ class Instructions {
 
     static final private class RcrW_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 17;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2=value2 % 17;
             return rcrw.run(cpu, value1, value2);
         }
 
