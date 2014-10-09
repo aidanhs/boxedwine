@@ -169,6 +169,8 @@ public class Syscall {
                     }
                     boolean changed = false;
                     boolean timeout = false;
+                    int count = 0;
+
                     while (true) {
                         changed = memory.readd(address) != value;
                         if (changed)
@@ -177,10 +179,12 @@ public class Syscall {
                         if (timeout)
                             break;
                         try {
-                            Thread.sleep(10);
+                            if (count>20)
+                                Thread.sleep(10);
                         } catch (InterruptedException e) {
                             return 0;
                         }
+                        count++;
                     }
                     if (timeout) {
                         thread.setErrno(Errno.ETIMEDOUT);

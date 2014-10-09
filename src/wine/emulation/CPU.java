@@ -90,6 +90,8 @@ public class CPU {
     final static public int PREFIX_ADDR = 0x1;
     final static public int PREFIX_REP = 0x2;
 
+    public boolean locked;
+
     public int callReturnEip;
     public final FPU fpu;
 

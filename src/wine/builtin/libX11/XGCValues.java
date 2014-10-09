@@ -113,17 +113,17 @@ public class XGCValues {
         if ((mask & GCLineStyle)!=0)
             line_style = memory.readd(address+20);
         if ((mask & GCCapStyle)!=0)
-            cap_style = memory.readd(address+20);
+            cap_style = memory.readd(address+24);
         if ((mask & GCJoinStyle)!=0)
-            join_style = memory.readd(address+24);
+            join_style = memory.readd(address+28);
         if ((mask & GCFillStyle)!=0)
-            fill_style = memory.readd(address+28);
+            fill_style = memory.readd(address+32);
         if ((mask & GCFillRule)!=0)
-            fill_rule = memory.readd(address+32);
+            fill_rule = memory.readd(address+36);
         if ((mask & GCArcMode)!=0)
-            arc_mode = memory.readd(address+36);
+            arc_mode = memory.readd(address+40);
         if ((mask & GCTile)!=0) {
-            int id = memory.readd(address+40);
+            int id = memory.readd(address+44);
             if (id==0)
                 tile = null;
             else {
@@ -133,7 +133,7 @@ public class XGCValues {
             }
         }
         if ((mask & GCStipple)!=0) {
-            int id = memory.readd(address+44);
+            int id = memory.readd(address+48);
             if (id==0)
                 stipple = null;
             else {
@@ -144,22 +144,22 @@ public class XGCValues {
         }
 
         if ((mask & GCTileStipXOrigin)!=0)
-            ts_x_origin = memory.readd(address+48);
+            ts_x_origin = memory.readd(address+52);
         if ((mask & GCTileStipYOrigin)!=0)
-            ts_y_origin = memory.readd(address+52);
+            ts_y_origin = memory.readd(address+56);
         if ((mask & GCFont)!=0) {
             Log.panic("Changing a GC font not implemented");
         }
         if ((mask & GCSubwindowMode)!=0)
-            subwindow_mode = memory.readd(address+60);
+            subwindow_mode = memory.readd(address+64);
         if ((mask & GCGraphicsExposures)!=0)
-            graphics_exposures = memory.readd(address+64);
+            graphics_exposures = memory.readd(address+68);
         if ((mask & GCClipXOrigin)!=0)
-            clip_x_origin = memory.readd(address+68);
+            clip_x_origin = memory.readd(address+72);
         if ((mask & GCClipYOrigin)!=0)
-            clip_y_origin = memory.readd(address+72);
+            clip_y_origin = memory.readd(address+76);
         if ((mask & GCClipMask)!=0) {
-            int id = memory.readd(address+76);
+            int id = memory.readd(address+80);
             if (id==0)
                 clip_mask = null;
             else {
@@ -169,9 +169,9 @@ public class XGCValues {
             }
         }
         if ((mask & GCDashOffset)!=0)
-            dash_offset = memory.readd(address+80);
+            dash_offset = memory.readd(address+84);
         if ((mask & GCDashList)!=0)
-            dashes = memory.readb(address+84);
+            dashes = memory.readb(address+88);
         return LibX11.Success;
     }
 }

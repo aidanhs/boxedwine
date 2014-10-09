@@ -429,8 +429,12 @@ public class Unistd {
         switch (name) {
             case 2: // _SC_CLK_TCK
                 return 1000;
-            case 84: // _SC_NPROCESSORS_ONLN
-                return Runtime.getRuntime().availableProcessors();
+            case 84: { // _SC_NPROCESSORS_ONLN
+                int count = Runtime.getRuntime().availableProcessors();
+                if (count<=1)
+                    count=2;
+                return count;
+            }
             case 85: // _SC_PHYS_PAGES
                 return RAM.pageCount();
             case 86: // _SC_AVPHYS_PAGES

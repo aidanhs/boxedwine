@@ -169,18 +169,11 @@ public class Memory {
         }
     }
 
-    public void lock(int address, int count, boolean exclusive) {
-        if (exclusive)
-            lock.writeLock().lock();
-        else
-            lock.readLock().lock();
+    public void lock() {
+        lock.writeLock().lock();
     }
 
-    public void unlock(int address, int count, boolean exclusive) {
-        if (exclusive) {
-            lock.writeLock().unlock();
-        } else {
-            lock.readLock().unlock();
-        }
+    public void unlock() {
+        lock.writeLock().unlock();
     }
 }
