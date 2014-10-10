@@ -123,6 +123,43 @@ public class testCPU extends TestCase {
         }
     }
 
+    protected void EbAlAx(int instruction, int which, Data[] data) {
+        for (Data d : data) {
+            for (int eb = 0; eb < 8; eb++) {
+                if (eb==0 || eb==4)
+                    continue;
+                int rm = eb | (which << 3) | 0xC0;
+                newInstruction(instruction, rm, d.flags);
+                Reg reg = Decoder.eb(cpu, rm);
+                if (reg.parent != null)
+                    reg.parent.dword = DEFAULT;
+                else
+                    reg.dword = DEFAULT;
+                cpu.eax.dword = DEFAULT;
+                cpu.eax.u8(d.left);
+                reg.u8(d.right);
+                runCPU();
+                d.assertResult(cpu, instruction, reg.u16(), 0, reg.name16, null, reg, null, 0, 16);
+            }
+
+            int rm = (which << 3);
+            if (cpu.big)
+                rm += 5;
+            else
+                rm += 6;
+            newInstruction(instruction, rm, d.flags);
+            if (cpu.big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            memory.writed(cpu.ds.dword + 200, DEFAULT);
+            memory.writeb(cpu.ds.dword + 200, d.left);
+            runCPU();
+            int result = memory.readb(cpu.ds.dword + 200);
+            d.assertResult(cpu, instruction, result, 0, null, null, null, null, cpu.ds.dword + 200, 8);
+        }
+    }
+
     protected void EbCl(int instruction, int which, Data[] data) {
         for (Data d : data) {
             for (int eb = 0; eb < 8; eb++) {
@@ -2254,6 +2291,11 @@ public class testCPU extends TestCase {
             new Data(10, 0, 0xFF, CPU.CF, true, false)
     };
 
+    private Data[] cmc = new Data[] {
+            new Data(0, 0, 0, 0, true, false),
+            new Data(0, 0, 0, CPU.CF, false, false)
+    };
+
     public void testAdd0x000() {cpu.big = false;EbGb(0x00, addb);}
     public void testAdd0x200() {cpu.big = true;EbGb(0x00, addb);}
     public void testAdd0x001() {cpu.big = false;EwGw(0x01, addw);}
@@ -2793,4 +2835,19 @@ public class testCPU extends TestCase {
         result+=8;
         assertTrue(cpu.eax.dword == result);
     }
+
+    public void testCmc0x0f5() {cpu.big=false;Eb(0xf5, cpu.eax, cmc);}
+    public void testCmc0x2f5() {cpu.big=true;Eb(0xf5, cpu.eax, cmc);}
+
+//    public void testGrp30x0f6() {
+//        cpu.big = true;
+//        EbIb(0xf6, 0, testb);
+//        EbIb(0xf6, 1, testb);
+//        Eb(0xf6, 2, notb);
+//        Eb(0xf6, 3, negb);
+//        EbAlAx(0xf6, 4, mulAl);
+//        EbAlAx(0xf6, 5, imulAl);
+//        EbAlAx(0xf6, 6, divAl);
+//        EbAlAx(0xf6, 7, idivAl);
+//    }
 }

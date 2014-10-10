@@ -4179,9 +4179,9 @@ class Ops {
         public Block call(CPU cpu) {
             cpu.fillFlags();
             if (cpu.CF())
-                cpu.flags |= CPU.CF;
-            else
                 cpu.flags &= ~CPU.CF;
+            else
+                cpu.flags |= CPU.CF;
             return next.callAndLog(cpu);
         }
         public String toString() {
