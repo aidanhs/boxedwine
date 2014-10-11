@@ -2,6 +2,7 @@ package wine.builtin.libc;
 
 import wine.emulation.Memory;
 import wine.system.WineProcess;
+import wine.system.WineSystem;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -64,8 +65,9 @@ public class Signal {
 
     // int kill(pid_t pid, int sig);
     static public int kill(int pid, int sig) {
-        // referenced but I don't think we would normally see this
-        Log.panic("kill not implemented");
+        WineProcess process = WineSystem.processes.get(pid);
+        if (process != null && !process.terminated)
+            Log.panic("kill not implemented");
         return 0;
     }
 

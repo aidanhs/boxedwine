@@ -153,8 +153,8 @@ public class WineThread {
             }
             process.addressSpace.freePages(pageStart, pageCount);
         }
-        threadToWineThread.remove(Thread.currentThread());
         process.exitThread(this);
+        threadToWineThread.remove(Thread.currentThread());
     }
 
     final public static Callback wineThreadReturn = new Callback() {

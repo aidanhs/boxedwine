@@ -49,9 +49,9 @@ public class WineProcess {
     final public SigAction[] sigActions = SigAction.create(64);
 
     public ElfModule mainModule;
-    final public Loader loader;
+    public Loader loader;
     public String currentDirectory;
-    public final Hashtable<Integer, FileDescriptor> fileDescriptors = new Hashtable<Integer, FileDescriptor>();
+    public Hashtable<Integer, FileDescriptor> fileDescriptors = new Hashtable<Integer, FileDescriptor>();
     public final int id;
     public int eipThreadReturn;
     public int passwd;
@@ -226,7 +226,19 @@ public class WineProcess {
         this.name = mainModule.name;
     }
     private void cleanup() {
+        Vector<FileDescriptor> fds = new Vector<FileDescriptor>();
+        for (FileDescriptor fd : this.fileDescriptors.values()) {
+            if (fd.closeOnExec())
+                fds.add(fd);
+        }
+        for (FileDescriptor fd : fds) {
+            fd.close();
+        }
         memory.close();
+        mainModule = null;
+        loader = null;
+        fileDescriptors = null;
+        stringMap = null;
     }
 
     public int alloc(int size) {
@@ -319,8 +331,7 @@ public class WineProcess {
 
     public void exitThread(WineThread thread) {
         synchronized (this) {
-            threads.remove(thread.id);
-            if (threads.size()==0) {
+            if (threads.size()==1) {
                 if (Log.level>=Log.LEVEL_DEBUG)
                     thread.out("Process Terminated");
                 this.terminated = true;
@@ -336,6 +347,7 @@ public class WineProcess {
 //                }
                 this.notifyAll();
             }
+            threads.remove(thread.id);
         }
     }
 

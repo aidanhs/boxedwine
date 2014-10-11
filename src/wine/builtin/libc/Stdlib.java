@@ -323,8 +323,10 @@ public class Stdlib {
                 } else if (c=='+') {
                     continue;
                 }
-                if (base==0 || base==16) {
-                    if (c == '0') {
+                else if (base==0 || base==16) {
+                    if (s.length()==1)
+                        base = 10;
+                    else if (c == '0') {
                         if (i + 1 < s.length()) {
                             char c1 = s.charAt(i + 1);
                             if (c1 == 'x' || c1 == 'X') {

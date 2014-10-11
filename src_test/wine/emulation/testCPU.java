@@ -123,7 +123,7 @@ public class testCPU extends TestCase {
         }
     }
 
-    protected void EbAlAx(int instruction, int which, Data[] data) {
+    protected void EbAlAx(int instruction, int which, Data[] data, boolean AX) {
         for (Data d : data) {
             for (int eb = 0; eb < 8; eb++) {
                 if (eb==0 || eb==4)
@@ -136,10 +136,13 @@ public class testCPU extends TestCase {
                 else
                     reg.dword = DEFAULT;
                 cpu.eax.dword = DEFAULT;
-                cpu.eax.u8(d.left);
+                if (AX)
+                    cpu.eax.u16(d.left);
+                else
+                    cpu.eax.u8(d.left);
                 reg.u8(d.right);
                 runCPU();
-                d.assertResult(cpu, instruction, reg.u16(), 0, reg.name16, null, reg, null, 0, 16);
+                d.assertResult(cpu, instruction, cpu.eax.u16(), 0, reg.name16, null, cpu.eax, null, 0, 16);
             }
 
             int rm = (which << 3);
@@ -152,11 +155,93 @@ public class testCPU extends TestCase {
                 pushCode32(200);
             else
                 pushCode16(200);
+            cpu.eax.dword = DEFAULT;
+            if (AX)
+                cpu.eax.u16(d.left);
+            else
+                cpu.eax.u8(d.left);
             memory.writed(cpu.ds.dword + 200, DEFAULT);
-            memory.writeb(cpu.ds.dword + 200, d.left);
+            memory.writeb(cpu.ds.dword + 200, d.right);
             runCPU();
-            int result = memory.readb(cpu.ds.dword + 200);
-            d.assertResult(cpu, instruction, result, 0, null, null, null, null, cpu.ds.dword + 200, 8);
+            d.assertResult(cpu, instruction, cpu.eax.u16(), 0, cpu.eax.name16, null, cpu.eax, null, 0, 16);
+        }
+    }
+
+    protected void EwAxDx(int instruction, int which, Data[] data, boolean useDX) {
+        for (Data d : data) {
+            for (int ew = 0; ew < 8; ew++) {
+                if (ew==0)
+                    continue;
+                if (useDX & ew==2)
+                    continue;
+                int rm = ew | (which << 3) | 0xC0;
+                newInstruction(instruction, rm, d.flags);
+                Reg reg = Decoder.ew(cpu, rm);
+                cpu.eax.dword = DEFAULT;
+                cpu.edx.dword = DEFAULT;
+                reg.dword = DEFAULT;
+                cpu.eax.u16(d.left);
+                cpu.edx.u16(d.right);
+                reg.u16(d.constant);
+                runCPU();
+                d.assertResult(cpu, instruction, cpu.eax.u16(), cpu.edx.u16(), cpu.eax.name16, cpu.edx.name16, cpu.eax, cpu.edx, 0, 16);
+            }
+
+            int rm = (which << 3);
+            if (cpu.big)
+                rm += 5;
+            else
+                rm += 6;
+            newInstruction(instruction, rm, d.flags);
+            if (cpu.big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            cpu.eax.dword = DEFAULT;
+            cpu.edx.dword = DEFAULT;
+            cpu.eax.u16(d.left);
+            cpu.edx.u16(d.right);
+            memory.writed(cpu.ds.dword + 200, DEFAULT);
+            memory.writew(cpu.ds.dword + 200, d.constant);
+            runCPU();
+            d.assertResult(cpu, instruction, cpu.eax.u16(), cpu.edx.u16(), cpu.eax.name16, cpu.edx.name16, cpu.eax, cpu.edx, 0, 16);
+        }
+    }
+
+    protected void EdEaxEdx(int instruction, int which, Data[] data, boolean useEdx) {
+        for (Data d : data) {
+            for (int ed = 0; ed < 8; ed++) {
+                if (ed==0)
+                    continue;
+                if (useEdx & ed==2)
+                    continue;
+                int rm = ed | (which << 3) | 0xC0;
+                newInstruction(instruction, rm, d.flags);
+                Reg reg = Decoder.ew(cpu, rm);
+                reg.dword = DEFAULT;
+                cpu.eax.dword = d.left;
+                cpu.edx.dword = d.right;
+                reg.dword = d.constant;
+                runCPU();
+                d.assertResult(cpu, instruction, cpu.eax.dword, cpu.edx.dword, cpu.eax.name32, cpu.edx.name32, cpu.eax, cpu.edx, 0, 32);
+            }
+
+            int rm = (which << 3);
+            if (cpu.big)
+                rm += 5;
+            else
+                rm += 6;
+            newInstruction(instruction, rm, d.flags);
+            if (cpu.big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            cpu.eax.dword=d.left;
+            cpu.edx.dword=d.right;
+            memory.writed(cpu.ds.dword + 200, DEFAULT);
+            memory.writed(cpu.ds.dword + 200, d.constant);
+            runCPU();
+            d.assertResult(cpu, instruction, cpu.eax.dword, cpu.edx.dword, cpu.eax.name32, cpu.edx.name32, cpu.eax, cpu.edx, 0, 32);
         }
     }
 
@@ -1293,6 +1378,19 @@ public class testCPU extends TestCase {
             dontUseResultAndCheckSFZF = false;
         }
 
+        public Data(int left, int right, int result, int flags, boolean CF, boolean OF, int constant, int rightResult) {
+            this.left = left;
+            this.right = right;
+            this.result = result;
+            this.flags = flags;
+            this.CF = CF;
+            this.OF = OF;
+            this.resultRight = rightResult;
+            this.useResultRight = true;
+            this.constant = constant;
+            dontUseResultAndCheckSFZF = false;
+        }
+
         public Data(int left, int right, int result, int constant, int constantWidth, int flags, boolean CF, boolean OF) {
             this.left = left;
             this.right = right;
@@ -1435,9 +1533,6 @@ public class testCPU extends TestCase {
             }
             if (bits==16) {
                 if (r1!=null) {
-                    if (!((r1.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000))) {
-                        int ii=0;
-                    }
                     assertTrue((r1.dword & 0xFFFF0000) == (DEFAULT & 0xFFFF0000));
                 }
                 if (r2!=null) {
@@ -2296,6 +2391,122 @@ public class testCPU extends TestCase {
             new Data(0, 0, 0, CPU.CF, false, false)
     };
 
+    private Data[] notb = new Data[] {
+            new Data(0, 0, 0xFF, 0, false, false),
+            new Data(0x0F, 0, 0xF0, 0, false, false),
+            new Data(0xF0, 0, 0x0F, 0, false, false)
+    };
+
+    private Data[] notw = new Data[] {
+            new Data(0, 0, 0xFFFF, 0, false, false),
+            new Data(0xF0F, 0, 0xF0F0, 0, false, false),
+            new Data(0xF0F0, 0, 0x0F0F, 0, false, false)
+    };
+
+    private Data[] notd = new Data[] {
+            new Data(0, 0, 0xFFFFFFFF, 0, false, false),
+            new Data(0x0F0F0F0F, 0, 0xF0F0F0F0, 0, false, false),
+            new Data(0xF0F0F0F0, 0, 0x0F0F0F0F, 0, false, false)
+    };
+
+    private Data[] negb = new Data[] {
+            new Data(0, 0, 0x0, 0, false, false),
+            new Data(4, 0, ((byte)-4) & 0xFF, 0, true, false)
+    };
+
+    private Data[] negw = new Data[] {
+            new Data(0, 0, 0x0, 0, false, false),
+            new Data(2045, 0, ((short)-2045) & 0xFFFF, 0, true, false)
+    };
+
+    private Data[] negd = new Data[] {
+            new Data(0, 0, 0x0, 0, false, false),
+            new Data(20458512, 0, -20458512, 0, true, false)
+    };
+
+    private Data[] mulAl = new Data[] {
+            new Data(2, 2, 4, 0, false, false),
+            new Data(0, 0, 0, 0, false, false),
+            new Data(0x20, 0x10, 0x200, 0, true, true),
+    };
+
+    private Data[] mulAx = new Data[] {
+            new Data(2, 0, 4, 0, false, false, 2, 0),
+            new Data(0, 0, 0, 0, false, false, 0, 0),
+            new Data(0x2001, 0, 0x0010, 0, true, true, 0x10, 0x0002),
+            new Data(0x2001, 0, 0x1000, 0, true, true, 0x1000, 0x0200),
+    };
+
+    private Data[] mulEax = new Data[] {
+            new Data(2, 0, 4, 0, false, false, 2, 0),
+            new Data(0, 0, 0, 0, false, false, 0, 0),
+            new Data(0x20000001, 0, 0x00000010, 0, true, true, 0x10, 0x00000002),
+            new Data(0x20000001, 0, 0x00010000, 0, true, true, 0x00010000, 0x00002000),
+    };
+
+    private Data[] imulAl = new Data[] {
+            new Data(2, 2, 4, 0, false, false),
+            new Data(0xFA, 2, 0xFFF4, 0, false, false), // -6 x 2 = -12
+            new Data(0xFA, 0x9C, 600, 0, true, true), // -6 x -100 = 600
+            new Data(0, 0xFF, 0, 0, false, false),
+    };
+
+    private Data[] imulAx = new Data[] {
+            new Data(2, 0, 4, 0, false, false, 2, 0),
+            new Data(0xFFFA, 0, 0xFFF4, 0, false, false, 2, 0xFFFF), // -6 x 2 = -12
+            new Data(((short)-600) & 0xFFFF, 0, 0x5780, 0, true, true, 30000, 0xFEED), // -600 x 30000 = -18000000
+            new Data(0xFFFA, 0, 600, 0, false, false, 0xFF9C, 0), // -6 x -100 = 600
+    };
+
+    private Data[] imulEax = new Data[] {
+            new Data(2, 0, 4, 0, false, false, 2, 0),
+            new Data(0xFFFFFFFA, 0, 0xFFFFFFF4, 0, false, false, 2, 0xFFFFFFFF), // -6 x 2 = -12
+            new Data(-60000, 0, 0x1729f800, 0, true, true, 3000000, 0xFFFFFFD6), // -60000 x 3000000 = -180000000000
+    };
+
+    private Data[] divAl = new Data[] {
+            new Data(10, 3, 0x0103, 0, false, false),
+            new Data(1003, 200, 0x0305, 0, false, false),
+    };
+
+    private Data[] divAx = new Data[] {
+            new Data(10, 0, 0x0003, 0, false, false, 3, 0x0001),
+            new Data(0x8512, 0xCB, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
+    };
+
+    private Data[] divEax = new Data[] {
+            new Data(10, 0, 0x0003, 0, false, false, 3, 0x0001),
+            new Data(0x85121234, 0xCB, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
+    };
+
+    private Data[] idivAl = new Data[] {
+            new Data(10, 3, 0x0103, 0, false, false),
+            new Data(10, ((byte)-3) & 0xFF, 0x01FD, 0, false, false),
+            new Data(((short)-1003) & 0xFFFF, ((byte)-100) & 0xFF, 0xFD0A, 0, false, false), // -3 rem, 10 quo
+    };
+
+    private Data[] idivAx = new Data[] {
+            new Data(10, 0, 3, 0, false, false, 3, 1),
+            new Data(0x8512, 0xCB, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
+            new Data(0x7AEE, 0xFF34, ((short)-4445) & 0xFFFF, 0, false, false, 3000, ((short)-2874) & 0xFFFF), // -13337874 / 3000 = -4445 r -2874
+    };
+
+    private Data[] idivEax = new Data[] {
+            new Data(10, 0, 3, 0, false, false, 3, 1),
+            new Data(0x85121234, 0xCB, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
+            new Data(0x7AEDEDCC, 0xFFFFFF34, 0xFFFFF4D3, 0, false, false, 0x12345678, 0xEDD848E4), // -874110915124 / 305419896 = -2861 r -304592668
+    };
+
+    private Data[] clc = new Data[] {
+            new Data(0, 0, 0, 0, false, false),
+            new Data(0, 0, 0, CPU.CF, false, false)
+    };
+
+    private Data[] stc = new Data[] {
+            new Data(0, 0, 0, 0, true, false),
+            new Data(0, 0, 0, CPU.CF, true, false)
+    };
+
     public void testAdd0x000() {cpu.big = false;EbGb(0x00, addb);}
     public void testAdd0x200() {cpu.big = true;EbGb(0x00, addb);}
     public void testAdd0x001() {cpu.big = false;EwGw(0x01, addw);}
@@ -2839,15 +3050,56 @@ public class testCPU extends TestCase {
     public void testCmc0x0f5() {cpu.big=false;Eb(0xf5, cpu.eax, cmc);}
     public void testCmc0x2f5() {cpu.big=true;Eb(0xf5, cpu.eax, cmc);}
 
-//    public void testGrp30x0f6() {
-//        cpu.big = true;
-//        EbIb(0xf6, 0, testb);
-//        EbIb(0xf6, 1, testb);
-//        Eb(0xf6, 2, notb);
-//        Eb(0xf6, 3, negb);
-//        EbAlAx(0xf6, 4, mulAl);
-//        EbAlAx(0xf6, 5, imulAl);
-//        EbAlAx(0xf6, 6, divAl);
-//        EbAlAx(0xf6, 7, idivAl);
-//    }
+    public void testGrp30x0f6() {
+        cpu.big = false;
+        EbIb(0xf6, 0, testb);
+        EbIb(0xf6, 1, testb);
+        Eb(0xf6, 2, notb);
+        Eb(0xf6, 3, negb);
+        EbAlAx(0xf6, 4, mulAl, false);
+        EbAlAx(0xf6, 5, imulAl, false);
+        EbAlAx(0xf6, 6, divAl, true);
+        EbAlAx(0xf6, 7, idivAl, true);
+    }
+
+    public void testGrp30x2f6() {
+        cpu.big = true;
+        EbIb(0xf6, 0, testb);
+        EbIb(0xf6, 1, testb);
+        Eb(0xf6, 2, notb);
+        Eb(0xf6, 3, negb);
+        EbAlAx(0xf6, 4, mulAl, false);
+        EbAlAx(0xf6, 5, imulAl, false);
+        EbAlAx(0xf6, 6, divAl, true);
+        EbAlAx(0xf6, 7, idivAl, true);
+    }
+
+    public void testGrp30x0f7() {
+        cpu.big = false;
+        EwIw(0xf7, 0, testw);
+        EwIw(0xf7, 1, testw);
+        Ew(0xf7, 2, notw);
+        Ew(0xf7, 3, negw);
+        EwAxDx(0xf7, 4, mulAx, false);
+        EwAxDx(0xf7, 5, imulAx, false);
+        EwAxDx(0xf7, 6, divAx, true);
+        EwAxDx(0xf7, 7, idivAx, true);
+    }
+
+    public void testGrp30x2f7() {
+        cpu.big = true;
+        EdId(0xf7, 0, testd);
+        EdId(0xf7, 1, testd);
+        Ed(0xf7, 2, notd);
+        Ed(0xf7, 3, negd);
+        EdEaxEdx(0xf7, 4, mulEax, false);
+        EdEaxEdx(0xf7, 5, imulEax, false);
+        EdEaxEdx(0xf7, 6, divEax, true);
+        EdEaxEdx(0xf7, 7, idivEax, true);
+    }
+
+    public void testClc0x0f8() {cpu.big=false;Eb(0xf8, cpu.eax, clc);}
+    public void testClc0x2f8() {cpu.big=true;Eb(0xf8, cpu.eax, clc);}
+    public void testStc0x0f8() {cpu.big=false;Eb(0xf9, cpu.eax, stc);}
+    public void testStc0x2f8() {cpu.big=true;Eb(0xf9, cpu.eax, stc);}
 }

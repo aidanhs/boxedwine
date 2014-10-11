@@ -1516,11 +1516,10 @@ class Instructions {
             int result = (byte)cpu.eax.u8() * (byte)value;
             cpu.eax.u16(result);
             cpu.fillFlagsNoCFOF();
-            result&=0xff80;
-            if (result>0xFF) {
-                cpu.flags&=~(CPU.CF|CPU.OF);
-            } else {
+            if (result<-128 || result>127) {
                 cpu.flags|=CPU.CF|CPU.OF;
+            } else {
+                cpu.flags&=~(CPU.CF|CPU.OF);
             }
         }
 
@@ -1538,7 +1537,7 @@ class Instructions {
             cpu.eax.u16(result);
             cpu.edx.u16(result >>> 16);
             cpu.fillFlagsNoCFOF();
-            if (result>0xFFFF) {
+            if (result>Short.MAX_VALUE || result<Short.MIN_VALUE) {
                 cpu.flags|=CPU.CF|CPU.OF;
             } else {
                 cpu.flags&=~(CPU.CF|CPU.OF);
@@ -1559,7 +1558,7 @@ class Instructions {
             cpu.eax.dword=(int)result;
             cpu.edx.dword=(int)(result >>> 32);
             cpu.fillFlagsNoCFOF();
-            if ((result & 0xFFFFFFFF00000000l) != 0) {
+            if (result>Integer.MAX_VALUE || result<Integer.MIN_VALUE) {
                 cpu.flags|=CPU.CF | CPU.OF;
             } else {
                 cpu.flags&=~(CPU.CF | CPU.OF);
@@ -1650,7 +1649,7 @@ class Instructions {
             if (quo!=(byte)quo) {
                 cpu.exception(CPU.DIVIDE_ERROR);
             }
-            cpu.eax.u16((rem << 8) | quo);
+            cpu.eax.u16((rem << 8) | (quo & 0xFF));
         }
 
         public boolean CF(CPU cpu) {return false;}
