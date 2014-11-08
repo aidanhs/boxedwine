@@ -3012,7 +3012,7 @@ class Decoder {
         };
         decoder[0x2f2] = decoder[0x0f2];
 
-        /* REPNZ */
+        /* REPZ */
         decoder[0x0f3] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
                 cpu.prefixes|=CPU.PREFIX_REP;
@@ -3023,6 +3023,15 @@ class Decoder {
             }
         };
         decoder[0x2f3] = decoder[0x0f3];
+
+        /* HLT */
+        decoder[0x0f4] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                Log.panic("HLT");
+                return true;
+            }
+        };
+        decoder[0x2f4] = decoder[0x0f4];
 
         /* CMC */
         decoder[0x0f5] = new Decode() {
@@ -3286,6 +3295,15 @@ class Decoder {
                 }
             }
         };
+
+        // RDTSC
+        decoder[0x131] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.Rdtsc();
+                return true;
+            }
+        };
+        decoder[0x331] = decoder[0x131];
 
         for (int i=0;i<16;i++) {
             final int index = i;

@@ -5340,4 +5340,17 @@ class Ops {
             return "pop "+name;
         }
     }
+
+    final static class Rdtsc extends Op {
+        public Block call(CPU cpu) {
+            long tsc = System.nanoTime();
+            cpu.eax.dword = (int)tsc;
+            cpu.edx.dword = (int)(tsc >>> 32);
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "RDTSCc";
+        }
+    };
 }
