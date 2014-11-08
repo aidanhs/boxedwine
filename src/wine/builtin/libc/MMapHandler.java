@@ -71,13 +71,19 @@ public class MMapHandler extends PageHandler {
         if (physicalPage==0) {
             alloc();
         }
-        return RAM.readd(address+addressTranslation);
+        if ((address & 0xFFF)<0xFFD) {
+            return RAM.readd(address+addressTranslation);
+        }
+        return memory.unalignedReadd(address);
     }
     public int readw(Memory memory, int address) {
         if (physicalPage==0) {
             alloc();
         }
-        return RAM.readw(address+addressTranslation);
+        if ((address & 0xFFF)<0xFFF) {
+            return RAM.readw(address+addressTranslation);
+        }
+        return memory.unalignedReadw(address);
     }
     public int readb(int address) {
         if (physicalPage==0) {
@@ -90,14 +96,25 @@ public class MMapHandler extends PageHandler {
             alloc();
         }
         dirty=true;
-        RAM.writed(address+addressTranslation, value);
+
+        if ((address & 0xFFF)<0xFFD) {
+            RAM.writed(address+addressTranslation, value);
+        } else {
+            memory.unalignedWrited(address, value);
+        }
+
     }
     public void writew(Memory memory, int address, int value) {
         if (physicalPage==0) {
             alloc();
         }
         dirty=true;
-        RAM.writew(address+addressTranslation, value);
+
+        if ((address & 0xFFF)<0xFFF) {
+            RAM.writew(address+addressTranslation, value);
+        } else {
+            memory.unalignedWritew(address, value);
+        }
     }
     public void writeb(int address, int value) {
         if (physicalPage==0) {
