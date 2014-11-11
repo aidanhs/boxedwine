@@ -2,13 +2,19 @@ package wine.util;
 
 import wine.system.WineThread;
 
+import javax.swing.*;
+
 public class Log {
     public static final int LEVEL_NONE = 0;
     public static final int LEVEL_WARN = 1;
     public static final int LEVEL_DEBUG = 2;
     public static final int level=LEVEL_WARN;
     static public void panic(String msg) {
-        WineThread.getCurrent().out("*** ERROR *** "+msg+"\n");
+        WineThread thread = WineThread.getCurrent();
+        msg = msg+" in "+thread.process.loader.getModule(thread.cpu.eip);
+        thread.out("*** ERROR *** "+msg+"\n");
+        JOptionPane.showMessageDialog(null, msg, "ERROR", JOptionPane.ERROR_MESSAGE);
+        System.exit(1);
     }
     static public void log(String msg) {
         WineThread.getCurrent().out(msg+"\n");

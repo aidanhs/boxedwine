@@ -2,6 +2,7 @@ package wine.builtin.libc;
 
 import wine.emulation.Memory;
 import wine.loader.BuiltinModule;
+import wine.loader.ElfModule;
 import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -9,6 +10,10 @@ import wine.util.Log;
 public class Libc extends BuiltinModule {
     public Libc(String name, WineProcess process, int id) {
         super(name, process, id);
+
+        ElfModule libc = null; //new ElfModule("libc.so", process, id);
+        //libc.load(WineThread.getCurrent(), "/usr/lib/i386-linux-gnu/libc.so");
+        //libc.init(WineThread.getCurrent());
 
         addData("stdin", process.stdin);
         addData("stdout", process.stdout);
@@ -23,17 +28,14 @@ public class Libc extends BuiltinModule {
         add_cdecl(Libc.class, "__cxa_atexit");
         add_cdecl(Libc.class, "__cxa_finalize");
         add_cdecl(Libc.class, "__fdelt_chk");
-        add_cdecl(Libc.class, "__fprintf_chk");
         add_cdecl(Libc.class, "__gmon_start__");
         add_cdecl(Libc.class, "_Jv_RegisterClasses");
         add_cdecl(Libc.class, "_ITM_deregisterTMCloneTable");
         add_cdecl(Libc.class, "_ITM_registerTMCloneTable");
         add_cdecl(Libc.class, "__libc_start_main");
         add_cdecl(Libc.class, "__pow_finite");
-        add_cdecl(Libc.class, "__snprintf_chk");
         add_cdecl(Libc.class, "__stack_chk_fail");
         add_cdecl(Libc.class, "strerror");
-        add_cdecl(Libc.class, "__vsnprintf_chk");
 
         add_cdecl(CType.class, "__ctype_b_loc");
         add_cdecl(CType.class, "__ctype_tolower_loc");
@@ -57,6 +59,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Dirent.class, "readdir");
         add_cdecl(Dirent.class, "readdir64");
         add_cdecl(Dirent.class, "rewinddir");
+        add_cdecl(Dirent.class, "scandir64");
 
         add_cdecl(Epoll.class, "epoll_create");
         add_cdecl(Epoll.class, "epoll_ctl");
@@ -68,6 +71,8 @@ public class Libc extends BuiltinModule {
         add_cdecl(Fcntl.class, "fcntl");
         add_cdecl(Fcntl.class, "open");
         add_cdecl(Fcntl.class, "open64");
+        add_cdecl(Fcntl.class, "__open64_2");
+        add_cdecl(Fcntl.class, "posix_fadvise64");
 
         add_cdecl(Grp.class, "getgrgid");
 
@@ -81,6 +86,7 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Ioctl.class, "ioctl");
 
+        add_cdecl(Locale.class, "localeconv");
         add_cdecl(Locale.class, "setlocale");
 
         add_cdecl(Mmap.class, "madvise");
@@ -104,6 +110,11 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Pwd.class, "getpwuid");
 
+        add_cdecl(Regex.class, "regcomp");
+        add_cdecl(Regex.class, "regerror");
+        add_cdecl(Regex.class, "regexec");
+        add_cdecl(Regex.class, "regfree");
+
         add_cdecl(Resource.class, "getrlimit64");
         add_cdecl(Resource.class, "setrlimit64");
 
@@ -111,6 +122,9 @@ public class Libc extends BuiltinModule {
         add_cdecl(Sched.class, "sched_setaffinity");
         add_cdecl(Sched.class, "sched_yield");
 
+        add_cdecl(Setjmp.class, "longjmp");
+        add_cdecl(Setjmp.class, "__longjmp_chk");
+        add_cdecl(Setjmp.class, "_setjmp");
         add_cdecl(Setjmp.class, "siglongjmp");
         add_cdecl(Setjmp.class, "__sigsetjmp");
 
@@ -152,6 +166,7 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stat.class, "stat");
         add_cdecl(Stat.class, "__xstat64");
         add_cdecl(Stat.class, "fstat");
+        add_cdecl(Stat.class, "__fxstat");
         add_cdecl(Stat.class, "__fxstat64");
         add_cdecl(Stat.class, "futimens");
         add_cdecl(Stat.class, "statfs64");
@@ -167,31 +182,67 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Statvfs.class, "fstatvfs");
 
+        if (libc==null) {
+            add_cdecl(Stdio.class, "__snprintf_chk");
+            add_cdecl(Stdio.class, "snprintf");
+            add_cdecl(Stdio.class, "sprintf");
+            add_cdecl(Stdio.class, "__sprintf_chk");
+            add_cdecl(Stdio.class, "__isoc99_sscanf");
+            add_cdecl(Stdio.class, "sscanf");
+            add_cdecl(Stdio.class, "__vfprintf_chk");
+            add_cdecl(Stdio.class, "vfprintf");
+            add_cdecl(Stdio.class, "__vsnprintf_chk");
+            add_cdecl(Stdio.class, "vsnprintf");
+            add_cdecl(Stdio.class, "vsscanf");
+        } else {
+            symbols.put("__snprintf_chk", libc.getSymbol("__snprintf_chk"));
+//            symbols.put("snprintf", libc.getSymbol("snprintf"));
+            symbols.put("sprintf", libc.getSymbol("sprintf"));
+            symbols.put("__sprintf_chk", libc.getSymbol("__sprintf_chk"));
+//            symbols.put("__isoc99_sscanf", libc.getSymbol("__isoc99_sscanf"));
+//            symbols.put("sscanf", libc.getSymbol("sscanf"));
+//            symbols.put("__vfprintf_chk", libc.getSymbol("__vfprintf_chk"));
+//            symbols.put("vfprintf", libc.getSymbol("vfprintf"));
+            symbols.put("__vsnprintf_chk", libc.getSymbol("__vsnprintf_chk"));
+//            symbols.put("vsnprintf", libc.getSymbol("vsnprintf"));
+//            symbols.put("vsscanf", libc.getSymbol("vsscanf"));
+
+            add_cdecl(Stdio.class, "__snprintf_chk");
+            add_cdecl(Stdio.class, "snprintf");
+            add_cdecl(Stdio.class, "sprintf");
+            add_cdecl(Stdio.class, "__sprintf_chk");
+            add_cdecl(Stdio.class, "__isoc99_sscanf");
+            add_cdecl(Stdio.class, "sscanf");
+            add_cdecl(Stdio.class, "__vfprintf_chk");
+            add_cdecl(Stdio.class, "vfprintf");
+            add_cdecl(Stdio.class, "__vsnprintf_chk");
+            add_cdecl(Stdio.class, "vsnprintf");
+            add_cdecl(Stdio.class, "vsscanf");
+        }
         add_cdecl(Stdio.class, "fclose");
         add_cdecl(Stdio.class, "fdopen");
         add_cdecl(Stdio.class, "fdopen64");
         add_cdecl(Stdio.class, "feof");
+        add_cdecl(Stdio.class, "fflush");
         add_cdecl(Stdio.class, "fgets");
         add_cdecl(Stdio.class, "fopen");
         add_cdecl(Stdio.class, "fopen64");
+        add_cdecl(Stdio.class, "__fprintf_chk");
         add_cdecl(Stdio.class, "fprintf");
         add_cdecl(Stdio.class, "fputc");
         add_cdecl(Stdio.class, "fputs");
+        add_cdecl(Stdio.class, "fread");
         add_cdecl(Stdio.class, "fscanf");
         add_cdecl(Stdio.class, "fwrite");
         add_cdecl(Stdio.class, "perror");
+        add_cdecl(Stdio.class, "__printf_chk");
         add_cdecl(Stdio.class, "printf");
+        add_cdecl(Stdio.class, "putchar");
         add_cdecl(Stdio.class, "puts");
         add_cdecl(Stdio.class, "rename");
         add_cdecl(Stdio.class, "setbuf");
         add_cdecl(Stdio.class, "setvbuf");
-        add_cdecl(Stdio.class, "snprintf");
-        add_cdecl(Stdio.class, "sprintf");
-        add_cdecl(Stdio.class, "__isoc99_sscanf");
-        add_cdecl(Stdio.class, "sscanf");
-        add_cdecl(Stdio.class, "vfprintf");
-        add_cdecl(Stdio.class, "vsnprintf");
-        add_cdecl(Stdio.class, "vsscanf");
+
 
         add_cdecl(Stdlib.class, "abort");
         add_cdecl(Stdlib.class, "abs");
@@ -202,14 +253,19 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "exit");
         add_cdecl(Stdlib.class, "free");
         add_cdecl(Stdlib.class, "getenv");
+        add_cdecl(Stdlib.class, "initstate_r");
         add_cdecl(Stdlib.class, "labs");
         add_cdecl(Stdlib.class, "ldiv");
         add_cdecl(Stdlib.class, "malloc");
+        add_cdecl(Stdlib.class, "mkostemp");
+        add_cdecl(Stdlib.class, "mkostemp64");
         add_cdecl(Stdlib.class, "putenv");
         add_cdecl(Stdlib.class, "qsort");
         add_cdecl(Stdlib.class, "rand");
+        add_cdecl(Stdlib.class, "random_r");
         add_cdecl(Stdlib.class, "realloc");
         add_cdecl(Stdlib.class, "realpath");
+        add_cdecl(Stdlib.class, "srand");
         add_cdecl(Stdlib.class, "strtod");
         add_cdecl(Stdlib.class, "strtol");
         add_cdecl(Stdlib.class, "strtold");
@@ -219,31 +275,62 @@ public class Libc extends BuiltinModule {
         add_cdecl(Stdlib.class, "system");
         add_cdecl(Stdlib.class, "unsetenv");
 
-        add_cdecl(Strings.class, "memcmp");
-        add_cdecl(Strings.class, "memccpy");
-        add_cdecl(Strings.class, "memchr");
-        add_cdecl(Strings.class, "memcpy");
-        add_cdecl(Strings.class, "memset");
-        add_cdecl(Strings.class, "memmove");
+        if (libc==null) {
+            add_cdecl(Strings.class, "memcmp");
+            add_cdecl(Strings.class, "memccpy");
+            add_cdecl(Strings.class, "memchr");
+            add_cdecl(Strings.class, "memcpy");
+            add_cdecl(Strings.class, "__memcpy_chk");
+            add_cdecl(Strings.class, "memset");
+            add_cdecl(Strings.class, "memmove");
+            add_cdecl(Strings.class, "strcat");
+            add_cdecl(Strings.class, "strncat");
+            add_cdecl(Strings.class, "strchr");
+            add_cdecl(Strings.class, "strcmp");
+            add_cdecl(Strings.class, "__strcpy_chk");
+            add_cdecl(Strings.class, "strcspn");
+            add_cdecl(Strings.class, "strncmp");
+            add_cdecl(Strings.class, "strncpy");
+
+            add_cdecl(Strings.class, "__strncpy_chk");
+            add_cdecl(Strings.class, "strpbrk");
+            add_cdecl(Strings.class, "strrchr");
+            add_cdecl(Strings.class, "strspn");
+            add_cdecl(Strings.class, "strstr");
+            add_cdecl(Strings.class, "strtok");
+            add_cdecl(Strings.class, "strxfrm");
+        } else {
+            symbols.put("memcmp", libc.getSymbol("memcmp"));
+            symbols.put("memccpy", libc.getSymbol("memccpy"));
+            symbols.put("memchr", libc.getSymbol("memchr"));
+            symbols.put("memcpy", libc.getSymbol("memcpy"));
+            symbols.put("__memcpy_chk", libc.getSymbol("__memcpy_chk"));
+            symbols.put("memset", libc.getSymbol("memset"));
+            symbols.put("memmove", libc.getSymbol("memmove"));
+            symbols.put("strcat", libc.getSymbol("strcat"));
+            symbols.put("strncat", libc.getSymbol("strncat"));
+            symbols.put("strchr", libc.getSymbol("strchr"));
+            symbols.put("strcmp", libc.getSymbol("strcmp"));
+            symbols.put("__strcpy_chk", libc.getSymbol("__strcpy_chk"));
+            symbols.put("strcspn", libc.getSymbol("strcspn"));
+            symbols.put("strncmp", libc.getSymbol("strncmp"));
+            symbols.put("strncpy", libc.getSymbol("strncpy"));
+
+            symbols.put("__strncpy_chk", libc.getSymbol("__strncpy_chk"));
+            symbols.put("strpbrk", libc.getSymbol("strpbrk"));
+            symbols.put("strrchr", libc.getSymbol("strrchr"));
+            symbols.put("strspn", libc.getSymbol("strspn"));
+            symbols.put("strstr", libc.getSymbol("strstr"));
+            symbols.put("strtok", libc.getSymbol("strtok"));
+            symbols.put("strxfrm", libc.getSymbol("strxfrm"));
+        }
         add_cdecl(Strings.class, "strcasecmp");
         add_cdecl(Strings.class, "strncasecmp");
-        add_cdecl(Strings.class, "strcat");
-        add_cdecl(Strings.class, "strncat");
-        add_cdecl(Strings.class, "strchr");
         add_cdecl(Strings.class, "stpcpy");
-        add_cdecl(Strings.class, "strcmp");
         add_cdecl(Strings.class, "strcpy");
-        add_cdecl(Strings.class, "strcspn");
         add_cdecl(Strings.class, "__strdup");
         add_cdecl(Strings.class, "strlen");
-        add_cdecl(Strings.class, "strncmp");
-        add_cdecl(Strings.class, "strncpy");
-        add_cdecl(Strings.class, "strpbrk");
-        add_cdecl(Strings.class, "strrchr");
-        add_cdecl(Strings.class, "strspn");
-        add_cdecl(Strings.class, "strstr");
-        add_cdecl(Strings.class, "strtok");
-        add_cdecl(Strings.class, "strxfrm");
+
 
         add_cdecl(Syscall.class, "syscall");
 
@@ -272,6 +359,7 @@ public class Libc extends BuiltinModule {
 
         add_cdecl(Uio.class, "writev");
 
+        add_cdecl(Unistd.class, "access");
         add_cdecl(Unistd.class, "alarm");
         add_cdecl(Unistd.class, "chdir");
         add_cdecl(Unistd.class, "close");
@@ -338,11 +426,6 @@ public class Libc extends BuiltinModule {
         return d / 32;
     }
 
-    // int __fprintf_chk(FILE * stream, int flag, const char * format)
-    static public int __fprintf_chk(int stream, int flag, int format) {
-        return Stdio.fprintf(stream, format);
-    }
-
     static public void __gmon_start__() {
     }
 
@@ -360,11 +443,6 @@ public class Libc extends BuiltinModule {
 
     static public double __pow_finite(double a, double b) {
         return Math.pow(a, b);
-    }
-
-    // int __snprintf_chk(char * str, size_t maxlen, int flag, size_t strlen, const char * format)
-    static public int __snprintf_chk(int str, int maxlen, int flag, int strlen, int format) {
-        return Stdio.vsnprintf(str, strlen, format, WineThread.getCurrent().cpu.esp.dword+20);
     }
 
     // int __libc_start_main(int (*main) (int, char * *, char * *), int argc, char * * ubp_av, void (*init) (void), void (*fini) (void), void (*rtld_fini) (void), void (* stack_end))
@@ -391,10 +469,5 @@ public class Libc extends BuiltinModule {
         }
         thread.process.memory.writeCString(thread.strerror, "Error: "+errnum);
         return thread.strerror;
-    }
-
-    // int __vsnprintf_chk(char * s, size_t maxlen, int flag, size_t slen, const char * format, va_list args)
-    static public int __vsnprintf_chk(int str, int maxlen, int flag, int strlen, int format, int args) {
-        return Stdio.vsnprintf(str, strlen, format, args);
     }
 }

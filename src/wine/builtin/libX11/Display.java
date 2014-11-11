@@ -2,6 +2,7 @@ package wine.builtin.libX11;
 
 import wine.emulation.Memory;
 import wine.system.WineProcess;
+import wine.system.WineThread;
 import wine.system.io.FileLock;
 import wine.system.io.KernelObject;
 import wine.system.io.KernelStat;
@@ -24,7 +25,37 @@ public class Display extends KernelObject {
     public boolean kbUseExtension = false;
     public WineProcess process;
 
+    private void addAtom(int id, String s) {
+        atomsById.put(id, s);
+        atomsByName.put(s, id);
+    }
     public Display() {
+        addAtom(XAtom.XA_WM_TRANSIENT_FOR, "WM_TRANSIENT_FOR");
+        addAtom(XAtom.XA_WM_SIZE_HINTS, "WM_SIZE_HINTS");
+        addAtom(XAtom.XA_WM_NAME, "WM_NAME");
+        addAtom(XAtom.XA_WM_ICON_NAME, "WM_ICON_NAME");
+        addAtom(XAtom.XA_WM_HINTS, "WM_HINTS");
+    }
+
+    static public Pixmap getPixmap(int id) {
+        XID result = XID.xids.get(id);
+        if (result instanceof Pixmap)
+            return (Pixmap)result;
+        return null;
+    }
+
+    public Window getWindow(int id) {
+        XID result = XID.xids.get(id);
+        if (result instanceof Window)
+            return (Window)result;
+        return null;
+    }
+
+    public Drawable getDrawable(int id) {
+        XID result = XID.xids.get(id);
+        if (result instanceof Drawable)
+            return (Drawable)result;
+        return null;
     }
 
     public Pixmap createNewPixmap() {
@@ -248,5 +279,32 @@ public class Display extends KernelObject {
         stat.st_blocks = 0;
         stat.st_rdev = 1;
         return true;
+    }
+
+    private int lockCount;
+    private int lockThreadId;
+
+    synchronized public void lock() {
+        int threadId = WineThread.getCurrent().id;
+        while (lockCount!=0 && lockThreadId!=threadId) {
+            try {this.wait();} catch (InterruptedException e) {}
+        }
+        lockCount++;
+        lockThreadId = threadId;
+    }
+
+    synchronized public void unlock() {
+        if (WineThread.getCurrent().id!=lockThreadId)
+            Log.panic("Wrong thread tried to unlock the display");
+        lockCount--;
+        if (lockCount==0) {
+            notifyAll();
+        }
+    }
+
+    synchronized public void checkLock() {
+        while (lockCount>0 && WineThread.getCurrent().id!=lockThreadId) {
+            try {this.wait();} catch (InterruptedException e) {}
+        }
     }
 }

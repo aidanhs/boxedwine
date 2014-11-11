@@ -375,9 +375,9 @@ class Instructions {
 
     static final private class Incb extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value+1;
-            cpu.result = r;
+            int r = (value+1) & 0xFF;
             cpu.oldcf = cpu.CF();
+            cpu.result = r;
             cpu.lazyFlags = this;
             return r;
         }
@@ -392,9 +392,9 @@ class Instructions {
 
     static final private class Incw extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value+1;
-            cpu.result = r;
+            int r = (value+1) & 0xFFFF;
             cpu.oldcf = cpu.CF();
+            cpu.result = r;
             cpu.lazyFlags = this;
             return r;
         }
@@ -410,8 +410,8 @@ class Instructions {
     static final private class Incd extends Instruction {
         public int run(CPU cpu, int value) {
             int r = value+1;
-            cpu.result = r;
             cpu.oldcf = cpu.CF();
+            cpu.result = r;
             cpu.lazyFlags = this;
             return r;
         }
@@ -426,9 +426,9 @@ class Instructions {
 
     static final private class Decb extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value-1;
-            cpu.result = r;
+            int r = (value-1) & 0xFF;
             cpu.oldcf = cpu.CF();
+            cpu.result = r;
             cpu.lazyFlags = this;
             return r;
         }
@@ -443,9 +443,9 @@ class Instructions {
 
     static final private class Decw extends Instruction {
         public int run(CPU cpu, int value) {
-            int r = value-1;
-            cpu.result = r;
+            int r =(value-1) & 0xFFFF;
             cpu.oldcf = cpu.CF();
+            cpu.result = r;
             cpu.lazyFlags = this;
             return r;
         }
@@ -461,8 +461,8 @@ class Instructions {
     static final private class Decd extends Instruction {
         public int run(CPU cpu, int value) {
             int r = value-1;
-            cpu.result = r;
             cpu.oldcf = cpu.CF();
+            cpu.result = r;
             cpu.lazyFlags = this;
             return r;
         }
@@ -790,10 +790,11 @@ class Instructions {
 
     static final private class RclB_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 9;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2 = value2 % 9;
             return rclb.run(cpu, value1, value2);
         }
 
@@ -832,10 +833,11 @@ class Instructions {
 
     static final private class RclW_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 17;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2 = value2 % 17;
             return rclw.run(cpu, value1, value2);
         }
 
@@ -855,9 +857,15 @@ class Instructions {
             cpu.left = value1;
             cpu.right = value2;
             if (cpu.CF()) {
-                result = (value1 << value2) | (1 << (value2 -1)) | (value1 >> (33-value2));
+                if (value2==1)
+                    result = (value1 << value2) | 1;
+                else
+                    result = (value1 << value2) | (1 << (value2 -1)) | (value1 >>> (33-value2));
             } else {
-                result = (value1 << value2) | (value1 >> (33-value2));
+                if (value2==1)
+                    result = (value1 << value2);
+                else
+                    result = (value1 << value2) | (value1 >>> (33-value2));
             }
             cpu.result = result;
             cpu.lazyFlags = this;
@@ -916,10 +924,11 @@ class Instructions {
 
     static final private class RcrB_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 9;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2 = value2 % 9;
             return rcrb.run(cpu, value1, value2);
         }
 
@@ -958,10 +967,11 @@ class Instructions {
 
     static final private class RcrW_check extends Instruction {
         public int run(CPU cpu, int value1, int value2) {
-            value2=value2 % 17;
+            value2=value2 & 0x1f;
             if (value2==0) {
                 return value1;
             }
+            value2=value2 % 17;
             return rcrw.run(cpu, value1, value2);
         }
 
@@ -981,9 +991,15 @@ class Instructions {
             cpu.left = value1;
             cpu.right = value2;
             if (cpu.CF()) {
-                result = (value1 >> value2) | (1 << (32 - value2)) | (value1 << (33-value2));
+                if (value2==1)
+                    result = (value1 >>> value2) | 0x80000000;
+                else
+                    result = (value1 >>> value2) | (1 << (32 - value2)) | (value1 << (33-value2));
             } else {
-                result = (value1 >> value2) | (value1 << (33-value2));
+                if (value2==1)
+                    result = (value1 >>> value2);
+                else
+                    result = (value1 >>> value2) | (value1 << (33-value2));
             }
             cpu.result = result;
             cpu.lazyFlags = this;
@@ -1500,11 +1516,10 @@ class Instructions {
             int result = (byte)cpu.eax.u8() * (byte)value;
             cpu.eax.u16(result);
             cpu.fillFlagsNoCFOF();
-            result&=0xff80;
-            if (result>0xFF) {
-                cpu.flags&=~(CPU.CF|CPU.OF);
-            } else {
+            if (result<-128 || result>127) {
                 cpu.flags|=CPU.CF|CPU.OF;
+            } else {
+                cpu.flags&=~(CPU.CF|CPU.OF);
             }
         }
 
@@ -1522,7 +1537,7 @@ class Instructions {
             cpu.eax.u16(result);
             cpu.edx.u16(result >>> 16);
             cpu.fillFlagsNoCFOF();
-            if (result>0xFFFF) {
+            if (result>Short.MAX_VALUE || result<Short.MIN_VALUE) {
                 cpu.flags|=CPU.CF|CPU.OF;
             } else {
                 cpu.flags&=~(CPU.CF|CPU.OF);
@@ -1543,7 +1558,7 @@ class Instructions {
             cpu.eax.dword=(int)result;
             cpu.edx.dword=(int)(result >>> 32);
             cpu.fillFlagsNoCFOF();
-            if ((result & 0xFFFFFFFF00000000l) != 0) {
+            if (result>Integer.MAX_VALUE || result<Integer.MIN_VALUE) {
                 cpu.flags|=CPU.CF | CPU.OF;
             } else {
                 cpu.flags&=~(CPU.CF | CPU.OF);
@@ -1634,7 +1649,7 @@ class Instructions {
             if (quo!=(byte)quo) {
                 cpu.exception(CPU.DIVIDE_ERROR);
             }
-            cpu.eax.u16((rem << 8) | quo);
+            cpu.eax.u16((rem << 8) | (quo & 0xFF));
         }
 
         public boolean CF(CPU cpu) {return false;}

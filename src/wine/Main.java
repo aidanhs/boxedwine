@@ -6,11 +6,13 @@ import wine.system.WineSystem;
 import wine.system.io.*;
 import wine.util.Path;
 
+import java.io.File;
+
 public class Main {
     static public void main(String[] args) {
         FileSystem.links.add(new Path("/home/boxedwine/.wine/drive_c", "/home/boxedwine/.wine/dosdevices/c:"));
         FileSystem.links.add(new Path("/", "/home/boxedwine/.wine/dosdevices/z:"));
-        FileSystem.paths.add(new Path("c:\\wine\\root", ""));
+        FileSystem.paths.add(new Path(System.getProperty("user.dir")+ File.separator+"root", ""));
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull());
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero());
         VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom());
@@ -19,15 +21,19 @@ public class Main {
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable/wine");
         WineSystem.libDirs.add("/usr/lib/i386-linux-gnu");
 
+        if (args.length==0) {
+            args = new String[] {"explorer", "/desktop=name,1024x768", "notepad"};
+        }
         RAM.init(170 * 1024 * 1024);
         // not necessary to create this up front, but it allows debug msg's to go to stdout
         //createWineServer();
         //WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/libz.so.1"}, new String[0]);
-        String[] t = new String[args.length+1];
-        System.arraycopy(args, 0, t, 1, args.length);
+        String[] t = new String[args.length+2];
+        System.arraycopy(args, 0, t, 2, args.length);
         args = t;
-        args[0]="/usr/lib/i386-linux-gnu/wine-unstable/bin/wine";
-        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32","WINEDEBUG=+bitblt"})==null) {
+        args[0]="/lib/ld-linux.so.2";
+        args[1]="/usr/lib/i386-linux-gnu/wine-unstable/bin/wine";
+        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32"})==null) {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }

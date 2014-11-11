@@ -61,7 +61,6 @@ public class Poll {
         for (int i=0;i<data.length;i++) {
             data[i].writeRevents(memory);
         }
-        thread.process.memory.writed(134957720, 2);
         return result;
     }
 

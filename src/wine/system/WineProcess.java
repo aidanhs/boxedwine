@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
+import java.util.concurrent.locks.Lock;
 
 public class WineProcess {
     // the values don't really matter too much, it just makes it easier to debug if we know what might be in a particular address
@@ -41,6 +42,10 @@ public class WineProcess {
     static public final int STATE_STARTED = 1;
     static public final int STATE_DONE = 2;
 
+    // resources
+    static public final int MAX_STACK_SIZE = 128*1024*1024;
+    static public final int MAX_ADDRESS_SPACE = 0xE0000000;
+
     // if new variables are addedd, make sure they are accounted for in fork and exec
     final public AddressSpace addressSpace;
     final public Memory memory;
@@ -48,9 +53,9 @@ public class WineProcess {
     final public SigAction[] sigActions = SigAction.create(64);
 
     public ElfModule mainModule;
-    final public Loader loader;
+    public Loader loader;
     public String currentDirectory;
-    public final Hashtable<Integer, FileDescriptor> fileDescriptors = new Hashtable<Integer, FileDescriptor>();
+    public Hashtable<Integer, FileDescriptor> fileDescriptors = new Hashtable<Integer, FileDescriptor>();
     public final int id;
     public int eipThreadReturn;
     public int passwd;
@@ -61,6 +66,9 @@ public class WineProcess {
     public int stdin;
     public int stdout;
     public int stderr;
+    public int end;
+    public int maxStackSize = MAX_STACK_SIZE;
+    public int maxAddressSpace = MAX_ADDRESS_SPACE;
     private int[] env;
     public final Hashtable<String, String> envByNameValue;
     public final Hashtable<String, Integer> envByNamePos;
@@ -89,6 +97,10 @@ public class WineProcess {
     private int stringPagePos;
     // if new variables are addedd, make sure they are accounted for in fork and exec
     public X11PerProcessData x11 = new X11PerProcessData();
+    public Vector<Lock> mutexes = new Vector<Lock>();
+    public int nextTLS = 4096; // first page is reserved
+    public int rtld_global_ro;
+    public int ctid;
 
     static private class ExitFunction {
         public ExitFunction(int func, int arg) {
@@ -124,6 +136,9 @@ public class WineProcess {
         this.stdin = process.stdin;
         this.stdout = process.stdout;
         this.stderr = process.stderr;
+        this.end = process.end;
+        this.maxAddressSpace = process.maxAddressSpace;
+        this.maxStackSize = process.maxStackSize;
         this.callReturnEip = process.callReturnEip;
         this.env = process.env.clone();
         this.envByNameValue = (Hashtable<String, String>)process.envByNameValue.clone();
@@ -153,10 +168,12 @@ public class WineProcess {
         this.stringMap = (Hashtable<String, Integer>)process.stringMap.clone();
         this.stringPage = process.stringPage;
         this.stringPagePos = process.stringPagePos;
+        this.nextTLS = process.nextTLS;
+        this.rtld_global_ro = process.rtld_global_ro;
         WineSystem.processes.put(id, this);
     }
 
-    public WineProcess(String currentDirectory, String name, int id, int tid, String envs[]) {
+    public WineProcess(String currentDirectory, String[] args, int id, int tid, String envs[]) {
         memory  = new Memory();
         loader = new Loader(this);
         addressSpace = new AddressSpace();
@@ -169,13 +186,16 @@ public class WineProcess {
         WineThread thread = new WineThread(this, 0, 0, 0, 0, tid);
         thread.jThread = Thread.currentThread();
         thread.registerThread();
-        init(name, envs, thread);
+        init(args, envs, thread);
     }
 
-    public void init(String name, String envs[], WineThread thread) {
+    public void init(String[] args, String envs[], WineThread thread) {
         memory.init();
         loader.init();
         addressSpace.clear();
+        rtld_global_ro = alloc(4096);
+        memory.writed(rtld_global_ro+0x38, 0); // dl_fpu_control
+
         heap.clear(ADDRESS_PROCESS_HEAP_START<<12, ADDRESS_PROCESS_HEAP_START<<12);
         envByNameValue.clear();
         callReturnEip=CPU.registerCallReturnEip(loader);
@@ -220,16 +240,28 @@ public class WineProcess {
             fileDescriptors.put(2, new FileDescriptor(0, KernelObject.stderr, Fcntl.O_WRONLY));
 
         thread.init();
-        mainModule = (ElfModule)loader.loadModule(thread, name);
+        mainModule = (ElfModule)loader.loadModule(thread, args[0]);
         this.name = mainModule.name;
     }
     private void cleanup() {
+        Vector<FileDescriptor> fds = new Vector<FileDescriptor>();
+        for (FileDescriptor fd : this.fileDescriptors.values()) {
+            if (fd.closeOnExec())
+                fds.add(fd);
+        }
+        for (FileDescriptor fd : fds) {
+            fd.close();
+        }
         memory.close();
+        mainModule = null;
+        loader = null;
+        fileDescriptors = null;
+        stringMap = null;
     }
 
     public int alloc(int size) {
         synchronized (heap) {
-            int result = heap.alloc(size);
+            int result = heap.alloc(memory, size);
             if (result == 0) {
                 int pages = ((size + 0xFFF) >>> 12) + 1;
                 int address = heap.grow(pages << 12);
@@ -238,7 +270,7 @@ public class WineProcess {
                     int page = RAM.allocPage();
                     memory.handlers[pageStart + i] = new RAMHandler(page, false, false);
                 }
-                result = heap.alloc(size);
+                result = heap.alloc(memory, size);
             }
             if (result == 0) {
                 Log.panic("Out of memory");
@@ -248,7 +280,7 @@ public class WineProcess {
     }
 
     public int getSizeOfAllocation(int address) {
-        return heap.getSize(address);
+        return heap.getSize(memory, address);
     }
 
     public void allocPages(int pageStart, int pages, boolean map) {
@@ -282,7 +314,7 @@ public class WineProcess {
         if (address==0)
             return;
         synchronized (heap) {
-            heap.free(address);
+            heap.free(memory, address);
         }
     }
 
@@ -317,8 +349,7 @@ public class WineProcess {
 
     public void exitThread(WineThread thread) {
         synchronized (this) {
-            threads.remove(thread.id);
-            if (threads.size()==0) {
+            if (threads.size()==1) {
                 if (Log.level>=Log.LEVEL_DEBUG)
                     thread.out("Process Terminated");
                 this.terminated = true;
@@ -334,6 +365,7 @@ public class WineProcess {
 //                }
                 this.notifyAll();
             }
+            threads.remove(thread.id);
         }
     }
 
@@ -443,7 +475,7 @@ public class WineProcess {
 
         Thread thread = new Thread(new Runnable() {
             public void run() {
-                final WineProcess process = new WineProcess(currentDirectory, args[0], pid, tid, env);
+                final WineProcess process = new WineProcess(currentDirectory, args, pid, tid, env);
                 if (process.mainModule==null) {
                     synchronized (result) {
                         result.notify();
@@ -500,7 +532,7 @@ public class WineProcess {
         start(thread, argPtrs, env, run);
     }
 
-    public void start(WineThread thread, int[] args, int[] env, boolean run) {
+    public void setupStack(WineThread thread, int[] args, int[] env, int eip) {
         thread.cpu.push32(0);
         for (int i=env.length-1;i>=0;i--)
             thread.cpu.push32(env[i]);
@@ -508,7 +540,7 @@ public class WineProcess {
         for (int i=args.length-1;i>=0;i--)
             thread.cpu.push32(args[i]);
         thread.cpu.push32(args.length);
-        thread.cpu.eip = mainModule.getEntryPoint();
+        thread.cpu.eip = eip;
         thread.cpu.eax.dword = 0;
         thread.cpu.ecx.dword = 0;
         thread.cpu.edx.dword = 0;
@@ -516,6 +548,9 @@ public class WineProcess {
         thread.cpu.ebp.dword = 0;
         thread.cpu.esi.dword = 0;
         thread.cpu.edi.dword = 0;
+    }
+    public void start(WineThread thread, int[] args, int[] env, boolean run) {
+        setupStack(thread, args, env, mainModule.getEntryPoint());
         synchronized (this) {
             state = STATE_STARTED;
         }
@@ -528,6 +563,60 @@ public class WineProcess {
         }
     }
 
+    /*
+ * cloning flags:
+ */
+    static public final int CSIGNAL        = 0x000000ff;      /* signal mask to be sent at exit */
+    static public final int CLONE_VM       = 0x00000100;      /* set if VM shared between processes */
+    static public final int CLONE_FS       = 0x00000200;      /* set if fs info shared between processes */
+    static public final int CLONE_FILES    = 0x00000400;      /* set if open files shared between processes */
+    static public final int CLONE_SIGHAND  = 0x00000800;      /* set if signal handlers and blocked signals shared */
+    static public final int CLONE_PTRACE   = 0x00002000;      /* set if we want to let tracing continue on the child too */
+    static public final int CLONE_VFORK    = 0x00004000;      /* set if the parent wants the child to wake it up on mm_release */
+    static public final int CLONE_PARENT   = 0x00008000;      /* set if we want to have the same parent as the cloner */
+    static public final int CLONE_THREAD   = 0x00010000;      /* Same thread group? */
+    static public final int CLONE_NEWNS    = 0x00020000;      /* New namespace group? */
+    static public final int CLONE_SYSVSEM  = 0x00040000;      /* share system V SEM_UNDO semantics */
+    static public final int CLONE_SETTLS   = 0x00080000;      /* create a new TLS for the child */
+    static public final int CLONE_PARENT_SETTID    = 0x00100000;      /* set the TID in the parent */
+    static public final int CLONE_CHILD_CLEARTID   = 0x00200000;      /* clear the TID in the child */
+    static public final int CLONE_DETACHED         = 0x00400000;      /* Unused, ignored */
+    static public final int CLONE_UNTRACED         = 0x00800000;      /* set if the tracing process can't force CLONE_PTRACE on this clone */
+    static public final int CLONE_CHILD_SETTID     = 0x01000000;      /* set the TID in the child */
+/* 0x02000000 was previously the unused CLONE_STOPPED (Start in stopped state)
+   and is now available for re-use. */
+    static public final int CLONE_NEWUTS           = 0x04000000;      /* New utsname group? */
+    static public final int CLONE_NEWIPC           = 0x08000000;      /* New ipcs */
+    static public final int CLONE_NEWUSER          = 0x10000000;      /* New user namespace */
+    static public final int CLONE_NEWPID           = 0x20000000;      /* New pid namespace */
+    static public final int CLONE_NEWNET           = 0x40000000;      /* New network namespace */
+    static public final int CLONE_IO               = 0x80000000;      /* Clone io context */
+
+
+
+    public int linux_clone(int flags, int child_stack, int ptid, int ctid, int regs) {
+        if ((flags & 0xFFFFFF00)!=(CLONE_CHILD_SETTID|CLONE_CHILD_CLEARTID)) {
+            Log.panic("syscall clone does not implement flags: "+Integer.toHexString(flags));
+        }
+        WineProcess process = new WineProcess(WineSystem.nextid++, this);
+        process.parent = this;
+        WineThread thread = WineThread.getCurrent().fork(process);
+
+        if ((flags & CLONE_CHILD_SETTID)!=0) {
+            if (ctid!=0) {
+                memory.writed(ctid, thread.id);
+            }
+        }
+        if ((flags & CLONE_CHILD_CLEARTID)!=0) {
+            process.ctid = ctid;
+        }
+        thread.cpu.eip = thread.cpu.peek32(0);
+        thread.cpu.eax.dword = 0;
+        thread.cpu.log = true;
+        thread.jThread.start();
+        return process.id;
+    }
+    
     // INHERITED
     // file descriptors
     // current thread
@@ -540,11 +629,12 @@ public class WineProcess {
     public WineProcess fork(int eip) {
         if (threads.size()>1) {
             // :TODO: what should we do if we have more than one thread, do we clean up the memory the other threads allocated?
-            Log.panic("fork doesn't handle a process with more than one thread");
+            Log.warn("fork doesn't handle a process with more than one thread correctly, memory was leaked");
         }
         WineProcess process = new WineProcess(WineSystem.nextid++, this);
         process.parent = this;
         WineThread thread = WineThread.getCurrent().fork(process);
+
         thread.cpu.eip = eip;
         thread.cpu.eax.dword = 0;
         thread.jThread.start();
@@ -644,7 +734,7 @@ public class WineProcess {
         if (address == null) {
             byte[] bytes = string.getBytes();
             int len = bytes.length+1;
-            if (len>4096-stringPagePos) {
+            if (stringPage==0 || len>4096-stringPagePos) {
                 int page = addressSpace.getNextPage(WineProcess.ADDRESS_PER_PROCESS, 1);
                 allocPages(page, 1, false);
                 stringPage = page << 12;

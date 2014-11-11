@@ -26,6 +26,8 @@ public class WineThread {
     public int alternateStackSize;
     public int sigMask;
     public int strtok_last;
+    public int clear_child_tid;
+
     private StringBuilder stdoutBuffer = new StringBuilder();
 
     static public WineThread getCurrent() {
@@ -148,15 +150,13 @@ public class WineThread {
             int pageCount = this.stackSize >>> 12;
             for (int i = 0; i < pageCount; i++) {
                 PageHandler handler = process.memory.handlers[pageStart + i];
-                if (handler instanceof ThreadHandler) {
-                    RAM.freePage(((ThreadHandler) handler).getPhysicalPage());
-                }
+                handler.close();
                 process.memory.handlers[i + pageStart] = Memory.invalidHandler;
             }
             process.addressSpace.freePages(pageStart, pageCount);
         }
-        threadToWineThread.remove(Thread.currentThread());
         process.exitThread(this);
+        threadToWineThread.remove(Thread.currentThread());
     }
 
     final public static Callback wineThreadReturn = new Callback() {
@@ -216,6 +216,10 @@ public class WineThread {
 
     public void setErrno(int errno) {
         process.memory.writed(this.errnoPtr, errno);
+    }
+
+    public int errno() {
+        return process.memory.readd(this.errnoPtr);
     }
 
     public int signal(int signal) {

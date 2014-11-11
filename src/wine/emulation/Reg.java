@@ -33,10 +33,11 @@ public class Reg {
     }
 
     public void u16(int value) {
-        dword = dword & 0xFFFF0000 | value;
+        dword = dword & 0xFFFF0000 | (value & 0xFFFF);
     }
 
     public void u8(int s) {
+        s &= 0xFF;
         if (parent == null)
             dword = (dword & 0xFFFFFF00 | s);
         else

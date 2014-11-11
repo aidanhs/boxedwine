@@ -18,6 +18,7 @@ abstract public class FSNode {
         if (!localPath.startsWith("/")) {
             localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
         }
+        System.out.println(localPath);
         for (int i=0;i<FileSystem.links.size();i++) {
             Path path = FileSystem.links.elementAt(i);
             if (localPath.startsWith(path.localPath)) {
@@ -87,6 +88,8 @@ abstract public class FSNode {
     abstract public InputStream getInputStream() throws IOException;
     abstract public boolean setLastModifiedTime(long time);
     abstract public String name();
+    abstract public boolean canRead();
+    abstract public boolean canWrite();
 
     private static class FSNodeFile extends FSNode {
         private FSNodeFile(File file, String localPath, String nativePath) {
@@ -218,6 +221,14 @@ abstract public class FSNode {
 
         public String name() {
             return file.getName();
+        }
+
+        public boolean canRead() {
+            return file.canRead();
+        }
+
+        public boolean canWrite() {
+            return file.canWrite();
         }
 
         final private File file;

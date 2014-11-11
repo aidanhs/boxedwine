@@ -394,7 +394,29 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writeb(address, instruction.run(cpu, cpu.memory.readb(address)));
+            Memory memory = cpu.memory;
+            memory.writeb(address, instruction.run(cpu, memory.readb(address)));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString8();
+        }
+    }
+
+    final static class Instruction_Mem8_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+
+        public Instruction_Mem8_Lock(Instruction instruction, EaaBase dest) {
+            this.instruction = instruction;
+            this.dest = dest;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writeb(address, instruction.run(cpu, memory.readb(address)));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -419,6 +441,29 @@ class Ops {
         }
     }
 
+    final static class Instruction_Mem8_value_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private int src;
+
+        public Instruction_Mem8_value_Lock(Instruction instruction, EaaBase dest, int src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writeb(address, instruction.run(cpu, memory.readb(address), src));
+            memory.unlock();
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString8()+", "+src;
+        }
+    }
+
     final static class Instruction_Mem8_value extends Op {
         final private Instruction instruction;
         final private EaaBase dest;
@@ -431,7 +476,8 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writeb(address, instruction.run(cpu, cpu.memory.readb(address), src));
+            Memory memory = cpu.memory;
+            memory.writeb(address, instruction.run(cpu, memory.readb(address), src));
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -449,7 +495,29 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address)));
+            Memory memory = cpu.memory;
+            memory.writew(address, instruction.run(cpu, memory.readw(address)));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16();
+        }
+    }
+
+    final static class Instruction_Mem16_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+
+        public Instruction_Mem16_Lock(Instruction instruction, EaaBase dest) {
+            this.instruction = instruction;
+            this.dest = dest;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writew(address, instruction.run(cpu, memory.readw(address)));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -486,7 +554,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address), src));
+            Memory memory = cpu.memory;
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src;
+        }
+    }
+
+    final static class Instruction_Mem16_value_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private int src;
+
+        public Instruction_Mem16_value_Lock(Instruction instruction, EaaBase dest, int src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -504,7 +596,29 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address)));
+            Memory memory = cpu.memory;
+            memory.writed(address, instruction.run(cpu, memory.readd(address)));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32();
+        }
+    }
+
+    final static class Instruction_Mem32_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+
+        public Instruction_Mem32_Lock(Instruction instruction, EaaBase dest) {
+            this.instruction = instruction;
+            this.dest = dest;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writed(address, instruction.run(cpu, memory.readd(address)));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -541,7 +655,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address), src));
+            Memory memory = cpu.memory;
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src;
+        }
+    }
+
+    final static class Instruction_Mem32_value_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private int src;
+
+        public Instruction_Mem32_value_Lock(Instruction instruction, EaaBase dest, int src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -561,7 +699,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writeb(address, instruction.run(cpu, cpu.memory.readb(address), src.u8()));
+            Memory memory = cpu.memory;
+            memory.writeb(address, instruction.run(cpu, memory.readb(address), src.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString8()+", "+src.name8;
+        }
+    }
+
+    final static class Instruction_Mem8_Reg8_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+
+        public Instruction_Mem8_Reg8_Lock(Instruction instruction, EaaBase dest, Reg src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writeb(address, instruction.run(cpu, memory.readb(address), src.u8()));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -581,7 +743,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address), src.u8()));
+            Memory memory = cpu.memory;
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src.name8;
+        }
+    }
+
+    final static class Instruction_Mem16_Reg8_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+
+        public Instruction_Mem16_Reg8_Lock(Instruction instruction, EaaBase dest, Reg src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src.u8()));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -601,7 +787,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writew(address, instruction.run(cpu, cpu.memory.readw(address), src.u16()));
+            Memory memory = cpu.memory;
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src.u16()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src.name16;
+        }
+    }
+
+    final static class Instruction_Mem16_Reg16_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+
+        public Instruction_Mem16_Reg16_Lock(Instruction instruction, EaaBase dest, Reg src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writew(address, instruction.run(cpu, memory.readw(address), src.u16()));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -621,7 +831,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address), src.u8()));
+            Memory memory = cpu.memory;
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src.name8;
+        }
+    }
+
+    final static class Instruction_Mem32_Reg8_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+
+        public Instruction_Mem32_Reg8_Lock(Instruction instruction, EaaBase dest, Reg src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src.u8()));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -641,7 +875,31 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int address = dest.call(cpu);
-            cpu.memory.writed(address, instruction.run(cpu, cpu.memory.readd(address), src.dword));
+            Memory memory = cpu.memory;
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src.dword));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src.name32;
+        }
+    }
+
+    final static class Instruction_Mem32_Reg32_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+
+        public Instruction_Mem32_Reg32_Lock(Instruction instruction, EaaBase dest, Reg src) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            int address = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writed(address, instruction.run(cpu, memory.readd(address), src.dword));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -663,7 +921,33 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writew(eaa, instruction.run(cpu, cpu.memory.readw(eaa), src.u16(), value.u8()));
+            Memory memory = cpu.memory;
+            memory.writew(eaa, instruction.run(cpu, memory.readw(eaa), src.u16(), value.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value.name8;
+        }
+    }
+
+    final static class Instruction_Mem16_Reg16_Reg8_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private Reg value;
+
+        public Instruction_Mem16_Reg16_Reg8_Lock(Instruction instruction, EaaBase dest, Reg src, Reg value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writew(eaa, instruction.run(cpu, memory.readw(eaa), src.u16(), value.u8()));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -685,7 +969,33 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writed(eaa, instruction.run(cpu, cpu.memory.readd(eaa), src.dword, value.u8()));
+            Memory memory = cpu.memory;
+            memory.writed(eaa, instruction.run(cpu, memory.readd(eaa), src.dword, value.u8()));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value.name8;
+        }
+    }
+
+    final static class Instruction_Mem32_Reg32_Reg8_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private Reg value;
+
+        public Instruction_Mem32_Reg32_Reg8_Lock(Instruction instruction, EaaBase dest, Reg src, Reg value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writed(eaa, instruction.run(cpu, memory.readd(eaa), src.dword, value.u8()));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -707,7 +1017,33 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writew(eaa, instruction.run(cpu, cpu.memory.readw(eaa), src.u16(), value));
+            Memory memory = cpu.memory;
+            memory.writew(eaa, instruction.run(cpu, memory.readw(eaa), src.u16(), value));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value;
+        }
+    }
+
+    final static class Instruction_Mem16_Reg16_Value_3_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private int value;
+
+        public Instruction_Mem16_Reg16_Value_3_Lock(Instruction instruction, EaaBase dest, Reg src, int value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writew(eaa, instruction.run(cpu, memory.readw(eaa), src.u16(), value));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -729,7 +1065,33 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa = dest.call(cpu);
-            cpu.memory.writed(eaa, instruction.run(cpu, cpu.memory.readd(eaa), src.dword, value));
+            Memory memory = cpu.memory;
+            memory.writed(eaa, instruction.run(cpu, memory.readd(eaa), src.dword, value));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value;
+        }
+    }
+
+    final static class Instruction_Mem32_Reg32_Value_3_Lock extends Op {
+        final private Instruction instruction;
+        final private EaaBase dest;
+        final private Reg src;
+        final private int value;
+
+        public Instruction_Mem32_Reg32_Value_3_Lock(Instruction instruction, EaaBase dest, Reg src, int value) {
+            this.instruction = instruction;
+            this.dest = dest;
+            this.src = src;
+            this.value = value;
+        }
+        public Block call(CPU cpu) {
+            int eaa = dest.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            memory.writed(eaa, instruction.run(cpu, memory.readd(eaa), src.dword, value));
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1303,11 +1665,7 @@ class Ops {
             this.dest = dest;
         }
         public Block call(CPU cpu) {
-            cpu.base_ds = cpu.zero;
-            cpu.base_ss = cpu.zero;
             dest.u16(eaa.call(cpu));
-            cpu.base_ds = cpu.ds;
-            cpu.base_ss = cpu.ss;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1324,11 +1682,7 @@ class Ops {
             this.dest = dest;
         }
         public Block call(CPU cpu) {
-            cpu.base_ds = cpu.zero;
-            cpu.base_ss = cpu.zero;
             dest.dword=eaa.call(cpu);
-            cpu.base_ds = cpu.ds;
-            cpu.base_ss = cpu.ss;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1425,19 +1779,22 @@ class Ops {
         }
     }
 
-    final static class Exchange_Mem8_Reg8 extends Op {
+    final static class Exchange_Mem8_Reg8_Lock extends Op {
         final private EaaBase eaa;
         final private Reg reg;
 
-        public Exchange_Mem8_Reg8(EaaBase eaa, Reg reg) {
+        public Exchange_Mem8_Reg8_Lock(EaaBase eaa, Reg reg) {
             this.eaa = eaa;
             this.reg = reg;
         }
         public Block call(CPU cpu) {
             int addresss = eaa.call(cpu);
             int tmp = reg.u8();
-            reg.u8(cpu.memory.readb(addresss));
-            cpu.memory.writeb(addresss, tmp);
+            Memory memory = cpu.memory;
+            memory.lock();
+            reg.u8(memory.readb(addresss));
+            memory.writeb(addresss, tmp);
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1464,19 +1821,22 @@ class Ops {
         }
     }
 
-    final static class Exchange_Mem16_Reg16 extends Op {
+    final static class Exchange_Mem16_Reg16_Lock extends Op {
         final private EaaBase eaa;
         final private Reg reg;
 
-        public Exchange_Mem16_Reg16(EaaBase eaa, Reg reg) {
+        public Exchange_Mem16_Reg16_Lock(EaaBase eaa, Reg reg) {
             this.eaa = eaa;
             this.reg = reg;
         }
         public Block call(CPU cpu) {
             int addresss = eaa.call(cpu);
             int tmp = reg.u16();
-            reg.u16(cpu.memory.readw(addresss));
-            cpu.memory.writew(addresss, tmp);
+            Memory memory = cpu.memory;
+            memory.lock();
+            reg.u16(memory.readw(addresss));
+            memory.writew(addresss, tmp);
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1503,19 +1863,22 @@ class Ops {
         }
     }
 
-    final static class Exchange_Mem32_Reg32 extends Op {
+    final static class Exchange_Mem32_Reg32_Lock extends Op {
         final private EaaBase eaa;
         final private Reg reg;
 
-        public Exchange_Mem32_Reg32(EaaBase eaa, Reg reg) {
+        public Exchange_Mem32_Reg32_Lock(EaaBase eaa, Reg reg) {
             this.eaa = eaa;
             this.reg = reg;
         }
         public Block call(CPU cpu) {
             int addresss = eaa.call(cpu);
             int tmp = reg.dword;
-            reg.dword=cpu.memory.readd(addresss);
-            cpu.memory.writed(addresss, tmp);
+            Memory memory = cpu.memory;
+            memory.lock();
+            reg.dword=memory.readd(addresss);
+            memory.writed(addresss, tmp);
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1625,6 +1988,22 @@ class Ops {
         }
     }
 
+    final static class Mov_Reg16_Reg8 extends Op {
+        final private Reg dest;
+        final private Reg src;
+
+        public Mov_Reg16_Reg8(Reg dest, Reg src) {
+            this.dest = dest;
+            this.src = src;
+        }
+        public Block call(CPU cpu) {
+            dest.u16(src.u8());
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "mov "+dest.name32+", "+src.name8;
+        }
+    }
 
     final static class Mov_Reg16_Reg8_sx extends Op {
         final private Reg dest;
@@ -1691,6 +2070,23 @@ class Ops {
         }
         public String toString() {
             return "mov "+eaa.toString16()+", "+src.name16;
+        }
+    }
+
+    final static class Mov_Reg16_Mem8 extends Op {
+        final private EaaBase eaa;
+        final private Reg dest;
+
+        public Mov_Reg16_Mem8(Reg dest, EaaBase eaa) {
+            this.eaa = eaa;
+            this.dest = dest;
+        }
+        public Block call(CPU cpu) {
+            dest.u16(cpu.memory.readb(eaa.call(cpu)));
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "mov "+dest.name32+", "+eaa.toString8();
         }
     }
 
@@ -1981,7 +2377,7 @@ class Ops {
 
     final static class Cdq extends Op {
         public Block call(CPU cpu) {
-            if ((cpu.eax.dword & 0x80000000)!=0) cpu.edx.dword=0xffffffff; else cpu.edx.dword=0;
+            if (cpu.eax.dword<0) cpu.edx.dword=0xffffffff; else cpu.edx.dword=0;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -1992,7 +2388,7 @@ class Ops {
     final static class PushF16 extends Op {
         public Block call(CPU cpu) {
             cpu.fillFlags();
-            cpu.push16(cpu.flags);
+            cpu.push16(cpu.flags|1);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2003,7 +2399,7 @@ class Ops {
     final static class PushF32 extends Op {
         public Block call(CPU cpu) {
             cpu.fillFlags();
-            cpu.push32(cpu.flags);
+            cpu.push32((cpu.flags|1) & 0xFCFFFF);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2025,7 +2421,7 @@ class Ops {
     final static class PopF32 extends Op {
         public Block call(CPU cpu) {
             cpu.lazyFlags = null;
-            cpu.flags=cpu.pop32();
+            cpu.flags=(cpu.flags & CPU.VM) | (cpu.pop32() & ~CPU.VM);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2035,7 +2431,8 @@ class Ops {
 
     final static class Sahf extends Op {
         public Block call(CPU cpu) {
-            cpu.flags=(cpu.flags & 0xFFFFFF00) | cpu.ah.u8() | (cpu.OF()?CPU.OF:0);
+            int mask = CPU.SF|CPU.ZF|CPU.AF|CPU.PF|CPU.CF;
+            cpu.flags=(cpu.flags & (0xFFFFFF00 | (~mask))) | (cpu.ah.u8() & mask);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2046,7 +2443,8 @@ class Ops {
     final static class Lahf extends Op {
         public Block call(CPU cpu) {
             cpu.fillFlags();
-            cpu.ah.u8(cpu.flags);
+            int mask = CPU.SF|CPU.ZF|CPU.AF|CPU.PF|CPU.CF;
+            cpu.ah.u8((cpu.flags & mask)|1);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2122,7 +2520,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writeb(base.dword + address, src.u8());
+            cpu.memory.writeb(base.dword + this.address, src.u8());
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2141,7 +2539,7 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writew(base.dword + address, src.u16());
+            cpu.memory.writew(base.dword + this.address, src.u16());
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -2160,7 +2558,8 @@ class Ops {
             this.base = base;
         }
         public Block call(CPU cpu) {
-            cpu.memory.writed(base.dword + address, src.dword);
+            int address = base.dword + this.address;
+            cpu.memory.writed(address, src.dword);
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -3780,9 +4179,9 @@ class Ops {
         public Block call(CPU cpu) {
             cpu.fillFlags();
             if (cpu.CF())
-                cpu.flags |= CPU.CF;
-            else
                 cpu.flags &= ~CPU.CF;
+            else
+                cpu.flags |= CPU.CF;
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4299,9 +4698,34 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa=eb.call(cpu);
-            int val = cpu.memory.readb(eaa);
+            Memory memory = cpu.memory;
+            int val = memory.readb(eaa);
             int result = Instructions.addb.run(cpu, gb.u8(), val);
-            cpu.memory.writeb(eaa,result);
+            memory.writeb(eaa,result);
+            gb.u8(val);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "xadd "+gb.name8+", "+eb.toString8();
+        }
+    }
+
+    final static class Xadd_Reg8_Mem8_Lock extends Op {
+        final private Reg gb;
+        final private EaaBase eb;
+
+        public Xadd_Reg8_Mem8_Lock(Reg gb, EaaBase eb) {
+            this.gb = gb;
+            this.eb = eb;
+        }
+        public Block call(CPU cpu) {
+            int eaa=eb.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            int val = memory.readb(eaa);
+            int result = Instructions.addb.run(cpu, gb.u8(), val);
+            memory.writeb(eaa,result);
+            memory.unlock();
             gb.u8(val);
             return next.callAndLog(cpu);
         }
@@ -4340,9 +4764,34 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa=ew.call(cpu);
-            int val = cpu.memory.readw(eaa);
+            Memory memory = cpu.memory;
+            int val = memory.readw(eaa);
             int result = Instructions.addw.run(cpu, gw.u16(), val);
-            cpu.memory.writew(eaa,result);
+            memory.writew(eaa,result);
+            gw.u16(val);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "xadd "+gw.name16+", "+ew.toString16();
+        }
+    }
+
+    final static class Xadd_Reg16_Mem16_Lock extends Op {
+        final private Reg gw;
+        final private EaaBase ew;
+
+        public Xadd_Reg16_Mem16_Lock(Reg gw, EaaBase ew) {
+            this.gw = gw;
+            this.ew = ew;
+        }
+        public Block call(CPU cpu) {
+            int eaa=ew.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            int val = memory.readw(eaa);
+            int result = Instructions.addw.run(cpu, gw.u16(), val);
+            memory.writew(eaa,result);
+            memory.unlock();
             gw.u16(val);
             return next.callAndLog(cpu);
         }
@@ -4381,9 +4830,34 @@ class Ops {
         }
         public Block call(CPU cpu) {
             int eaa=ed.call(cpu);
-            int val = cpu.memory.readd(eaa);
+            Memory memory = cpu.memory;
+            int val = memory.readd(eaa);
             int result = Instructions.addd.run(cpu, gd.dword, val);
-            cpu.memory.writed(eaa,result);
+            memory.writed(eaa,result);
+            gd.dword=val;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "xadd "+gd.name32+", "+ed.toString32();
+        }
+    }
+
+    final static class Xadd_Reg32_Mem32_Lock extends Op {
+        final private Reg gd;
+        final private EaaBase ed;
+
+        public Xadd_Reg32_Mem32_Lock(Reg gd, EaaBase ed) {
+            this.gd = gd;
+            this.ed = ed;
+        }
+        public Block call(CPU cpu) {
+            int eaa=ed.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            int val = memory.readd(eaa);
+            int result = Instructions.addd.run(cpu, gd.dword, val);
+            memory.writed(eaa,result);
+            memory.unlock();
             gd.dword=val;
             return next.callAndLog(cpu);
         }
@@ -4439,13 +4913,10 @@ class Ops {
         }
         public Block call(CPU cpu) {
             Instructions.subd.run(cpu, ed.dword, cpu.eax.dword);
-            cpu.fillFlags();
             if (cpu.eax.dword == ed.dword) {
                 ed.dword=gd.dword;
-                cpu.flags|=CPU.ZF;
             } else {
                 cpu.eax.dword=ed.dword;
-                cpu.flags&=~CPU.ZF;
             }
 
             return next.callAndLog(cpu);
@@ -4468,15 +4939,40 @@ class Ops {
             Memory memory = cpu.memory;
             int val = memory.readd(eaa);
             Instructions.subd.run(cpu, val, cpu.eax.dword);
-            cpu.fillFlags();
             if (cpu.eax.dword == val) {
                 memory.writed(eaa,gd.dword);
-                cpu.flags|=CPU.ZF;
             } else {
                 memory.writed(eaa,val);	// cmpxchg always issues a write
                 cpu.eax.dword=val;
-                cpu.flags&=~CPU.ZF;
             }
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmpxchg "+ed.toString32()+", "+gd.name32;
+        }
+    }
+
+    final static class CmpxchgEdGd_mem_Lock extends Op {
+        final private Reg gd;
+        final private EaaBase ed;
+
+        public CmpxchgEdGd_mem_Lock(EaaBase ed, Reg gd) {
+            this.gd = gd;
+            this.ed = ed;
+        }
+        public Block call(CPU cpu) {
+            int eaa=ed.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            int val = memory.readd(eaa);
+            Instructions.subd.run(cpu, val, cpu.eax.dword);
+            if (cpu.eax.dword == val) {
+                memory.writed(eaa,gd.dword);
+            } else {
+                memory.writed(eaa,val);	// cmpxchg always issues a write
+                cpu.eax.dword=val;
+            }
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4494,15 +4990,11 @@ class Ops {
         }
         public Block call(CPU cpu) {
             Instructions.subw.run(cpu, ew.u16(), cpu.eax.u16());
-            cpu.fillFlags();
             if (cpu.eax.u16() == ew.u16()) {
                 ew.u16(gw.u16());
-                cpu.flags|=CPU.ZF;
             } else {
                 cpu.eax.u16(ew.u16());
-                cpu.flags&=~CPU.ZF;
             }
-
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4523,15 +5015,40 @@ class Ops {
             Memory memory = cpu.memory;
             int val = memory.readw(eaa);
             Instructions.subw.run(cpu, val, cpu.eax.u16());
-            cpu.fillFlags();
             if (cpu.eax.u16() == val) {
                 memory.writew(eaa,gw.u16());
-                cpu.flags|=CPU.ZF;
             } else {
                 memory.writew(eaa,val);	// cmpxchg always issues a write
                 cpu.eax.u16(val);
-                cpu.flags&=~CPU.ZF;
             }
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmpxchg "+ew.toString16()+", "+gw.name16;
+        }
+    }
+
+    final static class CmpxchgEwGw_mem_Lock extends Op {
+        final private Reg gw;
+        final private EaaBase ew;
+
+        public CmpxchgEwGw_mem_Lock(EaaBase ew, Reg gw) {
+            this.gw = gw;
+            this.ew = ew;
+        }
+        public Block call(CPU cpu) {
+            int eaa=ew.call(cpu);
+            Memory memory = cpu.memory;
+            memory.lock();
+            int val = memory.readw(eaa);
+            Instructions.subw.run(cpu, val, cpu.eax.u16());
+            if (cpu.eax.u16() == val) {
+                memory.writew(eaa,gw.u16());
+            } else {
+                memory.writew(eaa,val);	// cmpxchg always issues a write
+                cpu.eax.u16(val);
+            }
+            memory.unlock();
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -4571,4 +5088,269 @@ class Ops {
             return "syscall";
         }
     }
+
+    static public final class ConditionalMov_Reg extends Op {
+        final Reg ed;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Reg(Condition cond, Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            if (cond.test(cpu))
+                gd.dword = ed.dword;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov "+cond.toString()+" "+gd.name32+", "+ed.name32;
+        }
+    }
+
+    static public final class ConditionalMov_Mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Mem(Condition cond, EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            int tmp = cpu.memory.readd(eaa.call(cpu));
+            if (cond.test(cpu))
+                gd.dword = tmp;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov "+cond.toString()+" "+gd.name32+", "+eaa.toString32();
+        }
+    }
+
+    static public final class BtcEdGd_reg extends Op {
+        final Reg ed;
+        final Reg gd;
+
+        public BtcEdGd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword^=mask;
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "btc";
+        }
+    }
+
+    static public final class BtcEdGd_mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BtcEdGd_mem(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            int address=eaa.call(cpu);
+            address+=(gd.dword>>5)*4; // intentional signed shift
+            Memory memory = cpu.memory;
+            int old=memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            memory.writed(address,old ^ mask);
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "btc";
+        }
+    }
+
+    static public final class BtcEdGd_mem_Lock extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BtcEdGd_mem_Lock(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            int address=eaa.call(cpu);
+            address+=(gd.dword>>5)*4; // intentional signed shift
+            Memory memory = cpu.memory;
+            memory.lock();
+            int old=memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            memory.writed(address,old ^ mask);
+            memory.unlock();
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "btc";
+        }
+    }
+
+    static public final class BsfGdEd_reg extends Op {
+        final Reg ed;
+        final Reg gd;
+
+        public BsfGdEd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int value=ed.dword;
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 0;
+                while ((value & 0x01)==0) { result++; value>>>=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsf";
+        }
+    }
+
+    static public final class BsfGdEd_mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BsfGdEd_mem(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            int address=eaa.call(cpu);
+            int value=cpu.memory.readd(address);
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 0;
+                while ((value & 0x01)==0) { result++; value>>>=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsf";
+        }
+    }
+
+    static public final class BsrGdEd_reg extends Op {
+        final Reg ed;
+        final Reg gd;
+
+        public BsrGdEd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int value=ed.dword;
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 31;	// Operandsize-1
+                while ((value & 0x80000000)==0) { result--; value<<=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsr";
+        }
+    }
+
+    static public final class BsrGdEd_mem extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+
+        public BsrGdEd_mem(EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+        }
+
+        public Block call(CPU cpu) {
+            int address=eaa.call(cpu);
+            int value=cpu.memory.readd(address);
+            if (value==0) {
+                cpu.setFlag(true, CPU.ZF);
+            } else {
+                int result = 31;	// Operandsize-1
+                while ((value & 0x80000000)==0) { result--; value<<=1; }
+                cpu.setFlag(false, CPU.ZF);
+                gd.dword=result;
+            }
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bsr";
+        }
+    }
+
+    final static class PopSeg32 extends Op {
+        final private Reg segValue;
+        final private Reg segPhys;
+        final private String name;
+
+        public PopSeg32(Reg segValue, Reg segPhys, String name) {
+            this.segValue = segValue;
+            this.segPhys = segPhys;
+            this.name = name;
+        }
+
+        public Block call(CPU cpu) {
+            segValue.dword = cpu.pop32();
+            segPhys.dword = cpu.ldt[segValue.dword >> 3];
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "pop "+name;
+        }
+    }
+
+    final static class Rdtsc extends Op {
+        public Block call(CPU cpu) {
+            long tsc = System.nanoTime();
+            cpu.eax.dword = (int)tsc;
+            cpu.edx.dword = (int)(tsc >>> 32);
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "RDTSCc";
+        }
+    };
 }

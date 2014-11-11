@@ -13,8 +13,10 @@ public class Utsname {
     // int uname(struct utsname *name)
     static public int uname(int name) {
         Memory memory = WineThread.getCurrent().process.memory;
-        memory.writeCString(name, "BoxedWine Java");
-        memory.writeCString(name+130, "1");
+        memory.writeCString(name, "Linux");
+        memory.writeCString(name+65, "GNU/Linux");
+        memory.writeCString(name+130, "3.11.0-12-generic");
+        memory.writeCString(name+260, "i686");
         return 0;
     }
 }

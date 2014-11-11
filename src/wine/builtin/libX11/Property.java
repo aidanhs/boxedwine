@@ -24,6 +24,13 @@ public class Property {
         setIndex(0, v1);
         setIndex(1, v2);
     }
+    public Property(int type, int format, int v1) {
+        this.type = type;
+        this.format = format;
+        this.data = new byte[format/8];
+        setIndex(0, v1);
+    }
+
     public void setIndexesByAddress(Memory memory, int address, int count) {
         data = new byte[format/8*count];
         for (int i=0;i<count;i++) {

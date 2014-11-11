@@ -68,6 +68,12 @@ public class Stdlib {
         return thread.process.getenv(thread.process.memory.readCString(name));
     }
 
+    // int initstate_r(unsigned int seed, char *statebuf, size_t statelen, struct random_data *buf)
+    static public int initstate_r(int seed, int statebuf, int statelen, int buf) {
+        Log.warn("initstate_r not implemented");
+        return 0;
+    }
+
     // long labs(long i)
     static public int labs(int i) {
         return abs(i);
@@ -84,6 +90,29 @@ public class Stdlib {
     static public int malloc(int size) {
         WineThread thread = WineThread.getCurrent();
         return thread.process.alloc(size);
+    }
+
+    // int mkostemp(char *template, int flags)
+    static public int mkostemp(int template, int flags) {
+        WineThread thread = WineThread.getCurrent();
+        Memory memory = thread.process.memory;
+        String t = memory.readCString(template);
+        if (!t.endsWith("XXXXXX")) {
+            thread.setErrno(Errno.EINVAL);
+            return -1;
+        }
+        int len = Strings.strlen(template);
+        while (true) {
+            for (int i=0;i<6;i++) {
+                memory.writeb(template+len-i-1, ((int)'A')+(Math.abs(rand()) % 26));
+            }
+            int fd = Fcntl.open(template, Fcntl.O_CREAT | Fcntl.O_EXCL | Fcntl.O_RDWR | flags);
+            if (fd>0)
+                return fd;
+        }
+    }
+    static public int mkostemp64(int template, int flags) {
+        return mkostemp(template, flags);
     }
 
     // int putenv(char *string)
@@ -126,8 +155,19 @@ public class Stdlib {
     // int rand(void)
     static private Random random = new Random();
 
+    // void srand (unsigned int seed);
+    static public void srand(int seed) {
+        random = new Random(seed);
+    }
+
     static public int rand() {
         return random.nextInt();
+    }
+
+    // int random_r(struct random_data *buf, int32_t *result)
+    static public int random_r(int buf, int result) {
+        WineThread.getCurrent().process.memory.writed(result, random.nextInt());
+        return 0;
     }
 
     // void *realloc(void *ptr, size_t size)
@@ -283,8 +323,10 @@ public class Stdlib {
                 } else if (c=='+') {
                     continue;
                 }
-                if (base==0 || base==16) {
-                    if (c == '0') {
+                else if (base==0 || base==16) {
+                    if (s.length()==1)
+                        base = 10;
+                    else if (c == '0') {
                         if (i + 1 < s.length()) {
                             char c1 = s.charAt(i + 1);
                             if (c1 == 'x' || c1 == 'X') {
@@ -297,8 +339,10 @@ public class Stdlib {
                             base=8;
                         continue;
                     }
+                    if (base==0) {
+                        base = 10;
+                    }
                 }
-                base = 10;
             }
             if (base<=10) {
                 if (c < '0' || c > '0' + base - 1) {
@@ -306,7 +350,7 @@ public class Stdlib {
                 }
             } else {
                 if (c < '0' || c > '9') {
-                    if (c<'A' || c>'A'+base-11 && (c<'A' || c>'A'+base-11)) {
+                    if (c<'a' || c>'a'+base-11 && (c<'a' || c>'a'+base-11)) {
                         break;
                     }
                 }
@@ -317,7 +361,7 @@ public class Stdlib {
             memory.writed(endptr, str+i);
         }
         try {
-            long result = Long.parseLong(buf.toString());
+            long result = Long.parseLong(buf.toString(), base);
             if (neg)
                 result=-result;
             return result;

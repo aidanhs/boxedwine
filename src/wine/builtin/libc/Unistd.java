@@ -11,6 +11,36 @@ import wine.system.io.KernelFile;
 import wine.util.Log;
 
 public class Unistd {
+    // int access(const char *filename, int flags)
+    static public int access(int filename, int flags) {
+        String path = WineThread.getCurrent().process.memory.readCString(filename);
+        FSNode node = FSNode.getNode(path, true);
+        WineThread thread = WineThread.getCurrent();
+
+        if (node==null) {
+            thread.setErrno(Errno.ENOENT);
+            return -1;
+        }
+        if (flags==0)
+            return 0;
+        if ((flags & 4)!=0) {
+            if (!node.canRead()) {
+                thread.setErrno(Errno.EACCES);
+                return -1;
+            }
+        }
+        if ((flags & 2)!=0) {
+            if (!node.canWrite()) {
+                thread.setErrno(Errno.EACCES);
+                return -1;
+            }
+        }
+        if ((flags & 1)!=0) {
+            Log.warn("access not fully implemented.  Can't test for executable permission");
+        }
+        return 0;
+    }
+
     // int alarm(int seconds)
     static public int alarm(int seconds) {
         Log.panic("alarm not implemented");
@@ -263,7 +293,7 @@ public class Unistd {
         WineThread thread = WineThread.getCurrent();
         String p1 = thread.process.memory.readCString(path1);
         String p2 = thread.process.memory.readCString(path2);
-        Log.panic("link not implemented yet: "+p1+" -> "+p2);
+        Log.warn("link not implemented yet: "+p1+" -> "+p2);
         return 0;
     }
 
@@ -399,8 +429,12 @@ public class Unistd {
         switch (name) {
             case 2: // _SC_CLK_TCK
                 return 1000;
-            case 84: // _SC_NPROCESSORS_ONLN
-                return Runtime.getRuntime().availableProcessors();
+            case 84: { // _SC_NPROCESSORS_ONLN
+                int count = Runtime.getRuntime().availableProcessors();
+                if (count<=1)
+                    count=2;
+                return count;
+            }
             case 85: // _SC_PHYS_PAGES
                 return RAM.pageCount();
             case 86: // _SC_AVPHYS_PAGES

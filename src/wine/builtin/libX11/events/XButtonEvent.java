@@ -12,8 +12,15 @@ public class XButtonEvent extends XAnyEvent {
     public int button; /* detail */
     public int same_screen; /* same screen flag */
 
-    public XButtonEvent(int display, int window, int type) {
+    public XButtonEvent(int display, int window, int type, int root, int subwindow, int x, int y, int state, int button) {
         super(display, window, type);
+        this.root = root;
+        this.subwindow = subwindow;
+        this.time = (int)System.currentTimeMillis();
+        this.x = x;
+        this.y = y;
+        this.state = state;
+        this.button = button;
     }
 
     public int write(Memory memory, int address) {

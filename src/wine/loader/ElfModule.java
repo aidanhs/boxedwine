@@ -2,6 +2,7 @@ package wine.loader;
 
 import wine.loader.elf.*;
 import wine.system.WineProcess;
+import wine.system.WineSystem;
 import wine.system.WineThread;
 import wine.system.io.FSNode;
 import wine.util.LittleEndianStream;
@@ -15,6 +16,7 @@ import java.util.Vector;
 
 public class ElfModule extends Module {
     private ElfHeader header = new ElfHeader();
+    public ElfModule interpreter;
     private Vector<ElfSection> sections = new Vector<ElfSection>();
     private Vector<ElfProgram> programs = new Vector<ElfProgram>();
     private long address;
@@ -29,6 +31,9 @@ public class ElfModule extends Module {
     public String path;
     static private final boolean lazyBinding = false; // lazy binding not implemented
     public int fullPath;
+    private Vector<Integer> irelocs = new Vector<Integer>();
+    private byte[] tlsImage = new byte[0];
+    private int tlsStart = 0;
 
     public ElfModule(String name, WineProcess process, int id) {
         super(name, process, id);
@@ -49,6 +54,8 @@ public class ElfModule extends Module {
         for (String name : symbolsByName.keySet()) {
             module.symbolsByName.put(name, symbolsByName.get(name));
         }
+        module.tlsImage = tlsImage.clone();
+        module.tlsStart = tlsStart;
         module.hasSymbolic = hasSymbolic;
         module.path = path;
         module.fullPath = fullPath;
@@ -56,12 +63,19 @@ public class ElfModule extends Module {
     }
 
     public int getEntryPoint() {
-        return (int)header.e_entry;
+        if (this.interpreter!=null)
+            return (int)(this.interpreter.header.e_entry+this.interpreter.addressDelta);
+        return (int)(header.e_entry+addressDelta);
     }
 
     public void init(WineThread thread) {
-        for (Integer address : initFunctions) {
-            thread.cpu.call(address.intValue());
+        if (interpreter!=null) {
+            interpreter.init(thread);
+        } else {
+            ireloc(thread);
+            for (Integer address : initFunctions) {
+                thread.cpu.call(address.intValue());
+            }
         }
     }
 
@@ -71,6 +85,10 @@ public class ElfModule extends Module {
 
     public int getImageSize() {
         return (int)imageSize;
+    }
+
+    public int getOriginalAddress() {
+        return (int)originalAddress;
     }
 
     private boolean loadHeaderAndSections() {
@@ -128,6 +146,7 @@ public class ElfModule extends Module {
             long pageAddress = originalAddress;
 
             long size = maxAddress - originalAddress;
+            imageSize = size;
             size = (size + 0xFFF) & 0xFFFFF000l;
             if ((pageAddress & 0xFFF)!=0) {
                 Log.panic("Wasn't expecting load address to be unaligned to page boundary");
@@ -148,7 +167,6 @@ public class ElfModule extends Module {
                     page = (page+0xFF) & ~0xFF;
                 }
                 pageStart = page;
-                imageSize = size;
                 address = (long)pageStart << 12;
                 addressDelta = address - originalAddress;
                 process.allocPages(pageStart, pageCount, true);
@@ -171,6 +189,14 @@ public class ElfModule extends Module {
             fis.close();
             fis = node.getInputStream();
             pos = 0;
+
+            for (ElfProgram program : programs) {
+                if (program.p_type == ElfProgram.PT_TLS) {
+                    tlsImage = new byte[(int) program.p_memsz];
+                    tlsStart = process.nextTLS;
+                    process.nextTLS+=tlsImage.length;
+                }
+            }
 
             for (ElfSection section: sections) {
                 if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0 && section.sh_type!=ElfSection.SHT_NOTE) {
@@ -305,6 +331,14 @@ public class ElfModule extends Module {
                             break;
                         case ElfDynamic.DT_VERNEEDNUM:
                             break;
+                        case ElfDynamic.DT_HASH:
+                            break;
+                        case ElfDynamic.DT_FLAGS:
+                            if (value == 0x10) { // DF_STATIC_TLS
+                            } else {
+                                Log.panic("Unhandled DT_FLAGS: "+Integer.toHexString(value)+" in "+name);
+                            }
+                            break;
                         default:
                             Log.panic("Unhandled Dynamic type: "+tag+" in "+name);
                     }
@@ -354,18 +388,39 @@ public class ElfModule extends Module {
                 }
             }
         }
+        int tlsPos = 0;
+        for (ElfSection section : sections) {
+            if ((section.sh_flags & ElfSection.SHF_TLS) != 0) {
+                if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0) {
+                    if (section.sh_type != ElfSection.SHT_NOBITS) {
+                        process.memory.memcpy(tlsImage, tlsPos, (int)section.sh_size, (int)section.sh_addr);
+                    }
+                    tlsPos += section.sh_size;
+                }
+            }
+        }
+        process.memory.memcpy(WineThread.getCurrent().cpu.gs.dword + tlsStart, tlsImage, 0, tlsImage.length);
     }
 
     private void loadSymbols(int strings, int symbols, int size) {
         try {
+            WineThread thread = WineThread.getCurrent();
             while (size >= ElfSymbol.SIZE) {
                 ElfSymbol symbol = new ElfSymbol();
                 symbol.load(process.memory, symbols);
                 if (symbol.st_name!=0 && symbol.st_shndx!=ElfSymbol.SHN_UNDEF) {
-                    int type = symbol.st_info >>> 4;
-                    if (type==ElfSymbol.STB_GLOBAL || type==ElfSymbol.STB_WEAK) {
+                    int bind = symbol.st_info >>> 4;
+                    int type = symbol.st_info & 0xF;
+                    if (type == ElfSymbol.STT_TLS) {
                         symbol.name = process.memory.readCString(strings + (int) symbol.st_name);
+                        this.symbolsByName.put(symbol.name, symbol);
+                    } else if (bind==ElfSymbol.STB_GLOBAL || bind==ElfSymbol.STB_WEAK) {
                         symbol.st_value += addressDelta;
+                        symbol.name = process.memory.readCString(strings + (int) symbol.st_name);
+                        if (type==ElfSymbol.STT_GNU_IFUNC) {
+                            thread.cpu.call((int)symbol.st_value);
+                            symbol.st_value = thread.cpu.eax.dword;
+                        }
                         this.symbolsByName.put(symbol.name, symbol);
                     }
                 }
@@ -396,7 +451,8 @@ public class ElfModule extends Module {
         if (symbol==null)
             symbol=getSymbol(name);
         if (symbol==null) {
-            Log.panic(this.name + ": unresolved symbol: " + name);
+            Log.warn(this.name + ": unresolved symbol: " + name);
+            return new ElfSymbol();
         }
         return symbol;
     }
@@ -410,6 +466,9 @@ public class ElfModule extends Module {
                 int symbolIndex = (int) (r_info >>> 8);
                 int rel = (int) (addressDelta + r_offset);
 
+                if (rel == 0xE43AE1E4) {
+                    int ii=0;
+                }
                 switch ((int) r_info & 0xFF) {
                     case 0: // none
                         break;
@@ -440,8 +499,17 @@ public class ElfModule extends Module {
                     case ElfSection.R_386_RELATIVE:
                         process.memory.writed(rel, process.memory.readd(rel) + (int) addressDelta);
                         break;
+                    case ElfSection.R_386_TLS_TPOFF:
+                        process.memory.writed(rel, process.memory.readd(rel)+tlsStart);
+                        break;
+                    case ElfSection.R_386_TLS_DTPMOD32:
+                        process.memory.writed(rel, 1);
+                        break;
+                    case ElfSection.R_386_IRELATIVE:
+                        irelocs.add(rel);
+                        break;
                     default:
-                        Log.panic("Unknown relocation tye:" + (r_info & 0xFF) + " in " + name);
+                        Log.panic("Unknown relocation type:" + (r_info & 0xFF) + " in " + name);
                 }
             }
         } catch (IOException e) {
@@ -449,11 +517,37 @@ public class ElfModule extends Module {
         }
     }
 
+    private void ireloc(WineThread thread) {
+        try {
+            for (Integer i : irelocs) {
+                int eip = process.memory.readd(i) + (int) addressDelta;
+                thread.cpu.call(eip);
+                process.memory.writed(i, thread.cpu.eax.dword);
+            }
+        } catch (Exception e) {
+            Log.panic(e.getMessage());
+        }
+        irelocs = null;
+    }
+
     public boolean load(WineThread thread, String path) {
         this.path = path;
         if (!loadHeaderAndSections())
             return false;
-        link(thread);
+//        if (process.mainModule==this) {
+//            for (ElfProgram p : this.programs) {
+//                if (p.p_type == ElfProgram.PT_INTERP) {
+//                    String i = process.memory.readCString((int)p.p_paddr, (int)p.p_memsz);
+//                    this.interpreter = new ElfModule(i.substring(i.lastIndexOf("/")+1), process, WineSystem.nextid++);
+//                    this.interpreter.load(thread, i);
+//                    process.loader.modulesByName.put(name.toLowerCase(), this.interpreter);
+//                    process.loader.modulesByHandle.put(this.interpreter.id, this.interpreter);
+//                    this.interpreter.init(thread);
+//                    return true;
+//                }
+//            }
+//        }
+//        link(thread);
         return true;
     }
 
@@ -468,7 +562,7 @@ public class ElfModule extends Module {
             thread.cpu.call(func);
         }
         int pageStart = (int)(address>>>12);
-        int pageCount = (int)(imageSize >> 12);
+        int pageCount = (int)((imageSize + 0xFFF) >> 12);
 //        process.freePages(pageStart, pageCount);
         if (Log.level>=Log.LEVEL_DEBUG) {
             System.out.println(process.mainModule.name + ":" + process.id + " unloading " + name + " " + Long.toHexString(address) + "(page=" + Integer.toHexString(pageStart) + " pageCount=" + pageCount + ")");

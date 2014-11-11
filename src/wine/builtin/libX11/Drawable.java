@@ -8,13 +8,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
 public class Drawable extends XID {
-    static public Drawable getDrawable(int id) {
-        XID result = xids.get(id);
-        if (result instanceof Drawable)
-            return (Drawable)result;
-        return null;
-    }
-
     public int depth = 32;
     public int width;
     public int height;

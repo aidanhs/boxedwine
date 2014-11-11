@@ -5,6 +5,7 @@ import wine.system.WineThread;
 import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
+import wine.util.Log;
 
 public class Dirent {
     static public final int DT_DIR = 4;
@@ -147,5 +148,21 @@ public class Dirent {
             fd.readDirData = new ReadDirData();
             fd.readDirData.dirs = file.node.list();
         }
+    }
+
+    // int scandir64(const char * dir, const struct dirent64 ** namelist, int (*sel) (const struct dirent64 *), int (*compar) (const struct dirent64 **, const struct dirent64 **))
+    static public int scandir64(int dir, int namelist, int sel, int compar) {
+        WineThread thread = WineThread.getCurrent();
+        FileDescriptor fd = thread.process.getFileDescriptor(dir);
+        KernelFile file = null;
+        if (fd!=null) {
+            file = fd.getFile();
+        }
+        if (file == null || !file.node.isDirectory()) {
+            thread.setErrno(Errno.ENOTDIR);
+            return -1;
+        }
+        Log.panic("scandir64 not implemented");
+        return 0;
     }
 }

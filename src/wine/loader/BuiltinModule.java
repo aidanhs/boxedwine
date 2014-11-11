@@ -16,9 +16,9 @@ import java.util.Hashtable;
 public class BuiltinModule extends Module {
     private Hashtable<String, Callback> functions = new Hashtable<String, Callback>();
     private Hashtable<String, Integer> registeredCallbacks = new Hashtable<String, Integer>();
-    private Hashtable<String, ElfSymbol> symbols = new Hashtable<String, ElfSymbol>();
+    protected Hashtable<String, ElfSymbol> symbols = new Hashtable<String, ElfSymbol>();
     private Hashtable<String, Integer> data = new Hashtable<String, Integer>();
-    static public boolean log = false;
+    static public int log = 0;
 
     public BuiltinModule(String name, WineProcess process, int id) {
         super(name, process, id);
@@ -75,7 +75,7 @@ public class BuiltinModule extends Module {
         }
 
         public void call(CPU cpu) {
-            boolean shouldLog = log;
+            boolean shouldLog = log == WineThread.getCurrent().id;
             if (name.contains("printf") || name.contains("put") || name.contains("fwrite")) {
                 shouldLog = false;
             }

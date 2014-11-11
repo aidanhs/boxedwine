@@ -1,7 +1,9 @@
 package wine.builtin.libX11;
 
 import wine.builtin.libX11.events.*;
+import wine.emulation.CPU;
 import wine.emulation.Memory;
+import wine.loader.BuiltinModule;
 import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -9,6 +11,9 @@ import wine.util.Log;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.FocusEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
@@ -31,13 +36,6 @@ public class Window extends Drawable {
     static public final int RevertToPointerRoot	= 1; //(int)PointerRoot
     static public final int RevertToParent      = 2;
 
-    static public Window getWindow(int id) {
-        XID result = xids.get(id);
-        if (result instanceof Window)
-            return (Window)result;
-        return null;
-    }
-
     private Hashtable<Integer, Property> properties = new Hashtable<Integer, Property>();
 
     public Window(Window parent, int display, WineProcess process) {
@@ -49,12 +47,103 @@ public class Window extends Drawable {
             panel = new JPanel();
         } else {
             panel = new WindowPanel();
+            panel.addMouseMotionListener(new MouseMotionListener() {
+                public void mouseDragged(MouseEvent e) {
+                    if (LibX11.rootWindow.capture==null)
+                        sendMouseMoveEvent(e.getX(), e.getY(), getState(e));
+                    else {
+                        Point p = new Point(e.getX(), e.getY());
+                        translateToRoot(p);
+                        LibX11.rootWindow.capture.translateFromRoot(p);
+                        LibX11.rootWindow.capture.sendMouseMoveEvent(p.x, p.y, getState(e));
+                    }
+                }
+
+                public void mouseMoved(MouseEvent e) {
+                    if (LibX11.rootWindow.capture==null)
+                        sendMouseMoveEvent(e.getX(), e.getY(), getState(e));
+                    else {
+                        Point p = new Point(e.getX(), e.getY());
+                        translateToRoot(p);
+                        LibX11.rootWindow.capture.translateFromRoot(p);
+                        LibX11.rootWindow.capture.sendMouseMoveEvent(p.x, p.y, getState(e));
+                    }
+                }
+            });
+            panel.addMouseListener(new MouseListener() {
+                public void mouseClicked(MouseEvent e) {
+
+                }
+
+                public void mousePressed(MouseEvent e) {
+                    if (LibX11.rootWindow.capture==null)
+                        sendButtonPressEvent(e.getX(), e.getY(), getState(e), e.getButton());
+                    else {
+                        Point p = new Point(e.getX(), e.getY());
+                        translateToRoot(p);
+                        LibX11.rootWindow.capture.translateFromRoot(p);
+                        LibX11.rootWindow.capture.sendButtonPressEvent(p.x, p.y, getState(e), e.getButton());
+                    }
+                }
+
+                public void mouseReleased(MouseEvent e) {
+                    if (LibX11.rootWindow.capture==null)
+                        sendButtonReleasedEvent(e.getX(), e.getY(), getState(e), e.getButton());
+                    else {
+                        Point p = new Point(e.getX(), e.getY());
+                        translateToRoot(p);
+                        LibX11.rootWindow.capture.translateFromRoot(p);
+                        LibX11.rootWindow.capture.sendButtonReleasedEvent(p.x, p.y, getState(e), e.getButton());
+                    }
+                }
+
+                public void mouseEntered(MouseEvent e) {
+
+                }
+
+                public void mouseExited(MouseEvent e) {
+
+                }
+            });
         }
         panel.setLayout(null);
         if (parent!=null) {
             this.parent.children.add(this);
         }
-        setProperty(Display.setAtom("_NET_WM_STATE", false), new Property(XAtom.XA_CARDINAL, 32, NormalState, 0));
+        setState(WithdrawnState);
+    }
+
+    public void translateToRoot(Point p) {
+        Window w = parent;
+        while (w!=null) {
+            p.x+=w.x;
+            p.y+=w.y;
+            w = w.parent;
+        }
+    }
+
+    public void translateFromRoot(Point p) {
+        Window w = parent;
+        while (w!=null) {
+            p.x-=w.x;
+            p.y-=w.y;
+            w = w.parent;
+        }
+    }
+
+    protected int getState(MouseEvent e) {
+        int state = 0;
+        if (e.isShiftDown())
+            state|=LibX11.ShiftMask;
+        if (e.isControlDown())
+            state|=LibX11.ControlMask;
+        if (e.getButton() == 1)
+            state|=LibX11.Button1Mask;
+        if (e.getButton() == 2)
+            state|=LibX11.Button2Mask;
+        if (e.getButton() == 3)
+            state|=LibX11.Button3Mask;
+        return state;
     }
 
     protected void onDataChanged() {
@@ -100,17 +189,22 @@ public class Window extends Drawable {
             memory.writed(bytes_after_return, property.data.length);
             return 1;
         }
-        int toCopy = Math.min(long_length, property.data.length)-long_offset;
-        int result = process.alloc(toCopy+1);
+        int toCopy = property.data.length-long_offset;
+        if (long_length>0 && toCopy>long_length*4)
+            toCopy = long_length*4;
+
         int remaining = property.data.length-long_offset-toCopy;
 
-        memory.memcpy(result, property.data, long_offset, toCopy);
-        memory.writeb(result + toCopy, 0);
         memory.writed(actual_type_return, property.type);
         memory.writed(actual_format_return, property.format);
         memory.writed(nitems_return, toCopy*8/property.format);
         memory.writed(bytes_after_return, remaining);
+
+        int result = process.alloc(toCopy+1);
+        memory.memcpy(result, property.data, long_offset, toCopy);
+        memory.writeb(result + toCopy, 0);
         memory.writed(prop_return, result);
+
         if (delete!=0 && remaining==0) {
             properties.remove(name);
         }
@@ -137,8 +231,20 @@ public class Window extends Drawable {
             }
             // :TODO: is this right?
             configurationChanged();
-            sendExposeEvent();
+            sendExposeEvent(0, 0, width, height);
         }
+        setState(NormalState);
+    }
+
+    private void setState(int state) {
+        int atom = Display.setAtom("WM_STATE", false);
+        setProperty(atom, new Property(atom, 32, state, 0));
+    }
+
+    private void remove(Window window) {
+        panel.remove(window.panel);
+        panel.repaint();
+        sendExposeEvent(window.x, window.y, window.height, window.width);
     }
 
     public void unmap() {
@@ -146,17 +252,24 @@ public class Window extends Drawable {
             return;
         isMapped = false;
         if (parent!=null) {
-            this.parent.panel.remove(this.panel);
+            this.parent.remove(this);
         }
         if (process!=null && (eventMask & StructureNotifyMask)!=0) {
             XUnmapEvent event = new XUnmapEvent(display, id, id);
             process.x11.addEvent(process, event);
         }
         LibX11.rootWindow.unmapped(this);
+        setState(WithdrawnState);
     }
 
     public void setCursor(Cursor cursor) {
-
+        if (cursor.type!=-1) {
+            panel.setCursor(java.awt.Cursor.getPredefinedCursor(cursor.type));
+        } else if (cursor.pixmap==null) {
+            panel.setCursor(java.awt.Cursor.getDefaultCursor());
+        } else {
+            panel.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(cursor.getImage(), new Point(cursor.x, cursor.y), "Cursor" + cursor.id));
+        }
     }
 
     public Window findWindow(int x, int y) {
@@ -218,10 +331,10 @@ public class Window extends Drawable {
         return 0;
     }
 
-    public void sendExposeEvent() {
+    public void sendExposeEvent(int x, int y, int width, int height) {
         if (process!=null) {
             if ((eventMask & ExposureMask)!=0) {
-                XExposeEvent event = new XExposeEvent(display, id, 0, 0, width, height);
+                XExposeEvent event = new XExposeEvent(display, id, x, y, width, height);
                 process.x11.addEvent(process, event);
             }
         }
@@ -258,6 +371,7 @@ public class Window extends Drawable {
             Log.panic("XSelectInput SubstructureNotifyMask not implemented");
         }
         this.eventMask = mask;
+        //System.out.println(getEventMask(mask));
     }
 
     public void setAttributes(int mask, XSetWindowAttributes attributes) {
@@ -266,6 +380,9 @@ public class Window extends Drawable {
         }
         if ((mask & XSetWindowAttributes.CWBackPixel)!=0) {
             panel.setBackground(new Color(attributes.background_pixel));
+        }
+        if ((mask & XSetWindowAttributes.CWCursor)!=0) {
+            setCursor(Cursor.getCursor(attributes.cursor));
         }
     }
 
@@ -306,7 +423,7 @@ public class Window extends Drawable {
     static public final int PointerMotionHintMask   = (1<<7);
     static public final int Button1MotionMask       = (1<<8);
     static public final int Button2MotionMask       = (1<<9);
-    private int eventMask;
+    public int eventMask;
 
     static private void addMask(int mask, int value, String name, StringBuilder builder) {
         if ((mask & value)!=0) {
@@ -374,7 +491,29 @@ public class Window extends Drawable {
         }
     }
 
+    public void sendMouseMoveEvent(int x, int y, int state) {
+        if ((eventMask & PointerMotionMask)!=0) {
+            XMotionEvent event = new XMotionEvent(display, id, id, 0, x, y, state);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public void sendButtonPressEvent(int x, int y, int state, int button) {
+        if ((eventMask & ButtonPressMask)!=0) {
+            XButtonPressedEvent event = new XButtonPressedEvent(display, id, id, 0, x, y, state, button);
+            process.x11.addEvent(process, event);
+        }
+    }
+
+    public void sendButtonReleasedEvent(int x, int y, int state, int button) {
+        if ((eventMask & ButtonReleaseMask)!=0) {
+            XButtonReleasedEvent event = new XButtonReleasedEvent(display, id, id, 0, x, y, state, button);
+            process.x11.addEvent(process, event);
+        }
+    }
+
     public void destroy() {
+        unmap();
         for (int i=children.size()-1;i>=0;i--) {
             Window window = children.get(i);
             window.destroy();
@@ -383,5 +522,6 @@ public class Window extends Drawable {
             XDestroyWindowEvent event = new XDestroyWindowEvent(display, id, id);
             process.x11.addEvent(process, event);
         }
+        setState(WithdrawnState);
     }
 }

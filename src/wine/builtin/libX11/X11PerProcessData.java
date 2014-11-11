@@ -3,6 +3,7 @@ package wine.builtin.libX11;
 import wine.builtin.libX11.events.XEvent;
 import wine.system.WineProcess;
 import wine.system.WineThread;
+import wine.system.io.FileDescriptor;
 
 import java.util.LinkedList;
 
@@ -28,14 +29,19 @@ public class X11PerProcessData {
         return 0;
     }
 
-    synchronized public void addEvent(WineProcess process, XEvent event) {
-        int address;
-        if (freeEvents.size()==0) {
-            address = process.alloc(EVENT_SIZE);
-        } else {
-            address = freeEvents.removeLast();
+    public void addEvent(WineProcess process, XEvent event) {
+        synchronized (this) {
+            int address;
+            if (freeEvents.size() == 0) {
+                address = process.alloc(EVENT_SIZE);
+            } else {
+                address = freeEvents.removeLast();
+            }
+            event.write(process.memory, address);
+            events.addLast(address);
         }
-        event.write(process.memory, address);
-        events.addLast(address);
+        synchronized (FileDescriptor.lock) {
+            FileDescriptor.lock.notifyAll();
+        }
     }
 }

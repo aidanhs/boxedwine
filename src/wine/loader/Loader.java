@@ -1,11 +1,11 @@
 package wine.loader;
 
+import wine.builtin.ld.Ld;
 import wine.builtin.libX11.LibX11;
 import wine.builtin.libXext.LibXext;
 import wine.builtin.libc.Libc;
 import wine.builtin.libdl.Libdl;
 import wine.builtin.libfontconfig.Libfontconfig;
-import wine.builtin.libfreetype.Libfreetype;
 import wine.builtin.libm.Libm;
 import wine.builtin.libpthread.LibPThread;
 import wine.loader.elf.ElfSymbol;
@@ -99,6 +99,7 @@ public class Loader {
             if (module.load(thread, explicitPath)) {
                 if (main == module) {
                     thread.entryPoint = module.getEntryPoint();
+                    process.end = module.getAddress()+module.getImageSize();
                 }
                 modulesByName.put(name.toLowerCase(), module);
                 modulesByHandle.put(module.id, module);
@@ -127,11 +128,11 @@ public class Loader {
             module = new LibX11(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libXext.so.6")) {
             module = new LibXext(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libfreetype.so.6")) {
-            module = new Libfreetype(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libfontconfig.so.1")) {
             module = new Libfontconfig(name, process, WineSystem.nextid++);
-        }
+        }//else if (name.equalsIgnoreCase("ld-linux.so.2")) {
+         //   module = new Ld(name, process, WineSystem.nextid++);
+         // }
         if (module != null) {
             modulesByName.put(name.toLowerCase(), module);
             modulesByHandle.put(module.id, module);
@@ -170,5 +171,18 @@ public class Loader {
         modulesByHandle.remove(module.id);
         module.unload();
         return true;
+    }
+
+    public String getModule(int eip) {
+        for (Module module: modulesByHandle.values()) {
+            if (module instanceof ElfModule) {
+                ElfModule elf = (ElfModule)module;
+                if (eip>=elf.getAddress() && eip<elf.getAddress()+elf.getImageSize()) {
+                    int offset = elf.getAddress() - elf.getOriginalAddress();
+                    return elf.name+" 0x"+Integer.toHexString(eip-offset);
+                }
+            }
+        }
+        return "";
     }
 }

@@ -298,6 +298,9 @@ public class KernelFile extends KernelObject {
         byte[] b = new byte[len];
         int result = io.read(b);
         if (result<0) {
+            if (io.getFilePointer()==node.length()) {
+                return 0;
+            }
             thread.setErrno(Errno.EIO);
             return -1;
         }
@@ -373,5 +376,10 @@ public class KernelFile extends KernelObject {
         stat.st_blocks = (node.length() + 511) / 512;
         stat.st_rdev = 1;
         return true;
+    }
+
+    public int ioctl(int request) {
+        WineThread.getCurrent().setErrno(Errno.ENODEV);
+        return -1;
     }
 }

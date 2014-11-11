@@ -121,7 +121,7 @@ class Decoder {
     }
 
     private static EaaBase getEaa(CPU cpu, int rm) {
-        if (cpu.ea16()) 
+        if (cpu.ea16())
             return getEaa16(cpu, rm);
         return getEaa32(cpu, rm);
     }
@@ -130,7 +130,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg8_Reg8(instruction, eb(cpu, rm), gb(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem8_Reg8(instruction, getEaa(cpu, rm), gb(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_Reg8_Lock(instruction, getEaa(cpu, rm), gb(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem8_Reg8(instruction, getEaa(cpu, rm), gb(cpu, rm));
         }
     }
 
@@ -138,7 +141,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg16_Reg16(instruction, ew(cpu, rm), gw(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem16_Reg16(instruction, getEaa(cpu, rm), gw(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_Reg16_Lock(instruction, getEaa(cpu, rm), gw(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem16_Reg16(instruction, getEaa(cpu, rm), gw(cpu, rm));
         }
     }
 
@@ -146,7 +152,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg16_Reg8(instruction, ew(cpu, rm), gb(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem16_Reg8(instruction, getEaa(cpu, rm), gb(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_Reg8_Lock(instruction, getEaa(cpu, rm), gb(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem16_Reg8(instruction, getEaa(cpu, rm), gb(cpu, rm));
         }
     }
 
@@ -155,7 +164,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg32_Reg32(instruction, ed(cpu, rm), gd(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem32_Reg32(instruction, getEaa(cpu, rm), gd(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_Reg32_Lock(instruction, getEaa(cpu, rm), gd(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem32_Reg32(instruction, getEaa(cpu, rm), gd(cpu, rm));
         }
     }
 
@@ -163,7 +175,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg32_Reg8(instruction, ed(cpu, rm), gb(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem32_Reg8(instruction, getEaa(cpu, rm), gb(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_Reg8_Lock(instruction, getEaa(cpu, rm), gb(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem32_Reg8(instruction, getEaa(cpu, rm), gb(cpu, rm));
         }
     }
 
@@ -238,7 +253,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg8(instruction, eb(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem8(instruction, getEaa(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_Lock(instruction, getEaa(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem8(instruction, getEaa(cpu, rm));
         }
     }
 
@@ -258,7 +276,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchb()
             value = cpu.fetchb();
-            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
         }
         return value;
     }
@@ -271,7 +292,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchb()
             value = cpu.fetchb() & mask;
-            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
         }
         return value;
     }
@@ -281,7 +305,10 @@ class Decoder {
             prev.next = new Ops.Instruction_Reg8_value(instruction, eb(cpu, rm), value);
         } else {
             EaaBase eaa = getEaa(cpu, rm);
-            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
         }
         return value;
     }
@@ -294,20 +321,26 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchb()
             value = cpu.fetchb();
-            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value & mask);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_value_Lock(instruction, eaa, value & mask);
+            else
+                prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value & mask);
         }
         return value;
     }
 
-    static private int EbIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod) {
+    static private int EbIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod, int mask) {
         int value;
         if (rm >= 0xc0 ) {
-            value = cpu.fetchb() % mod;
-            prev.next = new Ops.Instruction_Reg8_value(instruction, eb(cpu, rm), value);
+            value = cpu.fetchb() & mask;
+            prev.next = new Ops.Instruction_Reg8_value(instruction, eb(cpu, rm), value % mod);
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchb()
-            value = cpu.fetchb() % mod;
-            prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value);
+            value = cpu.fetchb() & mask;
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem8_value_Lock(instruction, eaa, value % mod);
+            else
+                prev.next = new Ops.Instruction_Mem8_value(instruction, eaa, value % mod);
         }
         return value;
     }
@@ -316,7 +349,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg16(instruction, ew(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem16(instruction, getEaa(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_Lock(instruction, getEaa(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem16(instruction, getEaa(cpu, rm));
         }
     }
 
@@ -336,7 +372,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchw()
             value = cpu.fetchw();
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
         }
         return value;
     }
@@ -349,7 +388,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchw()
             value = cpu.fetchb() & mask;
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
         }
         return value;
     }
@@ -362,7 +404,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchw()
             value = cpu.fetchb();
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value & mask);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_value_Lock(instruction, eaa, value & mask);
+            else
+                prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value & mask);
         }
         return value;
     }
@@ -372,20 +417,26 @@ class Decoder {
             prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), value);
         } else {
             EaaBase eaa = getEaa(cpu, rm);
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
         }
         return value;
     }
 
-    static private int EwIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod) {
+    static private int EwIbMod(CPU cpu, Op prev, Instruction instruction, int rm, int mod, int mask) {
         int value;
         if (rm >= 0xc0 ) {
-            value = cpu.fetchb() % mod;
-            prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), value);
+            value = cpu.fetchb() & mask;
+            prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), value % mod);
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchw()
-            value = cpu.fetchb() % mod;
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
+            value = cpu.fetchb() & mask;
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_value_Lock(instruction, eaa, value % mod);
+            else
+                prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value % mod);
         }
         return value;
     }
@@ -395,7 +446,11 @@ class Decoder {
             prev.next = new Ops.Instruction_Reg16_value(instruction, ew(cpu, rm), (cpu.fetchbs() & 0xFFFF));
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchbs()
-            prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, (cpu.fetchbs() & 0xFFFF));
+            int value = cpu.fetchbs() & 0xFFFF;
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem16_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem16_value(instruction, eaa, value);
         }
     }
 
@@ -403,7 +458,10 @@ class Decoder {
         if (rm >= 0xc0 ) {
             prev.next = new Ops.Instruction_Reg32(instruction, ed(cpu, rm));
         } else {
-            prev.next = new Ops.Instruction_Mem32(instruction, getEaa(cpu, rm));
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_Lock(instruction, getEaa(cpu, rm));
+            else
+                prev.next = new Ops.Instruction_Mem32(instruction, getEaa(cpu, rm));
         }
     }
 
@@ -423,7 +481,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchd()
             value = cpu.fetchd();
-            prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
         }
         return value;
     }
@@ -436,7 +497,10 @@ class Decoder {
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchd()
             value = cpu.fetchb() & mask;
-            prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
         }
         return value;
     }
@@ -446,7 +510,10 @@ class Decoder {
             prev.next = new Ops.Instruction_Reg32_value(instruction, ed(cpu, rm), value);
         } else {
             EaaBase eaa = getEaa(cpu, rm);
-            prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
         }
         return value;
     }
@@ -456,7 +523,11 @@ class Decoder {
             prev.next = new Ops.Instruction_Reg32_value(instruction, ed(cpu, rm), cpu.fetchbs());
         } else {
             EaaBase eaa = getEaa(cpu, rm); // must come before cpu.fetchbs()
-            prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, cpu.fetchbs());
+            int value = cpu.fetchbs();
+            if (cpu.locked)
+                prev.next = new Ops.Instruction_Mem32_value_Lock(instruction, eaa, value);
+            else
+                prev.next = new Ops.Instruction_Mem32_value(instruction, eaa, value);
         }
     }
 
@@ -753,6 +824,15 @@ class Decoder {
             decoder[i] = new NullDecoder(i);
         }
         addInstructions(0x00, Instructions.addb, Instructions.addw, Instructions.addd);
+
+        /* POP ES */
+        decoder[0x207] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.esValue, cpu.es, "es");
+                return true;
+            }
+        };
+
         addInstructions(0x08, Instructions.orb, Instructions.orw, Instructions.ord);
 
         /* 2 byte opcodes*/
@@ -768,7 +848,25 @@ class Decoder {
         };
 
         addInstructions(0x10, Instructions.adcb, Instructions.adcw, Instructions.adcd);
+
+        /* POP SS */
+        decoder[0x217] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.ssValue, cpu.ss, "ss");
+                return true;
+            }
+        };
+
         addInstructions(0x18, Instructions.sbbb, Instructions.sbbw, Instructions.sbbd);
+
+        /* POP DS */
+        decoder[0x21f] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.dsValue, cpu.ds, "ds");
+                return true;
+            }
+        };
+
         addInstructions(0x20, Instructions.andb, Instructions.andw, Instructions.andd);
         addInstructions(0x28, Instructions.subb, Instructions.subw, Instructions.subd);
         addInstructions(0x30, Instructions.xorb, Instructions.xorw, Instructions.xord);
@@ -1156,7 +1254,8 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Exchange_Reg8_Reg8(eb(cpu,rm), gb(cpu,rm));
                 } else {
-                    prev.next = new Ops.Exchange_Mem8_Reg8(getEaa(cpu, rm), gb(cpu,rm));
+                    // XCHG always locks
+                    prev.next = new Ops.Exchange_Mem8_Reg8_Lock(getEaa(cpu, rm), gb(cpu,rm));
                 }
                 return true;
             }
@@ -1170,7 +1269,8 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Exchange_Reg16_Reg16(ew(cpu,rm), gw(cpu,rm));
                 } else {
-                    prev.next = new Ops.Exchange_Mem16_Reg16(getEaa(cpu, rm), gw(cpu,rm));
+                    // XCHG always locks
+                    prev.next = new Ops.Exchange_Mem16_Reg16_Lock(getEaa(cpu, rm), gw(cpu,rm));
                 }
                 return true;
             }
@@ -1183,7 +1283,8 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Exchange_Reg32_Reg32(ed(cpu,rm), gd(cpu,rm));
                 } else {
-                    prev.next = new Ops.Exchange_Mem32_Reg32(getEaa(cpu, rm), gd(cpu,rm));
+                    // XCHG always locks
+                    prev.next = new Ops.Exchange_Mem32_Reg32_Lock(getEaa(cpu, rm), gd(cpu,rm));
                 }
                 return true;
             }
@@ -1256,26 +1357,31 @@ class Decoder {
             }
         };
 
+        /* MOV Gd,Ed */
+        decoder[0x28b] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Mov_Reg32_Reg32(gd(cpu, rm), ed(cpu, rm));
+                } else {
+                    prev.next = new Ops.Mov_Reg32_Mem32(gd(cpu, rm), getEaa(cpu, rm));
+                }
+                return true;
+            }
+        };
+
         /* Mov Ew,Sw */
         decoder[0x8c] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
-                Reg reg;
-                switch ((rm>>3) & 7) {
-                    case 0: reg = cpu.esValue; break;
-                    case 1: reg = cpu.csValue; break;
-                    case 2: reg = cpu.ssValue; break;
-                    case 3: reg = cpu.dsValue; break;
-                    case 4: reg = cpu.fsValue; break;
-                    case 5: reg = cpu.gsValue; break;
-                    default:
-                        reg=null;
-                        Log.panic("Invalid Mov Ew, Sw");
+                int sel = (rm>>3) & 7;
+                if (sel>5) {
+                    Log.panic("Invalid Mov Ew, Sw");
                 }
                 if (rm >= 0xc0 ) {
-                    prev.next = new Ops.Mov_Reg16_Reg16(reg, ew(cpu, rm));
+                    prev.next = new Ops.Mov_Reg16_Reg16(ew(cpu, rm), cpu.segValue[sel]);
                 } else {
-                    prev.next = new Ops.Mov_Reg16_Mem16(reg, getEaa(cpu, rm));
+                    prev.next = new Ops.Mov_Mem16_Reg16(getEaa(cpu, rm), cpu.segValue[sel]);
                 }
                 return true;
             }
@@ -1290,22 +1396,9 @@ class Decoder {
                     Log.panic("Invalid Mov Ew, Sw");
                 }
                 if (rm >= 0xc0 ) {
-                    prev.next = new Ops.Mov_Reg32_Reg32(cpu.segValue[sel], ew(cpu, rm));
+                    prev.next = new Ops.Mov_Reg32_Reg32(ew(cpu, rm), cpu.segValue[sel]);
                 } else {
-                    prev.next = new Ops.Mov_Reg16_Mem16(cpu.segValue[sel], getEaa(cpu, rm));
-                }
-                return true;
-            }
-        };
-
-        /* MOV Gd,Ed */
-        decoder[0x28b] = new Decode() {
-            public boolean call(CPU cpu, Op prev) {
-                int rm=cpu.fetchb();
-                if (rm >= 0xc0 ) {
-                    prev.next = new Ops.Mov_Reg32_Reg32(gd(cpu, rm), ed(cpu, rm));
-                } else {
-                    prev.next = new Ops.Mov_Reg32_Mem32(gd(cpu, rm), getEaa(cpu, rm));
+                    prev.next = new Ops.Mov_Mem16_Reg16(getEaa(cpu, rm), cpu.segValue[sel]);
                 }
                 return true;
             }
@@ -1315,7 +1408,11 @@ class Decoder {
         decoder[0x8d] = new Decode() {
             final public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
+                cpu.base_ds = cpu.zero;
+                cpu.base_ss = cpu.zero;
                 prev.next = new Ops.LeaGw(getEaa(cpu, rm), gw(cpu, rm));
+                cpu.base_ds = cpu.ds;
+                cpu.base_ss = cpu.ss;
                 return true;
             }
         };
@@ -1324,7 +1421,11 @@ class Decoder {
         decoder[0x28d] = new Decode() {
             final public boolean call(CPU cpu, Op prev) {
                 int rm=cpu.fetchb();
+                cpu.base_ds = cpu.zero;
+                cpu.base_ss = cpu.zero;
                 prev.next = new Ops.LeaGd(getEaa(cpu, rm), gd(cpu, rm));
+                cpu.base_ds = cpu.ds;
+                cpu.base_ss = cpu.ss;
                 return true;
             }
         };
@@ -1896,33 +1997,28 @@ class Decoder {
                 int rm=cpu.fetchb();
                 int which=(rm>>3)&7;
                 int value;
+
                 switch (which) {
                     case 0x00:
                         value = EbIbMaskOriginal(cpu, prev, Instructions.rolb, rm, 0x7);
-                        if ((value & 0x7)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x18)!=0) {
-                                EbIb(cpu, prev, Instructions.rolb_check, rm, value);
-                            }
                         }
                         break;
                     case 0x01:
                         value = EbIbMaskOriginal(cpu, prev, Instructions.rorb, rm, 0x7);
-                        if ((value & 0x7)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x18)!=0) {
-                                EbIb(cpu, prev, Instructions.rorb_check, rm, value);
-                            }
                         }
                         break;
                     case 0x02:
-                        value = EbIbMod(cpu, prev, Instructions.rclb, rm, 9);
+                        value = EbIbMod(cpu, prev, Instructions.rclb, rm, 9, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
                         break;
                     case 0x03:
-                        value = EbIbMod(cpu, prev, Instructions.rcrb, rm, 9);
+                        value = EbIbMod(cpu, prev, Instructions.rcrb, rm, 9, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
@@ -1966,30 +2062,24 @@ class Decoder {
                 switch (which) {
                     case 0x00:
                         value = EwIbMaskOriginal(cpu, prev, Instructions.rolw, rm, 0xf);
-                        if ((value & 0xf)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x10)!=0) {
-                                EwIw(cpu, prev, Instructions.rolw_check, rm, value);
-                            }
                         }
                         break;
                     case 0x01:
                         value = EwIbMaskOriginal(cpu, prev, Instructions.rorw, rm, 0xf);
-                        if ((value & 0xf)==0) {
+                        if ((value & 0x1f)==0) {
                             prev.next = null; // don't set flags
-                            if ((value & 0x10)!=0) {
-                                EwIw(cpu, prev, Instructions.rorw_check, rm, value);
-                            }
                         }
                         break;
                     case 0x02:
-                        value = EwIbMod(cpu, prev, Instructions.rclw, rm, 17);
+                        value = EwIbMod(cpu, prev, Instructions.rclw, rm, 17, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
                         break;
                     case 0x03:
-                        value = EwIbMod(cpu, prev, Instructions.rcrw, rm, 17);
+                        value = EwIbMod(cpu, prev, Instructions.rcrw, rm, 17, 0x1f);
                         if (value==0) {
                             prev.next = null; // don't set flags
                         }
@@ -2183,6 +2273,14 @@ class Decoder {
             }
         };
         decoder[0x2cd] = decoder[0x0cd];
+
+        /* IRET */
+        decoder[0x2cf] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new IRet();
+                return false;
+            }
+        };
 
         /* GRP2 Eb,1 */
         decoder[0xd0] = new Decode() {
@@ -2894,9 +2992,9 @@ class Decoder {
         /* LOCK */
         decoder[0x0f0] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
-                cpu.prefixes|=CPU.PREFIX_LOCK;
+                cpu.locked = true;
                 boolean result = decoder[cpu.op_index+cpu.fetchb()].call(cpu, prev);
-                cpu.prefixes&=~CPU.PREFIX_LOCK;
+                cpu.locked = false;
                 return result;
             }
         };
@@ -2914,7 +3012,7 @@ class Decoder {
         };
         decoder[0x2f2] = decoder[0x0f2];
 
-        /* REPNZ */
+        /* REPZ */
         decoder[0x0f3] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
                 cpu.prefixes|=CPU.PREFIX_REP;
@@ -2925,6 +3023,15 @@ class Decoder {
             }
         };
         decoder[0x2f3] = decoder[0x0f3];
+
+        /* HLT */
+        decoder[0x0f4] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                Log.panic("HLT");
+                return true;
+            }
+        };
+        decoder[0x2f4] = decoder[0x0f4];
 
         /* CMC */
         decoder[0x0f5] = new Decode() {
@@ -3189,6 +3296,30 @@ class Decoder {
             }
         };
 
+        // RDTSC
+        decoder[0x131] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.Rdtsc();
+                return true;
+            }
+        };
+        decoder[0x331] = decoder[0x131];
+
+        for (int i=0;i<16;i++) {
+            final int index = i;
+            decoder[0x340+i] = new Decode() {
+                public boolean call(CPU cpu, Op prev) {
+                    int rm = cpu.fetchb();
+                    if (rm >= 0xc0 ) {
+                        prev.next = new Ops.ConditionalMov_Reg(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
+                    } else {
+                        prev.next = new Ops.ConditionalMov_Mem(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
+                    }
+                    return true;
+                }
+            };
+        }
+
         for (int i=0;i<16;i++) {
             final int index = i;
             decoder[0x180+i] = new Decode() {
@@ -3224,6 +3355,14 @@ class Decoder {
             };
             decoder[0x390+i] = decoder[0x190+i];
         }
+
+        /* POP FS */
+        decoder[0x3a1] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.fsValue, cpu.fs, "fs");
+                return true;
+            }
+        };
 
         /* CPUID */
         decoder[0x1a2] = new Decode() {
@@ -3268,7 +3407,11 @@ class Decoder {
                     prev.next = new Ops.Instruction_Reg16_Reg16_Value_3(Instructions.dshlw, ew(cpu, rm), gw(cpu, rm), cpu.fetchb());
                 } else {
                     EaaBase eaa = getEaa(cpu, rm);
-                    prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshlw, eaa, gw(cpu, rm), cpu.fetchb());
+                    int value = cpu.fetchb();
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshlw, eaa, gw(cpu, rm), value);
+                    else
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshlw, eaa, gw(cpu, rm), value);
                 }
                 return true;
             }
@@ -3282,8 +3425,20 @@ class Decoder {
                     prev.next = new Ops.Instruction_Reg32_Reg32_Value_3(Instructions.dshld, ed(cpu, rm), gd(cpu, rm), cpu.fetchb());
                 } else {
                     EaaBase eaa = getEaa(cpu, rm);
-                    prev.next = new Ops.Instruction_Mem32_Reg32_Value_3(Instructions.dshld, eaa, gd(cpu, rm), cpu.fetchb());
+                    int value = cpu.fetchb();
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Value_3_Lock(Instructions.dshld, eaa, gd(cpu, rm), value);
+                    else
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Value_3(Instructions.dshld, eaa, gd(cpu, rm), value);
                 }
+                return true;
+            }
+        };
+
+        /* POP GS */
+        decoder[0x3a9] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                prev.next = new Ops.PopSeg32(cpu.gsValue, cpu.gs, "gs");
                 return true;
             }
         };
@@ -3296,7 +3451,11 @@ class Decoder {
                     prev.next = new Ops.Instruction_Reg16_Reg16_Value_3(Instructions.dshrw, ew(cpu, rm), gw(cpu, rm), cpu.fetchb());
                 } else {
                     EaaBase eaa = getEaa(cpu, rm);
-                    prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshrw, eaa, gw(cpu, rm), cpu.fetchb());
+                    int value = cpu.fetchb();
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Value_3_Lock(Instructions.dshrw, eaa, gw(cpu, rm), value);
+                    else
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Value_3(Instructions.dshrw, eaa, gw(cpu, rm), value);
                 }
                 return true;
             }
@@ -3323,7 +3482,10 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Instruction_Reg16_Reg16_Reg8(Instructions.dshrw, ew(cpu, rm), gw(cpu, rm), cpu.ecx);
                 } else {
-                    prev.next = new Ops.Instruction_Mem16_Reg16_Reg8(Instructions.dshrw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Reg8_Lock(Instructions.dshrw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
+                    else
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Reg8(Instructions.dshrw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
                 }
                 return true;
             }
@@ -3336,7 +3498,10 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Instruction_Reg32_Reg32_Reg8(Instructions.dshrd, ed(cpu, rm), gd(cpu, rm), cpu.ecx);
                 } else {
-                    prev.next = new Ops.Instruction_Mem32_Reg32_Reg8(Instructions.dshrd, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Reg8_Lock(Instructions.dshrd, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
+                    else
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Reg8(Instructions.dshrd, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
                 }
                 return true;
             }
@@ -3365,7 +3530,10 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.CmpxchgEwGw_reg(ew(cpu, rm), gw(cpu, rm));
                 } else {
-                    prev.next = new Ops.CmpxchgEwGw_mem(getEaa(cpu, rm), gw(cpu, rm));
+                    if (cpu.locked)
+                        prev.next = new Ops.CmpxchgEwGw_mem_Lock(getEaa(cpu, rm), gw(cpu, rm));
+                    else
+                        prev.next = new Ops.CmpxchgEwGw_mem(getEaa(cpu, rm), gw(cpu, rm));
                 }
                 return true;
             }
@@ -3378,7 +3546,23 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.CmpxchgEdGd_reg(ed(cpu, rm), gd(cpu, rm));
                 } else {
-                    prev.next = new Ops.CmpxchgEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                    if (cpu.locked)
+                        prev.next = new Ops.CmpxchgEdGd_mem_Lock(getEaa(cpu, rm), gd(cpu, rm));
+                    else
+                        prev.next = new Ops.CmpxchgEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+        /* MOVZX Gw,Eb */
+        decoder[0x1b6] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Mov_Reg16_Reg8(gd(cpu, rm), eb(cpu, rm));
+                } else {
+                    prev.next = new Ops.Mov_Reg16_Mem8(gd(cpu, rm), getEaa(cpu, rm));
                 }
                 return true;
             }
@@ -3405,6 +3589,48 @@ class Decoder {
                     prev.next = new Ops.Mov_Reg32_Reg16(gd(cpu, rm), ew(cpu, rm));
                 } else {
                     prev.next = new Ops.Mov_Reg32_Mem16(gd(cpu, rm), getEaa(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+         /* BTC Ed,Gd */
+        decoder[0x3bb] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BtcEdGd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    if (cpu.locked)
+                        prev.next = new Ops.BtcEdGd_mem_Lock(getEaa(cpu, rm), gd(cpu, rm));
+                    else
+                        prev.next = new Ops.BtcEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+        /* BSF Gd,Ed */
+        decoder[0x3bc] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BsfGdEd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BsfGdEd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+        /* BSR Gd,Ed */
+        decoder[0x3bd] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BsrGdEd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BsrGdEd_mem(getEaa(cpu, rm), gd(cpu, rm));
                 }
                 return true;
             }
@@ -3456,7 +3682,10 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Xadd_Reg8_Reg8(gb(cpu, rm), eb(cpu, rm));
                 } else {
-                    prev.next = new Ops.Xadd_Reg8_Mem8(gb(cpu, rm), getEaa(cpu, rm));
+                    if (cpu.locked)
+                        prev.next = new Ops.Xadd_Reg8_Mem8_Lock(gb(cpu, rm), getEaa(cpu, rm));
+                    else
+                        prev.next = new Ops.Xadd_Reg8_Mem8(gb(cpu, rm), getEaa(cpu, rm));
                 }
                 return true;
             }
@@ -3470,7 +3699,10 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Xadd_Reg16_Reg16(gw(cpu, rm), ew(cpu, rm));
                 } else {
-                    prev.next = new Ops.Xadd_Reg16_Mem16(gw(cpu, rm), getEaa(cpu, rm));
+                    if (cpu.locked)
+                        prev.next = new Ops.Xadd_Reg16_Mem16_Lock(gw(cpu, rm), getEaa(cpu, rm));
+                    else
+                        prev.next = new Ops.Xadd_Reg16_Mem16(gw(cpu, rm), getEaa(cpu, rm));
                 }
                 return true;
             }
@@ -3483,7 +3715,10 @@ class Decoder {
                 if (rm >= 0xc0 ) {
                     prev.next = new Ops.Xadd_Reg32_Reg32(gd(cpu, rm), ed(cpu, rm));
                 } else {
-                    prev.next = new Ops.Xadd_Reg32_Mem32(gd(cpu, rm), getEaa(cpu, rm));
+                    if (cpu.locked)
+                        prev.next = new Ops.Xadd_Reg32_Mem32_Lock(gd(cpu, rm), getEaa(cpu, rm));
+                    else
+                        prev.next = new Ops.Xadd_Reg32_Mem32(gd(cpu, rm), getEaa(cpu, rm));
                 }
                 return true;
             }

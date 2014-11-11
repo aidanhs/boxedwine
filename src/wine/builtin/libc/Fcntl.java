@@ -1,5 +1,7 @@
 package wine.builtin.libc;
 
+import wine.emulation.CPU;
+import wine.loader.BuiltinModule;
 import wine.system.WineThread;
 import wine.system.io.FileDescriptor;
 import wine.system.io.FileLock;
@@ -21,6 +23,8 @@ public class Fcntl {
     static public final int	F_GETLK	   = 5;
     static public final int	F_SETLK	   = 6;
     static public final int	F_SETLKW   = 7;
+    static public final int F_SETSIG   = 10;
+    static public final int F_GETSIG   = 11;
     static public final int	F_GETLK64  = 12;
     static public final int	F_SETLK64  = 13;
     static public final int	F_SETLKW64  = 14;
@@ -119,6 +123,10 @@ public class Fcntl {
                 }
                 return fd.object.setLockW(lock);
             }
+            case F_SETSIG: {
+                Log.warn("fcntl F_SETSIG not implemented");
+                return -1;
+            }
             default:
                 Log.warn("fcntl: unknown command: "+cmd);
                 thread.setErrno(Errno.EINVAL);
@@ -130,6 +138,10 @@ public class Fcntl {
     static public int open64(int pPath, int oflag) {
         return open(pPath, oflag);
     }
+    static public int __open64_2(int pPath, int oflag) {
+        return open(pPath, oflag);
+    }
+
     static public int open(int pPath, int oflag) {
         WineThread thread = WineThread.getCurrent();
         String path = thread.process.memory.readCString(pPath);
@@ -197,5 +209,10 @@ public class Fcntl {
             }
         }
         return fd.handle;
+    }
+
+    // int posix_fadvise64(int fd, off64_t offset, off64_t len, int advice)
+    static public int posix_fadvise64(int fd, long offset, long len, int advice) {
+        return 0;
     }
 }

@@ -15,6 +15,18 @@ public class XAnyEvent extends XEvent {
         this.window = window;
     }
 
+    public XAnyEvent() {
+    }
+
+    public int read(Memory memory, int address) {
+        address = super.read(memory, address);
+        serial = memory.readd(address); address+=4;
+        send_event = memory.readd(address); address+=4;
+        display = memory.readd(address); address+=4;
+        window = memory.readd(address); address+=4;
+        return address;
+    }
+
     public int write(Memory memory, int address) {
         address = super.write(memory, address);
         memory.writed(address, serial); address+=4;
