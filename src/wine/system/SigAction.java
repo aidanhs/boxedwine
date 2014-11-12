@@ -27,6 +27,13 @@ public class SigAction {
         sa_flags = memory.readd(address+12);
     }
 
+    public void write(int address) {
+        Memory memory = WineThread.getCurrent().process.memory;
+        memory.writed(address, sa_handler);
+        memory.writed(address+4, sa_sigaction);
+        memory.writed(address+8, sa_mask);
+        memory.writed(address+12, sa_flags);
+    }
     public void call() {
         WineThread thread = WineThread.getCurrent();
         Log.panic("Signals not implemented yet");

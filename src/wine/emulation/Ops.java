@@ -420,7 +420,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8();
+            return "lock "+instruction.toString()+" "+dest.toString8();
         }
     }
 
@@ -460,7 +460,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src;
+            return "lock "+instruction.toString()+" "+dest.toString8()+", "+src;
         }
     }
 
@@ -521,7 +521,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16();
+            return "lock "+instruction.toString()+" "+dest.toString16();
         }
     }
 
@@ -582,7 +582,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src;
         }
     }
 
@@ -622,7 +622,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32();
+            return "lock "+instruction.toString()+" "+dest.toString32();
         }
     }
 
@@ -683,7 +683,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src;
         }
     }
 
@@ -727,7 +727,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src.name8;
+            return "lock "+instruction.toString()+" "+dest.toString8()+", "+src.name8;
         }
     }
 
@@ -771,7 +771,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name8;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name8;
         }
     }
 
@@ -815,7 +815,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name16;
         }
     }
 
@@ -859,7 +859,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name8;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name8;
         }
     }
 
@@ -903,7 +903,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name32;
         }
     }
 
@@ -951,7 +951,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value.name8;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value.name8;
         }
     }
 
@@ -999,7 +999,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value.name8;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value.name8;
         }
     }
 
@@ -1047,7 +1047,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value;
         }
     }
 
@@ -1095,7 +1095,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value;
         }
     }
 
@@ -1798,7 +1798,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xchg "+eaa.toString8()+", "+reg.name8;
+            return "lock xchg "+eaa.toString8()+", "+reg.name8;
         }
     }
 
@@ -1840,7 +1840,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xchg "+eaa.toString16()+", "+reg.name16;
+            return "lock xchg "+eaa.toString16()+", "+reg.name16;
         }
     }
 
@@ -1882,7 +1882,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xchg "+eaa.toString32()+", "+reg.name32;
+            return "lock xchg "+eaa.toString32()+", "+reg.name32;
         }
     }
 
@@ -4730,7 +4730,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xadd "+gb.name8+", "+eb.toString8();
+            return "lock xadd "+gb.name8+", "+eb.toString8();
         }
     }
 
@@ -4796,7 +4796,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xadd "+gw.name16+", "+ew.toString16();
+            return "lock xadd "+gw.name16+", "+ew.toString16();
         }
     }
 
@@ -4862,7 +4862,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xadd "+gd.name32+", "+ed.toString32();
+            return "lock xadd "+gd.name32+", "+ed.toString32();
         }
     }
 
@@ -4976,7 +4976,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "cmpxchg "+ed.toString32()+", "+gd.name32;
+            return "lock cmpxchg "+ed.toString32()+", "+gd.name32;
         }
     }
 
@@ -5052,11 +5052,11 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "cmpxchg "+ew.toString16()+", "+gw.name16;
+            return "lock cmpxchg "+ew.toString16()+", "+gw.name16;
         }
     }
 
-    static public class RegGetter implements wine.builtin.libc.Syscall.SyscallGetter {
+    static public class RegGetter extends wine.builtin.libc.Syscall.SyscallGetter {
         CPU cpu;
         int pos=-1;
         public RegGetter(CPU cpu) {
@@ -5204,7 +5204,7 @@ class Ops {
         }
 
         public String toString() {
-            return "btc";
+            return "lock btc";
         }
     }
 
@@ -5353,4 +5353,153 @@ class Ops {
             return "RDTSCc";
         }
     };
+
+    final static public class BtEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bt "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+
+    final static public class BtsEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtsEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword|=mask;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtrEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtrEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword&=~mask;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btr "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtcEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtcEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            boolean cf = (ed.dword & mask)!=0;
+            cpu.setFlag(cf, CPU.CF);
+            if (cf) ed.dword&=~mask;
+            else ed.dword|=mask;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btc "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bt "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtsEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtsEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old|mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtrEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtrEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old & ~mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btr "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtcEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtcEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            boolean cf = (old & mask)!=0;
+            cpu.setFlag(cf, CPU.CF);
+            if (cf) old&=~mask;
+            else old|=mask;
+            cpu.memory.writed(address,old);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btc "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
 }

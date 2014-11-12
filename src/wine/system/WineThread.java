@@ -27,6 +27,8 @@ public class WineThread {
     public int sigMask;
     public int strtok_last;
     public int clear_child_tid;
+    public String currentDirectory; // used by openat
+    public int ctid;
 
     private StringBuilder stdoutBuffer = new StringBuilder();
 
@@ -56,6 +58,7 @@ public class WineThread {
         this.stackSizeReserved = forkedThread.stackSizeReserved;
         this.stackSizeCommit = forkedThread.stackSizeCommit;
         this.initialStackAddress = forkedThread.initialStackAddress;
+        this.ctid = forkedThread.ctid;
         this.cpu = forkedThread.cpu.deepCopy(this, process.callReturnEip);
         this.jThread = new Thread(new Runnable() {
             public void run() {
@@ -144,7 +147,9 @@ public class WineThread {
         }
         process.free(this.errnoPtr);
         this.errnoPtr = 0;
-
+        if (ctid!=0) {
+            process.memory.writed(ctid, 0);
+        }
         if (stackAddress!=0) {
             int pageStart = this.stackAddress >>> 12;
             int pageCount = this.stackSize >>> 12;

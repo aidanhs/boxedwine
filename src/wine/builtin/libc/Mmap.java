@@ -24,8 +24,16 @@ public class Mmap {
         public PageHandler fork(WineProcess process) {
             MMapHandlerRO handler = new MMapHandlerRO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
             handler.dirty = this.dirty;
-            if (shared) {
-                Log.panic("forked mmap shared mapped files not implemented");
+            if (physicalPage!=0) {
+                if (shared) {
+                    RAM.incrementRef(physicalPage);
+                    handler.physicalPage = physicalPage;
+                    handler.addressTranslation = addressTranslation;
+                } else {
+                    handler.physicalPage = RAM.allocPage();
+                    RAM.copy(physicalPage, handler.physicalPage);
+                    handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
+                }
             }
             return handler;
         }
@@ -52,8 +60,16 @@ public class Mmap {
         public PageHandler fork(WineProcess process) {
             MMapHandlerWO handler = new MMapHandlerWO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
             handler.dirty = this.dirty;
-            if (shared) {
-                Log.panic("forked mmap shared mapped files not implemented");
+            if (physicalPage!=0) {
+                if (shared) {
+                    RAM.incrementRef(physicalPage);
+                    handler.physicalPage = physicalPage;
+                    handler.addressTranslation = addressTranslation;
+                } else {
+                    handler.physicalPage = RAM.allocPage();
+                    RAM.copy(physicalPage, handler.physicalPage);
+                    handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
+                }
             }
             return handler;
         }
@@ -88,8 +104,16 @@ public class Mmap {
         public PageHandler fork(WineProcess process) {
             MMapHandlerNone handler = new MMapHandlerNone(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
             handler.dirty = this.dirty;
-            if (shared) {
-                Log.panic("forked mmap shared mapped files not implemented");
+            if (physicalPage!=0) {
+                if (shared) {
+                    RAM.incrementRef(physicalPage);
+                    handler.physicalPage = physicalPage;
+                    handler.addressTranslation = addressTranslation;
+                } else {
+                    handler.physicalPage = RAM.allocPage();
+                    RAM.copy(physicalPage, handler.physicalPage);
+                    handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
+                }
             }
             return handler;
         }

@@ -25,9 +25,9 @@ abstract class Op {
         }
     }
     public Block callAndLog(CPU cpu) {
-//        if (cpu.log) {
+        if (cpu.log) {
             log(cpu);
-//        }
+        }
         return this.call(cpu);
     }
 }

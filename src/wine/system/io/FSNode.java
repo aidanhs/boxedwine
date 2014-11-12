@@ -16,7 +16,12 @@ abstract public class FSNode {
 
     static public FSNode getNode(String localPath, boolean existing) {
         if (!localPath.startsWith("/")) {
-            localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
+            WineThread thread = WineThread.getCurrent();
+            if (thread.currentDirectory!=null) {
+                localPath = thread.currentDirectory + "/" + localPath;
+            } else {
+                localPath = thread.process.currentDirectory + "/" + localPath;
+            }
         }
         System.out.println(localPath);
         for (int i=0;i<FileSystem.links.size();i++) {

@@ -4,6 +4,7 @@ import wine.builtin.libX11.X11PerProcessData;
 import wine.builtin.libc.Errno;
 import wine.builtin.libc.Fcntl;
 import wine.builtin.libc.Signal;
+import wine.builtin.libc.Syscall;
 import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.emulation.RAM;
@@ -100,7 +101,6 @@ public class WineProcess {
     public Vector<Lock> mutexes = new Vector<Lock>();
     public int nextTLS = 4096; // first page is reserved
     public int rtld_global_ro;
-    public int ctid;
 
     static private class ExitFunction {
         public ExitFunction(int func, int arg) {
@@ -594,27 +594,45 @@ public class WineProcess {
 
 
 
-    public int linux_clone(int flags, int child_stack, int ptid, int ctid, int regs) {
-        if ((flags & 0xFFFFFF00)!=(CLONE_CHILD_SETTID|CLONE_CHILD_CLEARTID)) {
-            Log.panic("syscall clone does not implement flags: "+Integer.toHexString(flags));
-        }
-        WineProcess process = new WineProcess(WineSystem.nextid++, this);
-        process.parent = this;
-        WineThread thread = WineThread.getCurrent().fork(process);
+    public int linux_clone(int flags, int child_stack, int ptid, int tls, int ctid) {
+        if ((flags & 0xFFFFFF00)==(CLONE_CHILD_SETTID|CLONE_CHILD_CLEARTID)) {
+            WineProcess process = new WineProcess(WineSystem.nextid++, this);
+            process.parent = this;
+            WineThread thread = WineThread.getCurrent().fork(process);
 
-        if ((flags & CLONE_CHILD_SETTID)!=0) {
-            if (ctid!=0) {
-                memory.writed(ctid, thread.id);
+            if ((flags & CLONE_CHILD_SETTID)!=0) {
+                if (ctid!=0) {
+                    process.memory.writed(ctid, thread.id);
+                }
             }
+            if ((flags & CLONE_CHILD_CLEARTID)!=0) {
+                thread.ctid = ctid;
+            }
+            if (child_stack!=0)
+                thread.cpu.esp.dword = child_stack;
+            thread.cpu.eip = thread.cpu.peek32(0);
+            thread.cpu.eax.dword = 0;
+            thread.jThread.start();
+            return process.id;
+
+        } else if ((flags & 0xFFFFFF00) == (CLONE_THREAD | CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_SIGHAND | CLONE_SETTLS | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID | CLONE_SYSVSEM)) {
+            WineThread thread = WineThread.getCurrent().fork(this);
+            Syscall.modify_ldt_s ldt = new Syscall.modify_ldt_s(memory, tls);
+            if (ldt.base_addr!=0) {
+                thread.cpu.ldt[ldt.entry_number] = ldt.base_addr;
+                thread.cpu.gs.dword = ldt.base_addr;
+            }
+            thread.ctid = ctid;
+            memory.writed(ptid, thread.id);
+            thread.cpu.esp.dword = child_stack;
+            thread.cpu.esp.dword+=8;
+            thread.cpu.eip = thread.cpu.peek32(0);
+            thread.jThread.start();
+            return id;
+        } else {
+            Log.panic("sys_clone does not implement flags: "+Integer.toHexString(flags));
+            return 0;
         }
-        if ((flags & CLONE_CHILD_CLEARTID)!=0) {
-            process.ctid = ctid;
-        }
-        thread.cpu.eip = thread.cpu.peek32(0);
-        thread.cpu.eax.dword = 0;
-        thread.cpu.log = true;
-        thread.jThread.start();
-        return process.id;
     }
     
     // INHERITED
@@ -649,6 +667,13 @@ public class WineProcess {
             System.arraycopy(args, 1, t, 0, t.length);
             args = t;
         }
+        {
+            String[] t = new String[args.length + 1];
+            System.arraycopy(args, 0, t, 1, args.length);
+            args = t;
+            args[0] = "/lib/ld-linux.so.2";
+        }
+
         FSNode node = FSNode.getNode(args[0], true);
         if (node!=null && !node.exists()) {
             thread.setErrno(Errno.ENOENT);

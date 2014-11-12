@@ -3594,6 +3594,52 @@ class Decoder {
             }
         };
 
+         /* GRP8 Ed,Ib */
+        decoder[0x3ba] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    int mask = 1 << (cpu.fetchb() & 31);
+                    switch (rm & 0x38) {
+                        case 0x20:	/* BT */
+                            prev.next = new Ops.BtEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        case 0x28:	/* BTS */
+                            prev.next = new Ops.BtsEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        case 0x30:	/* BTR */
+                            prev.next = new Ops.BtrEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        case 0x38:	/* BTC */
+                            prev.next = new Ops.BtcEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        default:
+                            Log.panic("CPU:66:0F:BA:Illegal subfunction "+Integer.toString(rm & 0x38,16));
+                    }
+                } else {
+                    EaaBase eaa = getEaa(cpu, rm);
+                    int mask = 1 << (cpu.fetchb() & 31);
+                    switch (rm & 0x38) {
+                        case 0x20:	/* BT */
+                            prev.next = new Ops.BtEdIb_mem(eaa, mask);
+                            break;
+                        case 0x28:	/* BTS */
+                            prev.next = new Ops.BtsEdIb_mem(eaa, mask);
+                            break;
+                        case 0x30:	/* BTR */
+                            prev.next = new Ops.BtrEdIb_mem(eaa, mask);
+                            break;
+                        case 0x38:	/* BTC */
+                            prev.next = new Ops.BtcEdIb_mem(eaa, mask);
+                            break;
+                        default:
+                            Log.panic("CPU:66:0F:BA:Illegal subfunction "+Integer.toString(rm & 0x38,16));
+                    }
+                }
+                return true;
+            }
+        };
+
          /* BTC Ed,Gd */
         decoder[0x3bb] = new Decode() {
             public boolean call(CPU cpu, Op prev) {

@@ -91,15 +91,16 @@ public class Signal {
 
     // int sigaction(int sig, const struct sigaction * act, struct sigaction * oact);
     static public int sigaction(int sig, int act, int oact) {
+        WineThread thread = WineThread.getCurrent();
         if (sig == SIGKILL || sig == SIGSTOP) {
-            WineThread.getCurrent().setErrno(Errno.EINVAL);
+            thread.setErrno(Errno.EINVAL);
             return -1;
         }
 
         if (oact!=0) {
-            Log.panic("sigaction not fully implemented");
+            thread.process.sigActions[sig].write(oact);
         }
-        WineThread.getCurrent().process.sigActions[sig].read(act);
+        thread.process.sigActions[sig].read(act);
         return 0;
     }
 

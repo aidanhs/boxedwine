@@ -129,8 +129,17 @@ public class MMapHandler extends PageHandler {
     public PageHandler fork(WineProcess process) {
         MMapHandler handler = new MMapHandler(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
         handler.dirty = this.dirty;
-        if (shared) {
-            Log.panic("forked mmap shared mapped files not implemented");
+
+        if (physicalPage!=0) {
+            if (shared) {
+                RAM.incrementRef(physicalPage);
+                handler.physicalPage = physicalPage;
+                handler.addressTranslation = addressTranslation;
+            } else {
+                handler.physicalPage = RAM.allocPage();
+                RAM.copy(physicalPage, handler.physicalPage);
+                handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
+            }
         }
         return handler;
     }

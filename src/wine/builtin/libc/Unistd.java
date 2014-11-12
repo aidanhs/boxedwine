@@ -319,7 +319,7 @@ public class Unistd {
             thread.setErrno((int)-result);
             return -1;
         }
-        return (int)result;
+        return result;
     }
 
     // int pipe(int fildes[2])
