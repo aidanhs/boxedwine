@@ -23,7 +23,7 @@ abstract public class FSNode {
                 localPath = thread.process.currentDirectory + "/" + localPath;
             }
         }
-        System.out.println(localPath);
+        //System.out.println(localPath);
         for (int i=0;i<FileSystem.links.size();i++) {
             Path path = FileSystem.links.elementAt(i);
             if (localPath.startsWith(path.localPath)) {

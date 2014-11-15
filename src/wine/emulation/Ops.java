@@ -5502,4 +5502,102 @@ class Ops {
             return "btc "+eaa.toString32()+", "+Integer.toHexString(mask);
         }
     }
+
+    final static public class BtsEdGd_reg extends Op {
+        Reg gd;
+        Reg ed;
+
+        public BtsEdGd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword|=mask;
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bts " + ed.name32 + ", " + gd.name32;
+        }
+    }
+    final static public class BtsEdGd_mem extends Op {
+        Reg gd;
+        EaaBase eaa;
+        public BtsEdGd_mem(EaaBase eaa, Reg gd) {
+            this.gd = gd;
+            this.eaa = eaa;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            int address=eaa.call(cpu);
+            address+=(gd.dword>>5)*4; // intentional signed shift
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old | mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts " + eaa.toString32() + ", " + gd.name32;
+        }
+    }
+
+    final static public class BtsEwGw_reg extends Op {
+        Reg gw;
+        Reg ew;
+        public BtsEwGw_reg(Reg ew, Reg gw) {
+            this.gw = gw;
+            this.ew = ew;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gw.u16() & 15);
+            cpu.setFlag((ew.u16() & mask)!=0, CPU.CF);
+            ew.u16(ew.u16() | mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts " + ew.name16 + ", " + gw.name16;
+        }
+    }
+    final static public class BtsEwGw_mem extends Op {
+        Reg gw;
+        EaaBase eaa;
+        public BtsEwGw_mem(EaaBase eaa, Reg gw) {
+            this.eaa = eaa;
+            this.gw = gw;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gw.u16() & 15);
+            int address=eaa.call(cpu);
+            address+=(((/*Bit16s*/short)gw.u16())>>4)*2;
+            int old=cpu.memory.readw(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writew(address,old | mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts " + eaa.toString16() + ", " + gw.name32;
+        }
+    }
+
+    final static public class Bswapd extends Op {
+        Reg reg;
+
+        public Bswapd(Reg reg) {
+            this.reg = reg;
+        }
+        public Block call(CPU cpu) {
+            int i = reg.dword;
+            reg.dword=(i>>>24)|((i>>8)&0xFF00)|((i<<8)&0xFF0000)|(i<<24);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bswap " + reg.name32;
+        }
+    }
 }

@@ -1184,9 +1184,7 @@ public class LibX11 extends BuiltinModule {
     static public int XKeysymToString(int keysym) {
         WineProcess process = WineThread.getCurrent().process;
         String s = KeySym.x11KeySymToString.get(keysym);
-        if (s==null)
-            return 0;
-        return process.getString(s);
+        return 0;
     }
 
     // XPixmapFormatValues *XListPixmapFormats(Display *display, int *count_return)

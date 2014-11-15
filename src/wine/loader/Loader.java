@@ -1,13 +1,8 @@
 package wine.loader;
 
-import wine.builtin.ld.Ld;
 import wine.builtin.libX11.LibX11;
 import wine.builtin.libXext.LibXext;
 import wine.builtin.libc.Libc;
-import wine.builtin.libdl.Libdl;
-import wine.builtin.libfontconfig.Libfontconfig;
-import wine.builtin.libm.Libm;
-import wine.builtin.libpthread.LibPThread;
 import wine.loader.elf.ElfSymbol;
 import wine.system.*;
 import wine.system.io.FSNode;
@@ -80,13 +75,13 @@ public class Loader {
                 name = name.substring(pos+1);
             }
             if (explicitPath==null) {
-                for (String path : WineSystem.libDirs) {
-                    FSNode node = FSNode.getNode(path+"/"+name, true);
-                    if (node!=null && !node.isDirectory()) {
-                        explicitPath = node.localPath;
-                        break;
-                    }
-                }
+//                for (String path : WineSystem.libDirs) {
+//                    FSNode node = FSNode.getNode(path+"/"+name, true);
+//                    if (node!=null && !node.isDirectory()) {
+//                        explicitPath = node.localPath;
+//                        break;
+//                    }
+//                }
             }
             if (explicitPath == null) {
                 return null;
@@ -116,21 +111,11 @@ public class Loader {
 
     private Module load_builtin_module(String name) {
         BuiltinModule module = null;
-        if (name.equalsIgnoreCase("libdl.so.2")) {
-            module = new Libdl(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libm.so.6")) {
-            module = new Libm(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libc.so.6")) {
-            module = new Libc(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libpthread.so.0")) {
-            module = new LibPThread(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libX11.so.6")) {
+        if (name.equalsIgnoreCase("libX11.so.6")) {
             module = new LibX11(name, process, WineSystem.nextid++);
         } else if (name.equalsIgnoreCase("libXext.so.6")) {
             module = new LibXext(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libfontconfig.so.1")) {
-            module = new Libfontconfig(name, process, WineSystem.nextid++);
-        }//else if (name.equalsIgnoreCase("ld-linux.so.2")) {
+        } //else if (name.equalsIgnoreCase("ld-linux.so.2")) {
          //   module = new Ld(name, process, WineSystem.nextid++);
          // }
         if (module != null) {

@@ -28,4 +28,10 @@ public class SocketAddress {
     }
     public int family;
     public String name;
+
+    public String toString() {
+        if (family==Socket.AF_UNIX)
+            return "name="+name+" family=AF_UNIX";
+        return "family="+family;
+    }
 }

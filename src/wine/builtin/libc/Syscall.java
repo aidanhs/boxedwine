@@ -1,10 +1,13 @@
 package wine.builtin.libc;
 
 import wine.emulation.Memory;
+import wine.system.ExitThreadException;
 import wine.system.WineProcess;
 import wine.system.WineSystem;
 import wine.system.WineThread;
+import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
+import wine.system.io.SocketAddress;
 import wine.util.Log;
 
 public class Syscall {
@@ -20,8 +23,12 @@ public class Syscall {
     static public final int __NR_time = 13;
     static public final int __NR_chmod = 15;
     static public final int __NR_lseek = 19;
+    static public final int __NR_getpid = 20;
     static public final int __NR_access = 33;
+    static public final int __NR_kill = 37;
     static public final int __NR_mkdir = 39;
+    static public final int __NR_rmdir = 40;
+    static public final int __NR_dup = 41;
     static public final int __NR_pipe = 42;
     static public final int __NR_brk = 45;
     static public final int __NR_ioctl = 54;
@@ -50,6 +57,7 @@ public class Syscall {
     static public final int __NR_sigaltstack = 186;
     static public final int __NR_ugetrlimit = 191;
     static public final int __NR_mmap2 = 192;
+    static public final int __NR_ftruncate64 = 194;
     static public final int __NR_stat64 = 195;
     static public final int __NR_lstat64 = 196;
     static public final int __NR_fstat64 = 197;
@@ -67,6 +75,8 @@ public class Syscall {
     static public final int __NR_epoll_ctl = 255;
     static public final int __NR_epoll_wait = 256;
     static public final int __NR_set_tid_address = 258;
+    static public final int __NR_clock_gettime = 265;
+    static public final int __NR_statfs64 = 268;
     static public final int __NR_fstatfs64 = 269;
     static public final int __NR_tgkill = 270;
     static public final int __NR_inotify_init = 291;
@@ -145,6 +155,8 @@ public class Syscall {
         return syscall(number, new StackGetter(thread.process.memory,thread.cpu.esp.dword+4));
     }
 
+    static public boolean log = false;
+
     static public int syscall(int number, SyscallGetter getter) {
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
@@ -152,14 +164,19 @@ public class Syscall {
         thread.setErrno(0);
         switch (number) {
             case __NR_exit: {
-                Unistd._exit(getter.next());
-                return 0;
+                int status = getter.next();
+                if (log)
+                    Log.log("__NR_exit: "+status);
+                thread.exitValue = status;
+                throw new ExitThreadException();
             }
             case __NR_read: {
                 int fd = getter.next();
                 int buf = getter.next();
                 int len = getter.next();
                 result = Unistd.read(fd, buf, len);
+                if (log)
+                    Log.log("__NR_read: fd="+fd+" buf=0x"+Integer.toHexString(buf)+" len="+len+" result="+result);
                 break;
             }
             case __NR_write: {
@@ -167,50 +184,74 @@ public class Syscall {
                 int buf = getter.next();
                 int len = getter.next();
                 result = Unistd.write(fd, buf, len);
+                if (log)
+                    Log.log("__NR_write: fd="+fd+" buf=0x"+Integer.toHexString(buf)+" len="+len+" result="+result);
                 break;
             }
             case __NR_open: {
                 int name = getter.next();
                 int flags = getter.next();
                 result = Fcntl.open(name, flags);
+                if (log)
+                    Log.log("__NR_open: name=0x"+Integer.toHexString(name)+"("+memory.readCString(name)+") flags=0x"+Integer.toHexString(flags)+" result="+result);
                 break;
             }
             case __NR_close: {
                 int fd = getter.next();
                 result = Unistd.close(fd);
+                if (log)
+                    Log.log("__NR_close: fd="+fd+" result="+result);
                 break;
             }
             case __NR_waitpid: {
                 int pid = getter.next();
                 int status = getter.next();
                 int options = getter.next();
+                if (log)
+                    Log.log("__NR_waitpid: pid="+pid+" status="+status+" options=0x"+Integer.toHexString(options));
                 result = Wait.waitpid(pid, status, options);
+                if (log)
+                    Log.log("__NR_waitpid: result="+result);
                 break;
             }
             case __NR_unlink: {
                 int path = getter.next();
                 result = Unistd.unlink(path);
+                if (log)
+                    Log.log("__NR_unlink: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") result="+result);
                 break;
             }
             case __NR_execve: {
                 int path = getter.next();
                 int argv = getter.next();
                 int envp = getter.next();
+                if (log)
+                    Log.log("__NR_execve: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") argv=0x"+Integer.toHexString(argv)+" envp=0x"+Integer.toHexString(envp));
                 result = Unistd.execve(path, argv, envp);
+                if (log)
+                    Log.log("__NR_execve: result="+result);
                 break;
             }
             case __NR_chdir: {
-                result = Unistd.chdir(getter.next());
+                int path = getter.next();
+                result = Unistd.chdir(path);
+                if (log)
+                    Log.log("__NR_chdir: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") result="+result);
                 break;
             }
             case __NR_time: {
-                result = Time.time(getter.next());
+                int tloc = getter.next();
+                result = Time.time(tloc);
+                if (log)
+                    Log.log("__NR_time: tloc=0x"+Integer.toHexString(tloc)+" result="+result);
                 break;
             }
             case __NR_chmod: {
                 int path = getter.next();
                 int mode = getter.next();
                 result = Stat.chmod(path, mode);
+                if (log)
+                    Log.log("__NR_chmod: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") mode=0"+Integer.toOctalString(mode)+" result="+result);
                 break;
             }
             case __NR_lseek: {
@@ -218,23 +259,59 @@ public class Syscall {
                 int offset = getter.next();
                 int whence = getter.next();
                 result = Unistd.lseek(fildes, offset, whence);
+                if (log)
+                    Log.log("__NR_lseek: fildes="+fildes+" offset="+offset+" whence="+whence+" result="+result);
+                break;
+            }
+            case __NR_getpid: {
+                result = Unistd.getpid();
+                if (log)
+                    Log.log("__NR_getpid: result="+result);
                 break;
             }
             case __NR_access: {
                 int filename = getter.next();
                 int flags = getter.next();
                 result = Unistd.access(filename, flags);
+                if (log)
+                    Log.log("__NR_access: filename=0x"+Integer.toHexString(filename)+"("+memory.readCString(filename)+") flags=0x"+Integer.toHexString(flags)+" result="+result);
+                break;
+            }
+            case __NR_kill: {
+                int pid = getter.next();
+                int sig = getter.next();
+                result = Signal.kill(pid, sig);
+                if (log)
+                    Log.log("__NR_kill: pid="+pid+" sig="+sig+" result="+result);
                 break;
             }
             case __NR_mkdir: {
                 int path = getter.next();
                 int mode = getter.next();
                 result = Stat.mkdir(path, mode);
+                if (log)
+                    Log.log("__NR_mkdir: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") mode="+mode+" result="+result);
+                break;
+            }
+            case __NR_rmdir: {
+                int path = getter.next();
+                result = Unistd.rmdir(path);
+                if (log)
+                    Log.log("__NR_rmdir: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") result="+result);
+                break;
+            }
+            case __NR_dup: {
+                int fildes = getter.next();
+                result = Unistd.dup(fildes);
+                if (log)
+                    Log.log("__NR_dup: fildes="+fildes+" result="+result);
                 break;
             }
             case __NR_pipe: {
                 int fildes = getter.next();
                 result = Unistd.pipe(fildes);
+                if (log)
+                    Log.log("__NR_pipe: fildes=0x"+Integer.toHexString(fildes)+"("+memory.readd(fildes)+","+memory.readd(fildes+4)+") result="+result);
                 break;
             }
             case __NR_brk: {
@@ -247,38 +324,53 @@ public class Syscall {
                     }
                     thread.process.end = address;
                 }
+                if (log)
+                    Log.log("__NR_brk: address=0x"+Integer.toHexString(address)+" result=0x"+Integer.toHexString(thread.process.end));
                 return thread.process.end;
             }
             case __NR_ioctl: {
                 int d = getter.next();
                 int request = getter.next();
                 result = Ioctl.ioctl(d, request);
+                if (log)
+                    Log.log("__NR_ioctl: d="+d+" request="+request+" result="+result);
                 break;
             }
             case __NR_umask: {
-                result = Stat.umask(getter.next());
+                int cmask = getter.next();
+                result = Stat.umask(cmask);
+                if (log)
+                    Log.log("__NR_umask: cmask=0x"+Integer.toHexString(cmask)+" result=0x"+Integer.toHexString(result));
                 break;
             }
             case __NR_dup2: {
                 int fildes = getter.next();
                 int fildes2 = getter.next();
                 result = Unistd.dup2(fildes, fildes2);
+                if (log)
+                    Log.log("__NR_dup2: fildes="+fildes+" fildes2="+fildes2+" result="+result);
                 break;
             }
             case __NR_setsid: {
                 result = Unistd.setsid();
+                if (log)
+                    Log.log("__NR_setsid: result="+result);
                 break;
             }
             case __NR_gettimeofday: {
                 int tv = getter.next();
                 int tz = getter.next();
                 result = Time.gettimeofday(tv, tz);
+                if (log)
+                    Log.log("__NR_gettimeofday: tv=0x"+Integer.toHexString(tv)+" tz=0x"+Integer.toHexString(tz)+" result="+result);
                 break;
             }
             case __NR_symlink: {
                 int path1 = getter.next();
                 int path2 = getter.next();
                 result = Unistd.symlink(path1, path2);
+                if (log)
+                    Log.log("__NR_symlink: path1=0x"+Integer.toHexString(path1)+"("+memory.readCString(path1)+") path2=0x"+Integer.toHexString(path2)+"("+memory.readCString(path2)+") result="+result);
                 break;
             }
             case __NR_readlink: {
@@ -286,6 +378,8 @@ public class Syscall {
                 int buf = getter.next();
                 int bufsize = getter.next();
                 result = Unistd.readlink(path, buf, bufsize);
+                if (log)
+                    Log.log("__NR_readlink: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") buf=0x"+Integer.toHexString(buf)+"("+memory.readCString(buf)+") bufsize="+bufsize+" result="+result);
                 break;
             }
             case __NR_mmap: {
@@ -297,12 +391,16 @@ public class Syscall {
                 int fd = memory.readd(args+16);
                 int offset = memory.readd(args+20);
                 result = Mmap.mmap(address, len, prot, flags, fd, offset);
+                if (log)
+                    Log.log("__NR_mmap: address=0x"+Integer.toHexString(address)+" len="+len+" prot="+prot+" flags=0x"+Integer.toHexString(flags)+" fd="+fd+" offset="+offset+" result=0x"+Integer.toHexString(result));
                 break;
             }
             case __NR_munmap: {
                 int address = getter.next();
                 int len = getter.next();
                 result = Mmap.munmap(address, len);
+                if (log)
+                    Log.log("__NR_munmap: address=0x"+Integer.toHexString(address)+" len="+len+" result="+result);
                 break;
             }
             case __NR_socketcall: {
@@ -314,6 +412,23 @@ public class Syscall {
                         int type = args.next() & 0xFF;
                         int protocol = args.next();
                         result = Socket.socket(domain, type, protocol);
+                        if (log) {
+                            String sDomain;
+                            if (domain==Socket.AF_UNIX)
+                                sDomain="AF_UNIX";
+                            else if (domain==Socket.AF_INET)
+                                sDomain="AF_INET";
+                            else
+                                sDomain = String.valueOf(domain);
+                            String sType;
+                            if (type == Socket.SOCK_STREAM)
+                                sType = "SOCK_STREAM";
+                            else if (type == Socket.SOCK_DGRAM)
+                                sType = "SOCK_DRAM";
+                            else
+                                sType = String.valueOf(type);
+                            Log.log("SYS_SOCKET: domain="+sDomain+" type="+sType);
+                        }
                         break;
                     }
                     case 2: { // SYS_BIND
@@ -321,6 +436,10 @@ public class Syscall {
                         int address = args.next();
                         int len = args.next();
                         result = Socket.bind(socket, address, len);
+                        if (log) {
+                            SocketAddress sa = SocketAddress.parse(address, len);
+                            Log.log("SYS_BIND: socket="+socket+" address=0x"+address+"(name="+sa.toString()+") len="+len+" result="+result);
+                        }
                         break;
                     }
                     case 3: { // SYS_CONNECT
@@ -328,19 +447,29 @@ public class Syscall {
                         int address = args.next();
                         int len = args.next();
                         result = Socket.connect(socket, address, len);
+                        if (log) {
+                            SocketAddress sa = SocketAddress.parse(address, len);
+                            Log.log("SYS_CONNECT: socket="+socket+" address=0x"+address+"("+sa.toString()+") len="+len+" result="+result);
+                        }
                         break;
                     }
                     case 4: { // SYS_LISTEN
                         int socket = args.next();
                         int backlog = args.next();
+                        if (log)
+                            Log.log("SYS_LISTEN: socket="+socket+" backlog="+backlog);
                         result = Socket.listen(socket, backlog);
+                        if (log)
+                            Log.log("SYS_LISTEN: socket="+socket+" result="+result);
                         break;
                     }
                     case 5: { // SYS_ACCEPT
                         int socket = args.next();
                         int address = args.next();
-                        int len = args.next();
-                        result = Socket.accept(socket, address, len);
+                        int addrlen = args.next();
+                        result = Socket.accept(socket, address, addrlen);
+                        if (log)
+                            Log.log("SYS_ACCEPT: socket="+socket+" address=0x"+Integer.toHexString(address)+" addrlen=0x"+Integer.toHexString(addrlen)+" result="+result);
                         break;
                     }
                     case 6: { // SYS_GETSOCKNAME
@@ -348,6 +477,8 @@ public class Syscall {
                         int address = args.next();
                         int address_len = args.next();
                         result = Socket.getsockname(socket, address, address_len);
+                        if (log)
+                            Log.log("SYS_GETSOCKNAME: socket="+socket+" address=0x"+Integer.toHexString(address)+" address_len="+address_len);
                         break;
                     }
                     //case 7: // SYS_GETPEERNAME
@@ -357,6 +488,23 @@ public class Syscall {
                         int protocol = args.next();
                         int socks = args.next();
                         result = Socket.socketpair(af, type, protocol, socks);
+                        if (log) {
+                            String sDomain;
+                            if (af==Socket.AF_UNIX)
+                                sDomain="AF_UNIX";
+                            else if (af==Socket.AF_INET)
+                                sDomain="AF_INET";
+                            else
+                                sDomain = String.valueOf(af);
+                            String sType;
+                            if (type == Socket.SOCK_STREAM)
+                                sType = "SOCK_STREAM";
+                            else if (type == Socket.SOCK_DGRAM)
+                                sType = "SOCK_DRAM";
+                            else
+                                sType = String.valueOf(type);
+                            Log.log("SYS_SOCKETPAIR: af="+sDomain+" type="+sType+" protocol="+protocol+" socks=0x"+Integer.toHexString(socks)+"("+memory.readd(socks)+","+memory.readd(socks+4)+") result="+result);
+                        }
                         break;
                     }
                     case 9: { // SYS_SEND
@@ -364,7 +512,11 @@ public class Syscall {
                         int buffer = args.next();
                         int len = args.next();
                         int flags = args.next();
+                        if (log)
+                            Log.log("SYS_SEND: socket="+socket+" buffer=0x"+Integer.toHexString(buffer)+" len="+len+" flags=0x"+Integer.toHexString(flags)+" result="+result);
                         result = Socket.send(socket, buffer, len, flags);
+                        if (log)
+                            Log.log("SYS_SEND: socket="+socket+" result="+result);
                         break;
                     }
                     case 10: { // SYS_RECV
@@ -372,7 +524,11 @@ public class Syscall {
                         int buffer = args.next();
                         int len = args.next();
                         int flags = args.next();
+                        if (log)
+                            Log.log("SYS_RECV: socket="+socket+" buffer=0x"+Integer.toHexString(buffer)+" len="+len+" flags=0x"+Integer.toHexString(flags)+" result="+result);
                         result = Socket.recv(socket, buffer, len, flags);
+                        if (log)
+                            Log.log("SYS_RECV: socket="+socket+" result="+result);
                         break;
                     }
                     //case 11: // SYS_SENDTO
@@ -381,6 +537,8 @@ public class Syscall {
                         int socket = args.next();
                         int how = args.next();
                         result = Socket.shutdown(socket, how);
+                        if (log)
+                            Log.log("SYS_SHUTDOWN: socket="+socket+" how="+how+" result="+result);
                         break;
                     }
                     case 14: { // SYS_SETSOCKOPT
@@ -390,6 +548,8 @@ public class Syscall {
                         int value = args.next();
                         int len = args.next();
                         result = Socket.setsockopt(socket, level, name, value, len);
+                        if (log)
+                            Log.log("SYS_SETSOCKOPT: socket="+socket+" level="+level+" name="+name+" value="+value+" len="+len+" result="+result);
                         break;
                     }
                     case 15: { // SYS_GETSOCKOPT
@@ -399,20 +559,30 @@ public class Syscall {
                         int value = args.next();
                         int len = args.next();
                         result = Socket.getsockopt(socket, level, name, value, len);
+                        if (log)
+                            Log.log("SYS_GETSOCKOPT: socket="+socket+" level="+level+" name="+name+" value="+value+" len="+len+" result="+result);
                         break;
                     }
                     case 16: { // SYS_SENDMSG
                         int socket = args.next();
                         int message = args.next();
                         int flags = args.next();
+                        if (log)
+                            Log.log("SYS_SENDMSG: socket="+socket+" message=0x"+Integer.toHexString(message)+" flags=0x"+flags);
                         result = Socket.sendmsg(socket, message, flags);
+                        if (log)
+                            Log.log("SYS_SENDMSG: socket="+socket+" result="+result);
                         break;
                     }
                     case 17: { // SYS_RECVMSG
                         int socket = args.next();
                         int message = args.next();
                         int flags = args.next();
+                        if (log)
+                            Log.log("SYS_RECVMSG: socket="+socket+" message=0x"+Integer.toHexString(message)+" flags=0x"+flags);
                         result = Socket.recvmsg(socket, message, flags);
+                        if (log)
+                            Log.log("SYS_SENDMSG: socket="+socket+" result="+result);
                         break;
                     }
                     //case 18: // SYS_ACCEPT4
@@ -428,11 +598,15 @@ public class Syscall {
                 int tls = getter.next();
                 int ctid = getter.next();
                 result = thread.process.linux_clone(flags, child_stack, ptid, tls, ctid);
+                if (log)
+                    Log.log("__NR_clone: flags=0x"+Integer.toHexString(flags)+" child_stack="+child_stack+" ptid=0x"+Integer.toHexString(ptid)+" tls=0x"+Integer.toHexString(tls)+" ctid=0x"+Integer.toHexString(ctid)+" result="+result);
                 break;
             }
             case __NR_uname: {
                 int name = getter.next();
                 result = Utsname.uname(name);
+                if (log)
+                    Log.log("__NR_uname: name=0x"+Integer.toHexString(name)+"("+memory.readCString(name)+") result="+result);
                 break;
             }
             case __NR_mprotect: {
@@ -440,10 +614,15 @@ public class Syscall {
                 int len = getter.next();
                 int prot = getter.next();
                 result = Mmap.mprotect(address, len, prot);
+                if (log)
+                    Log.log("__NR_mprotect: address=0x"+Integer.toHexString(address)+" len="+len+" prot="+prot+" result="+result);
                 break;
             }
             case __NR_fchdir: {
-                result = Unistd.fchdir(getter.next());
+                int fd = getter.next();
+                result = Unistd.fchdir(fd);
+                if (log)
+                    Log.log("__NR_fchdir: fd="+fd+" result="+result);
                 break;
             }
             case __NR__llseek: {
@@ -461,24 +640,43 @@ public class Syscall {
                     if (pResult!=0)
                         memory.writeq(pResult, r);
                 }
+                if (log)
+                    Log.log("__NR__llseek: fildes="+fildes+" offsetHigh="+offsetHigh+" offsetLow="+offsetLow+" pResult=0x"+Integer.toHexString(pResult)+" whence="+whence+" result="+result);
                 break;
             }
             case __NR_writev: {
                 int fildes = getter.next();
                 int iov = getter.next();
                 int iovcnt = getter.next();
+                if (log)
+                    Log.log("__NR_writev: fildes="+fildes+" iov=0x"+Integer.toHexString(iov)+" iovcn="+iovcnt);
                 result = Uio.writev(fildes, iov, iovcnt);
+                if (log)
+                    Log.log("__NR_writev: fildes="+fildes+" result="+result);
                 break;
             }
             case __NR_poll: {
                 int pfd = getter.next();
                 int fds = getter.next();
                 int timeout = getter.next();
+                if (log)
+                    Log.log("__NR_poll: pfd=0x"+Integer.toHexString(pfd)+" fds="+fds+" timeout="+timeout);
                 result = Poll.poll(pfd, fds, timeout);
+                if (log)
+                    Log.log("__NR_poll: pfd=0x"+Integer.toHexString(pfd)+" fds="+fds+" timeout="+timeout+" result="+result);
                 break;
             }
             case __NR_prctl: {
-                result = Prctl.prctl(getter.next());
+                int option = getter.next();
+                if (option == 15 /* PR_SET_NAME*/) {
+                    thread.process.name = thread.process.memory.readCString(getter.next(), 16);
+                    result = -1; // :TODO: why does returning 0 cause WINE to have a stack overflow
+                } else {
+                    Log.warn("prctl not implemented");
+                    result = -1;
+                }
+                if (log)
+                    Log.log("__NR_prctl: option="+option+" result="+result);
                 break;
             }
             case __NR_rt_sigaction: {
@@ -486,6 +684,8 @@ public class Syscall {
                 int act = getter.next();
                 int oact = getter.next();
                 result = Signal.sigaction(sig, act, oact);
+                if (log)
+                    Log.log("__NR_rt_sigaction: sig="+sig+" act=0x"+Integer.toHexString(act)+" oact=0x"+Integer.toHexString(oact)+" result="+result);
                 break;
             }
             case __NR_rt_sigprocmask: {
@@ -493,6 +693,8 @@ public class Syscall {
                 int set = getter.next();
                 int oset = getter.next();
                 result = Signal.sigprocmask(how, set, oset);
+                if (log)
+                    Log.log("__NR_rt_sigprocmask: how"+how+" set="+set+" oset=0x"+Integer.toHexString(oset)+" result="+result);
                 break;
             }
             case __NR_pread64: {
@@ -501,18 +703,24 @@ public class Syscall {
                 int count = getter.next();
                 long offset = getter.nextLong();
                 result = Stat.pread64(fd, buf, count, offset);
+                if (log)
+                    Log.log("__NR_pread64: fd="+fd+" buf=0x"+Integer.toHexString(buf)+" count="+count+" offset="+offset+" result="+result);
                 break;
             }
             case __NR_getcwd: {
                 int buf = getter.next();
                 int size = getter.next();
                 result = Unistd.getcwd(buf, size);
+                if (log)
+                    Log.log("__NR_getcwd: buf=0x"+Integer.toHexString(buf)+"("+memory.readCString(buf)+") size="+size+" result="+result);
                 break;
             }
             case __NR_sigaltstack: {
                 int ss = getter.next();
                 int oss = getter.next();
                 result = Signal.sigaltstack(ss, oss);
+                if (log)
+                    Log.log("__NR_sigaltstack: ss=0x"+Integer.toHexString(ss)+" oss=0x"+oss+" result="+result);
                 break;
             }
             case __NR_ugetrlimit: {
@@ -530,6 +738,8 @@ public class Syscall {
                     default:
                         Log.panic("sys call __NR_ugetrlimit resource "+resource+" not implemented");
                 }
+                if (log)
+                    Log.log("__NR_ugetrlimit: resource="+resource+" rlim=0x"+Integer.toHexString(rlim)+" result=0");
                 return 0;
             }
             case __NR_mmap2: {
@@ -540,6 +750,16 @@ public class Syscall {
                 int fd = getter.next();
                 int offset = getter.next() * 4096;
                 result = Mmap.mmap(address, len, prot, flags, fd, offset);
+                if (log)
+                    Log.log("__NR_mmap: address=0x"+Integer.toHexString(address)+" len="+len+" prot="+prot+" flags=0x"+Integer.toHexString(flags)+" fd="+fd+" offset="+offset+" result=0x"+Integer.toHexString(result));
+                break;
+            }
+            case __NR_ftruncate64: {
+                int fildes = getter.next();
+                long length = getter.nextLong();
+                result = Unistd.ftruncate64(fildes, length);
+                if (log)
+                    Log.log("__NR_ftruncate64: fildes="+fildes+" length="+length+" result="+result);
                 break;
             }
             case __NR_stat64: {
@@ -564,7 +784,7 @@ public class Syscall {
                 Log.panic("syscall __NR_modify_ldt not implemented");
                 break;
             case __NR_getuid32: {
-                result = Unistd.getuid();
+                result = WineSystem.uid;
                 break;
             }
             case __NR_madvise: {
@@ -572,6 +792,8 @@ public class Syscall {
                 int len = getter.next();
                 int advise = getter.next();
                 result = Mmap.madvise(address, len, advise);
+                if (log)
+                    Log.log("__NR_madvise: address=0x"+Integer.toHexString(address)+" len="+len+" advise=0x"+Integer.toHexString(advise)+" result="+result);
                 break;
             }
             case __NR_getdents64:
@@ -682,6 +904,23 @@ public class Syscall {
             case __NR_set_tid_address:
                 thread.clear_child_tid = getter.next();
                 return thread.id;
+            case __NR_clock_gettime: {
+                int clock_id = getter.next();
+                int tp = getter.next();
+                result = Time.clock_gettime(clock_id, tp);
+                if (log)
+                    Log.log("__NR_clock_gettime: clock_id="+clock_id+" tp=0x"+Integer.toHexString(tp)+" result="+result);
+                break;
+            }
+            case __NR_statfs64: {
+                int path = getter.next();
+                int len = getter.next();
+                int buf = getter.next();
+                result = Stat.statfs64(path, buf);
+                if (log)
+                    Log.log("__NR_statfs64: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") buf=0x"+Integer.toHexString(buf)+" result="+result);
+                break;
+            }
             case __NR_fstatfs64: {
                 int fd = getter.next();
                 int sizeOfBuf = getter.next();
@@ -738,13 +977,63 @@ public class Syscall {
             case __NR_getcpu:
                 Log.panic("syscall __NR_getcpu not implemented");
                 break;
-            case __NR_utimensat:
-                Log.panic("syscall __NR_utimensat not implemented");
+            case __NR_utimensat: {
+                int dirfd = getter.next();
+                int pathname = getter.next();
+                int times = getter.next();
+                int flags = getter.next();
+                String path = "";
+
+                if (pathname!=0)
+                    memory.readCString(pathname);
+                if (log)
+                    Log.log("__NR_utimensat: dirfd="+dirfd+" pathname="+Integer.toHexString(pathname)+"("+path+") times=0x"+Integer.toHexString(times)+" flags="+flags);
+                if (!path.startsWith("/")) {
+                    if (dirfd==-100/*AT_FDCWD*/) {
+                        path = thread.process.currentDirectory + "/" + path;
+                    } else {
+                        FileDescriptor fd = thread.process.fileDescriptors.get(dirfd);
+                        if (fd == null) {
+                            return -Errno.EBADF;
+                        }
+                        if (pathname==0)
+                            path = fd.getFile().node.localPath;
+                        else
+                            path = fd.getFile().node.localPath+"/"+path;
+                    }
+                }
+                FSNode node = FSNode.getNode(path, true);
+                if (node == null) {
+                    return -1;
+                }
+                long UTIME_NOW = (1l<<30)-1;
+                long l;
+                long lastAccessTime;
+                long lastModifiedTime;
+
+                l = memory.readq(times+4);
+                if (l==UTIME_NOW)
+                    l = System.currentTimeMillis();
+                else
+                    l = memory.readd(times)+l/1000000l;
+                lastAccessTime = memory.readd(times)+l/1000000l;
+
+                l = memory.readq(times+16);
+                if (l==UTIME_NOW)
+                    l = System.currentTimeMillis();
+                else
+                    l = memory.readd(times+12)+l/1000000l;
+
+                lastModifiedTime = memory.readd(times+12)+l/1000000l;
+                //node.setLastModifiedTime(lastModifiedTime);
                 break;
+            }
             case __NR_pipe2: {
                 int fildes = getter.next();
                 int flags = getter.next();
                 result = Unistd.pipe2(fildes, flags);
+                if (log)
+                    Log.log("__NR_pipe2: fildes=0x"+Integer.toHexString(fildes)+"("+memory.readd(fildes)+","+memory.readd(fildes+4)+") flags=0x"+Integer.toHexString(flags)+" result="+result);
                 break;
             }
             case __NR_prlimit64: {

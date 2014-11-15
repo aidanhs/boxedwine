@@ -8,7 +8,7 @@ public class Log {
     public static final int LEVEL_NONE = 0;
     public static final int LEVEL_WARN = 1;
     public static final int LEVEL_DEBUG = 2;
-    public static final int level=LEVEL_WARN;
+    public static final int level=LEVEL_DEBUG;
     static public void panic(String msg) {
         WineThread thread = WineThread.getCurrent();
         msg = msg+" in "+thread.process.loader.getModule(thread.cpu.eip);

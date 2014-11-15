@@ -11,6 +11,9 @@ abstract class Op {
         if (cpu.thread.process!=null) {
             StringBuilder builder = new StringBuilder();
             builder.append(cpu.thread.id).append(" ");
+            if (eip==0xe61bdd49) {
+                int ii=0;
+            }
             builder.append(Integer.toHexString(eip)).append(" ");
             for (int i = 0; i < cpu.callIndex; i++)
                 builder.append("    ");
@@ -25,8 +28,8 @@ abstract class Op {
         }
     }
     public Block callAndLog(CPU cpu) {
-        if (cpu.log) {
-            log(cpu);
+        if (cpu.thread.id==111) {
+            //log(cpu);
         }
         return this.call(cpu);
     }

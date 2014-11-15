@@ -131,6 +131,8 @@ public class WineThread {
             stdoutBuffer.append(process.name);
             stdoutBuffer.append(":");
             stdoutBuffer.append(process.id);
+            stdoutBuffer.append("/");
+            stdoutBuffer.append(id);
             stdoutBuffer.append(" ");
         }
         stdoutBuffer.append(msg);
@@ -145,7 +147,7 @@ public class WineThread {
             process.free(this.strerror);
             this.strerror = 0;
         }
-        process.free(this.errnoPtr);
+        //process.free(this.errnoPtr);
         this.errnoPtr = 0;
         if (ctid!=0) {
             process.memory.writed(ctid, 0);

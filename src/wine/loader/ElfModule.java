@@ -190,14 +190,6 @@ public class ElfModule extends Module {
             fis = node.getInputStream();
             pos = 0;
 
-            for (ElfProgram program : programs) {
-                if (program.p_type == ElfProgram.PT_TLS) {
-                    tlsImage = new byte[(int) program.p_memsz];
-                    tlsStart = process.nextTLS;
-                    process.nextTLS+=tlsImage.length;
-                }
-            }
-
             for (ElfSection section: sections) {
                 if ((section.sh_flags & ElfSection.SHF_ALLOC) != 0 && section.sh_type!=ElfSection.SHT_NOTE) {
                     byte[] buffer = new byte[(int)section.sh_size];

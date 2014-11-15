@@ -10,6 +10,8 @@ import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
 
+import java.util.Vector;
+
 public class Unistd {
     // int access(const char *filename, int flags)
     static public int access(int filename, int flags) {
@@ -105,39 +107,17 @@ public class Unistd {
         return fildes2;
     }
 
-    // int execl(const char *path, const char *arg, ...)
-    static public int execl(int path, int arg) {
-        WineThread thread = WineThread.getCurrent();
-        WineProcess process = thread.process;
-        return process.exec(process.memory.readCStringArray(thread.cpu.esp.dword+4), null);
-    }
-
-    // int execv(const char *path, char *const argv[])
-    static public int execv(int path, int argv) {
-        WineProcess process = WineThread.getCurrent().process;
-        return process.exec(process.memory.readCStringArray(argv), null);
-    }
-
-    static public int execvp(int pFile, int argv) {
-        WineProcess process = WineThread.getCurrent().process;
-        String[] args = process.memory.readCStringArray(argv);
-        String file = process.memory.readCString(pFile);
-        if (!file.startsWith("/")) {
-            for (String path:process.paths()) {
-                FSNode node = FSNode.getNode(path+"/"+file, true);
-                if (node!=null) {
-                    args[0]=node.localPath;
-                    break;
-                }
-            }
-        }
-        return process.exec(args, null);
-    }
-
     // int execve(const char *path, char *const argv[], char *const envp[])
     static public int execve(int path, int argv, int envp) {
         WineProcess process = WineThread.getCurrent().process;
-        return process.exec(process.memory.readCStringArray(argv), process.memory.readCStringArray(envp));
+        Vector<String> env = new Vector<String>();
+        Vector<String> args = new Vector<String>();
+
+        for (String s : process.memory.readCStringArray(envp))
+            env.add(s);
+        for (String a : process.memory.readCStringArray(argv))
+            args.add(a);
+        return process.exec(args, env);
     }
 
     // void exit(int status)
@@ -160,15 +140,6 @@ public class Unistd {
         }
         thread.process.currentDirectory = file.node.localPath;
         return 0;
-    }
-
-    // pid_t fork(void)
-    static public int fork() {
-        WineThread thread = WineThread.getCurrent();
-        WineProcess process = thread.process.fork(thread.cpu.peek32(-1)); // eip was already popped before we got here
-        if (process!=null)
-            return process.id;
-        return -1;
     }
 
     // int fsync(int fildes)
@@ -233,48 +204,9 @@ public class Unistd {
 //        int val;
 //    };
 
-    // int getopt_long(int argc, char * const argv[], const char *optstring, const struct option *longopts, int *longindex)
-    static public int getopt_long(int argc, int argv, int optstring, int longopts, int longindex) {
-        WineProcess process = WineThread.getCurrent().process;
-        Memory memory = process.memory;
-        int index = memory.readd(process.optind);
-        if (index>=argc) {
-            return -1;
-        }
-        memory.writed(process.optind, index+1);
-        int a = memory.readd(argv + index * 4);
-        String s = memory.readCString(a);
-        if (s.equals("--init")) {
-            return 'i';
-        } else if (s.equals("-v"))
-            return (int) 'v';
-        else if (s.equals("-h"))
-            return (int) 'h';
-        else if (s.equals("-d")) {
-            index++;
-            if (index<argc) {
-                a = memory.readd(argv + index * 4);
-                s = memory.readCString(a);
-                if (!s.startsWith("-")) {
-                    memory.writeCString(process.optarg, s);
-                }
-            }
-            return (int) 'd';
-        }
-        else if (s.equals("-f"))
-            return (int) 'f';
-        Log.warn("getopt_long not implemented");
-        return -1;
-    }
-
     // pid_t getpid(void)
     static public int getpid() {
         return WineThread.getCurrent().process.id;
-    }
-
-    // uid_t getuid(void)
-    static public int getuid() {
-        return WineSystem.uid;
     }
 
     // int isatty(int fildes)
@@ -388,7 +320,7 @@ public class Unistd {
         WineThread thread = WineThread.getCurrent();
         String s = thread.process.memory.readCString(path);
         if (s.equals("/proc/self/exe")) {
-            String r = thread.process.mainModule.fullPath();
+            String r = thread.process.fullPath;
             thread.process.memory.writeCString(buf, r, bufsize);
             return r.length();
         }

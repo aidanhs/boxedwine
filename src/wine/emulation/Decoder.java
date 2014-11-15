@@ -3435,10 +3435,68 @@ class Decoder {
             }
         };
 
+         /* SHLD Ew,Gw,CL */
+        decoder[0x1a5] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Instruction_Reg16_Reg16_Reg8(Instructions.dshlw, ew(cpu, rm), gw(cpu, rm), cpu.ecx);
+                } else {
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Reg8_Lock(Instructions.dshlw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
+                    else
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Reg8(Instructions.dshlw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
+                }
+                return true;
+            }
+        };
+
+        /* SHLD Ed,Gd,CL */
+        decoder[0x3a5] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Instruction_Reg32_Reg32_Reg8(Instructions.dshld, ed(cpu, rm), gd(cpu, rm), cpu.ecx);
+                } else {
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Reg8_Lock(Instructions.dshld, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
+                    else
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Reg8(Instructions.dshld, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
+                }
+                return true;
+            }
+        };
+
         /* POP GS */
         decoder[0x3a9] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
                 prev.next = new Ops.PopSeg32(cpu.gsValue, cpu.gs, "gs");
+                return true;
+            }
+        };
+
+         /* BTS Ew,Gw */
+        decoder[0x1ab] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BtsEwGw_reg(ew(cpu, rm), gw(cpu, rm));
+                } else {
+                    prev.next = new Ops.BtsEwGw_mem(getEaa(cpu, rm), gw(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+         /* BTS Ed,Gd */
+        decoder[0x3ab] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BtsEdGd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BtsEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
                 return true;
             }
         };
@@ -3769,6 +3827,17 @@ class Decoder {
                 return true;
             }
         };
+
+        for (int i=0;i<8;i++) {
+             /* BSWAP */
+            final int rm = i;
+            decoder[0x3c8+i] = new Decode() {
+                public boolean call(CPU cpu, Op prev) {
+                    prev.next = new Ops.Bswapd(ed(cpu, rm));
+                    return true;
+                }
+            };
+        }
     }
 
     

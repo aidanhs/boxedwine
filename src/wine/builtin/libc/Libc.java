@@ -15,15 +15,6 @@ public class Libc extends BuiltinModule {
         //libc.load(WineThread.getCurrent(), "/usr/lib/i386-linux-gnu/libc.so");
         //libc.init(WineThread.getCurrent());
 
-        addData("stdin", process.stdin);
-        addData("stdout", process.stdout);
-        addData("stderr", process.stderr);
-        addData("environ", process.ppenviron);
-        addData("_environ", process.ppenviron);
-        addData("__environ", process.ppenviron);
-        addData("optind", process.optind);
-        addData("optarg", process.optarg);
-
         add_cdecl(Libc.class, "__assert_fail");
         add_cdecl(Libc.class, "__cxa_atexit");
         add_cdecl(Libc.class, "__cxa_finalize");
@@ -36,23 +27,6 @@ public class Libc extends BuiltinModule {
         add_cdecl(Libc.class, "__pow_finite");
         add_cdecl(Libc.class, "__stack_chk_fail");
         add_cdecl(Libc.class, "strerror");
-
-        add_cdecl(CType.class, "__ctype_b_loc");
-        add_cdecl(CType.class, "__ctype_tolower_loc");
-        add_cdecl(CType.class, "__ctype_toupper_loc");
-        add_cdecl(CType.class, "isalnum");
-        add_cdecl(CType.class, "isalpha");
-        add_cdecl(CType.class, "iscntrl");
-        add_cdecl(CType.class, "isdigit");
-        add_cdecl(CType.class, "isgraph");
-        add_cdecl(CType.class, "islower");
-        add_cdecl(CType.class, "isprint");
-        add_cdecl(CType.class, "ispunct");
-        add_cdecl(CType.class, "isspace");
-        add_cdecl(CType.class, "isupper");
-        add_cdecl(CType.class, "isxdigit");
-        add_cdecl(CType.class, "tolower");
-        add_cdecl(CType.class, "toupper");
 
         add_cdecl(Dirent.class, "opendir");
         add_cdecl(Dirent.class, "closedir");
@@ -107,8 +81,6 @@ public class Libc extends BuiltinModule {
         add_cdecl(Prctl.class, "prctl");
 
         add_cdecl(PTrace.class, "ptrace");
-
-        add_cdecl(Pwd.class, "getpwuid");
 
         add_cdecl(Regex.class, "regcomp");
         add_cdecl(Regex.class, "regerror");
@@ -410,7 +382,6 @@ public class Libc extends BuiltinModule {
 
     // int __cxa_atexit(void (*func) (void *), void * arg, void * dso_handle);
     static public int __cxa_atexit(int func, int arg, int dso_handle) {
-        WineThread.getCurrent().process.addExitFunction(dso_handle, func, arg);
         return 0;
     }
 

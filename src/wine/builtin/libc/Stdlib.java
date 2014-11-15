@@ -23,12 +23,6 @@ public class Stdlib {
         return java.lang.Math.abs(i);
     }
 
-    // int atexit(void (*func)(void))
-    static public int atexit(int func) {
-        WineThread thread = WineThread.getCurrent();
-        thread.process.runAtExit(func);
-        return 0;
-    }
 
     // int atoi(const char *str)
     static public int atoi(int str) {
@@ -50,22 +44,10 @@ public class Stdlib {
         return result  | ((long)remainder << 32);
     }
 
-    // void exit(int status)
-    static public void exit(int status) {
-        WineThread thread = WineThread.getCurrent();
-        thread.process.exit(status);
-    }
-
     // void free(void *ptr)
     static public void free(int ptr) {
         WineThread thread = WineThread.getCurrent();
         thread.process.free(ptr);
-    }
-
-    // char *getenv(const char *name)
-    static public int getenv(int name) {
-        WineThread thread = WineThread.getCurrent();
-        return thread.process.getenv(thread.process.memory.readCString(name));
     }
 
     // int initstate_r(unsigned int seed, char *statebuf, size_t statelen, struct random_data *buf)
@@ -113,13 +95,6 @@ public class Stdlib {
     }
     static public int mkostemp64(int template, int flags) {
         return mkostemp(template, flags);
-    }
-
-    // int putenv(char *string)
-    static public int putenv(int str) {
-        WineProcess process = WineThread.getCurrent().process;
-        String pair = process.memory.readCString(str);
-        return process.setenv(pair);
     }
 
     static private class QSortComparator implements Comparator<Integer> {
@@ -389,12 +364,5 @@ public class Stdlib {
     static public int system(int command) {
         Log.warn("system "+WineThread.getCurrent().process.memory.readCString(command)+" was not executed");
         return -1;
-    }
-
-    // int unsetenv(const char *name)
-    static public int unsetenv(int name) {
-        WineProcess process = WineThread.getCurrent().process;
-        String pair = process.memory.readCString(name);
-        return process.setenv(pair);
     }
 }

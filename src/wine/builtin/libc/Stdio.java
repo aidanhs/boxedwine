@@ -7,58 +7,12 @@ import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
-import wine.util.Sprintf;
-import wine.util.Sscanf;
 
 // I don't think wine.exe or wineserver.exe really need buffered i/o, so FILE* will just be a File Descriptor id
 public class Stdio {
     static public final int SEEK_SET              = 0;
     static public final int SEEK_CUR              = 1;
     static public final int SEEK_END              = 2;
-
-    static private class StackGetter implements Sprintf.SprintfGetter {
-        final private Memory memory;
-        private int address;
-
-        public StackGetter(Memory memory, int address) {
-            this.memory = memory;
-            this.address = address;
-        }
-        public int getNextInt() {
-            int result = memory.readd(address);
-            address+=4;
-            return result;
-        }
-
-        public short getNextShort() {
-            short result = (short)memory.readw(address);
-            address+=4;
-            return result;
-        }
-
-        public long getNextLong() {
-            long result = memory.readq(address);
-            address+=8;
-            return result;
-        }
-
-        public char getNextChar() {
-            char result = (char)(memory.readb(address) & 0xFF);
-            address+=4;
-            return result;
-        }
-
-        public String getNextString() {
-            int p = getNextInt();
-            if (p==0)
-                return "(null)";
-            return memory.readCString(p);
-        }
-
-        public double getNextDouble() {
-            return Double.longBitsToDouble(getNextLong());
-        }
-    }
 
     // int fclose(FILE *stream)
     static public int fclose(int stream) {
@@ -170,34 +124,6 @@ public class Stdio {
         return result;
     }
 
-    // int __fprintf_chk(FILE * stream, int flag, const char * format)
-    static public int __fprintf_chk(int stream, int flag, int format) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-
-        FileDescriptor fd = thread.process.getFileDescriptor(stream);
-        if (fd==null || !fd.canWrite()) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword + 12));
-        return fd.object.write(result);
-    }
-
-    // int fprintf(FILE * stream, const char * format, ...)
-    static public int fprintf(int stream, int format) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-
-        FileDescriptor fd = thread.process.getFileDescriptor(stream);
-        if (fd==null || !fd.canWrite()) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword+8));
-        return fd.object.write(result);
-    }
-
     // int fputc(int c, FILE *stream)
     static public int fputc(int c, int stream) {
         WineThread thread = WineThread.getCurrent();
@@ -269,32 +195,6 @@ public class Stdio {
         thread.out(thread.process.memory.readCString(s));
     }
 
-    // int __printf_chk(int flag, const char * format)
-    static public int __printf_chk(int flag, int format) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword+8));
-        FileDescriptor fd = thread.process.getFileDescriptor(thread.process.stdout);
-        if (fd==null || !fd.canWrite()) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        return fd.object.write(result);
-    }
-
-    // int printf(const char *restrict format, ...)
-    static public int printf(int format) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword+4));
-        FileDescriptor fd = thread.process.getFileDescriptor(thread.process.stdout);
-        if (fd==null || !fd.canWrite()) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        return fd.object.write(result);
-    }
-
     // int putchar(int c)
     static public int putchar(int c) {
         WineProcess process = WineThread.getCurrent().process;
@@ -338,85 +238,6 @@ public class Stdio {
 
     // int setvbuf(FILE * stream, char * buf, int type, size_t size)
     static public int setvbuf(int stream, int buf, int type, int size) {
-        return 0;
-    }
-
-    // int __snprintf_chk(char * str, size_t maxlen, int flag, size_t strlen, const char * format)
-    static public int __snprintf_chk(int str, int maxlen, int flag, int strlen, int format) {
-        return Stdio.vsnprintf(str, strlen, format, WineThread.getCurrent().cpu.esp.dword+20);
-    }
-
-    // int snprintf(char *s, size_t n, const char *format, /* args */ ...)
-    static public int snprintf(int s, int n, int format) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword+12));
-        if (n!=0)
-            memory.writeCString(s, result, n);
-        return result.length();
-    }
-
-    static public int __sprintf_chk(int s, int format) {
-        return sprintf(s, format);
-
-    }
-    // int sprintf(char *s, const char *format, ...)
-    static public int sprintf(int s, int format) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, thread.cpu.esp.dword+8));
-        memory.writeCString(s, result);
-        return result.length();
-    }
-
-    static public int __isoc99_sscanf(int s, int format) {
-        return sscanf(s, format);
-    }
-
-    // int sscanf(const char * s, const char * format, ... )
-    static public int sscanf(int s, int pFormat) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-        return Sscanf.sscanf(memory, memory.readCString(s), memory.readCString(pFormat), new StackGetter(memory, thread.cpu.esp.dword + 8));
-    }
-
-    // int vfprintf(FILE * stream, const char * format, va_list ap)
-    static public int vfprintf(int stream, int format, int ap) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-
-        FileDescriptor fd = thread.process.getFileDescriptor(stream);
-        if (fd==null || !fd.canWrite()) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
-        }
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, ap));
-        fd.object.write(result);
-        return result.length()+1;
-    }
-
-    // int __vfprintf_chk(FILE * fp, int flag, const char * format, va_list ap)
-    static public int __vfprintf_chk(int fp, int flag, int format, int ap) {
-        return vfprintf(fp, format, ap);
-    }
-
-    // int __vsnprintf_chk(char * s, size_t maxlen, int flag, size_t slen, const char * format, va_list args)
-    static public int __vsnprintf_chk(int str, int maxlen, int flag, int strlen, int format, int args) {
-        return Stdio.vsnprintf(str, strlen, format, args);
-    }
-
-    // int vsnprintf(char * s, size_t n, const char * format, va_list ap)
-    static public int vsnprintf(int s, int n, int format, int ap) {
-        WineThread thread = WineThread.getCurrent();
-        Memory memory = thread.process.memory;
-        String result = Sprintf.sprintf(memory.readCString(format), new StackGetter(memory, ap));
-        memory.writeCString(s, result, n);
-        return result.length();
-    }
-
-    // int vsscanf(const char * s, const char * format, va_list arg)
-    static public int vsscanf(int s, int format, int arg) {
-        Log.panic("vsscanf not implemented");
         return 0;
     }
 }

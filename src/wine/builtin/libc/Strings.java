@@ -88,51 +88,6 @@ public class Strings {
         return s1;
     }
 
-    // int strcasecmp(const char *s1, const char *s2)
-    static public int strcasecmp(int s1, int s2) {
-        Memory memory = WineThread.getCurrent().process.memory;
-        while (true) {
-            int c1 = CType.tolower(memory.readb(s1++));
-            int c2 = CType.tolower(memory.readb(s2++));
-
-            if (c1<c2)
-                return -1;
-            else if (c1>c2)
-                return 1;
-
-            if (c1 == 0 && c1 == c2) {
-                return 0;
-            }
-            if (c1 == 0)
-                return -1;
-            if (c2 == 0)
-                return 1;
-        }
-    }
-
-    // int strncasecmp(const char *s1, const char *s2, size_t n)
-    static public int strncasecmp(int s1, int s2, int n) {
-        Memory memory = WineThread.getCurrent().process.memory;
-        for (int i=0;i<(n & 0xFFFFFFFFl);i++) {
-            int c1 = CType.tolower(memory.readb(s1++));
-            int c2 = CType.tolower(memory.readb(s2++));
-
-            if (c1<c2)
-                return -1;
-            else if (c1>c2)
-                return 1;
-
-            if (c1 == 0 && c1 == c2) {
-                return 0;
-            }
-            if (c1 == 0)
-                return -1;
-            if (c2 == 0)
-                return 1;
-        }
-        return 0;
-    }
-
     // char *strcat(char *restrict s1, const char *restrict s2)
     static public int strcat(int s1, int s2) {
         int address = s1+strlen(s1);
