@@ -63,7 +63,7 @@ public class Dirent {
         return -1;
     }
 
-    static public class ReadDirData implements FileDescriptor.FileDescriptorData {
+    static public class ReadDirData {
         public FSNode[] dirs;
         public int index;
         public int pDirent;

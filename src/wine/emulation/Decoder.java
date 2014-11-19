@@ -3307,13 +3307,28 @@ class Decoder {
 
         for (int i=0;i<16;i++) {
             final int index = i;
+            decoder[0x140+i] = new Decode() {
+                public boolean call(CPU cpu, Op prev) {
+                    int rm = cpu.fetchb();
+                    if (rm >= 0xc0 ) {
+                        prev.next = new Ops.ConditionalMov_Reg16(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
+                    } else {
+                        prev.next = new Ops.ConditionalMov_Mem16(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
+                    }
+                    return true;
+                }
+            };
+        }
+
+        for (int i=0;i<16;i++) {
+            final int index = i;
             decoder[0x340+i] = new Decode() {
                 public boolean call(CPU cpu, Op prev) {
                     int rm = cpu.fetchb();
                     if (rm >= 0xc0 ) {
-                        prev.next = new Ops.ConditionalMov_Reg(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
+                        prev.next = new Ops.ConditionalMov_Reg32(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
                     } else {
-                        prev.next = new Ops.ConditionalMov_Mem(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
+                        prev.next = new Ops.ConditionalMov_Mem32(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
                     }
                     return true;
                 }

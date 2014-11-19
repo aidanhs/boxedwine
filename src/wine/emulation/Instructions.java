@@ -232,6 +232,7 @@ class Instructions {
         public boolean SF(CPU cpu) {return (cpu.result&0x80)!= 0;}
         public boolean OF(CPU cpu) {return false;}
         public String toString() {return "and";}
+        public String noResultString() {return "test";}
     }
     static public final Instruction andb = new Andb();
 
@@ -247,6 +248,7 @@ class Instructions {
         public boolean SF(CPU cpu) {return (cpu.result&0x8000)!= 0;}
         public boolean OF(CPU cpu) {return false;}
         public String toString() {return "and";}
+        public String noResultString() {return "test";}
     }
     static public final Instruction andw = new Andw();
 
@@ -262,6 +264,7 @@ class Instructions {
         public boolean SF(CPU cpu) {return cpu.result<0;}
         public boolean OF(CPU cpu) {return false;}
         public String toString() {return "and";}
+        public String noResultString() {return "test";}
     }
     static public final Instruction andd = new Andd();
 
@@ -280,6 +283,7 @@ class Instructions {
         public boolean SF(CPU cpu) {return (cpu.result & 0x80)!= 0;}
         public boolean OF(CPU cpu) {return (((cpu.left ^ cpu.right) & (cpu.left ^ cpu.result)) & 0x80) != 0;}
         public String toString() {return "sub";}
+        public String noResultString() {return "cmp";}
     }
     static public final Instruction subb = new Subb();
 
@@ -298,6 +302,7 @@ class Instructions {
         public boolean SF(CPU cpu) {return (cpu.result & 0x8000)!=0;}
         public boolean OF(CPU cpu) {return (((cpu.left ^ cpu.right) & (cpu.left ^ cpu.result)) & 0x8000) != 0;}
         public String toString() {return "sub";}
+        public String noResultString() {return "cmp";}
     }
     static public final Instruction subw = new Subw();
 
@@ -316,6 +321,7 @@ class Instructions {
         public boolean SF(CPU cpu) {return (cpu.result & 0x80000000)!= 0;}
         public boolean OF(CPU cpu) {return (((cpu.left ^ cpu.right) & (cpu.left ^ cpu.result)) & 0x80000000) != 0;}
         public String toString() {return "sub";}
+        public String noResultString() {return "cmp";}
     }
     static public final Instruction subd = new Subd();
 

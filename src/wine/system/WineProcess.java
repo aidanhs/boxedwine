@@ -9,6 +9,7 @@ import wine.emulation.CPU;
 import wine.emulation.Memory;
 import wine.emulation.RAM;
 import wine.emulation.RAMHandler;
+import wine.gui.Screen;
 import wine.loader.ElfModule;
 import wine.loader.Loader;
 import wine.loader.elf.ElfHeader;
@@ -38,7 +39,8 @@ public class WineProcess {
     static public int ADDRESS_PER_PROCESS =            0xE5000;
     static public int ADDRESS_PROCESS_MMAP_START =     0xE6000;
     static public int ADDRESS_PROCESS_HEAP_START =     0xF0000; // this needs a continuous space, hopefully wine won't use more than 256MB
-
+    static public int ADDRESS_PROCESS_FRAME_BUFFER =   0xF8000;
+    static public int ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS = 0xF8000000;
     static public final int STATE_INIT = 0;
     static public final int STATE_STARTED = 1;
     static public final int STATE_DONE = 2;
@@ -46,6 +48,7 @@ public class WineProcess {
     // resources
     static public final int MAX_STACK_SIZE = 128*1024*1024;
     static public final int MAX_ADDRESS_SPACE = 0xE0000000;
+    static public final int MAX_NUMBER_OF_FILES = 0xFFFF;
 
     // if new variables are addedd, make sure they are accounted for in fork and exec
     final public AddressSpace addressSpace;
@@ -58,6 +61,7 @@ public class WineProcess {
     public String currentDirectory;
     public Hashtable<Integer, FileDescriptor> fileDescriptors = new Hashtable<Integer, FileDescriptor>();
     public final int id;
+    public int groupId=1;
     public int eipThreadReturn;
     public int end;
     public int maxStackSize = MAX_STACK_SIZE;
@@ -161,6 +165,7 @@ public class WineProcess {
         if (fileDescriptors.get(2)==null)
             fileDescriptors.put(2, new FileDescriptor(0, KernelObject.stderr, Fcntl.O_WRONLY));
 
+        Screen.initProcess(this);
         thread.init();
         mainModule = (ElfModule)loader.loadModule(thread, args.get(0));
         this.name = mainModule.name;
@@ -270,7 +275,7 @@ public class WineProcess {
     }
 
     public void exitThread(WineThread thread) {
-        synchronized (this) {
+        synchronized (WineSystem.processes) {
             if (threads.size()==1) {
                 if (Log.level>=Log.LEVEL_DEBUG)
                     thread.out("Process Terminated\n");
@@ -285,7 +290,7 @@ public class WineProcess {
 //                } else if (sigActions[Signal.SIGCHLD].sa_handler!=SigAction.SIG_DFL) {
 //                    sigActions[Signal.SIGCHLD].call();
 //                }
-                this.notifyAll();
+                WineSystem.processes.notifyAll();
             }
             threads.remove(thread.id);
         }
@@ -312,12 +317,17 @@ public class WineProcess {
     }
 
     public void waitForPid() {
-        synchronized (this) {
-            if (isStopped() || isTerminated()) {
-                WineSystem.processes.remove(id);
-                return;
+        synchronized (WineSystem.processes) {
+            while (true) {
+                if (isStopped() || isTerminated()) {
+                    WineSystem.processes.remove(id);
+                    return;
+                }
+                try {
+                    WineSystem.processes.wait();
+                } catch (Exception e) {
+                }
             }
-            try {this.wait();} catch (Exception e){}
         }
     }
 
@@ -483,7 +493,6 @@ public class WineProcess {
             thread.cpu.esp.dword = child_stack;
             thread.cpu.esp.dword+=8;
             thread.cpu.eip = thread.cpu.peek32(0);
-            thread.cpu.log = true;
             thread.cpu.callIndex = 10;
             thread.jThread.start();
             return id;
@@ -499,6 +508,15 @@ public class WineProcess {
         WineThread thread = WineThread.getCurrent();
         if (args.get(0).endsWith("wine-preloader"))
             args.remove(0);
+        String program = args.get(0);
+        if (!program.startsWith("/")) {
+            for (String p : WineSystem.path) {
+                if (FSNode.getNode(p+"/"+program, true)!=null) {
+                    args.set(0, p+"/"+program);
+                    break;
+                }
+            }
+        }
         args.insertElementAt("/lib/ld-linux.so.2", 0);
 
         FSNode node = FSNode.getNode(args.get(0), true);
@@ -550,8 +568,8 @@ public class WineProcess {
         synchronized (waitToStart) {
             waitToStart.notify();
         }
-        synchronized (this) {
-            this.notify(); // wake up any waitForPid's so that they can wait on the new WineProcess
+        synchronized (WineSystem.processes) {
+            WineSystem.processes.notify(); // wake up any waitForPid's so that they can wait on the new WineProcess
         }
         for (Integer threadId :threads.keySet()) {
             WineThread t = threads.get(threadId);

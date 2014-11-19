@@ -111,7 +111,7 @@ public class Time {
             long m = System.currentTimeMillis();
             memory.writed(tp, (int)(m/1000));
             memory.writeq(tp+4, m % 1000);
-        } else if (clock_id==1 || clock_id==4) { // CLOCK_MONOTONIC_RAW
+        } else if (clock_id==1 || clock_id==4 || clock_id==6) { // CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC_COARSE
             long m = System.nanoTime();
             memory.writed(tp, (int)(m/1000000000l));
             memory.writeq(tp+4, m % 1000000000l);

@@ -16,6 +16,10 @@ public class UnixSocketFSNode extends FSNode {
         return node;
     }
 
+    public int getType() {
+        return 12; // DT_SOCK
+    }
+
     public boolean isDirectory() {
         return false;
     }

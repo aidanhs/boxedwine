@@ -1,6 +1,7 @@
 package wine.system.io;
 
 import wine.builtin.libc.Errno;
+import wine.builtin.libc.Syscall;
 import wine.emulation.Memory;
 import wine.system.WineProcess;
 import wine.system.WineThread;
@@ -175,7 +176,7 @@ abstract public class KernelObject {
     public String toString() {
         return name();
     }
-    public int ioctl(int request) {
+    public int ioctl(int request, Syscall.SyscallGetter getter) {
         WineThread.getCurrent().setErrno(Errno.ENOTTY);
         return -1;
     }

@@ -222,8 +222,7 @@ public class Stdio {
             return -1;
         }
         if (to.exists()) {
-            thread.setErrno(Errno.EEXIST);
-            return -1;
+            to.delete();
         }
         if (!from.renameTo(to)) {
             thread.setErrno(Errno.EIO);

@@ -8,117 +8,6 @@ import wine.system.io.KernelFile;
 import wine.util.Log;
 
 public class Mmap {
-    final static private class MMapHandlerRO extends MMapHandler {
-        public MMapHandlerRO(FileDescriptor fd, KernelFile file, int addressOffset, long fileOffset, boolean shared) {
-            super(fd, file, addressOffset, fileOffset, shared);
-        }
-        public void writed(Memory memory, int address, int value) {
-            pf(address);
-        }
-        public void writew(Memory memory, int address, int value) {
-            pf(address);
-        }
-        public void writeb(int address, int value) {
-            pf(address);
-        }
-        public PageHandler fork(WineProcess process) {
-            MMapHandlerRO handler = new MMapHandlerRO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
-            handler.dirty = this.dirty;
-            if (physicalPage!=0) {
-                if (shared) {
-                    RAM.incrementRef(physicalPage);
-                    handler.physicalPage = physicalPage;
-                    handler.addressTranslation = addressTranslation;
-                } else {
-                    handler.physicalPage = RAM.allocPage();
-                    RAM.copy(physicalPage, handler.physicalPage);
-                    handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
-                }
-            }
-            return handler;
-        }
-    }
-
-    final static private class MMapHandlerWO extends MMapHandler {
-        public MMapHandlerWO(FileDescriptor fd, KernelFile file, int addressOffset, long fileOffset, boolean shared) {
-            super(fd, file, addressOffset, fileOffset, shared);
-        }
-
-        public int readd(Memory memory, int address) {
-            pf(address);
-            return 0;
-        }
-        public int readw(Memory memory, int address) {
-            pf(address);
-            return 0;
-        }
-        public int readb(int address) {
-            pf(address);
-            return 0;
-        }
-
-        public PageHandler fork(WineProcess process) {
-            MMapHandlerWO handler = new MMapHandlerWO(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
-            handler.dirty = this.dirty;
-            if (physicalPage!=0) {
-                if (shared) {
-                    RAM.incrementRef(physicalPage);
-                    handler.physicalPage = physicalPage;
-                    handler.addressTranslation = addressTranslation;
-                } else {
-                    handler.physicalPage = RAM.allocPage();
-                    RAM.copy(physicalPage, handler.physicalPage);
-                    handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
-                }
-            }
-            return handler;
-        }
-    }
-
-    final static private class MMapHandlerNone extends MMapHandler {
-        public MMapHandlerNone(FileDescriptor fd, KernelFile file, int addressOffset, long fileOffset, boolean shared) {
-            super(fd, file, addressOffset, fileOffset, shared);
-        }
-        public void writed(Memory memory, int address, int value) {
-            pf(address);
-        }
-        public void writew(Memory memory, int address, int value) {
-            pf(address);
-        }
-        public void writeb(int address, int value) {
-            pf(address);
-        }
-        public int readd(Memory memory, int address) {
-            pf(address);
-            return 0;
-        }
-        public int readw(Memory memory, int address) {
-            pf(address);
-            return 0;
-        }
-        public int readb(int address) {
-            pf(address);
-            return 0;
-        }
-
-        public PageHandler fork(WineProcess process) {
-            MMapHandlerNone handler = new MMapHandlerNone(process.getFileDescriptor(fd.handle), file, addressOffset, fileOffset, shared);
-            handler.dirty = this.dirty;
-            if (physicalPage!=0) {
-                if (shared) {
-                    RAM.incrementRef(physicalPage);
-                    handler.physicalPage = physicalPage;
-                    handler.addressTranslation = addressTranslation;
-                } else {
-                    handler.physicalPage = RAM.allocPage();
-                    RAM.copy(physicalPage, handler.physicalPage);
-                    handler.addressTranslation = (handler.physicalPage<<12)-handler.addressOffset;
-                }
-            }
-            return handler;
-        }
-    }
-
     static public final int PROT_NONE  = 0x0;
     static public final int	PROT_READ  = 0x01;
     static public final int	PROT_WRITE = 0x02;
@@ -250,17 +139,7 @@ public class Mmap {
         }
 
         if (file!=null) {
-            for (int i = 0; i < pageCount; i++) {
-                handlers[pageStart + i].close();
-                if ((read | exec) && write)
-                    handlers[i + pageStart] = new MMapHandler(fd, file, address+i*4096, off+i*4096, shared);
-                else if (read | exec)
-                    handlers[i + pageStart] = new MMapHandlerRO(fd, file, address+i*4096, off+i*4096, shared);
-                else if (write)
-                    handlers[i + pageStart] = new MMapHandlerWO(fd, file, address+i*4096, off+i*4096, shared);
-                else
-                    handlers[i + pageStart] = new MMapHandlerNone(fd, file, address+i*4096, off+i*4096, shared);
-            }
+            return file.map(thread.process.memory, fd, off, address, len, (flags & MAP_FIXED) != 0, read, exec, write, shared);
         } else {
             for (int i = 0; i < pageCount; i++) {
                 if (read || exec || write) {

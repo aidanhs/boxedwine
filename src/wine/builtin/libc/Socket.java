@@ -15,6 +15,7 @@ public class Socket {
 
     static public final int	AF_UNIX     = 1;
     static public final int	AF_INET     = 2;
+    static public final int AF_INET6    = 10;
 
     static public final int	PF_UNIX     = 1;
     static public final int	PF_INET     = 2;
@@ -424,7 +425,7 @@ public class Socket {
         } else if (domain==AF_INET) {
             //return new KernelInetSocket(type, protocol).createNewFileDescriptor(process).handle;
         }
-        Log.panic("socket domain "+domain+" not implemented");
+        Log.warn("socket domain "+domain+" not implemented");
         return -1;
     }
 

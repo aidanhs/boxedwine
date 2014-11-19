@@ -1,5 +1,11 @@
 package wine.system.io;
 
+import wine.builtin.libc.Errno;
+import wine.builtin.libc.Syscall;
+import wine.emulation.Memory;
+import wine.system.WineThread;
+import wine.util.Log;
+
 import java.util.Arrays;
 
 public class DevZero implements FSNodeAccess {
@@ -29,5 +35,15 @@ public class DevZero implements FSNodeAccess {
     }
 
     public void close() {
+    }
+
+    public int ioctl(int request, Syscall.SyscallGetter getter) {
+        WineThread.getCurrent().setErrno(Errno.ENODEV);
+        return -1;
+    }
+
+    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+        Log.panic("Mapping /dev/zero not supported");
+        return -1;
     }
 }

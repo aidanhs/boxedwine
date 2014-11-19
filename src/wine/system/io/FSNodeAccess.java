@@ -1,5 +1,8 @@
 package wine.system.io;
 
+import wine.builtin.libc.Syscall;
+import wine.emulation.Memory;
+
 public interface FSNodeAccess {
     public boolean setLength(long length);
     public long getFilePointer();
@@ -8,4 +11,6 @@ public interface FSNodeAccess {
     public boolean write(byte[] b);
     public void close();
     public boolean open(String mode);
+    public int ioctl(int request, Syscall.SyscallGetter getter);
+    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared);
 }

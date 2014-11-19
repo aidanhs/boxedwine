@@ -1,5 +1,8 @@
 package wine.system.io;
 
+import wine.builtin.libc.*;
+import wine.emulation.Memory;
+import wine.emulation.PageHandler;
 import wine.system.WineThread;
 import wine.util.Path;
 
@@ -95,6 +98,7 @@ abstract public class FSNode {
     abstract public String name();
     abstract public boolean canRead();
     abstract public boolean canWrite();
+    abstract public int getType();
 
     private static class FSNodeFile extends FSNode {
         private FSNodeFile(File file, String localPath, String nativePath) {
@@ -106,6 +110,11 @@ abstract public class FSNode {
             return file.isDirectory();
         }
 
+        public int getType() {
+            if (isDirectory())
+                return 4; // DT_DIR;
+            return 8; // DT_REG
+        }
         public FSNode[] list() {
             // :TODO: what about virtual files and sockets
             String[] s = file.list();
@@ -205,6 +214,30 @@ abstract public class FSNode {
                     io = null;
                 }
             }
+
+            public int ioctl(int request, Syscall.SyscallGetter getter) {
+                WineThread.getCurrent().setErrno(Errno.ENODEV);
+                return -1;
+            }
+
+            public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+                PageHandler[] handlers = memory.handlers;
+                int pageStart = address>>>12;
+                int pageCount = (int)((len+0xFFF)>>>12);
+
+                for (int i = 0; i < pageCount; i++) {
+                    handlers[pageStart + i].close();
+                    if ((read | exec) && write)
+                        handlers[i + pageStart] = new MMapHandler(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    else if (read | exec)
+                        handlers[i + pageStart] = new MMapHandlerRO(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    else if (write)
+                        handlers[i + pageStart] = new MMapHandlerWO(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    else
+                        handlers[i + pageStart] = new MMapHandlerNone(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                }
+                return address;
+            }
         }
 
         public FSNodeAccess open(String mode) {
@@ -235,6 +268,7 @@ abstract public class FSNode {
         public boolean canWrite() {
             return file.canWrite();
         }
+
 
         final private File file;
     }

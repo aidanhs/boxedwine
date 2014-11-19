@@ -1,6 +1,7 @@
 package wine;
 
 import wine.emulation.RAM;
+import wine.gui.Screen;
 import wine.system.WineProcess;
 import wine.system.WineSystem;
 import wine.system.io.*;
@@ -13,17 +14,22 @@ public class Main {
     static public void main(String[] args) {
         FileSystem.links.add(new Path("/home/username/.wine/drive_c", "/home/username/.wine/dosdevices/c:"));
         FileSystem.links.add(new Path("/", "/home/username/.wine/dosdevices/z:"));
+        FileSystem.links.add(new Path("/usr/bin/Xorg", "/etc/X11/X"));
         FileSystem.paths.add(new Path(System.getProperty("user.dir")+ File.separator+"root", ""));
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull());
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero());
         VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom());
         VirtualFSNode.addVirtualFile("/proc/meminfo", new ProcMeminfo());
-
+        VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0));
+        VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2));
 
         int m = 32;
         Vector<String> env = new Vector<String>();
         Vector<String> programArgs = new Vector<String>();
         int i;
+        int cx = 1024;
+        int cy = 768;
+        int bpp = 32;
 
         env.add("HOME=/home/username");
         env.add("LOGNAME=username");
@@ -32,9 +38,10 @@ public class Main {
         env.add("DISPLAY=:0");
 
         programArgs.add("/lib/ld-linux.so.2");
-        String[] path = null;
+        WineSystem.path = null;
 
         for (i=0;i<args.length;i++) {
+            // :TODO: command line for resolution
             if (args[i].equals("-m")) {
                 if (i+1<args.length) {
                     i++;
@@ -42,20 +49,23 @@ public class Main {
                 }
             } else if (args[i].contains("=")) {
                 if (args[i].startsWith("PATH=")) {
-                    path = args[i].substring(5).split(":");
+                    WineSystem.path = args[i].substring(5).split(":");
                 }
                 env.add(args[i]);
             } else {
                 break;
             }
         }
-        if (path==null) {
-            path = new String[] {"/usr/bin"};
+        Screen.create(cx, cy, bpp);
+        VirtualFSNode.addVirtualFile("/dev/fb0", new DevFB(cx, cy, bpp, cx*4, WineProcess.ADDRESS_PROCESS_FRAME_BUFFER << 12, cx*4*cy*2));
+
+        if (WineSystem.path==null) {
+            WineSystem.path = new String[] {"/usr/bin"};
             env.add("PATH=/usr/bin");
         }
         String program = args[i++];
         if (!program.startsWith("/")) {
-            for (String p : path) {
+            for (String p : WineSystem.path) {
                 if (FSNode.getNode(p+"/"+program, true)!=null) {
                     program = p+"/"+program;
                     break;

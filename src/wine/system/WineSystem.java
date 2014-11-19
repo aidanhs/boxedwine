@@ -11,6 +11,7 @@ public class WineSystem {
     final static public int gid = 2;
     final static public int SCREEN_WIDTH = 1024;
     final static public int SCREEN_HEIGHT = 768;
+    static public String[] path;
 
     static public String hostName() {
         if (System.getProperty("os.name").startsWith("Windows")) {

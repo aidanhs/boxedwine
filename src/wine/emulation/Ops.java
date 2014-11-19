@@ -1327,7 +1327,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src;
+            return instruction.noResultString()+" "+dest.toString8()+", "+src;
         }
     }
 
@@ -1346,7 +1346,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src;
+            return instruction.noResultString()+" "+dest.toString16()+", "+src;
         }
     }
 
@@ -1365,7 +1365,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src;
+            return instruction.noResultString()+" "+dest.toString32()+", "+src;
         }
     }
 
@@ -1384,7 +1384,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src.name8;
+            return instruction.noResultString()+" "+dest.toString8()+", "+src.name8;
         }
     }
 
@@ -1403,7 +1403,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16;
+            return instruction.noResultString()+" "+dest.toString16()+", "+src.name16;
         }
     }
 
@@ -1422,7 +1422,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32;
+            return instruction.noResultString()+" "+dest.toString32()+", "+src.name32;
         }
     }
 
@@ -1441,7 +1441,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.name8+", "+src.toString8();
+            return instruction.noResultString()+" "+dest.name8+", "+src.toString8();
         }
     }
 
@@ -1460,7 +1460,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.name16+", "+src.toString16();
+            return instruction.noResultString()+" "+dest.name16+", "+src.toString16();
         }
     }
 
@@ -1479,7 +1479,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.name32+", "+src.toString32();
+            return instruction.noResultString()+" "+dest.name32+", "+src.toString32();
         }
     }
 
@@ -5089,12 +5089,55 @@ class Ops {
         }
     }
 
-    static public final class ConditionalMov_Reg extends Op {
+    static public final class ConditionalMov_Reg16 extends Op {
         final Reg ed;
         final Reg gd;
         final Condition cond;
 
-        public ConditionalMov_Reg(Condition cond, Reg ed, Reg gd) {
+        public ConditionalMov_Reg16(Condition cond, Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            if (cond.test(cpu))
+                gd.u16(ed.u16());
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov "+cond.toString()+" "+gd.name16+", "+ed.name16;
+        }
+    }
+
+    static public final class ConditionalMov_Mem16 extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Mem16(Condition cond, EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            int tmp = cpu.memory.readw(eaa.call(cpu));
+            if (cond.test(cpu))
+                gd.u16(tmp);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov "+cond.toString()+" "+gd.name16+", "+eaa.toString16();
+        }
+    }
+
+    static public final class ConditionalMov_Reg32 extends Op {
+        final Reg ed;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Reg32(Condition cond, Reg ed, Reg gd) {
             this.ed = ed;
             this.gd = gd;
             this.cond = cond;
@@ -5110,12 +5153,12 @@ class Ops {
         }
     }
 
-    static public final class ConditionalMov_Mem extends Op {
+    static public final class ConditionalMov_Mem32 extends Op {
         final EaaBase eaa;
         final Reg gd;
         final Condition cond;
 
-        public ConditionalMov_Mem(Condition cond, EaaBase eaa, Reg gd) {
+        public ConditionalMov_Mem32(Condition cond, EaaBase eaa, Reg gd) {
             this.eaa = eaa;
             this.gd = gd;
             this.cond = cond;

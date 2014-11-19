@@ -14,10 +14,6 @@ public class FileDescriptor {
     private int ref;
     public Dirent.ReadDirData readDirData;
 
-    static public interface FileDescriptorData {
-        public void onClose();
-    }
-
     public FileDescriptor(int handle, KernelObject object) {
         this.handle = handle;
         this.object = object;

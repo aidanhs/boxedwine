@@ -7,8 +7,10 @@ import wine.system.WineSystem;
 import wine.system.WineThread;
 import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
+import wine.system.io.FileSystem;
 import wine.system.io.KernelFile;
 import wine.util.Log;
+import wine.util.Path;
 
 import java.util.Vector;
 
@@ -323,6 +325,12 @@ public class Unistd {
             String r = thread.process.fullPath;
             thread.process.memory.writeCString(buf, r, bufsize);
             return r.length();
+        }
+        for (Path p : FileSystem.links) {
+            if (p.localPath.equals(s)) {
+                thread.process.memory.writeCString(buf, p.nativePath, bufsize);
+                return p.nativePath.length();
+            }
         }
         WineThread.getCurrent().setErrno(Errno.EINVAL);
         return -1;

@@ -50,6 +50,7 @@ public class CPU {
     int right;
     int result;
     boolean oldcf;
+    public Op currentOp;
 
     public int eip;
     public final Memory memory;

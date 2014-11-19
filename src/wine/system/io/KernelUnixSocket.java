@@ -114,6 +114,10 @@ public class KernelUnixSocket extends KernelSocket {
     public int bind(SocketAddress address) {
         WineThread thread = WineThread.getCurrent();
         String path = address.name;
+        if (path==null || path.length()==0) {
+            thread.setErrno(Errno.ENOENT);
+            return -1;
+        }
         if (!path.startsWith("/"))
             path = thread.process.currentDirectory+"/"+path;
         FSNode node = FSNode.getNode(path, false);

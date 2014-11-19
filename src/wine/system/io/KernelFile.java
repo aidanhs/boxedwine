@@ -3,6 +3,8 @@ package wine.system.io;
 import wine.builtin.libc.Errno;
 import wine.builtin.libc.Fcntl;
 import wine.builtin.libc.Stdio;
+import wine.builtin.libc.Syscall;
+import wine.emulation.Memory;
 import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -11,6 +13,7 @@ public class KernelFile extends KernelObject {
     final public FSNode node;
     public FSNodeAccess io;
     private long seekPos = 0;
+    public FSNode[] getdentsData;
 
     public KernelFile(FSNode fs) {
         this.node = fs;
@@ -224,7 +227,7 @@ public class KernelFile extends KernelObject {
 
     synchronized public long getFilePointer() {
         if (io==null) {
-            return -1;
+            return seekPos;
         }
         return io.getFilePointer();
     }
@@ -378,8 +381,18 @@ public class KernelFile extends KernelObject {
         return true;
     }
 
-    public int ioctl(int request) {
+    public int ioctl(int request, Syscall.SyscallGetter getter) {
+        if (io!=null)
+            return io.ioctl(request, getter);
         WineThread.getCurrent().setErrno(Errno.ENODEV);
         return -1;
+    }
+
+    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+        if (io==null) {
+            Log.panic("Tried to map: "+name());
+            return -1;
+        }
+        return io.map(memory, fd, off, address, len, fixed, read, exec, write, shared);
     }
 }

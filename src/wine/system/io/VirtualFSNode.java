@@ -72,4 +72,12 @@ public class VirtualFSNode extends FSNode {
     public boolean canWrite() {
         return true;
     }
+
+    public int getType() {
+        return 0; // DT_UNKNOWN
+    }
+
+    public void map() {
+
+    }
 }

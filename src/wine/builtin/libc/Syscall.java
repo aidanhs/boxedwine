@@ -8,15 +8,19 @@ import wine.system.WineThread;
 import wine.system.io.FSNode;
 import wine.system.io.FileDescriptor;
 import wine.system.io.SocketAddress;
+import wine.system.kernel.Files;
 import wine.util.Log;
 
 public class Syscall {
+    static public boolean log = false;
+
     static public final int __NR_exit = 1;
     static public final int __NR_read = 3;
     static public final int __NR_write = 4;
     static public final int __NR_open = 5;
     static public final int __NR_close = 6;
     static public final int __NR_waitpid = 7;
+    static public final int __NR_link = 9;
     static public final int __NR_unlink = 10;
     static public final int __NR_execve = 11;
     static public final int __NR_chdir = 12;
@@ -26,27 +30,36 @@ public class Syscall {
     static public final int __NR_getpid = 20;
     static public final int __NR_access = 33;
     static public final int __NR_kill = 37;
+    static public final int __NR_rename = 38;
     static public final int __NR_mkdir = 39;
     static public final int __NR_rmdir = 40;
     static public final int __NR_dup = 41;
     static public final int __NR_pipe = 42;
     static public final int __NR_brk = 45;
     static public final int __NR_ioctl = 54;
+    static public final int __NR_setpgid = 57;
     static public final int __NR_umask = 60;
     static public final int __NR_dup2 = 63;
+    static public final int __NR_getppid = 64;
+    static public final int __NR_getpgrp = 65;
     static public final int __NR_setsid = 66;
     static public final int __NR_gettimeofday = 78;
     static public final int __NR_symlink = 83;
     static public final int __NR_readlink = 85;
     static public final int __NR_mmap = 90;
     static public final int __NR_munmap = 91;
+    static public final int __NR_fchmod = 94;
+    static public final int __NR_setpriority = 97;
     static public final int __NR_socketcall = 102;
+    static public final int __NR_fsync = 118;
     static public final int __NR_clone = 120;
     static public final int __NR_uname = 122;
     static public final int __NR_modify_ldt = 123;
     static public final int __NR_mprotect = 125;
+    static public final int __NR_getpgid = 132;
     static public final int __NR_fchdir = 133;
     static public final int __NR__llseek = 140;
+    static public final int __NR_getdents = 141;
     static public final int __NR_writev = 146;
     static public final int __NR_poll = 168;
     static public final int __NR_prctl = 172;
@@ -62,6 +75,12 @@ public class Syscall {
     static public final int __NR_lstat64 = 196;
     static public final int __NR_fstat64 = 197;
     static public final int __NR_getuid32 = 199;
+    static public final int __NR_getgid32 = 200;
+    static public final int __NR_geteuid32 = 201;
+    static public final int __NR_getegid32 = 202;
+    static public final int __NR_fchown32 = 207;
+    static public final int __NR_getresuid32 = 209;
+    static public final int __NR_getresgid32 = 211;
     static public final int __NR_madvise = 219;
     static public final int __NR_getdents64 = 220;
     static public final int __NR_fcntl64 = 221;
@@ -76,6 +95,7 @@ public class Syscall {
     static public final int __NR_epoll_wait = 256;
     static public final int __NR_set_tid_address = 258;
     static public final int __NR_clock_gettime = 265;
+    static public final int __NR_clock_getres = 266;
     static public final int __NR_statfs64 = 268;
     static public final int __NR_fstatfs64 = 269;
     static public final int __NR_tgkill = 270;
@@ -155,8 +175,6 @@ public class Syscall {
         return syscall(number, new StackGetter(thread.process.memory,thread.cpu.esp.dword+4));
     }
 
-    static public boolean log = false;
-
     static public int syscall(int number, SyscallGetter getter) {
         WineThread thread = WineThread.getCurrent();
         Memory memory = thread.process.memory;
@@ -212,6 +230,14 @@ public class Syscall {
                 result = Wait.waitpid(pid, status, options);
                 if (log)
                     Log.log("__NR_waitpid: result="+result);
+                break;
+            }
+            case __NR_link: {
+                int path1 = getter.next();
+                int path2 = getter.next();
+                result = Unistd.link(path1, path2);
+                if (log)
+                    Log.log("__NR_link: path1=0x"+Integer.toHexString(path1)+"("+memory.readCString(path1)+") path2=0x"+Integer.toHexString(path2)+"("+memory.readCString(path2)+") result="+result);
                 break;
             }
             case __NR_unlink: {
@@ -285,6 +311,14 @@ public class Syscall {
                     Log.log("__NR_kill: pid="+pid+" sig="+sig+" result="+result);
                 break;
             }
+            case __NR_rename: {
+                int old = getter.next();
+                int newName = getter.next();
+                result = Stdio.rename(old, newName);
+                if (log)
+                    Log.log("__NR_rename: old=0x"+Integer.toHexString(old)+"("+memory.readCString(old)+") new=0x"+Integer.toHexString(newName)+"("+memory.readCString(newName)+") result="+result);
+                break;
+            }
             case __NR_mkdir: {
                 int path = getter.next();
                 int mode = getter.next();
@@ -320,6 +354,8 @@ public class Syscall {
                     if ((thread.process.end & 0xFFFFF000) != ((address-1) & 0xFFFFF000)) {
                         int pageStart = (thread.process.end + 0xFFF) >>> 12;
                         int pageCount = (((address-1) + 0xFFF) >>> 12) - pageStart;
+                        if (pageCount<1)
+                            return thread.process.end;
                         thread.process.allocPages(pageStart, pageCount, true);
                     }
                     thread.process.end = address;
@@ -331,9 +367,17 @@ public class Syscall {
             case __NR_ioctl: {
                 int d = getter.next();
                 int request = getter.next();
-                result = Ioctl.ioctl(d, request);
+                result = Ioctl.ioctl(d, request, getter);
                 if (log)
                     Log.log("__NR_ioctl: d="+d+" request="+request+" result="+result);
+                break;
+            }
+            case __NR_setpgid: {
+                int pid = getter.next();
+                int gpid = getter.next();
+                if (log)
+                    Log.log("__NR_setpgid: pid="+pid+" gpid="+gpid);
+                result = 0;
                 break;
             }
             case __NR_umask: {
@@ -349,6 +393,21 @@ public class Syscall {
                 result = Unistd.dup2(fildes, fildes2);
                 if (log)
                     Log.log("__NR_dup2: fildes="+fildes+" fildes2="+fildes2+" result="+result);
+                break;
+            }
+            case __NR_getppid: {
+                if (thread.process.parent!=null)
+                    result = thread.process.parent.id;
+                else
+                    result = 0;
+                if (log)
+                    Log.log("__NR_getppid: result="+result);
+                break;
+            }
+            case __NR_getpgrp: {
+                result = thread.process.groupId;
+                if (log)
+                    Log.log("__NR_getpgrp: result="+result);
                 break;
             }
             case __NR_setsid: {
@@ -403,6 +462,23 @@ public class Syscall {
                     Log.log("__NR_munmap: address=0x"+Integer.toHexString(address)+" len="+len+" result="+result);
                 break;
             }
+            case __NR_fchmod: {
+                int fd = getter.next();
+                int mode = getter.next();
+                result = Stat.fchmod(fd, mode);
+                if (log)
+                    Log.log("__NR_fchmod: fd="+fd+" mode=0"+Integer.toOctalString(mode));
+                break;
+            }
+            case __NR_setpriority: {
+                int which = getter.next();
+                int who = getter.next();
+                int prio = getter.next();
+                if (log)
+                    Log.log("__NR_setpriority: which="+which+" who="+who+" prio="+prio);
+                result = 0;
+                break;
+            }
             case __NR_socketcall: {
                 int call = getter.next();
                 StackGetter args = new StackGetter(memory, getter.next());
@@ -438,7 +514,7 @@ public class Syscall {
                         result = Socket.bind(socket, address, len);
                         if (log) {
                             SocketAddress sa = SocketAddress.parse(address, len);
-                            Log.log("SYS_BIND: socket="+socket+" address=0x"+address+"(name="+sa.toString()+") len="+len+" result="+result);
+                            Log.log("SYS_BIND: socket="+socket+" address=0x"+address+"("+sa.toString()+") len="+len+" result="+result);
                         }
                         break;
                     }
@@ -591,6 +667,13 @@ public class Syscall {
                 }
                 break;
             }
+            case __NR_fsync: {
+                int fd = getter.next();
+                result = Unistd.fsync(fd);
+                if (log)
+                    Log.log("__NR_fsync: fd="+fd+" result="+result);
+                break;
+            }
             case __NR_clone: {
                 int flags = getter.next();
                 int child_stack = getter.next();
@@ -618,6 +701,19 @@ public class Syscall {
                     Log.log("__NR_mprotect: address=0x"+Integer.toHexString(address)+" len="+len+" prot="+prot+" result="+result);
                 break;
             }
+            case __NR_getpgid: {
+                int pid = getter.next();
+                WineProcess process;
+                if (pid==0)
+                    process = thread.process;
+                else
+                    process = WineSystem.processes.get(pid);
+                if (log)
+                    Log.log("__NR_getpgid: pid="+pid);
+                if (process==null)
+                    return -Errno.EINVAL;
+                return process.groupId;
+            }
             case __NR_fchdir: {
                 int fd = getter.next();
                 result = Unistd.fchdir(fd);
@@ -643,6 +739,16 @@ public class Syscall {
                 if (log)
                     Log.log("__NR__llseek: fildes="+fildes+" offsetHigh="+offsetHigh+" offsetLow="+offsetLow+" pResult=0x"+Integer.toHexString(pResult)+" whence="+whence+" result="+result);
                 break;
+            }
+            case __NR_getdents: {
+                int dir = getter.next();
+                int dirp = getter.next();
+                int count = getter.next();
+
+                result = Files.getdents(thread, dir, dirp, count, false);
+                if (log)
+                    Log.log("getdents64: dir="+dir+" dirp=0x"+dirp+" count="+count+" result="+result);
+                return result;
             }
             case __NR_writev: {
                 int fildes = getter.next();
@@ -731,6 +837,10 @@ public class Syscall {
                         memory.writed(rlim, thread.process.maxStackSize);
                         memory.writed(rlim+4, WineProcess.MAX_STACK_SIZE);
                         break;
+                    case 7: // RLIMIT_NOFILE
+                        memory.writed(rlim, WineProcess.MAX_NUMBER_OF_FILES);
+                        memory.writed(rlim+4, WineProcess.MAX_NUMBER_OF_FILES);
+                        break;
                     case 9: // RLIMIT_AS
                         memory.writed(rlim, thread.process.maxAddressSpace);
                         memory.writed(rlim+4, WineProcess.MAX_ADDRESS_SPACE);
@@ -785,6 +895,65 @@ public class Syscall {
                 break;
             case __NR_getuid32: {
                 result = WineSystem.uid;
+                if (log)
+                    Log.log("__NR_getuid32: result="+result);
+                break;
+            }
+            case __NR_getgid32: {
+                result = thread.process.groupId;
+                if (log)
+                    Log.log("__NR_getgid32: result="+result);
+                break;
+            }
+            case __NR_geteuid32: {
+                result = 0;
+                if (log)
+                    Log.log("__NR_geteuid32: result="+result);
+                break;
+            }
+            case __NR_getegid32: {
+                result = thread.process.groupId;
+                if (log)
+                    Log.log("__NR_getegid32: result="+result);
+                break;
+            }
+            case __NR_fchown32: {
+                int fd = getter.next();
+                int owner = getter.next();
+                int group = getter.next();
+                result = 0;
+                if (log)
+                    Log.log("__NR_fchown32: fd="+fd+" owner="+owner+" group="+group+" result="+result);
+                break;
+            }
+            case __NR_getresuid32: {
+                int ruid = getter.next();
+                int euid = getter.next();
+                int suid = getter.next();
+                if (ruid!=0)
+                    memory.writed(ruid, WineSystem.uid);
+                if (euid!=0)
+                    memory.writed(euid, 0);
+                if (suid!=0)
+                    memory.writed(suid, WineSystem.uid);
+                result = 0;
+                if (log)
+                    Log.log("__NR_getresuid32: ruid=0x"+Integer.toHexString(ruid)+" euid=0x"+Integer.toHexString(euid)+" suid=0x"+Integer.toHexString(suid)+" result="+result);
+                break;
+            }
+            case __NR_getresgid32: {
+                int rgid = getter.next();
+                int egid = getter.next();
+                int sgid = getter.next();
+                if (rgid!=0)
+                    memory.writed(rgid, thread.process.groupId);
+                if (egid!=0)
+                    memory.writed(egid, thread.process.groupId);
+                if (sgid!=0)
+                    memory.writed(sgid, thread.process.groupId);
+                result = 0;
+                if (log)
+                    Log.log("__NR_getresgid32: rgid=0x"+Integer.toHexString(rgid)+" egid=0x"+Integer.toHexString(egid)+" sgid=0x"+Integer.toHexString(sgid)+" result="+result);
                 break;
             }
             case __NR_madvise: {
@@ -796,9 +965,16 @@ public class Syscall {
                     Log.log("__NR_madvise: address=0x"+Integer.toHexString(address)+" len="+len+" advise=0x"+Integer.toHexString(advise)+" result="+result);
                 break;
             }
-            case __NR_getdents64:
-                thread.setErrno(Errno.ENOSYS);
-                return -1;
+            case __NR_getdents64: {
+                int dir = getter.next();
+                int dirp = getter.next();
+                int count = getter.next();
+
+                result = Files.getdents(thread, dir, dirp, count, true);
+                if (log)
+                    Log.log("getdents64: dir="+dir+" dirp=0x"+dirp+" count="+count+" result="+result);
+                return result;
+            }
             case __NR_fcntl64: {
                 int fildes = getter.next();
                 int cmd = getter.next();
@@ -910,6 +1086,16 @@ public class Syscall {
                 result = Time.clock_gettime(clock_id, tp);
                 if (log)
                     Log.log("__NR_clock_gettime: clock_id="+clock_id+" tp=0x"+Integer.toHexString(tp)+" result="+result);
+                break;
+            }
+            case __NR_clock_getres: {
+                int clock_id = getter.next();
+                int res = getter.next();
+                memory.writed(res+0, 0);
+                memory.writeq(res+4, 1000000);
+                result = 0;
+                if (log)
+                    Log.log("__NR_clock_getres: clock_id="+clock_id+" res=0x"+Integer.toHexString(res)+" result=result");
                 break;
             }
             case __NR_statfs64: {
