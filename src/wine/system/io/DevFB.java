@@ -1,8 +1,8 @@
 package wine.system.io;
 
-import wine.builtin.libc.Syscall;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
-import wine.system.WineProcess;
+import wine.system.kernel.Process;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -234,7 +234,7 @@ public class DevFB implements FSNodeAccess {
             len=fb_fix_screeninfo.smem_len-pos;
         if (len<=0)
             return 0;
-        WineThread.getCurrent().process.memory.memcpy(b, 0, len, WineProcess.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS+pos);
+        WineThread.getCurrent().process.memory.memcpy(b, 0, len, Process.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS+pos);
         pos+=len;
         return len;
     }
@@ -245,7 +245,7 @@ public class DevFB implements FSNodeAccess {
             len=fb_fix_screeninfo.smem_len-pos;
         if (len<=0)
             return false;
-        WineThread.getCurrent().process.memory.memcpy(WineProcess.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS+pos, b, 0, b.length);
+        WineThread.getCurrent().process.memory.memcpy(Process.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS+pos, b, 0, b.length);
         pos+=len;
         return true;
     }
@@ -286,7 +286,7 @@ public class DevFB implements FSNodeAccess {
         int pageStart = address>>>12;
         int pageCount = (int)((len+0xFFF)>>>12);
         if (!fixed)
-            return WineProcess.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;
+            return wine.system.kernel.Process.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;
         Log.panic("Mapping /dev/fb at fixed address not supported");
         return -1;
     }

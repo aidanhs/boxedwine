@@ -5,13 +5,16 @@ import java.io.InputStream;
 
 public class VirtualFSNode extends FSNode {
     final private FSNodeAccess access;
-    protected VirtualFSNode(String localPath, FSNodeAccess access) {
+    final private int mode;
+
+    protected VirtualFSNode(String localPath, FSNodeAccess access, int mode) {
         super(localPath, null);
         this.access = access;
+        this.mode = mode;
     }
 
-    static public void addVirtualFile(String localPath, FSNodeAccess access) {
-        VirtualFSNode node = new VirtualFSNode(localPath, access);
+    static public void addVirtualFile(String localPath, FSNodeAccess access, int mode) {
+        VirtualFSNode node = new VirtualFSNode(localPath, access, mode);
         FSNode.addNode(node);
     }
 
@@ -79,5 +82,9 @@ public class VirtualFSNode extends FSNode {
 
     public void map() {
 
+    }
+
+    public int getMode() {
+        return mode;
     }
 }

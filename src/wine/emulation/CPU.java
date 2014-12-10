@@ -3,7 +3,6 @@ package wine.emulation;
 import wine.loader.Loader;
 import wine.system.Callback;
 import wine.system.ExitThreadException;
-import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -178,7 +177,7 @@ public class CPU {
         // intentionally skip page to catch overflow
         int page;
         synchronized (this.thread.process.addressSpace) {
-            page = this.thread.process.addressSpace.getNextPage(WineProcess.ADDRESS_PER_CPU, 3)+1;
+            page = this.thread.process.addressSpace.getNextPage(wine.system.kernel.Process.ADDRESS_PER_CPU, 3)+1;
             this.thread.process.allocPages(page, 2, false);
             this.thread.process.addressSpace.allocPages(page-1,3);
         }

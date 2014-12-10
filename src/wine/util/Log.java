@@ -1,7 +1,6 @@
 package wine.util;
 
-import wine.builtin.libc.MMapHandler;
-import wine.emulation.PageHandler;
+import wine.system.kernel.MMapHandler;
 import wine.system.WineThread;
 
 import javax.swing.*;

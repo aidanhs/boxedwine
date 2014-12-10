@@ -1,5 +1,7 @@
 package wine.emulation;
 
+import wine.system.kernel.MMapHandler;
+
 public abstract class Op {
     public Op next;
     // :TODO: both of these should be necessary, that is a lot of data to carry around for each op
@@ -12,6 +14,15 @@ public abstract class Op {
             StringBuilder builder = new StringBuilder();
             builder.append(cpu.thread.id).append(" ");
             builder.append(Integer.toHexString(eip)).append(" ");
+
+            if (cpu.thread.process.memory.handlers[eip>>>12]!=null && cpu.thread.process.memory.handlers[eip>>>12] instanceof MMapHandler) {
+                MMapHandler h = (MMapHandler)cpu.thread.process.memory.handlers[eip>>>12];
+                builder.append("@0x"+Long.toHexString(h.fileOffset+(eip & 0xFFF)));
+                builder.append(" ");
+                builder.append(h.file.name());
+                builder.append(" ");
+            }
+
             for (int i = 0; i < cpu.callIndex; i++)
                 builder.append("    ");
             builder.append(this.toString());
@@ -27,7 +38,7 @@ public abstract class Op {
 
     public Block callAndLog(CPU cpu) {
         if (cpu.log) {
-            //log(cpu);
+            log(cpu);
         }
         cpu.currentOp = this;
         return this.call(cpu);

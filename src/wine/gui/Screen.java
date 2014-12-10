@@ -2,8 +2,7 @@ package wine.gui;
 
 import wine.emulation.Memory;
 import wine.emulation.PageHandler;
-import wine.emulation.RAM;
-import wine.system.WineProcess;
+import wine.system.kernel.Process;
 
 import javax.swing.*;
 import java.awt.*;
@@ -103,15 +102,15 @@ public class Screen {
             local[index] = val;
         }
 
-        public PageHandler fork(WineProcess process) {
+        public PageHandler fork(Process process) {
             return this;
         }
     }
 
-    static public void initProcess(WineProcess process) {
+    static public void initProcess(Process process) {
         int pageCount = (width*height*4+0xFFF) >>> 12;
         for (int i=0;i<pageCount;i++)
-            process.memory.handlers[WineProcess.ADDRESS_PROCESS_FRAME_BUFFER+i] = handler;
+            process.memory.handlers[Process.ADDRESS_PROCESS_FRAME_BUFFER+i] = handler;
     }
 
     static public void create(int cx, int cy, int bpp) {
@@ -119,7 +118,7 @@ public class Screen {
         height = cy;
         depth = bpp;
 
-        handler = new FBPageHandler(WineProcess.ADDRESS_PROCESS_FRAME_BUFFER<<12);
+        handler = new FBPageHandler(wine.system.kernel.Process.ADDRESS_PROCESS_FRAME_BUFFER<<12);
 
         buffer = new BufferedImage(cx, cy*2, BufferedImage.TYPE_INT_RGB);
         DataBufferInt buf = (DataBufferInt) buffer.getRaster().getDataBuffer();

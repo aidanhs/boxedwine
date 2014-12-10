@@ -1,6 +1,8 @@
 package wine.system;
 
 import wine.emulation.*;
+import wine.gui.Console;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 import java.util.Hashtable;
@@ -16,9 +18,8 @@ public class WineThread {
     public final int stackSizeReserved;
     public final int stackSizeCommit;
     public final int initialStackAddress;
-    public final WineProcess process;
+    public final Process process;
     static private Hashtable threadToWineThread = new Hashtable();
-    private int errnoPtr;
     public int strerror;
     public Thread jThread;
     public int exitValue;
@@ -41,13 +42,12 @@ public class WineThread {
     }
 
 
-    public WineThread fork(WineProcess process) {
+    public WineThread fork(Process process) {
         return new WineThread(process, this);
     }
 
-    private WineThread(final WineProcess process, WineThread forkedThread) {
+    private WineThread(final Process process, WineThread forkedThread) {
         this.process = process;
-        this.errnoPtr = forkedThread.errnoPtr;
         this.strerror = forkedThread.strerror;
         this.id = WineSystem.nextid++;
         this.entryPoint = forkedThread.entryPoint;
@@ -75,7 +75,7 @@ public class WineThread {
         process.threads.put(id, this);
     }
 
-    public WineThread(WineProcess process, long startAddress, int stackAddress, int stackSizeCommit, int stackSizeReserved, int id) {
+    public WineThread(Process process, long startAddress, int stackAddress, int stackSizeCommit, int stackSizeReserved, int id) {
         entryPoint = (int)startAddress;
         this.process = process;
         this.id = id;
@@ -102,7 +102,7 @@ public class WineThread {
         if (initialStackAddress==0) {
             synchronized (process.addressSpace) {
                 int pageCount = stackSizeReserved>>>12;
-                int page = process.addressSpace.getNextPage(WineProcess.ADDRESS_PROCESS_STACK_START, pageCount);
+                int page = process.addressSpace.getNextPage(Process.ADDRESS_PROCESS_STACK_START, pageCount);
                 this.stackAddress = page << 12;
                 process.addressSpace.allocPages(page, pageCount);
             }
@@ -123,7 +123,6 @@ public class WineThread {
         this.cpu.init(process.callReturnEip);
         cpu.esp.dword = stackTop-4096;
         process.threads.put(id, this);
-        this.errnoPtr = process.alloc(4);
     }
 
     public void out(String msg) {
@@ -137,7 +136,7 @@ public class WineThread {
         }
         stdoutBuffer.append(msg);
         if (msg.indexOf('\n')>=0) {
-            System.out.print(stdoutBuffer.toString());
+            Console.out(stdoutBuffer.toString());
             stdoutBuffer.setLength(0);
         }
     }
@@ -147,8 +146,6 @@ public class WineThread {
             process.free(this.strerror);
             this.strerror = 0;
         }
-        //process.free(this.errnoPtr);
-        this.errnoPtr = 0;
         if (ctid!=0) {
             process.memory.writed(ctid, 0);
         }
@@ -217,18 +214,6 @@ public class WineThread {
         }
     }
 
-    public int getErrnoPtr() {
-        return errnoPtr;
-    }
-
-    public void setErrno(int errno) {
-        process.memory.writed(this.errnoPtr, errno);
-    }
-
-    public int errno() {
-        return process.memory.readd(this.errnoPtr);
-    }
-
     public int signal(int signal) {
         Log.panic("tgkill not implemented yet");
         SigAction action = process.sigActions[signal];
@@ -271,7 +256,7 @@ public class WineThread {
             grow();
             super.writeb(address, value);
         }
-        public PageHandler fork(WineProcess process) {
+        public PageHandler fork(Process process) {
             int page = RAM.allocPage();
             ThreadHandlerCheck handler = new ThreadHandlerCheck(process.memory, page);
             RAM.copy(getPhysicalPage(), page);
@@ -283,7 +268,7 @@ public class WineThread {
         public ThreadHandler(Memory memory, int physicalPage) {
             super(physicalPage, false, false);
         }
-        public PageHandler fork(WineProcess process) {
+        public PageHandler fork(wine.system.kernel.Process process) {
             int page = RAM.allocPage();
             ThreadHandler handler = new ThreadHandler(process.memory, page);
             RAM.copy(getPhysicalPage(), page);

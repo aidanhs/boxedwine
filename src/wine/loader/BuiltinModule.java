@@ -5,7 +5,7 @@ import wine.emulation.RestartThreadException;
 import wine.loader.elf.ElfSymbol;
 import wine.system.Callback;
 import wine.system.ExitThreadException;
-import wine.system.WineProcess;
+import wine.system.kernel.Process;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -20,11 +20,11 @@ public class BuiltinModule extends Module {
     private Hashtable<String, Integer> data = new Hashtable<String, Integer>();
     static public int log = 0;
 
-    public BuiltinModule(String name, WineProcess process, int id) {
+    public BuiltinModule(String name, Process process, int id) {
         super(name, process, id);
     }
 
-    public Module fork(WineProcess process) {
+    public Module fork(wine.system.kernel.Process process) {
         BuiltinModule lib = new BuiltinModule(name, process, id);
         // shallow copies of Callback and ElfSymbol are ok since they don't change after they are created
         lib.functions = (Hashtable<String, Callback>)functions.clone();

@@ -1,8 +1,8 @@
 package wine.system.io;
 
-import wine.builtin.libc.*;
 import wine.emulation.Memory;
 import wine.emulation.PageHandler;
+import wine.system.kernel.*;
 import wine.system.WineThread;
 import wine.util.Path;
 
@@ -26,7 +26,7 @@ abstract public class FSNode {
                 localPath = thread.process.currentDirectory + "/" + localPath;
             }
         }
-        //System.out.println(localPath);
+        System.out.println(localPath);
         for (int i=0;i<FileSystem.links.size();i++) {
             Path path = FileSystem.links.elementAt(i);
             if (localPath.startsWith(path.localPath)) {
@@ -99,6 +99,7 @@ abstract public class FSNode {
     abstract public boolean canRead();
     abstract public boolean canWrite();
     abstract public int getType();
+    abstract public int getMode();
 
     private static class FSNodeFile extends FSNode {
         private FSNodeFile(File file, String localPath, String nativePath) {
@@ -115,6 +116,20 @@ abstract public class FSNode {
                 return 4; // DT_DIR;
             return 8; // DT_REG
         }
+
+        public int getMode() {
+            int result = 0;
+            if (isDirectory()) {
+                result |= KernelStat._S_IFDIR;
+            } else {
+                result |= KernelStat._S_IFREG;
+            }
+            result |= KernelStat._S_IREAD;
+            result |= KernelStat._S_IWRITE;
+            result |= KernelStat._S_IEXEC;
+            return result;
+        }
+
         public FSNode[] list() {
             // :TODO: what about virtual files and sockets
             String[] s = file.list();
@@ -216,8 +231,7 @@ abstract public class FSNode {
             }
 
             public int ioctl(int request, Syscall.SyscallGetter getter) {
-                WineThread.getCurrent().setErrno(Errno.ENODEV);
-                return -1;
+                return -Errno.ENODEV;
             }
 
             public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {

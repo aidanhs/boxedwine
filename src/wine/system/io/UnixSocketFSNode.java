@@ -75,4 +75,12 @@ public class UnixSocketFSNode extends FSNode {
     public boolean canWrite() {
         return true;
     }
+
+    public int getMode() {
+        int result = KernelStat.S_IFSOCK;
+        result |= KernelStat._S_IREAD;
+        result |= KernelStat._S_IWRITE;
+        result |= KernelStat._S_IEXEC;
+        return result;
+    }
 }

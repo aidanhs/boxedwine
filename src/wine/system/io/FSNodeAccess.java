@@ -1,6 +1,6 @@
 package wine.system.io;
 
-import wine.builtin.libc.Syscall;
+import wine.system.kernel.Syscall;
 import wine.emulation.Memory;
 
 public interface FSNodeAccess {

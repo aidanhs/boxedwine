@@ -1,7 +1,7 @@
 package wine.system.io;
 
-import wine.builtin.libc.Errno;
-import wine.builtin.libc.Socket;
+import wine.system.kernel.Errno;
+import wine.system.kernel.Socket;
 import wine.emulation.Memory;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -81,8 +81,7 @@ public class KernelUnixSocket extends KernelSocket {
     public int accept(SocketAddress address) {
         WineThread thread = WineThread.getCurrent();
         if (!this.listening) {
-            thread.setErrno(Errno.EINVAL);
-            return -1;
+            return -Errno.EINVAL;
         }
         KernelUnixSocket connection = null;
         synchronized (this.waitingConnections) {
@@ -92,8 +91,7 @@ public class KernelUnixSocket extends KernelSocket {
                         try {this.waitingConnections.wait();} catch (InterruptedException e) {}
                     }
                 } else {
-                    thread.setErrno(Errno.EWOULDBLOCK);
-                    return -1;
+                    return -Errno.EWOULDBLOCK;
                 }
             }
             connection = (KernelUnixSocket)this.waitingConnections.removeFirst();
@@ -115,15 +113,13 @@ public class KernelUnixSocket extends KernelSocket {
         WineThread thread = WineThread.getCurrent();
         String path = address.name;
         if (path==null || path.length()==0) {
-            thread.setErrno(Errno.ENOENT);
-            return -1;
+            return -Errno.ENOENT;
         }
         if (!path.startsWith("/"))
             path = thread.process.currentDirectory+"/"+path;
         FSNode node = FSNode.getNode(path, false);
         if (node.exists()) {
-            thread.setErrno(Errno.EADDRINUSE);
-            return -1;
+            return -Errno.EADDRINUSE;
         }
         this.node = UnixSocketFSNode.add(path, this);
         this.address = address;
@@ -133,8 +129,7 @@ public class KernelUnixSocket extends KernelSocket {
     public int connect(SocketAddress address) {
         WineThread thread = WineThread.getCurrent();
         if (destAddress!=null || connection!=null) {
-            thread.setErrno(Errno.EISCONN);
-            return -1;
+            return -Errno.EISCONN;
         }
         if (type == Socket.SOCK_DGRAM) {
             this.destAddress = address;
@@ -147,8 +142,7 @@ public class KernelUnixSocket extends KernelSocket {
                 dest = ((UnixSocketFSNode)node).socket;
             }
             if (dest==null || !dest.listening) {
-                thread.setErrno(Errno.ECONNREFUSED);
-                return -1;
+                return -Errno.ECONNREFUSED;
             }
             synchronized (dest.waitingConnections) {
                 dest.waitingConnections.addLast(this);
@@ -162,8 +156,7 @@ public class KernelUnixSocket extends KernelSocket {
                 }
             }
             if (connection == null) {
-                thread.setErrno(Errno.ECONNREFUSED);
-                return -1;
+                return -Errno.ECONNREFUSED;
             }
             return 0;
         } else {
@@ -197,12 +190,10 @@ public class KernelUnixSocket extends KernelSocket {
 
     public int listen() {
         if (this.address==null) {
-            WineThread.getCurrent().setErrno(Errno.EDESTADDRREQ);
-            return -1;
+            return -Errno.EDESTADDRREQ;
         }
         if (this.connection!=null) {
-            WineThread.getCurrent().setErrno(Errno.EINVAL);
-            return -1;
+            return -Errno.EINVAL;
         }
         this.listening = true;
         return 0;
@@ -225,8 +216,7 @@ public class KernelUnixSocket extends KernelSocket {
                     } else {
                         if (result > 0)
                             return result;
-                        thread.setErrno(Errno.EWOULDBLOCK);
-                        return -1;
+                        return -Errno.EWOULDBLOCK;
                     }
                 }
                 while (len>0 && data.size()>0) {
@@ -256,8 +246,7 @@ public class KernelUnixSocket extends KernelSocket {
                     if (blocking) {
                         try {this.msgs.wait();} catch(InterruptedException e) {}
                     } else {
-                        thread.setErrno(Errno.EWOULDBLOCK);
-                        return -1;
+                        return -Errno.EWOULDBLOCK;
                     }
                 } else {
                     Msg msg = (Msg)this.msgs.getFirst();
@@ -286,14 +275,12 @@ public class KernelUnixSocket extends KernelSocket {
 
         if (type == Socket.SOCK_STREAM) {
             if (connection==null) {
-                thread.setErrno(Errno.ENOTCONN);
-                return -1;
+                return -Errno.ENOTCONN;
             }
             dest = connection;
         } else if (type == Socket.SOCK_DGRAM) {
             if (destAddress==null) {
-                thread.setErrno(Errno.EDESTADDRREQ);
-                return -1;
+                return -Errno.EDESTADDRREQ;
             }
             FSNode node = FSNode.getNode(address.name, true);
             dest = null;
@@ -301,8 +288,7 @@ public class KernelUnixSocket extends KernelSocket {
                 dest = ((UnixSocketFSNode)node).socket;
             }
             if (dest == null) {
-                thread.setErrno(Errno.EHOSTUNREACH);
-                return -1;
+                return -Errno.EHOSTUNREACH;
             }
         } else {
             Log.panic("send type "+type+" not implemented");
@@ -329,14 +315,12 @@ public class KernelUnixSocket extends KernelSocket {
 
         if (type == Socket.SOCK_STREAM) {
             if (connection==null) {
-                thread.setErrno(Errno.ENOTCONN);
-                return -1;
+                return -Errno.ENOTCONN;
             }
             dest = connection;
         } else if (type == Socket.SOCK_DGRAM) {
             if (destAddress==null) {
-                thread.setErrno(Errno.EDESTADDRREQ);
-                return -1;
+                return -Errno.EDESTADDRREQ;
             }
             FSNode node = FSNode.getNode(address.name, true);
             dest = null;
@@ -344,8 +328,7 @@ public class KernelUnixSocket extends KernelSocket {
                 dest = ((UnixSocketFSNode)node).socket;
             }
             if (dest == null) {
-                thread.setErrno(Errno.EHOSTUNREACH);
-                return -1;
+                return -Errno.EHOSTUNREACH;
             }
         } else {
             Log.panic("send type "+type+" not implemented");
@@ -368,14 +351,12 @@ public class KernelUnixSocket extends KernelSocket {
 
         if (type == Socket.SOCK_STREAM) {
             if (connection==null) {
-                thread.setErrno(Errno.ENOTCONN);
-                return -1;
+                return -Errno.ENOTCONN;
             }
             dest = connection;
         } else if (type == Socket.SOCK_DGRAM) {
             if (destAddress==null) {
-                thread.setErrno(Errno.EDESTADDRREQ);
-                return -1;
+                return -Errno.EDESTADDRREQ;
             }
             FSNode node = FSNode.getNode(address.name, true);
             dest = null;
@@ -383,8 +364,7 @@ public class KernelUnixSocket extends KernelSocket {
                 dest = ((UnixSocketFSNode)node).socket;
             }
             if (dest == null) {
-                thread.setErrno(Errno.EHOSTUNREACH);
-                return -1;
+                return -Errno.EHOSTUNREACH;
             }
         } else {
             Log.panic("sendmsg type "+type+" not implemented");
@@ -440,8 +420,7 @@ public class KernelUnixSocket extends KernelSocket {
             Log.panic("shutdown on SOCK_DGRAM not implemented");
         }
         if (connection==null) {
-            thread.setErrno(Errno.ENOTCONN);
-            return -1;
+            return -Errno.ENOTCONN;
         }
         if (how == Socket.SHUT_RD) {
             inClosed=true;

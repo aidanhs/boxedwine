@@ -1,7 +1,5 @@
 package wine.emulation;
 
-import wine.system.WineProcess;
-
 import java.util.Vector;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -150,7 +148,7 @@ public class Memory {
         writeb(address, 0);
     }
 
-    public void fork(WineProcess process) {
+    public void fork(wine.system.kernel.Process process) {
         for (int i=0;i<handlers.length;i++) {
             process.memory.handlers[i] = handlers[i].fork(process);
         }

@@ -1,8 +1,7 @@
 package wine.loader;
 
 import wine.loader.elf.*;
-import wine.system.WineProcess;
-import wine.system.WineSystem;
+import wine.system.kernel.Process;
 import wine.system.WineThread;
 import wine.system.io.FSNode;
 import wine.util.LittleEndianStream;
@@ -35,11 +34,11 @@ public class ElfModule extends Module {
     private byte[] tlsImage = new byte[0];
     private int tlsStart = 0;
 
-    public ElfModule(String name, WineProcess process, int id) {
+    public ElfModule(String name, Process process, int id) {
         super(name, process, id);
     }
 
-    public Module fork(WineProcess process) {
+    public Module fork(Process process) {
         ElfModule module = new ElfModule(name, process, id);
         module.header = header;
         module.sections = sections;
@@ -155,7 +154,7 @@ public class ElfModule extends Module {
             int pageCount = (int)(size >>> 12);
             synchronized (process.addressSpace) {
                 if (pageStart==0) {
-                    pageStart = WineProcess.ADDRESS_PROCESS_DLL_START;
+                    pageStart = wine.system.kernel.Process.ADDRESS_PROCESS_DLL_START;
                     reloc = true;
                 }
                 int page = process.addressSpace.getNextPage(pageStart, pageCount+256); // +256 so that we can realign the address bound to 1MB

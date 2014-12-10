@@ -5056,7 +5056,7 @@ class Ops {
         }
     }
 
-    static public class RegGetter extends wine.builtin.libc.Syscall.SyscallGetter {
+    static public class RegGetter extends wine.system.kernel.Syscall.SyscallGetter {
         CPU cpu;
         int pos=-1;
         public RegGetter(CPU cpu) {
@@ -5081,7 +5081,7 @@ class Ops {
 
     static public final class Syscall extends Op {
         public Block call(CPU cpu) {
-            cpu.eax.dword = wine.builtin.libc.Syscall.syscall(cpu.eax.dword, new RegGetter(cpu));
+            cpu.eax.dword = wine.system.kernel.Syscall.syscall(cpu.thread, cpu.eax.dword, new RegGetter(cpu));
             return next.callAndLog(cpu);
         }
         public String toString() {

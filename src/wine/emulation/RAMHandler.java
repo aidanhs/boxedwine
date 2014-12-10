@@ -1,6 +1,5 @@
 package wine.emulation;
 
-import wine.system.WineProcess;
 import wine.util.Log;
 
 public class RAMHandler extends PageHandler {
@@ -55,7 +54,7 @@ public class RAMHandler extends PageHandler {
         RAM.writeb(offset+(address & 0xFFF), value);
     }
 
-    public PageHandler fork(WineProcess process) {
+    public PageHandler fork(wine.system.kernel.Process process) {
         int page;
         if (isShared()) {
             page = getPhysicalPage();

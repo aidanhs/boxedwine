@@ -1,11 +1,9 @@
 package wine.system.io;
 
-import wine.builtin.libc.Errno;
-import wine.builtin.libc.Fcntl;
-import wine.builtin.libc.Stdio;
-import wine.builtin.libc.Syscall;
+import wine.system.kernel.Errno;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
-import wine.system.WineProcess;
+import wine.system.kernel.Process;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -19,7 +17,7 @@ public class KernelFile extends KernelObject {
         this.node = fs;
     }
 
-    public FileDescriptor createNewFileDescriptor(WineProcess process) {
+    public FileDescriptor createNewFileDescriptor(Process process) {
         return new FileDescriptor(process.getNextFileDescriptor(), this);
     }
 
@@ -39,13 +37,13 @@ public class KernelFile extends KernelObject {
             for (int i = 0; i < node.locks.size(); i++) {
                 FileLock f = (FileLock) node.locks.elementAt(i);
                 if (f.doesOverlap(lock)) {
-                    if (f.l_type == Fcntl.F_WRLCK || lock.l_type == Fcntl.F_WRLCK) {
+                    if (f.l_type == Io.F_WRLCK || lock.l_type == Io.F_WRLCK) {
                         lock.copy(f);
                         return 0;
                     }
                 }
             }
-            lock.l_type = Fcntl.F_UNLCK;
+            lock.l_type = Io.F_UNLCK;
             return 0;
         }
     }
@@ -61,10 +59,10 @@ public class KernelFile extends KernelObject {
 
     public int setLock(FileLock lock) {
         WineThread thread = WineThread.getCurrent();
-        WineProcess process = thread.process;
+        wine.system.kernel.Process process = thread.process;
 
         synchronized (node.locks) {
-            if (lock.l_type==Fcntl.F_UNLCK) {
+            if (lock.l_type==Io.F_UNLCK) {
                 for (int i = 0; i < node.locks.size(); i++) {
                     FileLock f = (FileLock) node.locks.elementAt(i);
                     if (f.l_pid==process.id) {
@@ -104,7 +102,7 @@ public class KernelFile extends KernelObject {
             for (int i = 0; i < node.locks.size(); i++) {
                 FileLock f = (FileLock) node.locks.elementAt(i);
                 if (f.doesOverlap(lock)) {
-                    if ((f.l_type == Fcntl.F_WRLCK || lock.l_type == Fcntl.F_WRLCK) && f.l_pid!=process.id) {
+                    if ((f.l_type == Io.F_WRLCK || lock.l_type == Io.F_WRLCK) && f.l_pid!=process.id) {
                         return -1;
                     }
                     if (f.l_pid==process.id) {
@@ -213,14 +211,12 @@ public class KernelFile extends KernelObject {
     synchronized public int write(int buffer, int len) {
         WineThread thread = WineThread.getCurrent();
         if (io==null) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
+            return -Errno.EBADF;
         }
         byte[] b = new byte[len];
         thread.process.memory.memcpy(b, 0, len, buffer);
         if (!io.write(b)) {
-            thread.setErrno(Errno.EIO);
-            return -1;
+            return -Errno.EIO;
         }
         return len;
     }
@@ -235,14 +231,12 @@ public class KernelFile extends KernelObject {
     synchronized public int pread(int buffer, int len, long offset) {
         WineThread thread = WineThread.getCurrent();
         if (io==null) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
+            return -Errno.EBADF;
         }
         byte[] b = new byte[len];
         long pos = io.getFilePointer();
         if (!io.seek(offset)) {
-            thread.setErrno(Errno.EIO);
-            return -1;
+            return -Errno.EIO;
         }
         int read = io.read(b);
         thread.process.memory.memcpy(buffer, b, 0, read);
@@ -254,19 +248,16 @@ public class KernelFile extends KernelObject {
     synchronized public int pwrite(int buffer, int len, long offset) {
         WineThread thread = WineThread.getCurrent();
         if (io==null) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
+            return -Errno.EBADF;
         }
         byte[] b = new byte[len];
         thread.process.memory.memcpy(b, 0, len, buffer);
         long pos = io.getFilePointer();
         if (!io.seek(offset)) {
-            thread.setErrno(Errno.EIO);
-            return -1;
+            return -Errno.EIO;
         }
         if (!io.write(b)) {
-            thread.setErrno(Errno.EIO);
-            return -1;
+            return -Errno.EIO;
         }
         if (pos>=0) {
             io.seek(pos);
@@ -277,13 +268,11 @@ public class KernelFile extends KernelObject {
     synchronized public int write(String msg) {
         WineThread thread = WineThread.getCurrent();
         if (io==null) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
+            return -Errno.EBADF;
         }
         byte[] b = msg.getBytes();
         if (!io.write(b)) {
-            thread.setErrno(Errno.EIO);
-            return -1;
+            return -Errno.EIO;
         }
         return b.length+1;
     }
@@ -291,12 +280,10 @@ public class KernelFile extends KernelObject {
     synchronized public int read(int buffer, int len) {
         WineThread thread = WineThread.getCurrent();
         if (node.isDirectory()) {
-            thread.setErrno(Errno.EISDIR);
-            return -1;
+            return -Errno.EISDIR;
         }
         if (io==null) {
-            thread.setErrno(Errno.EBADF);
-            return -1;
+            return -Errno.EBADF;
         }
         byte[] b = new byte[len];
         int result = io.read(b);
@@ -304,8 +291,7 @@ public class KernelFile extends KernelObject {
             if (io.getFilePointer()==node.length()) {
                 return 0;
             }
-            thread.setErrno(Errno.EIO);
-            return -1;
+            return -Errno.EIO;
         }
         thread.process.memory.memcpy(buffer, b, 0, result);
         return result;
@@ -326,9 +312,9 @@ public class KernelFile extends KernelObject {
 
     synchronized public long seek(int whence, long offset) {
         if (io==null) {
-            if (whence == Stdio.SEEK_SET) {
+            if (whence == Io.SEEK_SET) {
                 seekPos = offset;
-            } else if (whence == Stdio.SEEK_CUR) {
+            } else if (whence == Io.SEEK_CUR) {
                 seekPos += offset;
             } else {
                 return -Errno.EINVAL;
@@ -336,11 +322,11 @@ public class KernelFile extends KernelObject {
             return seekPos;
         }
         long pos = 0;
-        if (whence == Stdio.SEEK_SET) {
+        if (whence == Io.SEEK_SET) {
             pos = offset;
-        } else if (whence == Stdio.SEEK_CUR) {
+        } else if (whence == Io.SEEK_CUR) {
             pos = offset + io.getFilePointer();
-        } else if (whence == Stdio.SEEK_END) {
+        } else if (whence == Io.SEEK_END) {
             pos = offset + node.length();
         } else {
             return -Errno.EINVAL;
@@ -353,28 +339,13 @@ public class KernelFile extends KernelObject {
         return node.name();
     }
 
-    static private int getMode(FSNode file) {
-        int result = 0;
-        if (file instanceof UnixSocketFSNode) {
-            result |= KernelStat.S_IFSOCK;
-        } else if (file.isDirectory()) {
-            result |= KernelStat._S_IFDIR;
-        } else {
-            result |= KernelStat._S_IFREG;
-        }
-        result |= KernelStat._S_IREAD;
-        result |= KernelStat._S_IWRITE;
-        result |= KernelStat._S_IEXEC;
-        return result;
-    }
-
     public boolean stat(KernelStat stat) {
         if (!node.exists())
             return false;
         stat.mtime = node.lastModified();
         stat.st_ino = node.id;
         stat.st_dev = 1;
-        stat.st_mode = getMode(node);
+        stat.st_mode = node.getMode();
         stat.st_size = node.length();
         stat.st_blocks = (node.length() + 511) / 512;
         stat.st_rdev = 1;
@@ -384,8 +355,7 @@ public class KernelFile extends KernelObject {
     public int ioctl(int request, Syscall.SyscallGetter getter) {
         if (io!=null)
             return io.ioctl(request, getter);
-        WineThread.getCurrent().setErrno(Errno.ENODEV);
-        return -1;
+        return -Errno.ENODEV;
     }
 
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {

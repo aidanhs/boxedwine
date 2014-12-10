@@ -1,6 +1,6 @@
 package wine.system.io;
 
-import wine.builtin.libc.Syscall;
+import wine.system.kernel.Syscall;
 import wine.emulation.Memory;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -82,6 +82,11 @@ public class DevTTY implements FSNodeAccess {
     }
 
     public boolean write(byte[] b) {
+        StringBuilder builder = new StringBuilder();
+        for (int i=0;i<b.length;i++) {
+            builder.append((char) (b[i] & 0xFF));
+        }
+        WineThread.getCurrent().out(builder.toString());
         return true;
     }
 

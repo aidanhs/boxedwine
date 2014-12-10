@@ -1,11 +1,8 @@
 package wine.loader;
 
-import wine.builtin.libX11.LibX11;
-import wine.builtin.libXext.LibXext;
-import wine.builtin.libc.Libc;
 import wine.loader.elf.ElfSymbol;
 import wine.system.*;
-import wine.system.io.FSNode;
+import wine.system.kernel.Process;
 
 import java.util.Hashtable;
 import java.util.Vector;
@@ -17,9 +14,9 @@ public class Loader {
     private int callbackPages;
     private Vector<Callback> callbacks = new Vector<Callback>();
 
-    final private WineProcess process;
+    final private Process process;
 
-    public Loader(WineProcess process) {
+    public Loader(Process process) {
         this.process = process;
     }
 
@@ -31,7 +28,7 @@ public class Loader {
         callbackPages = 0;
     }
 
-    public Loader fork(WineProcess process) {
+    public Loader fork(Process process) {
         Loader loader = new Loader(process);
         loader.callbacks = (Vector<Callback>)callbacks.clone();
         loader.callbackPages = callbackPages;
@@ -53,17 +50,17 @@ public class Loader {
     public int registerFunction(Callback callback) {
         int page = (callbacks.size()*4) >>> 12;
         if (page>=callbackPages) {
-            process.allocPages(WineProcess.ADDRESS_PROCESS_CALLBACK_START + page, 1, false);
+            process.allocPages(Process.ADDRESS_PROCESS_CALLBACK_START + page, 1, false);
             callbackPages++;
         }
-        int address = ((WineProcess.ADDRESS_PROCESS_CALLBACK_START+page)<<12)+(callbacks.size()*4 & 0xFFF);
+        int address = ((Process.ADDRESS_PROCESS_CALLBACK_START+page)<<12)+(callbacks.size()*4 & 0xFFF);
         process.memory.writed(address, 0x38FE+(callbacks.size()<<16));
         callbacks.add(callback);
         return address;
     }
 
     public void unregisterFunction(int address) {
-        callbacks.set((address-(WineProcess.ADDRESS_PROCESS_CALLBACK_START<<12))/4, null);
+        callbacks.set((address-(wine.system.kernel.Process.ADDRESS_PROCESS_CALLBACK_START<<12))/4, null);
     }
 
     private Module load_native_module(WineThread thread, String name) {
@@ -109,28 +106,10 @@ public class Loader {
         return null;
     }
 
-    private Module load_builtin_module(String name) {
-        BuiltinModule module = null;
-        if (name.equalsIgnoreCase("libX11.so.6")) {
-            module = new LibX11(name, process, WineSystem.nextid++);
-        } else if (name.equalsIgnoreCase("libXext.so.6")) {
-            module = new LibXext(name, process, WineSystem.nextid++);
-        } //else if (name.equalsIgnoreCase("ld-linux.so.2")) {
-         //   module = new Ld(name, process, WineSystem.nextid++);
-         // }
-        if (module != null) {
-            modulesByName.put(name.toLowerCase(), module);
-            modulesByHandle.put(module.id, module);
-        }
-        return module;
-    }
-
     private Module internalLoadModule(WineThread thread, String name) {
         Module result = modulesByName.get(name.toLowerCase());
         if (result == null)
             result = load_native_module(thread, name);
-        if (result == null)
-            result = load_builtin_module(name);
         return result;
     }
 

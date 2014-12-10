@@ -1,6 +1,6 @@
 package wine.system.io;
 
-import wine.builtin.libc.Socket;
+import wine.system.kernel.Socket;
 import wine.emulation.Memory;
 import wine.system.WineThread;
 import wine.util.Log;

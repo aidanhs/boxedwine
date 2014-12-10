@@ -1,11 +1,12 @@
 package wine.system;
 
+import wine.system.kernel.Process;
+
 import java.net.InetAddress;
 import java.util.Hashtable;
-import java.util.Vector;
 
 public class WineSystem {
-    final static public Hashtable<Integer, WineProcess> processes = new Hashtable<Integer, WineProcess>();
+    final static public Hashtable<Integer, Process> processes = new Hashtable<Integer, wine.system.kernel.Process>();
     static public int nextid = 100;
     final static public int uid = 1;
     final static public int gid = 2;

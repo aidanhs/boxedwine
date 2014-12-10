@@ -1,8 +1,8 @@
 package wine.system.io;
 
-import wine.builtin.libc.Stdio;
 import wine.emulation.Memory;
 import wine.system.WineThread;
+import wine.system.kernel.Io;
 import wine.util.Log;
 
 public class FileLock {
@@ -31,7 +31,7 @@ public class FileLock {
             l_len=Long.MAX_VALUE;
         l_pid=memory.readw(address);
 
-        if (l_whence!= Stdio.SEEK_SET) {
+        if (l_whence!= Io.SEEK_SET) {
             Log.panic("Lock with l_whence "+l_whence+" not implemented");
         }
     }
@@ -61,7 +61,7 @@ public class FileLock {
             l_len=Long.MAX_VALUE;
         l_pid=WineThread.getCurrent().process.id;
 
-        if (l_whence!= Stdio.SEEK_SET) {
+        if (l_whence!= Io.SEEK_SET) {
             Log.panic("Lock with l_whence "+l_whence+" not implemented");
         }
     }
