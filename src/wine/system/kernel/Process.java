@@ -397,13 +397,13 @@ public class Process {
 
         for (int i=0;i<args.size();i++) {
             String arg = args.get(i);
-            thread.cpu.esp.dword-=arg.length()+1;
+            thread.cpu.esp.dword-=(arg.length()+1+3) & ~3;
             thread.process.memory.writeCString(thread.cpu.esp.dword, arg);
             pArgs[i]=thread.cpu.esp.dword;
         }
         for (int i=0;i<env.size();i++) {
             String e = env.get(i);
-            thread.cpu.esp.dword-=e.length()+1;
+            thread.cpu.esp.dword-=(e.length()+1+3) & ~3;
             thread.process.memory.writeCString(thread.cpu.esp.dword, e);
             pEnv[i]=thread.cpu.esp.dword;
         }

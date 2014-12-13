@@ -50,7 +50,7 @@ public class Mmap {
         // :TODO: what about holes?  can we alloc just the holes to create one section?
         for (int i = 0; i < pageCount; i++) {
             PageHandler handler = handlers[pageStart+i];
-            if (handler!=waitingHandler) {
+            if (handler!=waitingHandler && !(handler instanceof InvalidHandler)) {
                 if (handler instanceof RAMHandler) {
                     if (!((RAMHandler)handler).isMmap()) {
                         return -Errno.ENOMEM;
