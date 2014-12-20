@@ -12,16 +12,16 @@ import java.util.Vector;
 
 public class Main {
     static public void main(String[] args) {
-        String root = System.getProperty("user.dir")+ File.separator+"root";
+        String root = System.getProperty("user.dir")+ File.separator+"tcz";
         System.out.println("root path="+root);
-        FileSystem.links.add(new Path("/home/username/.wine/drive_c", "/home/username/.wine/dosdevices/c:"));
-        FileSystem.links.add(new Path("/", "/home/username/.wine/dosdevices/z:"));
-        FileSystem.links.add(new Path("/usr/bin/Xorg", "/etc/X11/X"));
+
+        FileSystem.readLinks(root+File.separator+"links.txt");
         FileSystem.paths.add(new Path(root, ""));
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull(), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/proc/meminfo", new ProcMeminfo(), KernelStat._S_IREAD);
+        VirtualFSNode.addVirtualFile("/proc/cmdline", new ProcCommandLine(), KernelStat._S_IREAD);
         VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
 
@@ -38,6 +38,9 @@ public class Main {
         env.add("USERNAME=username");
         env.add("USER=username");
         env.add("DISPLAY=:0");
+        env.add("LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib");
+//        env.add("LD_DEBUG=all");
+//        env.add("LD_BIND_NOW=1");
 
         programArgs.add("/lib/ld-linux.so.2");
         WineSystem.path = null;
@@ -62,8 +65,8 @@ public class Main {
         VirtualFSNode.addVirtualFile("/dev/fb0", new DevFB(cx, cy, bpp, cx*4, Process.ADDRESS_PROCESS_FRAME_BUFFER << 12, cx*4*cy*2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
 
         if (WineSystem.path==null) {
-            WineSystem.path = new String[] {"/usr/bin"};
-            env.add("PATH=/usr/bin");
+            WineSystem.path = new String[] {"/bin","/usr/bin","/usr/local/bin"};
+            env.add("PATH=/bin:/usr/bin:/usr/local/bin");
         }
         String program = args[i++];
         if (!program.startsWith("/")) {

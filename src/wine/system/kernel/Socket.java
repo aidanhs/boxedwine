@@ -15,6 +15,7 @@ public class Socket {
     static public final int	AF_UNIX     = 1;
     static public final int	AF_INET     = 2;
     static public final int AF_INET6    = 10;
+    static public final int AF_NETLINK  = 16;
 
     static public final int	PF_UNIX     = 1;
     static public final int	PF_INET     = 2;
@@ -29,6 +30,7 @@ public class Socket {
     static public final int SO_SNDBUF   = 7;
     static public final int SO_RCVBUF   = 8;
     static public final int SO_PASSCRED = 16;
+    static public final int SO_ATTACH_FILTER = 26;
 
     static public final int SOL_SOCKET = 1;
     static public final int SCM_RIGHTS = 1;
@@ -375,6 +377,9 @@ public class Socket {
             return new KernelUnixSocket(type, protocol).createNewFileDescriptor(process).handle;
         } else if (domain==AF_INET) {
             //return new KernelInetSocket(type, protocol).createNewFileDescriptor(process).handle;
+        } else if (domain==AF_NETLINK) {
+            // just fake it so that libudev doesn't crash
+            return new KernelUnixSocket(type, protocol).createNewFileDescriptor(process).handle;
         }
         Log.warn("socket domain "+domain+" not implemented");
         return -1;

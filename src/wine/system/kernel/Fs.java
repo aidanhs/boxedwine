@@ -83,6 +83,7 @@ public class Fs {
     }
 
     static public final int	F_SETFD    = 2;
+    static public final int	F_GETFL    = 3;
     static public final int	F_SETFL	   = 4;
     static public final int	F_GETLK	   = 5;
     static public final int	F_SETLK	   = 6;
@@ -108,6 +109,8 @@ public class Fs {
             case F_SETFD:
                 fd.setDescriptorFlags(arg1);
                 return 0;
+            case F_GETFL:
+                return fd.getAccessFlags();
             case F_SETFL:
                 fd.setAccessFlags(arg1);
                 return 0;

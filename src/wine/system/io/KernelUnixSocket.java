@@ -61,6 +61,10 @@ public class KernelUnixSocket extends KernelSocket {
         blocking = false;
     }
 
+    public boolean isNonBlocking() {
+        return blocking;
+    }
+
     public boolean isOpen() {
         return listening || (connection!=null && !inClosed); // :TODO: is inClosed correct here
     }
@@ -232,7 +236,7 @@ public class KernelUnixSocket extends KernelSocket {
                     len-=read;
                     result+=read;
                 }
-                if (len==0)
+                if (result!=0)
                     return result;
             }
         }
@@ -405,8 +409,10 @@ public class KernelUnixSocket extends KernelSocket {
                     this.sendBuffer = WineThread.getCurrent().process.memory.readd(value);
                 case Socket.SO_PASSCRED:
                     break;
+                case Socket.SO_ATTACH_FILTER:
+                    break;
                 default:
-                    Log.panic("setsockopt name "+name+" not implemented");
+                    Log.warn("setsockopt name "+name+" not implemented");
             }
         } else {
             Log.panic("setsockopt level "+level+" not implemented");

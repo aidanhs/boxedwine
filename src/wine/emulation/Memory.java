@@ -34,9 +34,6 @@ public class Memory {
         return handlers[(address>>>12)].readb(address);
     }
     public void writed(int address, int value) {
-        if (address == 0xe402ef78+8) {
-            int ii=0;
-        }
         handlers[(address>>>12)].writed(this, address, value);
     }
     public void writeq(int address, long value) {

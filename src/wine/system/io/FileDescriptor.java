@@ -2,6 +2,7 @@ package wine.system.io;
 
 import wine.system.WineThread;
 import wine.system.kernel.Io;
+import wine.util.Log;
 
 public class FileDescriptor {
     final static public Object lock = new Object();
@@ -16,7 +17,6 @@ public class FileDescriptor {
         this.handle = handle;
         this.object = object;
         ref=1;
-        WineThread.getCurrent().process.fileDescriptors.put(handle, this);
     }
 
     public FileDescriptor(int handle, KernelObject object, int accessFlags) {
@@ -40,6 +40,13 @@ public class FileDescriptor {
         if ((flags & Io.O_NONBLOCK) != 0) {
             object.setNonBlocking();
         }
+    }
+
+    public int getAccessFlags() {
+        int flags = accessFlags;
+        if (object.isNonBlocking())
+            flags|=Io.O_NONBLOCK;
+        return flags;
     }
 
     public void setDescriptorFlags(int flags) {
@@ -84,6 +91,8 @@ public class FileDescriptor {
         object.incrementRefCount();
         flags = fd.flags;
         accessFlags = fd.accessFlags;
+        if (ref!=1)
+            Log.panic("What should dup2 do on a fd with a ref count");
     }
 
     public boolean canFork() {

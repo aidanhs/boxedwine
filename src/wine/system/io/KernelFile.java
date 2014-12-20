@@ -18,7 +18,9 @@ public class KernelFile extends KernelObject {
     }
 
     public FileDescriptor createNewFileDescriptor(Process process) {
-        return new FileDescriptor(process.getNextFileDescriptor(), this);
+        FileDescriptor fd = new FileDescriptor(process.getNextFileDescriptor(), this);
+        process.fileDescriptors.put(fd.handle, fd);
+        return fd;
     }
 
     protected void onDelete() {
@@ -29,7 +31,10 @@ public class KernelFile extends KernelObject {
     }
 
     public void setNonBlocking() {
+    }
 
+    public boolean isNonBlocking() {
+        return false;
     }
 
     public int getLock(FileLock lock) {

@@ -12,6 +12,8 @@ public class SocketAddress {
         result.family = memory.readw(address);
         if (result.family== Socket.AF_UNIX) {
             result.name = memory.readCString(address+2);
+        } else if (result.family== Socket.AF_NETLINK) {
+            result.name = "port"+memory.readd(address+4);
         } else {
             Log.panic("Socket address family "+result.family+" not implemented");
         }

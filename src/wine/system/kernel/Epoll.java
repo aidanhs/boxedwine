@@ -18,7 +18,8 @@ public class Epoll {
     static public int epoll_create(WineThread thread, int size) {
         int result = thread.process.getNextFileDescriptor();
         KernelEpoll object = new KernelEpoll();
-        new FileDescriptor(result, object);
+        FileDescriptor fd = new FileDescriptor(result, object);
+        thread.process.fileDescriptors.put(fd.handle, fd);
         return result;
     }
 

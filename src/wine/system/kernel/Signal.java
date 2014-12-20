@@ -98,7 +98,8 @@ public class Signal {
         if (oact!=0) {
             thread.process.sigActions[sig].write(oact);
         }
-        thread.process.sigActions[sig].read(act);
+        if (act!=0)
+            thread.process.sigActions[sig].read(act);
         return 0;
     }
 

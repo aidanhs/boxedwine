@@ -26,6 +26,10 @@ public class KernelEpoll extends KernelObject {
         Log.warn("non blocking not supported on epoll object");
     }
 
+    public boolean isNonBlocking() {
+        return false;
+    }
+
     public int getLock(FileLock lock) {
         Log.warn("get lock not supported on epoll object");
         return 0;

@@ -457,9 +457,6 @@ public class ElfModule extends Module {
                 int symbolIndex = (int) (r_info >>> 8);
                 int rel = (int) (addressDelta + r_offset);
 
-                if (rel == 0xE43AE1E4) {
-                    int ii=0;
-                }
                 switch ((int) r_info & 0xFF) {
                     case 0: // none
                         break;

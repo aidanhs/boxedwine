@@ -80,6 +80,8 @@ public class Syscall {
     static public final int __NR_setresuid32 = 208;
     static public final int __NR_getresuid32 = 209;
     static public final int __NR_getresgid32 = 211;
+    static public final int __NR_setuid32 = 213;
+    static public final int __NR_setgid32 = 214;
     static public final int __NR_madvise = 219;
     static public final int __NR_getdents64 = 220;
     static public final int __NR_fcntl64 = 221;
@@ -969,6 +971,20 @@ public class Syscall {
                     Log.log("__NR_getresgid32: rgid=0x"+Integer.toHexString(rgid)+" egid=0x"+Integer.toHexString(egid)+" sgid=0x"+Integer.toHexString(sgid)+" result="+result);
                 break;
             }
+            case __NR_setuid32: {
+                int uid = getter.next();
+                thread.process.groupId = uid;
+                if (log)
+                    Log.log("__NR_setuid32: uid="+uid+" result="+result);
+                break;
+            }
+            case __NR_setgid32: {
+                int gid = getter.next();
+                thread.process.groupId = gid;
+                if (log)
+                    Log.log("__NR_setgid32: gid="+gid+" result="+result);
+                break;
+            }
             case __NR_madvise: {
                 int address = getter.next();
                 int len = getter.next();
@@ -993,6 +1009,8 @@ public class Syscall {
                 int cmd = getter.next();
                 int arg1 = getter.next();
                 result = Fs.fcntl(thread, fildes, cmd, arg1);
+                if (log)
+                    Log.log("__NR_fcntl64: fildes="+fildes+" cmd="+cmd+" arg1="+arg1+" result="+result);
                 break;
             }
             case __NR_gettid:
@@ -1104,10 +1122,10 @@ public class Syscall {
                 int clock_id = getter.next();
                 int res = getter.next();
                 memory.writed(res+0, 0);
-                memory.writeq(res+4, 1000000);
+                memory.writed(res+4, 1000000);
                 result = 0;
                 if (log)
-                    Log.log("__NR_clock_getres: clock_id="+clock_id+" res=0x"+Integer.toHexString(res)+" result=result");
+                    Log.log("__NR_clock_getres: clock_id="+clock_id+" res=0x"+Integer.toHexString(res)+" result="+result);
                 break;
             }
             case __NR_statfs64: {

@@ -15,7 +15,9 @@ abstract public class KernelObject {
     }
 
     public FileDescriptor createNewFileDescriptor(wine.system.kernel.Process process) {
-        return new FileDescriptor(process.getNextFileDescriptor(), this);
+        FileDescriptor fd = new FileDescriptor(process.getNextFileDescriptor(), this);
+        process.fileDescriptors.put(fd.handle, fd);
+        return fd;
     }
 
     public void incrementRefCount() {
@@ -30,6 +32,7 @@ abstract public class KernelObject {
     }
     abstract protected void onDelete();
     abstract public void setNonBlocking();
+    abstract public boolean isNonBlocking();
     abstract public int getLock(FileLock lock);
     abstract public int setLockW(FileLock lock);
     abstract public int setLock(FileLock lock);

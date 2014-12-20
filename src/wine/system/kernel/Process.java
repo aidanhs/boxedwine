@@ -81,6 +81,7 @@ public class Process {
     private int stringPagePos;
     // if new variables are addedd, make sure they are accounted for in fork and exec
     public String fullPath;
+    public Vector<String> args;
 
     static private class ExitFunction {
         public ExitFunction(int func, int arg) {
@@ -126,6 +127,7 @@ public class Process {
         this.stringMap = (Hashtable<String, Integer>)process.stringMap.clone();
         this.stringPage = process.stringPage;
         this.stringPagePos = process.stringPagePos;
+        this.args = process.args;
         WineSystem.processes.put(id, this);
     }
 
@@ -133,6 +135,7 @@ public class Process {
         memory  = new Memory();
         loader = new Loader(this);
         addressSpace = new AddressSpace();
+        this.args = args;
         heap = new Heap(ADDRESS_PROCESS_HEAP_START<<12, ADDRESS_PROCESS_HEAP_START<<12, 64); // it will grow
         this.currentDirectory = currentDirectory;
         this.id = id;
@@ -258,7 +261,7 @@ public class Process {
     }
 
     public int getNextFileDescriptor() {
-        int id = 0;
+        int id = 3;
         while (true) {
             if (fileDescriptors.get(id)==null)
                 return id;
@@ -375,7 +378,7 @@ public class Process {
     }
 
     private void start(WineThread thread, Vector<String> args, Vector<String> env, boolean run) {
-        fullPath = FSNode.getNode(args.get(1), true).localPath;
+        fullPath = args.get(1);
         name = fullPath.substring(fullPath.lastIndexOf('/')+1);
 
         setupStack(thread, args, env, mainModule.getEntryPoint());
@@ -463,6 +466,24 @@ public class Process {
             process.parent = this;
             WineThread thread = WineThread.getCurrent().fork(process);
 
+            if (fileDescriptors.get(0)==null) {
+                FileDescriptor tty = getFile("/dev/tty0", true);
+                tty.accessFlags = Io.O_RDONLY;
+                tty.getFile().open("r");
+                fileDescriptors.put(0, tty);
+            }
+            if (fileDescriptors.get(1)==null) {
+                FileDescriptor tty = getFile("/dev/tty0", true);
+                tty.accessFlags = Io.O_WRONLY;
+                tty.getFile().open("w");
+                fileDescriptors.put(0, tty);
+            }
+            if (fileDescriptors.get(2)==null) {
+                FileDescriptor tty = getFile("/dev/tty0", true);
+                tty.accessFlags = Io.O_WRONLY;
+                tty.getFile().open("w");
+                fileDescriptors.put(0, tty);
+            }
             if ((flags & CLONE_CHILD_SETTID)!=0) {
                 if (ctid!=0) {
                     process.memory.writed(ctid, thread.id);
@@ -514,10 +535,19 @@ public class Process {
                 }
             }
         }
+        FSNode node = FSNode.getNode(args.elementAt(0), true);
+        for (String path : WineSystem.path) {
+            if (node!=null)
+                break;
+            node = FSNode.getNode(path+"/"+args.elementAt(0), true);
+        }
+        if (node==null) {
+            return -Errno.ENOENT;
+        }
         args.insertElementAt("/lib/ld-linux.so.2", 0);
 
-        FSNode node = FSNode.getNode(args.get(0), true);
-        if (node!=null && !node.exists()) {
+        node = FSNode.getNode(args.get(0), true);
+        if (node==null) {
             return -Errno.ENOENT;
         }
         if (Log.level>=Log.LEVEL_DEBUG) {
@@ -645,10 +675,17 @@ public class Process {
         Vector<String> env = new Vector<String>();
         Vector<String> args = new Vector<String>();
 
-        for (String s : process.memory.readCStringArray(envp))
+        boolean hasLD = false;
+        for (String s : process.memory.readCStringArray(envp)) {
             env.add(s);
+            if (s.startsWith("LD_LIBRARY_PATH"))
+                hasLD = true;
+        }
+        if (!hasLD)
+            env.add("LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib");
         for (String a : process.memory.readCStringArray(argv))
             args.add(a);
+
         return process.exec(args, env);
     }
 
@@ -661,7 +698,9 @@ public class Process {
         if (fd==null) {
             return -Errno.EBADF;
         }
-        return fd.dup(thread.process.getNextFileDescriptor()).handle;
+        fd = fd.dup(thread.process.getNextFileDescriptor());
+        thread.process.fileDescriptors.put(fd.handle, fd);
+        return fd.handle;
     }
 
     static public int dup2(WineThread thread, int fildes, int fildes2) {
@@ -675,6 +714,7 @@ public class Process {
         FileDescriptor fd2 = thread.process.getFileDescriptor(fildes2);
         if (fd2==null) {
             fd2 = fd.dup(fildes2);
+            thread.process.fileDescriptors.put(fd2.handle, fd2);
         } else {
             fd2.dup2(fd);
         }
