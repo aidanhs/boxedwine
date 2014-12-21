@@ -582,6 +582,7 @@ public class Process {
         //memory.close(); // free up memory before allocating new process
 
         Process process = Process.create(currentDirectory, args, env, id, thread.id, waitToStart);
+        process.parent = this.parent;
         for (FileDescriptor fd : ((Hashtable<Integer, FileDescriptor>)fileDescriptors.clone()).values()) {
             if (!fd.closeOnExec()) {
                 process.fileDescriptors.put(fd.handle, fd);
@@ -606,7 +607,7 @@ public class Process {
         throw new ExitThreadException();
     }
 
-    synchronized static public int waitpid(WineThread thread, int pid, int status, int options) {
+    static public int waitpid(WineThread thread, int pid, int status, int options) {
         Process result = null;
         if (pid>0) {
             while (true) {
@@ -643,6 +644,13 @@ public class Process {
                 synchronized (WineSystem.processes) {
                     for (Process p : WineSystem.processes.values()) {
                         if (p.isStopped() || p.isTerminated()) {
+                            if (pid == -1) {
+                                if (p.parent.id != thread.process.id)
+                                    continue;
+                            } else {
+                                if (p.groupId != -pid)
+                                    continue;
+                            }
                             result = p;
                             break;
                         }
@@ -651,6 +659,10 @@ public class Process {
                         break;
                     if (options == 1) {
                         return -Errno.ECHILD;
+                    }
+                    try {
+                        WineSystem.processes.wait();
+                    } catch (Exception e) {
                     }
                 }
             }
