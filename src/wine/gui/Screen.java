@@ -10,6 +10,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
+import java.util.Arrays;
 
 public class Screen {
     static JFrame frame;
@@ -123,6 +124,7 @@ public class Screen {
         buffer = new BufferedImage(cx, cy*2, BufferedImage.TYPE_INT_RGB);
         DataBufferInt buf = (DataBufferInt) buffer.getRaster().getDataBuffer();
         int_rawImageData = buf.getData();
+        Arrays.fill(int_rawImageData, 0x00FFFFFF);
 
         frame = new JFrame("BoxedWine");
         frame.setFocusTraversalKeysEnabled(false); // don't eat tab keys
@@ -147,7 +149,7 @@ public class Screen {
             }
         };
 
-        Container pane = frame.getContentPane();
+        final Container pane = frame.getContentPane();
         pane.setLayout(null);
         panel.setBackground(Color.BLACK);
         pane.add(panel);
@@ -157,5 +159,15 @@ public class Screen {
         frame.setSize(cx + insets.left + insets.right, cy + insets.top + insets.bottom);
         frame.setResizable(false);
         frame.setVisible(true);
+
+        Thread thread = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    panel.repaint();
+                    try {Thread.sleep(10);} catch (Exception e) {}
+                }
+            }
+        });
+        thread.start();
     }
 }

@@ -119,6 +119,11 @@ public class KernelUnixSocket extends KernelSocket {
         if (path==null || path.length()==0) {
             return -Errno.ENOENT;
         }
+        // :TODO: hack for xorg
+        if (path.equals("port0")) {
+            listening = true;
+            return 0;
+        }
         if (!path.startsWith("/"))
             path = thread.process.currentDirectory+"/"+path;
         FSNode node = FSNode.getNode(path, false);

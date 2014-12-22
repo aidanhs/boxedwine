@@ -58,6 +58,7 @@ public class Syscall {
     static public final int __NR_fchdir = 133;
     static public final int __NR__llseek = 140;
     static public final int __NR_getdents = 141;
+    static public final int __NR_newselect = 142;
     static public final int __NR_writev = 146;
     static public final int __NR_poll = 168;
     static public final int __NR_prctl = 172;
@@ -753,8 +754,19 @@ public class Syscall {
 
                 result = Files.getdents(thread, dir, dirp, count, false);
                 if (log)
-                    Log.log("getdents: dir="+dir+" dirp=0x"+dirp+" count="+count+" result="+result);
+                    Log.log("__NR_getdents: dir="+dir+" dirp=0x"+dirp+" count="+count+" result="+result);
                 return result;
+            }
+            case __NR_newselect: {
+                int ndfs = getter.next();
+                int readfds = getter.next();
+                int writefds = getter.next();
+                int errorfds = getter.next();
+                int timeout = getter.next();
+                result = Select.select(thread, ndfs, readfds, writefds, errorfds, timeout);
+                if (log)
+                    Log.log("__NR_newselect: ndfs=0x"+Integer.toHexString(ndfs)+" readfds=0x"+Integer.toHexString(readfds)+" writefds=0x"+Integer.toHexString(writefds)+" errorfds=0x"+Integer.toHexString(errorfds)+" timeout=0x"+Integer.toHexString(timeout)+" result="+result);
+                break;
             }
             case __NR_writev: {
                 int fildes = getter.next();

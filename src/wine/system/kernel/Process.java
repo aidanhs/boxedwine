@@ -640,6 +640,8 @@ public class Process {
                 }
             }
         } else {
+            if (pid==0)
+                pid = thread.process.groupId;
             while (true) {
                 synchronized (WineSystem.processes) {
                     for (Process p : WineSystem.processes.values()) {
