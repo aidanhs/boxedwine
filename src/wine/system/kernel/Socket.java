@@ -30,6 +30,7 @@ public class Socket {
     static public final int SO_SNDBUF   = 7;
     static public final int SO_RCVBUF   = 8;
     static public final int SO_PASSCRED = 16;
+    static public final int SO_PEERCRED = 17;
     static public final int SO_ATTACH_FILTER = 26;
 
     static public final int SOL_SOCKET = 1;
@@ -215,6 +216,17 @@ public class Socket {
         return -1;
     }
 
+    static public int getpeername(WineThread thread, int socket, int address, int len) {
+        Process process = thread.process;
+        FileDescriptor fd = process.getFileDescriptor(socket);
+        if (fd==null) {
+            return -Errno.EBADF;
+        }
+        if (fd.getSocket()==null) {
+            return -Errno.ENOTSOCK;
+        }
+        return fd.getSocket().getpeername(thread, address, len);
+    }
     static public int getsockname(int socket, int address, int address_len) {
         Log.warn("getsockname not implemented");
         return -Errno.EOPNOTSUPP;
@@ -374,12 +386,16 @@ public class Socket {
     static public int socket(WineThread thread, int domain, int type, int protocol) {
         Process process = thread.process;
         if (domain==AF_UNIX) {
-            return new KernelUnixSocket(type, protocol).createNewFileDescriptor(process).handle;
+            FileDescriptor result = new KernelUnixSocket(type, protocol, thread.process.id).createNewFileDescriptor(process);
+            result.accessFlags = Io.O_RDWR;
+            return result.handle;
         } else if (domain==AF_INET) {
             //return new KernelInetSocket(type, protocol).createNewFileDescriptor(process).handle;
         } else if (domain==AF_NETLINK) {
             // just fake it so that libudev doesn't crash
-            return new KernelUnixSocket(type, protocol).createNewFileDescriptor(process).handle;
+            FileDescriptor result = new KernelUnixSocket(type, protocol, thread.process.id).createNewFileDescriptor(process);
+            result.accessFlags = Io.O_RDWR;
+            return result.handle;
         }
         Log.warn("socket domain "+domain+" not implemented");
         return -1;
@@ -393,8 +409,8 @@ public class Socket {
             Log.panic("socketpair with type "+type+" not implemented");
         }
         Process process = thread.process;
-        KernelUnixSocket s1 = new KernelUnixSocket(type, protocol);
-        KernelUnixSocket s2 = new KernelUnixSocket(type, protocol);
+        KernelUnixSocket s1 = new KernelUnixSocket(type, protocol, thread.process.id);
+        KernelUnixSocket s2 = new KernelUnixSocket(type, protocol, thread.process.id);
         s1.pair(s2);
         FileDescriptor fd1 = s1.createNewFileDescriptor(process);
         FileDescriptor fd2 = s2.createNewFileDescriptor(process);

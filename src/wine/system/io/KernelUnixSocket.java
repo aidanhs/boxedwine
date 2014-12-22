@@ -1,6 +1,8 @@
 package wine.system.io;
 
+import wine.system.WineSystem;
 import wine.system.kernel.Errno;
+import wine.system.kernel.Io;
 import wine.system.kernel.Socket;
 import wine.emulation.Memory;
 import wine.system.WineThread;
@@ -23,9 +25,11 @@ public class KernelUnixSocket extends KernelSocket {
     private boolean inClosed=true;
     private boolean outClosed=true;
     private FSNode node;
+    private int pid;
 
-    public KernelUnixSocket(int type, int protocol) {
+    public KernelUnixSocket(int type, int protocol, int pid) {
         super(type, protocol);
+        this.pid = pid;
     }
 
     protected void onDelete() {
@@ -100,7 +104,7 @@ public class KernelUnixSocket extends KernelSocket {
             }
             connection = (KernelUnixSocket)this.waitingConnections.removeFirst();
         }
-        KernelUnixSocket result = new KernelUnixSocket(this.type, this.protocol);
+        KernelUnixSocket result = new KernelUnixSocket(this.type, this.protocol, thread.process.id);
         connection.connection = result;
         connection.inClosed = false;
         connection.outClosed = false;
@@ -110,7 +114,9 @@ public class KernelUnixSocket extends KernelSocket {
         synchronized (connection) {
             connection.notify();
         }
-        return result.createNewFileDescriptor(thread.process).handle;
+        FileDescriptor fd = result.createNewFileDescriptor(thread.process);
+        fd.accessFlags = Io.O_RDWR;
+        return fd.handle;
     }
 
     public int bind(SocketAddress address) {
@@ -140,8 +146,8 @@ public class KernelUnixSocket extends KernelSocket {
         if (destAddress!=null || connection!=null) {
             return -Errno.EISCONN;
         }
+        this.destAddress = address;
         if (type == Socket.SOCK_DGRAM) {
-            this.destAddress = address;
             return 0;
         } else if (type == Socket.SOCK_STREAM) {
             FSNode node = FSNode.getNode(address.name, true);
@@ -174,6 +180,14 @@ public class KernelUnixSocket extends KernelSocket {
         }
     }
 
+    public int getpeername(WineThread thread, int address, int len) {
+        if (connection == null)
+            return -Errno.ENOTCONN;
+        destAddress.write(address, thread.process.memory.readd(len));
+        thread.process.memory.writed(len, destAddress.name.length()+2);
+        return 0;
+    }
+
     public int getsockopt(int level, int name, int value, int len) {
         if (level == Socket.SOL_SOCKET) {
             if (name == Socket.SO_RCVBUF) {
@@ -188,6 +202,12 @@ public class KernelUnixSocket extends KernelSocket {
                 if (len != 4)
                     Log.panic("getsockopt SO_ERROR expecting len of 4");
                 WineThread.getCurrent().process.memory.writed(value, 0);
+            } else if (name == Socket.SO_PEERCRED) {
+                if (WineThread.getCurrent().process.memory.readd(len) != 12)
+                    Log.panic("getsockopt SO_PEERCRED expecting len of 12");
+                WineThread.getCurrent().process.memory.writed(value, connection.pid);
+                WineThread.getCurrent().process.memory.writed(value+4, WineSystem.uid);
+                WineThread.getCurrent().process.memory.writed(value+8, WineSystem.gid);
             } else {
                 Log.panic("getsockopt name "+name+" not implemented");
             }

@@ -49,6 +49,7 @@ public class Syscall {
     static public final int __NR_fchmod = 94;
     static public final int __NR_setpriority = 97;
     static public final int __NR_socketcall = 102;
+    static public final int __NR_setitimer = 104;
     static public final int __NR_fsync = 118;
     static public final int __NR_clone = 120;
     static public final int __NR_uname = 122;
@@ -81,6 +82,7 @@ public class Syscall {
     static public final int __NR_setresuid32 = 208;
     static public final int __NR_getresuid32 = 209;
     static public final int __NR_getresgid32 = 211;
+    static public final int __NR_chown32 = 212;
     static public final int __NR_setuid32 = 213;
     static public final int __NR_setgid32 = 214;
     static public final int __NR_madvise = 219;
@@ -564,7 +566,15 @@ public class Syscall {
                             Log.log("SYS_GETSOCKNAME: socket="+socket+" address=0x"+Integer.toHexString(address)+" address_len="+address_len);
                         break;
                     }
-                    //case 7: // SYS_GETPEERNAME
+                    case 7: { // SYS_GETPEERNAME
+                        int socket = args.next();
+                        int addr = args.next();
+                        int len = args.next();
+                        result = Socket.getpeername(thread, socket, addr, len);
+                        if (log)
+                            Log.log("SYS_GETPEERNAME: socket="+socket+" addr=0x"+Integer.toHexString(addr)+" len="+len+" result="+result);
+                        break;
+                    }
                     case 8: { // SYS_SOCKETPAIR
                         int af = args.next();
                         int type = args.next();
@@ -672,6 +682,13 @@ public class Syscall {
                     default:
                         Log.panic("Unknown socket syscall: "+call);
                 }
+                break;
+            }
+            case __NR_setitimer: {
+                int which = getter.next();
+                int itimerval = getter.next();
+                result = 0;
+                Log.warn("__NR_setitimer not implemented");
                 break;
             }
             case __NR_fsync: {
@@ -981,6 +998,15 @@ public class Syscall {
                 result = 0;
                 if (log)
                     Log.log("__NR_getresgid32: rgid=0x"+Integer.toHexString(rgid)+" egid=0x"+Integer.toHexString(egid)+" sgid=0x"+Integer.toHexString(sgid)+" result="+result);
+                break;
+            }
+            case __NR_chown32: {
+                int path = getter.next();
+                int owner = getter.next();
+                int group = getter.next();
+                result = 0;
+                if (log)
+                    Log.log("__NR_chown32: path=0x"+Integer.toHexString(path)+"("+thread.process.memory.readCString(path)+") owner="+owner+" group="+group+" result="+result);
                 break;
             }
             case __NR_setuid32: {

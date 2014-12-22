@@ -2,6 +2,7 @@ package wine.system.kernel;
 
 import wine.emulation.Memory;
 import wine.system.WineThread;
+import wine.system.io.FileDescriptor;
 import wine.util.Log;
 
 import java.util.Vector;
@@ -81,7 +82,9 @@ public class Select {
                 int count = 0;
                 for (Poll.pollfd p : d) {
                     boolean found = false;
-                    if (readfds!=0 && (p.revents & Poll.POLLIN)!=0) {
+                    FileDescriptor fd = thread.process.getFileDescriptor(p.fd);
+
+                    if (readfds!=0 && (p.revents & Poll.POLLIN)!=0 || !fd.object.isOpen()) {
                         int v = thread.process.memory.readb(readfds+p.fd/8);
                         v |= 1 << (p.fd % 8);
                         thread.process.memory.writeb(readfds+p.fd/8, v);

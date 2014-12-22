@@ -15,7 +15,7 @@ public class Main {
         String root = System.getProperty("user.dir")+ File.separator+"tcz";
         System.out.println("root path="+root);
 
-        FileSystem.readLinks(root+File.separator+"links.txt");
+        FileSystem.readLinks(root + File.separator + "links.txt");
         FileSystem.paths.add(new Path(root, ""));
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull(), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
@@ -89,5 +89,14 @@ public class Main {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }
+        Vector<String> v = new Vector<String>();
+        v.add("/lib/ld-linux.so.2");
+        v.add("/usr/local/bin/flwm");
+
+//        while (FSNode.getNode("/tmp/.X11-unix/X0", true)==null) {
+//            try {Thread.sleep(1000);} catch (Exception e) {}
+//        }
+        try {Thread.sleep(60000);} catch (Exception e) {}
+        wine.system.kernel.Process.create("/home/username", v, env);
     }
 }

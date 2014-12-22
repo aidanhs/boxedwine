@@ -278,7 +278,16 @@ public class Process {
     }
 
     public FileDescriptor getFileDescriptor(int handle) {
-        return fileDescriptors.get(new Integer(handle));
+        FileDescriptor fd = fileDescriptors.get(new Integer(handle));
+        if (fd == null && handle == 2) {
+            if (fileDescriptors.get(2)==null) {
+                fd = getFile("/dev/tty0", true);
+                fd.accessFlags = Io.O_WRONLY;
+                fd.getFile().open("w");
+                fileDescriptors.put(2, fd);
+            }
+        }
+        return fd;
     }
 
     public boolean closeFileDescriptor(int handle) {
@@ -466,24 +475,7 @@ public class Process {
             process.parent = this;
             WineThread thread = WineThread.getCurrent().fork(process);
 
-            if (fileDescriptors.get(0)==null) {
-                FileDescriptor tty = getFile("/dev/tty0", true);
-                tty.accessFlags = Io.O_RDONLY;
-                tty.getFile().open("r");
-                fileDescriptors.put(0, tty);
-            }
-            if (fileDescriptors.get(1)==null) {
-                FileDescriptor tty = getFile("/dev/tty0", true);
-                tty.accessFlags = Io.O_WRONLY;
-                tty.getFile().open("w");
-                fileDescriptors.put(0, tty);
-            }
-            if (fileDescriptors.get(2)==null) {
-                FileDescriptor tty = getFile("/dev/tty0", true);
-                tty.accessFlags = Io.O_WRONLY;
-                tty.getFile().open("w");
-                fileDescriptors.put(0, tty);
-            }
+            initStdio();
             if ((flags & CLONE_CHILD_SETTID)!=0) {
                 if (ctid!=0) {
                     process.memory.writed(ctid, thread.id);
@@ -520,6 +512,26 @@ public class Process {
         }
     }
 
+    private void initStdio() {
+        if (fileDescriptors.get(0)==null) {
+            FileDescriptor tty = getFile("/dev/tty0", true);
+            tty.accessFlags = Io.O_RDONLY;
+            tty.getFile().open("r");
+            fileDescriptors.put(0, tty);
+        }
+        if (fileDescriptors.get(1)==null) {
+            FileDescriptor tty = getFile("/dev/tty0", true);
+            tty.accessFlags = Io.O_WRONLY;
+            tty.getFile().open("w");
+            fileDescriptors.put(1, tty);
+        }
+        if (fileDescriptors.get(2)==null) {
+            FileDescriptor tty = getFile("/dev/tty0", true);
+            tty.accessFlags = Io.O_WRONLY;
+            tty.getFile().open("w");
+            fileDescriptors.put(2, tty);
+        }
+    }
 
     // should only return if there is an error
     public int exec(Vector<String> args, Vector<String> env) {

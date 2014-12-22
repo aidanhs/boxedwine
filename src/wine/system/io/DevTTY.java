@@ -96,6 +96,8 @@ public class DevTTY implements FSNodeAccess {
     public int ioctl(int request, Syscall.SyscallGetter getter) {
         Memory memory = WineThread.getCurrent().process.memory;
         switch (request) {
+            case 0x4B32: // KBSETLED
+                break;
             case 0x4B3A: // KDSETMODE
                 graphics = getter.next()==1;
                 break;
@@ -105,6 +107,30 @@ public class DevTTY implements FSNodeAccess {
             case 0x4B45: // KDSKBMODE
                 kbMode = getter.next();
                 break;
+            case 0x4B46: { // KDGKBENT
+                int kbentry = getter.next();
+                int table = memory.readb(kbentry);
+                int index = memory.readb(kbentry+1);
+                int value = memory.readw(kbentry+2);
+                switch (table) {
+                    case 0: // K_NORMTAB
+                        memory.writew(kbentry+2, index);
+                        break;
+                    case 1: // K_SHIFTTAB
+                        memory.writew(kbentry+2, Character.toUpperCase((char)index));
+                        break;
+                    case 2: // K_ALTTAB
+                        memory.writew(kbentry+2, index);
+                        break;
+                    case 3: // K_ALTSHIFTTAB
+                        memory.writew(kbentry+2, index);
+                        break;
+                    default:
+                        memory.writew(kbentry+2, index);
+                        break;
+                }
+                break;
+            }
             case 0x4B51: // KDSKBMUTE
                 return -1;
             case 0x5401: // TCGETS
@@ -147,6 +173,9 @@ public class DevTTY implements FSNodeAccess {
                 int id = getter.next();
                 if (id!=active)
                     Log.panic("VT_WAITACTIVE not fully implemented");
+                break;
+            }
+            case 0x5608: { // VT_GETMODE
                 break;
             }
             default:

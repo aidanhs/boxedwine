@@ -25,7 +25,7 @@ public class SocketAddress {
         if (len>1)
             memory.writeb(address+1, family);
         if (family == Socket.AF_UNIX) {
-            memory.writeCString(address+2, name, len);
+            memory.writeCString(address+2, name, len-1);
         }
     }
     public int family;
