@@ -12,10 +12,7 @@ import wine.gui.Screen;
 import wine.loader.ElfModule;
 import wine.loader.Loader;
 import wine.loader.elf.ElfHeader;
-import wine.system.io.FSNode;
-import wine.system.io.FileDescriptor;
-import wine.system.io.KernelFile;
-import wine.system.io.KernelObject;
+import wine.system.io.*;
 import wine.util.AddressSpace;
 import wine.util.Heap;
 import wine.util.LittleEndianStream;
@@ -28,13 +25,13 @@ import java.util.Vector;
 
 public class Process {
     // the values don't really matter too much, it just makes it easier to debug if we know what might be in a particular address
+    static public int ADDRESS_PROCESS_MMAP_START =     0xD0000;
     static public int ADDRESS_PROCESS_STACK_START =    0xE0000;
     static public int ADDRESS_PER_CPU =                0xE1000;
     static public int ADDRESS_PROCESS_CALLBACK_START = 0xE2000;
     static public int ADDRESS_PROCESS_SHARED_START =   0xE3000;
     static public int ADDRESS_PROCESS_DLL_START =      0xE4000;
     static public int ADDRESS_PER_PROCESS =            0xE5000;
-    static public int ADDRESS_PROCESS_MMAP_START =     0xE6000;
     static public int ADDRESS_PROCESS_HEAP_START =     0xF0000; // this needs a continuous space, hopefully wine won't use more than 256MB
     static public int ADDRESS_PROCESS_FRAME_BUFFER =   0xF8000;
     static public int ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS = 0xF8000000;
@@ -82,6 +79,36 @@ public class Process {
     // if new variables are addedd, make sure they are accounted for in fork and exec
     public String fullPath;
     public Vector<String> args;
+
+    public long real_timer_next;
+    public long real_timer_current;
+
+    final public Thread timerThread = new Thread(new Runnable() {
+        public void run() {
+            while (real_timer_current!=0) {
+                try {
+                    Thread.sleep(real_timer_current);
+                } catch (InterruptedException e) {
+
+                }
+                synchronized (timerThread) {
+                    if (real_timer_current != 0) {
+                        real_timer_current = real_timer_next;
+                        //signal(Signal.SIGALRM);
+                    }
+                }
+            }
+        }
+    });
+
+    public void signal(WineThread thread, int signal) {
+        SigAction action = sigActions[signal];
+        if (action.sa_handler==SigAction.SIG_DFL) {
+
+        } else if (action.sa_handler != SigAction.SIG_IGN) {
+            thread.cpu.call(action.sa_handler, signal);
+        }
+    }
 
     static private class ExitFunction {
         public ExitFunction(int func, int arg) {
@@ -161,19 +188,16 @@ public class Process {
             FileDescriptor tty = getFile("/dev/tty0", true);
             tty.accessFlags = Io.O_RDONLY;
             tty.getFile().open("r");
-            fileDescriptors.put(0, tty);
         }
         if (fileDescriptors.get(1)==null) {
             FileDescriptor tty = getFile("/dev/tty0", true);
             tty.accessFlags = Io.O_WRONLY;
             tty.getFile().open("w");
-            fileDescriptors.put(0, tty);
         }
         if (fileDescriptors.get(2)==null) {
             FileDescriptor tty = getFile("/dev/tty0", true);
             tty.accessFlags = Io.O_WRONLY;
             tty.getFile().open("w");
-            fileDescriptors.put(0, tty);
         }
 
         Screen.initProcess(this);
@@ -184,12 +208,13 @@ public class Process {
             this.name = exe.substring(exe.lastIndexOf("/")+1);
         else
             this.name = exe;
+
+        VirtualFSNode.addVirtualFile("/proc/"+id+"/cmdline", new ProcCommandLine(id), KernelStat._S_IREAD);
     }
     private void cleanup() {
         Vector<FileDescriptor> fds = new Vector<FileDescriptor>();
         for (FileDescriptor fd : this.fileDescriptors.values()) {
-            if (fd.closeOnExec())
-                fds.add(fd);
+            fds.add(fd);
         }
         for (FileDescriptor fd : fds) {
             fd.close();
@@ -227,28 +252,12 @@ public class Process {
 
     public void allocPages(int pageStart, int pages, boolean map) {
         if (!addressSpace.allocPages(pageStart, pages)) {
+            addressSpace.allocPages(pageStart, pages);
             Log.panic("Failed to find address for " + pages+" pages @0x" + Integer.toHexString(pageStart<<12));
         }
         for (int i=0;i<pages;i++) {
             int page = RAM.allocPage();
             memory.handlers[pageStart+i] = new RAMHandler(page, map, false);
-        }
-    }
-
-    public void freePages(int pageStart, int pages) {
-        for (int i=0;i<pages;i++) {
-            memory.handlers[pageStart+i].close();
-            memory.handlers[pageStart+i] = Memory.invalidHandler;
-        }
-        addressSpace.freePages(pageStart, pages);
-    }
-
-    public int mapPage(int page) {
-        synchronized (addressSpace) {
-            int pageStart = addressSpace.getNextPage(ADDRESS_PROCESS_SHARED_START, 1);
-            addressSpace.allocPages(pageStart, 1);
-            memory.handlers[pageStart] = new RAMHandler(page, false, false);
-            return pageStart<<12;
         }
     }
 
@@ -261,7 +270,17 @@ public class Process {
     }
 
     public int getNextFileDescriptor() {
-        int id = 3;
+        int id = 0;
+        while (true) {
+            if (fileDescriptors.get(id)==null)
+                return id;
+            id++;
+        }
+    }
+
+    public int getNextFileDescriptor(int id) {
+        if (id<3)
+            id=3;
         while (true) {
             if (fileDescriptors.get(id)==null)
                 return id;
@@ -279,14 +298,14 @@ public class Process {
 
     public FileDescriptor getFileDescriptor(int handle) {
         FileDescriptor fd = fileDescriptors.get(new Integer(handle));
-        if (fd == null && handle == 2) {
-            if (fileDescriptors.get(2)==null) {
-                fd = getFile("/dev/tty0", true);
-                fd.accessFlags = Io.O_WRONLY;
-                fd.getFile().open("w");
-                fileDescriptors.put(2, fd);
-            }
-        }
+//        if (fd == null && handle == 2) {
+//            if (fileDescriptors.get(2)==null) {
+//                fd = getFile("/dev/tty0", true);
+//                fd.accessFlags = Io.O_WRONLY;
+//                fd.getFile().open("w");
+//                fileDescriptors.put(2, fd);
+//            }
+//        }
         return fd;
     }
 
@@ -556,7 +575,29 @@ public class Process {
         if (node==null) {
             return -Errno.ENOENT;
         }
-        args.insertElementAt("/lib/ld-linux.so.2", 0);
+        InputStream fis = null;
+        boolean isElf = false;
+        try {
+            fis = node.getInputStream();
+            LittleEndianStream is = new LittleEndianStream(fis);
+            ElfHeader header = new ElfHeader();
+            header.load(is);
+            String err = header.isValid();
+            if (err == null) {
+                isElf = true;
+            }
+        } catch (Exception e) {
+
+        } finally {
+            if (fis != null)
+                try {fis.close();} catch (Exception e) {}
+        }
+        if (isElf)
+            args.insertElementAt("/lib/ld-linux.so.2", 0);
+        else {
+            args.insertElementAt("/lib/ld-linux.so.2", 0);
+            args.insertElementAt("/bin/sh", 1);
+        }
 
         node = FSNode.getNode(args.get(0), true);
         if (node==null) {
@@ -569,7 +610,7 @@ public class Process {
             }
             System.out.println();
         }
-        InputStream fis = null;
+        fis = null;
         boolean valid = false;
         try {
             fis = node.getInputStream();
@@ -659,12 +700,13 @@ public class Process {
                     for (Process p : WineSystem.processes.values()) {
                         if (p.isStopped() || p.isTerminated()) {
                             if (pid == -1) {
-                                if (p.parent.id != thread.process.id)
+                                if (p.parent!=null && p.parent.id != thread.process.id)
                                     continue;
                             } else {
                                 if (p.groupId != -pid)
                                     continue;
                             }
+                            WineSystem.processes.remove(p.id);
                             result = p;
                             break;
                         }
@@ -720,11 +762,15 @@ public class Process {
     }
 
     static public int dup(WineThread thread, int fildes) {
+        return dup(thread, fildes, 0);
+    }
+
+    static public int dup(WineThread thread, int fildes, int nextId) {
         FileDescriptor fd = thread.process.getFileDescriptor(fildes);
         if (fd==null) {
             return -Errno.EBADF;
         }
-        fd = fd.dup(thread.process.getNextFileDescriptor());
+        fd = fd.dup(thread.process.getNextFileDescriptor(nextId));
         thread.process.fileDescriptors.put(fd.handle, fd);
         return fd.handle;
     }

@@ -1,13 +1,13 @@
 package wine.gui;
 
+import wine.Main;
 import wine.emulation.Memory;
 import wine.emulation.PageHandler;
 import wine.system.kernel.Process;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.util.Arrays;
@@ -141,6 +141,37 @@ public class Screen {
 
             }
         });
+        frame.addMouseListener(new MouseListener() {
+            public void mouseClicked(MouseEvent e) {
+
+            }
+
+            public void mousePressed(MouseEvent e) {
+
+            }
+
+            public void mouseReleased(MouseEvent e) {
+
+            }
+
+            public void mouseEntered(MouseEvent e) {
+
+            }
+
+            public void mouseExited(MouseEvent e) {
+
+            }
+        });
+        frame.addMouseMotionListener(new MouseMotionListener() {
+            public void mouseDragged(MouseEvent e) {
+                Main.mouse.event(e.getX(), e.getY(), e.getButton());
+            }
+
+            public void mouseMoved(MouseEvent e) {
+                Main.mouse.event(e.getX(), e.getY(), e.getButton());
+            }
+        });
+
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         panel = new JPanel() {

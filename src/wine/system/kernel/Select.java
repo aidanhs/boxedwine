@@ -65,8 +65,6 @@ public class Select {
                 Poll.pollfd[] d = new Poll.pollfd[data.size()];
                 data.copyInto(d);
                 int result = Poll.internalPoll(thread.process, d, timeout);
-                if (result == 0)
-                    return 0;
 
                 for (i=0;i<ndfs;i+=8) {
                     if (readfds != 0) {
@@ -79,6 +77,8 @@ public class Select {
                         thread.process.memory.writeb(errorfds + i / 8, 0);
                     }
                 }
+                if (result == 0)
+                    return 0;
                 int count = 0;
                 for (Poll.pollfd p : d) {
                     boolean found = false;

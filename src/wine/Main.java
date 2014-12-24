@@ -11,27 +11,21 @@ import java.io.File;
 import java.util.Vector;
 
 public class Main {
+    static final public DevMice mouse = new DevMice();
+
     static public void main(String[] args) {
-        String root = System.getProperty("user.dir")+ File.separator+"tcz";
-        System.out.println("root path="+root);
-
-        FileSystem.readLinks(root + File.separator + "links.txt");
-        FileSystem.paths.add(new Path(root, ""));
-        VirtualFSNode.addVirtualFile("/dev/null", new DevNull(), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
-        VirtualFSNode.addVirtualFile("/dev/zero", new DevZero(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
-        VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
-        VirtualFSNode.addVirtualFile("/proc/meminfo", new ProcMeminfo(), KernelStat._S_IREAD);
-        VirtualFSNode.addVirtualFile("/proc/cmdline", new ProcCommandLine(), KernelStat._S_IREAD);
-        VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
-        VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
-
-        int m = 32;
-        Vector<String> env = new Vector<String>();
-        Vector<String> programArgs = new Vector<String>();
+        int m = 240;
         int i;
         int cx = 1024;
         int cy = 768;
         int bpp = 32;
+
+        if (args.length==0)
+            args = new String[] {"/bin/sh", "/init.sh"};
+
+        Vector<String> env = new Vector<String>();
+        Vector<String> programArgs = new Vector<String>();
+        String root = System.getProperty("user.dir")+ File.separator+"root";
 
         env.add("HOME=/home/username");
         env.add("LOGNAME=username");
@@ -41,9 +35,6 @@ public class Main {
         env.add("LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib");
 //        env.add("LD_DEBUG=all");
 //        env.add("LD_BIND_NOW=1");
-
-        programArgs.add("/lib/ld-linux.so.2");
-        WineSystem.path = null;
 
         for (i=0;i<args.length;i++) {
             // :TODO: command line for resolution
@@ -57,10 +48,35 @@ public class Main {
                     WineSystem.path = args[i].substring(5).split(":");
                 }
                 env.add(args[i]);
-            } else {
+            } else if (args[i].equals("-root")) {
+                if (i+1<args.length) {
+                    i++;
+                    root = args[i];
+                }
+            }
+            else {
                 break;
             }
         }
+
+        System.out.println("root path="+root);
+
+        FileSystem.readLinks(root + File.separator + "links.txt");
+        FileSystem.paths.add(new Path(root, ""));
+        VirtualFSNode.addVirtualFile("/dev/null", new DevNull(), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/zero", new DevZero(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/proc/meminfo", new ProcMeminfo(), KernelStat._S_IREAD);
+        VirtualFSNode.addVirtualFile("/proc/cmdline", new ProcCommandLine(), KernelStat._S_IREAD);
+        VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/input/mice", mouse, KernelStat._S_IREAD|KernelStat._S_IFCHR);
+
+
+
+        programArgs.add("/lib/ld-linux.so.2");
+        WineSystem.path = null;
+
         Screen.create(cx, cy, bpp);
         VirtualFSNode.addVirtualFile("/dev/fb0", new DevFB(cx, cy, bpp, cx*4, Process.ADDRESS_PROCESS_FRAME_BUFFER << 12, cx*4*cy*2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
 
@@ -89,14 +105,5 @@ public class Main {
             System.out.println("Failed to start wine");
             System.exit(-1);
         }
-        Vector<String> v = new Vector<String>();
-        v.add("/lib/ld-linux.so.2");
-        v.add("/usr/local/bin/flwm");
-
-//        while (FSNode.getNode("/tmp/.X11-unix/X0", true)==null) {
-//            try {Thread.sleep(1000);} catch (Exception e) {}
-//        }
-        try {Thread.sleep(60000);} catch (Exception e) {}
-        wine.system.kernel.Process.create("/home/username", v, env);
     }
 }

@@ -66,6 +66,8 @@ public class Poll {
     static public int internalPoll(Process process, pollfd[] data, int timeout) {
         int result = 0;
         long startTime = System.nanoTime();
+        if (timeout<0)
+            timeout = Integer.MAX_VALUE;
         while (true) {
             result = 0;
             synchronized (FileDescriptor.lock) {

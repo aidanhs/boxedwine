@@ -84,7 +84,7 @@ public class WineThread {
         if (stackSizeReserved<stackSizeCommit)
             stackSizeReserved=stackSizeCommit;
         if (stackSizeCommit==0)
-            stackSizeCommit = 4096;
+            stackSizeCommit = 4096*16;
         this.stackSizeCommit = stackSizeCommit;
         if (stackAddress==0)
             stackSizeReserved+=4096*4; // padding for how ThreadHandlerCheck works

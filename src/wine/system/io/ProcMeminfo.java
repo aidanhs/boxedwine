@@ -35,6 +35,8 @@ public class ProcMeminfo implements FSNodeAccess {
     }
 
     public int read(byte[] b) {
+        if (pos>=buffer.length)
+            return 0;
         int len = b.length;
         if (pos+len>buffer.length)
             len = buffer.length-pos;
@@ -57,5 +59,13 @@ public class ProcMeminfo implements FSNodeAccess {
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         Log.panic("Mapping /proc/meminfo not supported");
         return -1;
+    }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
     }
 }

@@ -2,10 +2,6 @@ package wine.system.io;
 
 import wine.system.kernel.Errno;
 import wine.system.kernel.*;
-import wine.emulation.Memory;
-import wine.system.WineThread;
-
-import java.io.IOException;
 
 abstract public class KernelObject {
     private int refCount;

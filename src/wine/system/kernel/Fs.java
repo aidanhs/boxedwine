@@ -82,6 +82,7 @@ public class Fs {
         return file.chmod(mode);
     }
 
+    static public final int F_DUPFD    = 0;
     static public final int	F_SETFD    = 2;
     static public final int	F_GETFL    = 3;
     static public final int	F_SETFL	   = 4;
@@ -100,12 +101,18 @@ public class Fs {
     static public final int	F_UNLCK	   = 2;
 
     static public int fcntl(WineThread thread, int fildes, int cmd, int arg1) {
+        return fcntl(thread, fildes, cmd, arg1, null);
+    }
+
+    static public int fcntl(WineThread thread, int fildes, int cmd, int arg1, Syscall.SyscallGetter getter) {
         FileDescriptor fd = thread.process.getFileDescriptor(fildes);
 
         if (fd == null) {
             return -Errno.EBADF;
         }
         switch (cmd) {
+            case F_DUPFD:
+                return thread.process.dup(thread, fildes, arg1);
             case F_SETFD:
                 fd.setDescriptorFlags(arg1);
                 return 0;

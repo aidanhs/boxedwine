@@ -50,6 +50,7 @@ public class Syscall {
     static public final int __NR_setpriority = 97;
     static public final int __NR_socketcall = 102;
     static public final int __NR_setitimer = 104;
+    static public final int __NR_ipc = 117;
     static public final int __NR_fsync = 118;
     static public final int __NR_clone = 120;
     static public final int __NR_uname = 122;
@@ -61,6 +62,9 @@ public class Syscall {
     static public final int __NR_getdents = 141;
     static public final int __NR_newselect = 142;
     static public final int __NR_writev = 146;
+    static public final int __NR_sched_yield = 158;
+    static public final int __NR_nanosleep = 162;
+    static public final int __NR_mremap = 163;
     static public final int __NR_poll = 168;
     static public final int __NR_prctl = 172;
     static public final int __NR_rt_sigaction = 174;
@@ -103,6 +107,7 @@ public class Syscall {
     static public final int __NR_statfs64 = 268;
     static public final int __NR_fstatfs64 = 269;
     static public final int __NR_tgkill = 270;
+    static public final int __NR_fadvise64_64 = 272;
     static public final int __NR_inotify_init = 291;
     static public final int __NR_inotify_add_watch = 292;
     static public final int __NR_inotify_rm_watch = 293;
@@ -687,8 +692,43 @@ public class Syscall {
             case __NR_setitimer: {
                 int which = getter.next();
                 int itimerval = getter.next();
+                int itimerval_old = getter.next();
+                int next = memory.readd(itimerval)*1000 + memory.readd(itimerval+4) / 1000;
+                int current = memory.readd(itimerval+8)*1000 + memory.readd(itimerval+12) / 1000;
+
+                if (which == 0 ) { // ITIMER_REAL
+                    synchronized (thread.process.timerThread) {
+                        thread.process.real_timer_next = next;
+                        thread.process.real_timer_current = current;
+                        if (current!=0) {
+                            thread.process.signal(thread, Signal.SIGALRM);
+                        }
+//                        if (thread.process.timerThread.isAlive()) {
+//                            thread.process.timerThread.interrupt();
+//                        } else if (current!=0) {
+//                            thread.process.timerThread.start();
+//                        }
+                    }
+                } else if (which == 1) { // ITIMER_VIRTUAL
+                    Log.warn("__NR_setitimer ITIMER_VIRTUAL not implemented");
+                } else if (which == 2) { // ITIMER_PROF
+                    Log.warn("__NR_setitimer ITIMER_PROF not implemented");
+                }
                 result = 0;
-                Log.warn("__NR_setitimer not implemented");
+                break;
+            }
+            case __NR_ipc: {
+                int op = getter.next();
+                if (op == 23) { // IPCOP_shmget
+                    int key = getter.next();
+                    int size = getter.next();
+                    int flags = getter.next();
+                    // :TODO:
+                    return -Errno.EACCES;
+                } else {
+                    Log.panic("__NR_ipc op "+op+" not implemented");
+                }
+                result = 0;
                 break;
             }
             case __NR_fsync: {
@@ -780,6 +820,8 @@ public class Syscall {
                 int writefds = getter.next();
                 int errorfds = getter.next();
                 int timeout = getter.next();
+                if (log)
+                    Log.log("__NR_newselect: ndfs=0x"+Integer.toHexString(ndfs)+" readfds=0x"+Integer.toHexString(readfds)+" writefds=0x"+Integer.toHexString(writefds)+" errorfds=0x"+Integer.toHexString(errorfds)+" timeout=0x"+Integer.toHexString(timeout));
                 result = Select.select(thread, ndfs, readfds, writefds, errorfds, timeout);
                 if (log)
                     Log.log("__NR_newselect: ndfs=0x"+Integer.toHexString(ndfs)+" readfds=0x"+Integer.toHexString(readfds)+" writefds=0x"+Integer.toHexString(writefds)+" errorfds=0x"+Integer.toHexString(errorfds)+" timeout=0x"+Integer.toHexString(timeout)+" result="+result);
@@ -794,6 +836,28 @@ public class Syscall {
                 result = Io.writev(thread, fildes, iov, iovcnt);
                 if (log)
                     Log.log("__NR_writev: fildes="+fildes+" result="+result);
+                break;
+            }
+            case __NR_sched_yield: {
+                return 0;
+            }
+            case __NR_nanosleep: {
+                int req = getter.next();
+                int rem = getter.next();
+                int seconds = memory.readd(req);
+                int nano = memory.readd(req + 4);
+                long sleep = seconds * 1000l + nano / 1000000l;
+                try {Thread.sleep(sleep);} catch(Exception e){}
+                return 0;
+            }
+            case __NR_mremap: {
+                int oldAddress = getter.next();
+                int oldSize = getter.next();
+                int newSize = getter.next();
+                int flags = getter.next();
+                result = Mmap.remap(thread, oldAddress, oldSize, newSize, flags);
+                if (log)
+                    Log.log("__NR_mremap: oldAddress=0x"+Integer.toHexString(oldAddress)+" oldSize="+oldSize+" newSize="+newSize+" flags=0x"+Integer.toHexString(flags)+" result="+result);
                 break;
             }
             case __NR_poll: {
@@ -1198,6 +1262,12 @@ public class Syscall {
                     }
                 }
                 break;
+            }
+            case __NR_fadvise64_64: {
+                int fd = getter.next();
+                if (thread.process.getFileDescriptor(fd)==null)
+                    return -Errno.EBADF;
+                return 0;
             }
             case __NR_inotify_init:
                 Log.panic("syscall __NR_inotify_init not implemented");

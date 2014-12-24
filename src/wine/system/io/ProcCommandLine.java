@@ -1,16 +1,41 @@
 package wine.system.io;
 
 import wine.emulation.Memory;
-import wine.system.WineThread;
+import wine.system.WineSystem;
 import wine.system.kernel.*;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 public class ProcCommandLine implements FSNodeAccess {
     private int pos = 0;
     private byte[] buffer;
+    private int processId;
+
+    public ProcCommandLine() {
+    }
+
+    public ProcCommandLine(int id) {
+        this.processId = id;
+    }
 
     public boolean open(String mode) {
-        this.buffer = new byte[2]; // no kernel command line arguments
+        if (processId==0) {
+            this.buffer = new byte[2]; // no kernel command line arguments
+        } else {
+            Process p = WineSystem.processes.get(processId);
+            if (p == null)
+                return false;
+            StringBuilder buffer = new StringBuilder();
+            int i=1;
+            if (p.args.size()>0 && p.args.get(0).endsWith("ld-linux.so.2"))
+                i++;
+            for (;i<p.args.size();i++) {
+                buffer.append(p.args.get(i));
+                buffer.append((char)0);
+            }
+            buffer.append((char)0);
+            this.buffer = buffer.toString().getBytes();
+        }
         return true;
     }
 
@@ -49,5 +74,13 @@ public class ProcCommandLine implements FSNodeAccess {
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         Log.panic("Mapping /proc/meminfo not supported");
         return -1;
+    }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
     }
 }

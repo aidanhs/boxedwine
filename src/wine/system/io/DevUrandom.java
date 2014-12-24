@@ -46,5 +46,13 @@ public class DevUrandom implements FSNodeAccess {
         Log.panic("Mapping urandom not supported");
         return -1;
     }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
+    }
 }
 

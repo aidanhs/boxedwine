@@ -194,11 +194,11 @@ public class KernelFile extends KernelObject {
     }
 
     public boolean isReadReady() {
-        return true;
+        return io.isReadReady();
     }
 
     public boolean isWriteReady() {
-        return true;
+        return io.isWriteReady();
     }
 
     public int chmod(int mode) {

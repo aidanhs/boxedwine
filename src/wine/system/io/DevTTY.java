@@ -117,7 +117,7 @@ public class DevTTY implements FSNodeAccess {
                         memory.writew(kbentry+2, index);
                         break;
                     case 1: // K_SHIFTTAB
-                        memory.writew(kbentry+2, Character.toUpperCase((char)index));
+                        memory.writew(kbentry + 2, Character.toUpperCase((char) index));
                         break;
                     case 2: // K_ALTTAB
                         memory.writew(kbentry+2, index);
@@ -166,6 +166,9 @@ public class DevTTY implements FSNodeAccess {
                 memory.writew(address, 1); // v_state
                 break;
             }
+            case 0x5605: { // VT_RELDISP
+                break;
+            }
             case 0x5606: // VT_ACTIVATE
                 active = getter.next();
                 break;
@@ -187,5 +190,13 @@ public class DevTTY implements FSNodeAccess {
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         Log.panic("Mapping /dev/tty not supported");
         return -1;
+    }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
     }
 }

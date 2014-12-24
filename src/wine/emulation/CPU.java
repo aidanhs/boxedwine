@@ -179,7 +179,7 @@ public class CPU {
         synchronized (this.thread.process.addressSpace) {
             page = this.thread.process.addressSpace.getNextPage(wine.system.kernel.Process.ADDRESS_PER_CPU, 3)+1;
             this.thread.process.allocPages(page, 2, false);
-            this.thread.process.addressSpace.allocPages(page-1,3);
+            this.thread.process.addressSpace.allocPages(page-1,1);
         }
         this.gs.dword = page << 12;
         memory.writed(this.gs.dword+20, 0x4512AB78); // stack canary

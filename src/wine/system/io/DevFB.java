@@ -74,13 +74,13 @@ public class DevFB implements FSNodeAccess {
         public int bits_per_pixel = 32;          /* guess what                   */
         public int grayscale = 0;                /* 0 = color, 1 = grayscale,    */
                                         /* >1 = FOURCC                  */
-        public int red_offset=0;
+        public int red_offset=16;
         public int red_len=8;
         public int red_msb=0;
         public int green_offset=8;
         public int green_len=8;
         public int green_msb=0;
-        public int blue_offset=16;
+        public int blue_offset=0;
         public int blue_len=8;
         public int blue_msb=0;
         public int trans_offset=24;
@@ -289,5 +289,13 @@ public class DevFB implements FSNodeAccess {
             return wine.system.kernel.Process.ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;
         Log.panic("Mapping /dev/fb at fixed address not supported");
         return -1;
+    }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
     }
 }

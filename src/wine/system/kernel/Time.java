@@ -26,7 +26,8 @@ public class Time {
 
     static public int gettimeofday(WineThread thread, int tv, int tz) {
         if (tz!=0) {
-            Log.panic("gettimeofday tz not implemented");
+            thread.process.memory.writed(tz, 0);
+            thread.process.memory.writed(tz+4, 0);
         }
         long ms = System.currentTimeMillis();
         long s = ms/1000;

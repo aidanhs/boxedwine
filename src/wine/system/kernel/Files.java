@@ -29,7 +29,7 @@ public class Files {
             if (is64) {
                 recordLen = 24+node.name().length();
                 recordLen=(recordLen+3) / 4 * 4;
-                if (recordLen>count) {
+                if (recordLen+len>count) {
                     if (len==0)
                         return -Errno.EINVAL;
                     return len;
@@ -42,7 +42,7 @@ public class Files {
             } else {
                 recordLen = 12+node.name().length();
                 recordLen=(recordLen+3) / 4 * 4;
-                if (recordLen>count) {
+                if (recordLen+len>count) {
                     if (len==0)
                         return -Errno.EINVAL;
                     return len;

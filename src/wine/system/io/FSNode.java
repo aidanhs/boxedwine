@@ -177,6 +177,14 @@ abstract public class FSNode {
                 return true;
             }
 
+            public boolean isReadReady() {
+                return true;
+            }
+
+            public boolean isWriteReady() {
+                return true;
+            }
+
             public boolean setLength(long length) {
                 try {
                     io.setLength(length);

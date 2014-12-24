@@ -13,4 +13,6 @@ public interface FSNodeAccess {
     public boolean open(String mode);
     public int ioctl(int request, Syscall.SyscallGetter getter);
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared);
+    public boolean isWriteReady();
+    public boolean isReadReady();
 }

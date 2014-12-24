@@ -45,4 +45,12 @@ public class DevZero implements FSNodeAccess {
         Log.panic("Mapping /dev/zero not supported");
         return -1;
     }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
+    }
 }

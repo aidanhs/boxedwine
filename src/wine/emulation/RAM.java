@@ -2,6 +2,7 @@ package wine.emulation;
 
 import wine.util.Log;
 
+import javax.swing.*;
 import java.util.Arrays;
 
 public class RAM {
@@ -11,7 +12,12 @@ public class RAM {
     static public int freePageCount;
 
     static public void init(int size) {
-        bytes = new int[size>>2];
+        try {
+            bytes = new int[size >> 2];
+        } catch (OutOfMemoryError e) {
+            JOptionPane.showMessageDialog(null, "Could not allocate RAM ("+size/1024/1024+"MB).  Try launch the app with more memory.  For example: java -Xmx600m -jar boxedwine.jar", "ERROR", JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
+        }
         freePageCount = size >>> 12;
         freePages = new int[freePageCount];
         for (int i=0;i<freePageCount;i++) {
