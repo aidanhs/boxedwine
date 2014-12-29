@@ -3307,13 +3307,28 @@ class Decoder {
 
         for (int i=0;i<16;i++) {
             final int index = i;
+            decoder[0x140+i] = new Decode() {
+                public boolean call(CPU cpu, Op prev) {
+                    int rm = cpu.fetchb();
+                    if (rm >= 0xc0 ) {
+                        prev.next = new Ops.ConditionalMov_Reg16(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
+                    } else {
+                        prev.next = new Ops.ConditionalMov_Mem16(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
+                    }
+                    return true;
+                }
+            };
+        }
+
+        for (int i=0;i<16;i++) {
+            final int index = i;
             decoder[0x340+i] = new Decode() {
                 public boolean call(CPU cpu, Op prev) {
                     int rm = cpu.fetchb();
                     if (rm >= 0xc0 ) {
-                        prev.next = new Ops.ConditionalMov_Reg(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
+                        prev.next = new Ops.ConditionalMov_Reg32(Conditions.get(index), ed(cpu, rm), gd(cpu, rm));
                     } else {
-                        prev.next = new Ops.ConditionalMov_Mem(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
+                        prev.next = new Ops.ConditionalMov_Mem32(Conditions.get(index), getEaa(cpu, rm), gd(cpu, rm));
                     }
                     return true;
                 }
@@ -3435,10 +3450,68 @@ class Decoder {
             }
         };
 
+         /* SHLD Ew,Gw,CL */
+        decoder[0x1a5] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Instruction_Reg16_Reg16_Reg8(Instructions.dshlw, ew(cpu, rm), gw(cpu, rm), cpu.ecx);
+                } else {
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Reg8_Lock(Instructions.dshlw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
+                    else
+                        prev.next = new Ops.Instruction_Mem16_Reg16_Reg8(Instructions.dshlw, getEaa(cpu, rm), gw(cpu, rm), cpu.ecx);
+                }
+                return true;
+            }
+        };
+
+        /* SHLD Ed,Gd,CL */
+        decoder[0x3a5] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.Instruction_Reg32_Reg32_Reg8(Instructions.dshld, ed(cpu, rm), gd(cpu, rm), cpu.ecx);
+                } else {
+                    if (cpu.locked)
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Reg8_Lock(Instructions.dshld, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
+                    else
+                        prev.next = new Ops.Instruction_Mem32_Reg32_Reg8(Instructions.dshld, getEaa(cpu, rm), gd(cpu, rm), cpu.ecx);
+                }
+                return true;
+            }
+        };
+
         /* POP GS */
         decoder[0x3a9] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
                 prev.next = new Ops.PopSeg32(cpu.gsValue, cpu.gs, "gs");
+                return true;
+            }
+        };
+
+         /* BTS Ew,Gw */
+        decoder[0x1ab] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BtsEwGw_reg(ew(cpu, rm), gw(cpu, rm));
+                } else {
+                    prev.next = new Ops.BtsEwGw_mem(getEaa(cpu, rm), gw(cpu, rm));
+                }
+                return true;
+            }
+        };
+
+         /* BTS Ed,Gd */
+        decoder[0x3ab] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    prev.next = new Ops.BtsEdGd_reg(ed(cpu, rm), gd(cpu, rm));
+                } else {
+                    prev.next = new Ops.BtsEdGd_mem(getEaa(cpu, rm), gd(cpu, rm));
+                }
                 return true;
             }
         };
@@ -3594,6 +3667,52 @@ class Decoder {
             }
         };
 
+         /* GRP8 Ed,Ib */
+        decoder[0x3ba] = new Decode() {
+            public boolean call(CPU cpu, Op prev) {
+                int rm=cpu.fetchb();
+                if (rm >= 0xc0 ) {
+                    int mask = 1 << (cpu.fetchb() & 31);
+                    switch (rm & 0x38) {
+                        case 0x20:	/* BT */
+                            prev.next = new Ops.BtEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        case 0x28:	/* BTS */
+                            prev.next = new Ops.BtsEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        case 0x30:	/* BTR */
+                            prev.next = new Ops.BtrEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        case 0x38:	/* BTC */
+                            prev.next = new Ops.BtcEdIb_reg(ed(cpu, rm), mask);
+                            break;
+                        default:
+                            Log.panic("CPU:66:0F:BA:Illegal subfunction "+Integer.toString(rm & 0x38,16));
+                    }
+                } else {
+                    EaaBase eaa = getEaa(cpu, rm);
+                    int mask = 1 << (cpu.fetchb() & 31);
+                    switch (rm & 0x38) {
+                        case 0x20:	/* BT */
+                            prev.next = new Ops.BtEdIb_mem(eaa, mask);
+                            break;
+                        case 0x28:	/* BTS */
+                            prev.next = new Ops.BtsEdIb_mem(eaa, mask);
+                            break;
+                        case 0x30:	/* BTR */
+                            prev.next = new Ops.BtrEdIb_mem(eaa, mask);
+                            break;
+                        case 0x38:	/* BTC */
+                            prev.next = new Ops.BtcEdIb_mem(eaa, mask);
+                            break;
+                        default:
+                            Log.panic("CPU:66:0F:BA:Illegal subfunction "+Integer.toString(rm & 0x38,16));
+                    }
+                }
+                return true;
+            }
+        };
+
          /* BTC Ed,Gd */
         decoder[0x3bb] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
@@ -3723,6 +3842,17 @@ class Decoder {
                 return true;
             }
         };
+
+        for (int i=0;i<8;i++) {
+             /* BSWAP */
+            final int rm = i;
+            decoder[0x3c8+i] = new Decode() {
+                public boolean call(CPU cpu, Op prev) {
+                    prev.next = new Ops.Bswapd(ed(cpu, rm));
+                    return true;
+                }
+            };
+        }
     }
 
     

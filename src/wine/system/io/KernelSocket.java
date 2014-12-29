@@ -1,5 +1,6 @@
 package wine.system.io;
 
+import wine.system.WineThread;
 import wine.util.Log;
 
 abstract public class KernelSocket extends KernelObject {
@@ -20,6 +21,7 @@ abstract public class KernelSocket extends KernelObject {
     abstract public int accept(SocketAddress address);
     abstract public int bind(SocketAddress address);
     abstract public int connect(SocketAddress address);
+    abstract public int getpeername(WineThread thread, int address, int len);
     abstract public int getsockopt(int level, int name, int value, int len);
     abstract public int listen();
     abstract public int recv(int buffer, int len, int flags);

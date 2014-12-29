@@ -1,7 +1,5 @@
 package wine.emulation;
 
-import wine.system.WineProcess;
-
 public class RAMHandlerRO extends RAMHandler {
     public RAMHandlerRO(int physicalPage, boolean mmap, boolean shared) {
         super(physicalPage, mmap, shared);
@@ -15,7 +13,7 @@ public class RAMHandlerRO extends RAMHandler {
     public void writeb(int address, int value) {
         pf(address);
     }
-    public PageHandler fork(WineProcess process) {
+    public PageHandler fork(wine.system.kernel.Process process) {
         int page;
         if (isShared()) {
             page = getPhysicalPage();

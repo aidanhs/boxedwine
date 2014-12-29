@@ -1,5 +1,8 @@
 package wine.system.io;
 
+import wine.emulation.Memory;
+import wine.emulation.PageHandler;
+import wine.system.kernel.*;
 import wine.system.WineThread;
 import wine.util.Path;
 
@@ -16,8 +19,14 @@ abstract public class FSNode {
 
     static public FSNode getNode(String localPath, boolean existing) {
         if (!localPath.startsWith("/")) {
-            localPath = WineThread.getCurrent().process.currentDirectory+"/"+localPath;
+            WineThread thread = WineThread.getCurrent();
+            if (thread.currentDirectory!=null) {
+                localPath = thread.currentDirectory + "/" + localPath;
+            } else {
+                localPath = thread.process.currentDirectory + "/" + localPath;
+            }
         }
+        //System.out.println(localPath);
         for (int i=0;i<FileSystem.links.size();i++) {
             Path path = FileSystem.links.elementAt(i);
             if (localPath.startsWith(path.localPath)) {
@@ -89,6 +98,8 @@ abstract public class FSNode {
     abstract public String name();
     abstract public boolean canRead();
     abstract public boolean canWrite();
+    abstract public int getType();
+    abstract public int getMode();
 
     private static class FSNodeFile extends FSNode {
         private FSNodeFile(File file, String localPath, String nativePath) {
@@ -98,6 +109,25 @@ abstract public class FSNode {
 
         public boolean isDirectory() {
             return file.isDirectory();
+        }
+
+        public int getType() {
+            if (isDirectory())
+                return 4; // DT_DIR;
+            return 8; // DT_REG
+        }
+
+        public int getMode() {
+            int result = 0;
+            if (isDirectory()) {
+                result |= KernelStat._S_IFDIR;
+            } else {
+                result |= KernelStat._S_IFREG;
+            }
+            result |= KernelStat._S_IREAD;
+            result |= KernelStat._S_IWRITE;
+            result |= KernelStat._S_IEXEC;
+            return result;
         }
 
         public FSNode[] list() {
@@ -144,6 +174,14 @@ abstract public class FSNode {
             }
 
             public boolean open(String mode) {
+                return true;
+            }
+
+            public boolean isReadReady() {
+                return true;
+            }
+
+            public boolean isWriteReady() {
                 return true;
             }
 
@@ -199,6 +237,29 @@ abstract public class FSNode {
                     io = null;
                 }
             }
+
+            public int ioctl(WineThread thread, int request, Syscall.SyscallGetter getter) {
+                return -Errno.ENODEV;
+            }
+
+            public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+                PageHandler[] handlers = memory.handlers;
+                int pageStart = address>>>12;
+                int pageCount = (int)((len+0xFFF)>>>12);
+
+                for (int i = 0; i < pageCount; i++) {
+                    handlers[pageStart + i].close();
+                    if ((read | exec) && write)
+                        handlers[i + pageStart] = new MMapHandler(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    else if (read | exec)
+                        handlers[i + pageStart] = new MMapHandlerRO(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    else if (write)
+                        handlers[i + pageStart] = new MMapHandlerWO(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    else
+                        handlers[i + pageStart] = new MMapHandlerNone(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                }
+                return address;
+            }
         }
 
         public FSNodeAccess open(String mode) {
@@ -229,6 +290,7 @@ abstract public class FSNode {
         public boolean canWrite() {
             return file.canWrite();
         }
+
 
         final private File file;
     }

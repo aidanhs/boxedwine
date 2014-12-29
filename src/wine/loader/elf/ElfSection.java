@@ -10,6 +10,7 @@ public class ElfSection {
     static public final int SHF_WRITE       = 0x1;
     static public final int SHF_ALLOC       = 0x2;
     static public final int SHF_EXECINSTR   = 0x4;
+    static public final int SHF_TLS         = 0x400;
     static public final int SHF_MASKPROC    = 0xf0000000;
 
     static public final int SHT_NULL        = 0;
@@ -36,6 +37,10 @@ public class ElfSection {
     static public final int R_386_GLOB_DAT  = 6;
     static public final int R_386_JMP_SLOT  = 7;
     static public final int R_386_RELATIVE  = 8;
+
+    static public final int R_386_TLS_TPOFF = 14;
+    static public final int R_386_TLS_DTPMOD32 = 35;
+    static public final int R_386_IRELATIVE = 42;
 
     public long sh_name;
     public long sh_type;

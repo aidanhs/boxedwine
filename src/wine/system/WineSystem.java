@@ -1,19 +1,18 @@
 package wine.system;
 
+import wine.system.kernel.Process;
+
 import java.net.InetAddress;
 import java.util.Hashtable;
-import java.util.Vector;
 
 public class WineSystem {
-    final static public Hashtable<Integer, WineProcess> processes = new Hashtable<Integer, WineProcess>();
+    final static public Hashtable<Integer, Process> processes = new Hashtable<Integer, wine.system.kernel.Process>();
     static public int nextid = 100;
-    final static public Hashtable sharedMemoryMaps = new Hashtable();
     final static public int uid = 1;
     final static public int gid = 2;
-    final static public String homeDirectory = "/home/boxedwine";
-    final static public Vector<String> libDirs = new Vector<String>();
     final static public int SCREEN_WIDTH = 1024;
     final static public int SCREEN_HEIGHT = 768;
+    static public String[] path;
 
     static public String hostName() {
         if (System.getProperty("os.name").startsWith("Windows")) {

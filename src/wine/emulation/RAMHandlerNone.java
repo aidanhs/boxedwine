@@ -1,7 +1,5 @@
 package wine.emulation;
 
-import wine.system.WineProcess;
-
 public class RAMHandlerNone extends RAMHandler {
     public RAMHandlerNone(int physicalPage, boolean mmap, boolean shared) {
         super(physicalPage, mmap, shared);
@@ -28,7 +26,7 @@ public class RAMHandlerNone extends RAMHandler {
         pf(address);
     }
 
-    public PageHandler fork(WineProcess process) {
+    public PageHandler fork(wine.system.kernel.Process process) {
         if (getPhysicalPage() ==0)
             return new RAMHandlerNone(0, isMmap(), isShared());
         int page;

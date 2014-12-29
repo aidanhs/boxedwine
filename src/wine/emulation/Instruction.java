@@ -9,4 +9,7 @@ abstract class Instruction {
     abstract public boolean AF(CPU cpu);
     abstract public boolean SF(CPU cpu);
     abstract public boolean OF(CPU cpu);
+    public String noResultString() {
+        return toString();
+    }
 }

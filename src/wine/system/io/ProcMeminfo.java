@@ -1,6 +1,11 @@
 package wine.system.io;
 
+import wine.system.WineThread;
+import wine.system.kernel.Errno;
+import wine.system.kernel.Syscall;
+import wine.emulation.Memory;
 import wine.emulation.RAM;
+import wine.util.Log;
 
 public class ProcMeminfo implements FSNodeAccess {
     private int pos = 0;
@@ -31,6 +36,8 @@ public class ProcMeminfo implements FSNodeAccess {
     }
 
     public int read(byte[] b) {
+        if (pos>=buffer.length)
+            return 0;
         int len = b.length;
         if (pos+len>buffer.length)
             len = buffer.length-pos;
@@ -44,5 +51,22 @@ public class ProcMeminfo implements FSNodeAccess {
     }
 
     public void close() {
+    }
+
+    public int ioctl(WineThread thread, int request, Syscall.SyscallGetter getter) {
+        return -Errno.ENODEV;
+    }
+
+    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+        Log.panic("Mapping /proc/meminfo not supported");
+        return -1;
+    }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
     }
 }

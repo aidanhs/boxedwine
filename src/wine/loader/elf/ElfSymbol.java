@@ -17,6 +17,7 @@ public class ElfSymbol {
     static public final int STT_FILE    = 4;
     static public final int STT_COMMON  = 5;
     static public final int STT_TLS     = 6;
+    static public final int STT_GNU_IFUNC = 10;
 
     static public final int SHN_UNDEF   = 0;
 

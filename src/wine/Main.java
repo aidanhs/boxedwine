@@ -1,80 +1,106 @@
 package wine;
 
 import wine.emulation.RAM;
-import wine.system.WineProcess;
+import wine.gui.Screen;
+import wine.system.kernel.Process;
 import wine.system.WineSystem;
 import wine.system.io.*;
 import wine.util.Path;
 
 import java.io.File;
+import java.util.Vector;
 
 public class Main {
+    static final public DevMouse mouse = new DevMouse();
+
     static public void main(String[] args) {
-        FileSystem.links.add(new Path("/home/boxedwine/.wine/drive_c", "/home/boxedwine/.wine/dosdevices/c:"));
-        FileSystem.links.add(new Path("/", "/home/boxedwine/.wine/dosdevices/z:"));
-        FileSystem.paths.add(new Path(System.getProperty("user.dir")+ File.separator+"root", ""));
-        VirtualFSNode.addVirtualFile("/dev/null", new DevNull());
-        VirtualFSNode.addVirtualFile("/dev/zero", new DevZero());
-        VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom());
-        VirtualFSNode.addVirtualFile("/proc/meminfo", new ProcMeminfo());
-        WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable");
-        WineSystem.libDirs.add("/usr/lib/i386-linux-gnu/wine-unstable/wine");
-        WineSystem.libDirs.add("/usr/lib/i386-linux-gnu");
+        int m = 240;
+        int i;
+        int cx = 1024;
+        int cy = 768;
+        int bpp = 32;
 
-        if (args.length==0) {
-            args = new String[] {"explorer", "/desktop=name,1024x768", "notepad"};
-        }
-        RAM.init(170 * 1024 * 1024);
-        // not necessary to create this up front, but it allows debug msg's to go to stdout
-        //createWineServer();
-        //WineProcess.create(WineSystem.homeDirectory, new String[] {"/usr/lib/i386-linux-gnu/libz.so.1"}, new String[0]);
-        String[] t = new String[args.length+1];
-        System.arraycopy(args, 0, t, 1, args.length);
-        args = t;
-        args[0]="/usr/lib/i386-linux-gnu/wine-unstable/bin/wine";
-        if (WineProcess.create(WineSystem.homeDirectory, args, new String[] {"WINELOADERNOEXEC=1","WINEARCH=win32"})==null) {
-            System.out.println("Failed to start wine");
-            System.exit(-1);
-        }
-    }
+        if (args.length==0)
+            args = new String[] {"/bin/sh", "/init.sh"};
 
-    static private void createWineServer() {
-        final WineProcess process = WineProcess.create(WineSystem.homeDirectory,new String[] {"/usr/lib/i386-linux-gnu/wine-unstable/bin/wineserver", "-f"}, new String[0]);
-        if (process==null) {
-            System.out.println("Failed to start wineserver");
-            System.exit(-1);
-        }
-        for (int i=0;i<1;i++) {
-            synchronized (process) {
-                if (process.state == WineProcess.STATE_STARTED)
-                    break;
-                try {process.wait(3000);} catch (Exception e) {}
-            }
-        }
-        if (process.state != WineProcess.STATE_STARTED) {
-            System.out.println("Failed to start wineserver");
-            System.exit(-1);
-        }
-        boolean socketCreated = false;
-        long startTime = System.nanoTime();
-        while (true) {
-            synchronized (FileSystem.openNodes) {
-                for (FSNode node : FileSystem.openNodes.values()) {
-                    if (node.localPath.endsWith("socket")) {
-                        socketCreated = true;
-                        break;
-                    }
+        Vector<String> env = new Vector<String>();
+        Vector<String> programArgs = new Vector<String>();
+        String root = System.getProperty("user.dir")+ File.separator+"root";
+
+        env.add("HOME=/home/username");
+        env.add("LOGNAME=username");
+        env.add("USERNAME=username");
+        env.add("USER=username");
+        env.add("DISPLAY=:0");
+        env.add("LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib");
+//        env.add("LD_DEBUG=all");
+//        env.add("LD_BIND_NOW=1");
+
+        for (i=0;i<args.length;i++) {
+            // :TODO: command line for resolution
+            if (args[i].equals("-m")) {
+                if (i+1<args.length) {
+                    i++;
+                    m = Integer.parseInt(args[i]);
                 }
-                if (socketCreated)
-                    break;
-                long elapsed = (System.nanoTime()-startTime)/1000000;
-                if (elapsed>30000)
-                    break;
-                try {FileSystem.openNodes.wait(30000-elapsed);} catch (Exception e){}
+            } else if (args[i].contains("=")) {
+                if (args[i].startsWith("PATH=")) {
+                    WineSystem.path = args[i].substring(5).split(":");
+                }
+                env.add(args[i]);
+            } else if (args[i].equals("-root")) {
+                if (i+1<args.length) {
+                    i++;
+                    root = args[i];
+                }
+            }
+            else {
+                break;
             }
         }
-        if (!socketCreated) {
-            System.out.println("wineserver failed to create master socket within 10 seconds");
+
+        System.out.println("root path="+root);
+
+        FileSystem.readLinks(root + File.separator + "links.txt");
+        FileSystem.paths.add(new Path(root, ""));
+        VirtualFSNode.addVirtualFile("/dev/null", new DevNull(), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/zero", new DevZero(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/proc/meminfo", new ProcMeminfo(), KernelStat._S_IREAD);
+        VirtualFSNode.addVirtualFile("/proc/cmdline", new ProcCommandLine(), KernelStat._S_IREAD);
+        VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/input/event0", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        FileSystem.links.add(new Path("/dev/input/event0", "/sys/dev/char/0:1"));
+        programArgs.add("/lib/ld-linux.so.2");
+        WineSystem.path = null;
+
+        Screen.create(cx, cy, bpp);
+        VirtualFSNode.addVirtualFile("/dev/fb0", new DevFB(cx, cy, bpp, cx*4, Process.ADDRESS_PROCESS_FRAME_BUFFER << 12, cx*4*cy*2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
+
+        if (WineSystem.path==null) {
+            WineSystem.path = new String[] {"/bin","/usr/bin","/usr/local/bin"};
+            env.add("PATH=/bin:/usr/bin:/usr/local/bin");
+        }
+        String program = args[i++];
+        if (!program.startsWith("/")) {
+            for (String p : WineSystem.path) {
+                if (FSNode.getNode(p+"/"+program, true)!=null) {
+                    program = p+"/"+program;
+                    break;
+                }
+            }
+        }
+
+        programArgs.add(program);
+
+        for (;i<args.length;i++) {
+            programArgs.add(args[i]);
+        }
+
+        RAM.init(m * 1024 * 1024);
+        if (wine.system.kernel.Process.create("/home/username", programArgs, env)==null) {
+            System.out.println("Failed to start wine");
             System.exit(-1);
         }
     }

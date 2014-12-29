@@ -1,6 +1,6 @@
 package wine.system.io;
 
-import wine.builtin.libc.Socket;
+import wine.system.kernel.Socket;
 import wine.emulation.Memory;
 import wine.system.WineThread;
 import wine.util.Log;
@@ -12,6 +12,8 @@ public class SocketAddress {
         result.family = memory.readw(address);
         if (result.family== Socket.AF_UNIX) {
             result.name = memory.readCString(address+2);
+        } else if (result.family== Socket.AF_NETLINK) {
+            result.name = "port"+memory.readd(address+4);
         } else {
             Log.panic("Socket address family "+result.family+" not implemented");
         }
@@ -23,9 +25,15 @@ public class SocketAddress {
         if (len>1)
             memory.writeb(address+1, family);
         if (family == Socket.AF_UNIX) {
-            memory.writeCString(address+2, name, len);
+            memory.writeCString(address+2, name, len-1);
         }
     }
     public int family;
     public String name;
+
+    public String toString() {
+        if (family==Socket.AF_UNIX)
+            return "name="+name+" family=AF_UNIX";
+        return "family="+family;
+    }
 }

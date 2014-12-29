@@ -1,8 +1,8 @@
 package wine.system.io;
 
-import wine.builtin.libc.Dirent;
-import wine.builtin.libc.Fcntl;
 import wine.system.WineThread;
+import wine.system.kernel.Io;
+import wine.util.Log;
 
 public class FileDescriptor {
     final static public Object lock = new Object();
@@ -12,17 +12,11 @@ public class FileDescriptor {
     final public int handle;
     public KernelObject object;
     private int ref;
-    public Dirent.ReadDirData readDirData;
-
-    static public interface FileDescriptorData {
-        public void onClose();
-    }
 
     public FileDescriptor(int handle, KernelObject object) {
         this.handle = handle;
         this.object = object;
         ref=1;
-        WineThread.getCurrent().process.fileDescriptors.put(handle, this);
     }
 
     public FileDescriptor(int handle, KernelObject object, int accessFlags) {
@@ -37,19 +31,22 @@ public class FileDescriptor {
     public void close() {
         ref--;
         if (ref==0) {
-            KernelFile file = getFile();
-            if (readDirData!=null) {
-                readDirData.onClose();
-            }
             object.close();
             WineThread.getCurrent().process.fileDescriptors.remove(handle);
         }
     }
 
     public void setAccessFlags(int flags) {
-        if ((flags & Fcntl.O_NONBLOCK) != 0) {
+        if ((flags & Io.O_NONBLOCK) != 0) {
             object.setNonBlocking();
         }
+    }
+
+    public int getAccessFlags() {
+        int flags = accessFlags;
+        if (object.isNonBlocking())
+            flags|=Io.O_NONBLOCK;
+        return flags;
     }
 
     public void setDescriptorFlags(int flags) {
@@ -57,15 +54,15 @@ public class FileDescriptor {
     }
 
     public boolean canRead() {
-        return (accessFlags & Fcntl.O_ACCMODE)==Fcntl.O_RDONLY || (accessFlags & Fcntl.O_ACCMODE)==Fcntl.O_RDWR;
+        return (accessFlags & Io.O_ACCMODE)==Io.O_RDONLY || (accessFlags & Io.O_ACCMODE)==Io.O_RDWR;
     }
 
     public boolean canWrite() {
-        return (accessFlags & Fcntl.O_ACCMODE)==Fcntl.O_WRONLY || (accessFlags & Fcntl.O_ACCMODE)==Fcntl.O_RDWR;
+        return (accessFlags & Io.O_ACCMODE)==Io.O_WRONLY || (accessFlags & Io.O_ACCMODE)==Io.O_RDWR;
     }
 
     public boolean closeOnExec() {
-        return (flags & Fcntl.FD_CLOEXEC)!=0;
+        return (flags & Io.FD_CLOEXEC)!=0;
     }
 
     public KernelFile getFile() {
@@ -94,6 +91,8 @@ public class FileDescriptor {
         object.incrementRefCount();
         flags = fd.flags;
         accessFlags = fd.accessFlags;
+        if (ref!=1)
+            Log.panic("What should dup2 do on a fd with a ref count");
     }
 
     public boolean canFork() {
@@ -105,9 +104,6 @@ public class FileDescriptor {
         fd.flags = this.flags;
         fd.object.incrementRefCount();
         fd.ref = this.ref;
-        if (readDirData!=null) {
-            fd.readDirData = readDirData.copy();
-        }
         return fd;
     }
 }

@@ -420,7 +420,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8();
+            return "lock "+instruction.toString()+" "+dest.toString8();
         }
     }
 
@@ -460,7 +460,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src;
+            return "lock "+instruction.toString()+" "+dest.toString8()+", "+src;
         }
     }
 
@@ -521,7 +521,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16();
+            return "lock "+instruction.toString()+" "+dest.toString16();
         }
     }
 
@@ -582,7 +582,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src;
         }
     }
 
@@ -622,7 +622,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32();
+            return "lock "+instruction.toString()+" "+dest.toString32();
         }
     }
 
@@ -683,7 +683,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src;
         }
     }
 
@@ -727,7 +727,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src.name8;
+            return "lock "+instruction.toString()+" "+dest.toString8()+", "+src.name8;
         }
     }
 
@@ -771,7 +771,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name8;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name8;
         }
     }
 
@@ -815,7 +815,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name16;
         }
     }
 
@@ -859,7 +859,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name8;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name8;
         }
     }
 
@@ -903,7 +903,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name32;
         }
     }
 
@@ -951,7 +951,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value.name8;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value.name8;
         }
     }
 
@@ -999,7 +999,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value.name8;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value.name8;
         }
     }
 
@@ -1047,7 +1047,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value;
+            return "lock "+instruction.toString()+" "+dest.toString16()+", "+src.name16+", "+value;
         }
     }
 
@@ -1095,7 +1095,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value;
+            return "lock "+instruction.toString()+" "+dest.toString32()+", "+src.name32+", "+value;
         }
     }
 
@@ -1327,7 +1327,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src;
+            return instruction.noResultString()+" "+dest.toString8()+", "+src;
         }
     }
 
@@ -1346,7 +1346,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src;
+            return instruction.noResultString()+" "+dest.toString16()+", "+src;
         }
     }
 
@@ -1365,7 +1365,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src;
+            return instruction.noResultString()+" "+dest.toString32()+", "+src;
         }
     }
 
@@ -1384,7 +1384,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString8()+", "+src.name8;
+            return instruction.noResultString()+" "+dest.toString8()+", "+src.name8;
         }
     }
 
@@ -1403,7 +1403,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString16()+", "+src.name16;
+            return instruction.noResultString()+" "+dest.toString16()+", "+src.name16;
         }
     }
 
@@ -1422,7 +1422,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.toString32()+", "+src.name32;
+            return instruction.noResultString()+" "+dest.toString32()+", "+src.name32;
         }
     }
 
@@ -1441,7 +1441,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.name8+", "+src.toString8();
+            return instruction.noResultString()+" "+dest.name8+", "+src.toString8();
         }
     }
 
@@ -1460,7 +1460,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.name16+", "+src.toString16();
+            return instruction.noResultString()+" "+dest.name16+", "+src.toString16();
         }
     }
 
@@ -1479,7 +1479,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return instruction.toString()+" "+dest.name32+", "+src.toString32();
+            return instruction.noResultString()+" "+dest.name32+", "+src.toString32();
         }
     }
 
@@ -1798,7 +1798,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xchg "+eaa.toString8()+", "+reg.name8;
+            return "lock xchg "+eaa.toString8()+", "+reg.name8;
         }
     }
 
@@ -1840,7 +1840,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xchg "+eaa.toString16()+", "+reg.name16;
+            return "lock xchg "+eaa.toString16()+", "+reg.name16;
         }
     }
 
@@ -1882,7 +1882,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xchg "+eaa.toString32()+", "+reg.name32;
+            return "lock xchg "+eaa.toString32()+", "+reg.name32;
         }
     }
 
@@ -4730,7 +4730,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xadd "+gb.name8+", "+eb.toString8();
+            return "lock xadd "+gb.name8+", "+eb.toString8();
         }
     }
 
@@ -4796,7 +4796,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xadd "+gw.name16+", "+ew.toString16();
+            return "lock xadd "+gw.name16+", "+ew.toString16();
         }
     }
 
@@ -4862,7 +4862,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "xadd "+gd.name32+", "+ed.toString32();
+            return "lock xadd "+gd.name32+", "+ed.toString32();
         }
     }
 
@@ -4976,7 +4976,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "cmpxchg "+ed.toString32()+", "+gd.name32;
+            return "lock cmpxchg "+ed.toString32()+", "+gd.name32;
         }
     }
 
@@ -5052,11 +5052,11 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "cmpxchg "+ew.toString16()+", "+gw.name16;
+            return "lock cmpxchg "+ew.toString16()+", "+gw.name16;
         }
     }
 
-    static public class RegGetter implements wine.builtin.libc.Syscall.SyscallGetter {
+    static public class RegGetter extends wine.system.kernel.Syscall.SyscallGetter {
         CPU cpu;
         int pos=-1;
         public RegGetter(CPU cpu) {
@@ -5081,7 +5081,7 @@ class Ops {
 
     static public final class Syscall extends Op {
         public Block call(CPU cpu) {
-            cpu.eax.dword = wine.builtin.libc.Syscall.syscall(cpu.eax.dword, new RegGetter(cpu));
+            cpu.eax.dword = wine.system.kernel.Syscall.syscall(cpu.thread, cpu.eax.dword, new RegGetter(cpu));
             return next.callAndLog(cpu);
         }
         public String toString() {
@@ -5089,12 +5089,55 @@ class Ops {
         }
     }
 
-    static public final class ConditionalMov_Reg extends Op {
+    static public final class ConditionalMov_Reg16 extends Op {
         final Reg ed;
         final Reg gd;
         final Condition cond;
 
-        public ConditionalMov_Reg(Condition cond, Reg ed, Reg gd) {
+        public ConditionalMov_Reg16(Condition cond, Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            if (cond.test(cpu))
+                gd.u16(ed.u16());
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov "+cond.toString()+" "+gd.name16+", "+ed.name16;
+        }
+    }
+
+    static public final class ConditionalMov_Mem16 extends Op {
+        final EaaBase eaa;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Mem16(Condition cond, EaaBase eaa, Reg gd) {
+            this.eaa = eaa;
+            this.gd = gd;
+            this.cond = cond;
+        }
+
+        public Block call(CPU cpu) {
+            int tmp = cpu.memory.readw(eaa.call(cpu));
+            if (cond.test(cpu))
+                gd.u16(tmp);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "cmov "+cond.toString()+" "+gd.name16+", "+eaa.toString16();
+        }
+    }
+
+    static public final class ConditionalMov_Reg32 extends Op {
+        final Reg ed;
+        final Reg gd;
+        final Condition cond;
+
+        public ConditionalMov_Reg32(Condition cond, Reg ed, Reg gd) {
             this.ed = ed;
             this.gd = gd;
             this.cond = cond;
@@ -5106,16 +5149,16 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "cmov";
+            return "cmov "+cond.toString()+" "+gd.name32+", "+ed.name32;
         }
     }
 
-    static public final class ConditionalMov_Mem extends Op {
+    static public final class ConditionalMov_Mem32 extends Op {
         final EaaBase eaa;
         final Reg gd;
         final Condition cond;
 
-        public ConditionalMov_Mem(Condition cond, EaaBase eaa, Reg gd) {
+        public ConditionalMov_Mem32(Condition cond, EaaBase eaa, Reg gd) {
             this.eaa = eaa;
             this.gd = gd;
             this.cond = cond;
@@ -5128,7 +5171,7 @@ class Ops {
             return next.callAndLog(cpu);
         }
         public String toString() {
-            return "cmov";
+            return "cmov "+cond.toString()+" "+gd.name32+", "+eaa.toString32();
         }
     }
 
@@ -5204,7 +5247,7 @@ class Ops {
         }
 
         public String toString() {
-            return "btc";
+            return "lock btc";
         }
     }
 
@@ -5353,4 +5396,251 @@ class Ops {
             return "RDTSCc";
         }
     };
+
+    final static public class BtEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bt "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+
+    final static public class BtsEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtsEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword|=mask;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtrEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtrEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword&=~mask;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btr "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtcEdIb_reg extends Op {
+        Reg ed;
+        int mask;
+        public BtcEdIb_reg(Reg ed, int mask) {
+            this.ed = ed;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            boolean cf = (ed.dword & mask)!=0;
+            cpu.setFlag(cf, CPU.CF);
+            if (cf) ed.dword&=~mask;
+            else ed.dword|=mask;
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btc "+ed.name32+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bt "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtsEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtsEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old|mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtrEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtrEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old & ~mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btr "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+    final static public class BtcEdIb_mem extends Op {
+        EaaBase eaa;
+        int mask;
+        public BtcEdIb_mem(EaaBase eaa, int mask) {
+            this.eaa = eaa;
+            this.mask = mask;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int address=eaa.call(cpu);
+            int old=cpu.memory.readd(address);
+            boolean cf = (old & mask)!=0;
+            cpu.setFlag(cf, CPU.CF);
+            if (cf) old&=~mask;
+            else old|=mask;
+            cpu.memory.writed(address,old);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "btc "+eaa.toString32()+", "+Integer.toHexString(mask);
+        }
+    }
+
+    final static public class BtsEdGd_reg extends Op {
+        Reg gd;
+        Reg ed;
+
+        public BtsEdGd_reg(Reg ed, Reg gd) {
+            this.ed = ed;
+            this.gd = gd;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            cpu.setFlag((ed.dword & mask)!=0, CPU.CF);
+            ed.dword|=mask;
+            return next.callAndLog(cpu);
+        }
+
+        public String toString() {
+            return "bts " + ed.name32 + ", " + gd.name32;
+        }
+    }
+    final static public class BtsEdGd_mem extends Op {
+        Reg gd;
+        EaaBase eaa;
+        public BtsEdGd_mem(EaaBase eaa, Reg gd) {
+            this.gd = gd;
+            this.eaa = eaa;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gd.dword & 31);
+            int address=eaa.call(cpu);
+            address+=(gd.dword>>5)*4; // intentional signed shift
+            int old=cpu.memory.readd(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writed(address,old | mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts " + eaa.toString32() + ", " + gd.name32;
+        }
+    }
+
+    final static public class BtsEwGw_reg extends Op {
+        Reg gw;
+        Reg ew;
+        public BtsEwGw_reg(Reg ew, Reg gw) {
+            this.gw = gw;
+            this.ew = ew;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gw.u16() & 15);
+            cpu.setFlag((ew.u16() & mask)!=0, CPU.CF);
+            ew.u16(ew.u16() | mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts " + ew.name16 + ", " + gw.name16;
+        }
+    }
+    final static public class BtsEwGw_mem extends Op {
+        Reg gw;
+        EaaBase eaa;
+        public BtsEwGw_mem(EaaBase eaa, Reg gw) {
+            this.eaa = eaa;
+            this.gw = gw;
+        }
+        public Block call(CPU cpu) {
+            cpu.fillFlags();
+            int mask=1 << (gw.u16() & 15);
+            int address=eaa.call(cpu);
+            address+=(((/*Bit16s*/short)gw.u16())>>4)*2;
+            int old=cpu.memory.readw(address);
+            cpu.setFlag((old & mask)!=0, CPU.CF);
+            cpu.memory.writew(address,old | mask);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bts " + eaa.toString16() + ", " + gw.name32;
+        }
+    }
+
+    final static public class Bswapd extends Op {
+        Reg reg;
+
+        public Bswapd(Reg reg) {
+            this.reg = reg;
+        }
+        public Block call(CPU cpu) {
+            int i = reg.dword;
+            reg.dword=(i>>>24)|((i>>8)&0xFF00)|((i<<8)&0xFF0000)|(i<<24);
+            return next.callAndLog(cpu);
+        }
+        public String toString() {
+            return "bswap " + reg.name32;
+        }
+    }
 }

@@ -1,5 +1,11 @@
 package wine.system.io;
 
+import wine.system.kernel.Errno;
+import wine.system.kernel.Syscall;
+import wine.emulation.Memory;
+import wine.system.WineThread;
+import wine.util.Log;
+
 public class DevNull implements FSNodeAccess {
     public boolean setLength(long length) {
         return false;
@@ -25,5 +31,22 @@ public class DevNull implements FSNodeAccess {
     }
 
     public void close() {
+    }
+
+    public int ioctl(WineThread thread, int request, Syscall.SyscallGetter getter) {
+        return -Errno.ENODEV;
+    }
+
+    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+        Log.panic("Mapping /dev/null not supported");
+        return -1;
+    }
+
+    public boolean isReadReady() {
+        return true;
+    }
+
+    public boolean isWriteReady() {
+        return true;
     }
 }

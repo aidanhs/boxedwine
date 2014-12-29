@@ -3,7 +3,6 @@ package wine.emulation;
 import wine.loader.Loader;
 import wine.system.Callback;
 import wine.system.ExitThreadException;
-import wine.system.WineProcess;
 import wine.system.WineThread;
 import wine.util.Log;
 
@@ -50,6 +49,7 @@ public class CPU {
     int right;
     int result;
     boolean oldcf;
+    public Op currentOp;
 
     public int eip;
     public final Memory memory;
@@ -155,17 +155,25 @@ public class CPU {
         this.fpu = new FPU(this, memory);
     }
 
+//    typedef struct
+//    {
+//        void *tcb;            /* Pointer to the TCB.  Not necessary the
+//                           thread descriptor used by libpthread.  */
+//        dtv_t *dtv;
+//        void *self;           /* Pointer to the thread descriptor.  */
+//        int multiple_threads;
+//        uintptr_t sysinfo;
+//        uintptr_t stack_guard;
+//        uintptr_t pointer_guard;
+//        #ifdef __FreeBSD_kernel__
+//        long gscope_flag;
+//        # else
+//        int gscope_flag;
+//        # endif
+//    } tcbhead_t;
+
     public void init(int callReturnEip) {
         this.callReturnEip = callReturnEip;
-        // intentionally every other page to catch overflow
-        int page;
-        synchronized (this.thread.process.addressSpace) {
-            page = this.thread.process.addressSpace.getNextPage(WineProcess.ADDRESS_PER_CPU, 2)+1;
-            this.thread.process.allocPages(page, 1, false);
-            this.thread.process.addressSpace.allocPages(page-1,1);
-        }
-        this.gs.dword = page << 12;
-        memory.writed(this.gs.dword+20, 0x4512AB78); // stack canary
         blocks.clear();
     }
     static private class CallReturnException extends RuntimeException {
