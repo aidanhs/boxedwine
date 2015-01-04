@@ -16,6 +16,37 @@ abstract public class FSNode {
     final public String nativePath;
     final public Vector locks = new Vector(); // there can only be one write lock per byte and only one read lock per byte per process
     final public int id;
+    public String localLinkPath;
+    public String nativeLinkPath;
+
+    static public String readLink(File file) {
+        try {
+            FileInputStream is = new FileInputStream(file);
+            byte[] b = new byte[1024];
+            int read = is.read(b);
+            is.close();
+            return new String(b, 0, read);
+        } catch (Exception e) {
+
+        }
+        return null;
+    }
+
+    static private String localToNative(String local) {
+        if (local.contains(":"))
+            local=local.replace(":", "(_colon_)");
+        local = FileSystem.root + local;
+        if (File.separator.equals("\\"))
+            local=local.replace('/', '\\');
+        return local;
+    }
+
+    static private String nativeToLocalName(String nativePath) {
+        nativePath=nativePath.replace("(_colon_)", ":");
+        if (nativePath.endsWith(".link"))
+            nativePath = nativePath.substring(0, nativePath.length()-5);
+        return nativePath;
+    }
 
     static public FSNode getNode(String localPath, boolean existing) {
         if (!localPath.startsWith("/")) {
@@ -26,42 +57,94 @@ abstract public class FSNode {
                 localPath = thread.process.currentDirectory + "/" + localPath;
             }
         }
+        String localLinkPath = null;
+        String nativeLinkPath = null;
         //System.out.println(localPath);
-        for (int i=0;i<FileSystem.links.size();i++) {
-            Path path = FileSystem.links.elementAt(i);
-            if (localPath.startsWith(path.localPath)) {
-                localPath = path.nativePath+localPath.substring(path.localPath.length());
-                break;
-            }
-        }
-        for (int i=0;i<FileSystem.paths.size();i++) {
-            Path path = FileSystem.paths.elementAt(i);
-            if (path.localPath.length()==0 || localPath.startsWith(path.localPath)) {
-                String nativePath = path.nativePath + localPath.substring(path.localPath.length());
-                if (File.separator.equals("\\"))
-                    nativePath=nativePath.replace('/', '\\');
-                File nativeFile = new File(nativePath);
-                // remove the ../../ etc
-                try {
-                    nativePath = nativeFile.getCanonicalPath();
-                    localPath = path.localPath+nativePath.substring(path.nativePath.length());
-                    if (File.separator.equals("\\"))
-                        localPath=localPath.replace('\\', '/');
-                    nativeFile = new File(nativePath);
-                } catch (IOException e) {
-                }
-                FSNode node = FileSystem.openNodes.get(localPath);
-                if (node == null && (nativeFile.exists() || !existing)) {
-                    node = new FSNodeFile(nativeFile, localPath, nativePath);
-                    synchronized (FileSystem.openNodes) {
-                        FileSystem.openNodes.put(localPath, node);
-                        FileSystem.openNodes.notifyAll();
+        while (true) {
+            String nativePath = localToNative(localPath);
+            File nativeFile = new File(nativePath+".link");
+            if (!nativeFile.exists()) {
+                // remove the first /
+                String[] parts = localPath.substring(1).split("/");
+                StringBuilder path = new StringBuilder("/");
+                StringBuilder parentPath = new StringBuilder("/");
+                boolean foundLink = false;
+
+                // -1 because the last part will be handled below
+                for (int i=0;i<parts.length-1;i++) {
+                    String part = parts[i];
+                    path.append(part);
+                    path.append("/");
+                    File dir = new File(localToNative(path.toString()));
+                    if (!dir.exists()) {
+                        File link = new File(dir.getAbsolutePath()+".link");
+                        if (link.exists()) {
+                            String newPath = readLink(link);
+                            path = new StringBuilder(newPath);
+                            i++;
+                            if (!newPath.endsWith("/"))
+                                path.append("/");
+                            for (;i<parts.length;i++) {
+                                path.append(parts[i]);
+                                if (i!=parts.length-1)
+                                    path.append("/");
+                            }
+                            localPath = path.toString();
+                            if (!localPath.startsWith("/")) {
+                                localPath=parentPath+localPath;
+                            }
+                            foundLink = true;
+                            break;
+                        }
                     }
+                    parentPath.append(part);
+                    parentPath.append("/");
                 }
-                return node;
+                if (foundLink)
+                    continue;
+                nativeFile = new File(nativePath);
+            } else {
+                if (localLinkPath==null) {
+                    localLinkPath = localPath;
+                    nativeLinkPath = nativeFile.getAbsolutePath();
+                }
+                localPath = readLink(nativeFile);
+                if (!localPath.startsWith("/")) {
+                    localPath = localLinkPath.substring(0, localLinkPath.lastIndexOf("/")+1)+localPath;
+                }
+                continue;
             }
+            // remove the ../../ etc
+            try {
+                nativePath = nativeFile.getCanonicalPath();
+                localPath = nativePath.substring(FileSystem.root.length());
+                if (localPath.length()==0)
+                    localPath="/";
+                if (File.separator.equals("\\"))
+                    localPath=localPath.replace('\\', '/');
+                localPath=nativeToLocalName(localPath); // unescape colons
+                nativeFile = new File(nativePath);
+            } catch (IOException e) {
+            }
+            if (localLinkPath!=null) {
+                System.out.println(localLinkPath);
+                System.out.println("    -> "+nativePath);
+            }
+            String key;
+            if (localLinkPath==null)
+                key = localPath;
+            else
+                key = localLinkPath;
+            FSNode node = FileSystem.openNodes.get(key);
+            if (node == null && (nativeFile.exists() || !existing)) {
+                node = new FSNodeFile(nativeFile, localPath, nativePath, localLinkPath, nativeLinkPath);
+                synchronized (FileSystem.openNodes) {
+                    FileSystem.openNodes.put(key, node);
+                    FileSystem.openNodes.notifyAll();
+                }
+            }
+            return node;
         }
-        return null;
     }
 
     static public void remove(FSNode node) {
@@ -78,10 +161,12 @@ abstract public class FSNode {
         }
     }
 
-    protected FSNode(String localPath, String nativePath) {
+    protected FSNode(String localPath, String nativePath, String localLinkPath, String nativeLinkPath) {
         this.localPath = localPath;
         this.nativePath = nativePath;
         this.id=nextId++;
+        this.localLinkPath = localLinkPath;
+        this.nativeLinkPath = nativeLinkPath;
     }
 
     abstract public boolean isDirectory();
@@ -102,8 +187,8 @@ abstract public class FSNode {
     abstract public int getMode();
 
     private static class FSNodeFile extends FSNode {
-        private FSNodeFile(File file, String localPath, String nativePath) {
-            super(localPath, nativePath);
+        private FSNodeFile(File file, String localPath, String nativePath, String localLinkPath, String nativeLinkPath) {
+            super(localPath, nativePath, localLinkPath, nativeLinkPath);
             this.file = file;
         }
 
@@ -133,6 +218,9 @@ abstract public class FSNode {
         public FSNode[] list() {
             // :TODO: what about virtual files and sockets
             String[] s = file.list();
+            for (int i=0;i<s.length;i++) {
+                s[i] = nativeToLocalName(s[i]);
+            }
             FSNode[] result = new FSNode[s.length];
             for (int i=0;i<s.length;i++) {
                 result[i] = getNode(localPath+"/"+s[i], true);
@@ -145,12 +233,22 @@ abstract public class FSNode {
         }
 
         public boolean delete() {
-            return file.delete();
+            if (nativeLinkPath==null) {
+                return file.delete();
+            }
+            return new File(nativeLinkPath).delete();
         }
 
         public boolean renameTo(FSNode node) {
-            if (node instanceof FSNodeFile)
-                return file.renameTo(((FSNodeFile)node).file);
+            if (node instanceof FSNodeFile) {
+                if (nativeLinkPath==null)
+                    return file.renameTo(((FSNodeFile) node).file);
+                String path = node.nativePath;
+                if (path.endsWith(File.separator))
+                    path = path.substring(0, path.length()-1);
+                path=path+".link";
+                return new File(nativeLinkPath).renameTo(new File(path));
+            }
             return false;
         }
 
@@ -280,7 +378,9 @@ abstract public class FSNode {
         }
 
         public String name() {
-            return file.getName();
+            if (localLinkPath==null)
+                return file.getName();
+            return localLinkPath.substring(localLinkPath.lastIndexOf("/")+1);
         }
 
         public boolean canRead() {

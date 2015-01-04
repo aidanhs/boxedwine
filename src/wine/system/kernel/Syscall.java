@@ -48,8 +48,10 @@ public class Syscall {
     static public final int __NR_munmap = 91;
     static public final int __NR_fchmod = 94;
     static public final int __NR_setpriority = 97;
+    static public final int __NR_ioperm = 101;
     static public final int __NR_socketcall = 102;
     static public final int __NR_setitimer = 104;
+    static public final int __NR_iopl = 110;
     static public final int __NR_ipc = 117;
     static public final int __NR_fsync = 118;
     static public final int __NR_clone = 120;
@@ -493,6 +495,11 @@ public class Syscall {
                 result = 0;
                 break;
             }
+            case __NR_ioperm: {
+                Log.warn("__NR_ioperm not implemented");
+                result = 0;
+                break;
+            }
             case __NR_socketcall: {
                 int call = getter.next();
                 StackGetter args = new StackGetter(memory, getter.next());
@@ -714,6 +721,11 @@ public class Syscall {
                 } else if (which == 2) { // ITIMER_PROF
                     Log.warn("__NR_setitimer ITIMER_PROF not implemented");
                 }
+                result = 0;
+                break;
+            }
+            case __NR_iopl: {
+                Log.warn("__NR_iopl not implemented");
                 result = 0;
                 break;
             }

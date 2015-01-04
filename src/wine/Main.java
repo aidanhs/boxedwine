@@ -14,7 +14,7 @@ public class Main {
     static final public DevMouse mouse = new DevMouse();
 
     static public void main(String[] args) {
-        int m = 240;
+        int m = 256;
         int i;
         int cx = 1024;
         int cy = 768;
@@ -61,8 +61,7 @@ public class Main {
 
         System.out.println("root path="+root);
 
-        FileSystem.readLinks(root + File.separator + "links.txt");
-        FileSystem.paths.add(new Path(root, ""));
+        FileSystem.root = root;
         VirtualFSNode.addVirtualFile("/dev/null", new DevNull(), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/zero", new DevZero(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/urandom", new DevUrandom(), KernelStat._S_IREAD|KernelStat._S_IFCHR);
@@ -70,8 +69,9 @@ public class Main {
         VirtualFSNode.addVirtualFile("/proc/cmdline", new ProcCommandLine(), KernelStat._S_IREAD);
         VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
-        VirtualFSNode.addVirtualFile("/dev/input/event0", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
-        FileSystem.links.add(new Path("/dev/input/event0", "/sys/dev/char/0:1"));
+
+        VirtualFSNode.addVirtualFile("/dev/input/event3", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
+
         programArgs.add("/lib/ld-linux.so.2");
         WineSystem.path = null;
 

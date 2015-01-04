@@ -11,6 +11,10 @@ public class DevInput implements FSNodeAccess {
     static public final int SIZE = 16;
     private int mask;
     private String name;
+    protected int busType;
+    protected int vendor;
+    protected int product;
+    protected int version;
 
     public DevInput(int mask, String name) {
         this.mask = mask;
@@ -76,7 +80,6 @@ public class DevInput implements FSNodeAccess {
     }
 
     public void close() {
-        int ii=0;
     }
 
     public boolean open(String mode) {
@@ -95,7 +98,11 @@ public class DevInput implements FSNodeAccess {
                 int len = (request & 0x1fff0000) >> 16;
                 if (len!=8)
                     Log.panic("Bad length for EVIOCGID: "+len);
-                thread.process.memory.writeq(getter.next(), 0);
+                int buffer = getter.next();
+                thread.process.memory.writew(buffer, busType);
+                thread.process.memory.writew(buffer+2, vendor);
+                thread.process.memory.writew(buffer+4, product);
+                thread.process.memory.writew(buffer+6, version);
                 return 0;
             }
             case 0x4506: { // EVIOCGNAME

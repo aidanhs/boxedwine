@@ -37,7 +37,7 @@ public class Files {
                 memory.writeq(dirp, node.id);
                 memory.writeq(dirp+8, i);
                 memory.writew(dirp+16, recordLen);
-                memory.writeb(dirp+19, node.getType());
+                memory.writeb(dirp+18, node.getType());
                 memory.writeCString(dirp+19, node.name());
             } else {
                 recordLen = 12+node.name().length();

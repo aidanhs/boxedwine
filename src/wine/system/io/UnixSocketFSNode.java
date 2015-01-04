@@ -6,7 +6,7 @@ import java.io.InputStream;
 public class UnixSocketFSNode extends FSNode {
     public final KernelUnixSocket socket;
     protected UnixSocketFSNode(String localPath, KernelUnixSocket socket) {
-        super(localPath, null);
+        super(localPath, null, null, null);
         this.socket = socket;
     }
 

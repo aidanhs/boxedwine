@@ -7,6 +7,7 @@ import wine.system.WineThread;
 import wine.util.Log;
 
 import java.util.Hashtable;
+import java.util.Vector;
 
 public class CPU {
     public Reg eax=new Reg("AL", "AX", "EAX");
@@ -393,7 +394,7 @@ public class CPU {
         }
     }
 
-    Hashtable<Integer, Block> blocks = new Hashtable<Integer, Block>();
+    public Hashtable<Integer, Block> blocks = new Hashtable<Integer, Block>();
 
     Block getBlock(int eip, int cs) {
         int ip = eip+cs;
@@ -531,6 +532,8 @@ public class CPU {
         builder.append(Integer.toHexString(esi.dword));
         builder.append(" edi=0x");
         builder.append(Integer.toHexString(edi.dword));
+        builder.append(" eip=0x");
+        builder.append(Integer.toHexString(eip));
         return builder.toString();
     }
     

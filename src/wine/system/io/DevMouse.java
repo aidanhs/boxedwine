@@ -1,6 +1,5 @@
 package wine.system.io;
 
-import wine.gui.Screen;
 import wine.system.WineThread;
 import wine.system.kernel.Syscall;
 import wine.util.Log;
@@ -10,7 +9,11 @@ public class DevMouse extends DevInput {
     private int lastY;
 
     public DevMouse() {
-        super((1<<EV_SYN)|(1<<EV_KEY)|(1<<EV_REL), "BoxedWine Mouse");
+        super((1<<EV_SYN)|(1<<EV_KEY)|(1<<EV_REL), "Logitech Unifying Device. Wireless PID:1028");
+        busType = 3;
+        product = 0xc52b;
+        vendor = 0x046d;
+        version = 0x0111;
     }
 
     public void event(int x, int y, int button) {

@@ -2,28 +2,33 @@ package wine.system.io;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Vector;
 
 public class VirtualFSNode extends FSNode {
     final private FSNodeAccess access;
     final private int mode;
+    final private Vector<VirtualFSNode> children = new Vector<VirtualFSNode>();
 
     protected VirtualFSNode(String localPath, FSNodeAccess access, int mode) {
-        super(localPath, null);
+        super(localPath, null, null, null);
         this.access = access;
         this.mode = mode;
     }
 
-    static public void addVirtualFile(String localPath, FSNodeAccess access, int mode) {
+    static public FSNode addVirtualFile(String localPath, FSNodeAccess access, int mode) {
         VirtualFSNode node = new VirtualFSNode(localPath, access, mode);
         FSNode.addNode(node);
+        return node;
     }
 
     public boolean isDirectory() {
-        return false;
+        return access==null;
     }
 
     public FSNode[] list() {
-        return new FSNode[0];
+        FSNode[] result = new FSNode[children.size()];
+        children.copyInto(result);
+        return result;
     }
 
     public boolean exists() {
@@ -47,6 +52,8 @@ public class VirtualFSNode extends FSNode {
     }
 
     public FSNodeAccess open(String mode) {
+        if (access==null)
+            return null;
         if (access.open(mode))
             return access;
         return null;

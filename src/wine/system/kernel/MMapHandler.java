@@ -3,6 +3,7 @@ package wine.system.kernel;
 import wine.emulation.Memory;
 import wine.emulation.PageHandler;
 import wine.emulation.RAM;
+import wine.system.WineThread;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
 import wine.util.Log;
@@ -62,6 +63,8 @@ public class MMapHandler extends PageHandler {
             sync(Mmap.MS_SYNC);
             fd.close();
             file.close();
+            // :TODO: remove this once we can trap writes to memory that contain code
+            WineThread.getCurrent().cpu.blocks.clear();
             if (this.physicalPage != 0) {
                 RAM.freePage(physicalPage);
             }

@@ -4,7 +4,10 @@ import wine.emulation.Memory;
 import wine.system.WineThread;
 import wine.system.io.*;
 import wine.util.Log;
-import wine.util.Path;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 
 public class Fs {
     static public int access(WineThread thread, int filename, int flags) {
@@ -212,13 +215,12 @@ public class Fs {
             return r.length();
         }
 
-        for (Path p : FileSystem.links) {
-            if (p.localPath.equals(s)) {
-                thread.process.memory.writeCString(buf, p.nativePath, bufsize);
-                return p.nativePath.length();
-            }
-        }
-        return -Errno.EINVAL;
+        FSNode node = FSNode.getNode(s, true);
+        if (node==null || node.localLinkPath==null)
+            return -Errno.EINVAL;
+        String link = FSNode.readLink(new File(node.nativeLinkPath));
+        thread.process.memory.writeCString(buf, link, bufsize);
+        return link.length();
     }
 
     static public int rename(WineThread thread, int old, int newName) {
@@ -302,8 +304,19 @@ public class Fs {
 
     static public int symlink(WineThread thread, int path1, int path2) {
         Memory memory = thread.process.memory;
-        Log.warn("symlink not implemented: "+memory.readCString(path1)+" -> "+memory.readCString(path2));
-        return -1;
+        String s1 = memory.readCString(path1);
+        String s2 = memory.readCString(path2);
+        FSNode n2 = FSNode.getNode(s2, false);
+        if (n2==null || n2.exists())
+            return -Errno.EEXIST;
+        try {
+            FileOutputStream os = new FileOutputStream(n2.nativePath+".link");
+            os.write(s1.getBytes());
+            os.close();
+            return 0;
+        } catch (Exception e) {
+            return -Errno.EIO;
+        }
     }
 
     static public int unlink(WineThread thread, int path) {
@@ -356,8 +369,23 @@ public class Fs {
         if (fd == null) {
             return -Errno.ENOENT;
         }
-        int result = __fxstat64(ver, fd.handle, buf);
-        fd.close();
-        return result;
+        if (fd.getFile()!=null && fd.getFile().node.localLinkPath!=null) {
+            FSNode node = fd.getFile().node;
+            FSNode linkNode = FSNode.getNode(node.localPath, true);
+            KernelStat stat = new KernelStat();
+            stat.st_size = node.localPath.length();
+            stat.st_mode = KernelStat._S_IFLNK;
+            stat.mtime = linkNode.lastModified();
+            stat.st_ino = linkNode.id;
+            stat.st_dev = 1;
+            stat.st_rdev = 1;
+            stat.writeStat32(process.memory, buf);
+            fd.close();
+            return 0;
+        } else {
+            int result = __fxstat64(ver, fd.handle, buf);
+            fd.close();
+            return result;
+        }
     }
 }

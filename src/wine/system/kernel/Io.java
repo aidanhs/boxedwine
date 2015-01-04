@@ -2,6 +2,7 @@ package wine.system.kernel;
 
 import wine.emulation.Memory;
 import wine.system.WineThread;
+import wine.system.io.DevInput;
 import wine.system.io.DevTouch;
 import wine.system.io.FileDescriptor;
 import wine.system.io.KernelFile;
@@ -104,7 +105,7 @@ public class Io {
         if (!fd.canRead()) {
             return -Errno.EINVAL;
         }
-        if (fd.getFile()!=null && fd.getFile().io instanceof DevTouch) {
+        if (fd.getFile()!=null && fd.getFile().io instanceof DevInput) {
             int ii=0;
         }
         return fd.object.read(buf, nbyte);

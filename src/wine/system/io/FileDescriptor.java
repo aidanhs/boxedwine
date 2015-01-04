@@ -40,6 +40,9 @@ public class FileDescriptor {
         if ((flags & Io.O_NONBLOCK) != 0) {
             object.setNonBlocking();
         }
+        if ((flags & Io.O_ASYNC) != 0) {
+            Log.panic("O_ASYNC file");
+        }
     }
 
     public int getAccessFlags() {

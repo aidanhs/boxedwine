@@ -6,6 +6,7 @@ import wine.system.WineSystem;
 public class KernelStat {
         static public final int S_IFMT         = 0xF000;          /* file type mask */
         static public final int S_IFSOCK       = 0xC000;
+        static public final int _S_IFLNK       = 0xA000;
         static public final int _S_IFDIR       = 0x4000;          /* directory */
         static public final int _S_IFCHR       = 0x2000;          /* character special */
         static public final int _S_IFIFO       = 0x1000;          /* pipe */
