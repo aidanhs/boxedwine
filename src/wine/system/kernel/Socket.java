@@ -227,9 +227,15 @@ public class Socket {
         }
         return fd.getSocket().getpeername(thread, address, len);
     }
-    static public int getsockname(int socket, int address, int address_len) {
-        Log.warn("getsockname not implemented");
-        return -Errno.EOPNOTSUPP;
+    static public int getsockname(WineThread thread, int socket, int address, int address_len) {
+        FileDescriptor fd = thread.process.getFileDescriptor(socket);
+        if (fd==null) {
+            return -Errno.EBADF;
+        }
+        if (fd.getSocket()==null) {
+            return -Errno.ENOTSOCK;
+        }
+        return fd.getSocket().getsockname(thread, address, address_len);
     }
 
     static public int getsockopt(WineThread thread, int socket, int level, int name, int value, int len) {

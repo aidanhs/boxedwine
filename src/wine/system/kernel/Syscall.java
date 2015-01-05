@@ -573,7 +573,7 @@ public class Syscall {
                         int socket = args.next();
                         int address = args.next();
                         int address_len = args.next();
-                        result = Socket.getsockname(socket, address, address_len);
+                        result = Socket.getsockname(thread, socket, address, address_len);
                         if (log)
                             Log.log("SYS_GETSOCKNAME: socket="+socket+" address=0x"+Integer.toHexString(address)+" address_len="+address_len);
                         break;

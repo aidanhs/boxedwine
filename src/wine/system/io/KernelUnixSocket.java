@@ -26,6 +26,8 @@ public class KernelUnixSocket extends KernelSocket {
     private boolean outClosed=true;
     private FSNode node;
     private int pid;
+    private int nl_port;
+    private int family;
 
     public KernelUnixSocket(int type, int protocol, int pid) {
         super(type, protocol);
@@ -125,8 +127,13 @@ public class KernelUnixSocket extends KernelSocket {
         if (path==null || path.length()==0) {
             return -Errno.ENOENT;
         }
-        // :TODO: hack for xorg
-        if (path.equals("port0")) {
+        family = address.family;
+        if (address.family == Socket.AF_NETLINK) {
+            if (address.nl_port == 0) {
+                nl_port = thread.process.id;
+            } else {
+                nl_port = address.nl_port;
+            }
             listening = true;
             return 0;
         }
@@ -186,6 +193,22 @@ public class KernelUnixSocket extends KernelSocket {
         destAddress.write(address, thread.process.memory.readd(len));
         thread.process.memory.writed(len, destAddress.name.length()+2);
         return 0;
+    }
+
+    public int getsockname(WineThread thread, int address, int len) {
+        Memory memory = thread.process.memory;
+        if (family == Socket.AF_NETLINK) {
+            if (len>0 && len<12)
+                Log.panic("getsocketname: AF_NETLINK wrong address size");
+            memory.writew(address, type);
+            memory.writew(address+2, 0);
+            memory.writed(address+4, nl_port);
+            memory.writed(address+8, 0);
+            return 0;
+        } else {
+            Log.warn("getsockname not implemented");
+            return -Errno.EACCES;
+        }
     }
 
     public int getsockopt(int level, int name, int value, int len) {

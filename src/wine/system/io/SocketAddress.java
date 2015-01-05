@@ -13,6 +13,7 @@ public class SocketAddress {
         if (result.family== Socket.AF_UNIX) {
             result.name = memory.readCString(address+2);
         } else if (result.family== Socket.AF_NETLINK) {
+            result.nl_port = memory.readd(address+4);
             result.name = "port"+memory.readd(address+4);
         } else {
             Log.panic("Socket address family "+result.family+" not implemented");
@@ -30,6 +31,7 @@ public class SocketAddress {
     }
     public int family;
     public String name;
+    public int nl_port;
 
     public String toString() {
         if (family==Socket.AF_UNIX)

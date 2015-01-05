@@ -75,9 +75,6 @@ public class Poll {
                 for (int i = 0; i < data.length; i++) {
                     pollfd p = data[i];
                     FileDescriptor fd = process.getFileDescriptor(p.fd);
-                    if (fd.getFile()!=null && fd.getFile().name()!=null && (fd.getFile().name().equals("event3") || fd.getFile().name().equals("mouse0"))) {
-                        int ii=0;
-                    }
                     p.revents = 0;
                     if (!fd.object.isOpen()) {
                         p.revents = POLLHUP;

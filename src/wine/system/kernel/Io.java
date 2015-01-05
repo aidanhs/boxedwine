@@ -24,8 +24,8 @@ public class Io {
     static public final int	O_RDWR     = 0x0002;
     static public final int	O_ACCMODE  = 0x0003;
     // can change after open
-    static public final int O_ASYNC    = 0x0040;
     static public final int	O_NONBLOCK = 0x0800;
+    static public final int O_ASYNC    = 0x2000;
     static public final int	O_CLOEXEC =  0x80000;
     // cmd
     static public final int	F_SETFD    = 2;
@@ -104,9 +104,6 @@ public class Io {
         }
         if (!fd.canRead()) {
             return -Errno.EINVAL;
-        }
-        if (fd.getFile()!=null && fd.getFile().io instanceof DevInput) {
-            int ii=0;
         }
         return fd.object.read(buf, nbyte);
     }

@@ -15,11 +15,11 @@ public class Signal {
     static public final int	SIGPIPE	= 13;
     static public final int	SIGALRM	= 14;
     static public final int	SIGTERM	= 15;
-    static public final int	SIGSTOP	= 17;
-    static public final int	SIGCONT	= 19;
-    static public final int	SIGCHLD	= 20;
-    static public final int	SIGIO	= 23;
+    static public final int	SIGCHLD	= 17;
+    static public final int	SIGCONT	= 18;
+    static public final int	SIGSTOP	= 19;
     static public final int	SIGXFSZ	= 25;
+    static public final int	SIGIO	= 29;
     static public final int SIGUSR1 = 30;
     static public final int SIGUSR2 = 31;
 
