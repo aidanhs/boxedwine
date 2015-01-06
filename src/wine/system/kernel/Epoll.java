@@ -18,7 +18,7 @@ public class Epoll {
     static public int epoll_create(WineThread thread, int size) {
         int result = thread.process.getNextFileDescriptor();
         KernelEpoll object = new KernelEpoll();
-        FileDescriptor fd = new FileDescriptor(result, object);
+        FileDescriptor fd = new FileDescriptor(thread.process, result, object);
         thread.process.fileDescriptors.put(fd.handle, fd);
         return result;
     }
@@ -75,7 +75,7 @@ public class Epoll {
         for (KernelEpoll.Data d : epoll.fds.values()) {
             data[i++] = new Poll.pollfd(d.fd, d.events);
         }
-        Poll.internalPoll(thread.process, data, timeout);
+        Poll.internalPoll(thread, data, timeout);
         int result = 0;
         for (i=0;i<data.length && i<maxevents;i++) {
             KernelEpoll.Data d = epoll.fds.get(new Integer(data[i].fd));

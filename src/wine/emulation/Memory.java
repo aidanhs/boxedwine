@@ -176,6 +176,11 @@ public class Memory {
         lock.writeLock().unlock();
     }
 
+    static public void writeq(byte[] b, int pos, long value) {
+        writed(b, pos, (int)value);
+        writed(b, pos+4, (int)(value >>> 32));
+    }
+
     static public void writed(byte[] b, int pos, int value) {
         b[pos++] = (byte)value;
         b[pos++] = (byte)(value >>> 8);

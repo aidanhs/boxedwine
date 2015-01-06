@@ -2,7 +2,9 @@ package wine.system.io;
 
 import wine.emulation.Memory;
 import wine.system.WineThread;
-import wine.system.kernel.Syscall;
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
+import wine.util.Log;
 
 public class DevPS2Mouse implements FSNodeAccess {
     public int lastX = 512;
@@ -13,6 +15,7 @@ public class DevPS2Mouse implements FSNodeAccess {
     private boolean streaming = false;
     private int sampling = 100;
     private int resolution = 100;
+    private Process asyncProcess;
 
     synchronized public void event(int x, int y, int button) {
         if (!streaming)
@@ -38,6 +41,9 @@ public class DevPS2Mouse implements FSNodeAccess {
         int middleButton = 0;
         if (lastPos>=buffer.length)
             lastPos = 0;
+        if (lastPos==firstPos && asyncProcess!=null) {
+            asyncProcess.signal(Signal.SIGIO);
+        }
         buffer[lastPos++] = (byte)((yOverflow << 7) | (xOverflow << 6) | (ySign << 5) | (xSign << 4) | (1 << 3) | (middleButton << 2) | (rightButton << 1) | (leftButton));
         buffer[lastPos++] = (byte)(Math.abs(deltaX));
         buffer[lastPos++] = (byte)(Math.abs(deltaY));
@@ -152,5 +158,22 @@ public class DevPS2Mouse implements FSNodeAccess {
 
     synchronized public boolean isWriteReady() {
         return length()<buffer.length;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        if (remove) {
+            if (asyncProcess == process) {
+                asyncProcess = null;
+            }
+        } else {
+            if (asyncProcess != null) {
+                Log.panic("More than one process opened the mouse for async io.  This is currently not supported");
+            }
+            asyncProcess = process;
+        }
+    }
+
+    public boolean isAsync(Process process) {
+        return asyncProcess==process;
     }
 } 

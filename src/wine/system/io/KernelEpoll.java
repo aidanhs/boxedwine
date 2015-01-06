@@ -1,5 +1,8 @@
 package wine.system.io;
 
+import wine.system.WineThread;
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 import java.util.Hashtable;
@@ -30,12 +33,20 @@ public class KernelEpoll extends KernelObject {
         return false;
     }
 
+    public void setAsync(Process process, boolean remove) {
+        Log.warn("async io not supported on epoll object");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
+    }
+
     public int getLock(FileLock lock) {
         Log.warn("get lock not supported on epoll object");
         return 0;
     }
 
-    public int setLockW(FileLock lock) {
+    public int setLockW(WineThread thread, FileLock lock) {
         Log.warn("set lockw not supported on epoll object");
         return 0;
     }

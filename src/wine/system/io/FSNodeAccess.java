@@ -1,8 +1,9 @@
 package wine.system.io;
 
 import wine.system.WineThread;
-import wine.system.kernel.Syscall;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
+import wine.system.kernel.Process;
 
 public interface FSNodeAccess {
     public boolean setLength(long length);
@@ -16,4 +17,6 @@ public interface FSNodeAccess {
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared);
     public boolean isWriteReady();
     public boolean isReadReady();
+    public void setAsync(Process process, boolean remove);
+    public boolean isAsync(Process process);
 }

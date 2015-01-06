@@ -1,5 +1,8 @@
 package wine.system.io;
 
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Vector;
@@ -93,5 +96,13 @@ public class VirtualFSNode extends FSNode {
 
     public int getMode() {
         return mode;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        access.setAsync(process, remove);
+    }
+
+    public boolean isAsync(Process process) {
+        return access.isAsync(process);
     }
 }

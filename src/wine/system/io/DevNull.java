@@ -1,9 +1,9 @@
 package wine.system.io;
 
-import wine.system.kernel.Errno;
-import wine.system.kernel.Syscall;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
 import wine.system.WineThread;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 public class DevNull implements FSNodeAccess {
@@ -48,5 +48,13 @@ public class DevNull implements FSNodeAccess {
 
     public boolean isWriteReady() {
         return true;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        Log.panic("async io not implemented for /dev/null");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
     }
 }

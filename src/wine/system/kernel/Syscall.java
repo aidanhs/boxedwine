@@ -707,14 +707,11 @@ public class Syscall {
                     synchronized (thread.process.timerThread) {
                         thread.process.real_timer_next = next;
                         thread.process.real_timer_current = current;
-                        if (current!=0) {
-                            thread.process.signal(thread, Signal.SIGALRM);
+                        if (thread.process.timerThread.isAlive()) {
+                            thread.process.timerThread.interrupt();
+                        } else if (current!=0) {
+                            thread.process.timerThread.start();
                         }
-//                        if (thread.process.timerThread.isAlive()) {
-//                            thread.process.timerThread.interrupt();
-//                        } else if (current!=0) {
-//                            thread.process.timerThread.start();
-//                        }
                     }
                 } else if (which == 1) { // ITIMER_VIRTUAL
                     Log.warn("__NR_setitimer ITIMER_VIRTUAL not implemented");
@@ -986,13 +983,13 @@ public class Syscall {
             case __NR_stat64: {
                 int path = getter.next();
                 int buf = getter.next();
-                result = Fs.__xstat64(0, path, buf);
+                result = Fs.__xstat64(thread, 0, path, buf);
                 break;
             }
             case __NR_lstat64: {
                 int path = getter.next();
                 int buf = getter.next();
-                result = Fs.__lxstat64(0, path, buf);
+                result = Fs.__lxstat64(thread, 0, path, buf);
                 break;
             }
             case __NR_fstat64: {
@@ -1162,7 +1159,7 @@ public class Syscall {
                             if (count>20)
                                 Thread.sleep(10);
                         } catch (InterruptedException e) {
-                            return 0;
+                            thread.interrupted();
                         }
                         count++;
                     }

@@ -1,7 +1,8 @@
 package wine.system.io;
 
 import wine.system.WineThread;
-import wine.system.kernel.Io;
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 public class FileDescriptor {
@@ -12,16 +13,24 @@ public class FileDescriptor {
     final public int handle;
     public KernelObject object;
     private int ref;
+    final private Process process;
 
-    public FileDescriptor(int handle, KernelObject object) {
+    public FileDescriptor(Process process, int handle, KernelObject object) {
         this.handle = handle;
         this.object = object;
+        this.process = process;
         ref=1;
     }
 
-    public FileDescriptor(int handle, KernelObject object, int accessFlags) {
-        this(handle, object);
+    public FileDescriptor(Process process, int handle, KernelObject object, int accessFlags) {
+        this(process, handle, object);
         this.accessFlags = accessFlags;
+        if ((accessFlags & Io.O_NONBLOCK) != 0) {
+            object.setNonBlocking();
+        }
+        if ((accessFlags & Io.O_ASYNC) != 0) {
+            object.setAsync(process, false);
+        }
     }
 
     public void incrementRef() {
@@ -40,15 +49,20 @@ public class FileDescriptor {
         if ((flags & Io.O_NONBLOCK) != 0) {
             object.setNonBlocking();
         }
-        if ((flags & Io.O_ASYNC) != 0) {
-            Log.panic("O_ASYNC file");
+        boolean hasAsync = (accessFlags & Io.O_ASYNC)!=0;
+        boolean willHaveAsync = (flags & Io.O_ASYNC)!=0;
+        if (hasAsync!=willHaveAsync) {
+            object.setAsync(process, !willHaveAsync);
         }
+        accessFlags = flags;
     }
 
     public int getAccessFlags() {
         int flags = accessFlags;
         if (object.isNonBlocking())
             flags|=Io.O_NONBLOCK;
+        if (object.isAsync(process))
+            flags|=Io.O_ASYNC;
         return flags;
     }
 
@@ -81,7 +95,7 @@ public class FileDescriptor {
     }
 
     public FileDescriptor dup(int newHandle) {
-        FileDescriptor result = new FileDescriptor(newHandle, object);
+        FileDescriptor result = new FileDescriptor(process, newHandle, object);
         result.accessFlags = accessFlags;
         result.flags = flags;
         object.incrementRefCount();
@@ -102,8 +116,8 @@ public class FileDescriptor {
         return object.canFork();
     }
 
-    public FileDescriptor fork() {
-        FileDescriptor fd = new FileDescriptor(handle, object, accessFlags);
+    public FileDescriptor fork(Process process) {
+        FileDescriptor fd = new FileDescriptor(process, handle, object, accessFlags);
         fd.flags = this.flags;
         fd.object.incrementRefCount();
         fd.ref = this.ref;

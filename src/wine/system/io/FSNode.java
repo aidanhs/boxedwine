@@ -4,6 +4,8 @@ import wine.emulation.Memory;
 import wine.emulation.PageHandler;
 import wine.system.kernel.*;
 import wine.system.WineThread;
+import wine.system.kernel.Process;
+import wine.util.Log;
 import wine.util.Path;
 
 import java.io.*;
@@ -185,6 +187,8 @@ abstract public class FSNode {
     abstract public boolean canWrite();
     abstract public int getType();
     abstract public int getMode();
+    abstract public void setAsync(Process process, boolean remove);
+    abstract public boolean isAsync(Process process);
 
     private static class FSNodeFile extends FSNode {
         private FSNodeFile(File file, String localPath, String nativePath, String localLinkPath, String nativeLinkPath) {
@@ -358,6 +362,14 @@ abstract public class FSNode {
                 }
                 return address;
             }
+
+            public void setAsync(Process process, boolean remove) {
+                Log.warn("aync io not supported on files: "+file.getAbsolutePath());
+            }
+
+            public boolean isAsync(Process process) {
+                return false;
+            }
         }
 
         public FSNodeAccess open(String mode) {
@@ -391,7 +403,13 @@ abstract public class FSNode {
             return file.canWrite();
         }
 
+        public void setAsync(Process process, boolean remove) {
+            Log.warn("aync io not supported on files: "+file.getAbsolutePath());
+        }
 
+        public boolean isAsync(Process process) {
+            return false;
+        }
         final private File file;
     }
 }

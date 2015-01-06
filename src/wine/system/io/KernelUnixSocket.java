@@ -1,11 +1,10 @@
 package wine.system.io;
 
 import wine.system.WineSystem;
-import wine.system.kernel.Errno;
-import wine.system.kernel.Io;
-import wine.system.kernel.Socket;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
 import wine.system.WineThread;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 import java.util.LinkedList;
@@ -71,6 +70,14 @@ public class KernelUnixSocket extends KernelSocket {
         return blocking;
     }
 
+    public void setAsync(Process process, boolean remove) {
+        Log.warn("async io not supported on unix socket object");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
+    }
+
     public boolean isOpen() {
         return listening || (connection!=null && !inClosed); // :TODO: is inClosed correct here
     }
@@ -98,7 +105,7 @@ public class KernelUnixSocket extends KernelSocket {
             if (this.waitingConnections.size()==0) {
                 if (this.blocking) {
                     while (this.waitingConnections.size()==0) {
-                        try {this.waitingConnections.wait();} catch (InterruptedException e) {}
+                        try {this.waitingConnections.wait();} catch (InterruptedException e) {thread.interrupted();}
                     }
                 } else {
                     return -Errno.EWOULDBLOCK;
@@ -174,7 +181,7 @@ public class KernelUnixSocket extends KernelSocket {
             }
             synchronized (this) {
                 while (connection==null) {
-                    try {this.wait(10000000);} catch (InterruptedException e) {}
+                    try {this.wait(10000000);} catch (InterruptedException e) {thread.interrupted();}
                 }
             }
             if (connection == null) {
@@ -264,6 +271,7 @@ public class KernelUnixSocket extends KernelSocket {
                         try {
                             data.wait();
                         } catch (InterruptedException e) {
+                            thread.interrupted();
                         }
                     } else {
                         if (result > 0)
@@ -296,7 +304,7 @@ public class KernelUnixSocket extends KernelSocket {
             while (true) {
                 if (this.msgs.size()==0) {
                     if (blocking) {
-                        try {this.msgs.wait();} catch(InterruptedException e) {}
+                        try {this.msgs.wait();} catch(InterruptedException e) {thread.interrupted();}
                     } else {
                         return -Errno.EWOULDBLOCK;
                     }

@@ -57,14 +57,14 @@ public class Poll {
         for (int i=0;i<data.length;i++) {
             data[i] = new pollfd(memory, pfd+i*8);
         }
-        int result = internalPoll(process, data, timeout);
+        int result = internalPoll(thread, data, timeout);
         for (int i=0;i<data.length;i++) {
             data[i].writeRevents(memory);
         }
         return result;
     }
 
-    static public int internalPoll(Process process, pollfd[] data, int timeout) {
+    static public int internalPoll(WineThread thread, pollfd[] data, int timeout) {
         int result = 0;
         long startTime = System.nanoTime();
         if (timeout<0)
@@ -74,7 +74,7 @@ public class Poll {
             synchronized (FileDescriptor.lock) {
                 for (int i = 0; i < data.length; i++) {
                     pollfd p = data[i];
-                    FileDescriptor fd = process.getFileDescriptor(p.fd);
+                    FileDescriptor fd = thread.process.getFileDescriptor(p.fd);
                     p.revents = 0;
                     if (!fd.object.isOpen()) {
                         p.revents = POLLHUP;
@@ -103,6 +103,7 @@ public class Poll {
                         break;
                     }
                 } catch (InterruptedException e) {
+                    thread.interrupted();
                 }
             }
             if (result>0)

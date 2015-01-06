@@ -20,13 +20,11 @@ public class WineThread {
     public final int initialStackAddress;
     public final Process process;
     static private Hashtable threadToWineThread = new Hashtable();
-    public int strerror;
     public Thread jThread;
     public int exitValue;
     public int alternateStack;
     public int alternateStackSize;
     public int sigMask;
-    public int strtok_last;
     public int clear_child_tid;
     public String currentDirectory; // used by openat
     public int ctid;
@@ -48,7 +46,6 @@ public class WineThread {
 
     private WineThread(final Process process, WineThread forkedThread) {
         this.process = process;
-        this.strerror = forkedThread.strerror;
         this.id = WineSystem.nextid++;
         this.entryPoint = forkedThread.entryPoint;
         this.stackAddress = forkedThread.stackAddress;
@@ -142,10 +139,6 @@ public class WineThread {
     }
 
     public void cleanup() {
-        if (this.strerror!=0) {
-            process.free(this.strerror);
-            this.strerror = 0;
-        }
         if (ctid!=0) {
             process.memory.writed(ctid, 0);
         }
@@ -215,14 +208,38 @@ public class WineThread {
     }
 
     public int signal(int signal) {
-        Log.panic("tgkill not implemented yet");
         SigAction action = process.sigActions[signal];
         if (action.sa_handler==SigAction.SIG_DFL) {
 
         } else if (action.sa_handler != SigAction.SIG_IGN) {
-
+            int stack = cpu.esp.dword;
+            if (alternateStack!=0) {
+                cpu.esp.dword = alternateStack;
+            }
+            cpu.call(action.sa_handler, signal);
+            cpu.esp.dword = stack;
+        }
+        synchronized (process.signalMutex) {
+            process.signal &= ~(1l << (signal - 1));
         }
         return 0;
+    }
+
+    public void runSignals() {
+        synchronized (process.signalMutex) {
+            int todo = process.signal & ~sigMask;
+            if (todo!=0) {
+                for (int i=0;i<32;i++) {
+                    if ((todo & (1 << i))!=0) {
+                        signal(i+1);
+                    }
+                }
+            }
+        }
+    }
+
+    public void interrupted() {
+        runSignals();
     }
 
     final private class ThreadHandlerCheck extends ThreadHandler {

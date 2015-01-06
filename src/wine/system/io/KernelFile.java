@@ -18,7 +18,7 @@ public class KernelFile extends KernelObject {
     }
 
     public FileDescriptor createNewFileDescriptor(Process process) {
-        FileDescriptor fd = new FileDescriptor(process.getNextFileDescriptor(), this);
+        FileDescriptor fd = new FileDescriptor(process, process.getNextFileDescriptor(), this);
         process.fileDescriptors.put(fd.handle, fd);
         return fd;
     }
@@ -37,6 +37,14 @@ public class KernelFile extends KernelObject {
         return false;
     }
 
+    public void setAsync(Process process, boolean remove) {
+        node.setAsync(process, remove);
+    }
+
+    public boolean isAsync(Process process) {
+        return node.isAsync(process);
+    }
+
     public int getLock(FileLock lock) {
         synchronized (node.locks) {
             for (int i = 0; i < node.locks.size(); i++) {
@@ -53,10 +61,10 @@ public class KernelFile extends KernelObject {
         }
     }
 
-    public int setLockW(FileLock lock) {
+    public int setLockW(WineThread thread, FileLock lock) {
         while (setLock(lock)==-1) {
             synchronized (node.locks) {
-                try {node.locks.wait();} catch (InterruptedException e) {}
+                try {node.locks.wait();} catch (InterruptedException e) {thread.interrupted();}
             }
         }
         return 0;

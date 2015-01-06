@@ -298,4 +298,12 @@ public class DevFB implements FSNodeAccess {
     public boolean isWriteReady() {
         return true;
     }
+
+    public void setAsync(Process process, boolean remove) {
+        Log.panic("async io not implemented for /dev/fb");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
+    }
 }

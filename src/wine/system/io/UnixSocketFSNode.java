@@ -1,5 +1,9 @@
 package wine.system.io;
 
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
+import wine.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -82,5 +86,13 @@ public class UnixSocketFSNode extends FSNode {
         result |= KernelStat._S_IWRITE;
         result |= KernelStat._S_IEXEC;
         return result;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        Log.warn("aync io not supported on unix sockets");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
     }
 }

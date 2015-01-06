@@ -60,53 +60,61 @@ public class Process {
     public int end;
     public int maxStackSize = MAX_STACK_SIZE;
     public int maxAddressSpace = MAX_ADDRESS_SPACE;
-    public int startData;
     final private Heap heap;
     public int callReturnEip;
-    public int asctime;
-    public int tm;
     public int exitCode;
     public boolean terminated = false;
     public int signaled;
-    public int perCPUIndex = 0;
     public int state = STATE_INIT;
     public String name;
     public Process parent;
-    public int xerrorHandler;
-    private Hashtable<String, Integer> stringMap = new Hashtable<String, Integer>();
-    private int stringPage;
-    private int stringPagePos;
-    // if new variables are addedd, make sure they are accounted for in fork and exec
+    // if new variables are added, make sure they are accounted for in fork and exec
     public String fullPath;
     public Vector<String> args;
 
     public long real_timer_next;
     public long real_timer_current;
 
+    // should this be forked?
+    volatile public int signal;
+    final public Object signalMutex = new Object();
+
     final public Thread timerThread = new Thread(new Runnable() {
         public void run() {
-            while (real_timer_current!=0) {
+            while (true) {
+                while (real_timer_current != 0) {
+                    try {
+                        Thread.sleep(real_timer_current);
+                    } catch (InterruptedException e) {
+
+                    }
+                    synchronized (timerThread) {
+                        if (real_timer_current != 0) {
+                            real_timer_current = real_timer_next;
+                            signal(Signal.SIGALRM);
+                        }
+                    }
+                }
                 try {
-                    Thread.sleep(real_timer_current);
+                    Thread.sleep(100000);
                 } catch (InterruptedException e) {
 
-                }
-                synchronized (timerThread) {
-                    if (real_timer_current != 0) {
-                        real_timer_current = real_timer_next;
-                        //signal(Signal.SIGALRM);
-                    }
                 }
             }
         }
     });
 
-    public void signal(WineThread thread, int signal) {
-        SigAction action = sigActions[signal];
-        if (action.sa_handler==SigAction.SIG_DFL) {
-
-        } else if (action.sa_handler != SigAction.SIG_IGN) {
-            thread.cpu.call(action.sa_handler, signal);
+    public void signal(int signal) {
+        WineThread thread = WineThread.getCurrent();
+        if (thread!=null)
+            thread.signal(signal);
+        else {
+            synchronized (this.signalMutex) {
+                this.signal |= (1l << (signal - 1));
+                for (WineThread t : threads.values()) {
+                    t.jThread.interrupt();
+                }
+            }
         }
     }
 
@@ -127,7 +135,7 @@ public class Process {
         this.currentDirectory = process.currentDirectory;
         for (FileDescriptor fd : process.fileDescriptors.values()) {
             if (fd.canFork()) {
-                FileDescriptor f = fd.fork();
+                FileDescriptor f = fd.fork(this);
                 this.fileDescriptors.put(f.handle, f);
             }
         }
@@ -140,20 +148,12 @@ public class Process {
         this.maxAddressSpace = process.maxAddressSpace;
         this.maxStackSize = process.maxStackSize;
         this.callReturnEip = process.callReturnEip;
-        this.startData = process.startData;
-
-        this.asctime = process.asctime;
-        this.tm = process.tm;
         this.exitCode = process.exitCode;
         this.terminated = process.terminated;
         this.signaled = process.signaled;
-        this.perCPUIndex = 0;
         this.state = process.state;
         this.name = process.name;
         this.fullPath = process.fullPath;
-        this.stringMap = (Hashtable<String, Integer>)process.stringMap.clone();
-        this.stringPage = process.stringPage;
-        this.stringPagePos = process.stringPagePos;
         this.args = process.args;
         WineSystem.processes.put(id, this);
     }
@@ -223,7 +223,6 @@ public class Process {
         mainModule = null;
         loader = null;
         fileDescriptors = null;
-        stringMap = null;
     }
 
     public int alloc(int size) {
@@ -679,7 +678,8 @@ public class Process {
                             }
                             try {
                                 WineSystem.processes.wait();
-                            } catch (Exception e) {
+                            } catch (InterruptedException e) {
+                                thread.interrupted();
                             }
                         }
                     }
@@ -718,7 +718,8 @@ public class Process {
                     }
                     try {
                         WineSystem.processes.wait();
-                    } catch (Exception e) {
+                    } catch (InterruptedException e) {
+                        thread.interrupted();
                     }
                 }
             }

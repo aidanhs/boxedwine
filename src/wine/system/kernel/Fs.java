@@ -163,14 +163,14 @@ public class Fs {
                 if ((lock.l_type == F_WRLCK && !fd.canWrite()) || (lock.l_type == F_RDLCK && !fd.canRead())) {
                     return -Errno.EBADF;
                 }
-                return fd.object.setLockW(lock);
+                return fd.object.setLockW(thread, lock);
             }
             case F_SETLKW64: {
                 FileLock lock = new FileLock(arg1, true);
                 if ((lock.l_type == F_WRLCK && !fd.canWrite()) || (lock.l_type == F_RDLCK && !fd.canRead())) {
                     return -Errno.EBADF;
                 }
-                return fd.object.setLockW(lock);
+                return fd.object.setLockW(thread, lock);
             }
             case F_SETSIG: {
                 Log.warn("fcntl F_SETSIG not implemented");
@@ -331,8 +331,7 @@ public class Fs {
         return 0;
     }
 
-    static public int __xstat64(int ver, int path, int buf) {
-        WineThread thread = WineThread.getCurrent();
+    static public int __xstat64(WineThread thread, int ver, int path, int buf) {
         Process process = thread.process;
         FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         if (fd == null) {
@@ -361,9 +360,7 @@ public class Fs {
         return 0;
     }
 
-    static public int __lxstat64(int ver, int path, int buf) {
-        // :TODO: handle links
-        WineThread thread = WineThread.getCurrent();
+    static public int __lxstat64(WineThread thread, int ver, int path, int buf) {
         Process process = thread.process;
         FileDescriptor fd = process.getFile(process.memory.readCString(path), true);
         if (fd == null) {

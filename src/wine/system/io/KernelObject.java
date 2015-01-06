@@ -3,6 +3,7 @@ package wine.system.io;
 import wine.system.WineThread;
 import wine.system.kernel.Errno;
 import wine.system.kernel.*;
+import wine.system.kernel.Process;
 
 abstract public class KernelObject {
     private int refCount;
@@ -12,7 +13,7 @@ abstract public class KernelObject {
     }
 
     public FileDescriptor createNewFileDescriptor(wine.system.kernel.Process process) {
-        FileDescriptor fd = new FileDescriptor(process.getNextFileDescriptor(), this);
+        FileDescriptor fd = new FileDescriptor(process, process.getNextFileDescriptor(), this);
         process.fileDescriptors.put(fd.handle, fd);
         return fd;
     }
@@ -30,8 +31,10 @@ abstract public class KernelObject {
     abstract protected void onDelete();
     abstract public void setNonBlocking();
     abstract public boolean isNonBlocking();
+    abstract public void setAsync(Process process, boolean remove);
+    abstract public boolean isAsync(Process process);
     abstract public int getLock(FileLock lock);
-    abstract public int setLockW(FileLock lock);
+    abstract public int setLockW(WineThread thread, FileLock lock);
     abstract public int setLock(FileLock lock);
     abstract public boolean isOpen();
     abstract public boolean isReadReady();

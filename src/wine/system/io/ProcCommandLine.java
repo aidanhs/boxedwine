@@ -73,7 +73,7 @@ public class ProcCommandLine implements FSNodeAccess {
     }
 
     public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
-        Log.panic("Mapping /proc/meminfo not supported");
+        Log.panic("Mapping /proc/cmdline not supported");
         return -1;
     }
 
@@ -83,5 +83,13 @@ public class ProcCommandLine implements FSNodeAccess {
 
     public boolean isWriteReady() {
         return true;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        Log.panic("async io not implemented for /proc/cmdline");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
     }
 }

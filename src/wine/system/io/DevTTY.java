@@ -1,8 +1,9 @@
 package wine.system.io;
 
-import wine.system.kernel.Syscall;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
 import wine.system.WineThread;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 public class DevTTY implements FSNodeAccess {
@@ -167,5 +168,13 @@ public class DevTTY implements FSNodeAccess {
 
     public boolean isWriteReady() {
         return true;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        Log.panic("async io not implemented for /dev/tty");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
     }
 }

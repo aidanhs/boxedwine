@@ -1,10 +1,10 @@
 package wine.system.io;
 
 import wine.system.WineThread;
-import wine.system.kernel.Errno;
-import wine.system.kernel.Syscall;
+import wine.system.kernel.*;
 import wine.emulation.Memory;
 import wine.emulation.RAM;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 public class ProcMeminfo implements FSNodeAccess {
@@ -68,5 +68,13 @@ public class ProcMeminfo implements FSNodeAccess {
 
     public boolean isWriteReady() {
         return true;
+    }
+
+    public void setAsync(Process process, boolean remove) {
+        Log.panic("async io not implemented for /proc/meminfo");
+    }
+
+    public boolean isAsync(Process process) {
+        return false;
     }
 }

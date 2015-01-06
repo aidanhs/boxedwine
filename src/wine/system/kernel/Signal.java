@@ -148,7 +148,7 @@ public class Signal {
                 Log.panic("sigprocmask how "+how+" unsupported");
             }
         }
-        // :TODO: if this unblocked any signals then make sure we deliver them before returning
+        thread.runSignals();
         return 0;
     }
 }

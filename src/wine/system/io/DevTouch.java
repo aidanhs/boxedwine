@@ -2,6 +2,7 @@ package wine.system.io;
 
 import wine.gui.Screen;
 import wine.system.WineThread;
+import wine.system.kernel.Signal;
 import wine.system.kernel.Syscall;
 import wine.util.Log;
 
@@ -14,13 +15,23 @@ public class DevTouch extends DevInput {
     }
 
     public void event(int x, int y, int button) {
+        boolean send = false;
+
         if (x!=lastX) {
             lastX = x;
             super.event(EV_ABS, ABS_X, x);
+            send = true;
         }
         if (y!=lastY) {
             lastY = y;
             super.event(EV_ABS, ABS_Y, y);
+            send = true;
+        }
+        if (send) {
+            super.event(EV_SYN, SYN_REPORT, 0);
+            if (asyncProcess != null) {
+                asyncProcess.signal(Signal.SIGIO);
+            }
         }
     }
 
@@ -38,11 +49,24 @@ public class DevTouch extends DevInput {
                 writeBit(thread, buffer, BTN_RIGHT);
                 return result;
             }
+            case 0x4522: { // EVIOCGBIT, EV_REL
+                int len = (request & 0x1fff0000) >> 16;
+                int buffer = getter.next();
+                thread.process.memory.zero(buffer, len);
+                thread.process.memory.writeb(buffer, 0);
+                return 1;
+            }
             case 0x4523: { // EVIOCGBIT, EV_ABS
                 int len = (request & 0x1fff0000) >> 16;
                 int buffer = getter.next();
                 thread.process.memory.zero(buffer, len);
                 thread.process.memory.writeb(buffer, (1 << ABS_X)|(1 << ABS_Y));
+                return 1;
+            }
+            case 0x4531: { // EVIOCGBIT, EV_LED
+                int len = (request & 0x1fff0000) >> 16;
+                int buffer = getter.next();
+                thread.process.memory.zero(buffer, len);
                 return 1;
             }
             case 0x4540: { // EVIOCGABS (ABS_X)

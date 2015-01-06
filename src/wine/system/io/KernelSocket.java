@@ -45,7 +45,7 @@ abstract public class KernelSocket extends KernelObject {
         return -1;
     }
 
-    public int setLockW(FileLock lock) {
+    public int setLockW(WineThread thread, FileLock lock) {
         Log.panic("F_SETLKW not implemented for socket");
         return -1;
     }

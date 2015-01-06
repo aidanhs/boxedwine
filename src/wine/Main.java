@@ -10,7 +10,7 @@ import java.io.File;
 import java.util.Vector;
 
 public class Main {
-    static final public DevPS2Mouse mouse = new DevPS2Mouse();
+    static final public DevInput mouse = new DevMouse();
 
     static public void main(String[] args) {
         int m = 384;
@@ -69,7 +69,8 @@ public class Main {
         VirtualFSNode.addVirtualFile("/dev/tty0", new DevTTY(0), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/tty2", new DevTTY(2), KernelStat._S_IREAD|KernelStat._S_IWRITE|KernelStat._S_IFCHR);
 
-        VirtualFSNode.addVirtualFile("/dev/psaux", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        //VirtualFSNode.addVirtualFile("/dev/psaux", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/input/event3", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
 
         programArgs.add("/lib/ld-linux.so.2");
         WineSystem.path = null;

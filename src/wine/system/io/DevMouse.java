@@ -1,12 +1,13 @@
 package wine.system.io;
 
 import wine.system.WineThread;
+import wine.system.kernel.Signal;
 import wine.system.kernel.Syscall;
 import wine.util.Log;
 
 public class DevMouse extends DevInput {
-    private int lastX;
-    private int lastY;
+    private int lastX = 512;
+    private int lastY = 384;
 
     public DevMouse() {
         super((1<<EV_SYN)|(1<<EV_KEY)|(1<<EV_REL), "Logitech Unifying Device. Wireless PID:1028");
@@ -17,13 +18,22 @@ public class DevMouse extends DevInput {
     }
 
     public void event(int x, int y, int button) {
+        boolean send = false;
         if (x!=lastX) {
-            super.event(EV_REL, REL_X, x);
+            super.event(EV_REL, REL_X, lastX - x);
             lastX = x;
+            send = true;
         }
         if (y!=lastY) {
-            super.event(EV_REL, ABS_Y, y);
+            super.event(EV_REL, REL_Y, lastY - y);
             lastY = y;
+            send = true;
+        }
+        if (send) {
+            super.event(EV_SYN, SYN_REPORT, 0);
+            if (asyncProcess != null) {
+                asyncProcess.signal(Signal.SIGIO);
+            }
         }
     }
 
@@ -34,7 +44,7 @@ public class DevMouse extends DevInput {
                 int buffer = getter.next();
                 int result = Math.max(BTN_LEFT, BTN_MIDDLE);
                 result = Math.max(BTN_RIGHT, result);
-                result = (len+7)/8;
+                result = (result+7)/8;
                 thread.process.memory.zero(buffer, len);
                 writeBit(thread, buffer, BTN_LEFT);
                 writeBit(thread, buffer, BTN_MIDDLE);

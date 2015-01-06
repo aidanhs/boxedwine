@@ -2,33 +2,36 @@ package wine.system.io;
 
 import wine.emulation.Memory;
 import wine.system.WineThread;
-import wine.system.kernel.Syscall;
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 import java.util.LinkedList;
 
 public class DevInput implements FSNodeAccess {
-    static public final int SIZE = 16;
     private int mask;
     private String name;
     protected int busType;
     protected int vendor;
     protected int product;
     protected int version;
+    protected Process asyncProcess;
 
     public DevInput(int mask, String name) {
         this.mask = mask;
         this.name = name;
     }
     static class Data {
+        static public final int SIZE = 16;
+
         public Data(int type, int code, int value) {
-            this.time = (int) System.currentTimeMillis();
+            this.time = System.currentTimeMillis();
             this.type = type;
             this.code = code;
             this.value = value;
         }
 
-        public long time; // timeval
+        public long time; // timeval 8 bytes on 32-bit systems (16 bytes on 64-bit systems)
         public int type; // u16
         public int code; // u16
         public int value; // s32
@@ -59,20 +62,23 @@ public class DevInput implements FSNodeAccess {
 
     public int read(byte[] b) {
         Data input;
+        int len = 0;
+        int room = b.length;
+
         synchronized (queue)
         {
-            int len = b.length;
-            while (len >= DevInput.SIZE) {
+            while (room >= Data.SIZE && queue.size()>0) {
                 input = queue.removeFirst();
                 Memory.writed(b, len, (int)(input.time / 1000)); // seconds
                 Memory.writed(b, len+4, (int)(input.time % 1000)*1000); // microseconds
                 Memory.writew(b, len+8, input.type);
                 Memory.writew(b, len+10, input.code);
                 Memory.writed(b, len+12, input.value);
-                len += DevInput.SIZE;
+                len += Data.SIZE;
+                room -= Data.SIZE;
             }
         }
-        return 0;
+        return len;
     }
 
     public boolean write(byte[] b) {
@@ -83,6 +89,7 @@ public class DevInput implements FSNodeAccess {
     }
 
     public boolean open(String mode) {
+        queue.clear();
         return true;
     }
 
@@ -138,6 +145,23 @@ public class DevInput implements FSNodeAccess {
         return true;
     }
 
+    public void setAsync(Process process, boolean remove) {
+        if (remove) {
+            if (asyncProcess == process) {
+                asyncProcess = null;
+            }
+        } else {
+            if (asyncProcess != null) {
+                Log.panic("More than one process opened /dev/input for async io.  This is currently not supported");
+            }
+            asyncProcess = process;
+        }
+    }
+
+    public boolean isAsync(Process process) {
+        return asyncProcess==process;
+    }
+
     //    struct input_absinfo {
     //        __s32 value;
     //        __s32 minimum;
@@ -177,6 +201,11 @@ public class DevInput implements FSNodeAccess {
     static public final int EV_PWR                = 0x16;
     static public final int EV_FF_STATUS          = 0x17;
     static public final int EV_MAX                = 0x1f;
+
+    static public final int SYN_REPORT            = 0;
+    static public final int SYN_CONFIG            = 1;
+    static public final int SYN_MT_REPORT         = 2;
+    static public final int SYN_DROPPED           = 3;
 
     static public final int ABS_X                 = 0x00;
     static public final int ABS_Y                 = 0x01;
