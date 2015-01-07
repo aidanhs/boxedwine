@@ -141,17 +141,26 @@ public class Screen {
 
             }
         });
-        frame.addMouseListener(new MouseListener() {
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        panel = new JPanel() {
+            public void paint(Graphics g) {
+                g.drawImage(buffer, 0, 0, width, height, 0, 0, width, height, null);
+            }
+        };
+
+        panel.addMouseListener(new MouseListener() {
             public void mouseClicked(MouseEvent e) {
 
             }
 
             public void mousePressed(MouseEvent e) {
-
+                Main.mouse.mouseDown(e.getButton());
             }
 
             public void mouseReleased(MouseEvent e) {
-
+                Main.mouse.mouseUp(e.getButton());
             }
 
             public void mouseEntered(MouseEvent e) {
@@ -162,23 +171,16 @@ public class Screen {
 
             }
         });
-        frame.addMouseMotionListener(new MouseMotionListener() {
+
+        panel.addMouseMotionListener(new MouseMotionListener() {
             public void mouseDragged(MouseEvent e) {
-                Main.mouse.event(e.getX(), e.getY(), e.getButton());
+                Main.mouse.event(e.getX(), e.getY());
             }
 
             public void mouseMoved(MouseEvent e) {
-                Main.mouse.event(e.getX(), e.getY(), e.getButton());
+                Main.mouse.event(e.getX(), e.getY());
             }
         });
-
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        panel = new JPanel() {
-            public void paint(Graphics g) {
-                g.drawImage(buffer, 0, 0, width, height, 0, 0, width, height, null);
-            }
-        };
 
         final Container pane = frame.getContentPane();
         pane.setLayout(null);

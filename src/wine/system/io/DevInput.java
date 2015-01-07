@@ -6,6 +6,7 @@ import wine.system.kernel.*;
 import wine.system.kernel.Process;
 import wine.util.Log;
 
+import java.awt.event.MouseEvent;
 import java.util.LinkedList;
 
 public class DevInput implements FSNodeAccess {
@@ -39,7 +40,37 @@ public class DevInput implements FSNodeAccess {
 
     private LinkedList<Data> queue = new LinkedList<Data>();
 
-    public void event(int type, int code, int value) {
+    public void mouseDown(int button) {
+        if (button == MouseEvent.BUTTON1)
+            event(EV_KEY, BTN_LEFT, 1);
+        else if (button == MouseEvent.BUTTON2)
+            event(EV_KEY, BTN_MIDDLE, 1);
+        else if (button == MouseEvent.BUTTON3)
+            event(EV_KEY, BTN_RIGHT, 1);
+        else
+            return;
+        event(EV_SYN, SYN_REPORT, 0);
+        if (asyncProcess != null) {
+            asyncProcess.signal(Signal.SIGIO);
+        }
+    }
+
+    public void mouseUp(int button) {
+        if (button == MouseEvent.BUTTON1)
+            event(EV_KEY, BTN_LEFT, 0);
+        else if (button == MouseEvent.BUTTON2)
+            event(EV_KEY, BTN_MIDDLE, 0);
+        else if (button == MouseEvent.BUTTON3)
+            event(EV_KEY, BTN_RIGHT, 0);
+        else
+            return;
+        event(EV_SYN, SYN_REPORT, 0);
+        if (asyncProcess != null) {
+            asyncProcess.signal(Signal.SIGIO);
+        }
+    }
+
+    protected void event(int type, int code, int value) {
         synchronized (queue) {
             queue.add(new Data(type, code, value));
         }
@@ -69,8 +100,8 @@ public class DevInput implements FSNodeAccess {
         {
             while (room >= Data.SIZE && queue.size()>0) {
                 input = queue.removeFirst();
-                Memory.writed(b, len, (int)(input.time / 1000)); // seconds
-                Memory.writed(b, len+4, (int)(input.time % 1000)*1000); // microseconds
+                Memory.writed(b, len, (int) (input.time / 1000)); // seconds
+                Memory.writed(b, len + 4, (int) (input.time % 1000) * 1000); // microseconds
                 Memory.writew(b, len+8, input.type);
                 Memory.writew(b, len+10, input.code);
                 Memory.writed(b, len+12, input.value);

@@ -14,7 +14,7 @@ public class DevTouch extends DevInput {
         super((1<<EV_SYN)|(1<<EV_KEY)|(1<<EV_ABS), "BoxedWine Touchpad");
     }
 
-    public void event(int x, int y, int button) {
+    public void event(int x, int y) {
         boolean send = false;
 
         if (x!=lastX) {

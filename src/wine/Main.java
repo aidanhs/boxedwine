@@ -10,7 +10,7 @@ import java.io.File;
 import java.util.Vector;
 
 public class Main {
-    static final public DevInput mouse = new DevMouse();
+    static final public DevTouch mouse = new DevTouch();
 
     static public void main(String[] args) {
         int m = 384;

@@ -2433,6 +2433,7 @@ class Ops {
         public Block call(CPU cpu) {
             int mask = CPU.SF|CPU.ZF|CPU.AF|CPU.PF|CPU.CF;
             cpu.flags=(cpu.flags & (0xFFFFFF00 | (~mask))) | (cpu.ah.u8() & mask);
+            cpu.lazyFlags = null;
             return next.callAndLog(cpu);
         }
         public String toString() {

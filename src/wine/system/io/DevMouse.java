@@ -6,8 +6,8 @@ import wine.system.kernel.Syscall;
 import wine.util.Log;
 
 public class DevMouse extends DevInput {
-    private int lastX = 512;
-    private int lastY = 384;
+    private int lastX = -1;
+    private int lastY = -1;
 
     public DevMouse() {
         super((1<<EV_SYN)|(1<<EV_KEY)|(1<<EV_REL), "Logitech Unifying Device. Wireless PID:1028");
@@ -18,14 +18,18 @@ public class DevMouse extends DevInput {
     }
 
     public void event(int x, int y, int button) {
+        if (lastX<0 || lastY<0) {
+            lastX = x;
+            lastY = y;
+        }
         boolean send = false;
         if (x!=lastX) {
-            super.event(EV_REL, REL_X, lastX - x);
+            super.event(EV_REL, REL_X, x-lastX);
             lastX = x;
             send = true;
         }
         if (y!=lastY) {
-            super.event(EV_REL, REL_Y, lastY - y);
+            super.event(EV_REL, REL_Y, y-lastY);
             lastY = y;
             send = true;
         }
