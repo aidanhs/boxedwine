@@ -2277,7 +2277,7 @@ class Decoder {
         /* IRET */
         decoder[0x2cf] = new Decode() {
             public boolean call(CPU cpu, Op prev) {
-                prev.next = new IRet();
+                prev.next = new Ops.IRet();
                 return false;
             }
         };
@@ -3866,8 +3866,7 @@ class Decoder {
             done = !decoder[cpu.op_index +cpu.fetchb()].call(cpu, op);
             if (op.next!=null)
                 op = op.next;
-            op.eip_count = cpu.cseip-start;
-            op.eip = start-cpu.cs.dword;
+            //op.eip = start-cpu.cs.dword;
         }
         return result.next;
     }

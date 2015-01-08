@@ -372,7 +372,7 @@ public class Syscall {
                 int request = getter.next();
                 result = Ioctl.ioctl(thread, d, request, getter);
                 if (log)
-                    Log.log("__NR_ioctl: d="+d+" request="+request+" result="+result);
+                    Log.log("__NR_ioctl: d="+d+" request=0x"+Integer.toHexString(request)+" result="+result);
                 break;
             }
             case __NR_setpgid: {

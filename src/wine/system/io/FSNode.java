@@ -18,6 +18,7 @@ abstract public class FSNode {
     final public String nativePath;
     final public Vector locks = new Vector(); // there can only be one write lock per byte and only one read lock per byte per process
     final public int id;
+    public int rdev = 1;
     public String localLinkPath;
     public String nativeLinkPath;
 
@@ -127,10 +128,6 @@ abstract public class FSNode {
                 localPath=nativeToLocalName(localPath); // unescape colons
                 nativeFile = new File(nativePath);
             } catch (IOException e) {
-            }
-            if (localLinkPath!=null) {
-                System.out.println(localLinkPath);
-                System.out.println("    -> "+nativePath);
             }
             String key;
             if (localLinkPath==null)

@@ -1,11 +1,9 @@
 package wine.emulation;
 
 class Block {
-    public Block(Op op, int eip) {
+    public Block(Op op) {
         this.op = op;
-        this.eip = eip;
         while (op!=null) {
-            eip_count+=op.eip_count;
             if (op.next==null && op instanceof Ops.JumpOp) {
                 ((Ops.JumpOp)op).block=this;
             }
@@ -17,5 +15,4 @@ class Block {
     public Block link2;
     public final Op op;
     public int eip_count;
-    public final int eip;
 }

@@ -42,7 +42,7 @@ public class DevTouch extends DevInput {
                 int buffer = getter.next();
                 int result = Math.max(BTN_LEFT, BTN_MIDDLE);
                 result = Math.max(BTN_RIGHT, result);
-                result = (len+7)/8;
+                result = (result+7)/8;
                 thread.process.memory.zero(buffer, len);
                 writeBit(thread, buffer, BTN_LEFT);
                 writeBit(thread, buffer, BTN_MIDDLE);

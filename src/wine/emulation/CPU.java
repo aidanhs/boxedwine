@@ -50,7 +50,6 @@ public class CPU {
     int right;
     int result;
     boolean oldcf;
-    public Op currentOp;
 
     public int eip;
     public final Memory memory;
@@ -408,7 +407,8 @@ public class CPU {
                 this.op_index = 0;
                 this.prefixes = 0;
             }
-            block = new Block(Decoder.decode(this), eip);
+            block = new Block(Decoder.decode(this));
+            block.eip_count = this.cseip - ip;
             blocks.put(ip, block);
         }
         return block;

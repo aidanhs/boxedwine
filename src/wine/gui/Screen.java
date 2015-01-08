@@ -21,6 +21,7 @@ public class Screen {
     static public int height;
     static public int depth;
     static private FBPageHandler handler;
+    static private boolean changed = false;
 
     static public class FBPageHandler extends PageHandler {
         private int offset;
@@ -61,6 +62,7 @@ public class Screen {
         }
 
         public void writed(Memory memory, int address, int value) {
+            changed = true;
             address-=offset;
             int rem = (address & 0x3);
             if (rem == 0) {
@@ -77,6 +79,7 @@ public class Screen {
         }
 
         public void writew(Memory memory, int address, int value) {
+            changed = true;
             address-=offset;
             int rem = (address & 0x3);
             int[] local = int_rawImageData;
@@ -94,6 +97,7 @@ public class Screen {
         }
 
         public void writeb(int address, int value) {
+            changed = true;
             address-=offset;
             int off = (address & 0x3) << 3;
             int[] local = int_rawImageData;
@@ -130,15 +134,14 @@ public class Screen {
         frame.setFocusTraversalKeysEnabled(false); // don't eat tab keys
         frame.addKeyListener(new KeyListener() {
             public void keyTyped(KeyEvent e) {
-
             }
 
             public void keyPressed(KeyEvent e) {
-
+                Main.keyboard.keyDown(e);
             }
 
             public void keyReleased(KeyEvent e) {
-
+                Main.keyboard.keyUp(e);
             }
         });
 
@@ -196,7 +199,10 @@ public class Screen {
         Thread thread = new Thread(new Runnable() {
             public void run() {
                 while (true) {
-                    panel.repaint();
+                    if (changed) {
+                        changed = false;
+                        panel.repaint();
+                    }
                     try {Thread.sleep(10);} catch (Exception e) {}
                 }
             }

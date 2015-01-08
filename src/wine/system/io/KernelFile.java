@@ -361,7 +361,7 @@ public class KernelFile extends KernelObject {
         stat.st_mode = node.getMode();
         stat.st_size = node.length();
         stat.st_blocks = (node.length() + 511) / 512;
-        stat.st_rdev = 1;
+        stat.st_rdev = node.rdev;
         return true;
     }
 

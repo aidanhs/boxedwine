@@ -11,6 +11,7 @@ import java.util.Vector;
 
 public class Main {
     static final public DevTouch mouse = new DevTouch();
+    static final public DevKeyboard keyboard = new DevKeyboard();
 
     static public void main(String[] args) {
         int m = 384;
@@ -71,6 +72,7 @@ public class Main {
 
         //VirtualFSNode.addVirtualFile("/dev/psaux", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
         VirtualFSNode.addVirtualFile("/dev/input/event3", mouse, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
+        VirtualFSNode.addVirtualFile("/dev/input/event4", keyboard, KernelStat._S_IWRITE|KernelStat._S_IREAD|KernelStat._S_IFCHR);
 
         programArgs.add("/lib/ld-linux.so.2");
         WineSystem.path = null;

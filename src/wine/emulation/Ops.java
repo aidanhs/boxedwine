@@ -1611,6 +1611,14 @@ class Ops {
         }
     }
 
+    static public class IRet extends JumpOp {
+        public Block call(CPU cpu) {
+            Log.panic("iret not implemented yet");
+            cpu.iret(true, cpu.eip + block.eip_count);
+            return null;
+        }
+    }
+
     abstract static class JumpOp extends Op {
         public Block block;
         final public int offset;
@@ -1652,7 +1660,7 @@ class Ops {
             return jump(cpu, cond.test(cpu));
         }
         public String toString() {
-            return "j"+cond.toString()+" "+Integer.toHexString(offset+block.eip+block.eip_count);
+            return "j"+cond.toString()+" "+Integer.toHexString(offset+block.eip_count);
         }
     }
 
@@ -4125,7 +4133,7 @@ class Ops {
             return block.link1;
         }
         public String toString() {
-            return "call "+Integer.toHexString(offset+block.eip+block.eip_count);
+            return "call "+Integer.toHexString(offset+block.eip_count);
         }
     }
 
@@ -4142,7 +4150,7 @@ class Ops {
             return block.link1;
         }
         public String toString() {
-            return "call "+Integer.toHexString(offset+block.eip+block.eip_count);
+            return "call "+Integer.toHexString(offset+block.eip_count);
         }
     }
 
@@ -4157,7 +4165,7 @@ class Ops {
             return block.link1;
         }
         public String toString() {
-            return "jmp 0x"+Integer.toHexString(offset+block.eip+block.eip_count);
+            return "jmp 0x"+Integer.toHexString(offset+block.eip_count);
         }
     }
 
@@ -4172,7 +4180,7 @@ class Ops {
             return block.link1;
         }
         public String toString() {
-            return "jmp 0x"+Integer.toHexString(offset+block.eip+block.eip_count);
+            return "jmp 0x"+Integer.toHexString(offset+block.eip_count);
         }
     }
 

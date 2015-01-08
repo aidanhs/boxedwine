@@ -1,6 +1,5 @@
 package wine.system.io;
 
-import wine.system.kernel.*;
 import wine.system.kernel.Process;
 
 import java.io.IOException;
@@ -11,11 +10,13 @@ public class VirtualFSNode extends FSNode {
     final private FSNodeAccess access;
     final private int mode;
     final private Vector<VirtualFSNode> children = new Vector<VirtualFSNode>();
+    static private int nextrdev = 100;
 
     protected VirtualFSNode(String localPath, FSNodeAccess access, int mode) {
         super(localPath, null, null, null);
         this.access = access;
         this.mode = mode;
+        this.rdev = nextrdev++;
     }
 
     static public FSNode addVirtualFile(String localPath, FSNodeAccess access, int mode) {

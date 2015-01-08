@@ -54,7 +54,7 @@ public class FileDescriptor {
         if (hasAsync!=willHaveAsync) {
             object.setAsync(process, !willHaveAsync);
         }
-        accessFlags = flags;
+        accessFlags = (accessFlags & Io.O_ACCMODE) | (flags & ~Io.O_ACCMODE);
     }
 
     public int getAccessFlags() {

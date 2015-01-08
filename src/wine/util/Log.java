@@ -1,5 +1,6 @@
 package wine.util;
 
+import wine.emulation.Op;
 import wine.system.kernel.MMapHandler;
 import wine.system.WineThread;
 
@@ -13,9 +14,10 @@ public class Log {
 
     static public void panic(String msg) {
         WineThread thread = WineThread.getCurrent();
-        if (thread.cpu.currentOp!=null && thread.process.memory.handlers[thread.cpu.currentOp.eip>>>12]!=null && thread.process.memory.handlers[thread.cpu.currentOp.eip>>>12] instanceof MMapHandler) {
-            MMapHandler h = (MMapHandler)thread.process.memory.handlers[thread.cpu.currentOp.eip>>>12];
-            msg = msg+" in "+h.file.name()+"@0x"+Long.toHexString(h.fileOffset+(thread.cpu.currentOp.eip & 0xFFF))+"\n   "+thread.cpu.currentOp.toString()+"\n   "+thread.cpu.toString()+"\n   process:"+thread.process.name+" (id="+thread.process.id+")\n   thread: id="+thread.id;
+        int eip = thread.cpu.eip;
+        if (thread.process.memory.handlers[eip>>>12]!=null && thread.process.memory.handlers[eip>>>12] instanceof MMapHandler) {
+            MMapHandler h = (MMapHandler)thread.process.memory.handlers[eip>>>12];
+            msg = msg+" in "+h.file.name()+"near @0x"+Long.toHexString(h.fileOffset+(eip & 0xFFF))+"\n   "+thread.cpu.toString()+"\n   process:"+thread.process.name+" (id="+thread.process.id+")\n   thread: id="+thread.id;
         } else {
             msg = msg+" in "+thread.process.loader.getModule(thread.cpu.eip);
         }
