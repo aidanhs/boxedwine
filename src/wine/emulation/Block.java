@@ -1,6 +1,6 @@
 package wine.emulation;
 
-class Block {
+public class Block {
     public Block(Op op) {
         this.op = op;
         while (op!=null) {

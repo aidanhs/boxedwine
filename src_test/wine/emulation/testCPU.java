@@ -19,10 +19,10 @@ public class testCPU extends TestCase {
             memory.init();
             this.cpu = new CPU(memory);
             RAM.init(4096 * 5);
-            memory.handlers[(STACK_ADDRESS>>>12)-1] = new RAMHandler(RAM.allocPage(), false, false);
-            memory.handlers[(HEAP_ADDRESS-1)>>>12] = new RAMHandler(RAM.allocPage(), false, false);
-            memory.handlers[HEAP_ADDRESS>>>12] = new RAMHandler(RAM.allocPage(), false, false);
-            memory.handlers[CODE_ADDRESS>>>12] = new RAMHandler(RAM.allocPage(), false, false);
+            memory.handlers[(STACK_ADDRESS>>>12)-1] = RAMHandler.create(RAM.allocPage(), PageHandler.READ|PageHandler.WRITE);
+            memory.handlers[(HEAP_ADDRESS-1)>>>12] = RAMHandler.create(RAM.allocPage(), PageHandler.READ|PageHandler.WRITE);
+            memory.handlers[HEAP_ADDRESS>>>12] = RAMHandler.create(RAM.allocPage(), PageHandler.READ|PageHandler.WRITE);
+            memory.handlers[CODE_ADDRESS>>>12] = RAMHandler.create(RAM.allocPage(), PageHandler.READ|PageHandler.WRITE);
             cpu.cs.dword = CODE_ADDRESS;
             cpu.ds.dword = HEAP_ADDRESS;
             cpu.ss.dword = STACK_ADDRESS-4096;

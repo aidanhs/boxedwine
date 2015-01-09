@@ -1,7 +1,6 @@
 package wine.util;
 
-import wine.emulation.Op;
-import wine.system.kernel.MMapHandler;
+import wine.emulation.RAMHandler;
 import wine.system.WineThread;
 
 import javax.swing.*;
@@ -15,9 +14,13 @@ public class Log {
     static public void panic(String msg) {
         WineThread thread = WineThread.getCurrent();
         int eip = thread.cpu.eip;
-        if (thread.process.memory.handlers[eip>>>12]!=null && thread.process.memory.handlers[eip>>>12] instanceof MMapHandler) {
-            MMapHandler h = (MMapHandler)thread.process.memory.handlers[eip>>>12];
-            msg = msg+" in "+h.file.name()+"near @0x"+Long.toHexString(h.fileOffset+(eip & 0xFFF))+"\n   "+thread.cpu.toString()+"\n   process:"+thread.process.name+" (id="+thread.process.id+")\n   thread: id="+thread.id;
+        if (thread.process.memory.handlers[eip>>>12]!=null && thread.process.memory.handlers[eip>>>12] instanceof RAMHandler) {
+            RAMHandler h = (RAMHandler)thread.process.memory.handlers[eip>>>12];
+            if (h.fileData!=null) {
+                msg = msg + " in " + h.fileData.file.name() + "near @0x" + Long.toHexString(h.fileData.fileOffset + (eip & 0xFFF)) + "\n   " + thread.cpu.toString() + "\n   process:" + thread.process.name + " (id=" + thread.process.id + ")\n   thread: id=" + thread.id;
+            } else {
+                msg = msg+" in "+thread.process.loader.getModule(thread.cpu.eip);
+            }
         } else {
             msg = msg+" in "+thread.process.loader.getModule(thread.cpu.eip);
         }

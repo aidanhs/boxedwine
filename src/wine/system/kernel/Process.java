@@ -1,13 +1,10 @@
 package wine.system.kernel;
 
+import wine.emulation.*;
 import wine.system.ExitThreadException;
 import wine.system.SigAction;
 import wine.system.WineSystem;
 import wine.system.WineThread;
-import wine.emulation.CPU;
-import wine.emulation.Memory;
-import wine.emulation.RAM;
-import wine.emulation.RAMHandler;
 import wine.gui.Screen;
 import wine.loader.ElfModule;
 import wine.loader.Loader;
@@ -234,7 +231,7 @@ public class Process {
                 int pageStart = address >>> 12;
                 for (int i = 0; i < pages; i++) {
                     int page = RAM.allocPage();
-                    memory.handlers[pageStart + i] = new RAMHandler(page, false, false);
+                    memory.handlers[pageStart + i] = RAMHandler.create(page, RAMHandler.READ | RAMHandler.WRITE);
                 }
                 result = heap.alloc(memory, size);
             }
@@ -256,7 +253,7 @@ public class Process {
         }
         for (int i=0;i<pages;i++) {
             int page = RAM.allocPage();
-            memory.handlers[pageStart+i] = new RAMHandler(page, map, false);
+            memory.handlers[pageStart+i] = RAMHandler.create(page, RAMHandler.READ|RAMHandler.WRITE|(map?RAMHandler.MAPPED:0));
         }
     }
 

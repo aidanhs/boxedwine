@@ -17,7 +17,7 @@ public class InvalidHandler extends PageHandler {
         return 0;
     }
 
-    public int readb(int address) {
+    public int readb(Memory memory, int address) {
         Log.panic("PF: "+Integer.toHexString(address));
         return 0;
     }
@@ -30,7 +30,7 @@ public class InvalidHandler extends PageHandler {
         Log.panic("PF: "+Integer.toHexString(address));
     }
 
-    public void writeb(int address, int value) {
+    public void writeb(Memory memory, int address, int value) {
         Log.panic("PF: "+Integer.toHexString(address));
     }
 

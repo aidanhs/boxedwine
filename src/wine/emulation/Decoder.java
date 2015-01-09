@@ -3862,7 +3862,7 @@ class Decoder {
         boolean done = false;
 
         while (!done) {
-            int start = cpu.cseip;
+            //int start = cpu.cseip;
             done = !decoder[cpu.op_index +cpu.fetchb()].call(cpu, op);
             if (op.next!=null)
                 op = op.next;

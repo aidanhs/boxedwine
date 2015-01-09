@@ -2,6 +2,7 @@ package wine.system.io;
 
 import wine.emulation.Memory;
 import wine.emulation.PageHandler;
+import wine.emulation.RAMHandler;
 import wine.system.kernel.*;
 import wine.system.WineThread;
 import wine.system.kernel.Process;
@@ -344,18 +345,26 @@ abstract public class FSNode {
             public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
                 PageHandler[] handlers = memory.handlers;
                 int pageStart = address>>>12;
-                int pageCount = (int)((len+0xFFF)>>>12);
+                int pageCount = ((len+0xFFF)>>>12);
 
+                int flags = PageHandler.MAPPED;
+                if (write)
+                    flags|=PageHandler.WRITE;
+                if (read)
+                    flags|=PageHandler.READ;
+                if (exec)
+                    flags|=PageHandler.EXEC;
+                if (shared)
+                    flags|=PageHandler.SHARED;
+
+                RAMHandler.FileData fileData = new RAMHandler.FileData();
+                fileData.fd = fd.handle;
+                fileData.file = fd.getFile();
+                fileData.fileOffset = off;
+                fileData.address = address;
                 for (int i = 0; i < pageCount; i++) {
                     handlers[pageStart + i].close();
-                    if ((read | exec) && write)
-                        handlers[i + pageStart] = new MMapHandler(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
-                    else if (read | exec)
-                        handlers[i + pageStart] = new MMapHandlerRO(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
-                    else if (write)
-                        handlers[i + pageStart] = new MMapHandlerWO(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
-                    else
-                        handlers[i + pageStart] = new MMapHandlerNone(fd, fd.getFile(), address + i * 4096, off + i * 4096, shared);
+                    handlers[i + pageStart] = RAMHandler.createFileMap(fileData, flags);
                 }
                 return address;
             }

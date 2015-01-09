@@ -56,7 +56,7 @@ public class Screen {
             return val & 0xFFFF;
         }
 
-        public int readb(int address) {
+        public int readb(Memory memory, int address) {
             address-=offset;
             return ((int_rawImageData[(address >>> 2)] >>> ((address & 0x3) << 3)) & 0xFF);
         }
@@ -96,7 +96,7 @@ public class Screen {
             }
         }
 
-        public void writeb(int address, int value) {
+        public void writeb(Memory memory, int address, int value) {
             changed = true;
             address-=offset;
             int off = (address & 0x3) << 3;

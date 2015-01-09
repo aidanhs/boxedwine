@@ -31,7 +31,7 @@ public class Memory {
         return readb(address) | (readb(address+1)<<8);
     }
     public int readb(int address) {
-        return handlers[(address>>>12)].readb(address);
+        return handlers[(address>>>12)].readb(this, address);
     }
     public void writed(int address, int value) {
         handlers[(address>>>12)].writed(this, address, value);
@@ -54,7 +54,7 @@ public class Memory {
         writeb(address+1, value>>8);
     }
     public void writeb(int address, int value) {
-        handlers[(address>>>12)].writeb(address, value);
+        handlers[(address>>>12)].writeb(this, address, value);
     }
     public int readws(int address) {
         return (short)(readw(address));

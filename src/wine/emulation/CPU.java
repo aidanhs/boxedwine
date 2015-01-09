@@ -4,10 +4,10 @@ import wine.loader.Loader;
 import wine.system.Callback;
 import wine.system.ExitThreadException;
 import wine.system.WineThread;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 import java.util.Hashtable;
-import java.util.Vector;
 
 public class CPU {
     public Reg eax=new Reg("AL", "AX", "EAX");
@@ -142,6 +142,7 @@ public class CPU {
         this.thread = thread;
         fpu = cpu.fpu.deepCopy(cpu, memory);
     }
+
     public CPU(WineThread thread) {
         this.memory = thread.process.memory;
         this.thread = thread;
@@ -174,7 +175,6 @@ public class CPU {
 
     public void init(int callReturnEip) {
         this.callReturnEip = callReturnEip;
-        blocks.clear();
     }
     static private class CallReturnException extends RuntimeException {
     }
@@ -410,6 +410,7 @@ public class CPU {
             block = new Block(Decoder.decode(this));
             block.eip_count = this.cseip - ip;
             blocks.put(ip, block);
+            ((RAMHandler)memory.handlers[ip >>> 12]).addCode(memory, ip);
         }
         return block;
     }
