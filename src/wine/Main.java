@@ -14,7 +14,7 @@ public class Main {
     static final public DevKeyboard keyboard = new DevKeyboard();
 
     static public void main(String[] args) {
-        int m = 384;
+        int m = 196;
         int i;
         int cx = 1024;
         int cy = 768;

@@ -27,6 +27,8 @@ public class RAM {
     }
 
     static public int pageCount() {
+        if (pageRefCount==null)
+            return 0;
         return pageRefCount.length;
     }
 
@@ -60,6 +62,11 @@ public class RAM {
         }
         pageRefCount[page]++;
     }
+
+    static public int getRefCount(int page) {
+        return pageRefCount[page];
+    }
+
     static public int readd(int address) {
         int rem = (address & 0x3);
         if (rem == 0) {

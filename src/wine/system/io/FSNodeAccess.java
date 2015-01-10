@@ -14,7 +14,7 @@ public interface FSNodeAccess {
     public void close();
     public boolean open(String mode);
     public int ioctl(WineThread thread, int request, Syscall.SyscallGetter getter);
-    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared);
+    public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared);
     public boolean isWriteReady();
     public boolean isReadReady();
     public void setAsync(Process process, boolean remove);

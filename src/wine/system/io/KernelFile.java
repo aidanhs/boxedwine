@@ -371,11 +371,11 @@ public class KernelFile extends KernelObject {
         return -Errno.ENODEV;
     }
 
-    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+    public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         if (io==null) {
             Log.panic("Tried to map: "+name());
             return -1;
         }
-        return io.map(memory, fd, off, address, len, fixed, read, exec, write, shared);
+        return io.map(process, fd, off, address, len, fixed, read, exec, write, shared);
     }
 }

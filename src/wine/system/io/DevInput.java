@@ -164,7 +164,7 @@ public class DevInput implements FSNodeAccess {
         return -1;
     }
 
-    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+    public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         return 0;
     }
 

@@ -153,7 +153,7 @@ public class Mmap {
         }
 
         if (file!=null) {
-            return file.map(thread.process.memory, fd, off, address, len, (flags & MAP_FIXED) != 0, read, exec, write, shared);
+            return file.map(thread.process, fd, off, address, len, (flags & MAP_FIXED) != 0, read, exec, write, shared);
         } else {
             int f = PageHandler.MAPPED;
             if (write)
@@ -175,7 +175,7 @@ public class Mmap {
                         zero = false;
                         // don't call changeFlags here, the previous handler might have a file and the new one won't
                     } else {
-                        handlers[pageStart + i].close();
+                        handlers[pageStart + i].close(thread.process, pageStart + i);
                     }
                     if (page == 0) {
                         page = RAM.allocPage();
@@ -282,7 +282,7 @@ public class Mmap {
 
         for (int i = 0; i < pageCount; i++) {
             PageHandler handler = handlers[pageStart + i];
-            handler.close();
+            handler.close(thread.process, pageStart + i);
             handlers[pageStart+i] = Memory.invalidHandler;
         }
         return 0;

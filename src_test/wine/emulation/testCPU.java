@@ -16,7 +16,7 @@ public class testCPU extends TestCase {
     protected void setUp() throws java.lang.Exception {
         if (memory==null) {
             memory = new Memory();
-            memory.init();
+            memory.init(null);
             this.cpu = new CPU(memory);
             RAM.init(4096 * 5);
             memory.handlers[(STACK_ADDRESS>>>12)-1] = RAMHandler.create(RAM.allocPage(), PageHandler.READ|PageHandler.WRITE);

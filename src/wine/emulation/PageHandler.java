@@ -1,5 +1,7 @@
 package wine.emulation;
 
+import wine.system.kernel.*;
+import wine.system.kernel.Process;
 import wine.util.Log;
 
 abstract public class PageHandler {
@@ -79,14 +81,14 @@ abstract public class PageHandler {
         }
     }
 
-    abstract public void close();
+    abstract public void close(Process process, int page);
     abstract public int readd(Memory memory, int address);
     abstract public int readw(Memory memory, int address);
     abstract public int readb(Memory memory, int address);
     abstract public void writed(Memory memory, int address, int value);
     abstract public void writew(Memory memory, int address, int value);
     abstract public void writeb(Memory memory, int address, int value);
-    abstract public PageHandler fork(wine.system.kernel.Process process);
+    abstract public PageHandler fork(Process from, Process to, int index);
     public void pf(int address) {
         Log.panic("PF "+Integer.toHexString(address));
     }

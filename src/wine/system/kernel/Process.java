@@ -37,7 +37,7 @@ public class Process {
     static public final int STATE_DONE = 2;
 
     // resources
-    static public final int MAX_STACK_SIZE = 128*1024*1024;
+    static public final int MAX_STACK_SIZE = 4*1024*1024;
     static public final int MAX_ADDRESS_SPACE = 0xE0000000;
     static public final int MAX_NUMBER_OF_FILES = 0xFFFF;
 
@@ -138,7 +138,7 @@ public class Process {
         }
         // must come after fd
         this.memory = new Memory();
-        process.memory.fork(this);
+        process.memory.fork(process, this);
         this.id = id;
         this.eipThreadReturn = process.eipThreadReturn;
         this.end = process.end;
@@ -171,7 +171,7 @@ public class Process {
     }
 
     public void init(Vector<String> args, WineThread thread) {
-        memory.init();
+        memory.init(this);
         loader.init();
         addressSpace.clear();
 
@@ -216,7 +216,7 @@ public class Process {
         for (FileDescriptor fd : fds) {
             fd.close();
         }
-        memory.close();
+        memory.close(this);
         mainModule = null;
         loader = null;
         fileDescriptors = null;

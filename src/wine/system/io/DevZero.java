@@ -41,7 +41,7 @@ public class DevZero implements FSNodeAccess {
         return -Errno.ENODEV;
     }
 
-    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+    public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         Log.panic("Mapping /dev/zero not supported");
         return -1;
     }

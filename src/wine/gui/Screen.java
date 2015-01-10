@@ -3,7 +3,9 @@ package wine.gui;
 import wine.Main;
 import wine.emulation.Memory;
 import wine.emulation.PageHandler;
+import wine.emulation.RAM;
 import wine.system.kernel.Process;
+import wine.util.Log;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,13 +24,15 @@ public class Screen {
     static public int depth;
     static private FBPageHandler handler;
     static private boolean changed = false;
+    static private long lastMemoryUpdate;
+    static private long lastHeapFreeValue;
 
     static public class FBPageHandler extends PageHandler {
         private int offset;
         public FBPageHandler(int offset) {
             this.offset = offset;
         }
-        public void close() {
+        public void close(Process process, int page) {
 
         }
 
@@ -107,7 +111,7 @@ public class Screen {
             local[index] = val;
         }
 
-        public PageHandler fork(Process process) {
+        public PageHandler fork(Process from, Process to, int index) {
             return this;
         }
     }
@@ -150,6 +154,17 @@ public class Screen {
         panel = new JPanel() {
             public void paint(Graphics g) {
                 g.drawImage(buffer, 0, 0, width, height, 0, 0, width, height, null);
+                if (Log.level>Log.LEVEL_NONE) {
+                    long now = System.currentTimeMillis();
+                    if (now-lastMemoryUpdate>10000) {
+                        Runtime.getRuntime().gc();
+                        lastHeapFreeValue = Runtime.getRuntime().freeMemory()/1024/1024;
+                        lastMemoryUpdate = now;
+                    }
+                    g.setColor(Color.YELLOW);
+                    g.drawString("RAM " + ((RAM.pageCount()-RAM.freePageCount)*4/1024) + " MB / " + (RAM.pageCount()*4/1024)+" MB", 10, 13);
+                    g.drawString("HEAP " + lastHeapFreeValue+" MB", 10, 30);
+                }
             }
         };
 
@@ -199,11 +214,14 @@ public class Screen {
         Thread thread = new Thread(new Runnable() {
             public void run() {
                 while (true) {
-                    if (changed) {
+                    if (changed || Log.level>Log.LEVEL_NONE) {
                         changed = false;
                         panel.repaint();
                     }
-                    try {Thread.sleep(10);} catch (Exception e) {}
+                    if (Log.level>Log.LEVEL_NONE)
+                        try {Thread.sleep(20);} catch (Exception e) {}
+                    else
+                        try {Thread.sleep(10);} catch (Exception e) {}
                 }
             }
         });

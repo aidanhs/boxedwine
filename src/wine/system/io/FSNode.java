@@ -342,8 +342,8 @@ abstract public class FSNode {
                 return -Errno.ENODEV;
             }
 
-            public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
-                PageHandler[] handlers = memory.handlers;
+            public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+                PageHandler[] handlers = process.memory.handlers;
                 int pageStart = address>>>12;
                 int pageCount = ((len+0xFFF)>>>12);
 
@@ -363,7 +363,7 @@ abstract public class FSNode {
                 fileData.fileOffset = off;
                 fileData.address = address;
                 for (int i = 0; i < pageCount; i++) {
-                    handlers[pageStart + i].close();
+                    handlers[pageStart + i].close(process, pageStart + i);
                     handlers[i + pageStart] = RAMHandler.createFileMap(fileData, flags);
                 }
                 return address;

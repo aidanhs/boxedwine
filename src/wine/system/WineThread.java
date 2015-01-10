@@ -150,7 +150,7 @@ public class WineThread {
             int pageCount = this.stackSize >>> 12;
             for (int i = 0; i < pageCount; i++) {
                 PageHandler handler = process.memory.handlers[pageStart + i];
-                handler.close();
+                handler.close(process, pageStart + i);
                 process.memory.handlers[i + pageStart] = Memory.invalidHandler;
             }
             process.addressSpace.freePages(pageStart, pageCount);

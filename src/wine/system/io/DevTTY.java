@@ -157,7 +157,7 @@ public class DevTTY implements FSNodeAccess {
         return 0;
     }
 
-    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+    public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         Log.panic("Mapping /dev/tty not supported");
         return -1;
     }
@@ -171,7 +171,7 @@ public class DevTTY implements FSNodeAccess {
     }
 
     public void setAsync(Process process, boolean remove) {
-        Log.panic("async io not implemented for /dev/tty");
+        //Log.panic("async io not implemented for /dev/tty");
     }
 
     public boolean isAsync(Process process) {

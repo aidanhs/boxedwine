@@ -6,11 +6,13 @@ import wine.system.kernel.*;
 import wine.system.kernel.Process;
 import wine.util.Log;
 
+import java.util.Hashtable;
 import java.util.TreeSet;
 
 public class RAMHandler extends PageHandler {
     private final int offset;
     public FileData fileData;
+    TreeSet<Integer> blocks;
 
     static public class FileData {
         public int fd;
@@ -24,38 +26,35 @@ public class RAMHandler extends PageHandler {
         boolean write = (flags & WRITE)!=0;
         boolean exec = (flags & EXEC)!=0;
 
+        if (!read && !write && !exec) {
+            return new RAMHandlerNone(physicalPage, flags);
+        }
         if (exec)
             read = true;
+        if (read && (flags & (HAS_CODE|COPY_ON_WRITE))!=0)
+            return new RAMHandlerRO(physicalPage, flags);
         if (read & write)
             return new RAMHandler(physicalPage, flags);
         else if (read)
             return new RAMHandlerRO(physicalPage, flags);
-        else if (write)
-            return new RAMHandlerWO(physicalPage, flags);
         else
-            return new RAMHandlerNone(physicalPage, flags);
+            return new RAMHandlerWO(physicalPage, flags);
     }
 
     static public RAMHandler changeFlags(RAMHandler handler, int flags) {
-        if (handler.fileData!=null) {
-            handler.data = (handler.data & ~PERMISSIONS) | flags;
-        } else if (handler.hasCode()) {
-            handler.data = (handler.data & ~PERMISSIONS) | flags;
-        } else {
-            int page = handler.getPhysicalPage();
-            if (page == 0 && (flags & PERMISSIONS)!=0) {
-                page = RAM.allocPage();
+        int page = handler.getPhysicalPage();
+        if (page == 0) {
+            if (handler.fileData!=null) {
+                // handler is still of type RAMHandlerNone
+                handler.data = (handler.data & ~PERMISSIONS) | flags;
+                return handler;
             }
-            return create(page, (handler.data & ~PERMISSIONS) | flags);
+            if ((flags & PERMISSIONS)!=0)
+                page = RAM.allocPage();
         }
-        return handler;
-    }
-
-    static public RAMHandler createFileMap(FileData fileData, int page, int flags) {
-        if (page==0)
-            return createFileMap(fileData, flags);
-        RAMHandler result = create(page, flags);
-        result.fileData = fileData;
+        RAMHandler result = create(page, (handler.data & ~PERMISSIONS) | flags);
+        result.fileData = handler.fileData;
+        result.blocks = handler.blocks;
         return result;
     }
 
@@ -88,15 +87,36 @@ public class RAMHandler extends PageHandler {
         }
     }
 
-    public void close() {
+    public void close(Process process, int page) {
         setRefCount(getRefCount() - 1);
         if (getRefCount() ==0) {
+            int physicalPage = getPhysicalPage();
+            if (physicalPage!=0) {
+                if (RAM.getRefCount(physicalPage)<1) {
+                    Log.panic("Bad reference count on RAM page");
+                }
+                if (fileData!=null && (data & COPY_ON_WRITE)!=0 && RAM.getRefCount(physicalPage)==1) {
+                    FileCache entry = fileCache.get(fileData.file.node.id);
+                    if (entry == null) {
+                        Log.panic("File cache is corrupted");
+                    }
+                    long pos = (page << 12)-fileData.address+fileData.fileOffset;
+                    int index = (int)(pos >>> 12);
+                    entry.pages[index] = 0;
+                }
+            }
             if (fileData!=null) {
                 Io.close(WineThread.getCurrent(), fileData.fd);
                 fileData = null;
             }
-            if (getPhysicalPage() != 0)
-                RAM.freePage(getPhysicalPage());
+            if (physicalPage != 0)
+                RAM.freePage(physicalPage);
+        }
+        if (blocks!=null) {
+            for (Integer ip : blocks) {
+                for (WineThread thread : process.threads.values())
+                    thread.cpu.blocks.remove(ip);
+            }
         }
     }
 
@@ -134,18 +154,29 @@ public class RAMHandler extends PageHandler {
         RAM.writeb(offset+(address & 0xFFF), value);
     }
 
-    public PageHandler fork(wine.system.kernel.Process process) {
-        int page;
-        if (isShared()) {
-            page = getPhysicalPage();
+    public PageHandler fork(Process from, Process to, int index) {
+        int page = getPhysicalPage();
+        if (page != 0) {
             RAM.incrementRef(page);
-        } else {
-            page = RAM.allocPage();
         }
-        RAMHandler handler = new RAMHandler(page, data);
         if (!isShared()) {
-            RAM.copy(getPhysicalPage(), page);
+            if ((data & COPY_ON_WRITE)==0) {
+                data |= COPY_ON_WRITE;
+                if (page!=0) {
+                    RAMHandler handler = RAMHandler.create(page, data);
+                    handler.fileData = fileData;
+                    from.memory.handlers[index] = handler;
+                }
+            }
         }
+        if (page == 0 && fileData!=null) {
+            // don't call createFileMap, we need to preserve fd ref count
+            RAMHandlerNone handler = new RAMHandlerNone(0, data);
+            handler.fileData = fileData;
+            return handler;
+        }
+        RAMHandler handler = RAMHandler.create(page, data);
+        handler.fileData = fileData;
         return handler;
     }
 
@@ -153,30 +184,52 @@ public class RAMHandler extends PageHandler {
         return offset >> 12;
     }
 
+    static private class FileCache {
+        KernelFile file;
+        int[] pages;
+    }
+
+    final static private Hashtable<Integer, FileCache> fileCache = new Hashtable<Integer, FileCache>();
+
     static public class RAMHandlerNone extends RAMHandler {
         public RAMHandlerNone(int physicalPage, int flags) {
             super(physicalPage, flags);
         }
         protected int alloc(int address) {
-            int physicalPage = RAM.allocPage();
-
-            synchronized (fileData.file) {
-                byte[] b = new byte[4096];
-                long pos = fileData.file.io.getFilePointer();
-                if (!fileData.file.io.seek((address & 0xFFFFF000)-fileData.address+fileData.fileOffset)) {
-                    Log.panic("Oops");
+            synchronized (fileCache) {
+                FileCache entry = fileCache.get(fileData.file.node.id);
+                if (entry==null) {
+                    entry = new FileCache();
+                    entry.file = fileData.file;
+                    entry.pages = new int[(int)((fileData.file.node.length()+4095)/4096)];
+                    fileCache.put(fileData.file.node.id, entry);
                 }
-                int read = fileData.file.io.read(b);
-                int a = physicalPage << 12;
-                // use b.length, so that 0's will fill the end of the page
-                for (int i = 0; i < b.length; i++) {
-                    RAM.writeb(a++, b[i]);
-                }
-                if (pos >= 0) {
-                    fileData.file.io.seek(pos);
+                long pos = (address & 0xFFFFF000)-fileData.address+fileData.fileOffset;
+                int page = (int)(pos >>> 12);
+                if (entry.pages[page]!=0) {
+                    int physicalPage = entry.pages[page];
+                    RAM.incrementRef(physicalPage);
+                    return physicalPage;
+                } else {
+                    byte[] b = new byte[4096];
+                    long oldPos = fileData.file.io.getFilePointer();
+                    if (!fileData.file.io.seek(pos)) {
+                        Log.panic("Oops");
+                    }
+                    int read = fileData.file.io.read(b);
+                    int physicalPage = RAM.allocPage();
+                    int a = physicalPage << 12;
+                    // use b.length, so that 0's will fill the end of the page
+                    for (int i = 0; i < b.length; i++) {
+                        RAM.writeb(a++, b[i]);
+                    }
+                    if (oldPos >= 0) {
+                        fileData.file.io.seek(oldPos);
+                    }
+                    entry.pages[page] = physicalPage;
+                    return physicalPage;
                 }
             }
-            return physicalPage;
         }
 
         private RAMHandler onDemand(Memory memory, int address) {
@@ -190,7 +243,7 @@ public class RAMHandler extends PageHandler {
                         return (RAMHandler)memory.handlers[page];
                     }
 
-                    RAMHandler handler = RAMHandler.create(alloc(address), data);
+                    RAMHandler handler = RAMHandler.create(alloc(address), data|COPY_ON_WRITE);
                     handler.fileData = fileData;
                     memory.handlers[page] = handler;
                     return handler;
@@ -241,36 +294,15 @@ public class RAMHandler extends PageHandler {
             else
                 pf(address);
         }
-
-        public PageHandler fork(wine.system.kernel.Process process) {
-            if (getPhysicalPage() ==0) {
-                RAMHandler handler = new RAMHandlerNone(0, data);
-                handler.fileData = fileData;
-                return handler;
-            }
-            int page;
-            if (isShared()) {
-                page = getPhysicalPage();
-                RAM.incrementRef(page);
-            } else {
-                page = RAM.allocPage();
-            }
-            RAMHandler handler = new RAMHandlerNone(page, data);
-            if (!isShared()) {
-                RAM.copy(getPhysicalPage(), page);
-            }
-            handler.fileData = fileData;
-            return handler;
-        }
     }
 
     static public class RAMHandlerRO extends RAMHandler {
-        TreeSet<Integer> blocks = new TreeSet<Integer>();
-
         public RAMHandlerRO(int physicalPage, int flags) {
             super(physicalPage, flags);
         }
         private void clearCode(int address, int len) {
+            if (blocks == null)
+                return;
             WineThread t = WineThread.getCurrent();
             if (t!=null) { // will be null in unit tests
                 Process process = t.process;
@@ -292,10 +324,40 @@ public class RAMHandler extends PageHandler {
         }
         public void addCode(Memory memory, int address) {
             data|=HAS_CODE;
+            if (blocks == null)
+                blocks = new TreeSet<Integer>();
             blocks.add(address);
         }
+        public void copyOnWrite(Memory memory, int address) {
+            synchronized (this) {
+                if ((data & COPY_ON_WRITE)==0) {
+                    // this could happen if two threads wrote to the same page at the same time
+                    return;
+                }
+                data&=~COPY_ON_WRITE;
+                int page = RAM.allocPage();
+                int physicalPage = getPhysicalPage();
+                RAM.copy(physicalPage, page);
+                if (fileData!=null && RAM.getRefCount(physicalPage)==1) {
+                    FileCache entry = fileCache.get(fileData.file.node.id);
+                    if (entry == null) {
+                        Log.panic("File cache is corrupted");
+                    }
+                    long pos = (address & 0xFFFFF000)-fileData.address+fileData.fileOffset;
+                    int index = (int)(pos >>> 12);
+                    entry.pages[index] = 0;
+                }
+                RAM.freePage(physicalPage);
+                RAMHandler handler = RAMHandler.create(page, data);
+                handler.fileData = fileData;
+                memory.handlers[address >>> 12] = handler;
+            }
+        }
         public void writed(Memory memory, int address, int value) {
-            if ((data & WRITE)!=0) {
+            if ((data & COPY_ON_WRITE)!=0) {
+                copyOnWrite(memory, address);
+                memory.handlers[address >>> 12].writed(memory, address, value);
+            } else if ((data & WRITE)!=0) {
                 clearCode(address, 4);
                 super.writed(memory, address, value);
             } else {
@@ -303,7 +365,10 @@ public class RAMHandler extends PageHandler {
             }
         }
         public void writew(Memory memory, int address, int value) {
-            if ((data & WRITE)!=0) {
+            if ((data & COPY_ON_WRITE)!=0) {
+                copyOnWrite(memory, address);
+                memory.handlers[address >>> 12].writew(memory, address, value);
+            } else if ((data & WRITE)!=0) {
                 clearCode(address, 2);
                 super.writew(memory, address, value);
             } else {
@@ -311,36 +376,15 @@ public class RAMHandler extends PageHandler {
             }
         }
         public void writeb(Memory memory, int address, int value) {
-            if ((data & WRITE)!=0) {
+            if ((data & COPY_ON_WRITE)!=0) {
+                copyOnWrite(memory, address);
+                memory.handlers[address >>> 12].writeb(memory, address, value);
+            } else if ((data & WRITE)!=0) {
                 clearCode(address, 1);
                 super.writeb(memory, address, value);
             } else {
                 pf(address);
             }
-        }
-        public PageHandler fork(wine.system.kernel.Process process) {
-            int page;
-            if (isShared()) {
-                page = getPhysicalPage();
-                RAM.incrementRef(page);
-            } else {
-                page = RAM.allocPage();
-            }
-            RAMHandlerRO handler = new RAMHandlerRO(page, data);
-            if (!isShared()) {
-                RAM.copy(getPhysicalPage(), page);
-            }
-            handler.fileData = fileData;
-            return handler;
-        }
-
-        public void close() {
-            Process process = WineThread.getCurrent().process;
-            for (Integer ip : blocks) {
-                for (WineThread thread : process.threads.values())
-                    thread.cpu.blocks.remove(ip);
-            }
-            super.close();
         }
     }
 
@@ -359,21 +403,6 @@ public class RAMHandler extends PageHandler {
         public int readb(int address) {
             pf(address);
             return 0;
-        }
-        public PageHandler fork(wine.system.kernel.Process process) {
-            int page;
-            if (isShared()) {
-                page = getPhysicalPage();
-                RAM.incrementRef(page);
-            } else {
-                page = RAM.allocPage();
-            }
-            RAMHandlerWO handler = new RAMHandlerWO(page, data);
-            if (!isShared()) {
-                RAM.copy(getPhysicalPage(), page);
-            }
-            handler.fileData = fileData;
-            return handler;
         }
     }
 }

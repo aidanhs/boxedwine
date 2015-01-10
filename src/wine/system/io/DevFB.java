@@ -282,7 +282,7 @@ public class DevFB implements FSNodeAccess {
         return 0;
     }
 
-    public int map(Memory memory, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
+    public int map(Process process, FileDescriptor fd, long off, int address, int len, boolean fixed, boolean read, boolean exec, boolean write, boolean shared) {
         int pageStart = address>>>12;
         int pageCount = (int)((len+0xFFF)>>>12);
         if (!fixed)
