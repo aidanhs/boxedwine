@@ -1,8 +1,8 @@
 package wine.emulation;
 
 abstract class EaaBase {
-    final protected Reg ds;
-    final protected Reg ss;
+    final protected int ds;
+    final protected int ss;
 
     public EaaBase(CPU cpu) {
         ds = cpu.base_ds;

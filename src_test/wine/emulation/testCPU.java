@@ -95,7 +95,7 @@ public class testCPU extends TestCase {
             for (int eb = 0; eb < 8; eb++) {
                 int rm = eb | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.eb(cpu, rm);
+                Reg reg = cpu.regs[Decoder.eb(rm)];
                 if (reg.parent != null)
                     reg.parent.dword = DEFAULT;
                 else
@@ -130,7 +130,7 @@ public class testCPU extends TestCase {
                     continue;
                 int rm = eb | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.eb(cpu, rm);
+                Reg reg = cpu.regs[Decoder.eb(rm)];
                 if (reg.parent != null)
                     reg.parent.dword = DEFAULT;
                 else
@@ -176,7 +176,7 @@ public class testCPU extends TestCase {
                     continue;
                 int rm = ew | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.ew(cpu, rm);
+                Reg reg = cpu.regs[Decoder.ew(rm)];
                 cpu.eax.dword = DEFAULT;
                 cpu.edx.dword = DEFAULT;
                 reg.dword = DEFAULT;
@@ -217,7 +217,7 @@ public class testCPU extends TestCase {
                     continue;
                 int rm = ed | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.ew(cpu, rm);
+                Reg reg = cpu.regs[Decoder.ew(rm)];
                 reg.dword = DEFAULT;
                 cpu.eax.dword = d.left;
                 cpu.edx.dword = d.right;
@@ -252,7 +252,7 @@ public class testCPU extends TestCase {
                     continue;
                 int rm = eb | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.eb(cpu, rm);
+                Reg reg = cpu.regs[Decoder.eb(rm)];
                 if (reg.parent != null)
                     reg.parent.dword = DEFAULT;
                 else
@@ -290,7 +290,7 @@ public class testCPU extends TestCase {
                 int rm = eb | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode8(d.right);
-                Reg e = Decoder.eb(cpu, rm);
+                Reg e = cpu.regs[Decoder.eb(rm)];
                 if (e.parent != null)
                     e.parent.dword = DEFAULT;
                 else
@@ -343,8 +343,8 @@ public class testCPU extends TestCase {
                     int rm = eb | (gb << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.eb(cpu, rm);
-                    Reg g = Decoder.gb(cpu, rm);
+                    Reg e = cpu.regs[Decoder.eb(rm)];
+                    Reg g = cpu.regs[Decoder.gb(rm)];
                     if (e.parent != null)
                         e.parent.dword = DEFAULT;
                     else
@@ -374,7 +374,7 @@ public class testCPU extends TestCase {
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writeb(cpu.ds.dword + 200, d.left);
-                Reg g = Decoder.gb(cpu, rm);
+                Reg g = cpu.regs[Decoder.gb(rm)];
                 if (g.parent != null)
                     g.parent.dword = DEFAULT;
                 else
@@ -396,8 +396,8 @@ public class testCPU extends TestCase {
                     int rm = eb | (gb << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.eb(cpu, rm);
-                    Reg g = Decoder.gb(cpu, rm);
+                    Reg e = cpu.regs[Decoder.eb(rm)];
+                    Reg g = cpu.regs[Decoder.gb(rm)];
                     if (e.parent != null)
                         e.parent.dword = DEFAULT;
                     else
@@ -427,7 +427,7 @@ public class testCPU extends TestCase {
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writeb(cpu.ds.dword + 200, d.right);
-                Reg g = Decoder.gb(cpu, rm);
+                Reg g = cpu.regs[Decoder.gb(rm)];
                 if (g.parent != null)
                     g.parent.dword = DEFAULT;
                 else
@@ -444,7 +444,7 @@ public class testCPU extends TestCase {
             for (int eb = 0; eb < 8; eb++) {
                 int rm = eb | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.ew(cpu, rm);
+                Reg reg = cpu.regs[Decoder.ew(rm)];
                 reg.dword = DEFAULT;
                 reg.u16(d.left);
                 runCPU();
@@ -476,7 +476,7 @@ public class testCPU extends TestCase {
                     continue;
                 int rm = ew | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.ew(cpu, rm);
+                Reg reg = cpu.regs[Decoder.ew(rm)];
                 reg.dword = DEFAULT;
                 cpu.ecx.dword = DEFAULT;
                 reg.u16(d.left);
@@ -514,7 +514,7 @@ public class testCPU extends TestCase {
                 int rm = ew | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode8(d.right);
-                Reg e = Decoder.ew(cpu, rm);
+                Reg e = cpu.regs[Decoder.ew(rm)];
                 e.dword = DEFAULT;
                 e.u16(d.left);
                 runCPU();
@@ -557,7 +557,7 @@ public class testCPU extends TestCase {
                 int rm = ew | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode8(d.right);
-                Reg e = Decoder.ew(cpu, rm);
+                Reg e = cpu.regs[Decoder.ew(rm)];
                 e.dword = DEFAULT;
                 e.u16(d.left);
                 runCPU();
@@ -590,7 +590,7 @@ public class testCPU extends TestCase {
                 int rm = ew | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode16(d.right);
-                Reg e = Decoder.ew(cpu, rm);
+                Reg e = cpu.regs[Decoder.ew(rm)];
                 e.dword = DEFAULT;
                 e.u16(d.left);
                 runCPU();
@@ -625,8 +625,8 @@ public class testCPU extends TestCase {
                     int rm = ew | (gw << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.ew(cpu, rm);
-                    Reg g = Decoder.gw(cpu, rm);
+                    Reg e = cpu.regs[Decoder.ew(rm)];
+                    Reg g = cpu.regs[Decoder.gw(rm)];
                     e.dword = DEFAULT;
                     g.dword = DEFAULT;
                     e.u16(d.left);
@@ -650,7 +650,7 @@ public class testCPU extends TestCase {
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writew(cpu.ds.dword + 200, d.left);
-                Reg g = Decoder.gw(cpu, rm);
+                Reg g = cpu.regs[Decoder.gw(rm)];
                 g.dword = DEFAULT;
                 g.u16(d.right);
                 runCPU();
@@ -667,8 +667,8 @@ public class testCPU extends TestCase {
                     int rm = ew | (gw << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.ew(cpu, rm);
-                    Reg g = cpu.segValue[gw];
+                    Reg e = cpu.regs[Decoder.ew(rm)];
+                    Reg g = cpu.regs[cpu.segValue[gw]];
                     e.dword = DEFAULT;
                     g.dword = DEFAULT;
                     e.u16(d.left);
@@ -692,7 +692,7 @@ public class testCPU extends TestCase {
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writew(cpu.ds.dword + 200, d.left);
-                Reg g = cpu.segValue[gw];
+                Reg g = cpu.regs[cpu.segValue[gw]];
                 g.dword = DEFAULT;
                 g.u16(d.right);
                 runCPU();
@@ -711,8 +711,8 @@ public class testCPU extends TestCase {
                     int rm = ew | (gw << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.ew(cpu, rm);
-                    Reg g = Decoder.gw(cpu, rm);
+                    Reg e = cpu.regs[Decoder.ew(rm)];
+                    Reg g = cpu.regs[Decoder.gw(rm)];
                     e.dword = DEFAULT;
                     g.dword = DEFAULT;
                     e.u16(d.right);
@@ -736,7 +736,7 @@ public class testCPU extends TestCase {
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, DEFAULT);
                 memory.writew(cpu.ds.dword + 200, d.right);
-                Reg g = Decoder.gw(cpu, rm);
+                Reg g = cpu.regs[Decoder.gw(rm)];
                 g.dword = DEFAULT;
                 g.u16(d.left);
                 runCPU();
@@ -751,7 +751,7 @@ public class testCPU extends TestCase {
             for (int ed = 0; ed < 8; ed++) {
                 int rm = ed | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.ed(cpu, rm);
+                Reg reg = cpu.regs[Decoder.ed(rm)];
                 reg.dword = d.left;
                 runCPU();
                 d.assertResult(cpu, instruction, reg.dword, 0, reg.name32, null, reg, null, 0, 32);
@@ -781,7 +781,7 @@ public class testCPU extends TestCase {
                     continue;
                 int rm = ed | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
-                Reg reg = Decoder.ed(cpu, rm);
+                Reg reg = cpu.regs[Decoder.ed(rm)];
                 cpu.ecx.dword = DEFAULT;
                 reg.dword = d.left;
                 cpu.ecx.u8(d.right);
@@ -817,7 +817,7 @@ public class testCPU extends TestCase {
                 int rm = ed | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode8(d.right);
-                Reg e = Decoder.ed(cpu, rm);
+                Reg e = cpu.regs[Decoder.ed(rm)];
                 e.dword = d.left;
                 runCPU();
                 d.assertResult(cpu, instruction, e.dword, 0, e.name32, null, null, null, 0, 0);
@@ -847,7 +847,7 @@ public class testCPU extends TestCase {
                 int rm = ew | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode8(d.right);
-                Reg e = Decoder.ed(cpu, rm);
+                Reg e = cpu.regs[Decoder.ed(rm)];
                 e.dword = d.left;
                 runCPU();
                 d.assertResult(cpu, instruction, e.dword, 0, e.name32, null, e, null, 0, 32);
@@ -889,7 +889,7 @@ public class testCPU extends TestCase {
                 int rm = ed | (which << 3) | 0xC0;
                 newInstruction(instruction, rm, d.flags);
                 pushCode32(d.right);
-                Reg e = Decoder.ed(cpu, rm);
+                Reg e = cpu.regs[Decoder.ed(rm)];
                 e.dword = d.left;
                 runCPU();
                 d.assertResult(cpu, instruction, e.dword, 0, e.name32, null, null, null, 0, 0);
@@ -922,8 +922,8 @@ public class testCPU extends TestCase {
                     int rm = ed | (gd << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.ed(cpu, rm);
-                    Reg g = Decoder.gd(cpu, rm);
+                    Reg e = cpu.regs[Decoder.ed(rm)];
+                    Reg g = cpu.regs[Decoder.gd(rm)];
                     e.dword = d.left;
                     g.dword = d.right;
                     runCPU();
@@ -944,7 +944,7 @@ public class testCPU extends TestCase {
                     pushCode16(200);
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, d.left);
-                Reg g = Decoder.gw(cpu, rm);
+                Reg g = cpu.regs[Decoder.gw(rm)];
                 g.dword = d.right;
                 runCPU();
                 int result = memory.readd(cpu.ds.dword + 200);
@@ -962,8 +962,8 @@ public class testCPU extends TestCase {
                     int rm = ed | (gd << 3) | 0xC0;
                     newInstruction(instruction, rm, d.flags);
                     d.pushConstant();
-                    Reg e = Decoder.ed(cpu, rm);
-                    Reg g = Decoder.gd(cpu, rm);
+                    Reg e = cpu.regs[Decoder.ed(rm)];
+                    Reg g = cpu.regs[Decoder.gd(rm)];
                     e.dword = d.right;
                     g.dword = d.left;
                     runCPU();
@@ -984,7 +984,7 @@ public class testCPU extends TestCase {
                     pushCode16(200);
                 d.pushConstant();
                 memory.writed(cpu.ds.dword + 200, d.right);
-                Reg g = Decoder.gd(cpu, rm);
+                Reg g = cpu.regs[Decoder.gd(rm)];
                 g.dword = d.left;
                 runCPU();
                 int result = memory.readd(cpu.ds.dword + 200);
@@ -1054,7 +1054,7 @@ public class testCPU extends TestCase {
             int rm = i<<3 | 0x44;
             pushCode8(rm);
             pushCode8(8);
-            Reg reg = Decoder.gw(cpu, rm);
+            Reg reg = cpu.regs[Decoder.gw(rm)];
             reg.dword = DEFAULT;
             cpu.esi.dword = DEFAULT;
             cpu.esi.u16(0xABCD);
@@ -1073,7 +1073,7 @@ public class testCPU extends TestCase {
             int rm = i<<3 | 0x43;
             pushCode8(rm);
             pushCode8(8);
-            Reg reg = Decoder.gd(cpu, rm);
+            Reg reg = cpu.regs[Decoder.gd(rm)];
             cpu.ebx.dword=0xABCD1234;
             runCPU();
             assertTrue(reg.dword==(0xABCD1234+8));
@@ -1242,7 +1242,7 @@ public class testCPU extends TestCase {
                 continue;
             newInstruction(0x8f, 0);
             pushCode8(i|0xC0);
-            Reg reg = Decoder.ew(cpu, i|0xC0);
+            Reg reg = cpu.regs[Decoder.ew(i|0xC0)];
             cpu.esp.dword-=2;
             reg.dword=0xDDDDDDDD;
             memory.writew(cpu.ss.dword+cpu.esp.dword, 0xAAAA);
@@ -1280,7 +1280,7 @@ public class testCPU extends TestCase {
                 continue;
             newInstruction(0x8f, 0);
             pushCode8(i|0xC0);
-            Reg reg = Decoder.ew(cpu, i|0xC0);
+            Reg reg = cpu.regs[Decoder.ew(i|0xC0)];
             cpu.esp.dword-=4;
             memory.writed(cpu.ss.dword+cpu.esp.dword, 0xAAAAAAAA);
             memory.writed(cpu.ss.dword+cpu.esp.dword-4, 0x56781234);

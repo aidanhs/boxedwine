@@ -4,7 +4,6 @@ import wine.loader.Loader;
 import wine.system.Callback;
 import wine.system.ExitThreadException;
 import wine.system.WineThread;
-import wine.system.kernel.Process;
 import wine.util.Log;
 
 import java.util.Hashtable;
@@ -34,14 +33,118 @@ public class CPU {
     public Reg dsValue=new Reg("DS");
     public Reg fsValue=new Reg("FS");
     public Reg gsValue=new Reg("GS");
-    public Reg[] segPhys = new Reg[] {es, cs, ss, ds, fs, gs};
-    public Reg[] segValue = new Reg[] {esValue, csValue, ssValue, dsValue, fsValue, gsValue};
+    final public int[] segPhys = new int[] {ES, CS, SS, DS, FS, GS};
+    final public int[] segValue = new int[] {ES_VALUE, CS_VALUE, SS_VALUE, DS_VALUE, FS_VALUE, FS_VALUE};
+    public Reg[] regs = new Reg[] {eax, ecx, edx, ebx, esp, ebp, esi, edi, ah, ch, dh, bh, es, cs, ss, ds, fs, gs, esValue, csValue, ssValue, dsValue, fsValue, gsValue, new Reg("ZERO", "ZERO", "ZERO")};
     public int[] ldt = new int[32];
     public boolean pmode = true;
 
-    Reg zero=new Reg("0");
-    Reg base_ds=ds;
-    Reg base_ss=ss;
+    static public final int EAX = 0;
+    static public final int ECX = 1;
+    static public final int EDX = 2;
+    static public final int EBX = 3;
+    static public final int ESP = 4;
+    static public final int EBP = 5;
+    static public final int ESI = 6;
+    static public final int EDI = 7;
+    static public final int AH = 8;
+    static public final int CH = 9;
+    static public final int DH = 10;
+    static public final int BH = 11;
+    static public final int ES = 12;
+    static public final int CS = 13;
+    static public final int SS = 14;
+    static public final int DS = 15;
+    static public final int FS = 16;
+    static public final int GS = 17;
+    static public final int ES_VALUE = 18;
+    static public final int CS_VALUE = 19;
+    static public final int SS_VALUE = 20;
+    static public final int DS_VALUE = 21;
+    static public final int FS_VALUE = 22;
+    static public final int GS_VALUE = 23;
+    static public final int ZERO = 24;
+    
+    static public String regToString(int reg) {
+        switch (reg) {
+            case EAX: return "EAX";
+            case ECX: return "ECX";
+            case EDX: return "EDX";
+            case EBX: return "EBX";
+            case ESP: return "ESP";
+            case EBP: return "EBP";
+            case ESI: return "ESI";
+            case EDI: return "EDI";
+            case AH: return "AH";
+            case CH: return "CH";
+            case DH: return "DH";
+            case BH: return "BH";
+            case ES: return "ES";
+            case CS: return "CS";
+            case SS: return "SS";
+            case DS: return "DS";
+            case FS: return "FS";
+            case GS: return "GS";
+            case ZERO: return "ZERO";
+            default:
+                Log.panic("Unknown reg: "+reg);
+                return "";
+        }
+    }
+    static public String regToString8(int reg) {
+        switch (reg) {
+            case EAX: return "AL";
+            case ECX: return "CL";
+            case EDX: return "DL";
+            case EBX: return "BL";
+            case ESP: return "ESP";
+            case EBP: return "EBP";
+            case ESI: return "ESI";
+            case EDI: return "EDI";
+            case AH: return "AH";
+            case CH: return "CH";
+            case DH: return "DH";
+            case BH: return "BH";
+            case ES: return "ES";
+            case CS: return "CS";
+            case SS: return "SS";
+            case DS: return "DS";
+            case FS: return "FS";
+            case GS: return "GS";
+            case ZERO: return "ZERO";
+            default:
+                Log.panic("Unknown reg: "+reg);
+                return "";
+        }
+    }
+    static public String regToString16(int reg) {
+        switch (reg) {
+            case EAX: return "AX";
+            case ECX: return "CX";
+            case EDX: return "DX";
+            case EBX: return "BX";
+            case ESP: return "SP";
+            case EBP: return "BP";
+            case ESI: return "SI";
+            case EDI: return "DI";
+            case AH: return "AH";
+            case CH: return "CH";
+            case DH: return "DH";
+            case BH: return "BH";
+            case ES: return "ES";
+            case CS: return "CS";
+            case SS: return "SS";
+            case DS: return "DS";
+            case FS: return "FS";
+            case GS: return "GS";
+            case ZERO: return "ZERO";
+            default:
+                Log.panic("Unknown reg: "+reg);
+                return "";
+        }
+    }
+    int base_ds=DS;
+    int base_ss=SS;
 
     // Flags
     int flags = VM | IOPL | ID | 1;
