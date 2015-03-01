@@ -4,5 +4,6 @@
 #include "kthread.h"
 
 void scheduleThread(KThread* thread);
+void unscheduleThread(KThread* thread);
 
 #endif

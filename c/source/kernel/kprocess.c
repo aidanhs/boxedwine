@@ -2,40 +2,34 @@
 #include "kthread.h"
 #include "kscheduler.h"
 #include "log.h"
+#include "ksystem.h"
+
 #include <stdlib.h>
 
-KProcess* processes[1024];
-
-int getNextPid() {
-	int i;
-	for (i=0;i<sizeof(processes)/sizeof(KProcess*);i++) {
-		if (!processes[i])
-			return i;
-	}
-	panic("Ran out of pids");
-	return 0;
-}
-
-void initProcess(KProcess* process, KThread* thread) {
-	process->id = getNextPid();
-	processes[process->id] = process;
+void initProcess(KProcess* process) {
+	process->id = addProcess(process);
 	initMemory(&process->memory);
-	process->threads = thread;
-	thread->processNext = 0;
-	thread->processPrev = 0;
+	initArray(&process->threads);	
 }
 
 void addThread(KProcess* process, KThread* thread) {
-	thread->processNext = process->threads;
-	process->threads->processPrev = thread;
-	process->threads = thread;
+	thread->id = addObjecToArray(&process->threads, thread);
 }
 
 void startProcess() {
 	KProcess* process = (KProcess*)malloc(sizeof(KProcess));
 	KThread* thread = (KThread*)malloc(sizeof(KThread));
 
-	initProcess(process, thread);
+	initProcess(process);
 	initThread(thread, &process->memory);
+	addThread(process, thread);
 	scheduleThread(thread);
+}
+
+void processOnExitThread(KThread* thread) {
+	KArray* threads = &thread->process->threads;
+	removeObjectFromArray(threads, thread->id);
+	if (!getArrayCount(threads)) {
+		// :TODO:
+	}
 }

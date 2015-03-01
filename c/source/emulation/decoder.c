@@ -5920,6 +5920,8 @@ Op* decodeBlock(CPU* cpu) {
 			rm = FETCH8();
 			if (rm==0x80) {
 				op->func = syscall;
+				FINISH_OP();
+				return block;
 			} else {
 				panic("Unhandled interrupt %d", rm);
 			}

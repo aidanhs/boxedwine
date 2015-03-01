@@ -16,6 +16,7 @@ typedef struct CPU {
 	U32		flags;
 	Reg		eip;	
 	Memory* memory;
+	struct KThread* thread;
 	Reg     var1;
 	Reg     var2;
 	Reg     result;

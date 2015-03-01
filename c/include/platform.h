@@ -9,5 +9,6 @@
 #define S16 short
 #define U8 unsigned char
 #define S8 char
+#define BOOL char
 
 #endif
