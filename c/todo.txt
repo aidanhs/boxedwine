@@ -1,0 +1,19 @@
+Need to Code
+
+  To get a console app running and output to stdout
+    1) file system emulation
+    2) kernel sys calls
+    3) elf classes do load ld into memory
+
+  To get WINE to run
+    1) SDL stuff (video, mouse, keyboard)
+    2) frame buffer, mouse and keyboard dev nodes
+
+Need to research
+
+1) How to use OpenGL with a native loader (might need to compile a custom opengl lib or might need to go back to an emulated loader)
+2) consider using lighter weight X11 implementations like nanoX
+3) Research using less memory for the MMU (per process), perhaps a 2 index approach like the new JPC
+4) Add emscriptem as a target to visual studio 2010
+5) make files for other platforms
+6) add MMX instructions
