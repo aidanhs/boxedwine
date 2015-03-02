@@ -8,6 +8,107 @@
 #include "fpu.h"
 #include "ops.h"
 
+#define DECODE_MEMORY(name)						\
+if (ea16) {										\
+	op->func = name##_mem16;					\
+	ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
+} else {										\
+	op->func = name##_mem32;					\
+	ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
+}
+
+#define DECODE_E(name)			\
+if (rm >= 0xc0 ) {				\
+	op->func = name##_reg;		\
+	op->r1 = E(rm);				\
+} else {						\
+	DECODE_MEMORY(name);		\
+}
+
+#define FETCH8() readb(cpu->memory, ip++)
+#define FETCH_S8() (S8)readb(cpu->memory, ip++)
+#define FETCH16() readw(cpu->memory, ip);ip+=2
+#define FETCH_S16() (S16)readw(cpu->memory, ip);ip+=2
+#define FETCH32() readd(cpu->memory, ip);ip+=4
+#define FETCH_S32() (S32)readb(cpu->memory, ip);ip+=4
+
+#define FINISH_OP() op->eipCount=ip-start
+
+#define DECODE_STRING(name)				\
+if (ea16) {							\
+	if (rep) {						\
+		op->func = name##16_r;		\
+	} else {						\
+		op->func = name##16;		\
+	}								\
+} else {							\
+	if (rep) {						\
+		op->func = name##32_r;		\
+	} else {						\
+		op->func = name##32;		\
+	}								\
+}
+
+#define DECODE_GROUP3(BITS)			\
+rm=FETCH8();						\
+switch (G(rm)) {					\
+    case 0x00:						\
+    case 0x01:						\
+		DECODE_E(test##BITS);		\
+		op->data1 = FETCH##BITS##();\
+        break;						\
+    case 0x02:						\
+		DECODE_E(not##BITS##);		\
+        break;						\
+    case 0x03:						\
+		DECODE_E(neg##BITS##);		\
+        break;						\
+    case 0x04:						\
+		DECODE_E(mul##BITS##);		\
+        break;						\
+    case 0x05:						\
+		DECODE_E(imul##BITS##);		\
+        break;						\
+    case 0x06:						\
+		DECODE_E(div##BITS##);		\
+        break;						\
+    case 0x07:						\
+		DECODE_E(idiv##BITS##);		\
+        break;						\
+}
+
+#define DECODE_INST_EG(name, b)				\
+	rm = FETCH8();							\
+	if (rm>=0xC0) {							\
+		op->func = name##r##b##r##b##;		\
+		op->r1 = E(rm);						\
+		op->r2 = G(rm);						\
+	} else if (ea16) {						\
+		op->func = name##e##b##r##b##_16;	\
+		op->r1 = G(rm);						\
+		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
+	} else {								\
+		op->func = name##e##b##r##b##_32;	\
+		op->r1 = G(rm);						\
+		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
+	}									
+
+#define DECODE_INST_GE(name, b)				\
+	rm = FETCH8();							\
+	if (rm>=0xC0) {							\
+		op->func = name##r##b##r##b##;		\
+		op->r2 = E(rm);						\
+		op->r1 = G(rm);						\
+	} else if (ea16) {						\
+		op->func = name##r##b##e##b##_16;	\
+		op->r1 = G(rm);						\
+		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
+	} else {								\
+		op->func = name##r##b##e##b##_32;	\
+		op->r1 = G(rm);						\
+		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
+	}
+
 Op* freeOps;
 
 Op* allocOp() {
