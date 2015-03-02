@@ -15,6 +15,7 @@ void initCPU(CPU* cpu, Memory* memory) {
 	cpu->memory = memory;
 	cpu->inst = FLAGS_NONE;
 	cpu->timeStampCounter = 0;
+	cpu->blockCounter = 0;
 	FPU_FINIT(&cpu->fpu);
 }
 
@@ -506,4 +507,7 @@ void exception(CPU* cpu, int code) {
 
 void runBlock(CPU* cpu, Op* block) {
 	block->func(cpu, block);
+}
+
+void runCPU(CPU* cpu) {
 }

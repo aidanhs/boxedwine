@@ -132,6 +132,8 @@
     <ClInclude Include="..\..\..\..\include\platform.h" />
     <ClInclude Include="..\..\..\..\include\ram.h" />
     <ClInclude Include="..\..\..\..\include\reg.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\fpu.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\ops.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c" />

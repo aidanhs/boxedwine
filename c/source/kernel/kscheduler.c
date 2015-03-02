@@ -27,12 +27,11 @@ U64 contextTime = 10000;
 
 void runSlice() {
 	CPU* cpu;
-	U64 clocks;
 
 	lastThread = lastThread->scheduleNext;
 	cpu = &lastThread->cpu;
-	clocks = cpu->timeStampCounter;
 	do {
-	} while (cpu->timeStampCounter-clocks < contextTime);
-
+		runCPU(cpu);
+	} while (cpu->blockCounter < contextTime);
+	cpu->timeStampCounter+=cpu->blockCounter;
 }

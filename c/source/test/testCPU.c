@@ -87,7 +87,7 @@ void newInstructionWithRM(int instruction, int rm, int flags) {
     pushCode8(rm);
 }
 
-void runCPU() {
+void runTestCPU() {
 	Op* block;
 
     pushCode8(0x70); // jump causes the decoder to stop building the block
@@ -198,7 +198,7 @@ void Eb(int instruction, int which, Data* data) {
             reg = cpu->reg8[E(rm)];
 			cpu->reg[E8(rm)].u32 = DEFAULT;
             *reg = (U8)data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, *reg, 0, E8(rm), -1, 0, 8);
         }
 
@@ -214,7 +214,7 @@ void Eb(int instruction, int which, Data* data) {
             pushCode16(200);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
 		writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readb(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 8);
 		data++;
@@ -242,7 +242,7 @@ void EbAlAx(int instruction, int which, Data* data, int useAX) {
 				AX = data->var1;
 			else
 				AL = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, AX, 0, 0, -1, 0, 8);
         }
 
@@ -263,7 +263,7 @@ void EbAlAx(int instruction, int which, Data* data, int useAX) {
             AL = data->var1;
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var2);
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, AX, 0, 0, -1, 0, 16);
 		data++;
     }
@@ -290,7 +290,7 @@ void EwAxDx(int instruction, int which, Data* data, int useDX) {
             AX = data->var2;
             DX = data->var1;
             reg->u16=data->constant;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, AX, DX, 0, 2, 0, 16);
         }
 
@@ -310,7 +310,7 @@ void EwAxDx(int instruction, int which, Data* data, int useDX) {
         DX = data->var1;
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writew(cpu->memory, cpu->segAddress[DS] + 200, data->constant);
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, AX, DX, 0, 2, 0, 16);
 		data++;
     }
@@ -335,7 +335,7 @@ void EdEaxEdx(int instruction, int which, Data* data, int useEdx) {
             EAX = data->var2;
             EDX = data->var1;
             reg->u32 = data->constant;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, EAX, EDX, 0, 2, 0, 32);
         }
 
@@ -353,7 +353,7 @@ void EdEaxEdx(int instruction, int which, Data* data, int useEdx) {
         EDX=data->var1;
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->constant);
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, EAX, EDX, 0, 2, 0, 32);
 		data++;
     }
@@ -377,7 +377,7 @@ void EbCl(int instruction, int which, Data* data) {
             ECX = DEFAULT;
             *reg=data->var1;
             CL = data->var2;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, *reg, 0, E8(rm), -1, 0, 8);
         }
 
@@ -395,7 +395,7 @@ void EbCl(int instruction, int which, Data* data) {
             pushCode16(200);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
 		writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
 		result = readb(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 8);
 		data++;
@@ -417,7 +417,7 @@ void EbIb(int instruction, int which, Data* data) {
             e = cpu->reg8[E(rm)];
 			cpu->reg[E8(rm)].u32 = DEFAULT;
             *e=data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, *e, 0, E8(rm), -1, 0, 8);
         }
 
@@ -434,7 +434,7 @@ void EbIb(int instruction, int which, Data* data) {
         pushCode8(data->var2);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
 		result = readb(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 8);
 		data++;
@@ -447,7 +447,7 @@ void EbRegIb(int instruction, U8* e, int rm, Data* data) {
         pushCode8(data->var2);
 		cpu->reg[E8(rm)].u32 = DEFAULT;
         *e=data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, *e, 0, E8(rm), -1, 0, 8);
 		data++;
     }
@@ -475,7 +475,7 @@ void EbGb(int instruction, Data* data) {
 				cpu->reg[G8(rm)].u32 = DEFAULT;
                 *e=data->var1;
                 *g=data->var2;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, *e, *g, E8(rm), G8(rm), 0, 8);
             }
         }
@@ -500,7 +500,7 @@ void EbGb(int instruction, Data* data) {
             g = cpu->reg8[G(rm)];
 			cpu->reg[G8(rm)].u32 = DEFAULT;
             *g=data->var2;
-            runCPU();
+            runTestCPU();
 			result = readb(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, *g, G8(rm), -1, cpu->segAddress[DS] + 200, 8);
         }
@@ -530,7 +530,7 @@ void GbEb(int instruction, Data* data) {
 				cpu->reg[G8(rm)].u32 = DEFAULT;
                 *e=data->var2;
                 *g=data->var1;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, *g, *e, E8(rm), G8(rm), 0, 8);
             }
         }
@@ -554,7 +554,7 @@ void GbEb(int instruction, Data* data) {
             g = cpu->reg8[G(rm)];
 			cpu->reg[G8(rm)].u32 = DEFAULT;
             *g=data->var1;
-            runCPU();
+            runTestCPU();
 			assertResult(data, cpu, instruction, *g, readb(cpu->memory, cpu->segAddress[DS] + 200), G8(rm), -1, cpu->segAddress[DS] + 200, 8);
         }
 		data++;
@@ -575,7 +575,7 @@ void Ew(int instruction, int which, Data* data) {
             reg = &cpu->reg[E(rm)];
             reg->u32 = DEFAULT;
             reg->u16=data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, reg->u16, 0, E(rm), -1, 0, 16);
         }
 
@@ -591,7 +591,7 @@ void Ew(int instruction, int which, Data* data) {
             pushCode16(200);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
 		writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
 		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
 		data++;
@@ -616,7 +616,7 @@ void EwCl(int instruction, int which, Data* data) {
             ECX = DEFAULT;
 			reg->u16=data->var1;
             CL = data->var2;
-            runCPU();
+            runTestCPU();
 			assertResult(data, cpu, instruction, reg->u16, 0, E(rm), -1, 0, 16);
         }
 
@@ -634,7 +634,7 @@ void EwCl(int instruction, int which, Data* data) {
             pushCode16(200);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
 		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
 		data++;
@@ -660,7 +660,7 @@ void EwIx(int instruction, int which, Data* data) {
             e = &cpu->reg[E(rm)];
 			e->u32 = DEFAULT;
             e->u16 = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
         }
 
@@ -677,7 +677,7 @@ void EwIx(int instruction, int which, Data* data) {
         pushCode8(data->var2);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
 		writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
 		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
 		data++;
@@ -690,7 +690,7 @@ void EwRegIw(int instruction, Reg* e, int rm, Data* data) {
         pushCode16(data->var2);
         e->u32 = DEFAULT;
         e->u16 = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
 		data++;
     }
@@ -711,7 +711,7 @@ void EwIb(int instruction, int which, Data* data) {
             e = &cpu->reg[E(rm)];
 			e->u32 = DEFAULT;
             e->u16 = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
         }
 
@@ -728,7 +728,7 @@ void EwIb(int instruction, int which, Data* data) {
         pushCode8(data->var2);
 		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
 		writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
 		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
 		data++;
@@ -750,7 +750,7 @@ void EwIw(int instruction, int which, Data* data) {
             e = &cpu->reg[E(rm)];
             e->u32 = DEFAULT;
             e->u16=data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
         }
 
@@ -767,7 +767,7 @@ void EwIw(int instruction, int which, Data* data) {
         pushCode16(data->var2);
         writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
 		data++;
@@ -796,7 +796,7 @@ void EwGw(int instruction, Data* data) {
                 g->u32 = DEFAULT;
                 e->u16 = data->var1;
                 g->u16 = data->var2;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, e->u16, g->u16, E(rm), G(rm), 0, 16);
             }
         }
@@ -821,7 +821,7 @@ void EwGw(int instruction, Data* data) {
             g = &cpu->reg[G(rm)];
             g->u32 = DEFAULT;
             g->u16 = data->var2;
-            runCPU();
+            runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200, 16);
         }
@@ -848,7 +848,7 @@ void EwSw(int instruction, Data* data) {
                 e->u32 = DEFAULT;
                 e->u16 = data->var1;
                 *g = data->var2;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, e->u16, *g, ew, -1, 0, 16);
             }
         }
@@ -872,7 +872,7 @@ void EwSw(int instruction, Data* data) {
             writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
 			g = &cpu->segValue[gw];
             *g = data->var2;
-            runCPU();
+            runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, *g, -1, -1, cpu->segAddress[DS] + 200, 16);
         }
@@ -898,7 +898,7 @@ void EdSw(int instruction, Data* data) {
 				g = &cpu->segValue[gw];
                 e->u32 = data->var1;
                 *g = data->var2;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, e->u16, *g, ew, -1, 0, 32);
             }
         }
@@ -922,7 +922,7 @@ void EdSw(int instruction, Data* data) {
             writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
 			g = &cpu->segValue[gw];
             *g = data->var2;
-            runCPU();
+            runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, *g, -1, -1, cpu->segAddress[DS] + 200, 32);
         }
@@ -952,7 +952,7 @@ void GwEw(int instruction, Data* data) {
                 g->u32 = DEFAULT;
                 e->u16=data->var2;
                 g->u16=data->var1;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, g->u16, e->u16, ew, gw, 0, 16);
             }
         }
@@ -977,7 +977,7 @@ void GwEw(int instruction, Data* data) {
             g = &cpu->reg[gw];
             g->u32 = DEFAULT;
             g->u16 = data->var1;
-            runCPU();
+            runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, g->u16, result, gw, -1, cpu->segAddress[DS] + 200, 16);
         }
@@ -998,7 +998,7 @@ void Ed(int instruction, int which, Data* data) {
             newInstructionWithRM(instruction, rm, data->flags);
             reg = &cpu->reg[ed];
             reg->u32 = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, reg->u32, 0, ed, -1, 0, 32);
         }
 
@@ -1013,7 +1013,7 @@ void Ed(int instruction, int which, Data* data) {
         else
             pushCode16(200);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 32);
 		data++;
@@ -1037,7 +1037,7 @@ void EdCl(int instruction, int which, Data* data) {
             ECX = DEFAULT;
             reg->u32 = data->var1;
             CL=data->var2;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, reg->u32, 0, ed, -1, 0, 32);
         }
 
@@ -1054,7 +1054,7 @@ void EdCl(int instruction, int which, Data* data) {
         else
             pushCode16(200);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 32);
 		data++;
@@ -1079,7 +1079,7 @@ void EdIx(int instruction, int which, Data* data) {
             pushCode8(data->var2);
             e = &cpu->reg[ed];
             e->u32 = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, e->u32, 0, -1, -1, 0, 0);
         }
 
@@ -1095,7 +1095,7 @@ void EdIx(int instruction, int which, Data* data) {
             pushCode16(200);
         pushCode8(data->var2);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, 0, 0);
 		data++;
@@ -1116,7 +1116,7 @@ void EdIb(int instruction, int which, Data* data) {
             pushCode8(data->var2);
             e = &cpu->reg[ed];
             e->u32 = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, e->u32, 0, ed, -1, 0, 32);
         }
 
@@ -1133,7 +1133,7 @@ void EdIb(int instruction, int which, Data* data) {
         pushCode8(data->var2);
         writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 32);
 		data++;
@@ -1145,7 +1145,7 @@ void EdRegId(int instruction, Reg* e, int ed, Data* data) {
         newInstruction(instruction, 0);
         pushCode32(data->var2);
         e->u32=data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, e->u32, 0, ed, -1, 0, 32);
 		data++;
     }
@@ -1165,7 +1165,7 @@ void EdId(int instruction, int which, Data* data) {
             pushCode32(data->var2);
             e = &cpu->reg[ed];
             e->u32 = data->var1;
-            runCPU();
+            runTestCPU();
             assertResult(data, cpu, instruction, e->u32, 0, -1, -1, 0, 0);
         }
 
@@ -1181,7 +1181,7 @@ void EdId(int instruction, int which, Data* data) {
             pushCode16(200);
         pushCode32(data->var2);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-        runCPU();
+        runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, 0, 0);
 		data++;
@@ -1208,7 +1208,7 @@ void EdGd(int instruction, Data* data) {
                 g = &cpu->reg[gd];
                 e->u32 = data->var1;
                 g->u32 = data->var2;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, e->u32, g->u32, -1, -1, 0, 0);
             }
         }
@@ -1231,7 +1231,7 @@ void EdGd(int instruction, Data* data) {
             writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
             g = &cpu->reg[gd];
             g->u32 = data->var2;
-            runCPU();
+            runTestCPU();
             result = readd(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u32, -1, -1, 0, 0);
         }
@@ -1259,7 +1259,7 @@ void GdEd(int instruction, Data* data) {
                 g = &cpu->reg[gd];
                 e->u32 = data->var2;
                 g->u32 = data->var1;
-                runCPU();
+                runTestCPU();
                 assertResult(data, cpu, instruction, g->u32, e->u32, -1, -1, 0, 0);
             }
         }
@@ -1282,7 +1282,7 @@ void GdEd(int instruction, Data* data) {
             writed(cpu->memory, cpu->segAddress[DS] + 200, data->var2);
             g = &cpu->reg[gd];
             g->u32 = data->var1;
-            runCPU();
+            runTestCPU();
             result = readd(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, g->u32, result, -1, -1, 0, 0);
         }
@@ -1296,7 +1296,7 @@ void AlIb(int instruction, Data* data) {
         pushCode8(data->var2);
         EAX = DEFAULT;
         AL = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, AL, 0, 0, -1, 0, 8);
 		data++;
     }
@@ -1308,7 +1308,7 @@ void AxIw(int instruction, Data* data) {
         pushCode16(data->var2);
         EAX = DEFAULT;
         AX = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, AX, 0, 0, -1, 0, 16);
 		data++;
     }
@@ -1319,7 +1319,7 @@ void EaxId(int instruction, Data* data) {
         newInstruction(instruction, data->flags);
         pushCode32(data->var2);
         EAX = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, EAX, 0, -1, -1, 0, 0);
 		data++;
     }
@@ -1331,7 +1331,7 @@ void EwReg(int instruction, int ew, Data* data) {
         newInstruction(instruction, data->flags);
         reg->u32 = DEFAULT;
         reg->u16 = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, reg->u16, 0, ew, -1, 0, 16);
 		data++;
     }
@@ -1345,7 +1345,7 @@ void EbReg(int instruction, int eb, Data* data) {
         newInstruction(instruction, data->flags);
         reg->u32 = DEFAULT;
         *e = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, reg->u8, 0, eb, -1, 0, 8);
 		data++;
     }
@@ -1368,7 +1368,7 @@ void LeaGw() {
         reg->u32 = DEFAULT;
         ESI = DEFAULT;
         SI = 0xABCD;
-        runCPU();
+        runTestCPU();
         assertTrue(reg->u16==(0xABCD+8));
         assertTrue((reg->u32 & 0xFFFF0000)==(DEFAULT & 0xFFFF0000));
     }
@@ -1389,7 +1389,7 @@ void LeaGd() {
         pushCode8(8);
         reg = &cpu->reg[i];
         EBX=0xABCD1234;
-        runCPU();
+        runTestCPU();
         assertTrue(reg->u32==(0xABCD1234+8));
     }
 }
@@ -1399,7 +1399,7 @@ void EdReg(int instruction, int ed, Data* data) {
 		Reg* reg = &cpu->reg[ed];
         newInstruction(instruction, data->flags);
         reg->u32 = data->var1;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, reg->u32, 0, -1, -1, 0, 0);
 		data++;
     }
@@ -1412,7 +1412,7 @@ void Reg16Reg16(int instruction, Data* data, Reg* r1, Reg* r2) {
         r1->u16 = data->var1;
         r2->u32 = DEFAULT;
         r2->u16 = data->var2;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, r1->u16, r2->u16, -1, -1, 0, 16);
 		data++;
     }
@@ -1423,7 +1423,7 @@ void Reg32Reg32(int instruction, Data* data, Reg* r1, Reg* r2) {
         newInstruction(instruction, data->flags);
         r1->u32 = data->var1;
         r2->u32 = data->var2;
-        runCPU();
+        runTestCPU();
         assertResult(data, cpu, instruction, r1->u32, r2->u32, -1, -1, 0, 0);
 		data++;
     }
@@ -1436,7 +1436,7 @@ void Push16Reg(int instruction, Reg* reg) {
 	writew(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAA);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0xCCCC);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4092);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0x1234);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP+2)==0xAAAA);
@@ -1450,7 +1450,7 @@ void Pushf(int instruction) {
     writew(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAA);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0xCCCC);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4092);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0x1236); // bit 1 is always set
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP+2)==0xAAAA);
@@ -1464,7 +1464,7 @@ void Push32Reg(int instruction, Reg* reg) {
     writed(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAAAAAA);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xCCCCCCCC);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4088);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==0x56781234);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP+4)==0xAAAAAAAA);
@@ -1478,7 +1478,7 @@ void Pushfd(int instruction) {
     writed(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAAAAAA);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xCCCCCCCC);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4088);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==(0x56781236 & 0xFCFFFF)); // bit 1 is always set
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP+4)==0xAAAAAAAA);
@@ -1493,7 +1493,7 @@ void Pop16(int instruction, Reg* reg) {
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0x1234);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
     ESP-=2;
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4094);
     assertTrue(reg->u32 == 0xDDDD1234);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0xAAAA);
@@ -1508,7 +1508,7 @@ void Popf(int instruction) {
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0x1234);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
     ESP-=2;
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4094);
     assertTrue(cpu->flags == 0xDDDD1234);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0xAAAA);
@@ -1522,7 +1522,7 @@ void Pop32(int instruction, Reg* reg) {
     writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0x56781234);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
     ESP-=4;
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4092);
     assertTrue(reg->u32 == 0x56781234);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==0xAAAAAAAA);
@@ -1536,7 +1536,7 @@ void Popfd(int instruction) {
     writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0x56781234);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
     ESP-=4;
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4092);
     assertTrue(cpu->flags == 0x56781234);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==0xAAAAAAAA);
@@ -1548,7 +1548,7 @@ void flags(int instruction, Data* data, Reg* reg) {
         newInstruction(instruction, 0);
         cpu->flags = data->var1;
         reg->u32 = data->var2;
-        runCPU();
+        runTestCPU();
         assertTrue(reg->u32 == data->resultvar2);
         assertTrue(cpu->flags == data->result);
 		data++;
@@ -1571,7 +1571,7 @@ void PopEw() {
         writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0x1234);
         writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
         ESP-=2;
-        runCPU();
+        runTestCPU();
         assertTrue(ESP==4094);
         assertTrue(reg->u32 == 0xDDDD1234);
         assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0xAAAA);
@@ -1588,7 +1588,7 @@ void PopEw() {
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0x1234);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
     ESP-=2;
-    runCPU();
+    runTestCPU();
 
     assertTrue(ESP==4094);
     assertTrue(readd(cpu->memory, cpu->segAddress[DS] + 200) == ((DEFAULT & 0xFFFF0000) | 0x1234));
@@ -1611,7 +1611,7 @@ void PopEd() {
         writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0x56781234);
         writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
         ESP-=4;
-        runCPU();
+        runTestCPU();
         assertTrue(ESP==4092);
         assertTrue(reg->u32 == 0x56781234);
         assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==0xAAAAAAAA);
@@ -1628,7 +1628,7 @@ void PopEd() {
     writed(cpu->memory, cpu->segAddress[SS] + ESP - 4, 0x56781234);
     writed(cpu->memory, cpu->segAddress[SS] + ESP - 8, 0xBBBBBBBB);
     ESP-=4;
-    runCPU();
+    runTestCPU();
 
     assertTrue(ESP==4092);
     assertTrue(readd(cpu->memory, cpu->segAddress[DS] + 200) == 0x56781234);
@@ -1643,7 +1643,7 @@ void Push16(int instruction) {
     writew(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAA);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0xCCCC);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4092);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0x1234);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP+2)==0xAAAA);
@@ -1657,7 +1657,7 @@ void Push32(int instruction) {
     writed(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAAAAAA);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xCCCCCCCC);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4088);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==0x56781234);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP+4)==0xAAAAAAAA);
@@ -1671,7 +1671,7 @@ void Push16s8(int instruction) {
     writew(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAA);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0xCCCC);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4092);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP)==0xFFFC);
     assertTrue(readw(cpu->memory, cpu->segAddress[SS]+ESP+2)==0xAAAA);
@@ -1685,7 +1685,7 @@ void Push32s8(int instruction) {
     writed(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAAAAAA);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xCCCCCCCC);
     writed(cpu->memory, cpu->segAddress[SS]+ESP-8, 0xBBBBBBBB);
-    runCPU();
+    runTestCPU();
     assertTrue(ESP==4088);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP)==0xFFFFFFFC);
     assertTrue(readd(cpu->memory, cpu->segAddress[SS]+ESP+4)==0xAAAAAAAA);
@@ -3289,7 +3289,7 @@ void testXlat0x0d7() {
     BX = 2000;
     AL=4;
     writeb(cpu->memory, cpu->segAddress[DS] + 2004, 0x08);
-    runCPU();
+    runTestCPU();
     result = DEFAULT;
     result&=~0xFF;
     result+=8;
@@ -3308,7 +3308,7 @@ void testXlat0x2d7() {
     EBX=2000;
     AL=4;
 	writeb(cpu->memory, cpu->segAddress[DS] + 2004, 0x08);
-    runCPU();
+    runTestCPU();
     result = DEFAULT;
     result&=~0xFF;
     result+=8;
@@ -3340,7 +3340,7 @@ const U32 FLOAT_NAN_BITS = 0x7fd00000;
 int getStackPos() {
     newInstruction(0xdf, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     return (AX & 0x3800) >> 11;
 
 }
@@ -3358,7 +3358,7 @@ float getTopFloat() {
         pushCode32(4);
     else
         pushCode16(4);
-    runCPU();
+    runTestCPU();
     result.i = readd(cpu->memory, HEAP_ADDRESS+4);
 	return result.f;
 }
@@ -3383,13 +3383,13 @@ void fldf32(float f) {
     else
         pushCode16(4);
     writeF(f);
-    runCPU();
+    runTestCPU();
 }
 
 void fpu_init() {
     newInstruction(0xdb, 0);
     pushCode8(rm(false, 4, 3));
-    runCPU();
+    runTestCPU();
 }
 
 void doF32Instruction(int op1, int group1, int op2, int group2, float x, float y, float r) {
@@ -3406,7 +3406,7 @@ void doF32Instruction(int op1, int group1, int op2, int group2, float x, float y
         pushCode32(4);
     else
         pushCode16(4);
-    runCPU();
+    runTestCPU();
     result = getTopFloat();
     assertTrue((isnan(result) && isnan(r)) || result == r);
     assertTrue(getStackPos()==7); // nothing was popped
@@ -3417,7 +3417,7 @@ void doF32Instruction(int op1, int group1, int op2, int group2, float x, float y
     fldf32(x);
     newInstruction(op2, 0);
     pushCode8(rm(false, group2, 1));
-    runCPU();
+    runTestCPU();
     result = getTopFloat();
     assertTrue((isnan(result) && isnan(r)) || result == r);
     assertTrue(getStackPos()==6); // nothing was popped
@@ -3660,7 +3660,7 @@ int MASK = 0x100 | 0x200 | 0x400 | 0x4000;
 void assertTest(int r) {
     newInstruction(0xdf, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     assertTrue((AX & MASK) == r);
 }
 
@@ -3676,7 +3676,7 @@ void F32ComBase(int op, int group, float x, float y, int r, int popCount) {
         pushCode32(4);
     else
         pushCode16(4);
-    runCPU();
+    runTestCPU();
     assertTest(r);
     assertTrue(getStackPos()==((7+popCount)&7));
 
@@ -3686,7 +3686,7 @@ void F32ComBase(int op, int group, float x, float y, int r, int popCount) {
     fldf32(x);
     newInstruction(op, 0);
     pushCode8(rm(false, group, 1));
-    runCPU();
+    runTestCPU();
     assertTest(r);
     assertTrue(getStackPos()==((6+popCount)&7));
 }
@@ -3790,7 +3790,7 @@ void FSTFloat(int op, int group, float f, int pop) {
         pushCode32(4);
     else
         pushCode16(4);
-    runCPU();
+    runTestCPU();
 	result.i = readd(cpu->memory, HEAP_ADDRESS+4);
     assertTrue(result.f==f || (isnan(result.f) && isnan(f)));
     assertTrue(getStackPos()==(pop?0:7));
@@ -3825,22 +3825,22 @@ void doFLDSti() {
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 0, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==1.0f);
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 0, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==2.0f);
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 0, 4));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==3.0f);
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 0, 6));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==4.0f);
 }
 
@@ -3856,7 +3856,7 @@ void doFXCHSTi() {
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 1, 3));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==4.0f);
 }
 
@@ -3872,12 +3872,12 @@ void doFSTPSTi() {
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 3, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==2.0f);
 
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 3, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==1.0f);
 }
 
@@ -3889,31 +3889,31 @@ void doFCHS() {
     fldf32(432.1f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==-432.1f);
 
     fldf32(-0.001234f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==0.001234f);
 
     fldf32(NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(isnan(getTopFloat()));
 
     fldf32(POSITIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==NEGATIVE_INFINITY);
 
     fldf32(NEGATIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==POSITIVE_INFINITY);
 }
 
@@ -3925,31 +3925,31 @@ void doFABS() {
     fldf32(432.1f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==432.1f);
 
     fldf32(-0.001234f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==0.001234f);
 
     fldf32(NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(isnan(getTopFloat()));
 
     fldf32(POSITIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==POSITIVE_INFINITY);
 
     fldf32(NEGATIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat()==POSITIVE_INFINITY);
 }
 
@@ -3961,37 +3961,37 @@ void doFTST() {
     fldf32(432.1f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
-    runCPU();
+    runTestCPU();
     assertTest(GREATER);
 
     fldf32(-0.00001f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
-    runCPU();
+    runTestCPU();
     assertTest(LESS);
 
     fldf32(0.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
-    runCPU();
+    runTestCPU();
     assertTest(EQUAL);
 
     fldf32(POSITIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
-    runCPU();
+    runTestCPU();
     assertTest(GREATER);
 
     fldf32(NEGATIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
-    runCPU();
+    runTestCPU();
     assertTest(LESS);
 
     fldf32(NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
-    runCPU();
+    runTestCPU();
     assertTest(UNORDERED);
 }
 
@@ -4003,37 +4003,37 @@ void doFXAM() {
     fldf32(0.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
-    runCPU();
+    runTestCPU();
     assertTest(0x4000);
 
     fldf32(NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
-    runCPU();
+    runTestCPU();
     assertTest(0x100);
 
     fldf32(POSITIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
-    runCPU();
+    runTestCPU();
     assertTest(0x100 | 0x400);
 
     fldf32(NEGATIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
-    runCPU();
+    runTestCPU();
     assertTest(0x100 | 0x200 | 0x400);
 
     fldf32(1.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
-    runCPU();
+    runTestCPU();
     assertTest(0x400);
 
     fldf32(-2.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
-    runCPU();
+    runTestCPU();
     assertTest(0x200 | 0x400);
 }
 
@@ -4044,7 +4044,7 @@ void testFXAM() {
 void doFLD1() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 1.0f);
 }
 
@@ -4055,7 +4055,7 @@ void testFLD1() {
 void doFLDL2T() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 3.321928f);
 }
 
@@ -4066,7 +4066,7 @@ void testFLDL2T() {
 void doFLDL2E() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 1.442695f);
 }
 
@@ -4077,7 +4077,7 @@ void testFLDL2E() {
 void doFLDPI() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 3));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 3.1415927f);
 }
 
@@ -4088,7 +4088,7 @@ void testFLDPI() {
 void doFLDLG2() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 4));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == .30103f);
 }
 
@@ -4099,7 +4099,7 @@ void testFLDLG2() {
 void doFLDLN2() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 5));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 0.6931472f);
 }
 
@@ -4110,7 +4110,7 @@ void testFLDLN2() {
 void doFLDZ() {
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 5, 6));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 0.0f);
 }
 
@@ -4127,37 +4127,37 @@ void doF2XM1() {
     fldf32(NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(isnan(getTopFloat()));
 
     fldf32(POSITIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == POSITIVE_INFINITY);
 
     fldf32(NEGATIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == -1.0f);
 
     fldf32(-1.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == -0.5f);
 
     fldf32(1.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 1.0f);
 
     fldf32(-0.5f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == -0.29289323f);
 }
 
@@ -4170,7 +4170,7 @@ void doFYL2X() {
     fldf32(0.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == NEGATIVE_INFINITY);
 
     fpu_init();
@@ -4178,7 +4178,7 @@ void doFYL2X() {
     fldf32(1.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 0.0f);
 
     fpu_init();
@@ -4186,7 +4186,7 @@ void doFYL2X() {
     fldf32(2.5f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 10.575425f);
 
     fpu_init();
@@ -4194,7 +4194,7 @@ void doFYL2X() {
     fldf32(2.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 8.0f);
 
     fpu_init();
@@ -4202,7 +4202,7 @@ void doFYL2X() {
     fldf32(-2.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(isnan(getTopFloat()));
 
     fpu_init();
@@ -4210,7 +4210,7 @@ void doFYL2X() {
     fldf32(8.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 30.0f);
 
     fpu_init();
@@ -4218,7 +4218,7 @@ void doFYL2X() {
     fldf32(NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(isnan(getTopFloat()));
 
     fpu_init();
@@ -4226,7 +4226,7 @@ void doFYL2X() {
     fldf32(POSITIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == POSITIVE_INFINITY);
 
     fpu_init();
@@ -4234,7 +4234,7 @@ void doFYL2X() {
     fldf32(NEGATIVE_INFINITY);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
-    runCPU();
+    runTestCPU();
     assertTrue(isnan(getTopFloat()));
 }
 
@@ -4247,28 +4247,28 @@ void doFSQRT() {
     fldf32(0.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 7, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 0.0f);
 
     fpu_init();
     fldf32(1.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 7, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 1.0f);
 
     fpu_init();
     fldf32(2.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 7, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 1.4142135f);
 
     fpu_init();
     fldf32(4.0f);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 7, 2));
-    runCPU();
+    runTestCPU();
     assertTrue(getTopFloat() == 2.0f);
 }
 

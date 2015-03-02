@@ -5,3873 +5,8 @@
 #include "log.h"
 #include <stdlib.h>
 #include <string.h>
-#include "fpu.c"
-
-#define FETCH8() readb(cpu->memory, ip++)
-#define FETCH_S8() (S8)readb(cpu->memory, ip++)
-#define FETCH16() readw(cpu->memory, ip);ip+=2
-#define FETCH_S16() (S16)readw(cpu->memory, ip);ip+=2
-#define FETCH32() readd(cpu->memory, ip);ip+=4
-#define FETCH_S32() (S32)readb(cpu->memory, ip);ip+=4
-
-#define FINISH_OP() op->eipCount=ip-start
-
-#define INST8(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r8r8(CPU* cpu, Op* op) {							\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = *cpu->reg8[op->r2];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8r8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = *cpu->reg8[op->r1];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8r8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = *cpu->reg8[op->r1];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8e8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = readb(cpu->memory, eaa);					\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8e8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = readb(cpu->memory, eaa);					\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8(CPU* cpu, Op* op) {							\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-
-#define INST16(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r16r16(CPU* cpu, Op* op) {						\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = cpu->reg[op->r2].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16r16_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = cpu->reg[op->r1].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16r16_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = cpu->reg[op->r1].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16e16_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = readw(cpu->memory, eaa);				\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16e16_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = readw(cpu->memory, eaa);				\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16(CPU* cpu, Op* op) {							\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INST32(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r32r32(CPU* cpu, Op* op) {						\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = cpu->reg[op->r2].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32r32_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = cpu->reg[op->r1].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32r32_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = cpu->reg[op->r1].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32e32_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = readd(cpu->memory, eaa);				\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32e32_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = readd(cpu->memory, eaa);				\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32(CPU* cpu, Op* op) {							\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INST(name, uname, op, rr, mr, rm, rd, md)				\
-	INST8(name, uname, op, rr, mr, rm, rd, md)					\
-	INST16(name, uname, op, rr, mr, rm, rd, md)					\
-	INST32(name, uname, op, rr, mr, rm, rd, md)
-
-#define INSTR8(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r8r8(CPU* cpu, Op* op) {							\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = *cpu->reg8[op->r2];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8r8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = *cpu->reg8[op->r1];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8r8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = *cpu->reg8[op->r1];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8e8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = readb(cpu->memory, eaa);					\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8e8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = readb(cpu->memory, eaa);					\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8(CPU* cpu, Op* op) {							\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8;			\
-		cpu->inst = FLAGS_##uname##8;							\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INSTR16(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r16r16(CPU* cpu, Op* op) {						\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = cpu->reg[op->r2].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16r16_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = cpu->reg[op->r1].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16r16_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = cpu->reg[op->r1].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16e16_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = readw(cpu->memory, eaa);				\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16e16_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = readw(cpu->memory, eaa);				\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16(CPU* cpu, Op* op) {							\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16;		\
-		cpu->inst = FLAGS_##uname##16;							\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INSTR32(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r32r32(CPU* cpu, Op* op) {						\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = cpu->reg[op->r2].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32r32_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = cpu->reg[op->r1].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32r32_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = cpu->reg[op->r1].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32e32_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = readd(cpu->memory, eaa);				\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32e32_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = readd(cpu->memory, eaa);				\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32(CPU* cpu, Op* op) {							\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32;		\
-		cpu->inst = FLAGS_##uname##32;							\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INSTR(name, uname, op, rr, mr, rm, rd, md)				\
-	INSTR8(name, uname, op, rr, mr, rm, rd, md)					\
-	INSTR16(name, uname, op, rr, mr, rm, rd, md)				\
-	INSTR32(name, uname, op, rr, mr, rm, rd, md)
-
-#define INSTC8(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r8r8(CPU* cpu, Op* op) {							\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = *cpu->reg8[op->r2];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8r8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = *cpu->reg8[op->r1];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8r8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = *cpu->reg8[op->r1];						\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8e8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = readb(cpu->memory, eaa);					\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8e8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = readb(cpu->memory, eaa);					\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r8(CPU* cpu, Op* op) {							\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = *cpu->reg8[op->r1];						\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		*cpu->reg8[op->r1] = cpu->result.u8;					\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e8_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u8 = readb(cpu->memory, eaa);					\
-		cpu->var2.u8 = op->data1;								\
-		cpu->result.u8 = cpu->var2.u8 o cpu->var1.u8 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##8;							\
-		writeb(cpu->memory, eaa, cpu->result.u8);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INSTC16(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r16r16(CPU* cpu, Op* op) {						\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = cpu->reg[op->r2].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16r16_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = cpu->reg[op->r1].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16r16_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = cpu->reg[op->r1].u16;					\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16e16_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = readw(cpu->memory, eaa);				\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16e16_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = readw(cpu->memory, eaa);				\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r16(CPU* cpu, Op* op) {							\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = cpu->reg[op->r1].u16;					\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		cpu->reg[op->r1].u16 = cpu->result.u16;					\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e16_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u16 = readw(cpu->memory, eaa);				\
-		cpu->var2.u16 = op->data1;								\
-		cpu->result.u16 = cpu->var2.u16 o cpu->var1.u16 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##16;							\
-		writew(cpu->memory, eaa, cpu->result.u16);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INSTC32(name, uname, o, rr, mr, rm, rd, md)				\
-	void name##r32r32(CPU* cpu, Op* op) {						\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = cpu->reg[op->r2].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32r32_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = cpu->reg[op->r1].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32r32_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = cpu->reg[op->r1].u32;					\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(mr);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32e32_16(CPU* cpu, Op* op) {					\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = readd(cpu->memory, eaa);				\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32e32_32(CPU* cpu, Op* op) {					\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = readd(cpu->memory, eaa);				\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rm);												\
-		NEXT();													\
-	}															\
-																\
-	void name##r32(CPU* cpu, Op* op) {							\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = cpu->reg[op->r1].u32;					\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		cpu->reg[op->r1].u32 = cpu->result.u32;					\
-		CYCLES(rd);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32_16(CPU* cpu, Op* op) {						\
-		int eaa = eaa16(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}															\
-																\
-	void name##e32_32(CPU* cpu, Op* op) {						\
-		int eaa = eaa32(cpu, op);								\
-		cpu->oldcf = getCF(cpu);								\
-		cpu->var1.u32 = readd(cpu->memory, eaa);				\
-		cpu->var2.u32 = op->data1;								\
-		cpu->result.u32 = cpu->var2.u32 o cpu->var1.u32 o cpu->oldcf;\
-		cpu->inst = FLAGS_##uname##32;							\
-		writed(cpu->memory, eaa, cpu->result.u32);				\
-		CYCLES(md);												\
-		NEXT();													\
-	}
-
-#define INSTC(name, uname, op, rr, mr, rm, rd, md)				\
-	INSTC8(name, uname, op, rr, mr, rm, rd, md)					\
-	INSTC16(name, uname, op, rr, mr, rm, rd, md)				\
-	INSTC32(name, uname, op, rr, mr, rm, rd, md)
-
-INST(add, ADD, +, 1, 3, 2, 1, 3)
-INST(or, OR, |, 1, 3, 2, 1, 3)
-INSTC(adc, ADC, +, 1, 3, 2, 1, 3)
-INSTC(sbb, SBB, -, 1, 3, 2, 1, 3)
-INST(and, AND, &, 1, 3, 2, 1, 3)
-INST(sub, SUB, -, 1, 3, 2, 1, 3)
-INST(xor, XOR, ^, 1, 3, 2, 1, 3)
-INSTR(cmp, CMP, -, 1, 2, 2, 1, 2)
-INSTR(test, TEST, &, 1, 2, 2, 1, 2)
-
-#define DECODE_INST_EG(name, b)				\
-	rm = FETCH8();							\
-	if (rm>=0xC0) {							\
-		op->func = name##r##b##r##b##;		\
-		op->r1 = E(rm);						\
-		op->r2 = G(rm);						\
-	} else if (ea16) {						\
-		op->func = name##e##b##r##b##_16;	\
-		op->r1 = G(rm);						\
-		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
-	} else {								\
-		op->func = name##e##b##r##b##_32;	\
-		op->r1 = G(rm);						\
-		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
-	}									
-
-#define DECODE_INST_GE(name, b)				\
-	rm = FETCH8();							\
-	if (rm>=0xC0) {							\
-		op->func = name##r##b##r##b##;		\
-		op->r2 = E(rm);						\
-		op->r1 = G(rm);						\
-	} else if (ea16) {						\
-		op->func = name##r##b##e##b##_16;	\
-		op->r1 = G(rm);						\
-		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
-	} else {								\
-		op->func = name##r##b##e##b##_32;	\
-		op->r1 = G(rm);						\
-		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
-	}
-
-void pushSeg16(CPU* cpu, Op* op) {
-	push16(cpu, cpu->segValue[op->r1]);
-	CYCLES(1);
-	NEXT();
-}
-
-void pushSeg32(CPU* cpu, Op* op) {
-	push32(cpu, cpu->segValue[op->r1]);
-	CYCLES(1);
-	NEXT();
-}
-
-void popSeg16(CPU* cpu, Op* op) {
-	cpu->segValue[op->r1] = pop16(cpu);
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
-	CYCLES(3);
-	NEXT();
-}
-
-void popSeg32(CPU* cpu, Op* op) {
-	cpu->segValue[op->r1] = pop32(cpu);
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
-	CYCLES(3);
-	NEXT();
-}
-
-// OF is undefinted
-void daa(CPU* cpu, Op* op) {
-	if (((AL & 0x0F)>0x09) || getAF(cpu)) {
-		if ((AL > 0x99) || getCF(cpu)) {
-			AL+=0x60;
-			addFlag(CF);
-		} else {
-			removeFlag(CF);
-		}
-		AL+=0x06;
-		addFlag(AF);
-	} else {
-		if ((AL > 0x99) || getCF(cpu)) {
-			AL+=0x60;
-			addFlag(CF);
-		} else {
-			removeFlag(CF);
-		}
-		removeFlag(AF);
-	}
-	setSF(cpu,(AL & 0x80));
-	setZF(cpu,(AL == 0));
-	setPF(cpu,parity_lookup[AL]);
-	cpu->inst=FLAGS_NONE;
-	CYCLES(3);
-	NEXT();
-}
-
-void das(CPU* cpu, Op* op) {
-	U8 osigned=AL & 0x80;
-	if (((AL & 0x0f) > 9) || getAF(cpu)) {
-		if ((AL>0x99) || getCF(cpu)) {
-			AL-=0x60;
-			addFlag(CF);
-		} else {
-			setCF(cpu,(AL<=0x05));
-		}
-		AL-=6;
-		addFlag(AF);
-	} else {
-		if ((AL>0x99) || getCF(cpu)) {
-			AL-=0x60;
-			addFlag(CF);
-		} else {
-			removeFlag(CF);
-		}
-		removeFlag(AF);
-	}
-	setOF(cpu,osigned && ((AL & 0x80)==0));
-	setSF(cpu,(AL & 0x80));
-	setZF(cpu,(AL==0));
-	setPF(cpu,parity_lookup[AL]);
-	cpu->inst=FLAGS_NONE;
-	CYCLES(3);
-	NEXT();
-}
-
-void aaa(CPU* cpu, Op* op) {
-	setSF(cpu,((AL>=0x7a) && (AL<=0xf9)));
-	if ((AL & 0xf) > 9) {
-		setOF(cpu,(AL & 0xf0)==0x70);
-		AX += 0x106;
-		addFlag(CF);
-		setZF(cpu,(AL == 0));
-		addFlag(AF);
-	} else if (getAF(cpu)) {
-		AX += 0x106;
-		removeFlag(OF);
-		addFlag(CF);
-		removeFlag(ZF);
-		addFlag(AF);
-	} else {
-		removeFlag(OF);
-		removeFlag(CF);
-		setZF(cpu,(AL == 0));
-		removeFlag(AF);
-	}
-	setPF(cpu,parity_lookup[AL]);
-	AL &= 0x0F;
-	cpu->inst=FLAGS_NONE;
-	CYCLES(3);
-	NEXT();
-}
-
-void aas(CPU* cpu, Op* op) {
-	if ((AL & 0x0f)>9) {
-		setSF(cpu,(AL>0x85));
-		AX -= 0x106;
-		removeFlag(OF);
-		addFlag(CF);
-		addFlag(AF);
-	} else if (getAF(cpu)) {
-		setOF(cpu,((AL>=0x80) && (AL<=0x85)));
-		setSF(cpu,(AL<0x06) || (AL>0x85));
-		AX -= 0x106;
-		addFlag(CF);
-		addFlag(AF);
-	} else {
-		setSF(cpu,(AL>=0x80));
-		removeFlag(OF);
-		removeFlag(CF);
-		removeFlag(AF);
-	}
-	setZF(cpu,(AL == 0));
-	setPF(cpu,parity_lookup[AL]);
-	AL &= 0x0F;
-	cpu->inst=FLAGS_NONE;
-	CYCLES(3);
-	NEXT();
-}
-
-void incr8(CPU* cpu, Op* op) {
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u8=*cpu->reg8[op->r1];
-	cpu->result.u8=cpu->var1.u8+1;
-	cpu->inst = FLAGS_INC8;
-	*cpu->reg8[op->r1] = cpu->result.u8;
-	CYCLES(1);
-	NEXT();
-}
-
-void ince8_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u8=readb(cpu->memory, eaa);
-	cpu->result.u8=cpu->var1.u8+1;
-	cpu->inst = FLAGS_INC8;
-	writeb(cpu->memory, eaa, cpu->result.u8);
-	CYCLES(3);
-	NEXT();
-}
-
-void ince8_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u8=readb(cpu->memory, eaa);
-	cpu->result.u8=cpu->var1.u8+1;
-	cpu->inst = FLAGS_INC8;
-	writeb(cpu->memory, eaa, cpu->result.u8);
-	CYCLES(3);
-	NEXT();
-}
-
-void incr16(CPU* cpu, Op* op) {
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u16=cpu->reg[op->r1].u16;
-	cpu->result.u16=cpu->var1.u16+1;
-	cpu->inst = FLAGS_INC16;
-	cpu->reg[op->r1].u16 = cpu->result.u16;
-	CYCLES(1);
-	NEXT();
-}
-
-void ince16_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u16=readw(cpu->memory, eaa);
-	cpu->result.u16=cpu->var1.u16+1;
-	cpu->inst = FLAGS_INC16;
-	writew(cpu->memory, eaa, cpu->result.u16);
-	CYCLES(3);
-	NEXT();
-}
-
-void ince16_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u16=readw(cpu->memory, eaa);
-	cpu->result.u16=cpu->var1.u16+1;
-	cpu->inst = FLAGS_INC16;
-	writew(cpu->memory, eaa, cpu->result.u16);
-	CYCLES(3);
-	NEXT();
-}
-
-void incr32(CPU* cpu, Op* op) {
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u32=cpu->reg[op->r1].u32;
-	cpu->result.u32=cpu->var1.u32+1;
-	cpu->inst = FLAGS_INC32;
-	cpu->reg[op->r1].u32 = cpu->result.u32;
-	CYCLES(1);
-	NEXT();
-}
-
-void ince32_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u32=readd(cpu->memory, eaa);
-	cpu->result.u32=cpu->var1.u32+1;
-	cpu->inst = FLAGS_INC32;
-	writed(cpu->memory, eaa, cpu->result.u32);
-	CYCLES(3);
-	NEXT();
-}
-
-void ince32_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u32=readd(cpu->memory, eaa);
-	cpu->result.u32=cpu->var1.u32+1;
-	cpu->inst = FLAGS_INC32;
-	writed(cpu->memory, eaa, cpu->result.u32);
-	CYCLES(3);
-	NEXT();
-}
-
-void decr8(CPU* cpu, Op* op) {
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u8=*cpu->reg8[op->r1];
-	cpu->result.u8=cpu->var1.u8-1;
-	cpu->inst = FLAGS_DEC8;
-	*cpu->reg8[op->r1] = cpu->result.u8;
-	CYCLES(1);
-	NEXT();
-}
-
-void dece8_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u8=readb(cpu->memory, eaa);
-	cpu->result.u8=cpu->var1.u8-1;
-	cpu->inst = FLAGS_DEC8;
-	writeb(cpu->memory, eaa, cpu->result.u8);
-	CYCLES(3);
-	NEXT();
-}
-
-void dece8_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u8=readb(cpu->memory, eaa);
-	cpu->result.u8=cpu->var1.u8-1;
-	cpu->inst = FLAGS_DEC8;
-	writeb(cpu->memory, eaa, cpu->result.u8);
-	CYCLES(3);
-	NEXT();
-}
-
-void decr16(CPU* cpu, Op* op) {
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u16=cpu->reg[op->r1].u16;
-	cpu->result.u16=cpu->var1.u16-1;
-	cpu->inst = FLAGS_DEC16;
-	cpu->reg[op->r1].u16 = cpu->result.u16;
-	CYCLES(1);
-	NEXT();
-}
-
-void dece16_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u16=readw(cpu->memory, eaa);
-	cpu->result.u16=cpu->var1.u16-1;
-	cpu->inst = FLAGS_DEC16;
-	writew(cpu->memory, eaa, cpu->result.u16);
-	CYCLES(3);
-	NEXT();
-}
-
-void dece16_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u16=readw(cpu->memory, eaa);
-	cpu->result.u16=cpu->var1.u16-1;
-	cpu->inst = FLAGS_DEC16;
-	writew(cpu->memory, eaa, cpu->result.u16);
-	CYCLES(3);
-	NEXT();
-}
-
-void decr32(CPU* cpu, Op* op) {
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u32=cpu->reg[op->r1].u32;
-	cpu->result.u32=cpu->var1.u32-1;
-	cpu->inst = FLAGS_DEC32;
-	cpu->reg[op->r1].u32 = cpu->result.u32;
-	CYCLES(1);
-	NEXT();
-}
-
-void dece32_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u32=readd(cpu->memory, eaa);
-	cpu->result.u32=cpu->var1.u32-1;
-	cpu->inst = FLAGS_DEC32;
-	writed(cpu->memory, eaa, cpu->result.u32);
-	CYCLES(3);
-	NEXT();
-}
-
-void dece32_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->oldcf=getCF(cpu);
-	cpu->var1.u32=readd(cpu->memory, eaa);
-	cpu->result.u32=cpu->var1.u32-1;
-	cpu->inst = FLAGS_DEC32;
-	writed(cpu->memory, eaa, cpu->result.u32);
-	CYCLES(3);
-	NEXT();
-}
-
-#define PUSHPOP16(name, r) void push##name##(CPU* cpu, Op* op) {push16(cpu, r);CYCLES(1);NEXT();} void pop##name##(CPU* cpu, Op* op) {r=pop16(cpu);CYCLES(1);NEXT();}
-#define PUSHPOP32(name, r) void push##name##(CPU* cpu, Op* op) {push32(cpu, r);CYCLES(1);NEXT();} void pop##name##(CPU* cpu, Op* op) {r=pop32(cpu);CYCLES(1);NEXT();}
-
-PUSHPOP16(Ax, AX)
-PUSHPOP16(Cx, CX)
-PUSHPOP16(Dx, DX)
-PUSHPOP16(Bx, BX)
-PUSHPOP16(Sp, SP)
-PUSHPOP16(Bp, BP)
-PUSHPOP16(Si, SI)
-PUSHPOP16(Di, DI)
-
-PUSHPOP32(Eax, EAX)
-PUSHPOP32(Ecx, ECX)
-PUSHPOP32(Edx, EDX)
-PUSHPOP32(Ebx, EBX)
-PUSHPOP32(Esp, ESP)
-PUSHPOP32(Ebp, EBP)
-PUSHPOP32(Esi, ESI)
-PUSHPOP32(Edi, EDI)
-
-// not PF safe
-void pusha(CPU* cpu, Op* op) {
-	U16 sp = SP;
-	push16(cpu, AX);
-	push16(cpu, CX);
-	push16(cpu, DX);
-	push16(cpu, BX);
-	push16(cpu, sp);
-	push16(cpu, BP);
-	push16(cpu, SI);
-	push16(cpu, DI);
-	CYCLES(5);
-	NEXT();
-}
-
-void popa(CPU* cpu, Op* op) {
-	DI = pop16(cpu);
-	SI = pop16(cpu);
-	BP = pop16(cpu);
-	pop16(cpu);
-	BX = pop16(cpu);
-	DX = pop16(cpu);
-	CX = pop16(cpu);
-	AX = pop16(cpu);
-	CYCLES(5);
-	NEXT();
-}
-
-void pushad(CPU* cpu, Op* op) {
-	U32 esp = ESP;
-	push32(cpu, EAX);
-	push32(cpu, ECX);
-	push32(cpu, EDX);
-	push32(cpu, EBX);
-	push32(cpu, esp);
-	push32(cpu, EBP);
-	push32(cpu, ESI);
-	push32(cpu, EDI);
-	CYCLES(5);
-	NEXT();
-}
-
-void popad(CPU* cpu, Op* op) {
-	EDI = pop32(cpu);
-	ESI = pop32(cpu);
-	EBP = pop32(cpu);
-	pop32(cpu);
-	EBX = pop32(cpu);
-	EDX = pop32(cpu);
-	ECX = pop32(cpu);
-	EAX = pop32(cpu);
-	CYCLES(5);
-	NEXT();
-}
-
-void bound_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	if (cpu->reg[op->r1].u16<readw(cpu->memory, eaa) || cpu->reg[op->r1].u16>readw(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
-	}
-	CYCLES(8);
-	NEXT();
-}
-
-void bound_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	if (cpu->reg[op->r1].u16<readw(cpu->memory, eaa) || cpu->reg[op->r1].u16>readw(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
-	}
-	CYCLES(8);
-	NEXT();
-}
-
-void boundd_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	if (cpu->reg[op->r1].u32<readd(cpu->memory, eaa) || cpu->reg[op->r1].u32>readd(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
-	}
-	CYCLES(8);
-	NEXT();
-}
-
-void boundd_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	if (cpu->reg[op->r1].u32<readd(cpu->memory, eaa) || cpu->reg[op->r1].u32>readd(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
-	}
-	CYCLES(8);
-	NEXT();
-}
-
-void push16data(CPU* cpu, Op* op) {
-	push16(cpu, op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void push32data(CPU* cpu, Op* op) {
-	push32(cpu, op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void dimulr16r16(CPU* cpu, Op* op) {
-	S32 res=(S16)(cpu->reg[op->r2].u16) * (S16)op->data1;
-	fillFlagsNoCFOF(cpu);
-	if ((res >= -32767) && (res <= 32767)) {
-		removeFlag(CF|OF);
-	} else {
-		addFlag(CF|OF);
-	}
-	cpu->reg[op->r1].u16 = res;
-	CYCLES(10);
-	NEXT();
-}
-
-void dimulr16e16_16(CPU* cpu, Op* op) {
-	S32 res=(S16)(readw(cpu->memory, eaa16(cpu, op))) * (S16)op->data1;
-	fillFlagsNoCFOF(cpu);
-	if ((res >= -32767) && (res <= 32767)) {
-		removeFlag(CF|OF);
-	} else {
-		addFlag(CF|OF);
-	}
-	cpu->reg[op->r1].u16 = res;
-	CYCLES(10);
-	NEXT();
-}
-
-void dimulr16e16_32(CPU* cpu, Op* op) {
-	S32 res=(S16)(readw(cpu->memory, eaa32(cpu, op))) * (S16)op->data1;
-	fillFlagsNoCFOF(cpu);
-	if ((res >= -32767) && (res <= 32767)) {
-		removeFlag(CF|OF);
-	} else {
-		addFlag(CF|OF);
-	}
-	cpu->reg[op->r1].u16 = res;
-	CYCLES(10);
-	NEXT();
-}
-
-void dimulr32r32(CPU* cpu, Op* op) {
-	S64 res=(S32)(cpu->reg[op->r2].u32) * (S64)((S32)op->data1);
-	fillFlagsNoCFOF(cpu);
-	if (res>=-2147483647l && res<=2147483647l) {
-		removeFlag(CF|OF);
-	} else {
-		addFlag(CF|OF);
-	}
-	cpu->reg[op->r1].u32 = (S32)res;
-	CYCLES(10);
-	NEXT();
-}
-
-void dimulr32e32_16(CPU* cpu, Op* op) {
-	S64 res=(S32)(readd(cpu->memory, eaa16(cpu, op))) * (S64)((S32)op->data1);
-	fillFlagsNoCFOF(cpu);
-	if (res>=-2147483647l && res<=2147483647l) {
-		removeFlag(CF|OF);
-	} else {
-		addFlag(CF|OF);
-	}
-	cpu->reg[op->r1].u32 = (S32)res;
-	CYCLES(10);
-	NEXT();
-}
-
-void dimulr32e32_32(CPU* cpu, Op* op) {
-	S64 res=(S32)(readd(cpu->memory, eaa32(cpu, op))) * (S64)((S32)op->data1);
-	fillFlagsNoCFOF(cpu);
-	if (res>=-2147483647l && res<=2147483647l) {
-		removeFlag(CF|OF);
-	} else {
-		addFlag(CF|OF);
-	}
-	cpu->reg[op->r1].u32 = (S32)res;
-	CYCLES(10);
-	NEXT();
-}
-
-void jumpO(CPU* cpu, Op* op) {
-	if (getOF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNO(CPU* cpu, Op* op) {
-	if (!getOF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpB(CPU* cpu, Op* op) {
-	if (getCF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNB(CPU* cpu, Op* op) {
-	if (!getCF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpZ(CPU* cpu, Op* op) {
-	if (getZF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNZ(CPU* cpu, Op* op) {
-	if (!getZF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpBE(CPU* cpu, Op* op) {
-	if (getZF(cpu) || getCF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNBE(CPU* cpu, Op* op) {
-	if (!getZF(cpu) && !getCF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpS(CPU* cpu, Op* op) {
-	if (getSF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNS(CPU* cpu, Op* op) {
-	if (!getSF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpP(CPU* cpu, Op* op) {
-	if (getPF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNP(CPU* cpu, Op* op) {
-	if (!getPF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpL(CPU* cpu, Op* op) {
-	if (getSF(cpu)!=getOF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNL(CPU* cpu, Op* op) {
-	if (getSF(cpu)==getOF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpLE(CPU* cpu, Op* op) {
-	if (getZF(cpu) || getSF(cpu)!=getOF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void jumpNLE(CPU* cpu, Op* op) {
-	if (!getZF(cpu) && getSF(cpu)==getOF(cpu)) {
-		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
-}
-
-void xchgr8r8(CPU* cpu, Op* op) {
-	U8 tmp = *cpu->reg8[op->r1];
-	*cpu->reg8[op->r1] = *cpu->reg8[op->r2];
-	*cpu->reg8[op->r2] = tmp;
-	CYCLES(3);
-	NEXT();
-}
-
-void xchge8r8_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	U8 tmp = readb(cpu->memory, eaa);
-	writeb(cpu->memory, eaa, *cpu->reg8[op->r1]);
-	*cpu->reg8[op->r1] = tmp;
-	CYCLES(4);
-	NEXT();
-}
-
-void xchge8r8_32(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	U8 tmp = readb(cpu->memory, eaa);
-	writeb(cpu->memory, eaa, *cpu->reg8[op->r1]);
-	*cpu->reg8[op->r1] = tmp;
-	CYCLES(4);
-	NEXT();
-}
-
-void xchgr16r16(CPU* cpu, Op* op) {
-	U16 tmp = cpu->reg[op->r1].u16;
-	cpu->reg[op->r1].u16 = cpu->reg[op->r2].u16;
-	cpu->reg[op->r2].u16 = tmp;
-	CYCLES(3);
-	NEXT();
-}
-
-void xchge16r16_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	U16 tmp = readw(cpu->memory, eaa);
-	writew(cpu->memory, eaa, cpu->reg[op->r1].u16);
-	cpu->reg[op->r1].u16 = tmp;
-	CYCLES(4);
-	NEXT();
-}
-
-void xchge16r16_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	U16 tmp = readw(cpu->memory, eaa);
-	writew(cpu->memory, eaa, cpu->reg[op->r1].u16);
-	cpu->reg[op->r1].u16 = tmp;
-	CYCLES(4);
-	NEXT();
-}
-
-void xchgr32r32(CPU* cpu, Op* op) {
-	U32 tmp = cpu->reg[op->r1].u32;
-	cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;
-	cpu->reg[op->r2].u32 = tmp;
-	CYCLES(3);
-	NEXT();
-}
-
-void xchge32r32_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	U32 tmp = readd(cpu->memory, eaa);
-	writed(cpu->memory, eaa, cpu->reg[op->r1].u32);
-	cpu->reg[op->r1].u32 = tmp;
-	CYCLES(4);
-	NEXT();
-}
-
-void xchge32r32_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	U32 tmp = readd(cpu->memory, eaa);
-	writed(cpu->memory, eaa, cpu->reg[op->r1].u32);
-	cpu->reg[op->r1].u32 = tmp;
-	CYCLES(4);
-	NEXT();
-}
-
-void movr8r8(CPU* cpu, Op* op) {
-	*cpu->reg8[op->r1] = *cpu->reg8[op->r2];
-	CYCLES(1);
-	NEXT();
-}
-
-void movr8(CPU* cpu, Op* op) {
-	*cpu->reg8[op->r1] = op->data1;
-	CYCLES(1);
-	NEXT();
-}
-
-void move8_16(CPU* cpu, Op* op) {
-	writeb(cpu->memory, eaa16(cpu, op), op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void move8_32(CPU* cpu, Op* op) {
-	writeb(cpu->memory, eaa32(cpu, op), op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void movr8e8_16(CPU* cpu, Op* op) {
-	*cpu->reg8[op->r1] = readb(cpu->memory, eaa16(cpu, op));
-	CYCLES(1);
-	NEXT();
-}
-
-void movr8e8_32(CPU* cpu, Op* op) {
-	*cpu->reg8[op->r1] = readb(cpu->memory, eaa32(cpu, op));
-	CYCLES(1);
-	NEXT();
-}
-
-void move8r8_16(CPU* cpu, Op* op) {
-	writeb(cpu->memory, eaa16(cpu, op), *cpu->reg8[op->r1]);
-	CYCLES(1);
-	NEXT();
-}
-
-void move8r8_32(CPU* cpu, Op* op) {
-	writeb(cpu->memory, eaa32(cpu, op), *cpu->reg8[op->r1]);
-	CYCLES(1);
-	NEXT();
-}
-
-void movr16r16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = cpu->reg[op->r2].u16;
-	CYCLES(1);
-	NEXT();
-}
-
-void movr16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = op->data1;
-	CYCLES(1);
-	NEXT();
-}
-
-void move16_16(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa16(cpu, op), op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void move16_32(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa32(cpu, op), op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void movr16e16_16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = readw(cpu->memory, eaa16(cpu, op));
-	CYCLES(1);
-	NEXT();
-}
-
-void movr16e16_32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = readw(cpu->memory, eaa32(cpu, op));
-	CYCLES(1);
-	NEXT();
-}
-
-void move16r16_16(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa16(cpu, op), cpu->reg[op->r1].u16);
-	CYCLES(1);
-	NEXT();
-}
-
-void move16r16_32(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa32(cpu, op), cpu->reg[op->r1].u16);
-	CYCLES(1);
-	NEXT();
-}
-
-void movr32r32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;
-	CYCLES(1);
-	NEXT();
-}
-
-void movr32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = op->data1;
-	CYCLES(1);
-	NEXT();
-}
-
-void move32_16(CPU* cpu, Op* op) {
-	writed(cpu->memory, eaa16(cpu, op), op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void move32_32(CPU* cpu, Op* op) {
-	writed(cpu->memory, eaa32(cpu, op), op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void movr32e32_16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = readd(cpu->memory, eaa16(cpu, op));
-	CYCLES(1);
-	NEXT();
-}
-
-void movr32e32_32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = readd(cpu->memory, eaa32(cpu, op));
-	CYCLES(1);
-	NEXT();
-}
-
-void move32r32_16(CPU* cpu, Op* op) {
-	writed(cpu->memory, eaa16(cpu, op), cpu->reg[op->r1].u32);
-	CYCLES(1);
-	NEXT();
-}
-
-void move32r32_32(CPU* cpu, Op* op) {
-	writed(cpu->memory, eaa32(cpu, op), cpu->reg[op->r1].u32);
-	CYCLES(1);
-	NEXT();
-}
-
-void movr16s16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = cpu->segValue[op->r2];
-	CYCLES(1);
-	NEXT();
-}
-
-void movr32s16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = cpu->segValue[op->r2];
-	CYCLES(1);
-	NEXT();
-}
-
-void move16s16_16(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa16(cpu, op), cpu->segValue[op->r1]);
-	CYCLES(1);
-	NEXT();
-}
-
-void move16s16_32(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa32(cpu, op), cpu->segValue[op->r1]);
-	CYCLES(1);
-	NEXT();
-}
-
-void lear16_16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = eaa16(cpu, op);
-	CYCLES(1);
-	NEXT();
-}
-
-void lear16_32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = eaa32(cpu, op);
-	CYCLES(1);
-	NEXT();
-}
-
-void lear32_16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = eaa16(cpu, op);
-	CYCLES(1);
-	NEXT();
-}
-
-void lear32_32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = eaa32(cpu, op);
-	CYCLES(1);
-	NEXT();
-}
-
-void movs16r16(CPU* cpu, Op* op) {
-	cpu->segValue[op->r1] = cpu->reg[op->r2].u16;
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
-	CYCLES(2);
-	NEXT();
-}
-
-void movs16e16_16(CPU* cpu, Op* op) {
-	cpu->segValue[op->r1] = readb(cpu->memory, eaa16(cpu, op));
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
-	CYCLES(3);
-	NEXT();
-}
-
-void movs16e16_32(CPU* cpu, Op* op) {
-	cpu->segValue[op->r1] = readb(cpu->memory, eaa32(cpu, op));
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
-	CYCLES(3);
-	NEXT();
-}
-
-void pope16_16(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa16(cpu, op), pop16(cpu));
-	NEXT();
-}
-
-void pope16_32(CPU* cpu, Op* op) {
-	writew(cpu->memory, eaa32(cpu, op), pop16(cpu));
-	CYCLES(3);
-	NEXT();
-}
-
-void pope32_16(CPU* cpu, Op* op) {
-	writed(cpu->memory, eaa16(cpu, op), pop32(cpu));
-	CYCLES(3);
-	NEXT();
-}
-
-void pope32_32(CPU* cpu, Op* op) {
-	writed(cpu->memory, eaa32(cpu, op), pop32(cpu));
-	CYCLES(3);
-	NEXT();
-}
-
-void cbw(CPU* cpu, Op* op) {
-	AX = (S8)AL;
-	CYCLES(3);
-	NEXT();
-}
-
-void cbwe(CPU* cpu, Op* op) {
-	EAX = (S16)AX;
-	CYCLES(3);
-	NEXT();
-}
-
-void cwd(CPU* cpu, Op* op) {
-	if (((S16)AX) < 0)
-		DX = 0xFFFF;
-	else
-		DX = 0;
-	CYCLES(2);
-	NEXT();
-}
-
-void cwq(CPU* cpu, Op* op) {
-	if (((S32)EAX) < 0)
-		EDX = 0xFFFFFFFF;
-	else
-		EDX = 0;
-	CYCLES(2);
-	NEXT();
-}
-
-void pushf16(CPU* cpu, Op* op) {
-	fillFlags(cpu);
-	push16(cpu, cpu->flags|2);
-	CYCLES(3);
-	NEXT();
-}
-
-void pushf32(CPU* cpu, Op* op) {
-	fillFlags(cpu);
-	push32(cpu, (cpu->flags|2) & 0xFCFFFF);
-	CYCLES(3);
-	NEXT();
-}
-
-void popf16(CPU* cpu, Op* op) {
-	cpu->inst = FLAGS_NONE;
-	cpu->flags=(cpu->flags & 0xFFFF0000) | pop16(cpu);
-	CYCLES(4);
-	NEXT();
-}
-
-void popf32(CPU* cpu, Op* op) {
-	cpu->inst = FLAGS_NONE;
-	cpu->flags=(cpu->flags & VM) | (pop32(cpu) & ~VM);
-	CYCLES(4);
-	NEXT();
-}
-
-void sahf(CPU* cpu, Op* op) {
-#define mask (SF|ZF|AF|PF|CF)
-    cpu->flags=(cpu->flags & (0xFFFFFF00 | (~mask))) | (AH & mask);
-    cpu->inst = FLAGS_NONE;
-	CYCLES(2);
-	NEXT();
-}
-
-void lahf(CPU* cpu, Op* op) {
-	cpu->inst = FLAGS_NONE;
-	AH = cpu->flags & (SF|ZF|AF|PF|CF);
-	CYCLES(2);
-	NEXT();
-}
-
-void movAl(CPU* cpu, Op* op) {
-	AL = readb(cpu->memory, cpu->segAddress[DS]+op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void movAx(CPU* cpu, Op* op) {
-	AX = readw(cpu->memory, cpu->segAddress[DS]+op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void movEax(CPU* cpu, Op* op) {
-	EAX = readd(cpu->memory, cpu->segAddress[DS]+op->data1);
-	CYCLES(1);
-	NEXT();
-}
-
-void movDirectAl(CPU* cpu, Op* op) {
-	writeb(cpu->memory, cpu->segAddress[DS]+op->data1, AL);
-	CYCLES(1);
-	NEXT();
-}
-
-void movDirectAx(CPU* cpu, Op* op) {
-	writew(cpu->memory, cpu->segAddress[DS]+op->data1, AX);
-	CYCLES(1);
-	NEXT();
-}
-
-void movDirectEax(CPU* cpu, Op* op) {
-	writed(cpu->memory, cpu->segAddress[DS]+op->data1, EAX);
-	CYCLES(1);
-	NEXT();
-}
-
-void movsb32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		writeb(memory, dBase+EDI, readb(memory, sBase+ESI));
-		EDI+=inc;
-		ESI+=inc;
-	}
-	ECX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void movsb16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		writeb(memory, dBase+DI, readb(memory, sBase+SI));
-		DI+=inc;
-		SI+=inc;
-	}
-	CX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void movsb32(CPU* cpu, Op* op) {
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-
-	writeb(memory, cpu->segAddress[ES]+EDI, readb(memory,  cpu->segAddress[op->base]+ESI));
-	EDI+=inc;
-	ESI+=inc;
-	CYCLES(4);
-	NEXT();
-}
-
-void movsb16(CPU* cpu, Op* op) {
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-
-	writeb(memory, cpu->segAddress[ES]+DI, readb(memory, cpu->segAddress[op->base]+SI));
-	DI+=inc;
-	SI+=inc;
-	CYCLES(4);
-	NEXT();
-}
-
-void movsw32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		writew(memory, dBase+EDI, readw(memory, sBase+ESI));
-		EDI+=inc;
-		ESI+=inc;
-	}
-	ECX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void movsw16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		writew(memory, dBase+DI, readw(memory, sBase+SI));
-		DI+=inc;
-		SI+=inc;
-	}
-	CX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void movsw32(CPU* cpu, Op* op) {
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-
-	writew(memory, cpu->segAddress[ES]+EDI, readw(memory,  cpu->segAddress[op->base]+ESI));
-	EDI+=inc;
-	ESI+=inc;
-	CYCLES(4);
-	NEXT();
-}
-
-void movsw16(CPU* cpu, Op* op) {
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-
-	writeb(memory, cpu->segAddress[ES]+DI, readb(memory, cpu->segAddress[op->base]+SI));
-	DI+=inc;
-	SI+=inc;
-	CYCLES(4);
-	NEXT();
-}
-
-void movsd32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		writed(memory, dBase+EDI, readd(memory, sBase+ESI));
-		EDI+=inc;
-		ESI+=inc;
-	}
-	ECX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void movsd16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		writed(memory, dBase+DI, readd(memory, sBase+SI));
-		DI+=inc;
-		SI+=inc;
-	}
-	CX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void movsd32(CPU* cpu, Op* op) {
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-
-	writed(memory, cpu->segAddress[ES]+EDI, readd(memory,  cpu->segAddress[op->base]+ESI));
-	EDI+=inc;
-	ESI+=inc;
-	CYCLES(4);
-	NEXT();
-}
-
-void movsd16(CPU* cpu, Op* op) {
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-
-	writed(memory, cpu->segAddress[ES]+DI, readd(memory, cpu->segAddress[op->base]+SI));
-	DI+=inc;
-	SI+=inc;
-	CYCLES(4);
-	NEXT();
-}
-
-void cmpsb32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-	U8 v1;
-	U8 v2;
-	int rep_zero = op->data1;
-
-	if (count) {
-		for (i=0;i<count;i++) {
-			v1 = readb(memory, dBase+EDI);
-			v2 = readb(memory, sBase+ESI);
-			EDI+=inc;
-			ESI+=inc;
-			ECX--;
-			if ((v1==v2)!=rep_zero) break;
-		}
-		cpu->var1.u8 = v1;
-		cpu->var2.u8 = v2;
-		cpu->result.u8 = v2 - v1;
-		cpu->inst = FLAGS_SUB8;
-	}
-	CYCLES(9+4*count);
-	NEXT();
-}
-
-void cmpsb16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-	U8 v1;
-	U8 v2;
-	int rep_zero = op->data1;
-
-	if (count) {
-		for (i=0;i<count;i++) {
-			v1 = readb(memory, dBase+EDI);
-			v2 = readb(memory, sBase+ESI);
-			DI+=inc;
-			SI+=inc;
-			CX--;
-			if ((v1==v2)!=rep_zero) break;
-		}
-		cpu->var1.u8 = v1;
-		cpu->var2.u8 = v2;
-		cpu->result.u8 = v2 - v1;
-		cpu->inst = FLAGS_SUB8;
-	}
-	CYCLES(9+4*count);
-	NEXT();
-}
-
-void cmpsb32(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U8 v1;
-	U8 v2;
-
-	v1 = readb(memory, dBase+EDI);
-	v2 = readb(memory, sBase+ESI);
-	EDI+=inc;
-	ESI+=inc;
-
-	cpu->var1.u8 = v1;
-	cpu->var2.u8 = v2;
-	cpu->result.u8 = v2 - v1;
-	cpu->inst = FLAGS_SUB8;
-	CYCLES(5);
-	NEXT();
-}
-
-void cmpsb16(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U8 v1;
-	U8 v2;
-
-	v1 = readb(memory, dBase+EDI);
-	v2 = readb(memory, sBase+ESI);
-	DI+=inc;
-	SI+=inc;
-
-	cpu->var1.u8 = v1;
-	cpu->var2.u8 = v2;
-	cpu->result.u8 = v2 - v1;
-	cpu->inst = FLAGS_SUB8;
-	CYCLES(5);
-	NEXT();
-}
-
-void cmpsw32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-	U16 v1;
-	U16 v2;
-	int rep_zero = op->data1;
-
-	if (count) {
-		for (i=0;i<count;i++) {
-			v1 = readw(memory, dBase+EDI);
-			v2 = readw(memory, sBase+ESI);
-			EDI+=inc;
-			ESI+=inc;
-			ECX--;
-			if ((v1==v2)!=rep_zero) break;
-		}
-		cpu->var1.u16 = v1;
-		cpu->var2.u16 = v2;
-		cpu->result.u16 = v2 - v1;
-		cpu->inst = FLAGS_SUB16;
-	}
-	CYCLES(9+4*count);
-	NEXT();
-}
-
-void cmpsw16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-	U16 v1;
-	U16 v2;
-	int rep_zero = op->data1;
-
-	if (count) {
-		for (i=0;i<count;i++) {
-			v1 = readw(memory, dBase+EDI);
-			v2 = readw(memory, sBase+ESI);
-			DI+=inc;
-			SI+=inc;
-			CX--;
-			if ((v1==v2)!=rep_zero) break;
-		}
-		cpu->var1.u16 = v1;
-		cpu->var2.u16 = v2;
-		cpu->result.u16 = v2 - v1;
-		cpu->inst = FLAGS_SUB16;
-	}
-	CYCLES(9+4*count);
-	NEXT();
-}
-
-void cmpsw32(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 v1;
-	U16 v2;
-
-	v1 = readw(memory, dBase+EDI);
-	v2 = readw(memory, sBase+ESI);
-	EDI+=inc;
-	ESI+=inc;
-
-	cpu->var1.u16 = v1;
-	cpu->var2.u16 = v2;
-	cpu->result.u16 = v2 - v1;
-	cpu->inst = FLAGS_SUB16;
-	CYCLES(5);
-	NEXT();
-}
-
-void cmpsw16(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 v1;
-	U16 v2;
-
-	v1 = readw(memory, dBase+EDI);
-	v2 = readw(memory, sBase+ESI);
-	DI+=inc;
-	SI+=inc;
-
-	cpu->var1.u16 = v1;
-	cpu->var2.u16 = v2;
-	cpu->result.u16 = v2 - v1;
-	cpu->inst = FLAGS_SUB16;
-	CYCLES(5);
-	NEXT();
-}
-
-void cmpsd32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-	U32 v1;
-	U32 v2;
-	int rep_zero = op->data1;
-
-	if (count) {
-		for (i=0;i<count;i++) {
-			v1 = readd(memory, dBase+EDI);
-			v2 = readd(memory, sBase+ESI);
-			EDI+=inc;
-			ESI+=inc;
-			ECX--;
-			if ((v1==v2)!=rep_zero) break;
-		}
-		cpu->var1.u32 = v1;
-		cpu->var2.u32 = v2;
-		cpu->result.u32 = v2 - v1;
-		cpu->inst = FLAGS_SUB32;
-	}
-	CYCLES(9+4*count);
-	NEXT();
-}
-
-void cmpsd16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-	U32 v1;
-	U32 v2;
-	int rep_zero = op->data1;
-
-	if (count) {
-		for (i=0;i<count;i++) {
-			v1 = readd(memory, dBase+EDI);
-			v2 = readd(memory, sBase+ESI);
-			DI+=inc;
-			SI+=inc;
-			CX--;
-			if ((v1==v2)!=rep_zero) break;
-		}
-		cpu->var1.u32 = v1;
-		cpu->var2.u32 = v2;
-		cpu->result.u32 = v2 - v1;
-		cpu->inst = FLAGS_SUB32;
-	}
-	CYCLES(9+4*count);
-	NEXT();
-}
-
-void cmpsd32(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 v1;
-	U32 v2;
-
-	v1 = readd(memory, dBase+EDI);
-	v2 = readd(memory, sBase+ESI);
-	EDI+=inc;
-	ESI+=inc;
-
-	cpu->var1.u32 = v1;
-	cpu->var2.u32 = v2;
-	cpu->result.u32 = v2 - v1;
-	cpu->inst = FLAGS_SUB32;
-	CYCLES(5);
-	NEXT();
-}
-
-void cmpsd16(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 v1;
-	U32 v2;
-
-	v1 = readd(memory, dBase+EDI);
-	v2 = readd(memory, sBase+ESI);
-	DI+=inc;
-	SI+=inc;
-
-	cpu->var1.u32 = v1;
-	cpu->var2.u32 = v2;
-	cpu->result.u32 = v2 - v1;
-	cpu->inst = FLAGS_SUB32;
-	CYCLES(5);
-	NEXT();
-}
-
-void stosb32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		writeb(memory, dBase+EDI, AL);
-		EDI+=inc;
-	}
-	ECX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void stosb16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		writeb(memory, dBase+DI, AL);
-		DI+=inc;
-	}
-	CX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void stosb32(CPU* cpu, Op* op) {
-	writeb(cpu->memory, cpu->segAddress[ES]+EDI, AL);
-	EDI+=cpu->df;
-	CYCLES(3);
-	NEXT();
-}
-
-void stosb16(CPU* cpu, Op* op) {
-	writeb(cpu->memory, cpu->segAddress[ES]+DI, AL);
-	DI+=cpu->df;
-	CYCLES(3);
-	NEXT();
-}
-
-void stosw32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		writew(memory, dBase+EDI, AX);
-		EDI+=inc;
-	}
-	ECX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void stosw16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		writew(memory, dBase+DI, AX);
-		DI+=inc;
-	}
-	CX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void stosw32(CPU* cpu, Op* op) {
-	writew(cpu->memory, cpu->segAddress[ES]+EDI, AX);
-	EDI+=cpu->df << 1;
-	CYCLES(3);
-	NEXT();
-}
-
-void stosw16(CPU* cpu, Op* op) {
-	writew(cpu->memory, cpu->segAddress[ES]+DI, AX);
-	DI+=cpu->df << 1;
-	CYCLES(3);
-	NEXT();
-}
-
-void stosd32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		writed(memory, dBase+EDI, EAX);
-		EDI+=inc;
-	}
-	ECX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void stosd16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		writed(memory, dBase+DI, EAX);
-		DI+=inc;
-	}
-	CX=0;
-	CYCLES(3+count);
-	NEXT();
-}
-
-void stosd32(CPU* cpu, Op* op) {
-	writed(cpu->memory, cpu->segAddress[ES]+EDI, EAX);
-	EDI+=cpu->df << 2;
-	CYCLES(3);
-	NEXT();
-}
-
-void stosd16(CPU* cpu, Op* op) {
-	writed(cpu->memory, cpu->segAddress[ES]+DI, EAX);
-	DI+=cpu->df << 2;
-	CYCLES(3);
-	NEXT();
-}
-
-void lodsb32_r(CPU* cpu, Op* op) {
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		AL = readb(memory, sBase+ESI);
-		ESI+=inc;
-	}
-	ECX=0;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsb16_r(CPU* cpu, Op* op) {
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		AL = readb(memory, sBase+SI);
-		SI+=inc;
-	}
-	CX=0;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsb32(CPU* cpu, Op* op) {
-	AL = readb(cpu->memory, cpu->segAddress[op->base]+ESI);
-	ESI+=cpu->df;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsb16(CPU* cpu, Op* op) {
-	AL = readb(cpu->memory, cpu->segAddress[op->base]+SI);
-	SI+=cpu->df;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsw32_r(CPU* cpu, Op* op) {
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		AX = readw(memory, sBase+ESI);
-		ESI+=inc;
-	}
-	ECX=0;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsw16_r(CPU* cpu, Op* op) {
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		AX = readw(memory, sBase+SI);
-		SI+=inc;
-	}
-	CX=0;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsw32(CPU* cpu, Op* op) {
-	AX = readw(cpu->memory, cpu->segAddress[op->base]+ESI);
-	ESI+=cpu->df << 1;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsw16(CPU* cpu, Op* op) {
-	AX = readw(cpu->memory, cpu->segAddress[op->base]+SI);
-	SI+=cpu->df << 1;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsd32_r(CPU* cpu, Op* op) {
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-
-	for (i=0;i<count;i++) {
-		EAX = readd(memory, sBase+ESI);
-		ESI+=inc;
-	}
-	ECX=0;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsd16_r(CPU* cpu, Op* op) {
-	int sBase = cpu->segAddress[op->base];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-
-	for (i=0;i<count;i++) {
-		EAX = readd(memory, sBase+SI);
-		SI+=inc;
-	}
-	CX=0;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsd32(CPU* cpu, Op* op) {
-	EAX = readd(cpu->memory, cpu->segAddress[op->base]+ESI);
-	ESI+=cpu->df << 2;
-	CYCLES(2);
-	NEXT();
-}
-
-void lodsd16(CPU* cpu, Op* op) {
-	EAX = readd(cpu->memory, cpu->segAddress[op->base]+SI);
-	SI+=cpu->df << 2;
-	CYCLES(2);
-	NEXT();
-}
-
-void scasb32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-	U8 v1;
-	U32 repeat_zero = op->data1;
-
-	for (i=0;i<count;i++) {
-		v1=readb(memory, dBase+EDI);
-		EDI+=inc;
-		ECX--;
-		if ((AL==v1)!=repeat_zero)
-			break;
-	}
-	cpu->var1.u8 = v1;
-	cpu->var2.u8 = AL;
-	cpu->result.u8 = AL - v1;
-	cpu->inst = FLAGS_SUB8;
-	CYCLES(8+4*count);
-	NEXT();
-}
-
-void scasb16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-	U8 v1;
-	U32 repeat_zero = op->data1;
-
-	for (i=0;i<count;i++) {
-		v1=readb(memory, dBase+DI);
-		DI+=inc;
-		CX--;
-		if ((AL==v1)!=repeat_zero)
-			break;
-	}
-	cpu->var1.u8 = v1;
-	cpu->var2.u8 = AL;
-	cpu->result.u8 = AL - v1;
-	cpu->inst = FLAGS_SUB8;
-	CYCLES(8+4*count);
-	NEXT();
-}
-
-void scasb32(CPU* cpu, Op* op) {
-	U8 v1=readb(cpu->memory, cpu->segAddress[ES]+EDI);
-	EDI+=cpu->df;
-
-	cpu->var1.u8 = v1;
-	cpu->var2.u8 = AL;
-	cpu->result.u8 = AL - v1;
-	cpu->inst = FLAGS_SUB8;
-	CYCLES(4);
-	NEXT();
-}
-
-void scasb16(CPU* cpu, Op* op) {
-	U8 v1=readb(cpu->memory, cpu->segAddress[ES]+DI);
-	DI+=cpu->df;
-
-	cpu->var1.u8 = v1;
-	cpu->var2.u8 = AL;
-	cpu->result.u8 = AL - v1;
-	cpu->inst = FLAGS_SUB8;
-	CYCLES(4);
-	NEXT();
-}
-
-void scasw32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-	U16 v1;
-	U32 repeat_zero = op->data1;
-
-	for (i=0;i<count;i++) {
-		v1=readw(memory, dBase+EDI);
-		EDI+=inc;
-		ECX--;
-		if ((AX==v1)!=repeat_zero)
-			break;
-	}
-	cpu->var1.u16 = v1;
-	cpu->var2.u16 = AX;
-	cpu->result.u16 = AX - v1;
-	cpu->inst = FLAGS_SUB16;
-	CYCLES(8+4*count);
-	NEXT();
-}
-
-void scasw16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 1;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-	U16 v1;
-	U32 repeat_zero = op->data1;
-
-	for (i=0;i<count;i++) {
-		v1=readw(memory, dBase+DI);
-		DI+=inc;
-		CX--;
-		if ((AX==v1)!=repeat_zero)
-			break;
-	}
-	cpu->var1.u16 = v1;
-	cpu->var2.u16 = AX;
-	cpu->result.u16 = AX - v1;
-	cpu->inst = FLAGS_SUB16;
-	CYCLES(8+4*count);
-	NEXT();
-}
-
-void scasw32(CPU* cpu, Op* op) {
-	U16 v1=readw(cpu->memory, cpu->segAddress[ES]+EDI);
-	EDI+=cpu->df << 1;
-
-	cpu->var1.u16 = v1;
-	cpu->var2.u16 = AX;
-	cpu->result.u16 = AX - v1;
-	cpu->inst = FLAGS_SUB16;
-	CYCLES(4);
-	NEXT();
-}
-
-void scasw16(CPU* cpu, Op* op) {
-	U16 v1=readw(cpu->memory, cpu->segAddress[ES]+DI);
-	DI+=cpu->df << 1;
-
-	cpu->var1.u16 = v1;
-	cpu->var2.u16 = AX;
-	cpu->result.u16 = AX - v1;
-	cpu->inst = FLAGS_SUB16;
-	CYCLES(4);
-	NEXT();
-}
-
-void scasd32_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U32 count = ECX;
-	U32 i;
-	U32 v1;
-	U32 repeat_zero = op->data1;
-
-	for (i=0;i<count;i++) {
-		v1=readd(memory, dBase+EDI);
-		EDI+=inc;
-		ECX--;
-		if ((EAX==v1)!=repeat_zero)
-			break;
-	}
-	cpu->var1.u32 = v1;
-	cpu->var2.u32 = EAX;
-	cpu->result.u32 = EAX - v1;
-	cpu->inst = FLAGS_SUB32;
-	CYCLES(8+4*count);
-	NEXT();
-}
-
-void scasd16_r(CPU* cpu, Op* op) {
-	int dBase = cpu->segAddress[ES];
-	int inc = cpu->df << 2;
-	Memory* memory = cpu->memory;
-	U16 count = CX;
-	U16 i;
-	U32 v1;
-	U32 repeat_zero = op->data1;
-
-	for (i=0;i<count;i++) {
-		v1=readd(memory, dBase+DI);
-		DI+=inc;
-		CX--;
-		if ((EAX==v1)!=repeat_zero)
-			break;
-	}
-	cpu->var1.u32 = v1;
-	cpu->var2.u32 = EAX;
-	cpu->result.u32 = EAX - v1;
-	cpu->inst = FLAGS_SUB32;
-	CYCLES(8+4*count);
-	NEXT();
-}
-
-void scasd32(CPU* cpu, Op* op) {
-	U32 v1=readd(cpu->memory, cpu->segAddress[ES]+EDI);
-	EDI+=cpu->df << 2;
-
-	cpu->var1.u32 = v1;
-	cpu->var2.u32 = EAX;
-	cpu->result.u32 = EAX - v1;
-	cpu->inst = FLAGS_SUB32;
-	CYCLES(4);
-	NEXT();
-}
-
-void scasd16(CPU* cpu, Op* op) {
-	U32 v1=readd(cpu->memory, cpu->segAddress[ES]+DI);
-	DI+=cpu->df << 2;
-
-	cpu->var1.u32 = v1;
-	cpu->var2.u32 = EAX;
-	cpu->result.u32 = EAX - v1;
-	cpu->inst = FLAGS_SUB32;
-	CYCLES(4);
-	NEXT();
-}
-
-#define ROL8 fillFlagsNoCFOF(cpu); result = (var1 << var2) | (var1 >> (8 - var2)); setCF(cpu, result & 1); setOF(cpu, (result & 1) ^ (result >> 7))
-#define ROL16 fillFlagsNoCFOF(cpu); result = (var1 << var2) | (var1 >> (16 - var2)); setCF(cpu, result & 1); setOF(cpu, (result & 1) ^ (result >> 15))
-#define ROL32 fillFlagsNoCFOF(cpu); result = (var1 << var2) | (var1 >> (32 - var2)); setCF(cpu, result & 1); setOF(cpu, (result & 1) ^ (result >> 31))
-#define ROR8 fillFlagsNoCFOF(cpu); result = (var1 >> var2) | (var1 << (8 - var2)); setCF(cpu, result & 0x80); setOF(cpu, (result ^ (result<<1)) & 0x80);
-#define ROR16 fillFlagsNoCFOF(cpu); result = (var1 >> var2) | (var1 << (16 - var2)); setCF(cpu, result & 0x8000); setOF(cpu, (result ^ (result<<1)) & 0x8000);
-#define ROR32 fillFlagsNoCFOF(cpu); result = (var1 >> var2) | (var1 << (32 - var2)); setCF(cpu, result & 0x80000000); setOF(cpu, (result ^ (result<<1)) & 0x80000000);
-#define RCL8 fillFlagsNoOF(cpu); result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (9-var2)); setCF(cpu, ((var1 >> (8-var2)) & 1)); setOF(cpu, (cpu->flags & CF) ^ (result >> 7))
-#define RCL16 fillFlagsNoOF(cpu); result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (17-var2)); setCF(cpu, ((var1 >> (16-var2)) & 1)); setOF(cpu, (cpu->flags & CF) ^ (result >> 15))
-#define RCL32 fillFlagsNoOF(cpu); if (var2==1) {result = (var1 << var2) | (cpu->flags & CF);} else { result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));} setCF(cpu, ((var1 >> (32-var2)) & 1)); setOF(cpu, (cpu->flags & CF) ^ (result >> 31))
-#define RCR8 fillFlagsNoOF(cpu); result = (var1 >> var2) | ((cpu->flags & CF) << (8-var2)) | (var1 << (9-var2)); setCF(cpu, (var1 >> (var2 - 1)) & 1); setOF(cpu, (result ^ (result<<1)) & 0x80)
-#define RCR16 fillFlagsNoOF(cpu); result = (var1 >> var2) | ((cpu->flags & CF) << (16-var2)) | (var1 << (17-var2)); setCF(cpu, (var1 >> (var2 - 1)) & 1); setOF(cpu, (result ^ (result<<1)) & 0x8000)
-#define RCR32 fillFlagsNoOF(cpu); if (var2==1) {result = (var1 >> var2) | ((cpu->flags & CF) << 31);} else {result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));} setCF(cpu, (var1 >> (var2 - 1)) & 1); setOF(cpu, (result ^ (result<<1)) & 0x80000000)
-#define SHL8 result = var1 << var2; cpu->inst = FLAGS_SHL8; cpu->result.u8 = result; cpu->var1.u8=var2; cpu->var2.u8 = var1
-#define SHL16 result = var1 << var2; cpu->inst = FLAGS_SHL16; cpu->result.u16 = result; cpu->var1.u16=var2; cpu->var2.u16 = var1
-#define SHL32 result = var1 << var2; cpu->inst = FLAGS_SHL32; cpu->result.u32 = result; cpu->var1.u32=var2; cpu->var2.u32 = var1
-#define SHR8 result = var1 >> var2; cpu->inst = FLAGS_SHR8; cpu->result.u8 = result; cpu->var1.u8=var2; cpu->var2.u8 = var1
-#define SHR16 result = var1 >> var2; cpu->inst = FLAGS_SHR16; cpu->result.u16 = result; cpu->var1.u16=var2; cpu->var2.u16 = var1
-#define SHR32 result = var1 >> var2; cpu->inst = FLAGS_SHR32; cpu->result.u32 = result; cpu->var1.u32=var2; cpu->var2.u32 = var1
-#define SAR8 result = (S8)var1 >> var2; cpu->inst = FLAGS_SAR8; cpu->result.u8 = result; cpu->var1.u8=var2; cpu->var2.u8 = var1
-#define SAR16 result = (S16)var1 >> var2; cpu->inst = FLAGS_SAR16; cpu->result.u16 = result; cpu->var1.u16=var2; cpu->var2.u16 = var1
-#define SAR32 result = (S32)var1 >> var2; cpu->inst = FLAGS_SAR32; cpu->result.u32 = result; cpu->var1.u32=var2; cpu->var2.u32 = var1
-
-#define GROUP2(name, inst1, inst2, inst3, r, m) \
-void name##r8(CPU* cpu, Op* op) { U8 result; U8 var2 = op->data1; U8 var1 = *cpu->reg8[op->r1]; inst1; *cpu->reg8[op->r1] = result;CYCLES(r);NEXT();} \
-void name##e8_16(CPU* cpu, Op* op) {U8 result; U8 var2 = op->data1; int eaa = eaa16(cpu, op);	U8 var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e8_32(CPU* cpu, Op* op) {U8 result; U8 var2 = op->data1; int eaa = eaa32(cpu, op); U8 var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r16(CPU* cpu, Op* op) { U16 result; U8 var2 = op->data1; U16 var1 = cpu->reg[op->r1].u16; inst2; cpu->reg[op->r1].u16 = result;CYCLES(r);NEXT();} \
-void name##e16_16(CPU* cpu, Op* op) {U16 result; U8 var2 = op->data1; int eaa = eaa16(cpu, op);	U16 var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e16_32(CPU* cpu, Op* op) {U16 result; U8 var2 = op->data1; int eaa = eaa32(cpu, op); U16 var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r32(CPU* cpu, Op* op) { U32 result; U8 var2 = op->data1; U32 var1 = cpu->reg[op->r1].u32; inst3; cpu->reg[op->r1].u32 = result;CYCLES(r);NEXT();} \
-void name##e32_16(CPU* cpu, Op* op) {U32 result; U8 var2 = op->data1; int eaa = eaa16(cpu, op);	U32 var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e32_32(CPU* cpu, Op* op) {U32 result; U8 var2 = op->data1; int eaa = eaa32(cpu, op); U32 var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();}
-
-#define GROUP2_cl(name, inst1, inst2, inst3, r, m) \
-void name##r8_cl(CPU* cpu, Op* op) { U8 result; U8 var2 = CL & 0x1f; U8 var1; if (!var2) return; var1 = *cpu->reg8[op->r1]; inst1; *cpu->reg8[op->r1] = result;CYCLES(r);NEXT();} \
-void name##e8_16_cl(CPU* cpu, Op* op) {U8 result; U8 var2 = CL & 0x1f; int eaa = eaa16(cpu, op); U8 var1; if (!var2) return; var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e8_32_cl(CPU* cpu, Op* op) {U8 result; U8 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U8 var1; if (!var2) return; var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r16_cl(CPU* cpu, Op* op) { U16 result; U16 var2 = CL & 0x1f; U16 var1; if (!var2) return; var1 = cpu->reg[op->r1].u16; inst2; cpu->reg[op->r1].u16 = result;CYCLES(r);NEXT();} \
-void name##e16_16_cl(CPU* cpu, Op* op) {U16 result; U16 var2 = CL & 0x1f; int eaa = eaa16(cpu, op);	U16 var1; if (!var2) return; var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e16_32_cl(CPU* cpu, Op* op) {U16 result; U16 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U16 var1; if (!var2) return; var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r32_cl(CPU* cpu, Op* op) { U32 result; U32 var2 = CL & 0x1f; U32 var1; if (!var2) return; var1 = cpu->reg[op->r1].u32; inst3; cpu->reg[op->r1].u32 = result;CYCLES(r);NEXT();} \
-void name##e32_16_cl(CPU* cpu, Op* op) {U32 result; U32 var2 = CL & 0x1f; int eaa = eaa16(cpu, op);	U32 var1; if (!var2) return; var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e32_32_cl(CPU* cpu, Op* op) {U32 result; U32 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U32 var1; if (!var2) return; var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();}
-
-#define GROUP2_cl_mask(name, inst1, inst2, inst3, r, m) \
-void name##r8_cl(CPU* cpu, Op* op) { U8 result; U8 var2 = CL & 0x1f; U8 var1; if (!var2) return; var2=var2 & 7; var1 = *cpu->reg8[op->r1]; inst1; *cpu->reg8[op->r1] = result;CYCLES(r);NEXT();} \
-void name##e8_16_cl(CPU* cpu, Op* op) {U8 result; U8 var2 = CL & 0x1f; int eaa = eaa16(cpu, op); U8 var1; if (!var2) return; var2=var2 & 7; var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e8_32_cl(CPU* cpu, Op* op) {U8 result; U8 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U8 var1; if (!var2) return; var2=var2 & 7; var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r16_cl(CPU* cpu, Op* op) { U16 result; U16 var2 = CL & 0x1f; U16 var1; if (!var2) return; var2=var2 & 0xf; var1 = cpu->reg[op->r1].u16; inst2; cpu->reg[op->r1].u16 = result;CYCLES(r);NEXT();} \
-void name##e16_16_cl(CPU* cpu, Op* op) {U16 result; U16 var2 = CL & 0x1f; int eaa = eaa16(cpu, op);	U16 var1; if (!var2) return; var2=var2 & 0xf; var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e16_32_cl(CPU* cpu, Op* op) {U16 result; U16 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U16 var1; if (!var2) return; var2=var2 & 0xf; var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r32_cl(CPU* cpu, Op* op) { U32 result; U32 var2 = CL & 0x1f; U32 var1; if (!var2) return; var1 = cpu->reg[op->r1].u32; inst3; cpu->reg[op->r1].u32 = result;CYCLES(r);NEXT();} \
-void name##e32_16_cl(CPU* cpu, Op* op) {U32 result; U32 var2 = CL & 0x1f; int eaa = eaa16(cpu, op);	U32 var1; if (!var2) return; var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e32_32_cl(CPU* cpu, Op* op) {U32 result; U32 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U32 var1; if (!var2) return; var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();}
-
-#define GROUP2_cl_mod(name, inst1, inst2, inst3, r, m) \
-void name##r8_cl(CPU* cpu, Op* op) { U8 result; U8 var2 = CL & 0x1f; U8 var1; if (!var2) return; var2=var2 % 9; var1 = *cpu->reg8[op->r1]; inst1; *cpu->reg8[op->r1] = result;CYCLES(r);NEXT();} \
-void name##e8_16_cl(CPU* cpu, Op* op) {U8 result; U8 var2 = CL & 0x1f; int eaa = eaa16(cpu, op); U8 var1; if (!var2) return; var2=var2 % 9; var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e8_32_cl(CPU* cpu, Op* op) {U8 result; U8 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U8 var1; if (!var2) return; var2=var2 % 9; var1 = readb(cpu->memory, eaa); inst1; writeb(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r16_cl(CPU* cpu, Op* op) { U16 result; U16 var2 = CL & 0x1f; U16 var1; if (!var2) return; var2=var2 % 17; var1 = cpu->reg[op->r1].u16; inst2; cpu->reg[op->r1].u16 = result;CYCLES(r);NEXT();} \
-void name##e16_16_cl(CPU* cpu, Op* op) {U16 result; U16 var2 = CL & 0x1f; int eaa = eaa16(cpu, op);	U16 var1; if (!var2) return; var2=var2 % 17; var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e16_32_cl(CPU* cpu, Op* op) {U16 result; U16 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U16 var1; if (!var2) return; var2=var2 % 17; var1 = readw(cpu->memory, eaa); inst2; writew(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##r32_cl(CPU* cpu, Op* op) { U32 result; U32 var2 = CL & 0x1f; U32 var1; if (!var2) return; var1 = cpu->reg[op->r1].u32; inst3; cpu->reg[op->r1].u32 = result;CYCLES(r);NEXT();} \
-void name##e32_16_cl(CPU* cpu, Op* op) {U32 result; U32 var2 = CL & 0x1f; int eaa = eaa16(cpu, op);	U32 var1; if (!var2) return; var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();} \
-void name##e32_32_cl(CPU* cpu, Op* op) {U32 result; U32 var2 = CL & 0x1f; int eaa = eaa32(cpu, op); U32 var1; if (!var2) return; var1 = readd(cpu->memory, eaa); inst3; writed(cpu->memory, eaa, result);CYCLES(m);NEXT();}
-
-GROUP2(rol, ROL8, ROL16, ROL32, 1, 3)
-GROUP2(ror, ROR8, ROR16, ROR32, 1, 3)
-GROUP2(rcl, RCL8, RCL16, RCL32, 8, 10)
-GROUP2(rcr, RCR8, RCR16, RCR32, 8, 10)
-GROUP2(shl, SHL8, SHL16, SHL32, 1, 3)
-GROUP2(shr, SHR8, SHR16, SHR32, 1, 3)
-GROUP2(sar, SAR8, SAR16, SAR32, 1, 3)
-
-GROUP2_cl_mask(rol, ROL8, ROL16, ROL32, 4, 4)
-GROUP2_cl_mask(ror, ROR8, ROR16, ROR32, 4, 4)
-GROUP2_cl_mod(rcl, RCL8, RCL16, RCL32, 7, 9)
-GROUP2_cl_mod(rcr, RCR8, RCR16, RCR32, 7, 9)
-GROUP2_cl(shl, SHL8, SHL16, SHL32, 4, 4)
-GROUP2_cl(shr, SHR8, SHR16, SHR32, 4, 4)
-GROUP2_cl(sar, SAR8, SAR16, SAR32, 4, 4)
-
-void retnIw16(CPU* cpu, Op* op) {
-	cpu->eip.u32 = pop16(cpu);
-	SP = SP+op->data1;
-	CYCLES(3);
-}
-
-void retnIw32(CPU* cpu, Op* op) {
-	cpu->eip.u32 = pop32(cpu);
-	SP = SP+op->data1;
-	CYCLES(3);
-}
-
-void retn16(CPU* cpu, Op* op) {
-	cpu->eip.u32 = pop16(cpu);
-	CYCLES(2);
-}
-
-void retn32(CPU* cpu, Op* op) {
-	cpu->eip.u32 = pop32(cpu);
-	CYCLES(2);
-}
-
-void leave16(CPU* cpu, Op* op) {
-	SP = BP;
-	BP = pop16(cpu);
-	CYCLES(3);
-	NEXT();
-}
-
-void leave32(CPU* cpu, Op* op) {
-	ESP = EBP;
-	EBP = pop32(cpu);
-	CYCLES(3);
-	NEXT();
-}
-
-void syscall(CPU* cpu, Op* op);
-
-void salc(CPU* cpu, Op* op) {
-	if (getCF(cpu))
-		AL = 0xFF;
-	else
-		AL = 0;
-	CYCLES(2); // :TODO:
-	NEXT();
-}
-
-void xlat16(CPU* cpu, Op* op) {
-	AL = readb(cpu->memory, cpu->segAddress[op->base] + (U16)(BX + AL));
-	CYCLES(4);
-	NEXT();
-}
-
-void xlat32(CPU* cpu, Op* op) {
-	AL = readb(cpu->memory, cpu->segAddress[op->base] + EBX + AL);
-	CYCLES(4);
-	NEXT();
-}
-
-void loopnz16(CPU* cpu, Op* op) {
-	AX--;
-	cpu->eip.u32+=op->eipCount;
-	if (AX!=0 && !getZF(cpu))
-		cpu->eip.u32+=op->data1;
-	CYCLES(7);
-}
-
-void loopnz32(CPU* cpu, Op* op) {
-	EAX--;
-	cpu->eip.u32+=op->eipCount;
-	if (EAX!=0 && !getZF(cpu))
-		cpu->eip.u32+=op->data1;
-	CYCLES(7);
-}
-
-void loopz16(CPU* cpu, Op* op) {
-	AX--;
-	cpu->eip.u32+=op->eipCount;
-	if (AX!=0 && getZF(cpu))
-		cpu->eip.u32+=op->data1;
-	CYCLES(7);
-}
-
-void loopz32(CPU* cpu, Op* op) {
-	EAX--;
-	cpu->eip.u32+=op->eipCount;
-	if (EAX!=0 && getZF(cpu))
-		cpu->eip.u32+=op->data1;
-	CYCLES(7);
-}
-
-void loop16(CPU* cpu, Op* op) {
-	AX--;
-	cpu->eip.u32+=op->eipCount;
-	if (AX!=0)
-		cpu->eip.u32+=op->data1;
-	CYCLES(5);
-}
-
-void loop32(CPU* cpu, Op* op) {
-	EAX--;
-	cpu->eip.u32+=op->eipCount;
-	if (EAX!=0)
-		cpu->eip.u32+=op->data1;
-	CYCLES(5);
-}
-
-void jcxz16(CPU* cpu, Op* op) {
-	cpu->eip.u32+=op->eipCount;
-	if (AX==0)
-		cpu->eip.u32+=op->data1;
-	CYCLES(5);
-}
-
-void jcxz32(CPU* cpu, Op* op) {
-	cpu->eip.u32+=op->eipCount;
-	if (EAX==0)
-		cpu->eip.u32+=op->data1;
-	CYCLES(5);
-}
-
-void callJw(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32 + op->eipCount);
-	cpu->eip.u32 += op->eipCount + op->data1;
-	CYCLES(1);
-}
-
-void callJd(CPU* cpu, Op* op) {
-	push32(cpu, cpu->eip.u32 + op->eipCount);
-	cpu->eip.u32 += op->eipCount + (S32)op->data1;
-	CYCLES(1);
-}
-
-void jump(CPU* cpu, Op* op) {
-	cpu->eip.u32 += op->eipCount + (S32)op->data1;
-	CYCLES(1);
-}
-
-void cmc(CPU* cpu, Op* op) {
-	fillFlags(cpu);
-	setCF(cpu, !(cpu->flags & CF));
-	CYCLES(2);
-	NEXT();
-}
-
-void negr8(CPU* cpu, Op* op) {
-	cpu->var1.u8 = *cpu->reg8[op->r1];
-	cpu->result.u8 = 0-cpu->var1.u8;
-	*cpu->reg8[op->r1] = cpu->result.u8;
-	cpu->inst = FLAGS_NEG8;
-	CYCLES(1);
-	NEXT();
-}
-
-void nege8_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->var1.u8 = readb(cpu->memory, eaa);
-	cpu->result.u8 = 0-cpu->var1.u8;
-	writeb(cpu->memory, eaa, cpu->result.u8);
-	cpu->inst = FLAGS_NEG8;
-	CYCLES(3);
-	NEXT();
-}
-
-void nege8_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->var1.u8 = readb(cpu->memory, eaa);
-	cpu->result.u8 = 0-cpu->var1.u8;
-	writeb(cpu->memory, eaa, cpu->result.u8);
-	cpu->inst = FLAGS_NEG8;
-	CYCLES(3);
-	NEXT();
-}
-
-void mulr8(CPU* cpu, Op* op) {
-	AX = AL * (*cpu->reg8[op->r1]);
-    fillFlagsNoCFOF(cpu);
-    if (AX>0xFF) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void mule8_16(CPU* cpu, Op* op) {
-	AX = AL * readb(cpu->memory, eaa16(cpu, op));
-    fillFlagsNoCFOF(cpu);
-    if (AX>0xFF) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void mule8_32(CPU* cpu, Op* op) {
-	AX = AL * readb(cpu->memory, eaa32(cpu, op));
-    fillFlagsNoCFOF(cpu);
-    if (AX>0xFF) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void imulr8(CPU* cpu, Op* op) {
-	AX = (S16)((S8)AL) * (S8)(*cpu->reg8[op->r1]);
-    fillFlagsNoCFOF(cpu);
-    if ((S16)AX<-128 || (S16)AX>127) {
-        addFlag(CF);
-		addFlag(OF);
-    } else {
-		removeFlag(CF);
-		removeFlag(OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void imule8_16(CPU* cpu, Op* op) {
-	AX = (S16)((S8)AL) * (S8)readb(cpu->memory, eaa16(cpu, op));
-    fillFlagsNoCFOF(cpu);
-    if ((S16)AX<-128 || (S16)AX>127) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void imule8_32(CPU* cpu, Op* op) {
-	AX = (S16)((S8)AL) * (S8)readb(cpu->memory, eaa32(cpu, op));
-    fillFlagsNoCFOF(cpu);
-    if ((S16)AX<-128 || (S16)AX>127) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void div8(CPU* cpu, U8 src) {
-	U16 quo;
-	U8 rem;
-
-	if (src==0)
-		exception(cpu, 0);
-
-	quo = AX / src;
-	rem = AX % src;
-
-	if (quo > 255)
-		exception(cpu, 0);
-	AL = (U8)quo;
-	AH = rem;
-}
-
-void divr8(CPU* cpu, Op* op) {
-	div8(cpu, *cpu->reg8[op->r1]);
-	CYCLES(17);
-	NEXT();
-}
-
-void dive8_16(CPU* cpu, Op* op) {
-	div8(cpu, readb(cpu->memory, eaa16(cpu, op)));
-	CYCLES(17);
-	NEXT();
-}
-
-void dive8_32(CPU* cpu, Op* op) {
-	div8(cpu, readb(cpu->memory, eaa32(cpu, op)));
-	CYCLES(17);
-	NEXT();
-}
-
-void idiv8(CPU* cpu, S8 src) {
-	S16 quo;
-	S8 quo8;
-	S8 rem;
-
-	if (src==0)
-		exception(cpu, 0);
-
-	quo = (S16)AX / src;
-	quo8 = (S8)quo;
-	rem = (S16)AX % src;
-
-	if (quo != quo8)
-		exception(cpu, 0);
-	AL = quo8;
-	AH = rem;
-}
-
-void idivr8(CPU* cpu, Op* op) {
-	idiv8(cpu, (S8)(*cpu->reg8[op->r1]));
-	CYCLES(22);
-	NEXT();
-}
-
-void idive8_16(CPU* cpu, Op* op) {
-	idiv8(cpu, (S8)readb(cpu->memory, eaa16(cpu, op)));
-	CYCLES(22);
-	NEXT();
-}
-
-void idive8_32(CPU* cpu, Op* op) {
-	idiv8(cpu, (S8)readb(cpu->memory, eaa32(cpu, op)));
-	CYCLES(22);
-	NEXT();
-}
-
-void notr8(CPU* cpu, Op* op) {
-	*cpu->reg8[op->r1] = ~ *cpu->reg8[op->r1];
-	CYCLES(1);
-	NEXT();
-}
-
-void note8_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	writeb(cpu->memory, eaa, ~readb(cpu->memory, eaa));
-	CYCLES(3);
-	NEXT();
-}
-
-void note8_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	writeb(cpu->memory, eaa, ~readb(cpu->memory, eaa));
-	CYCLES(3);
-	NEXT();
-}
-
-void negr16(CPU* cpu, Op* op) {
-	cpu->var1.u16 = cpu->reg[op->r1].u16;
-	cpu->result.u16 = 0-cpu->var1.u16;
-	cpu->reg[op->r1].u16 = cpu->result.u16;
-	cpu->inst = FLAGS_NEG16;
-	CYCLES(1);
-	NEXT();
-}
-
-void nege16_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->var1.u16 = readw(cpu->memory, eaa);
-	cpu->result.u16 = 0-cpu->var1.u16;
-	writew(cpu->memory, eaa, cpu->result.u16);
-	cpu->inst = FLAGS_NEG16;
-	CYCLES(3);
-	NEXT();
-}
-
-void nege16_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->var1.u16 = readw(cpu->memory, eaa);
-	cpu->result.u16 = 0-cpu->var1.u16;
-	writew(cpu->memory, eaa, cpu->result.u16);
-	cpu->inst = FLAGS_NEG16;
-	CYCLES(3);
-	NEXT();
-}
-
-void mulr16(CPU* cpu, Op* op) {
-	U32 result = (U32)AX * cpu->reg[op->r1].u16;
-	AX = (U16)result;
-	DX = (U16)(result >> 16);
-    fillFlagsNoCFOF(cpu);
-    if (DX) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void mule16_16(CPU* cpu, Op* op) {
-    U32 result = (U32)AX * readw(cpu->memory, eaa16(cpu, op));
-	AX = (U16)result;
-	DX = (U16)(result >> 16);
-    fillFlagsNoCFOF(cpu);
-    if (DX) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void mule16_32(CPU* cpu, Op* op) {
-	U32 result = (U32)AX * readw(cpu->memory, eaa32(cpu, op));
-	AX = (U16)result;
-	DX = (U16)(result >> 16);
-    fillFlagsNoCFOF(cpu);
-    if (DX) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void imulr16(CPU* cpu, Op* op) {
-	S32 result = (S32)((S16)AX) * (S16)cpu->reg[op->r1].u16;
-	AX = (S16)result;
-	DX = (S16)(result >> 16);
-    fillFlagsNoCFOF(cpu);
-    if (result>32767 || result<-32768) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void imule16_16(CPU* cpu, Op* op) {
-    S32 result = (S32)((S16)AX) * (S16)readw(cpu->memory, eaa16(cpu, op));
-	AX = (S16)result;
-	DX = (S16)(result >> 16);
-    fillFlagsNoCFOF(cpu);
-    if (result>32767 || result<-32768) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void imule16_32(CPU* cpu, Op* op) {
-	S32 result = (S32)((S16)AX) * (S16)readw(cpu->memory, eaa32(cpu, op));
-	AX = (S16)result;
-	DX = (S16)(result >> 16);
-    fillFlagsNoCFOF(cpu);
-    if (result>32767 || result<-32768) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(11);
-	NEXT();
-}
-
-void div16(CPU* cpu, U16 src) {	
-	U32 num = ((U32)DX << 16) | AX;
-	U32 quo;
-	U16 rem;
-	U16 quo16;
-
-	if (src==0)	
-		exception(cpu, 0);
-
-	quo=num/src;
-	rem=(U16)(num % src);
-	quo16=(U16)quo;
-	if (quo!=(U32)quo16)
-		exception(cpu, 0);
-	DX=rem;
-	AX=quo16;
-}
-
-void divr16(CPU* cpu, Op* op) {
-	div16(cpu, cpu->reg[op->r1].u16);
-	CYCLES(25);
-	NEXT();
-}
-
-void dive16_16(CPU* cpu, Op* op) {
-	div16(cpu, readw(cpu->memory, eaa16(cpu, op)));
-	CYCLES(25);
-	NEXT();
-}
-
-void dive16_32(CPU* cpu, Op* op) {
-	div16(cpu, readw(cpu->memory, eaa32(cpu, op)));
-	CYCLES(25);
-	NEXT();
-}
-
-void idiv16(CPU* cpu, S16 src) {
-	S32 num = (S32)(((U32)DX << 16) | AX);
-	S32 quo;
-	S16 rem;
-	S16 quo16s;
-
-	if (src==0)
-		exception(cpu, 0);
-
-	quo=num/src;
-	rem=(S16)(num % src);
-	quo16s=(S16)quo;
-	if (quo!=(S32)quo16s) 
-		exception(cpu, 0);
-	DX=rem;
-	AX=quo16s;
-}
-
-void idivr16(CPU* cpu, Op* op) {
-	idiv16(cpu, (S16)cpu->reg[op->r1].u16);
-	CYCLES(30);
-	NEXT();
-}
-
-void idive16_16(CPU* cpu, Op* op) {
-	idiv16(cpu, (S16)readw(cpu->memory, eaa16(cpu, op)));
-	CYCLES(30);
-	NEXT();
-}
-
-void idive16_32(CPU* cpu, Op* op) {
-	idiv16(cpu, (S16)readw(cpu->memory, eaa32(cpu, op)));
-	CYCLES(30);
-	NEXT();
-}
-
-void notr16(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u16 = ~cpu->reg[op->r1].u16;
-	CYCLES(1);
-	NEXT();
-}
-
-void note16_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	writew(cpu->memory, eaa, ~readw(cpu->memory, eaa));
-	CYCLES(3);
-	NEXT();
-}
-
-void note16_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	writew(cpu->memory, eaa, ~readw(cpu->memory, eaa));
-	CYCLES(3);
-	NEXT();
-}
-
-void negr32(CPU* cpu, Op* op) {
-	cpu->var1.u32 = cpu->reg[op->r1].u32;
-	cpu->result.u32 = 0-cpu->var1.u32;
-	cpu->reg[op->r1].u32 = cpu->result.u32;
-	cpu->inst = FLAGS_NEG32;
-	CYCLES(1);
-	NEXT();
-}
-
-void nege32_16(CPU* cpu, Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	cpu->var1.u32 = readd(cpu->memory, eaa);
-	cpu->result.u32 = 0-cpu->var1.u32;
-	writed(cpu->memory, eaa, cpu->result.u32);
-	cpu->inst = FLAGS_NEG32;
-	CYCLES(3);
-	NEXT();
-}
-
-void nege32_32(CPU* cpu, Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	cpu->var1.u32 = readd(cpu->memory, eaa);
-	cpu->result.u32 = 0-cpu->var1.u32;
-	writed(cpu->memory, eaa, cpu->result.u32);
-	cpu->inst = FLAGS_NEG32;
-	CYCLES(3);
-	NEXT();
-}
-
-void mulr32(CPU* cpu, Op* op) {
-	U64 result = (U64)EAX * cpu->reg[op->r1].u32;
-	EAX = (U32)result;
-	EDX = (U32)(result >> 32);
-    fillFlagsNoCFOF(cpu);
-    if (EDX) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(10);
-	NEXT();
-}
-
-void mule32_16(CPU* cpu, Op* op) {
-    U64 result = (U64)EAX * readd(cpu->memory, eaa16(cpu, op));
-	EAX = (U32)result;
-	EDX = (U32)(result >> 32);
-    fillFlagsNoCFOF(cpu);
-    if (EDX) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(10);
-	NEXT();
-}
-
-void mule32_32(CPU* cpu, Op* op) {
-	U64 result = (U64)EAX * readd(cpu->memory, eaa32(cpu, op));
-	EAX = (U32)result;
-	EDX = (U32)(result >> 32);
-    fillFlagsNoCFOF(cpu);
-    if (EDX) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(10);
-	NEXT();
-}
-
-void imulr32(CPU* cpu, Op* op) {
-	S64 result = (S64)((S32)EAX) * (S32)cpu->reg[op->r1].u32;
-	EAX = (S32)result;
-	EDX = (S32)(result >> 32);
-    fillFlagsNoCFOF(cpu);
-    if (result>0x7fffffffl || result<-0x7fffffffl) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(10);
-	NEXT();
-}
-
-void imule32_16(CPU* cpu, Op* op) {
-    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa16(cpu, op));
-	EAX = (S32)result;
-	EDX = (S32)(result >> 32);
-    fillFlagsNoCFOF(cpu);
-    if (result>0x7fffffffl || result<-0x7fffffffl) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(10);
-	NEXT();
-}
-
-void imule32_32(CPU* cpu, Op* op) {
-	S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa32(cpu, op));
-	EAX = (S32)result;
-	EDX = (S32)(result >> 32);
-    fillFlagsNoCFOF(cpu);
-    if (result>0x7fffffffl || result<-0x7fffffffl) {
-        cpu->flags|=CF|OF;
-    } else {
-        cpu->flags&=~(CF|OF);
-    }
-	CYCLES(10);
-	NEXT();
-}
-
-void div32(CPU* cpu, U32 src) {	
-	U64 num = ((U64)EDX << 32) | EAX;
-	U64 quo;
-	U32 rem;
-	U32 quo32;
-
-	if (src==0)	
-		exception(cpu, 0);
-
-	quo=num/src;
-	rem=(U32)(num % src);
-	quo32=(U32)quo;
-	if (quo!=(U64)quo32)
-		exception(cpu, 0);
-	EDX=rem;
-	EAX=quo32;
-}
-
-void divr32(CPU* cpu, Op* op) {
-	div32(cpu, cpu->reg[op->r1].u32);
-	CYCLES(41);
-	NEXT();
-}
-
-void dive32_16(CPU* cpu, Op* op) {
-	div32(cpu, readd(cpu->memory, eaa16(cpu, op)));
-	CYCLES(41);
-	NEXT();
-}
-
-void dive32_32(CPU* cpu, Op* op) {
-	div32(cpu, readd(cpu->memory, eaa32(cpu, op)));
-	CYCLES(41);
-	NEXT();
-}
-
-void idiv32(CPU* cpu, S32 src) {
-	S64 num = (S64)(((U64)EDX << 32) | EAX);
-	S64 quo;
-	S32 rem;
-	S32 quo32s;
-
-	if (src==0)
-		exception(cpu, 0);
-
-	quo=num/src;
-	rem=(S32)(num % src);
-	quo32s=(S32)quo;
-	if (quo!=(S64)quo32s) 
-		exception(cpu, 0);
-	EDX=rem;
-	EAX=quo32s;
-}
-
-void idivr32(CPU* cpu, Op* op) {
-	idiv32(cpu, (S32)cpu->reg[op->r1].u32);
-	CYCLES(46);
-	NEXT();
-}
-
-void idive32_16(CPU* cpu, Op* op) {
-	idiv32(cpu, (S32)readd(cpu->memory, eaa16(cpu, op)));
-	CYCLES(46);
-	NEXT();
-}
-
-void idive32_32(CPU* cpu, Op* op) {
-	idiv32(cpu, (S32)readd(cpu->memory, eaa32(cpu, op)));
-	CYCLES(46);
-	NEXT();
-}
-
-void notr32(CPU* cpu, Op* op) {
-	cpu->reg[op->r1].u32 = ~cpu->reg[op->r1].u32;
-	CYCLES(1);
-	NEXT();
-}
-
-void note32_16(CPU* cpu, Op* op) {
-	int eaa = eaa16(cpu, op);
-	writed(cpu->memory, eaa, ~readd(cpu->memory, eaa));
-	CYCLES(3);
-	NEXT();
-}
-
-void note32_32(CPU* cpu, Op* op) {
-	int eaa = eaa32(cpu, op);
-	writed(cpu->memory, eaa, ~readd(cpu->memory, eaa));
-	CYCLES(3);
-	NEXT();
-}
-
-void clc(CPU* cpu, Op* op) {
-	fillFlags(cpu);
-    cpu->flags &= ~CF;
-	CYCLES(2);
-	NEXT();
-}
-
-void stc(CPU* cpu, Op* op) {
-	fillFlags(cpu);
-    cpu->flags |= CF;
-	CYCLES(2);
-	NEXT();
-}
-
-void cld(CPU* cpu, Op* op) {
-	removeFlag(DF);
-	CYCLES(2);
-	NEXT();
-}
-
-void std(CPU* cpu, Op* op) {
-	addFlag(DF);
-	CYCLES(2);
-	NEXT();
-}
-
-void callEv16_reg(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = cpu->reg[op->r1].u16;
-	CYCLES(2);
-}
-
-void callEv16_mem16(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
-	CYCLES(4);
-}
-
-void callEv16_mem32(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
-	CYCLES(4);
-}
-
-void jmpEv16_reg(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = cpu->reg[op->r1].u16;
-	CYCLES(2);
-}
-
-void jmpEv16_mem16(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
-	CYCLES(2);
-}
-
-void jmpEv16_mem32(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
-	CYCLES(2);
-}
-
-void pushEv16_reg(CPU* cpu, Op* op) {
-	push16(cpu, cpu->reg[op->r1].u16);
-	CYCLES(1);
-	NEXT();
-}
-
-void pushEv16_mem16(CPU* cpu, Op* op) {
-	push16(cpu, readw(cpu->memory, eaa16(cpu, op)));
-	CYCLES(2);
-	NEXT();
-}
-
-void pushEv16_mem32(CPU* cpu, Op* op) {
-	push16(cpu, readw(cpu->memory, eaa32(cpu, op)));
-	CYCLES(2);
-	NEXT();
-}
-
-void pushEd_reg(CPU* cpu, Op* op) {
-	push32(cpu, cpu->reg[op->r1].u32);
-	CYCLES(1);
-	NEXT();
-}
-
-void pushEd_mem16(CPU* cpu, Op* op) {
-	push32(cpu, readd(cpu->memory, eaa16(cpu, op)));
-	CYCLES(2);
-	NEXT();
-}
-
-void pushEd_mem32(CPU* cpu, Op* op) {
-	push32(cpu, readd(cpu->memory, eaa32(cpu, op)));
-	CYCLES(2);
-	NEXT();
-}
-
-void callNear32_reg(CPU* cpu, Op* op) {
-	push32(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = cpu->reg[op->r1].u32;
-	CYCLES(2);
-}
-
-void callNear32_mem16(CPU* cpu, Op* op) {
-	push32(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
-	CYCLES(4);
-}
-
-void callNear32_mem32(CPU* cpu, Op* op) {
-	push32(cpu, cpu->eip.u32+op->eipCount);
-	cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
-	CYCLES(4);
-}
-
-void jmpNear32_reg(CPU* cpu, Op* op) {
-	cpu->eip.u32 = cpu->reg[op->r1].u32;
-	CYCLES(2);
-}
-
-void jmpNear32_mem16(CPU* cpu, Op* op) {
-	cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
-	CYCLES(4);
-}
-
-void jmpNear32_mem32(CPU* cpu, Op* op) {
-	cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
-	CYCLES(4);
-}
-
-void rdtsc(CPU* cpu, Op* op) {
-	EAX = (U32)cpu->timeStampCounter;
-	EDX = (U32)(cpu->timeStampCounter >> 32);
-	CYCLES(1);
-	NEXT();
-}
+#include "fpu.h"
+#include "ops.h"
 
 Op* freeOps;
 
@@ -4062,17 +197,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x04: // ADD AL,Ib
 		case 0x204:
-			op->func = addr8;
+			op->func = add8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x05: // ADD AX,Iw
-			op->func = addr16;
+			op->func = add16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x205: // ADD EAX,Id
-			op->func = addr32;
+			op->func = add32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4114,17 +249,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x0c: // OR AL,Ib
 		case 0x20c:
-			op->func = orr8;
+			op->func = or8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x0d: // OR AX,Iw
-			op->func = orr16;
+			op->func = or16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x20d: // OR EAX,Id
-			op->func = orr32;
+			op->func = or32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4162,17 +297,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x14: // ADC AL,Ib
 		case 0x214:
-			op->func = adcr8;
+			op->func = adc8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x15: // ADC AX,Iw
-			op->func = adcr16;
+			op->func = adc16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x215: // ADC EAX,Id
-			op->func = adcr32;
+			op->func = adc32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4214,17 +349,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x1c: // SBB AL,Ib
 		case 0x21c:
-			op->func = sbbr8;
+			op->func = sbb8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x1d: // SBB AX,Iw
-			op->func = sbbr16;
+			op->func = sbb16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x21d: // SBB EAX,Id
-			op->func = sbbr32;
+			op->func = sbb32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4266,17 +401,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x24: // AND AL,Ib
 		case 0x224:
-			op->func = andr8;
+			op->func = and8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x25: // AND AX,Iw
-			op->func = andr16;
+			op->func = and16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x225: // AND EAX,Id
-			op->func = andr32;
+			op->func = and32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4311,17 +446,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x2c: // SUB AL,Ib
 		case 0x22c:
-			op->func = subr8;
+			op->func = sub8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x2d: // SUB AX,Iw
-			op->func = subr16;
+			op->func = sub16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x22d: // SUB EAX,Id
-			op->func = subr32;
+			op->func = sub32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4356,17 +491,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x34: // XOR AL,Ib
 		case 0x234:
-			op->func = xorr8;
+			op->func = xor8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x35: // XOR AX,Iw
-			op->func = xorr16;
+			op->func = xor16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x235: // XOR EAX,Id
-			op->func = xorr32;
+			op->func = xor32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4401,17 +536,17 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x3c: // CMP AL,Ib
 		case 0x23c:
-			op->func = cmpr8;
+			op->func = cmp8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0x3d: // CMP AX,Iw
-			op->func = cmpr16;
+			op->func = cmp16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x23d: // CMP EAX,Id
-			op->func = cmpr32;
+			op->func = cmp32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
@@ -4425,131 +560,131 @@ Op* decodeBlock(CPU* cpu) {
 			op->func = aas;
 			break;
 		case 0x40: // INC AX
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 0;
 			break;
 		case 0x240: // INC EAX
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 0;
 			break;
 		case 0x41: // INC CX
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 1;
 			break;
 		case 0x241: // INC ECX
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 1;
 			break;
 		case 0x42: // INC DX
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 2;
 			break;
 		case 0x242: // INC EDX
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 2;
 			break;
 		case 0x43: // INC BX
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 3;
 			break;
 		case 0x243: // INC EBX
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 3;
 			break;
 		case 0x44: // INC SP
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 4;
 			break;
 		case 0x244: // INC ESP
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 4;
 			break;
 		case 0x45: // INC BP
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 5;
 			break;
 		case 0x245: // INC EBP
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 5;
 			break;
 		case 0x46: // INC SI
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 6;
 			break;
 		case 0x246: // INC ESI
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 6;
 			break;
 		case 0x47: // INC DI
-			op->func = incr16;
+			op->func = inc16_reg;
 			op->r1 = 7;
 			break;
 		case 0x247: // INC EDI
-			op->func = incr32;
+			op->func = inc32_reg;
 			op->r1 = 7;
 			break;
 		case 0x48: // DEC AX
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 0;
 			break;
 		case 0x248: // DEC EAX
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 0;
 			break;
 		case 0x49: // DEC CX
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 1;
 			break;
 		case 0x249: // DEC ECX
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 1;
 			break;
 		case 0x4a: // DEC DX
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 2;
 			break;
 		case 0x24a: // DEC EDX
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 2;
 			break;
 		case 0x4b: // DEC BX
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 3;
 			break;
 		case 0x24b: // DEC EBX
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 3;
 			break;
 		case 0x4c: // DEC SP
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 4;
 			break;
 		case 0x24c: // DEC ESP
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 4;
 			break;
 		case 0x4d: // DEC BP
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 5;
 			break;
 		case 0x24d: // DEC EBP
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 5;
 			break;
 		case 0x4e: // DEC SI
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 6;
 			break;
 		case 0x24e: // DEC ESI
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 6;
 			break;
 		case 0x4f: // DEC DI
-			op->func = decr16;
+			op->func = dec16_reg;
 			op->r1 = 7;
 			break;
 		case 0x24f: // DEC EDI
-			op->func = decr32;
+			op->func = dec32_reg;
 			op->r1 = 7;
 			break;
 		case 0x50: // PUSH AX
@@ -4809,208 +944,73 @@ Op* decodeBlock(CPU* cpu) {
 		case 0x82:
 		case 0x282:
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);	
-				switch (G(rm)) {
-				case 0: op->func = addr8; break;
-				case 1: op->func = orr8; break;
-				case 2: op->func = adcr8; break;
-				case 3: op->func = sbbr8; break;
-				case 4: op->func = andr8; break;
-				case 5: op->func = subr8; break;
-				case 6: op->func = xorr8; break;
-				case 7: op->func = cmpr8; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde8_16; break;
-				case 1: op->func = ore8_16; break;
-				case 2: op->func = adce8_16; break;
-				case 3: op->func = sbbe8_16; break;
-				case 4: op->func = ande8_16; break;
-				case 5: op->func = sube8_16; break;
-				case 6: op->func = xore8_16; break;
-				case 7: op->func = cmpe8_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde8_32; break;
-				case 1: op->func = ore8_32; break;
-				case 2: op->func = adce8_32; break;
-				case 3: op->func = sbbe8_32; break;
-				case 4: op->func = ande8_32; break;
-				case 5: op->func = sube8_32; break;
-				case 6: op->func = xore8_32; break;
-				case 7: op->func = cmpe8_32; break;
-				}
-			}
+			switch (G(rm)) {
+			case 0: DECODE_E(add8); break;
+			case 1: DECODE_E(or8); break;
+			case 2: DECODE_E(adc8); break;
+			case 3: DECODE_E(sbb8); break;
+			case 4: DECODE_E(and8); break;
+			case 5: DECODE_E(sub8); break;
+			case 6: DECODE_E(xor8); break;
+			case 7: DECODE_E(cmp8); break;
+			}			
 			op->data1 = FETCH8();			
 			break;
 		case 0x81: // Grpl Ew,Iw
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);	
-				switch (G(rm)) {
-				case 0: op->func = addr16; break;
-				case 1: op->func = orr16; break;
-				case 2: op->func = adcr16; break;
-				case 3: op->func = sbbr16; break;
-				case 4: op->func = andr16; break;
-				case 5: op->func = subr16; break;
-				case 6: op->func = xorr16; break;
-				case 7: op->func = cmpr16; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde16_16; break;
-				case 1: op->func = ore16_16; break;
-				case 2: op->func = adce16_16; break;
-				case 3: op->func = sbbe16_16; break;
-				case 4: op->func = ande16_16; break;
-				case 5: op->func = sube16_16; break;
-				case 6: op->func = xore16_16; break;
-				case 7: op->func = cmpe16_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde16_32; break;
-				case 1: op->func = ore16_32; break;
-				case 2: op->func = adce16_32; break;
-				case 3: op->func = sbbe16_32; break;
-				case 4: op->func = ande16_32; break;
-				case 5: op->func = sube16_32; break;
-				case 6: op->func = xore16_32; break;
-				case 7: op->func = cmpe16_32; break;
-				}
-			}
+			switch (G(rm)) {
+			case 0: DECODE_E(add16); break;
+			case 1: DECODE_E(or16); break;
+			case 2: DECODE_E(adc16); break;
+			case 3: DECODE_E(sbb16); break;
+			case 4: DECODE_E(and16); break;
+			case 5: DECODE_E(sub16); break;
+			case 6: DECODE_E(xor16); break;
+			case 7: DECODE_E(cmp16); break;
+			}			
 			op->data1 = FETCH16();			
 			break;
 		case 0x281: // Grpl Ed,Id
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);	
-				switch (G(rm)) {
-				case 0: op->func = addr32; break;
-				case 1: op->func = orr32; break;
-				case 2: op->func = adcr32; break;
-				case 3: op->func = sbbr32; break;
-				case 4: op->func = andr32; break;
-				case 5: op->func = subr32; break;
-				case 6: op->func = xorr32; break;
-				case 7: op->func = cmpr32; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde32_16; break;
-				case 1: op->func = ore32_16; break;
-				case 2: op->func = adce32_16; break;
-				case 3: op->func = sbbe32_16; break;
-				case 4: op->func = ande32_16; break;
-				case 5: op->func = sube32_16; break;
-				case 6: op->func = xore32_16; break;
-				case 7: op->func = cmpe32_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde32_32; break;
-				case 1: op->func = ore32_32; break;
-				case 2: op->func = adce32_32; break;
-				case 3: op->func = sbbe32_32; break;
-				case 4: op->func = ande32_32; break;
-				case 5: op->func = sube32_32; break;
-				case 6: op->func = xore32_32; break;
-				case 7: op->func = cmpe32_32; break;
-				}
-			}
+			switch (G(rm)) {
+			case 0: DECODE_E(add32); break;
+			case 1: DECODE_E(or32); break;
+			case 2: DECODE_E(adc32); break;
+			case 3: DECODE_E(sbb32); break;
+			case 4: DECODE_E(and32); break;
+			case 5: DECODE_E(sub32); break;
+			case 6: DECODE_E(xor32); break;
+			case 7: DECODE_E(cmp32); break;
+			}			
 			op->data1 = FETCH32();			
 			break;
 		case 0x83: // Grpl Ew,Ix
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);	
-				switch (G(rm)) {
-				case 0: op->func = addr16; break;
-				case 1: op->func = orr16; break;
-				case 2: op->func = adcr16; break;
-				case 3: op->func = sbbr16; break;
-				case 4: op->func = andr16; break;
-				case 5: op->func = subr16; break;
-				case 6: op->func = xorr16; break;
-				case 7: op->func = cmpr16; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde16_16; break;
-				case 1: op->func = ore16_16; break;
-				case 2: op->func = adce16_16; break;
-				case 3: op->func = sbbe16_16; break;
-				case 4: op->func = ande16_16; break;
-				case 5: op->func = sube16_16; break;
-				case 6: op->func = xore16_16; break;
-				case 7: op->func = cmpe16_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde16_32; break;
-				case 1: op->func = ore16_32; break;
-				case 2: op->func = adce16_32; break;
-				case 3: op->func = sbbe16_32; break;
-				case 4: op->func = ande16_32; break;
-				case 5: op->func = sube16_32; break;
-				case 6: op->func = xore16_32; break;
-				case 7: op->func = cmpe16_32; break;
-				}
-			}
+			switch (G(rm)) {
+			case 0: DECODE_E(add16); break;
+			case 1: DECODE_E(or16); break;
+			case 2: DECODE_E(adc16); break;
+			case 3: DECODE_E(sbb16); break;
+			case 4: DECODE_E(and16); break;
+			case 5: DECODE_E(sub16); break;
+			case 6: DECODE_E(xor16); break;
+			case 7: DECODE_E(cmp16); break;
+			}			
 			op->data1 = FETCH_S8();			
 			op->data1 &= 0xFFFF;
 			break;
 		case 0x283: // Grpl Ed,Ix
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);	
-				switch (G(rm)) {
-				case 0: op->func = addr32; break;
-				case 1: op->func = orr32; break;
-				case 2: op->func = adcr32; break;
-				case 3: op->func = sbbr32; break;
-				case 4: op->func = andr32; break;
-				case 5: op->func = subr32; break;
-				case 6: op->func = xorr32; break;
-				case 7: op->func = cmpr32; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde32_16; break;
-				case 1: op->func = ore32_16; break;
-				case 2: op->func = adce32_16; break;
-				case 3: op->func = sbbe32_16; break;
-				case 4: op->func = ande32_16; break;
-				case 5: op->func = sube32_16; break;
-				case 6: op->func = xore32_16; break;
-				case 7: op->func = cmpe32_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = adde32_32; break;
-				case 1: op->func = ore32_32; break;
-				case 2: op->func = adce32_32; break;
-				case 3: op->func = sbbe32_32; break;
-				case 4: op->func = ande32_32; break;
-				case 5: op->func = sube32_32; break;
-				case 6: op->func = xore32_32; break;
-				case 7: op->func = cmpe32_32; break;
-				}
-			}
+			switch (G(rm)) {
+			case 0: DECODE_E(add32); break;
+			case 1: DECODE_E(or32); break;
+			case 2: DECODE_E(adc32); break;
+			case 3: DECODE_E(sbb32); break;
+			case 4: DECODE_E(and32); break;
+			case 5: DECODE_E(sub32); break;
+			case 6: DECODE_E(xor32); break;
+			case 7: DECODE_E(cmp32); break;
+			}			
 			op->data1 = FETCH_S8();			
 			break;
 		case 0x84: // TEST Eb,Gb
@@ -5330,424 +1330,211 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0xa4: // MOVSB
 		case 0x2a4:
-			if (ea16) {
-				if (rep) {
-					op->func = movsb16_r;
-				} else {
-					op->func = movsb16;
-				}
-			} else {
-				if (rep) {
-					op->func = movsb32_r;
-				} else {
-					op->func = movsb32;
-				}
-			}
+			DECODE_STRING(movsb);
 			break;
 		case 0xa5: // MOVSW
-			if (ea16) {
-				if (rep) {
-					op->func = movsw16_r;
-				} else {
-					op->func = movsw16;
-				}
-			} else {
-				if (rep) {
-					op->func = movsw32_r;
-				} else {
-					op->func = movsw32;
-				}
-			}
+			DECODE_STRING(movsw);
 			break;
 		case 0x2a5: // MOVSD
-			if (ea16) {
-				if (rep) {
-					op->func = movsd16_r;
-				} else {
-					op->func = movsd16;
-				}
-			} else {
-				if (rep) {
-					op->func = movsd32_r;
-				} else {
-					op->func = movsd32;
-				}
-			}
+			DECODE_STRING(movsd);
 			break;
 		case 0xa6: // CMPSB
 		case 0x2a6:
-			if (ea16) {
-				if (rep) {
-					op->func = cmpsb16_r;
-					op->data1 = rep_zero;
-				} else {
-					op->func = cmpsb16;
-				}
-			} else {
-				if (rep) {
-					op->func = cmpsb32_r;
-					op->data1 = rep_zero;
-				} else {
-					op->func = cmpsb32;
-				}
-			}			
+			DECODE_STRING(cmpsb);
 			break;
 		case 0xa7: // CMPSW
-			if (ea16) {
-				if (rep) {
-					op->func = cmpsw16_r;
-					op->data1 = rep_zero;
-				} else {
-					op->func = cmpsw16;
-				}
-			} else {
-				if (rep) {
-					op->func = cmpsw32_r;
-					op->data1 = rep_zero;
-				} else {
-					op->func = cmpsw32;
-				}
-			}			
+			DECODE_STRING(cmpsw);
 			break;
 		case 0x2a7: // CMPSD
-			if (ea16) {
-				if (rep) {
-					op->func = cmpsd16_r;
-					op->data1 = rep_zero;
-				} else {
-					op->func = cmpsd16;
-				}
-			} else {
-				if (rep) {
-					op->func = cmpsd32_r;
-					op->data1 = rep_zero;
-				} else {
-					op->func = cmpsd32;
-				}
-			}
+			DECODE_STRING(cmpsd);
 			break;
 		case 0xa8: // TEST AL,Ib
 		case 0x2a8:
-			op->func = testr8;
+			op->func = test8_reg;
 			op->r1 = 0;
 			op->data1 = FETCH8();
 			break;
 		case 0xa9: // TEST AX,Iw
-			op->func = testr16;
+			op->func = test16_reg;
 			op->r1 = 0;
 			op->data1 = FETCH16();
 			break;
 		case 0x2a9: // TEST EAX,Id
-			op->func = testr32;
+			op->func = test32_reg;
 			op->r1 = 0;
 			op->data1 = FETCH32();
 			break;
 		case 0xaa: // STOSB
 		case 0x2aa:
-			if (ea16) {
-				if (rep) {
-					op->func = stosb16_r;
-				} else {
-					op->func = stosb16;
-				}
-			} else {
-				if (rep) {
-					op->func = stosb32_r;
-				} else {
-					op->func = stosb32;
-				}
-			}
+			DECODE_STRING(stosb);
 			break;
 		case 0xab: // STOSW
-			if (ea16) {
-				if (rep) {
-					op->func = stosw16_r;
-				} else {
-					op->func = stosw16;
-				}
-			} else {
-				if (rep) {
-					op->func = stosw32_r;
-				} else {
-					op->func = stosw32;
-				}
-			}
+			DECODE_STRING(stosw);
 			break;
 		case 0x2ab: // STOSD
-			if (ea16) {
-				if (rep) {
-					op->func = stosd16_r;
-				} else {
-					op->func = stosd16;
-				}
-			} else {
-				if (rep) {
-					op->func = stosd32_r;
-				} else {
-					op->func = stosd32;
-				}
-			}
+			DECODE_STRING(stosd);
 			break;
 		case 0xac: // LODSB
 		case 0x2ac:
-			if (ea16) {
-				if (rep) {
-					op->func = lodsb16_r;
-				} else {
-					op->func = lodsb16;
-				}
-			} else {
-				if (rep) {
-					op->func = lodsb32_r;
-				} else {
-					op->func = lodsb32;
-				}
-			}
+			DECODE_STRING(lodsb);
 			break;
 		case 0xad: // LODSW
-			if (ea16) {
-				if (rep) {
-					op->func = lodsw16_r;
-				} else {
-					op->func = lodsw16;
-				}
-			} else {
-				if (rep) {
-					op->func = lodsw32_r;
-				} else {
-					op->func = lodsw32;
-				}
-			}
+			DECODE_STRING(lodsw);
 			break;
 		case 0x2ad: // LODSD
-			if (ea16) {
-				if (rep) {
-					op->func = lodsd16_r;
-				} else {
-					op->func = lodsd16;
-				}
-			} else {
-				if (rep) {
-					op->func = lodsd32_r;
-				} else {
-					op->func = lodsd32;
-				}
-			}
+			DECODE_STRING(lodsd);
 			break;
 		case 0xae: // SCASB
 		case 0x2ae:
-			if (ea16) {
-				if (rep) {
-					op->func = scasb16_r;
-				} else {
-					op->func = scasb16;
-				}
-			} else {
-				if (rep) {
-					op->func = scasb32_r;
-				} else {
-					op->func = scasb32;
-				}
-			}
+			DECODE_STRING(scasb);
 			break;
 		case 0xaf: // SCASW
-			if (ea16) {
-				if (rep) {
-					op->func = scasw16_r;
-				} else {
-					op->func = scasw16;
-				}
-			} else {
-				if (rep) {
-					op->func = scasw32_r;
-				} else {
-					op->func = scasw32;
-				}
-			}
+			DECODE_STRING(scasw);
 			break;
 		case 0x2af: // SCASD
-			if (ea16) {
-				if (rep) {
-					op->func = scasd16_r;
-				} else {
-					op->func = scasd16;
-				}
-			} else {
-				if (rep) {
-					op->func = scasd32_r;
-				} else {
-					op->func = scasd32;
-				}
-			}
+			DECODE_STRING(scasd);
 			break;
 		case 0xb0: // MOV AL,Ib
 		case 0x2b0:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 0;
 			break;
 		case 0xb1: // MOV CL,Ib
 		case 0x2b1:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 1;
 			break;
 		case 0xb2: // MOV DL,Ib
 		case 0x2b2:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 2;
 			break;
 		case 0xb3: // MOV BL,Ib
 		case 0x2b3:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 3;
 			break;
 		case 0xb4: // MOV AH,Ib
 		case 0x2b4:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 4;
 			break;
 		case 0xb5: // MOV CH,Ib
 		case 0x2b5:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 5;
 			break;
 		case 0xb6: // MOV DH,Ib
 		case 0x2b6:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 6;
 			break;
 		case 0xb7: // MOV BH,Ib
 		case 0x2b7:
-			op->func = movr8;
+			op->func = mov8_reg;
 			op->data1 = FETCH8();
 			op->r1 = 7;
 			break;
 		case 0xb8: // MOV AX,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 0;
 			break;
 		case 0x2b8: // MOV EAX,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 0;
 			break;
 		case 0xb9: // MOV CX,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 1;
 			break;
 		case 0x2b9: // MOV ECX,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 1;
 			break;
 		case 0xba: // MOV DX,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 2;
 			break;
 		case 0x2ba: // MOV EDX,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 2;
 			break;
 		case 0xbb: // MOV BX,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 3;
 			break;
 		case 0x2bb: // MOV EBX,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 3;
 			break;
 		case 0xbc: // MOV SP,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 4;
 			break;
 		case 0x2bc: // MOV ESP,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 4;
 			break;
 		case 0xbd: // MOV BP,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 5;
 			break;
 		case 0x2bd: // MOV EBP,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 5;
 			break;
 		case 0xbe: // MOV SI,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 6;
 			break;
 		case 0x2be: // MOV ESI,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 6;
 			break;
 		case 0xbf: // MOV DI,Iw
-			op->func = movr16;
+			op->func = mov16_reg;
 			op->data1 = FETCH16();
 			op->r1 = 7;
 			break;
 		case 0x2bf: // MOV EDI,Id
-			op->func = movr32;
+			op->func = mov32_reg;
 			op->data1 = FETCH32();
 			op->r1 = 7;
 			break;
 		case 0xc0: // GRP2 Eb,Ib
 		case 0x2c0:
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr8; break;
-				case 1: op->func = rorr8; break;
-				case 2: op->func = rclr8; break;
-				case 3: op->func = rcrr8; break;
-				case 4: op->func = shlr8; break;
-				case 5: op->func = shrr8; break;
-				case 6: op->func = shlr8; break;
-				case 7: op->func = sarr8; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role8_16; break;
-				case 1: op->func = rore8_16; break;
-				case 2: op->func = rcle8_16; break;
-				case 3: op->func = rcre8_16; break;
-				case 4: op->func = shle8_16; break;
-				case 5: op->func = shre8_16; break;
-				case 6: op->func = shle8_16; break;
-				case 7: op->func = sare8_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role8_32; break;
-				case 1: op->func = rore8_32; break;
-				case 2: op->func = rcle8_32; break;
-				case 3: op->func = rcre8_32; break;
-				case 4: op->func = shle8_32; break;
-				case 5: op->func = shre8_32; break;
-				case 6: op->func = shle8_32; break;
-				case 7: op->func = sare8_32; break;
-				}
-			}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol8); break;
+			case 1: DECODE_E(ror8); break;
+			case 2: DECODE_E(rcl8); break;
+			case 3: DECODE_E(rcr8); break;
+			case 4: DECODE_E(shl8); break;
+			case 5: DECODE_E(shr8); break;
+			case 6: DECODE_E(shl8); break;
+			case 7: DECODE_E(sar8); break;
+			}			
 			op->data1 = FETCH8() & 0x1F;
 			if (op->data1==0)
 				continue;		
@@ -5761,42 +1548,15 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0xc1: // GRP2 Ew,Ib
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr16; break;
-				case 1: op->func = rorr16; break;
-				case 2: op->func = rclr16; break;
-				case 3: op->func = rcrr16; break;
-				case 4: op->func = shlr16; break;
-				case 5: op->func = shrr16; break;
-				case 6: op->func = shlr16; break;
-				case 7: op->func = sarr16; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role16_16; break;
-				case 1: op->func = rore16_16; break;
-				case 2: op->func = rcle16_16; break;
-				case 3: op->func = rcre16_16; break;
-				case 4: op->func = shle16_16; break;
-				case 5: op->func = shre16_16; break;
-				case 6: op->func = shle16_16; break;
-				case 7: op->func = sare16_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role16_32; break;
-				case 1: op->func = rore16_32; break;
-				case 2: op->func = rcle16_32; break;
-				case 3: op->func = rcre16_32; break;
-				case 4: op->func = shle16_32; break;
-				case 5: op->func = shre16_32; break;
-				case 6: op->func = shle16_32; break;
-				case 7: op->func = sare16_32; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol16); break;
+			case 1: DECODE_E(ror16); break;
+			case 2: DECODE_E(rcl16); break;
+			case 3: DECODE_E(rcr16); break;
+			case 4: DECODE_E(shl16); break;
+			case 5: DECODE_E(shr16); break;
+			case 6: DECODE_E(shl16); break;
+			case 7: DECODE_E(sar16); break;
 			}
 			op->data1 = FETCH8() & 0x1F;
 			if (op->data1==0)
@@ -5811,42 +1571,15 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0x2c1: // GRP2 Ed,Ib
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr32; break;
-				case 1: op->func = rorr32; break;
-				case 2: op->func = rclr32; break;
-				case 3: op->func = rcrr32; break;
-				case 4: op->func = shlr32; break;
-				case 5: op->func = shrr32; break;
-				case 6: op->func = shlr32; break;
-				case 7: op->func = sarr32; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role32_16; break;
-				case 1: op->func = rore32_16; break;
-				case 2: op->func = rcle32_16; break;
-				case 3: op->func = rcre32_16; break;
-				case 4: op->func = shle32_16; break;
-				case 5: op->func = shre32_16; break;
-				case 6: op->func = shle32_16; break;
-				case 7: op->func = sare32_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role32_32; break;
-				case 1: op->func = rore32_32; break;
-				case 2: op->func = rcle32_32; break;
-				case 3: op->func = rcre32_32; break;
-				case 4: op->func = shle32_32; break;
-				case 5: op->func = shre32_32; break;
-				case 6: op->func = shle32_32; break;
-				case 7: op->func = sare32_32; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol32); break;
+			case 1: DECODE_E(ror32); break;
+			case 2: DECODE_E(rcl32); break;
+			case 3: DECODE_E(rcr32); break;
+			case 4: DECODE_E(shl32); break;
+			case 5: DECODE_E(shr32); break;
+			case 6: DECODE_E(shl32); break;
+			case 7: DECODE_E(sar32); break;
 			}
 			op->data1 = FETCH8() & 0x1F;
 			if (op->data1==0)
@@ -5869,44 +1602,17 @@ Op* decodeBlock(CPU* cpu) {
 		case 0xc6: // MOV Eb,Ib
 		case 0x2c6:
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->func = movr8;
-				op->r1 = E(rm);
-			} else if (ea16) {
-				op->func = move8_16;
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-			} else {
-				op->func = move8_32;
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-			}
+			DECODE_E(mov8);
 			op->data1 = FETCH8();
 			break;
 		case 0xc7: // MOV Ew,Iw
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->func = movr16;
-				op->r1 = E(rm);
-			} else if (ea16) {
-				op->func = move16_16;
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-			} else {
-				op->func = move16_32;
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-			}
+			DECODE_E(mov16);
 			op->data1 = FETCH16();
 			break;
 		case 0x2c7: // MOV Ed,Id
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->func = movr32;
-				op->r1 = E(rm);
-			} else if (ea16) {
-				op->func = move32_16;
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-			} else {
-				op->func = move32_32;
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-			}
+			DECODE_E(mov32);
 			op->data1 = FETCH32();
 			break;
 		case 0xc9: // LEAVE
@@ -5929,246 +1635,84 @@ Op* decodeBlock(CPU* cpu) {
 		case 0xd0: // GRP2 Eb,1
 		case 0x2d0:
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr8; break;
-				case 1: op->func = rorr8; break;
-				case 2: op->func = rclr8; break;
-				case 3: op->func = rcrr8; break;
-				case 4: op->func = shlr8; break;
-				case 5: op->func = shrr8; break;
-				case 6: op->func = shlr8; break;
-				case 7: op->func = sarr8; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role8_16; break;
-				case 1: op->func = rore8_16; break;
-				case 2: op->func = rcle8_16; break;
-				case 3: op->func = rcre8_16; break;
-				case 4: op->func = shle8_16; break;
-				case 5: op->func = shre8_16; break;
-				case 6: op->func = shle8_16; break;
-				case 7: op->func = sare8_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role8_32; break;
-				case 1: op->func = rore8_32; break;
-				case 2: op->func = rcle8_32; break;
-				case 3: op->func = rcre8_32; break;
-				case 4: op->func = shle8_32; break;
-				case 5: op->func = shre8_32; break;
-				case 6: op->func = shle8_32; break;
-				case 7: op->func = sare8_32; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol8); break;
+			case 1: DECODE_E(ror8); break;
+			case 2: DECODE_E(rcl8); break;
+			case 3: DECODE_E(rcr8); break;
+			case 4: DECODE_E(shl8); break;
+			case 5: DECODE_E(shr8); break;
+			case 6: DECODE_E(shl8); break;
+			case 7: DECODE_E(sar8); break;
 			}
 			op->data1 = 1;
 			break;
 		case 0xd1: // // GRP2 Ew,1
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr16; break;
-				case 1: op->func = rorr16; break;
-				case 2: op->func = rclr16; break;
-				case 3: op->func = rcrr16; break;
-				case 4: op->func = shlr16; break;
-				case 5: op->func = shrr16; break;
-				case 6: op->func = shlr16; break;
-				case 7: op->func = sarr16; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role16_16; break;
-				case 1: op->func = rore16_16; break;
-				case 2: op->func = rcle16_16; break;
-				case 3: op->func = rcre16_16; break;
-				case 4: op->func = shle16_16; break;
-				case 5: op->func = shre16_16; break;
-				case 6: op->func = shle16_16; break;
-				case 7: op->func = sare16_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role16_32; break;
-				case 1: op->func = rore16_32; break;
-				case 2: op->func = rcle16_32; break;
-				case 3: op->func = rcre16_32; break;
-				case 4: op->func = shle16_32; break;
-				case 5: op->func = shre16_32; break;
-				case 6: op->func = shle16_32; break;
-				case 7: op->func = sare16_32; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol16); break;
+			case 1: DECODE_E(ror16); break;
+			case 2: DECODE_E(rcl16); break;
+			case 3: DECODE_E(rcr16); break;
+			case 4: DECODE_E(shl16); break;
+			case 5: DECODE_E(shr16); break;
+			case 6: DECODE_E(shl16); break;
+			case 7: DECODE_E(sar16); break;
 			}
 			op->data1 = 1;
 			break;
 		case 0x2d1: // GRP2 Ed,1
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr32; break;
-				case 1: op->func = rorr32; break;
-				case 2: op->func = rclr32; break;
-				case 3: op->func = rcrr32; break;
-				case 4: op->func = shlr32; break;
-				case 5: op->func = shrr32; break;
-				case 6: op->func = shlr32; break;
-				case 7: op->func = sarr32; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role32_16; break;
-				case 1: op->func = rore32_16; break;
-				case 2: op->func = rcle32_16; break;
-				case 3: op->func = rcre32_16; break;
-				case 4: op->func = shle32_16; break;
-				case 5: op->func = shre32_16; break;
-				case 6: op->func = shle32_16; break;
-				case 7: op->func = sare32_16; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role32_32; break;
-				case 1: op->func = rore32_32; break;
-				case 2: op->func = rcle32_32; break;
-				case 3: op->func = rcre32_32; break;
-				case 4: op->func = shle32_32; break;
-				case 5: op->func = shre32_32; break;
-				case 6: op->func = shle32_32; break;
-				case 7: op->func = sare32_32; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol32); break;
+			case 1: DECODE_E(ror32); break;
+			case 2: DECODE_E(rcl32); break;
+			case 3: DECODE_E(rcr32); break;
+			case 4: DECODE_E(shl32); break;
+			case 5: DECODE_E(shr32); break;
+			case 6: DECODE_E(shl32); break;
+			case 7: DECODE_E(sar32); break;
 			}
 			op->data1 = 1;
 			break;
 		case 0xd2: // GRP2 Eb,CL
 		case 0x2d2:
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr8_cl; break;
-				case 1: op->func = rorr8_cl; break;
-				case 2: op->func = rclr8_cl; break;
-				case 3: op->func = rcrr8_cl; break;
-				case 4: op->func = shlr8_cl; break;
-				case 5: op->func = shrr8_cl; break;
-				case 6: op->func = shlr8_cl; break;
-				case 7: op->func = sarr8_cl; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role8_16_cl; break;
-				case 1: op->func = rore8_16_cl; break;
-				case 2: op->func = rcle8_16_cl; break;
-				case 3: op->func = rcre8_16_cl; break;
-				case 4: op->func = shle8_16_cl; break;
-				case 5: op->func = shre8_16_cl; break;
-				case 6: op->func = shle8_16_cl; break;
-				case 7: op->func = sare8_16_cl; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role8_32_cl; break;
-				case 1: op->func = rore8_32_cl; break;
-				case 2: op->func = rcle8_32_cl; break;
-				case 3: op->func = rcre8_32_cl; break;
-				case 4: op->func = shle8_32_cl; break;
-				case 5: op->func = shre8_32_cl; break;
-				case 6: op->func = shle8_32_cl; break;
-				case 7: op->func = sare8_32_cl; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol8cl); break;
+			case 1: DECODE_E(ror8cl); break;
+			case 2: DECODE_E(rcl8cl); break;
+			case 3: DECODE_E(rcr8cl); break;
+			case 4: DECODE_E(shl8cl); break;
+			case 5: DECODE_E(shr8cl); break;
+			case 6: DECODE_E(shl8cl); break;
+			case 7: DECODE_E(sar8cl); break;
 			}
 			break;
 		case 0xd3: // // GRP2 Ew,CL
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr16_cl; break;
-				case 1: op->func = rorr16_cl; break;
-				case 2: op->func = rclr16_cl; break;
-				case 3: op->func = rcrr16_cl; break;
-				case 4: op->func = shlr16_cl; break;
-				case 5: op->func = shrr16_cl; break;
-				case 6: op->func = shlr16_cl; break;
-				case 7: op->func = sarr16_cl; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role16_16_cl; break;
-				case 1: op->func = rore16_16_cl; break;
-				case 2: op->func = rcle16_16_cl; break;
-				case 3: op->func = rcre16_16_cl; break;
-				case 4: op->func = shle16_16_cl; break;
-				case 5: op->func = shre16_16_cl; break;
-				case 6: op->func = shle16_16_cl; break;
-				case 7: op->func = sare16_16_cl; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role16_32_cl; break;
-				case 1: op->func = rore16_32_cl; break;
-				case 2: op->func = rcle16_32_cl; break;
-				case 3: op->func = rcre16_32_cl; break;
-				case 4: op->func = shle16_32_cl; break;
-				case 5: op->func = shre16_32_cl; break;
-				case 6: op->func = shle16_32_cl; break;
-				case 7: op->func = sare16_32_cl; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol16cl); break;
+			case 1: DECODE_E(ror16cl); break;
+			case 2: DECODE_E(rcl16cl); break;
+			case 3: DECODE_E(rcr16cl); break;
+			case 4: DECODE_E(shl16cl); break;
+			case 5: DECODE_E(shr16cl); break;
+			case 6: DECODE_E(shl16cl); break;
+			case 7: DECODE_E(sar16cl); break;
 			}
 			break;
 		case 0x2d3: // GRP2 Ed,CL
 			rm = FETCH8();
-			if (rm>=0xC0) {
-				op->r1 = E(rm);
-				switch (G(rm)) {
-				case 0: op->func = rolr32_cl; break;
-				case 1: op->func = rorr32_cl; break;
-				case 2: op->func = rclr32_cl; break;
-				case 3: op->func = rcrr32_cl; break;
-				case 4: op->func = shlr32_cl; break;
-				case 5: op->func = shrr32_cl; break;
-				case 6: op->func = shlr32_cl; break;
-				case 7: op->func = sarr32_cl; break;
-				}
-			} else if (ea16) {
-				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role32_16_cl; break;
-				case 1: op->func = rore32_16_cl; break;
-				case 2: op->func = rcle32_16_cl; break;
-				case 3: op->func = rcre32_16_cl; break;
-				case 4: op->func = shle32_16_cl; break;
-				case 5: op->func = shre32_16_cl; break;
-				case 6: op->func = shle32_16_cl; break;
-				case 7: op->func = sare32_16_cl; break;
-				}
-			} else {
-				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-				switch (G(rm)) {
-				case 0: op->func = role32_32_cl; break;
-				case 1: op->func = rore32_32_cl; break;
-				case 2: op->func = rcle32_32_cl; break;
-				case 3: op->func = rcre32_32_cl; break;
-				case 4: op->func = shle32_32_cl; break;
-				case 5: op->func = shre32_32_cl; break;
-				case 6: op->func = shle32_32_cl; break;
-				case 7: op->func = sare32_32_cl; break;
-				}
+			switch (G(rm)) {
+			case 0: DECODE_E(rol32cl); break;
+			case 1: DECODE_E(ror32cl); break;
+			case 2: DECODE_E(rcl32cl); break;
+			case 3: DECODE_E(rcr32cl); break;
+			case 4: DECODE_E(shl32cl); break;
+			case 5: DECODE_E(shr32cl); break;
+			case 6: DECODE_E(shl32cl); break;
+			case 7: DECODE_E(sar32cl); break;
 			}
 			break;
 		case 0xd6: // SALC
@@ -6666,277 +2210,13 @@ Op* decodeBlock(CPU* cpu) {
 			break;
 		case 0xf6: // GRP3 Eb(,Ib)
 		case 0x2f6:
-			rm=FETCH8();
-            switch (G(rm)) {
-                case 0x00:											/* TEST Eb,Ib */
-                case 0x01:											/* TEST Eb,Ib Undocumented*/
-					if (rm>=0xC0) {
-						op->func = testr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = teste8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = teste8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-					op->data1 = FETCH8();
-                    break;
-                case 0x02:											/* NOT Eb */
-                    if (rm>=0xC0) {
-						op->func = notr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = note8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = note8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x03:                                          /* NEG Eb */
-                    if (rm>=0xC0) {
-						op->func = negr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = nege8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = nege8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x04:											/* MUL AL,Eb */
-                    if (rm>=0xC0) {
-						op->func = mulr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = mule8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = mule8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x05:											/* IMUL AL,Eb */
-                    if (rm>=0xC0) {
-						op->func = imulr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = imule8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = imule8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x06:											/* DIV Eb */
-                    if (rm>=0xC0) {
-						op->func = divr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = dive8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = dive8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x07:											/* IDIV Eb */
-                    if (rm>=0xC0) {
-						op->func = idivr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = idive8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = idive8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-            }
+			DECODE_GROUP3(8);
 			break;
 		case 0xf7: // GRP3 Ew(,Iw)
-			rm=FETCH8();
-            switch (G(rm)) {
-                case 0x00:											/* TEST Ew,Iw */
-                case 0x01:											/* TEST Ew,Iw Undocumented*/
-					if (rm>=0xC0) {
-						op->func = testr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = teste16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = teste16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-					op->data1 = FETCH16();
-                    break;
-                case 0x02:											/* NOT Ew */
-                    if (rm>=0xC0) {
-						op->func = notr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = note16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = note16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x03:                                          /* NEG Ew */
-                    if (rm>=0xC0) {
-						op->func = negr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = nege16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = nege16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x04:											/* MUL AX,Ew */
-                    if (rm>=0xC0) {
-						op->func = mulr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = mule16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = mule16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x05:											/* IMUL AX,Ew */
-                    if (rm>=0xC0) {
-						op->func = imulr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = imule16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = imule16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x06:											/* DIV Ew */
-                    if (rm>=0xC0) {
-						op->func = divr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = dive16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = dive16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x07:											/* IDIV Ew */
-                    if (rm>=0xC0) {
-						op->func = idivr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = idive16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = idive16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-            }
+			DECODE_GROUP3(16);
 			break;
 		case 0x2f7: // GRP3 Ed(,Id)
-			rm=FETCH8();
-            switch (G(rm)) {
-                case 0x00:											/* TEST Ed,Id */
-                case 0x01:											/* TEST Ed,Id Undocumented*/
-					if (rm>=0xC0) {
-						op->func = testr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = teste32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = teste32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-					op->data1 = FETCH32();
-                    break;
-                case 0x02:											/* NOT Ed */
-                    if (rm>=0xC0) {
-						op->func = notr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = note32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = note32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x03:                                          /* NEG Ed */
-                    if (rm>=0xC0) {
-						op->func = negr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = nege32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = nege32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x04:											/* MUL EAX,Ed */
-                    if (rm>=0xC0) {
-						op->func = mulr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = mule32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = mule32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x05:											/* IMUL EAX,Ed */
-                    if (rm>=0xC0) {
-						op->func = imulr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = imule32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = imule32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x06:											/* DIV Ed */
-                    if (rm>=0xC0) {
-						op->func = divr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = dive32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = dive32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-                case 0x07:											/* IDIV Ed */
-                    if (rm>=0xC0) {
-						op->func = idivr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = idive32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = idive32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
-                    break;
-            }
+			DECODE_GROUP3(32);
 			break;
 		case 0xf8: // CLC
 		case 0x2f8:
@@ -6959,28 +2239,10 @@ Op* decodeBlock(CPU* cpu) {
 			rm=FETCH8();
             switch ((rm>>3)&7) {
                 case 0x00:										/* INC Eb */
-					if (rm>=0xC0) {
-						op->func = incr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = ince8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = ince8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(inc8);
                     break;
                 case 0x01:										/* DEC Eb */
-					if (rm>=0xC0) {
-						op->func = decr8;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = dece8_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = dece8_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(dec8);
                     break;
                 default:
                     panic("Illegal GRP4 Call %d, "+((rm>>3) & 7));
@@ -6991,75 +2253,27 @@ Op* decodeBlock(CPU* cpu) {
 			rm = FETCH8();
             switch ((rm>>3)&7) {
                 case 0x00:										/* INC Ew */
-                    if (rm>=0xC0) {
-						op->func = incr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = ince16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = ince16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(inc16);
                     break;
                 case 0x01:										/* DEC Ew */
-                    if (rm>=0xC0) {
-						op->func = decr16;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = dece16_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = dece16_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(dec16);
                     break;
                 case 0x02:										/* CALL Ev */
-                    if (rm >= 0xc0 ) {
-						op->func = callEv16_reg;
-						op->r1 = E(rm);
-                    }
-                    else if (ea16) {
-						op->func = callEv16_mem16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = callEv16_mem32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(callEv16);
 					FINISH_OP();
 					return block;
                 case 0x03:										/* CALL Ep */
                     panic("Call Ep (0xFF) not implemented");
                     break;
                 case 0x04:										/* JMP Ev */
-                    if (rm >= 0xc0 ) {
-						op->func = jmpEv16_reg;
-						op->r1 = E(rm);
-                    }
-                    else if (ea16) {
-						op->func = jmpEv16_mem16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = jmpEv16_mem32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(jmpEv16);
 					FINISH_OP();
 					return block;
                 case 0x05:										/* JMP Ep */
                     panic("Jmp Ep (0xFF) not implemented");
                     break;
                 case 0x06:										/* PUSH Ev */
-                    if (rm >= 0xc0 ) {
-						op->func = pushEv16_reg;
-						op->r1 = E(rm);
-                    }
-                    else if (ea16) {
-						op->func = pushEv16_mem16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = pushEv16_mem32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(pushEv16);
 					break;
                 default:
                     panic("CPU:GRP5:Illegal Call %d", (rm>>3)&7);
@@ -7070,75 +2284,27 @@ Op* decodeBlock(CPU* cpu) {
 			rm = FETCH8();
             switch ((rm>>3)&7) {
                 case 0x00:											/* INC Ed */
-                    if (rm>=0xC0) {
-						op->func = incr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = ince32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = ince32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(inc32);
 					break;
                 case 0x01:											/* DEC Ed */
-                    if (rm>=0xC0) {
-						op->func = decr32;
-						op->r1 = E(rm);
-					} else if (ea16) {
-						op->func = dece32_16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = dece32_32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(dec32);
                     break;
                 case 0x02:											/* CALL NEAR Ed */
-					if (rm >= 0xc0 ) {
-						op->func = callNear32_reg;
-						op->r1 = E(rm);
-                    }
-                    else if (ea16) {
-						op->func = callNear32_mem16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = callNear32_mem32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(callNear32);
 					FINISH_OP();
 					return block;
                 case 0x03:											/* CALL FAR Ed */
                     panic("CALL FAR Ed not implemented");
                     break;
                 case 0x04:											/* JMP NEAR Ed */
-                    if (rm >= 0xc0 ) {
-						op->func = jmpNear32_reg;
-						op->r1 = E(rm);
-                    }
-                    else if (ea16) {
-						op->func = jmpNear32_mem16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = jmpNear32_mem32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(jmpNear32);
 					FINISH_OP();
 					return block;
                 case 0x05:											/* JMP FAR Ed */
                     panic("JMP FAR Ed not implemented");
                     break;
                 case 0x06:											/* Push Ed */
-                    if (rm >= 0xc0 ) {
-						op->func = pushEd_reg;
-						op->r1 = E(rm);
-                    }
-                    else if (ea16) {
-						op->func = pushEd_mem16;
-						ip = decodeEa16(cpu, op, ds, ss, rm, ip);
-					} else {
-						op->func = pushEd_mem32;
-						ip = decodeEa32(cpu, op, ds, ss, rm, ip);
-					}
+					DECODE_E(pushEd);
 					break;
                 default:
                     panic("CPU:66:GRP5:Illegal call %d", (rm>>3)&7);

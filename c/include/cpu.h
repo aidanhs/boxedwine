@@ -26,6 +26,7 @@ typedef struct CPU {
 	U8		big;
 	FPU     fpu;
 	U64		timeStampCounter;
+	U32     blockCounter; // number of clocks since the start of the block
 } CPU;
 
 U32 getCF(CPU* cpu);
@@ -112,6 +113,7 @@ U32 pop32(CPU* cpu);
 void exception(CPU* cpu, int code);
 void initCPU(CPU* cpu, Memory* memory);
 void runBlock(CPU* cpu, Op* block);
+void runCPU(CPU* cpu);
 
 #define FLAGS_NONE 0
 #define FLAGS_ADD8 1

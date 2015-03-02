@@ -96,6 +96,12 @@
     <ClInclude Include="..\..\..\..\include\ksystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\ops.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\fpu.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">

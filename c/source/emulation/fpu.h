@@ -1,6 +1,3 @@
-#include "fpu.h"
-#include "cpu.h"
-#include "decoder.h"
 #include <math.h>
 
 #define FMASK_TEST (CF | PF | AF | ZF | SF | OF)    
