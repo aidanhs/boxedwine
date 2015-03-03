@@ -5,5 +5,6 @@
 
 void scheduleThread(KThread* thread);
 void unscheduleThread(KThread* thread);
+void runSlice();
 
 #endif

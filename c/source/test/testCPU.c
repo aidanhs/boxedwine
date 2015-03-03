@@ -35,9 +35,9 @@ void setup() {
 		initMemory(memory);
 		initRAM(10);
 
-		allocReadWritePagesAtAddress(memory, STACK_ADDRESS-4096, 1);
-		allocReadWritePagesAtAddress(memory, CODE_ADDRESS, 1);
-		allocReadWritePagesAtAddress(memory, HEAP_ADDRESS, 1);
+		allocPages(memory, &ramPageWR, TRUE, (STACK_ADDRESS >> PAGE_SHIFT)-1, 1);
+		allocPages(memory, &ramPageWR, TRUE, CODE_ADDRESS >> PAGE_SHIFT, 1);
+		allocPages(memory, &ramPageWR, TRUE, HEAP_ADDRESS >> PAGE_SHIFT, 1);
 	}
 	initCPU(cpu, memory);	
 

@@ -5,7 +5,7 @@
 void initArray(KArray* karray) {
 	karray->count = 0;
 	karray->maxCount = 10;
-	karray->objects = malloc(sizeof(void*)*10);
+	karray->objects = (void**)malloc(sizeof(void*)*10);
 }
 
 void destroyArray(KArray* karray) {

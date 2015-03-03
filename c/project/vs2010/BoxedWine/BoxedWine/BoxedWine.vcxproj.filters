@@ -105,6 +105,9 @@
     <ClInclude Include="..\..\..\..\include\kstring.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\pathutils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -153,6 +156,9 @@
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\kstring.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pathutils.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
   </ItemGroup>

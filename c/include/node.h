@@ -3,9 +3,11 @@
 
 #include "filepath.h"
 #include "platform.h"
+#include "nodeType.h"
 
 typedef struct Node {
 	FilePath path;
+	NodeType* nodeType;
 	U32 id;
 } Node;
 

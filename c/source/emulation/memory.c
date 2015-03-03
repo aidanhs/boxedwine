@@ -1,6 +1,11 @@
 #include "memory.h"
 #include "log.h"
 #include "ram.h"
+#include <string.h>
+
+// invalidPage data options
+#define UNRESERVED 0
+#define RESERVED 1
 
 U8 pf_readb(Memory* memory, U32 data, U32 address) {
 	panic("PF");
@@ -29,7 +34,7 @@ void pf_writed(Memory* memory, U32 data, U32 address, U32 value) {
 	panic("PF");
 }
 
-void pf_clear(U32 data) {
+void pf_clear(U32 page, U32 data) {
 }
 
 Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_writed, pf_clear};
@@ -87,27 +92,37 @@ void initMemory(Memory* memory) {
 	for (i=0;i<0x100000;i++) {
 		memory->mmu[i] = &invalidPage;
 	}
+	memset(memory->data, 0, sizeof(memory->data));
 }
 
 void destroyMemory(Memory* memory) {
 	int i;
 
 	for (i=0;i<0x100000;i++) {
-		memory->mmu[i]->clear(memory->data[i]);
+		memory->mmu[i]->clear(i, memory->data[i]);
 	}
 }
 
-void allocReadWritePagesAtAddress(Memory* memory, U32 address, int pages) {
-	int index = address >> 12;
-	int i;
+void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount) {
+	U32 i;
+	U32 address = page << PAGE_SHIFT;
 
-	for (i=0;i<pages;i++) {
-		int ram = allocRamPage();
+	if (allocRAM) {
+		for (i=0;i<pageCount;i++) {
+			U32 ram = allocRamPage();
 
-		memory->mmu[index] = &ramPageWR;
-		memory->data[index] = address-getAddressOfRamPage(ram);
-		index++;
-		address+=0x1000;
+			memory->mmu[page] = pageType;
+			memory->data[page] = address-getAddressOfRamPage(ram);
+			page++;
+			address+=0x1000;
+		}
+	} else {
+		for (i=0;i<pageCount;i++) {
+			memory->mmu[page] = pageType;
+			memory->data[page] = page;
+			page++;
+			address+=0x1000;
+		}
 	}
 }
 
@@ -125,5 +140,46 @@ void copyMemory(Memory* memory, U8* data, U32 address, int len) {
 		*data=readb(memory, address);
 		address++;
 		data++;
+	}
+}
+
+BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32* result) {
+	U32 i;
+	
+	for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
+		if (memory->data[i]==UNRESERVED && memory->mmu[i]==&invalidPage) {
+			U32 j;
+			BOOL success = TRUE;
+
+			for (j=1;j<pageCount;j++) {
+				if (memory->data[i+j]!=UNRESERVED || memory->mmu[i+j]!=&invalidPage) {
+					success = FALSE;
+					break;
+				}
+			}
+			if (success) {
+				*result = i;
+				return TRUE;
+			}
+		}
+	}
+	return FALSE;
+}
+
+void reservePages(Memory* memory, U32 startingPage, U32 pageCount) {
+	U32 i;
+	
+	for (i=startingPage;i<startingPage+pageCount;i++) {
+		memory->data[i]=RESERVED;
+	}
+}
+
+void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
+	U32 i;
+	
+	for (i=startingPage;i<startingPage+pageCount;i++) {
+		memory->mmu[i]->clear(i, memory->data[i]);
+		memory->mmu[i] = &invalidPage;
+		memory->data[i]=UNRESERVED;
 	}
 }

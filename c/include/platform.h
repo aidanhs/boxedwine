@@ -1,6 +1,8 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
+#define MAX_PATH 1024
+
 #define U64 unsigned long long int
 #define S64 long long int
 #define U32 unsigned int
@@ -10,5 +12,8 @@
 #define U8 unsigned char
 #define S8 char
 #define BOOL char
+
+#define TRUE 1
+#define FALSE 0
 
 #endif

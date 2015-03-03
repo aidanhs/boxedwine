@@ -7,12 +7,16 @@
 typedef struct KThread {
 	U32 id;
 	CPU cpu;
+	U32 stackPageStart;
+	U32 stackPageCount;
 	struct KProcess* process;
 	struct KThread* scheduleNext;
 	struct KThread* schedulePrev;
 } KThread;
 
-void initThread(KThread* thread, Memory* memory);
+extern U32 numberOfThreads;
+
+void initThread(KThread* thread, struct KProcess* process);
 void exitThread(KThread* thread, U32 status);
 
 #endif

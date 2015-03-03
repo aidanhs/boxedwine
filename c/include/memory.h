@@ -6,10 +6,11 @@
 
 #define PAGE_SIZE 4096
 #define PAGE_SHIFT 12
+#define NUMBER_OF_PAGES 0x100000
 
 typedef struct Memory {
-	Page* mmu[0x100000];
-	U32 data[0x100000];
+	Page* mmu[NUMBER_OF_PAGES];
+	U32 data[NUMBER_OF_PAGES];
 } Memory;
 
 U8 readb(Memory* memory, U32 address);
@@ -34,7 +35,11 @@ void pf_writed(Memory* memory, U32 data, U32 address, U32 value);
 
 void initMemory(Memory* memory);
 void destroyMemory(Memory* memory);
+void releaseMemory(Memory* memory, U32 page, U32 pageCount);
 
-void allocReadWritePagesAtAddress(Memory* memory, U32 address, int pages);
+void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount);
 
+BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32* result);
+// should be called after findFirstAvailablePage, it will not verify that the pages are UNRESERVED before marking them RESERVED
+void reservePages(Memory* memory, U32 startingPage, U32 pageCount);
 #endif

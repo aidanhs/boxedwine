@@ -5,16 +5,16 @@
 
 static U8* ram;
 static U8* ramRefCount;
-static int pageCount;
-static int freePageCount;
+static U32 pageCount;
+static U32 freePageCount;
 static U32* freePages;
 
 U32 getAddressOfRamPage(int page) {
 	return (U32)(&ram[page << 12]);
 }
 
-void initRAM(int pages) {
-	int i;
+void initRAM(U32 pages) {
+	U32 i;
 
 	pageCount = pages;
 	ram = (U8*)malloc(PAGE_SIZE*pages);
@@ -27,11 +27,11 @@ void initRAM(int pages) {
 	}
 }
 
-int getPageCount() {
+U32 getPageCount() {
     return pageCount;
 }
 
-int allocRamPage() {
+U32 allocRamPage() {
 	int result;
 
     if (freePageCount==0) {
@@ -106,10 +106,55 @@ void ram_writed(Memory* memory, U32 data, U32 address, U32 value) {
 	}
 }
 
-void ram_clear(U32 data) {
-	freeRamPage(data >> 12);
+void ram_clear(U32 page, U32 data) {
+	U32 ramPage = ((page << PAGE_SHIFT) - data - (U32)ram) >> PAGE_SHIFT;
+	freeRamPage(ramPage);
+}
+
+U32 ondemmand(Memory* memory, U32 page);
+
+U8 ondemand_ram_readb(Memory* memory, U32 data, U32 address) {
+	data = ondemmand(memory, data);
+	return ram_readb(memory, data, address);
+}
+
+void ondemand_ram_writeb(Memory* memory, U32 data, U32 address, U8 value) {
+	data = ondemmand(memory, data);
+	ram_writeb(memory, data, address, value);
+}
+
+U16 ondemand_ram_readw(Memory* memory, U32 data, U32 address) {
+	data = ondemmand(memory, data);
+	return ram_readw(memory, data, address);
+}
+
+void ondemand_ram_writew(Memory* memory, U32 data, U32 address, U16 value) {
+	data = ondemmand(memory, data);
+	ram_writew(memory, data, address, value);
+}
+
+U32 ondemand_ram_readd(Memory* memory, U32 data, U32 address) {
+	data = ondemmand(memory, data);
+	return ram_readd(memory, data, address);
+}
+
+void ondemand_ram_writed(Memory* memory, U32 data, U32 address, U32 value) {
+	data = ondemmand(memory, data);
+	ram_writed(memory, data, address, value);
+}
+
+void ondemand_ram_clear(U32 page, U32 data) {
 }
 
 Page ramPageRO = {ram_readb, pf_writeb, ram_readw, pf_writew, ram_readd, pf_writed, ram_clear};
 Page ramPageWO = {pf_readb, ram_writeb, pf_readw, ram_writew, pf_readd, ram_writed, ram_clear};
 Page ramPageWR = {ram_readb, ram_writeb, ram_readw, ram_writew, ram_readd, ram_writed, ram_clear};
+Page ramOnDemandPageWR = {ondemand_ram_readb, ondemand_ram_writeb, ondemand_ram_readw, ondemand_ram_writew, ondemand_ram_readd, ondemand_ram_writed, ondemand_ram_clear};
+
+U32 ondemmand(Memory* memory, U32 page) {
+	U32 ram = allocRamPage();
+	U32 address = page << PAGE_SHIFT;
+	memory->data[page] = address-getAddressOfRamPage(ram);
+	memory->mmu[page] = &ramPageWR;
+	return memory->data[page];
+}
