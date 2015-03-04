@@ -16,4 +16,19 @@
 #define TRUE 1
 #define FALSE 0
 
+#ifdef _MSC_VER
+#define unlink _unlink
+#define ftruncate64(h, l) _chsize(h, (long)l)
+#define lseek64 _lseeki64
+#define UNISTD <io.h>
+#define UTIME <sys/utime.h>
+#else
+#define UNISTD <unistd.h>
+#define UTIME <utime.h>
+#endif
+
+#ifndef S_ISDIR
+# define S_ISDIR(ST_MODE) (((ST_MODE) & _S_IFMT) == _S_IFDIR)
+#endif
+
 #endif

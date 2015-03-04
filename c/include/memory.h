@@ -42,4 +42,6 @@ void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pag
 BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32* result);
 // should be called after findFirstAvailablePage, it will not verify that the pages are UNRESERVED before marking them RESERVED
 void reservePages(Memory* memory, U32 startingPage, U32 pageCount);
+
+U8* getPhysicalAddress(Memory* memory, U32 address);
 #endif

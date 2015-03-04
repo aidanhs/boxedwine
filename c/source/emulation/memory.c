@@ -183,3 +183,8 @@ void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
 		memory->data[i]=UNRESERVED;
 	}
 }
+
+U8* getPhysicalAddress(Memory* memory, U32 address) {
+	int index = address >> 12;
+	return memory->mmu[index]->physicalAddress(memory->data[index], address);
+}

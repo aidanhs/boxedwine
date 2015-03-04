@@ -6,6 +6,6 @@
 extern char pathSeperator;
 
 Node* getNodeFromLocalPath(const char* currentDirectory, const char* path);
-void setFileSystemRoot(const char* pPath);
+void initFileSystem(const char* rootPath);
 
 #endif

@@ -158,3 +158,7 @@ U32 ondemmand(Memory* memory, U32 page) {
 	memory->mmu[page] = &ramPageWR;
 	return memory->data[page];
 }
+
+U8* physicalAddress(U32 data, U32 address) {
+	return (U8*)(address-data);
+}

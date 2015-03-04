@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 		strcat(r, "root");
 		root=r;
 	}
-	setFileSystemRoot(root);
+	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);
 
 	ppenv[envc++] = "HOME=/home/username";
