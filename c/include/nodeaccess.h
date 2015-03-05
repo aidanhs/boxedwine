@@ -14,13 +14,14 @@ typedef struct OpenNode {
 } OpenNode;
 
 typedef struct NodeAccess {
+	S64  (*length)(OpenNode* node);
 	BOOL (*setLength)(OpenNode* node, S64 length);
-	S64 (*getFilePointer)(OpenNode* node);
-	S64 (*seek)(OpenNode* node, S64 pos);	
-	U32 (*read)(Memory* memory, OpenNode* node, U32 address, U32 len);
-    U32 (*write)(Memory* memory, OpenNode* node, U32 address, U32 len);
+	S64  (*getFilePointer)(OpenNode* node);
+	S64  (*seek)(OpenNode* node, S64 pos);	
+	U32  (*read)(Memory* memory, OpenNode* node, U32 address, U32 len);
+    U32  (*write)(Memory* memory, OpenNode* node, U32 address, U32 len);
 	void (*close)(OpenNode* node);
-	U32 (*ioctl)(KThread* thread, OpenNode* node, U32 request);
+	U32  (*ioctl)(KThread* thread, OpenNode* node, U32 request);
     BOOL (*isWriteReady)(OpenNode* node);
     BOOL (*isReadReady)(OpenNode* node);
 } NodeAccess;

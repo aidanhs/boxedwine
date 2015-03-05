@@ -11,7 +11,7 @@
 #define S16 short
 #define U8 unsigned char
 #define S8 char
-#define BOOL char
+#define BOOL unsigned int
 
 #define TRUE 1
 #define FALSE 0

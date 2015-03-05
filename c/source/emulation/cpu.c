@@ -1,7 +1,10 @@
 #include "cpu.h"
 #include "log.h"
+#include "decoder.h"
+#include <string.h>
 
 void initCPU(CPU* cpu, Memory* memory) {
+	memset(cpu, 0, sizeof(CPU));
 	cpu->reg8[0] = &cpu->reg[0].u8;
 	cpu->reg8[1] = &cpu->reg[1].u8;
 	cpu->reg8[2] = &cpu->reg[2].u8;
@@ -10,12 +13,9 @@ void initCPU(CPU* cpu, Memory* memory) {
 	cpu->reg8[5] = &cpu->reg[5].h8;
 	cpu->reg8[6] = &cpu->reg[6].h8;
 	cpu->reg8[7] = &cpu->reg[7].h8;
-	cpu->reg[8].u32 = 0;
-	cpu->segAddress[SEG_ZERO] = 0;
 	cpu->memory = memory;
 	cpu->inst = FLAGS_NONE;
-	cpu->timeStampCounter = 0;
-	cpu->blockCounter = 0;
+	cpu->big = 1;
 	FPU_FINIT(&cpu->fpu);
 }
 
@@ -510,4 +510,7 @@ void runBlock(CPU* cpu, Op* block) {
 }
 
 void runCPU(CPU* cpu) {
+	Op* block = decodeBlock(cpu);
+	runBlock(cpu, block);
+	freeOp(block);
 }
