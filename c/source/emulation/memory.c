@@ -3,9 +3,6 @@
 #include "ram.h"
 #include <string.h>
 
-// invalidPage data options
-#define UNRESERVED 0
-#define RESERVED 1
 
 U8 pf_readb(Memory* memory, U32 data, U32 address) {
 	panic("PF");
@@ -34,7 +31,7 @@ void pf_writed(Memory* memory, U32 data, U32 address, U32 value) {
 	panic("PF");
 }
 
-void pf_clear(U32 page, U32 data) {
+void pf_clear(Memory* memory, U32 page, U32 data) {
 }
 
 Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_writed, pf_clear};
@@ -99,11 +96,11 @@ void destroyMemory(Memory* memory) {
 	int i;
 
 	for (i=0;i<0x100000;i++) {
-		memory->mmu[i]->clear(i, memory->data[i]);
+		memory->mmu[i]->clear(memory, i, memory->data[i]);
 	}
 }
 
-void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount) {
+void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U32 data) {
 	U32 i;
 	U32 address = page << PAGE_SHIFT;
 
@@ -119,9 +116,8 @@ void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pag
 	} else {
 		for (i=0;i<pageCount;i++) {
 			memory->mmu[page] = pageType;
-			memory->data[page] = page;
+			memory->data[page] = data;
 			page++;
-			address+=0x1000;
 		}
 	}
 }
@@ -166,11 +162,11 @@ BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32
 	return FALSE;
 }
 
-void reservePages(Memory* memory, U32 startingPage, U32 pageCount) {
+void reservePages(Memory* memory, U32 startingPage, U32 pageCount, U32 status) {
 	U32 i;
 	
 	for (i=startingPage;i<startingPage+pageCount;i++) {
-		memory->data[i]=RESERVED;
+		memory->data[i]=status;
 	}
 }
 
@@ -178,7 +174,7 @@ void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
 	U32 i;
 	
 	for (i=startingPage;i<startingPage+pageCount;i++) {
-		memory->mmu[i]->clear(i, memory->data[i]);
+		memory->mmu[i]->clear(memory, i, memory->data[i]);
 		memory->mmu[i] = &invalidPage;
 		memory->data[i]=UNRESERVED;
 	}
@@ -186,5 +182,5 @@ void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
 
 U8* getPhysicalAddress(Memory* memory, U32 address) {
 	int index = address >> 12;
-	return memory->mmu[index]->physicalAddress(memory->data[index], address);
+	return memory->mmu[index]->physicalAddress(memory, address, memory->data[index]);
 }

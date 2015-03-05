@@ -5,10 +5,10 @@
 #include "memory.h"
 #include "kthread.h"
 #include "karray.h"
+#include "kfiledescriptor.h"
 
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_STACK_START		0xE0000
-#define ADDRESS_PROCESS_CALLBACK_START	0xE2000
 #define ADDRESS_PROCESS_SHARED_START	0xE3000
 // this needs a continuous space, hopefully wine won't use more than 256MB
 #define ADDRESS_PROCESS_HEAP_START		0xF0000
@@ -22,9 +22,11 @@ typedef struct KProcess {
 	const char** args;
 	const char** env;
 	const char* currentDirectory;
+	KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
 } KProcess;
 
 void processOnExitThread(KThread* thread);
 BOOL startProcess(const char* currentDirectory, int argc, const char** args, int envc, const char** env);
+KFileDescriptor* getFileDescriptor(KProcess* process, U32 handle);
 
 #endif

@@ -123,13 +123,18 @@
     <ClInclude Include="..\..\..\..\include\fpu.h" />
     <ClInclude Include="..\..\..\..\include\karray.h" />
     <ClInclude Include="..\..\..\..\include\kerror.h" />
+    <ClInclude Include="..\..\..\..\include\kfiledescriptor.h" />
     <ClInclude Include="..\..\..\..\include\khashmap.h" />
+    <ClInclude Include="..\..\..\..\include\kmmap.h" />
+    <ClInclude Include="..\..\..\..\include\kobject.h" />
+    <ClInclude Include="..\..\..\..\include\kobjectaccess.h" />
     <ClInclude Include="..\..\..\..\include\kprocess.h" />
     <ClInclude Include="..\..\..\..\include\kscheduler.h" />
     <ClInclude Include="..\..\..\..\include\kstat.h" />
     <ClInclude Include="..\..\..\..\include\kstring.h" />
     <ClInclude Include="..\..\..\..\include\ksystem.h" />
     <ClInclude Include="..\..\..\..\include\kthread.h" />
+    <ClInclude Include="..\..\..\..\include\loader.h" />
     <ClInclude Include="..\..\..\..\include\log.h" />
     <ClInclude Include="..\..\..\..\include\memory.h" />
     <ClInclude Include="..\..\..\..\include\node.h" />
@@ -143,6 +148,7 @@
     <ClInclude Include="..\..\..\..\include\reg.h" />
     <ClInclude Include="..\..\..\..\source\emulation\fpu.h" />
     <ClInclude Include="..\..\..\..\source\emulation\ops.h" />
+    <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c" />
@@ -151,10 +157,15 @@
     <ClCompile Include="..\..\..\..\source\emulation\ram.c" />
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kobject.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kprocess.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kscheduler.c" />
     <ClCompile Include="..\..\..\..\source\kernel\ksystem.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kthread.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\loader\elf.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\loader\loader.c" />
     <ClCompile Include="..\..\..\..\source\kernel\syscall.c" />
     <ClCompile Include="..\..\..\..\source\sdl\main.c" />
     <ClCompile Include="..\..\..\..\source\test\testCPU.c" />

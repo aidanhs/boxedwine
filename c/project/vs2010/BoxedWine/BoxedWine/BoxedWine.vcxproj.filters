@@ -31,6 +31,9 @@
     <Filter Include="Source Files\io">
       <UniqueIdentifier>{ee7fb443-b868-4e80-9ec4-45153408d6f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\kernel\loader">
+      <UniqueIdentifier>{065303d5-14b1-4cd2-b831-1f353464b9fe}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -120,6 +123,24 @@
     <ClInclude Include="..\..\..\..\include\kerror.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h">
+      <Filter>Source Files\kernel\loader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kmmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfiledescriptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kobject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kobjectaccess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -175,6 +196,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\khashmap.c">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\loader\elf.c">
+      <Filter>Source Files\kernel\loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\loader\loader.c">
+      <Filter>Source Files\kernel\loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kobject.c">
+      <Filter>Source Files\kernel</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

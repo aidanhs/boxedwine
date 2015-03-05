@@ -43,6 +43,12 @@ void initFileSystem(const char* rootPath) {
 	initHashmap(&nodeMap);
 }
 
+S64 openfile_length(OpenNode* node) {
+	S32 currentPos = lseek(node->handle, 0, SEEK_CUR);
+    S32 size = lseek(node->handle, 00, SEEK_END);
+    lseek(node->handle, currentPos, SEEK_SET);
+	return size;
+}
 
 BOOL file_setLength(OpenNode* node, S64 len) {
 	return ftruncate64(node->handle, len)==0;
@@ -60,16 +66,21 @@ U32 file_read(Memory* memory, OpenNode* node, U32 address, U32 len) {
 	if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
 		U8* ram = getPhysicalAddress(memory, address);
 		return read(node->handle, ram, len);		
-	} else {
-		U8* ram = getPhysicalAddress(memory, address);
+	} else {		
 		U32 result = 0;
 		while (len) {
 			U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
+			U32 didRead;
+			U8* ram = getPhysicalAddress(memory, address);
+
 			if (todo>len)
 				todo = len;
-			result+=read(node->handle, ram, todo);		
-			len-=todo;
-			address+=todo;
+			didRead=read(node->handle, ram, todo);		
+			if (didRead==0)
+				break;
+			len-=didRead;
+			address+=didRead;
+			result+=didRead;
 		}
 		return result;
 	}
@@ -79,11 +90,11 @@ U32 file_write(Memory* memory, OpenNode* node, U32 address, U32 len) {
 	if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
 		U8* ram = getPhysicalAddress(memory, address);
 		return write(node->handle, ram, len);		
-	} else {
-		U8* ram = getPhysicalAddress(memory, address);
+	} else {		
 		U32 wrote = 0;
 		while (len) {
 			U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
+			U8* ram = getPhysicalAddress(memory, address);
 			if (todo>len)
 				todo = len;
 			wrote+=write(node->handle, ram, todo);		
@@ -111,7 +122,7 @@ BOOL file_isReadReady(OpenNode* node) {
 	return node->isRead;
 }
 
-NodeAccess fileAccess = {file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_ioctl, file_isWriteReady, file_isReadReady};
+NodeAccess fileAccess = {openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_ioctl, file_isWriteReady, file_isReadReady};
 
 BOOL file_isDirectory(Node* node) {
 	struct stat buf;
@@ -147,22 +158,8 @@ U64 file_length(Node* node) {
 	return 0;
 }
 
-#define K_O_RDONLY   0x0000
-#define K_O_WRONLY   0x0001
-#define K_O_RDWR     0x0002
-#define K_O_ACCMODE  0x0003
-
-#define K_O_CREAT	   0x0040
-#define K_O_EXCL	   0x0080
-#define K_O_TRUNC	   0x0200
-#define K_O_APPEND     0x0400
-
-// can change after open
-#define K_O_NONBLOCK = 0x0800;
-#define K_O_CLOEXEC =  0x80000;
-
 OpenNode* file_open(Node* node, U32 flags) {
-	U32 openFlags = 0;
+	U32 openFlags = O_BINARY;
 	U32 f;
 	OpenNode* result;
 	BOOL isRead = FALSE;
@@ -191,7 +188,7 @@ OpenNode* file_open(Node* node, U32 flags) {
 	if (flags & K_O_APPEND) {
 		openFlags|=O_APPEND;
 	}
-	f = open(node->path.nativePath, flags);	
+	f = open(node->path.nativePath, openFlags);	
 	if (!f)
 		return 0;
 	result = (OpenNode*)malloc(sizeof(OpenNode));
@@ -271,6 +268,7 @@ Node* getNodeFromLocalPath(const char* currentDirectory, const char* path) {
 	result->id = nodeId++;
 	result->path.localPath = strdup(localPath);
 	result->path.nativePath = strdup(nativePath);
+	result->nodeType = &fileNodeType;
 	putHashmapValue(&nodeMap, result->path.localPath, result);
 	return result;
 }
