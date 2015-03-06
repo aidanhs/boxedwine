@@ -23,7 +23,8 @@ static U32 ondemmandFile(Memory* memory, U32 address, U32 data) {
 	U32 page = address >> 12;
 	BOOL read = data & MEMORY_DATA_READ;
 	BOOL write = data & MEMORY_DATA_WRITE;
-	
+	U32 len;
+
 	if (read && write)
 		memory->mmu[page] = &ramPageWR;
 	else if (write)
@@ -32,7 +33,10 @@ static U32 ondemmandFile(Memory* memory, U32 address, U32 data) {
 		memory->mmu[page] = &ramPageRO;
 
 	memory->data[page] = address-getAddressOfRamPage(ram);
-	fd->kobject->access->read(fd->kobject, memory, address, PAGE_SIZE);
+	len = fd->kobject->access->read(fd->kobject, memory, address, PAGE_SIZE);
+	if (len<PAGE_SIZE) {
+		zeroMemory(memory, address+len, PAGE_SIZE-len);
+	}
 	closeFD(fd);
 	return memory->data[page];
 }

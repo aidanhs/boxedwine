@@ -70,13 +70,13 @@ U32 file_read(Memory* memory, OpenNode* node, U32 address, U32 len) {
 		U32 result = 0;
 		while (len) {
 			U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
-			U32 didRead;
+			S32 didRead;
 			U8* ram = getPhysicalAddress(memory, address);
 
 			if (todo>len)
 				todo = len;
 			didRead=read(node->handle, ram, todo);		
-			if (didRead==0)
+			if (didRead<=0)
 				break;
 			len-=didRead;
 			address+=didRead;

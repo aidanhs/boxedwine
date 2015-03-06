@@ -32,21 +32,54 @@ const char* getInterpreter(OpenNode* openNode, BOOL* isElf) {
 	return 0;
 }
 
+#define SHF_WRITE 1
+#define SHF_ALLOC 2
+
+#define SHT_NOBITS 8
+
+#define PT_LOAD 1
+
 BOOL loadProgram(KThread* thread, OpenNode* openNode, U32* eip) {
 	U8 buffer[sizeof(Elf32_Ehdr)];
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
-	U32 address;
+	U32 fileLen;
+	U32 address=0xFFFFFFFF;
+	U32 i;
 
 	if (len!=sizeof(buffer)) {
 		return FALSE;
 	}
 	if (!isValidElf(hdr))
 		return FALSE;
-	len = (U32)openNode->access->length(openNode);
+
+	len=0;
+	openNode->access->seek(openNode, hdr->e_phoff);	
+	for (i=0;i<hdr->e_phoff;i++) {
+		Elf32_Phdr phdr;		
+		read(openNode->handle, &phdr, sizeof(Elf32_Phdr));
+		if (phdr.p_type==PT_LOAD) {
+			if (phdr.p_paddr<address)
+				address=phdr.p_paddr;
+			if (len<phdr.p_paddr+phdr.p_memsz)
+				len=phdr.p_paddr+phdr.p_memsz;
+		}
+	}
+
 	address = mmap64(thread, 0, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
-	openNode->access->seek(openNode, 0);
-	openNode->access->read(thread->process->memory, openNode, address, len);	
+
+	for (i=0;i<hdr->e_phnum;i++) {
+		Elf32_Phdr phdr;		
+		openNode->access->seek(openNode, hdr->e_phoff+sizeof(Elf32_Phdr)*i);
+		read(openNode->handle, &phdr, sizeof(phdr));
+		if (phdr.p_type==PT_LOAD) {
+			if (phdr.p_filesz>0) {
+				openNode->access->seek(openNode, phdr.p_offset);
+				openNode->access->read(thread->process->memory, openNode, address+phdr.p_paddr, phdr.p_filesz);		
+			}
+		}
+	}
+	
 	*eip = hdr->e_entry+address;
 	return TRUE;
 }
