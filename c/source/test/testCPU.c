@@ -115,11 +115,11 @@ typedef struct Data {
 } Data;
 
 #define endData() {0}
-#define allocData(var2, var1, result, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, 0, 0, 0, 0, 0 }
-#define allocDataFlags(var2, var1, fCF, fOF, fSF, fZF) { 1, var1, var2, 0, 0, 0, 0, fCF, fOF, fZF, fSF, 1, 0, 0 }
-#define allocDataConst(var2, var1, result, constant, constantWidth, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, constant, fCF, fOF, 0, 0, 0, 0, constantWidth }
-#define allocDatavar2(var2, var1, resultvar1, resultvar2) { 1, var1, var2, resultvar1, resultvar2, 0, 0, 0, 0, 0, 0, 1, 1, 0 }
-#define allocDataConstvar2(var2, var1, result, flags, fCF, fOF, constant, var2Result) { 1, var1, var2, result, var2Result, flags, constant, fCF, fOF, 0, 0, 0, 1, 0 }
+#define allocData(var1, var2, result, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, 0, 0, 0, 0, 0 }
+#define allocDataFlags(var1, var2, fCF, fOF, fSF, fZF) { 1, var1, var2, 0, 0, 0, 0, fCF, fOF, fZF, fSF, 1, 0, 0 }
+#define allocDataConst(var1, var2, result, constant, constantWidth, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, constant, fCF, fOF, 0, 0, 0, 0, constantWidth }
+#define allocDatavar2(var1, var2, resultvar1, resultvar2) { 1, var1, var2, resultvar1, resultvar2, 0, 0, 0, 0, 0, 0, 1, 1, 0 }
+#define allocDataConstvar2(var1, var2, result, flags, fCF, fOF, constant, var2Result) { 1, var1, var2, result, var2Result, flags, constant, fCF, fOF, 0, 0, 0, 1, 0 }
 
 void pushConstant(Data* data) {
     if (data->constantWidth==8) {
@@ -2023,603 +2023,603 @@ static Data testd[] = {
 static Data incb[] = {
         allocData(0, 0, 1, 0, false, false),
         allocData(0, 0, 1, CF, true, false), // it should keep the previous carry flag
-        allocData(0, 0x80, 0x81, 0, false, false),
-        allocData(0, 0x7F, 0x80, 0, false, true),
+        allocData(0x80, 0, 0x81, 0, false, false),
+        allocData(0x7F, 0, 0x80, 0, false, true),
 		endData()
 };
 
 static Data incw[] = {
         allocData(0, 0, 1, 0, false, false),
         allocData(0, 0, 1, CF, true, false), // it should keep the previous carry flag
-        allocData(0, 0x8000, 0x8001, 0, false, false),
-        allocData(0, 0x7FFF, 0x8000, 0, false, true),
-        allocData(0, 0xFFFF, 0, 0, false, false), // carry flag is not set
+        allocData(0x8000, 0, 0x8001, 0, false, false),
+        allocData(0x7FFF, 0, 0x8000, 0, false, true),
+        allocData(0xFFFF, 0, 0, 0, false, false), // carry flag is not set
 		endData()
 };
 
 static Data incd[] = {
         allocData(0, 0, 1, 0, false, false),
         allocData(0, 0, 1, CF, true, false), // it should keep the previous carry flag
-        allocData(0, 0x80000000, 0x80000001, 0, false, false),
-        allocData(0, 0x7FFFFFFF, 0x80000000, 0, false, true),
-        allocData(0, 0xFFFFFFFF, 0, 0, false, false), // carry flag is not set
+        allocData(0x80000000, 0, 0x80000001, 0, false, false),
+        allocData(0x7FFFFFFF, 0, 0x80000000, 0, false, true),
+        allocData(0xFFFFFFFF, 0, 0, 0, false, false), // carry flag is not set
 		endData()
 };
 
 static Data decb[] = {
-        allocData(0, 2, 1, 0, false, false),
-        allocData(0, 1, 0, CF, true, false), // it should keep the previous carry flag
-        allocData(0, 0x80, 0x7F, 0, false, true),
+        allocData(2, 0, 1, 0, false, false),
+        allocData(1, 0, 0, CF, true, false), // it should keep the previous carry flag
+        allocData(0x80, 0, 0x7F, 0, false, true),
         allocData(0, 0, 0xFF, 0, false, false),
 		endData()
 };
 
 static Data decw[] = {
-        allocData(0, 2, 1, 0, false, false),
-        allocData(0, 1, 0, CF, true, false), // it should keep the previous carry flag
-        allocData(0, 0x8000, 0x7FFF, 0, false, true),
+        allocData(2, 0, 1, 0, false, false),
+        allocData(1, 0, 0, CF, true, false), // it should keep the previous carry flag
+        allocData(0x8000, 0, 0x7FFF, 0, false, true),
         allocData(0, 0, 0xFFFF, 0, false, false),
 		endData()
 };
 
 static Data decd[] = {
-        allocData(0, 2, 1, 0, false, false),
-        allocData(0, 1, 0, CF, true, false), // it should keep the previous carry flag
-        allocData(0, 0x80000000, 0x7FFFFFFF, 0, false, true),
+        allocData(2, 0, 1, 0, false, false),
+        allocData(1, 0, 0, CF, true, false), // it should keep the previous carry flag
+        allocData(0x80000000, 0, 0x7FFFFFFF, 0, false, true),
         allocData(0, 0, 0xFFFFFFFF, 0, false, false),
 		endData()
 };
 
 static Data imulw[] = {
-        allocDataConst(2, 0, 4, 2, 16, 0, false, false),
-        allocDataConst(0xFFFE, 0, 0xFFFC, 2, 16, 0, false, false), // -2 * 2 = -4
-        allocDataConst(0xFFFE, 0, 4, 0xFFFE, 16, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
-        allocDataConst(300, 0, 0x5F90, 300, 16, 0, true, true), // 300 x 300 = 0x15F90
-        allocDataConst(-300, 0, 0xA070, 300, 16, 0, true, true),
+        allocDataConst(0, 2, 4, 2, 16, 0, false, false),
+        allocDataConst(0, 0xFFFE, 0xFFFC, 2, 16, 0, false, false), // -2 * 2 = -4
+        allocDataConst(0, 0xFFFE, 4, 0xFFFE, 16, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
+        allocDataConst(0, 300, 0x5F90, 300, 16, 0, true, true), // 300 x 300 = 0x15F90
+        allocDataConst(0, -300, 0xA070, 300, 16, 0, true, true),
 		endData()
 };
 
 static Data imuld[] = {
-        allocDataConst(2, 0, 4, 2, 32, 0, false, false),
-        allocDataConst(0xFFFFFFFE, 0, 0xFFFFFFFC, 2, 32, 0, false, false), // -2 * 2 = -4
-        allocDataConst(0xFFFFFFFE, 0, 4, 0xFFFFFFFE, 32, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
-        allocDataConst(300000, 0, 0xF08EB000, 400000, 32, 0, true, true), // = 1BF08EB000
-        allocDataConst(-300000, 0, 0x0F715000, 400000, 32, 0, true, true),
+        allocDataConst(0, 2, 4, 2, 32, 0, false, false),
+        allocDataConst(0, 0xFFFFFFFE, 0xFFFFFFFC, 2, 32, 0, false, false), // -2 * 2 = -4
+        allocDataConst(0, 0xFFFFFFFE, 4, 0xFFFFFFFE, 32, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
+        allocDataConst(0, 300000, 0xF08EB000, 400000, 32, 0, true, true), // = 1BF08EB000
+        allocDataConst(0, -300000, 0x0F715000, 400000, 32, 0, true, true),
 		endData()
 };
 
 static Data imulw_s8[] = {
-        allocDataConst(2, 0, 4, 2, 8, 0, false, false),
-        allocDataConst(0xFFFE, 0, 0xFFFC, 2, 8, 0, false, false), // -2 * 2 = -4
-        allocDataConst(0xFFFE, 0, 4, 0xFE, 8, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
-        allocDataConst(3000, 0, 0xD048, 127, 8, 0, true, true), // 3000 x 127 = 0x5D048
-        allocDataConst(-3000, 0, 0x2FB8, 127, 8, 0, true, true),
+        allocDataConst(0, 2, 4, 2, 8, 0, false, false),
+        allocDataConst(0, 0xFFFE, 0xFFFC, 2, 8, 0, false, false), // -2 * 2 = -4
+        allocDataConst(0, 0xFFFE, 4, 0xFE, 8, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
+        allocDataConst(0, 3000, 0xD048, 127, 8, 0, true, true), // 3000 x 127 = 0x5D048
+        allocDataConst(0, -3000, 0x2FB8, 127, 8, 0, true, true),
 		endData()
 };
 
 static Data imuld_s8[] = {
-        allocDataConst(2, 0, 4, 2, 8, 0, false, false),
-        allocDataConst(0xFFFFFFFE, 0, 0xFFFFFFFC, 2, 8, 0, false, false), // -2 * 2 = -4
-        allocDataConst(0xFFFFFFFE, 0, 4, 0xFE, 8, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
-        allocDataConst(300000000, 0, 0xDEEFDD00, 127, 8, 0, true, true), // = 8DEEFDD00
-        allocDataConst(-300000000, 0, 0x21102300, 127, 8, 0, true, true),
+        allocDataConst(0, 2, 4, 2, 8, 0, false, false),
+        allocDataConst(0, 0xFFFFFFFE, 0xFFFFFFFC, 2, 8, 0, false, false), // -2 * 2 = -4
+        allocDataConst(0, 0xFFFFFFFE, 4, 0xFE, 8, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
+        allocDataConst(0, 300000000, 0xDEEFDD00, 127, 8, 0, true, true), // = 8DEEFDD00
+        allocDataConst(0, -300000000, 0x21102300, 127, 8, 0, true, true),
 		endData()
 };
 
 static Data xchgb[] = {
-        allocDatavar2(1, 2, 1, 2),
+        allocDatavar2(2, 1, 1, 2),
         allocDatavar2(0, 0, 0, 0),
-        allocDatavar2(0xFC, 0xAB, 0xFC, 0xAB),
+        allocDatavar2(0xAB, 0xFC, 0xFC, 0xAB),
 		endData()
 };
 
 static Data xchgw[] = {
-        allocDatavar2(1, 2, 1, 2),
+        allocDatavar2(2, 1, 1, 2),
         allocDatavar2(0, 0, 0, 0),
-        allocDatavar2(0xFC15, 0xAB38, 0xFC15, 0xAB38),
+        allocDatavar2(0xAB38, 0xFC15, 0xFC15, 0xAB38),
 		endData()
 };
 
 static Data xchgd[] = {
-        allocDatavar2(1, 2, 1, 2),
+        allocDatavar2(2, 1, 1, 2),
         allocDatavar2(0, 0, 0, 0),
-        allocDatavar2(0xFC150146, 0xAB38, 0xFC150146, 0xAB38),
+        allocDatavar2(0xAB38, 0xFC150146, 0xFC150146, 0xAB38),
 		endData()
 };
 
 static Data movb[] = {
-        allocData(1, 0, 1, 0, false, false),
+        allocData(0, 1, 1, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
-        allocData(0xFF, 0, 0xFF, 0, false, false),
-        allocData(0x7F, 0, 0x7F, 0, false, false),
+        allocData(0, 0xFF, 0xFF, 0, false, false),
+        allocData(0, 0x7F, 0x7F, 0, false, false),
 		endData()
 };
 
 static Data movw[] = {
-        allocData(1, 0, 1, 0, false, false),
+        allocData(0, 1, 1, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
-        allocData(0xFFFF, 0, 0xFFFF, 0, false, false),
-        allocData(0x7FFF, 0, 0x7FFF, 0, false, false),
+        allocData(0, 0xFFFF, 0xFFFF, 0, false, false),
+        allocData(0, 0x7FFF, 0x7FFF, 0, false, false),
 		endData()
 };
 
 static Data movd[] = {
-        allocData(1, 0, 1, 0, false, false),
+        allocData(0, 1, 1, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
-        allocData(0xFFFF, 0, 0xFFFF, 0, false, false),
-        allocData(0x7FFF, 0, 0x7FFF, 0, false, false),
-        allocData(0xFFFFFFFF, 0, 0xFFFFFFFF, 0, false, false),
-        allocData(0x7FFFFFFF, 0, 0x7FFFFFFF, 0, false, false),
-        allocData(0x08080808, 0, 0x08080808, 0, false, false),
+        allocData(0, 0xFFFF, 0xFFFF, 0, false, false),
+        allocData(0, 0x7FFF, 0x7FFF, 0, false, false),
+        allocData(0, 0xFFFFFFFF, 0xFFFFFFFF, 0, false, false),
+        allocData(0, 0x7FFFFFFF, 0x7FFFFFFF, 0, false, false),
+        allocData(0, 0x08080808, 0x08080808, 0, false, false),
 		endData()
 };
 
 static Data cbw[] = {
-        allocData(0, 0x1234, 0x0034, 0, false, false),
-        allocData(0, 0x12FE, 0xFFFE, 0, false, false),
+        allocData(0x1234, 0, 0x0034, 0, false, false),
+        allocData(0x12FE, 0, 0xFFFE, 0, false, false),
 		endData()
 };
 
 static Data cwde[] = {
-        allocData(0, 0x12345678, 0x5678, 0, false, false),
-        allocData(0, 0x1234FFFE, 0xFFFFFFFE, 0, false, false),
+        allocData(0x12345678, 0, 0x5678, 0, false, false),
+        allocData(0x1234FFFE, 0, 0xFFFFFFFE, 0, false, false),
 		endData()
 };
 
 static Data cwd[] = {
         allocDatavar2(0x1234, 0x1234, 0x1234, 0),
-        allocDatavar2(0x1234, 0xFFFE, 0xFFFE, 0xFFFF),
+        allocDatavar2(0xFFFE, 0x1234, 0xFFFE, 0xFFFF),
 		endData()
 };
 
 static Data cdq[] = {
         allocDatavar2(0x12345678, 0x12345678, 0x12345678, 0),
-        allocDatavar2(0x12345678, 0xFFFFFFFE, 0xFFFFFFFE, 0xFFFFFFFF),
+        allocDatavar2(0xFFFFFFFE, 0x12345678, 0xFFFFFFFE, 0xFFFFFFFF),
 		endData()
 };
 
 static Data sahf[] = {
-        allocDatavar2(0x0000FF00, 0x12345600, 0x123456D5, 0x0000FF00),
-        allocDatavar2(0x00000000, 0xFFFFFFFF, 0xFFFFFF2A, 0x00000000),
+        allocDatavar2(0x12345600, 0x0000FF00, 0x123456D5, 0x0000FF00),
+        allocDatavar2(0xFFFFFFFF, 0x00000000, 0xFFFFFF2A, 0x00000000),
 		endData()
 };
 
 static Data lahf[] = {
-        allocDatavar2(0x00000000, 0x123456FF, 0x123456FF, 0x0000D500),
-        allocDatavar2(0xFFFFFFFF, 0xFFFFFF00, 0xFFFFFF00, 0xFFFF00FF),
+        allocDatavar2(0x123456FF, 0x00000000, 0x123456FF, 0x0000D500),
+        allocDatavar2(0xFFFFFF00, 0xFFFFFFFF, 0xFFFFFF00, 0xFFFF00FF),
 		endData()
 };
 
 static Data rolb[] = {
-        allocData(1, 0x40, 0x80, 0, false, true),
-        allocData(1, 0x01, 0x02, 0, false, false),
-        allocData(1, 0x80, 0x01, 0, true, true),
-        allocData(4, 0x30, 0x03, 0, true, true),
-        allocData(12, 0x30, 0x03, 0, true, true),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(8, 0x01, 0x01, 0, true, true),
-        allocData(8, 0x80, 0x80, 0, false, true),
-        allocData(9, 0x01, 0x02, 0, false, false),
-        allocData(32, 0x01, 0x01, 0, false, false),
+        allocData(0x40, 1, 0x80, 0, false, true),
+        allocData(0x01, 1, 0x02, 0, false, false),
+        allocData(0x80, 1, 0x01, 0, true, true),
+        allocData(0x30, 4, 0x03, 0, true, true),
+        allocData(0x30, 12, 0x03, 0, true, true),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 8, 0x01, 0, true, true),
+        allocData(0x80, 8, 0x80, 0, false, true),
+        allocData(0x01, 9, 0x02, 0, false, false),
+        allocData(0x01, 32, 0x01, 0, false, false),
 		endData()
 };
 
 static Data rolb_1[] = {
-        allocData(1, 0x40, 0x80, 0, false, true),
-        allocData(1, 0x01, 0x02, 0, false, false),
-        allocData(1, 0x80, 0x01, 0, true, true),
+        allocData(0x40, 1, 0x80, 0, false, true),
+        allocData(0x01, 1, 0x02, 0, false, false),
+        allocData(0x80, 1, 0x01, 0, true, true),
 		endData()
 };
 
 static Data rorb[] = {
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0x40, 0, false, true),
-        allocData(1, 0x01, 0x80, 0, true, true),
-        allocData(4, 0x03, 0x30, 0, false, false),
-        allocData(12, 0x03, 0x30, 0, false, false),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(8, 0x01, 0x01, 0, false, false),
-        allocData(8, 0x80, 0x80, 0, true, true),
-        allocData(9, 0x80, 0x40, 0, false, true),
-        allocData(32, 0x80, 0x80, 0, false, false),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0x40, 0, false, true),
+        allocData(0x01, 1, 0x80, 0, true, true),
+        allocData(0x03, 4, 0x30, 0, false, false),
+        allocData(0x03, 12, 0x30, 0, false, false),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 8, 0x01, 0, false, false),
+        allocData(0x80, 8, 0x80, 0, true, true),
+        allocData(0x80, 9, 0x40, 0, false, true),
+        allocData(0x80, 32, 0x80, 0, false, false),
 		endData()
 };
 
 static Data rorb_1[] = {
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0x40, 0, false, true),
-        allocData(1, 0x01, 0x80, 0, true, true),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0x40, 0, false, true),
+        allocData(0x01, 1, 0x80, 0, true, true),
 		endData()
 };
 
 static Data rclb[] = {
-        allocData(1, 0x40, 0x80, 0, false, true),
-        allocData(1, 0x01, 0x02, 0, false, false),
-        allocData(1, 0x80, 0x00, 0, true, true),
-        allocData(5, 0x30, 0x03, 0, false, false),
-        allocData(14, 0x30, 0x03, 0, false, false),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(9, 0x01, 0x01, 0, false, false),
-        allocData(9, 0x80, 0x80, 0, false, true),
-        allocData(10, 0x01, 0x02, 0, false, false),
-        allocData(32, 0x01, 0x01, 0, false, false),
-        allocData(1, 0x00, 0x01, CF, false, false),
-        allocData(2, 0x80, 0x03, CF, false, false),
+        allocData(0x40, 1, 0x80, 0, false, true),
+        allocData(0x01, 1, 0x02, 0, false, false),
+        allocData(0x80, 1, 0x00, 0, true, true),
+        allocData(0x30, 5, 0x03, 0, false, false),
+        allocData(0x30, 14, 0x03, 0, false, false),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 9, 0x01, 0, false, false),
+        allocData(0x80, 9, 0x80, 0, false, true),
+        allocData(0x01, 10, 0x02, 0, false, false),
+        allocData(0x01, 32, 0x01, 0, false, false),
+        allocData(0x00, 1, 0x01, CF, false, false),
+        allocData(0x80, 2, 0x03, CF, false, false),
 		endData()
 };
 
 static Data rclb_1[] = {
-        allocData(1, 0x40, 0x80, 0, false, true),
-        allocData(1, 0x01, 0x02, 0, false, false),
-        allocData(1, 0x80, 0x00, 0, true, true),
-        allocData(1, 0x00, 0x01, CF, false, false),
+        allocData(0x40, 1, 0x80, 0, false, true),
+        allocData(0x01, 1, 0x02, 0, false, false),
+        allocData(0x80, 1, 0x00, 0, true, true),
+        allocData(0x00, 1, 0x01, CF, false, false),
 		endData()
 };
 
 static Data rcrb[] = {
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0x40, 0, false, true),
-        allocData(1, 0x01, 0x00, 0, true, false),
-        allocData(5, 0x03, 0x30, 0, false, false),
-        allocData(14, 0x03, 0x30, 0, false, false),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(9, 0x01, 0x01, 0, false, false),
-        allocData(9, 0x80, 0x80, 0, false, true),
-        allocData(10, 0x80, 0x40, 0, false, true),
-        allocData(32, 0x80, 0x80, 0, false, false),
-        allocData(1, 0x00, 0x80, CF, false, true),
-        allocData(2, 0x01, 0xC0, CF, false, false),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0x40, 0, false, true),
+        allocData(0x01, 1, 0x00, 0, true, false),
+        allocData(0x03, 5, 0x30, 0, false, false),
+        allocData(0x03, 14, 0x30, 0, false, false),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 9, 0x01, 0, false, false),
+        allocData(0x80, 9, 0x80, 0, false, true),
+        allocData(0x80, 10, 0x40, 0, false, true),
+        allocData(0x80, 32, 0x80, 0, false, false),
+        allocData(0x00, 1, 0x80, CF, false, true),
+        allocData(0x01, 2, 0xC0, CF, false, false),
 		endData()
 };
 
 static Data rcrb_1[] = {
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0x40, 0, false, true),
-        allocData(1, 0x01, 0x00, 0, true, false),
-        allocData(1, 0x00, 0x80, CF, false, true),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0x40, 0, false, true),
+        allocData(0x01, 1, 0x00, 0, true, false),
+        allocData(0x00, 1, 0x80, CF, false, true),
 		endData()
 };
 
 static Data shlb[] = {
-        allocData(1, 0x40, 0x80, 0, false, true),
-        allocData(1, 0x01, 0x02, 0, false, false),
-        allocData(1, 0x80, 0x00, 0, true, true),
-        allocData(4, 0x03, 0x30, 0, false, false),
-        allocData(12, 0x03, 0x00, 0, false, false),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(32, 0x01, 0x01, 0, false, false),
+        allocData(0x40, 1, 0x80, 0, false, true),
+        allocData(0x01, 1, 0x02, 0, false, false),
+        allocData(0x80, 1, 0x00, 0, true, true),
+        allocData(0x03, 4, 0x30, 0, false, false),
+        allocData(0x03, 12, 0x00, 0, false, false),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 32, 0x01, 0, false, false),
 		endData()
 };
 
 static Data shlb_1[] = {
-        allocData(1, 0x40, 0x80, 0, false, true),
-        allocData(1, 0x01, 0x02, 0, false, false),
-        allocData(1, 0x80, 0x00, 0, true, true),
+        allocData(0x40, 1, 0x80, 0, false, true),
+        allocData(0x01, 1, 0x02, 0, false, false),
+        allocData(0x80, 1, 0x00, 0, true, true),
 		endData()
 };
 
 static Data shrb[] = {
-        allocData(1, 0x40, 0x20, 0, false, false),
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0x40, 0, false, true),
-        allocData(1, 0x01, 0x00, 0, true, false),
-        allocData(4, 0x30, 0x03, 0, false, false),
-        allocData(12, 0x03, 0x00, 0, false, false),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(32, 0x01, 0x01, 0, false, false),
+        allocData(0x40, 1, 0x20, 0, false, false),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0x40, 0, false, true),
+        allocData(0x01, 1, 0x00, 0, true, false),
+        allocData(0x30, 4, 0x03, 0, false, false),
+        allocData(0x03, 12, 0x00, 0, false, false),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 32, 0x01, 0, false, false),
 		endData()
 };
 
 static Data shrb_1[] = {
-        allocData(1, 0x40, 0x20, 0, false, false),
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0x40, 0, false, true),
-        allocData(1, 0x01, 0x00, 0, true, false),
+        allocData(0x40, 1, 0x20, 0, false, false),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0x40, 0, false, true),
+        allocData(0x01, 1, 0x00, 0, true, false),
 		endData()
 };
 
 static Data sarb[] = {
-        allocData(1, 0x40, 0x20, 0, false, false),
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0xC0, 0, false, false),
-        allocData(7, 0xC0, 0xFF, 0, true, false),
-        allocData(1, 0x01, 0x00, 0, true, false),
-        allocData(4, 0x30, 0x03, 0, false, false),
-        allocData(12, 0x03, 0x00, 0, false, false),
-        allocData(0, 0x01, 0x01, 0, false, false),
-        allocData(32, 0x01, 0x01, 0, false, false),
+        allocData(0x40, 1, 0x20, 0, false, false),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0xC0, 0, false, false),
+        allocData(0xC0, 7, 0xFF, 0, true, false),
+        allocData(0x01, 1, 0x00, 0, true, false),
+        allocData(0x30, 4, 0x03, 0, false, false),
+        allocData(0x03, 12, 0x00, 0, false, false),
+        allocData(0x01, 0, 0x01, 0, false, false),
+        allocData(0x01, 32, 0x01, 0, false, false),
 		endData()
 };
 
 static Data sarb_1[] = {
-        allocData(1, 0x40, 0x20, 0, false, false),
-        allocData(1, 0x02, 0x01, 0, false, false),
-        allocData(1, 0x80, 0xC0, 0, false, false),
+        allocData(0x40, 1, 0x20, 0, false, false),
+        allocData(0x02, 1, 0x01, 0, false, false),
+        allocData(0x80, 1, 0xC0, 0, false, false),
 		endData()
 };
 
 static Data rolw[] = {
-        allocData(1, 0x4000, 0x8000, 0, false, true),
-        allocData(1, 0x0001, 0x0002, 0, false, false),
-        allocData(1, 0x8000, 0x0001, 0, true, true),
-        allocData(8, 0x3000, 0x0030, 0, false, false),
-        allocData(12, 0x3000, 0x0300, 0, false, false),
-        allocData(0, 0x0101, 0x0101, 0, false, false),
-        allocData(16, 0x0101, 0x0101, 0, true, true),
-        allocData(16, 0x8080, 0x8080, 0, false, true),
-        allocData(17, 0x0101, 0x0202, 0, false, false),
-        allocData(32, 0x0101, 0x0101, 0, false, false),
+        allocData(0x4000, 1, 0x8000, 0, false, true),
+        allocData(0x0001, 1, 0x0002, 0, false, false),
+        allocData(0x8000, 1, 0x0001, 0, true, true),
+        allocData(0x3000, 8, 0x0030, 0, false, false),
+        allocData(0x3000, 12, 0x0300, 0, false, false),
+        allocData(0x0101, 0, 0x0101, 0, false, false),
+        allocData(0x0101, 16, 0x0101, 0, true, true),
+        allocData(0x8080, 16, 0x8080, 0, false, true),
+        allocData(0x0101, 17, 0x0202, 0, false, false),
+        allocData(0x0101, 32, 0x0101, 0, false, false),
 		endData()
 };
 
 static Data rolw_1[] = {
-        allocData(1, 0x4000, 0x8000, 0, false, true),
-        allocData(1, 0x0001, 0x0002, 0, false, false),
-        allocData(1, 0x8000, 0x0001, 0, true, true),
+        allocData(0x4000, 1, 0x8000, 0, false, true),
+        allocData(0x0001, 1, 0x0002, 0, false, false),
+        allocData(0x8000, 1, 0x0001, 0, true, true),
 		endData()
 };
 
 static Data rorw[] = {
-        allocData(1, 0x0002, 0x0001, 0, false, false),
-        allocData(1, 0x8000, 0x4000, 0, false, true),
-        allocData(1, 0x0001, 0x8000, 0, true, true),
-        allocData(8, 0x0300, 0x0003, 0, false, false),
-        allocData(24, 0x0300, 0x003, 0, false, false),
-        allocData(0, 0x0101, 0x0101, 0, false, false),
-        allocData(16, 0x0101, 0x0101, 0, false, false),
-        allocData(16, 0x8000, 0x8000, 0, true, true),
-        allocData(17, 0x8080, 0x4040, 0, false, true),
-        allocData(32, 0x8080, 0x8080, 0, false, false),
+        allocData(0x0002, 1, 0x0001, 0, false, false),
+        allocData(0x8000, 1, 0x4000, 0, false, true),
+        allocData(0x0001, 1, 0x8000, 0, true, true),
+        allocData(0x0300, 8, 0x0003, 0, false, false),
+        allocData(0x0300, 24, 0x003, 0, false, false),
+        allocData(0x0101, 0, 0x0101, 0, false, false),
+        allocData(0x0101, 16, 0x0101, 0, false, false),
+        allocData(0x8000, 16, 0x8000, 0, true, true),
+        allocData(0x8080, 17, 0x4040, 0, false, true),
+        allocData(0x8080, 32, 0x8080, 0, false, false),
 		endData()
 };
 
 static Data rorw_1[] = {
-        allocData(1, 0x0002, 0x0001, 0, false, false),
-        allocData(1, 0x8000, 0x4000, 0, false, true),
-        allocData(1, 0x0001, 0x8000, 0, true, true),
+        allocData(0x0002, 1, 0x0001, 0, false, false),
+        allocData(0x8000, 1, 0x4000, 0, false, true),
+        allocData(0x0001, 1, 0x8000, 0, true, true),
 		endData()
 };
 
 static Data rclw[] = {
-        allocData(1, 0x4000, 0x8000, 0, false, true),
-        allocData(1, 0x0101, 0x0202, 0, false, false),
-        allocData(1, 0x8000, 0x0000, 0, true, true),
-        allocData(13, 0x3000, 0x0300, 0, false, false),
-        allocData(30, 0x3000, 0x0300, 0, false, false),
-        allocData(0, 0x0101, 0x0101, 0, false, false),
-        allocData(17, 0x0103, 0x0103, 0, false, false),
-        allocData(17, 0x8070, 0x8070, 0, false, true),
-        allocData(18, 0x0101, 0x0202, 0, false, false),
-        allocData(32, 0x0102, 0x0102, 0, false, false),
-        allocData(1, 0x0000, 0x0001, CF, false, false),
-        allocData(2, 0x8000, 0x0003, CF, false, false),
+        allocData(0x4000, 1, 0x8000, 0, false, true),
+        allocData(0x0101, 1, 0x0202, 0, false, false),
+        allocData(0x8000, 1, 0x0000, 0, true, true),
+        allocData(0x3000, 13, 0x0300, 0, false, false),
+        allocData(0x3000, 30, 0x0300, 0, false, false),
+        allocData(0x0101, 0, 0x0101, 0, false, false),
+        allocData(0x0103, 17, 0x0103, 0, false, false),
+        allocData(0x8070, 17, 0x8070, 0, false, true),
+        allocData(0x0101, 18, 0x0202, 0, false, false),
+        allocData(0x0102, 32, 0x0102, 0, false, false),
+        allocData(0x0000, 1, 0x0001, CF, false, false),
+        allocData(0x8000, 2, 0x0003, CF, false, false),
 		endData()
 };
 
 static Data rclw_1[] = {
-        allocData(1, 0x4000, 0x8000, 0, false, true),
-        allocData(1, 0x0101, 0x0202, 0, false, false),
-        allocData(1, 0x8000, 0x0000, 0, true, true),
-        allocData(1, 0x0000, 0x0001, CF, false, false),
+        allocData(0x4000, 1, 0x8000, 0, false, true),
+        allocData(0x0101, 1, 0x0202, 0, false, false),
+        allocData(0x8000, 1, 0x0000, 0, true, true),
+        allocData(0x0000, 1, 0x0001, CF, false, false),
 		endData()
 };
 
 static Data rcrw[] = {
-        allocData(1, 0x0202, 0x0101, 0, false, false),
-        allocData(1, 0x8080, 0x4040, 0, false, true),
-        allocData(1, 0x0001, 0x0000, 0, true, false),
-        allocData(5, 0x03, 0x3000, 0, false, false),
-        allocData(22, 0x03, 0x3000, 0, false, false),
-        allocData(0, 0x0100, 0x0100, 0, false, false),
-        allocData(17, 0x0100, 0x0100, 0, false, false),
-        allocData(17, 0x8000, 0x8000, 0, false, true),
-        allocData(18, 0x8000, 0x4000, 0, false, true),
-        allocData(32, 0x8070, 0x8070, 0, false, false),
-        allocData(1, 0x0000, 0x8000, CF, false, true),
-        allocData(2, 0x0001, 0xC000, CF, false, false),
+        allocData(0x0202, 1, 0x0101, 0, false, false),
+        allocData(0x8080, 1, 0x4040, 0, false, true),
+        allocData(0x0001, 1, 0x0000, 0, true, false),
+        allocData(0x03, 5, 0x3000, 0, false, false),
+        allocData(0x03, 22, 0x3000, 0, false, false),
+        allocData(0x0100, 0, 0x0100, 0, false, false),
+        allocData(0x0100, 17, 0x0100, 0, false, false),
+        allocData(0x8000, 17, 0x8000, 0, false, true),
+        allocData(0x8000, 18, 0x4000, 0, false, true),
+        allocData(0x8070, 32, 0x8070, 0, false, false),
+        allocData(0x0000, 1, 0x8000, CF, false, true),
+        allocData(0x0001, 2, 0xC000, CF, false, false),
 		endData()
 };
 
 static Data rcrw_1[] = {
-        allocData(1, 0x0202, 0x0101, 0, false, false),
-        allocData(1, 0x8080, 0x4040, 0, false, true),
-        allocData(1, 0x0001, 0x0000, 0, true, false),
-        allocData(1, 0x0000, 0x8000, CF, false, true),
+        allocData(0x0202, 1, 0x0101, 0, false, false),
+        allocData(0x8080, 1, 0x4040, 0, false, true),
+        allocData(0x0001, 1, 0x0000, 0, true, false),
+        allocData(0x0000, 1, 0x8000, CF, false, true),
 		endData()
 };
 
 static Data shlw[] = {
-        allocData(1, 0x4040, 0x8080, 0, false, true),
-        allocData(1, 0x0101, 0x0202, 0, false, false),
-        allocData(1, 0x8000, 0x00, 0, true, true),
-        allocData(8, 0x0003, 0x0300, 0, false, false),
-        allocData(20, 0x0003, 0x00, 0, false, false),
-        allocData(0, 0x0102, 0x0102, 0, false, false),
-        allocData(32, 0x0102, 0x0102, 0, false, false),
+        allocData(0x4040, 1, 0x8080, 0, false, true),
+        allocData(0x0101, 1, 0x0202, 0, false, false),
+        allocData(0x8000, 1, 0x00, 0, true, true),
+        allocData(0x0003, 8, 0x0300, 0, false, false),
+        allocData(0x0003, 20, 0x00, 0, false, false),
+        allocData(0x0102, 0, 0x0102, 0, false, false),
+        allocData(0x0102, 32, 0x0102, 0, false, false),
 		endData()
 };
 
 static Data shlw_1[] = {
-        allocData(1, 0x4040, 0x8080, 0, false, true),
-        allocData(1, 0x0101, 0x0202, 0, false, false),
-        allocData(1, 0x8000, 0x00, 0, true, true),
+        allocData(0x4040, 1, 0x8080, 0, false, true),
+        allocData(0x0101, 1, 0x0202, 0, false, false),
+        allocData(0x8000, 1, 0x00, 0, true, true),
 		endData()
 };
 
 static Data shrw[] = {
-        allocData(1, 0x4020, 0x2010, 0, false, false),
-        allocData(1, 0x0802, 0x0401, 0, false, false),
-        allocData(1, 0x8000, 0x4000, 0, false, true),
-        allocData(1, 0x0001, 0x0000, 0, true, false),
-        allocData(12, 0x3000, 0x0003, 0, false, false),
-        allocData(20, 0x0300, 0x0000, 0, false, false),
-        allocData(0, 0x0102, 0x0102, 0, false, false),
-        allocData(32, 0x0102, 0x0102, 0, false, false),
+        allocData(0x4020, 1, 0x2010, 0, false, false),
+        allocData(0x0802, 1, 0x0401, 0, false, false),
+        allocData(0x8000, 1, 0x4000, 0, false, true),
+        allocData(0x0001, 1, 0x0000, 0, true, false),
+        allocData(0x3000, 12, 0x0003, 0, false, false),
+        allocData(0x0300, 20, 0x0000, 0, false, false),
+        allocData(0x0102, 0, 0x0102, 0, false, false),
+        allocData(0x0102, 32, 0x0102, 0, false, false),
 		endData()
 };
 
 static Data shrw_1[] = {
-        allocData(1, 0x4020, 0x2010, 0, false, false),
-        allocData(1, 0x0802, 0x0401, 0, false, false),
-        allocData(1, 0x8000, 0x4000, 0, false, true),
-        allocData(1, 0x0001, 0x0000, 0, true, false),
+        allocData(0x4020, 1, 0x2010, 0, false, false),
+        allocData(0x0802, 1, 0x0401, 0, false, false),
+        allocData(0x8000, 1, 0x4000, 0, false, true),
+        allocData(0x0001, 1, 0x0000, 0, true, false),
 		endData()
 };
 
 static Data sarw[] = {
-        allocData(1, 0x4020, 0x2010, 0, false, false),
-        allocData(1, 0x0204, 0x0102, 0, false, false),
-        allocData(1, 0x8000, 0xC000, 0, false, false),
-        allocData(15, 0xC000, 0xFFFF, 0, true, false),
-        allocData(1, 0x0001, 0x0000, 0, true, false),
-        allocData(12, 0x3000, 0x0003, 0, false, false),
-        allocData(28, 0x3000, 0x0000, 0, false, false),
-        allocData(0, 0x0102, 0x0102, 0, false, false),
-        allocData(32, 0x0102, 0x0102, 0, false, false),
+        allocData(0x4020, 1, 0x2010, 0, false, false),
+        allocData(0x0204, 1, 0x0102, 0, false, false),
+        allocData(0x8000, 1, 0xC000, 0, false, false),
+        allocData(0xC000, 15, 0xFFFF, 0, true, false),
+        allocData(0x0001, 1, 0x0000, 0, true, false),
+        allocData(0x3000, 12, 0x0003, 0, false, false),
+        allocData(0x3000, 28, 0x0000, 0, false, false),
+        allocData(0x0102, 0, 0x0102, 0, false, false),
+        allocData(0x0102, 32, 0x0102, 0, false, false),
 		endData()
 };
 
 static Data sarw_1[] = {
-        allocData(1, 0x4020, 0x2010, 0, false, false),
-        allocData(1, 0x0204, 0x0102, 0, false, false),
-        allocData(1, 0x8000, 0xC000, 0, false, false),
-        allocData(1, 0x0001, 0x0000, 0, true, false),
+        allocData(0x4020, 1, 0x2010, 0, false, false),
+        allocData(0x0204, 1, 0x0102, 0, false, false),
+        allocData(0x8000, 1, 0xC000, 0, false, false),
+        allocData(0x0001, 1, 0x0000, 0, true, false),
 		endData()
 };
 
 static Data rold[] = {
-        allocData(1, 0x40000000, 0x80000000, 0, false, true),
-        allocData(1, 0x00000001, 0x00000002, 0, false, false),
-        allocData(1, 0x80000000, 0x00000001, 0, true, true),
-        allocData(24, 0x30000000, 0x00300000, 0, false, false),
-        allocData(0, 0x01010101, 0x01010101, 0, false, false),
-        allocData(32, 0x01010101, 0x01010101, 0, false, false),
-        allocData(32, 0x80808080, 0x80808080, 0, false, false),
-        allocData(33, 0x01010101, 0x02020202, 0, false, false),
+        allocData(0x40000000, 1, 0x80000000, 0, false, true),
+        allocData(0x00000001, 1, 0x00000002, 0, false, false),
+        allocData(0x80000000, 1, 0x00000001, 0, true, true),
+        allocData(0x30000000, 24, 0x00300000, 0, false, false),
+        allocData(0x01010101, 0, 0x01010101, 0, false, false),
+        allocData(0x01010101, 32, 0x01010101, 0, false, false),
+        allocData(0x80808080, 32, 0x80808080, 0, false, false),
+        allocData(0x01010101, 33, 0x02020202, 0, false, false),
 		endData()
 };
 
 static Data rold_1[] = {
-        allocData(1, 0x40000000, 0x80000000, 0, false, true),
-        allocData(1, 0x00000001, 0x00000002, 0, false, false),
-        allocData(1, 0x80000000, 0x00000001, 0, true, true),
+        allocData(0x40000000, 1, 0x80000000, 0, false, true),
+        allocData(0x00000001, 1, 0x00000002, 0, false, false),
+        allocData(0x80000000, 1, 0x00000001, 0, true, true),
 		endData()
 };
 
 static Data rord[] = {
-        allocData(1, 0x00020000, 0x00010000, 0, false, false),
-        allocData(1, 0x80000000, 0x40000000, 0, false, true),
-        allocData(1, 0x00000001, 0x80000000, 0, true, true),
-        allocData(8, 0x00000003, 0x03000000, 0, false, false),
-        allocData(40, 0x03000000, 0x00030000, 0, false, false),
-        allocData(0, 0x01020304, 0x01020304, 0, false, false),
-        allocData(32, 0x01020304, 0x01020304, 0, false, false),
-        allocData(32, 0x80000000, 0x80000000, 0, false, false),
-        allocData(33, 0x80808080, 0x40404040, 0, false, true),
+        allocData(0x00020000, 1, 0x00010000, 0, false, false),
+        allocData(0x80000000, 1, 0x40000000, 0, false, true),
+        allocData(0x00000001, 1, 0x80000000, 0, true, true),
+        allocData(0x00000003, 8, 0x03000000, 0, false, false),
+        allocData(0x03000000, 40, 0x00030000, 0, false, false),
+        allocData(0x01020304, 0, 0x01020304, 0, false, false),
+        allocData(0x01020304, 32, 0x01020304, 0, false, false),
+        allocData(0x80000000, 32, 0x80000000, 0, false, false),
+        allocData(0x80808080, 33, 0x40404040, 0, false, true),
 		endData()
 };
 
 static Data rord_1[] = {
-        allocData(1, 0x00020000, 0x00010000, 0, false, false),
-        allocData(1, 0x80000000, 0x40000000, 0, false, true),
-        allocData(1, 0x00000001, 0x80000000, 0, true, true),
+        allocData(0x00020000, 1, 0x00010000, 0, false, false),
+        allocData(0x80000000, 1, 0x40000000, 0, false, true),
+        allocData(0x00000001, 1, 0x80000000, 0, true, true),
 		endData()
 };
 
 static Data rcld[] = {
-        allocData(1, 0x40000000, 0x80000000, 0, false, true),
-        allocData(1, 0x01010101, 0x02020202, 0, false, false),
-        allocData(1, 0x80000000, 0x00000000, 0, true, true),
-        allocData(29, 0x30000000, 0x03000000, 0, false, false),
-        allocData(61, 0x30000000, 0x03000000, 0, false, false),
-        allocData(0, 0x01020304, 0x01020304, 0, false, false),
-        allocData(33, 0x01010101, 0x02020202, 0, false, false),
-        allocData(1, 0x00000000, 0x00000001, CF, false, false),
-        allocData(2, 0x80000000, 0x00000003, CF, false, false),
+        allocData(0x40000000, 1, 0x80000000, 0, false, true),
+        allocData(0x01010101, 1, 0x02020202, 0, false, false),
+        allocData(0x80000000, 1, 0x00000000, 0, true, true),
+        allocData(0x30000000, 29, 0x03000000, 0, false, false),
+        allocData(0x30000000, 61, 0x03000000, 0, false, false),
+        allocData(0x01020304, 0, 0x01020304, 0, false, false),
+        allocData(0x01010101, 33, 0x02020202, 0, false, false),
+        allocData(0x00000000, 1, 0x00000001, CF, false, false),
+        allocData(0x80000000, 2, 0x00000003, CF, false, false),
 		endData()
 };
 
 static Data rcld_1[] = {
-        allocData(1, 0x40000000, 0x80000000, 0, false, true),
-        allocData(1, 0x01010101, 0x02020202, 0, false, false),
-        allocData(1, 0x80000000, 0x00000000, 0, true, true),
-        allocData(1, 0x00000000, 0x00000001, CF, false, false),
+        allocData(0x40000000, 1, 0x80000000, 0, false, true),
+        allocData(0x01010101, 1, 0x02020202, 0, false, false),
+        allocData(0x80000000, 1, 0x00000000, 0, true, true),
+        allocData(0x00000000, 1, 0x00000001, CF, false, false),
 		endData()
 };
 
 static Data rcrd[] = {
-        allocData(1, 0x02020202, 0x01010101, 0, false, false),
-        allocData(1, 0x80808080, 0x40404040, 0, false, true),
-        allocData(1, 0x00000001, 0x00000000, 0, true, false),
-        allocData(5, 0x00000003, 0x30000000, 0, false, false),
-        allocData(37, 0x00000003, 0x30000000, 0, false, false),
-        allocData(0, 0x01020304, 0x01020304, 0, false, false),
-        allocData(1, 0x00000000, 0x80000000, CF, false, true),
-        allocData(2, 0x00000001, 0xC0000000, CF, false, false),
+        allocData(0x02020202, 1, 0x01010101, 0, false, false),
+        allocData(0x80808080, 1, 0x40404040, 0, false, true),
+        allocData(0x00000001, 1, 0x00000000, 0, true, false),
+        allocData(0x00000003, 5, 0x30000000, 0, false, false),
+        allocData(0x00000003, 37, 0x30000000, 0, false, false),
+        allocData(0x01020304, 0, 0x01020304, 0, false, false),
+        allocData(0x00000000, 1, 0x80000000, CF, false, true),
+        allocData(0x00000001, 2, 0xC0000000, CF, false, false),
 		endData()
 };
 
 static Data rcrd_1[] = {
-        allocData(1, 0x02020202, 0x01010101, 0, false, false),
-        allocData(1, 0x80808080, 0x40404040, 0, false, true),
-        allocData(1, 0x00000001, 0x00000000, 0, true, false),
-        allocData(1, 0x00000000, 0x80000000, CF, false, true),
+        allocData(0x02020202, 1, 0x01010101, 0, false, false),
+        allocData(0x80808080, 1, 0x40404040, 0, false, true),
+        allocData(0x00000001, 1, 0x00000000, 0, true, false),
+        allocData(0x00000000, 1, 0x80000000, CF, false, true),
 		endData()
     };
 
 static Data shld[] = {
-        allocData(1, 0x40404040, 0x80808080, 0, false, true),
-        allocData(1, 0x01010101, 0x02020202, 0, false, false),
-        allocData(1, 0x80000000, 0x00000000, 0, true, true),
-        allocData(16, 0x00000003, 0x00030000, 0, false, false),
-        allocData(20, 0x00030000, 0x00000000, 0, false, false),
-        allocData(0, 0x01020304, 0x01020304, 0, false, false),
-        allocData(32, 0x01020304, 0x01020304, 0, false, false),
+        allocData(0x40404040, 1, 0x80808080, 0, false, true),
+        allocData(0x01010101, 1, 0x02020202, 0, false, false),
+        allocData(0x80000000, 1, 0x00000000, 0, true, true),
+        allocData(0x00000003, 16, 0x00030000, 0, false, false),
+        allocData(0x00030000, 20, 0x00000000, 0, false, false),
+        allocData(0x01020304, 0, 0x01020304, 0, false, false),
+        allocData(0x01020304, 32, 0x01020304, 0, false, false),
 		endData()
 };
 
 static Data shld_1[] = {
-        allocData(1, 0x40404040, 0x80808080, 0, false, true),
-        allocData(1, 0x01010101, 0x02020202, 0, false, false),
-        allocData(1, 0x80000000, 0x00000000, 0, true, true),
+        allocData(0x40404040, 1, 0x80808080, 0, false, true),
+        allocData(0x01010101, 1, 0x02020202, 0, false, false),
+        allocData(0x80000000, 1, 0x00000000, 0, true, true),
 		endData()
 };
 
 static Data shrd[] = {
-        allocData(1, 0x00804020, 0x00402010, 0, false, false),
-        allocData(1, 0x80000000, 0x40000000, 0, false, true),
-        allocData(1, 0x00000001, 0x00000000, 0, true, false),
-        allocData(28, 0x30000000, 0x00000003, 0, false, false),
-        allocData(30, 0x30000000, 0x00000000, 0, true, false),
-        allocData(0, 0x01020304, 0x01020304, 0, false, false),
-        allocData(32, 0x01020304, 0x01020304, 0, false, false),
+        allocData(0x00804020, 1, 0x00402010, 0, false, false),
+        allocData(0x80000000, 1, 0x40000000, 0, false, true),
+        allocData(0x00000001, 1, 0x00000000, 0, true, false),
+        allocData(0x30000000, 28, 0x00000003, 0, false, false),
+        allocData(0x30000000, 30, 0x00000000, 0, true, false),
+        allocData(0x01020304, 0, 0x01020304, 0, false, false),
+        allocData(0x01020304, 32, 0x01020304, 0, false, false),
 		endData()
 };
 
 static Data shrd_1[] = {
-        allocData(1, 0x00804020, 0x00402010, 0, false, false),
-        allocData(1, 0x80000000, 0x40000000, 0, false, true),
-        allocData(1, 0x00000001, 0x00000000, 0, true, false),
+        allocData(0x00804020, 1, 0x00402010, 0, false, false),
+        allocData(0x80000000, 1, 0x40000000, 0, false, true),
+        allocData(0x00000001, 1, 0x00000000, 0, true, false),
 		endData()
 };
 
 static Data sard[] = {
-        allocData(1, 0x00804020, 0x00402010, 0, false, false),
-        allocData(1, 0x80000000, 0xC0000000, 0, false, false),
-        allocData(31, 0xC0000000, 0xFFFFFFFF, 0, true, false),
-        allocData(1, 0x00000001, 0x00000000, 0, true, false),
-        allocData(12, 0x3000, 0x0003, 0, false, false),
-        allocData(28, 0x30000000, 0x00000003, 0, false, false),
-        allocData(30, 0x30000000, 0x00000000, 0, true, false),
-        allocData(0, 0x01020304, 0x01020304, 0, false, false),
-        allocData(32, 0x01020304, 0x01020304, 0, false, false),
+        allocData(0x00804020, 1, 0x00402010, 0, false, false),
+        allocData(0x80000000, 1, 0xC0000000, 0, false, false),
+        allocData(0xC0000000, 31, 0xFFFFFFFF, 0, true, false),
+        allocData(0x00000001, 1, 0x00000000, 0, true, false),
+        allocData(0x3000, 12, 0x0003, 0, false, false),
+        allocData(0x30000000, 28, 0x00000003, 0, false, false),
+        allocData(0x30000000, 30, 0x00000000, 0, true, false),
+        allocData(0x01020304, 0, 0x01020304, 0, false, false),
+        allocData(0x01020304, 32, 0x01020304, 0, false, false),
 		endData()
 };
 
 static Data sard_1[] = {
-        allocData(1, 0x00804020, 0x00402010, 0, false, false),
-        allocData(1, 0x80000000, 0xC0000000, 0, false, false),
-        allocData(1, 0x00000001, 0x00000000, 0, true, false),
+        allocData(0x00804020, 1, 0x00402010, 0, false, false),
+        allocData(0x80000000, 1, 0xC0000000, 0, false, false),
+        allocData(0x00000001, 1, 0x00000000, 0, true, false),
 		endData()
 };
 
@@ -2637,40 +2637,40 @@ static Data cmc[] = {
 
 static Data notb[] = {
         allocData(0, 0, 0xFF, 0, false, false),
-        allocData(0, 0x0F, 0xF0, 0, false, false),
-        allocData(0, 0xF0, 0x0F, 0, false, false),
+        allocData(0x0F, 0, 0xF0, 0, false, false),
+        allocData(0xF0, 0, 0x0F, 0, false, false),
 		endData()
 };
 
 static Data notw[] = {
         allocData(0, 0, 0xFFFF, 0, false, false),
-        allocData(0, 0xF0F, 0xF0F0, 0, false, false),
-        allocData(0, 0xF0F0, 0x0F0F, 0, false, false),
+        allocData(0xF0F, 0, 0xF0F0, 0, false, false),
+        allocData(0xF0F0, 0, 0x0F0F, 0, false, false),
 		endData()
 };
 
 static Data notd[] = {
         allocData(0, 0, 0xFFFFFFFF, 0, false, false),
-        allocData(0, 0x0F0F0F0F, 0xF0F0F0F0, 0, false, false),
-        allocData(0, 0xF0F0F0F0, 0x0F0F0F0F, 0, false, false),
+        allocData(0x0F0F0F0F, 0, 0xF0F0F0F0, 0, false, false),
+        allocData(0xF0F0F0F0, 0, 0x0F0F0F0F, 0, false, false),
 		endData()
 };
 
 static Data negb[] = {
         allocData(0, 0, 0x0, 0, false, false),
-        allocData(0, 4, ((S8)-4) & 0xFF, 0, true, false),
+        allocData(4, 0, ((S8)-4) & 0xFF, 0, true, false),
 		endData()
 };
 
 static Data negw[] = {
         allocData(0, 0, 0x0, 0, false, false),
-        allocData(0, 2045, ((S16)-2045) & 0xFFFF, 0, true, false),
+        allocData(2045, 0, ((S16)-2045) & 0xFFFF, 0, true, false),
 		endData()
 };
 
 static Data negd[] = {
         allocData(0, 0, 0x0, 0, false, false),
-        allocData(0, 20458512, -20458512, 0, true, false),
+        allocData(20458512, 0, -20458512, 0, true, false),
 		endData()
 };
 
@@ -2682,18 +2682,18 @@ static Data mulAl[] = {
 };
 
 static Data mulAx[] = {
-        allocDataConstvar2(2, 0, 4, 0, false, false, 2, 0),
+        allocDataConstvar2(0, 2, 4, 0, false, false, 2, 0),
         allocDataConstvar2(0, 0, 0, 0, false, false, 0, 0),
-        allocDataConstvar2(0x2001, 0, 0x0010, 0, true, true, 0x10, 0x0002),
-        allocDataConstvar2(0x2001, 0, 0x1000, 0, true, true, 0x1000, 0x0200),
+        allocDataConstvar2(0, 0x2001, 0x0010, 0, true, true, 0x10, 0x0002),
+        allocDataConstvar2(0, 0x2001, 0x1000, 0, true, true, 0x1000, 0x0200),
 		endData()
 };
 
 static Data mulEax[] = {
-        allocDataConstvar2(2, 0, 4, 0, false, false, 2, 0),
+        allocDataConstvar2(0, 2, 4, 0, false, false, 2, 0),
         allocDataConstvar2(0, 0, 0, 0, false, false, 0, 0),
-        allocDataConstvar2(0x20000001, 0, 0x00000010, 0, true, true, 0x10, 0x00000002),
-        allocDataConstvar2(0x20000001, 0, 0x00010000, 0, true, true, 0x00010000, 0x00002000),
+        allocDataConstvar2(0, 0x20000001, 0x00000010, 0, true, true, 0x10, 0x00000002),
+        allocDataConstvar2(0, 0x20000001, 0x00010000, 0, true, true, 0x00010000, 0x00002000),
 		endData()
 };
 
@@ -2706,56 +2706,56 @@ static Data imulAl[] = {
 };
 
 static Data imulAx[] = {
-        allocDataConstvar2(2, 0, 4, 0, false, false, 2, 0),
-        allocDataConstvar2(0xFFFA, 0, 0xFFF4, 0, false, false, 2, 0xFFFF), // -6 x 2 = -12
-        allocDataConstvar2(((S16)-600) & 0xFFFF, 0, 0x5780, 0, true, true, 30000, 0xFEED), // -600 x 30000 = -18000000
-        allocDataConstvar2(0xFFFA, 0, 600, 0, false, false, 0xFF9C, 0), // -6 x -100 = 600
+        allocDataConstvar2(0, 2, 4, 0, false, false, 2, 0),
+        allocDataConstvar2(0, 0xFFFA, 0xFFF4, 0, false, false, 2, 0xFFFF), // -6 x 2 = -12
+        allocDataConstvar2(0, ((S16)-600) & 0xFFFF, 0x5780, 0, true, true, 30000, 0xFEED), // -600 x 30000 = -18000000
+        allocDataConstvar2(0, 0xFFFA, 600, 0, false, false, 0xFF9C, 0), // -6 x -100 = 600
 		endData()
 };
 
 static Data imulEax[] = {
-        allocDataConstvar2(2, 0, 4, 0, false, false, 2, 0),
-        allocDataConstvar2(0xFFFFFFFA, 0, 0xFFFFFFF4, 0, false, false, 2, 0xFFFFFFFF), // -6 x 2 = -12
-        allocDataConstvar2(-60000, 0, 0x1729f800, 0, true, true, 3000000, 0xFFFFFFD6), // -60000 x 3000000 = -180000000000
+        allocDataConstvar2(0, 2, 4, 0, false, false, 2, 0),
+        allocDataConstvar2(0, 0xFFFFFFFA, 0xFFFFFFF4, 0, false, false, 2, 0xFFFFFFFF), // -6 x 2 = -12
+        allocDataConstvar2(0, -60000, 0x1729f800, 0, true, true, 3000000, 0xFFFFFFD6), // -60000 x 3000000 = -180000000000
 		endData()
 };
 
 static Data divAl[] = {
-        allocData(3, 10, 0x0103, 0, false, false),
-        allocData(200, 1003, 0x0305, 0, false, false),
+        allocData(10, 3, 0x0103, 0, false, false),
+        allocData(1003, 200, 0x0305, 0, false, false),
 		endData()
 };
 
 static Data divAx[] = {
-        allocDataConstvar2(10, 0, 0x0003, 0, false, false, 3, 0x0001),
-        allocDataConstvar2(0x8512, 0xCB, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
+        allocDataConstvar2(0, 10, 0x0003, 0, false, false, 3, 0x0001),
+        allocDataConstvar2(0xCB, 0x8512, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
 		endData()
 };
 
 static Data divEax[] = {
-        allocDataConstvar2(10, 0, 0x0003, 0, false, false, 3, 0x0001),
-        allocDataConstvar2(0x85121234, 0xCB, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
+        allocDataConstvar2(0, 10, 0x0003, 0, false, false, 3, 0x0001),
+        allocDataConstvar2(0xCB, 0x85121234, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
 		endData()
 };
 
 static Data idivAl[] = {
-        allocData(3, 10, 0x0103, 0, false, false),
-        allocData(((S8)-3) & 0xFF, 10, 0x01FD, 0, false, false),
-        allocData(((S8)-100) & 0xFF, ((S16)-1003) & 0xFFFF, 0xFD0A, 0, false, false), // -3 rem, 10 quo
+        allocData(10, 3, 0x0103, 0, false, false),
+        allocData(10, ((S8)-3) & 0xFF, 0x01FD, 0, false, false),
+        allocData(((S16)-1003) & 0xFFFF, ((S8)-100) & 0xFF, 0xFD0A, 0, false, false), // -3 rem, 10 quo
 		endData()
 };
 
 static Data idivAx[] = {
-        allocDataConstvar2(10, 0, 3, 0, false, false, 3, 1),
-        allocDataConstvar2(0x8512, 0xCB, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
-        allocDataConstvar2(0x7AEE, 0xFF34, ((S16)-4445) & 0xFFFF, 0, false, false, 3000, ((S16)-2874) & 0xFFFF), // -13337874 / 3000 = -4445 r -2874
+        allocDataConstvar2(0, 10, 3, 0, false, false, 3, 1),
+        allocDataConstvar2(0xCB, 0x8512, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
+        allocDataConstvar2(0xFF34, 0x7AEE, ((S16)-4445) & 0xFFFF, 0, false, false, 3000, ((S16)-2874) & 0xFFFF), // -13337874 / 3000 = -4445 r -2874
 		endData()
 };
 
 static Data idivEax[] = {
-        allocDataConstvar2(10, 0, 3, 0, false, false, 3, 1),
-        allocDataConstvar2(0x85121234, 0xCB, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
-        allocDataConstvar2(0x7AEDEDCC, 0xFFFFFF34, 0xFFFFF4D3, 0, false, false, 0x12345678, 0xEDD848E4), // -874110915124 / 305419896 = -2861 r -304592668
+        allocDataConstvar2(0, 10, 3, 0, false, false, 3, 1),
+        allocDataConstvar2(0xCB, 0x85121234, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
+        allocDataConstvar2(0xFFFFFF34, 0x7AEDEDCC, 0xFFFFF4D3, 0, false, false, 0x12345678, 0xEDD848E4), // -874110915124 / 305419896 = -2861 r -304592668
 		endData()
 };
 

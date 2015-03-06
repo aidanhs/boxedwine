@@ -141,6 +141,21 @@
     <ClInclude Include="..\..\..\..\include\kobjectaccess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\arith.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\incdec.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\pushpop.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\strings.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\shift.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">

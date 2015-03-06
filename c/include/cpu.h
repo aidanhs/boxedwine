@@ -17,8 +17,8 @@ typedef struct CPU {
 	Reg		eip;	
 	Memory* memory;
 	struct KThread* thread;
-	Reg     var1;
-	Reg     var2;
+	Reg     src;
+	Reg     dst;
 	Reg     result;
 	int     inst;
 	int	    df;

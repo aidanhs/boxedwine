@@ -222,6 +222,7 @@ int decodeEa16(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 	op->e1=regZero; 
 	op->e2=regZero; 
+	op->eSib = 0;
 	if (rm<0x40) {
 		switch (rm & 7) {
 		case 0x00: op->base=ds; op->e1 = regAX; return ip;
@@ -260,7 +261,7 @@ int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 
 Op* decodeBlock(CPU* cpu) {
 	int ea16 = cpu->big?0:1;
-	int opCode = cpu->big?0x200:0;
+	U16 opCode = cpu->big?0x200:0;
 	// :TODO: doesn't handling wrapping in 16-bit mode
 	U32 ip = cpu->eip.u32 + cpu->segAddress[CS];
 	int ds = DS;
@@ -272,7 +273,7 @@ Op* decodeBlock(CPU* cpu) {
 	Op* block = op;
 
 	while (1) {
-		U16 inst = FETCH8()+opCode;
+		U16 inst = (U16)FETCH8()+opCode;
 		U8 rm;		
 
 		switch (inst) {

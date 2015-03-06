@@ -70,62 +70,62 @@ U32 getCF(CPU* cpu) {
 	case FLAGS_DEC32:
 		return cpu->flags & CF;
 	case FLAGS_ADD8:	
-		return (cpu->result.u8<cpu->var2.u8);
+		return (cpu->result.u8<cpu->dst.u8);
 	case FLAGS_ADD16:	
-		return (cpu->result.u16<cpu->var2.u16);
+		return (cpu->result.u16<cpu->dst.u16);
 	case FLAGS_ADD32:
-		return (cpu->result.u32<cpu->var2.u32);
+		return (cpu->result.u32<cpu->dst.u32);
 	case FLAGS_ADC8:
-		return (cpu->result.u8 < cpu->var2.u8) || (cpu->oldcf && (cpu->result.u8 == cpu->var2.u8));
+		return (cpu->result.u8 < cpu->dst.u8) || (cpu->oldcf && (cpu->result.u8 == cpu->dst.u8));
 	case FLAGS_ADC16:
-		return (cpu->result.u16 < cpu->var2.u16) || (cpu->oldcf && (cpu->result.u16 == cpu->var2.u16));
+		return (cpu->result.u16 < cpu->dst.u16) || (cpu->oldcf && (cpu->result.u16 == cpu->dst.u16));
 	case FLAGS_ADC32:
-		return (cpu->result.u32 < cpu->var2.u32) || (cpu->oldcf && (cpu->result.u32 == cpu->var2.u32));
+		return (cpu->result.u32 < cpu->dst.u32) || (cpu->oldcf && (cpu->result.u32 == cpu->dst.u32));
 	case FLAGS_SBB8:
-		return (cpu->var2.u8 < cpu->result.u8) || (cpu->oldcf && (cpu->var1.u8==0xff));
+		return (cpu->dst.u8 < cpu->result.u8) || (cpu->oldcf && (cpu->src.u8==0xff));
 	case FLAGS_SBB16:
-		return (cpu->var2.u16 < cpu->result.u16) || (cpu->oldcf && (cpu->var1.u16==0xffff));
+		return (cpu->dst.u16 < cpu->result.u16) || (cpu->oldcf && (cpu->src.u16==0xffff));
 	case FLAGS_SBB32:
-		return (cpu->var2.u32 < cpu->result.u32) || (cpu->oldcf && (cpu->var1.u32==0xffffffff));
+		return (cpu->dst.u32 < cpu->result.u32) || (cpu->oldcf && (cpu->src.u32==0xffffffff));
 	case FLAGS_SUB8:
 	case FLAGS_CMP8:
-		return (cpu->var2.u8<cpu->var1.u8);
+		return (cpu->dst.u8<cpu->src.u8);
 	case FLAGS_SUB16:
 	case FLAGS_CMP16:
-		return (cpu->var2.u16<cpu->var1.u16);
+		return (cpu->dst.u16<cpu->src.u16);
 	case FLAGS_SUB32:
 	case FLAGS_CMP32:
-		return (cpu->var2.u32<cpu->var1.u32);
+		return (cpu->dst.u32<cpu->src.u32);
 	case FLAGS_SHL8:
-		if (cpu->var1.u8>8) return 0;
-		else return (cpu->var2.u8 >> (8-cpu->var1.u8)) & 1;
+		if (cpu->src.u8>8) return 0;
+		else return (cpu->dst.u8 >> (8-cpu->src.u8)) & 1;
 	case FLAGS_SHL16:
-		if (cpu->var1.u8>16) return 0;
-		else return (cpu->var2.u16 >> (16-cpu->var1.u8)) & 1;
+		if (cpu->src.u8>16) return 0;
+		else return (cpu->dst.u16 >> (16-cpu->src.u8)) & 1;
 	case FLAGS_SHL32:
 	case FLAGS_DSHL16:	/* Hmm this is not correct for shift higher than 16 */
 	case FLAGS_DSHL32:
-		return (cpu->var2.u32 >> (32 - cpu->var1.u8)) & 1;
+		return (cpu->dst.u32 >> (32 - cpu->src.u8)) & 1;
 	case FLAGS_SHR8:
-		return (cpu->var2.u8 >> (cpu->var1.u8 - 1)) & 1;
+		return (cpu->dst.u8 >> (cpu->src.u8 - 1)) & 1;
 	case FLAGS_SHR16:
-		return (cpu->var2.u16 >> (cpu->var1.u8 - 1)) & 1;
+		return (cpu->dst.u16 >> (cpu->src.u8 - 1)) & 1;
 	case FLAGS_SHR32:
 	case FLAGS_DSHR16:	/* Hmm this is not correct for shift higher than 16 */
 	case FLAGS_DSHR32:
-		return (cpu->var2.u32 >> (cpu->var1.u8 - 1)) & 1;
+		return (cpu->dst.u32 >> (cpu->src.u8 - 1)) & 1;
 	case FLAGS_SAR8:
-		return (((S8) cpu->var2.u8) >> (cpu->var1.u8 - 1)) & 1;
+		return (((S8) cpu->dst.u8) >> (cpu->src.u8 - 1)) & 1;
 	case FLAGS_SAR16:
-		return (((S16) cpu->var2.u16) >> (cpu->var1.u8 - 1)) & 1;
+		return (((S16) cpu->dst.u16) >> (cpu->src.u8 - 1)) & 1;
 	case FLAGS_SAR32:
-		return (((S32) cpu->var2.u32) >> (cpu->var1.u8 - 1)) & 1;
+		return (((S32) cpu->dst.u32) >> (cpu->src.u8 - 1)) & 1;
 	case FLAGS_NEG8:
-		return cpu->var1.u8!=0;
+		return cpu->dst.u8!=0;
 	case FLAGS_NEG16:
-		return cpu->var1.u16!=0;
+		return cpu->dst.u16!=0;
 	case FLAGS_NEG32:
-		return cpu->var1.u32!=0;
+		return cpu->dst.u32!=0;
 	case FLAGS_OR8:
 	case FLAGS_OR16:
 	case FLAGS_OR32:
@@ -151,25 +151,25 @@ U32 getOF(CPU* cpu) {
 		return cpu->flags & OF;
 	case FLAGS_ADD8:
 	case FLAGS_ADC8:
-		return ((cpu->var2.u8 ^ cpu->var1.u8 ^ 0x80) & (cpu->result.u8 ^ cpu->var1.u8)) & 0x80;
+		return ((cpu->dst.u8 ^ cpu->src.u8 ^ 0x80) & (cpu->result.u8 ^ cpu->src.u8)) & 0x80;
 	case FLAGS_ADD16:
 	case FLAGS_ADC16:
-		return ((cpu->var2.u16 ^ cpu->var1.u16 ^ 0x8000) & (cpu->result.u16 ^ cpu->var1.u16)) & 0x8000;
+		return ((cpu->dst.u16 ^ cpu->src.u16 ^ 0x8000) & (cpu->result.u16 ^ cpu->src.u16)) & 0x8000;
 	case FLAGS_ADD32:
 	case FLAGS_ADC32:
-		return ((cpu->var2.u32 ^ cpu->var1.u32 ^ 0x80000000) & (cpu->result.u32 ^ cpu->var1.u32)) & 0x80000000;
+		return ((cpu->dst.u32 ^ cpu->src.u32 ^ 0x80000000) & (cpu->result.u32 ^ cpu->src.u32)) & 0x80000000;
 	case FLAGS_SBB8:
 	case FLAGS_SUB8:
 	case FLAGS_CMP8:
-		return ((cpu->var2.u8 ^ cpu->var1.u8) & (cpu->var2.u8 ^ cpu->result.u8)) & 0x80;
+		return ((cpu->dst.u8 ^ cpu->src.u8) & (cpu->dst.u8 ^ cpu->result.u8)) & 0x80;
 	case FLAGS_SBB16:
 	case FLAGS_SUB16:
 	case FLAGS_CMP16:
-		return ((cpu->var2.u16 ^ cpu->var1.u16) & (cpu->var2.u16 ^ cpu->result.u16)) & 0x8000;
+		return ((cpu->dst.u16 ^ cpu->src.u16) & (cpu->dst.u16 ^ cpu->result.u16)) & 0x8000;
 	case FLAGS_SBB32:
 	case FLAGS_SUB32:
 	case FLAGS_CMP32:
-		return ((cpu->var2.u32 ^ cpu->var1.u32) & (cpu->var2.u32 ^ cpu->result.u32)) & 0x80000000;
+		return ((cpu->dst.u32 ^ cpu->src.u32) & (cpu->dst.u32 ^ cpu->result.u32)) & 0x80000000;
 	case FLAGS_INC8:
 		return (cpu->result.u8 == 0x80);
 	case FLAGS_INC16:
@@ -183,29 +183,29 @@ U32 getOF(CPU* cpu) {
 	case FLAGS_DEC32:
 		return (cpu->result.u32 == 0x7fffffff);
 	case FLAGS_NEG8:
-		return (cpu->var1.u8 == 0x80);
+		return (cpu->dst.u8 == 0x80);
 	case FLAGS_NEG16:
-		return (cpu->var1.u16 == 0x8000);
+		return (cpu->dst.u16 == 0x8000);
 	case FLAGS_NEG32:
-		return (cpu->var1.u32 == 0x80000000);
+		return (cpu->dst.u32 == 0x80000000);
 	case FLAGS_SHL8:
-		return (cpu->result.u8 ^ cpu->var2.u8) & 0x80;
+		return (cpu->result.u8 ^ cpu->dst.u8) & 0x80;
 	case FLAGS_SHL16:
 	case FLAGS_DSHR16:
 	case FLAGS_DSHL16:
-		return (cpu->result.u16 ^ cpu->var2.u16) & 0x8000;
+		return (cpu->result.u16 ^ cpu->dst.u16) & 0x8000;
 	case FLAGS_SHL32:
 	case FLAGS_DSHR32:
 	case FLAGS_DSHL32:
-		return (cpu->result.u32 ^ cpu->var2.u32) & 0x80000000;
+		return (cpu->result.u32 ^ cpu->dst.u32) & 0x80000000;
 	case FLAGS_SHR8:
-		if ((cpu->var1.u8&0x1f)==1) return (cpu->var2.u8 >= 0x80);
+		if ((cpu->src.u8&0x1f)==1) return (cpu->dst.u8 >= 0x80);
 		else return 0;
 	case FLAGS_SHR16:
-		if ((cpu->var1.u8&0x1f)==1) return (cpu->var2.u16 >= 0x8000);
+		if ((cpu->src.u8&0x1f)==1) return (cpu->dst.u16 >= 0x8000);
 		else return 0;
 	case FLAGS_SHR32:
-		if ((cpu->var1.u8&0x1f)==1) return (cpu->var2.u32 >= 0x80000000);
+		if ((cpu->src.u8&0x1f)==1) return (cpu->dst.u32 >= 0x80000000);
 		else return 0;
 	case FLAGS_OR8:
 	case FLAGS_OR16:
@@ -238,19 +238,19 @@ U32 getAF(CPU* cpu) {
 	case FLAGS_SBB8:
 	case FLAGS_SUB8:
 	case FLAGS_CMP8:
-		return ((cpu->var2.u8 ^ cpu->var1.u8) ^ cpu->result.u8) & 0x10;
+		return ((cpu->dst.u8 ^ cpu->src.u8) ^ cpu->result.u8) & 0x10;
 	case FLAGS_ADD16:
 	case FLAGS_ADC16:
 	case FLAGS_SBB16:
 	case FLAGS_SUB16:
 	case FLAGS_CMP16:
-		return ((cpu->var2.u16 ^ cpu->var1.u16) ^ cpu->result.u16) & 0x10;
+		return ((cpu->dst.u16 ^ cpu->src.u16) ^ cpu->result.u16) & 0x10;
 	case FLAGS_ADC32:
 	case FLAGS_ADD32:
 	case FLAGS_SBB32:
 	case FLAGS_SUB32:
 	case FLAGS_CMP32:
-		return ((cpu->var2.u32 ^ cpu->var1.u32) ^ cpu->result.u32) & 0x10;
+		return ((cpu->dst.u32 ^ cpu->src.u32) ^ cpu->result.u32) & 0x10;
 	case FLAGS_INC8:
 		return (cpu->result.u8 & 0x0f) == 0;
 	case FLAGS_INC16:
@@ -264,23 +264,23 @@ U32 getAF(CPU* cpu) {
 	case FLAGS_DEC32:
 		return (cpu->result.u32 & 0x0f) == 0x0f;
 	case FLAGS_NEG8:
-		return cpu->var1.u8 & 0x0f;
+		return cpu->dst.u8 & 0x0f;
 	case FLAGS_NEG16:
-		return cpu->var1.u16 & 0x0f;
+		return cpu->dst.u16 & 0x0f;
 	case FLAGS_NEG32:
-		return cpu->var1.u32 & 0x0f;
+		return cpu->dst.u32 & 0x0f;
 	case FLAGS_SHL8:
 	case FLAGS_SHR8:
 	case FLAGS_SAR8:
-		return cpu->var1.u8 & 0x1f;
+		return cpu->src.u8 & 0x1f;
 	case FLAGS_SHL16:
 	case FLAGS_SHR16:
 	case FLAGS_SAR16:
-		return cpu->var1.u16 & 0x1f;
+		return cpu->src.u16 & 0x1f;
 	case FLAGS_SHL32:
 	case FLAGS_SHR32:
 	case FLAGS_SAR32:
-		return cpu->var1.u32 & 0x1f;
+		return cpu->src.u32 & 0x1f;
 	case FLAGS_OR8:
 	case FLAGS_OR16:
 	case FLAGS_OR32:
