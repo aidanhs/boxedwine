@@ -7,6 +7,7 @@
 #include <string.h>
 #include "fpu.h"
 #include "ops.h"
+#include "ram.h"
 
 #define DECODE_MEMORY(name)						\
 if (ea16) {										\
@@ -118,7 +119,18 @@ Op* allocOp() {
 		result = freeOps;
 		freeOps = result->next;
 	} else {
-		result = (Op*)malloc(sizeof(Op));
+		// :TODO: attach this page of ops to a particular memory mapped file so that when the file is unmapped we can free these RAM pages
+		U32 address = getAddressOfRamPage(allocRamPage());
+		U32 count = PAGE_SIZE/sizeof(Op);
+		U32 i;
+
+		for (i=0;i<count;i++) {
+			Op* op=(Op*)address;
+			op->next = 0;
+			freeOp(op);
+			address+=sizeof(Op);
+		}
+		return allocOp();
 	}
 	memset(result, 0, sizeof(Op));
 	return result;
