@@ -246,21 +246,21 @@ int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 		case 0x06: op->base=ds; op->e1 = regSI; return ip;
 		case 0x07: op->base=ds; op->e1 = regDI; return ip;
 		}
-	} else {
+	} else {		
+		switch (rm & 7) {
+		case 0x00: op->base=ds; op->e1 = regAX; break;
+		case 0x01: op->base=ds; op->e1 = regCX; break;
+		case 0x02: op->base=ds; op->e1 = regDX; break;
+		case 0x03: op->base=ds; op->e1 = regBX; break;
+		case 0x04: ip = Sib(1, cpu, ip, op, ds, ss); break;
+		case 0x05: op->base=ss; op->e1 = regBP; break;
+		case 0x06: op->base=ds; op->e1 = regSI; break;
+		case 0x07: op->base=ds; op->e1 = regDI; break;
+		}
 		if (rm<0x80) {
 			op->eData = FETCH_S8();
 		} else {
 			op->eData = FETCH32();
-		}
-		switch (rm & 7) {
-		case 0x00: op->base=ds; op->e1 = regAX; return ip;
-		case 0x01: op->base=ds; op->e1 = regCX; return ip;
-		case 0x02: op->base=ds; op->e1 = regDX; return ip;
-		case 0x03: op->base=ds; op->e1 = regBX; return ip;
-		case 0x04: return Sib(1, cpu, ip, op, ds, ss);
-		case 0x05: op->base=ss; op->e1 = regBP; return ip;
-		case 0x06: op->base=ds; op->e1 = regSI; return ip;
-		case 0x07: op->base=ds; op->e1 = regDI; return ip;
 		}
 	}
 	return ip;
