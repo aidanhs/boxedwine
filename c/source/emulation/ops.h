@@ -697,6 +697,60 @@ void move16s16_32(CPU* cpu, Op* op) {
 	NEXT();
 }
 
+void movxz8r16r16(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u16 = cpu->reg[op->r2].u8;
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz8r16e16_16(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u16 = readb(cpu->memory, eaa16(cpu, op));
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz8r16e16_32(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u16 = readb(cpu->memory, eaa32(cpu, op));
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz8r32r32(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u32 = cpu->reg[op->r2].u8;
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz8r32e32_16(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u32 = readb(cpu->memory, eaa16(cpu, op));
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz8r32e32_32(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u16 = readb(cpu->memory, eaa32(cpu, op));
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz16r32r32(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u32 = cpu->reg[op->r2].u16;
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz16r32e32_16(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u32 = readw(cpu->memory, eaa16(cpu, op));
+	CYCLES(1);
+	NEXT();
+}
+
+void movxz16r32e32_32(CPU* cpu, Op* op) {
+	cpu->reg[op->r1].u16 = readw(cpu->memory, eaa32(cpu, op));
+	CYCLES(1);
+	NEXT();
+}
+
 void lear16_16(CPU* cpu, Op* op) {
 	cpu->reg[op->r1].u16 = eaa16(cpu, op);
 	CYCLES(1);

@@ -281,9 +281,11 @@ int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 	} else if (ea16) {						\
 		op->func = cmov##c##_##b##_mem16;	\
 		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
+		op->r1 = G(rm);						\
 	} else {								\
 		op->func = cmov##c##_##b##_mem32;	\
 		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
+		op->r1 = G(rm);						\
 	}										
 
 Op* decodeBlock(CPU* cpu) {
@@ -2635,7 +2637,16 @@ Op* decodeBlock(CPU* cpu) {
 			return block;
 		case 0x38f:
 			JUMP(NLE, 32);
-			return block;		
+			return block;	
+		case 0x1b6: // MOVZX Gw,Eb
+			DECODE_INST_GE(movxz8, 16);
+			break;
+		case 0x3b6: // MOVZX Gd,Eb
+			DECODE_INST_GE(movxz8, 32);
+			break;
+		case 0x3b7: // MOVXZ Gd,Ew
+			DECODE_INST_GE(movxz16, 32);
+			break;
 		default:
 			panic("Unknown op code %d", inst);
 		}		
