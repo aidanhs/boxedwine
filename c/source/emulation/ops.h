@@ -1709,31 +1709,30 @@ void callEv16_reg(CPU* cpu, Op* op) {
 }
 
 void callEv16_mem16(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
+	U32 eip = cpu->eip.u32+op->eipCount;	
 	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
+	push16(cpu, eip);
 	CYCLES(4);
 }
 
 void callEv16_mem32(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
+	U32 eip = cpu->eip.u32+op->eipCount;	
 	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
+	push16(cpu, eip);
 	CYCLES(4);
 }
 
 void jmpEv16_reg(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
 	cpu->eip.u32 = cpu->reg[op->r1].u16;
 	CYCLES(2);
 }
 
 void jmpEv16_mem16(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
 	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
 	CYCLES(2);
 }
 
 void jmpEv16_mem32(CPU* cpu, Op* op) {
-	push16(cpu, cpu->eip.u32+op->eipCount);
 	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
 	CYCLES(2);
 }
@@ -1781,14 +1780,16 @@ void callNear32_reg(CPU* cpu, Op* op) {
 }
 
 void callNear32_mem16(CPU* cpu, Op* op) {
-	push32(cpu, cpu->eip.u32+op->eipCount);
+	U32 eip = cpu->eip.u32+op->eipCount;	
 	cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
+	push32(cpu, eip);
 	CYCLES(4);
 }
 
 void callNear32_mem32(CPU* cpu, Op* op) {
-	push32(cpu, cpu->eip.u32+op->eipCount);
+	U32 eip = cpu->eip.u32+op->eipCount;	
 	cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
+	push32(cpu, eip);
 	CYCLES(4);
 }
 
