@@ -15,6 +15,7 @@
 #define PAGE_MASK 0xFFF
 #define PAGE_SHIFT 12
 #define NUMBER_OF_PAGES 0x100000
+#define ROUND_UP_TO_PAGE(x) ((x + 0xFFF) & 0xFFFFF000)
 
 typedef struct Memory {
 	Page* mmu[NUMBER_OF_PAGES];

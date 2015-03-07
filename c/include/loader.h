@@ -4,8 +4,9 @@
 #include "memory.h"
 #include "platform.h"
 #include "nodeaccess.h"
+#include "kprocess.h"
 
 const char* getInterpreter(OpenNode* openNode, BOOL* isElf);
-BOOL loadProgram(KThread* thread, OpenNode* openNode, U32* eip);
+BOOL loadProgram(KProcess* process, KThread* thread, OpenNode* openNode, U32* eip);
 
 #endif

@@ -19,6 +19,7 @@ void setupStack(KThread* thread) {
 	thread->stackPageCount = pageCount;
 	thread->stackPageStart = page;
 	thread->cpu.reg[4].u32 = (page+pageCount+1) << PAGE_SHIFT; // one page away from the top
+	thread->cpu.thread = thread;
 }
 
 void initThread(KThread* thread, KProcess* process) {

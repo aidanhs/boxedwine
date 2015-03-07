@@ -92,13 +92,13 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		initThread(thread, process);
 		addThread(process, thread);
 
-		if (!loadProgram(thread, loaderOpenNode, &thread->cpu.eip.u32))
+		if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32))
 			return FALSE;
 
 		process->heapSize = 0;
 		process->maxHeapSize = 1024*1024;
 		// will be on demand, so it's ok that it's a lot larger than we need
-		process->pHeap = mmap64(thread, 0, process->maxHeapSize, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
+		process->pHeap = mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, process->maxHeapSize, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
 		process->args = stringArrayFromNative(process, args, argc);
 		process->env = stringArrayFromNative(process, env, envc);

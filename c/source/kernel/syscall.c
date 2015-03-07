@@ -1,5 +1,9 @@
 #include "cpu.h"
 #include "kthread.h"
+#include "kprocess.h"
+#include "memory.h"
+#include "kmmap.h"
+#include "decoder.h"
 
 #define __NR_exit 1
 #define __NR_read 3
@@ -117,11 +121,16 @@
 #define LOG 
 
 void syscall(CPU* cpu, Op* op) {
+	KThread* thread = cpu->thread;
+	KProcess* process = thread->process;
+	Memory* memory = cpu->memory;
+
 	switch (EAX) {
 	case __NR_exit:
 		LOG("__NR_exit %d", ARG1);
 		exitThread(cpu->thread, ARG1);
 		break;
+		/*
 	case __NR_read:
 		break;
 	case __NR_write:
@@ -158,5 +167,196 @@ void syscall(CPU* cpu, Op* op) {
 		break;
 	case __NR_rmdir:
 		break;
+	case __NR_dup:
+		break;
+	case __NR_pipe:
+		break;
+		*/
+	case __NR_brk:
+		if (ARG1 > process->brkEnd) {
+			U32 len = ARG1-process->brkEnd;
+			U32 alreadyAllocated = ROUND_UP_TO_PAGE(process->brkEnd) - process->brkEnd;
+			if (len<=alreadyAllocated) {
+				process->brkEnd+=len;
+			} else {
+				mmap64(thread, process->brkEnd, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
+				process->brkEnd+=len;
+			}
+		}
+		EAX = process->brkEnd;
+		break;
+		/*
+	case __NR_ioctl:
+		break;
+	case __NR_setpgid:
+		break;
+	case __NR_umask:
+		break;
+	case __NR_dup2:
+		break;
+	case __NR_getppid:
+		break;
+	case __NR_getpgrp:
+		break;
+	case __NR_setsid:
+		break;
+	case __NR_gettimeofday:
+		break;
+	case __NR_symlink:
+		break;
+	case __NR_readlink:
+		break;
+	case __NR_mmap:
+		break;
+	case __NR_munmap:
+		break;
+	case __NR_fchmod:
+		break;
+	case __NR_setpriority:
+		break;
+	case __NR_socketcall:
+		break;
+	case __NR_setitimer:
+		break;
+	case __NR_ipc:
+		break;
+	case __NR_fsync:
+		break;
+	case __NR_clone:
+		break;
+	case __NR_uname:
+		break;
+	case __NR_modify_ldt:
+		break;
+	case __NR_mprotect:
+		break;
+	case __NR_getpgid:
+		break;
+	case __NR_fchdir:
+		break;
+	case __NR__llseek:
+		break;
+	case __NR_getdents:
+		break;
+	case __NR_newselect:
+		break;
+	case __NR_writev:
+		break;
+	case __NR_sched_yield:
+		break;
+	case __NR_nanosleep:
+		break;
+	case __NR_mremap:
+		break;
+	case __NR_poll:
+		break;
+	case __NR_prctl:
+		break;
+	case __NR_rt_sigaction:
+		break;
+	case __NR_rt_sigprocmask:
+		break;
+	case __NR_pread64:
+		break;
+	case __NR_getcwd:
+		break;
+	case __NR_sigaltstack:
+		break;
+	case __NR_ugetrlimit:
+		break;
+	case __NR_mmap2:
+		break;
+	case __NR_ftruncate64:
+		break;
+	case __NR_stat64:
+		break;
+	case __NR_lstat64:
+		break;
+	case __NR_fstat64:
+		break;
+	case __NR_getuid32:
+		break;
+	case __NR_getgid32:
+		break;
+	case __NR_geteuid32:
+		break;
+	case __NR_getegid32:
+		break;
+	case __NR_fchown32:
+		break;
+	case __NR_setresuid32:
+		break;
+	case __NR_getresuid32:
+		break;
+	case __NR_getresgid32:
+		break;
+	case __NR_chown32:
+		break;
+	case __NR_setuid32:
+		break;
+	case __NR_setgid32:
+		break;
+	case __NR_madvise:
+		break;
+	case __NR_getdents64:
+		break;
+	case __NR_fcntl64:
+		break;
+	case __NR_gettid:
+		break;
+	case __NR_tkill:
+		break;
+	case __NR_futex:
+		break;
+	case __NR_sched_getaffinity:
+		break;
+	case __NR_set_thread_area:
+		break;
+	case __NR_exit_group:
+		break;
+	case __NR_epoll_create:
+		break;
+	case __NR_epoll_ctl:
+		break;
+	case __NR_epoll_wait:
+		break;
+	case __NR_set_tid_address:
+		break;
+	case __NR_clock_gettime:
+		break;
+	case __NR_clock_getres:
+		break;
+	case __NR_statfs64:
+		break;
+	case __NR_fstatfs64:
+		break;
+	case __NR_tgkill:
+		break;
+	case __NR_fadvise64_64:
+		break;
+	case __NR_inotify_init:
+		break;
+	case __NR_inotify_add_watch:
+		break;
+	case __NR_inotify_rm_watch:
+		break;
+	case __NR_openat:
+		break;
+	case __NR_set_robust_list:
+		break;
+	case __NR_getcpu:
+		break;
+	case __NR_utimensat:
+		break;
+	case __NR_pipe2:
+		break;
+	case __NR_prlimit64:
+		break;
+		*/
+	default:
+		panic("Unknown syscall %d", EAX);
+		break;
 	}
+	cpu->eip.u32+=op->eipCount;
+	CYCLES(1);
 }

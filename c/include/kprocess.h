@@ -10,8 +10,7 @@
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_STACK_START		0xE0000
 #define ADDRESS_PROCESS_SHARED_START	0xE3000
-// this needs a continuous space, hopefully wine won't use more than 256MB
-#define ADDRESS_PROCESS_HEAP_START		0xF0000
+#define ADDRESS_PROCESS_LOADER			0xF0000
 #define ADDRESS_PROCESS_FRAME_BUFFER	0xF8000
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
@@ -27,6 +26,7 @@ typedef struct KProcess {
 	U32 pHeap;
 	U32 heapSize;
 	U32 maxHeapSize;
+	U32 brkEnd;
 	KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
 } KProcess;
 

@@ -39,7 +39,7 @@ const char* getInterpreter(OpenNode* openNode, BOOL* isElf) {
 
 #define PT_LOAD 1
 
-BOOL loadProgram(KThread* thread, OpenNode* openNode, U32* eip) {
+BOOL loadProgram(KProcess* process, KThread* thread, OpenNode* openNode, U32* eip) {
 	U8 buffer[sizeof(Elf32_Ehdr)];
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
@@ -67,7 +67,7 @@ BOOL loadProgram(KThread* thread, OpenNode* openNode, U32* eip) {
 	}
 
 	address = mmap64(thread, 0, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
-
+	process->brkEnd = address+len;
 	for (i=0;i<hdr->e_phnum;i++) {
 		Elf32_Phdr phdr;		
 		openNode->access->seek(openNode, hdr->e_phoff+sizeof(Elf32_Phdr)*i);
