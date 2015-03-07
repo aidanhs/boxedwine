@@ -8,6 +8,7 @@
 #include "fpu.h"
 #include "ops.h"
 #include "ram.h"
+#include "conditions.h"
 
 #define DECODE_MEMORY(name)						\
 if (ea16) {										\
@@ -31,7 +32,7 @@ if (rm >= 0xc0 ) {				\
 #define FETCH16() readw(cpu->memory, ip);ip+=2
 #define FETCH_S16() (S16)readw(cpu->memory, ip);ip+=2
 #define FETCH32() readd(cpu->memory, ip);ip+=4
-#define FETCH_S32() (S32)readb(cpu->memory, ip);ip+=4
+#define FETCH_S32() (S32)readd(cpu->memory, ip);ip+=4
 
 #define FINISH_OP() op->eipCount=ip-start
 
@@ -270,6 +271,20 @@ int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 	op->func = jump##n##;					\
 	op->data1 = FETCH_S##b##();				\
 	FINISH_OP();	
+
+#define CMOV(c, b)							\
+	rm = FETCH8();							\
+	if (rm>=0xC0) {							\
+		op->func = cmov##c##_##b##_reg;		\
+		op->r1 = G(rm);						\
+		op->r2 = E(rm);						\
+	} else if (ea16) {						\
+		op->func = cmov##c##_##b##_mem16;	\
+		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
+	} else {								\
+		op->func = cmov##c##_##b##_mem32;	\
+		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
+	}										
 
 Op* decodeBlock(CPU* cpu) {
 	int ea16 = cpu->big?0:1;
@@ -2429,6 +2444,200 @@ Op* decodeBlock(CPU* cpu) {
 		case 0x331:
 			op->func = rdtsc;
 			break;
+		case 0x140: 
+			CMOV(O, 16);
+			break;
+		case 0x340: 
+			CMOV(O, 32);
+			break;
+		case 0x141: 
+			CMOV(NO, 16);
+			break;
+		case 0x341: 
+			CMOV(NO, 32);
+			break;
+		case 0x142: 
+			CMOV(B, 16);
+			break;
+		case 0x342: 
+			CMOV(B, 32);
+			break;
+		case 0x143: 
+			CMOV(NB, 16);
+			break;
+		case 0x343: 
+			CMOV(NB, 32);
+			break;
+		case 0x144: 
+			CMOV(Z, 16);
+			break;
+		case 0x344: 
+			CMOV(Z, 32);
+			break;
+		case 0x145: 
+			CMOV(NZ, 16);
+			break;
+		case 0x345: 
+			CMOV(NZ, 32);
+			break;
+		case 0x146: 
+			CMOV(BE, 16);
+			break;
+		case 0x346: 
+			CMOV(BE, 32);
+			break;
+		case 0x147: 
+			CMOV(NBE, 16);
+			break;
+		case 0x347: 
+			CMOV(NBE, 32);
+			break;
+		case 0x148: 
+			CMOV(S, 16);
+			break;
+		case 0x348: 
+			CMOV(S, 32);
+			break;
+		case 0x149: 
+			CMOV(NS, 16);
+			break;
+		case 0x349: 
+			CMOV(NS, 32);
+			break;
+		case 0x14a: 
+			CMOV(P, 16);
+			break;
+		case 0x34a: 
+			CMOV(P, 32);
+			break;
+		case 0x14b: 
+			CMOV(NP, 16);
+			break;
+		case 0x34b: 
+			CMOV(NP, 32);
+			break;
+		case 0x14c: 
+			CMOV(L, 16);
+			break;
+		case 0x34c: 
+			CMOV(L, 32);
+			break;
+		case 0x14d: 
+			CMOV(NL, 16);
+			break;
+		case 0x34d: 
+			CMOV(NL, 32);
+			break;
+		case 0x14e: 
+			CMOV(LE, 16);
+			break;
+		case 0x34e: 
+			CMOV(LE, 32);
+			break;
+		case 0x14f: 
+			CMOV(NLE, 16);
+			break;
+		case 0x34f: 
+			CMOV(NLE, 32);
+			break;
+		case 0x180: // JO
+			JUMP(O, 16);
+			return block;
+		case 0x380:
+			JUMP(O, 32);
+			return block;
+		case 0x181: // JNO
+			JUMP(NO, 16);
+			return block;
+		case 0x381:
+			JUMP(NO, 32);
+			return block;
+		case 0x182: // JB
+			JUMP(B, 16);
+			return block;
+		case 0x382:
+			JUMP(B, 32);
+			return block;
+		case 0x183: // JNB
+			JUMP(NB, 16);
+			return block;
+		case 0x383:
+			JUMP(NB, 32);
+			return block;
+		case 0x184: // JZ
+			JUMP(Z, 16);
+			return block;
+		case 0x384:
+			JUMP(Z, 32);
+			return block;
+		case 0x185: // JNZ
+			JUMP(NZ, 16);
+			return block;
+		case 0x385:
+			JUMP(NZ, 32);
+			return block;
+		case 0x186: // JBE
+			JUMP(BE, 16);
+			return block;
+		case 0x386:
+			JUMP(BE, 32);
+			return block;
+		case 0x187: // JNBE
+			JUMP(NBE, 16);
+			return block;
+		case 0x387:
+			JUMP(NBE, 32);
+			return block;
+		case 0x188: // JS
+			JUMP(S, 16);
+			return block;
+		case 0x388:
+			JUMP(S, 32);
+			return block;
+		case 0x189: // JNS
+			JUMP(NS, 16);
+			return block;
+		case 0x389:
+			JUMP(NS, 32);
+			return block;
+		case 0x18a: // JP
+			JUMP(P, 16);
+			return block;
+		case 0x38a:
+			JUMP(P, 32);
+			return block;
+		case 0x18b: // JNP
+			JUMP(NP, 16);
+			return block;
+		case 0x38b:
+			JUMP(NP, 32);
+			return block;
+		case 0x18c: // JL
+			JUMP(L, 16);
+			return block;
+		case 0x38c:
+			JUMP(L, 32);
+			return block;
+		case 0x18d: // JNL
+			JUMP(NL, 16);
+			return block;
+		case 0x38d:
+			JUMP(NL, 32);
+			return block;
+		case 0x18e: // JLE
+			JUMP(LE, 16);
+			return block;
+		case 0x38e:
+			JUMP(LE, 32);
+			return block;
+		case 0x18f: // JNLE
+			JUMP(NLE, 16);
+			return block;
+		case 0x38f:
+			JUMP(NLE, 32);
+			return block;		
+		default:
+			panic("Unknown op code %d", inst);
 		}		
 		if (cpu->big) {
 			opCode = 0x200;

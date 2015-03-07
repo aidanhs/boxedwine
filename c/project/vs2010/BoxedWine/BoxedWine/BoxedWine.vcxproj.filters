@@ -156,6 +156,9 @@
     <ClInclude Include="..\..\..\..\source\emulation\shift.h">
       <Filter>Source Files\emulation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\conditions.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">

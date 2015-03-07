@@ -31,11 +31,77 @@ public class Main {
             fos = new FileOutputStream("shift.h");
             shift();
             fos.close();
+            fos = new FileOutputStream("conditions.h");
+            conditions();
+            fos.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    static public void conditions() throws IOException {
+        condition("cmovO", "getOF(cpu)");
+        condition("cmovNO", "!getOF(cpu)");
+        condition("cmovB", "getCF(cpu)");
+        condition("cmovNB", "!getCF(cpu)");
+        condition("cmovZ", "getZF(cpu)");
+        condition("cmovNZ", "!getZF(cpu)");
+        condition("cmovBE", "getZF(cpu) || getCF(cpu)");
+        condition("cmovNBE", "!getZF(cpu) && !getCF(cpu)");
+        condition("cmovS", "getSF(cpu)");
+        condition("cmovNS", "!getSF(cpu)");
+        condition("cmovP", "getPF(cpu)");
+        condition("cmovNP", "!getPF(cpu)");
+        condition("cmovL", "getSF(cpu)!=getOF(cpu)");
+        condition("cmovNL", "getSF(cpu)==getOF(cpu)");
+        condition("cmovLE", "getZF(cpu) || getSF(cpu)!=getOF(cpu)");
+        condition("cmovNLE", "!getZF(cpu) && getSF(cpu)==getOF(cpu)");
+    }
+
+    static public void condition(String name, String condition) throws IOException {
+        out("void "+name+"_16_reg(CPU* cpu, Op* op) {");
+        out("    if ("+condition+") {");
+        out("        cpu->reg[op->r1].u16 = cpu->reg[op->r2].u16;");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_16_mem16(CPU* cpu, Op* op) {");
+        out("    if ("+condition+") {");
+        out("        cpu->reg[op->r1].u16 = readw(cpu->memory, eaa16(cpu, op));");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_16_mem32(CPU* cpu, Op* op) {");
+        out("    if ("+condition+") {");
+        out("        cpu->reg[op->r1].u16 = readw(cpu->memory, eaa32(cpu, op));");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_32_reg(CPU* cpu, Op* op) {");
+        out("    if ("+condition+") {");
+        out("        cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_32_mem16(CPU* cpu, Op* op) {");
+        out("    if ("+condition+") {");
+        out("        cpu->reg[op->r1].u32 = readd(cpu->memory, eaa16(cpu, op));");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_32_mem32(CPU* cpu, Op* op) {");
+        out("    if ("+condition+") {");
+        out("        cpu->reg[op->r1].u32 = readd(cpu->memory, eaa32(cpu, op));");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+    }
     static public void strings() throws IOException {
         movs("movsb32_r", "b", "ESI", "EDI", "ECX", 0, true);
         movs("movsb16_r", "b", "SI", "DI", "CX", 0, true);

@@ -510,7 +510,11 @@ void runBlock(CPU* cpu, Op* block) {
 }
 
 void runCPU(CPU* cpu) {
-	Op* block = decodeBlock(cpu);
+	Op* block;
+	//if (cpu->eip.u32==0xd0004b7e) {
+	//	int ii=0;
+//	}
+	block = decodeBlock(cpu);
 	runBlock(cpu, block);
 	freeOp(block);
 }
