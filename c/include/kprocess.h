@@ -19,14 +19,19 @@ typedef struct KProcess {
 	U32 id;
 	Memory* memory;
 	KArray threads;
-	const char** args;
-	const char** env;
+	U32 args;
+	U32 argc;
+	U32 env;
+	U32 envc;
 	const char* currentDirectory;
+	U32 pHeap;
+	U32 heapSize;
+	U32 maxHeapSize;
 	KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
 } KProcess;
 
 void processOnExitThread(KThread* thread);
-BOOL startProcess(const char* currentDirectory, int argc, const char** args, int envc, const char** env);
+BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
 KFileDescriptor* getFileDescriptor(KProcess* process, U32 handle);
 
 #endif

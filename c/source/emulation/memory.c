@@ -184,3 +184,11 @@ U8* getPhysicalAddress(Memory* memory, U32 address) {
 	int index = address >> 12;
 	return memory->mmu[index]->physicalAddress(memory, address, memory->data[index]);
 }
+
+void memcopyFromNative(Memory* memory, U32 address, const unsigned char* p, U32 len) {
+	U32 i;
+	
+	for (i=0;i<len;i++) {
+		writeb(memory, address+i, p[i]);
+	}
+}

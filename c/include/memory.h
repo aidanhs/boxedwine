@@ -12,6 +12,7 @@
 #define MEMORY_DATA_WRITE 0x40000000
 
 #define PAGE_SIZE 4096
+#define PAGE_MASK 0xFFF
 #define PAGE_SHIFT 12
 #define NUMBER_OF_PAGES 0x100000
 
@@ -53,4 +54,7 @@ BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32
 void reservePages(Memory* memory, U32 startingPage, U32 pageCount, U32 status);
 
 U8* getPhysicalAddress(Memory* memory, U32 address);
+
+void memcopyFromNative(Memory* memory, U32 address, const unsigned char* p, U32 len);
+
 #endif

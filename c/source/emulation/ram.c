@@ -167,7 +167,7 @@ static U32 ondemmand(Memory* memory, U32 address, U32 data) {
 	BOOL read = data & MEMORY_DATA_READ;
 	BOOL write = data & MEMORY_DATA_WRITE;
 
-	memory->data[page] = address-getAddressOfRamPage(ram);
+	memory->data[page] = (page << PAGE_SHIFT) - getAddressOfRamPage(ram);
 	
 	if (read && write)
 		memory->mmu[page] = &ramPageWR;
