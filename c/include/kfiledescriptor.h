@@ -3,7 +3,6 @@
 
 #include "kobject.h"
 #include "platform.h"
-#include "page.h"
 
 #define MAX_FDS_PER_PROCESS 256
 
@@ -11,7 +10,10 @@ typedef struct KFileDescriptor {
 	U32 accessFlags;
     U32 descriptorFlags;
     U32 handle;
-    KObject* kobject;
+	union {
+		KObject* kobject;
+		struct KFileDescriptor* next; // used for free list
+	};
     U32 refCount;
     struct KProcess* process;
 } KFileDescriptor;
@@ -19,7 +21,6 @@ typedef struct KFileDescriptor {
 BOOL canReadFD(KFileDescriptor* fd);
 BOOL canWriteFD(KFileDescriptor* fd);
 void closeFD(KFileDescriptor* fd);
-
-extern Page ramOnDemandFilePage;
+KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags);
 
 #endif

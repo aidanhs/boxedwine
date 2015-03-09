@@ -7,7 +7,7 @@
 #include <string.h>
 #include "fpu.h"
 #include "ops.h"
-#include "ram.h"
+#include "kalloc.h"
 #include "conditions.h"
 
 #define DECODE_MEMORY(name)						\
@@ -120,18 +120,7 @@ Op* allocOp() {
 		result = freeOps;
 		freeOps = result->next;
 	} else {
-		// :TODO: attach this page of ops to a particular memory mapped file so that when the file is unmapped we can free these RAM pages
-		U32 address = getAddressOfRamPage(allocRamPage());
-		U32 count = PAGE_SIZE/sizeof(Op);
-		U32 i;
-
-		for (i=0;i<count;i++) {
-			Op* op=(Op*)address;
-			op->next = 0;
-			freeOp(op);
-			address+=sizeof(Op);
-		}
-		return allocOp();
+		result = (Op*)kalloc(sizeof(Op));
 	}
 	memset(result, 0, sizeof(Op));
 	return result;
@@ -1760,7 +1749,7 @@ Op* decodeBlock(CPU* cpu) {
 				FINISH_OP();
 				return block;
 			} else {
-				panic("Unhandled interrupt %d", rm);
+				kpanic("Unhandled interrupt %d", rm);
 			}
 			break;
 		case 0xd0: // GRP2 Eb,1
@@ -1915,7 +1904,7 @@ Op* decodeBlock(CPU* cpu) {
                             case 1: op->func = FABS; break;
                             case 4: op->func = FTST; break;
                             case 5: op->func = FXAM; break;
-                            default: panic("ESC 1:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                            default: kpanic("ESC 1:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                         }
                         break;
                     }
@@ -1929,7 +1918,7 @@ Op* decodeBlock(CPU* cpu) {
                             case 4: op->func = FLDLG2; break;
                             case 5: op->func = FLDLN2; break;
                             case 6: op->func = FLDZ; break;
-                            case 7: panic("ESC 1:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                            case 7: kpanic("ESC 1:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                         }
                         break;
                     }
@@ -1966,7 +1955,7 @@ Op* decodeBlock(CPU* cpu) {
 				ip = decodeEa16(cpu, op, ds, ss, rm, ip);
                 switch ((rm >> 3) & 7) {
                     case 0: op->func = FLD_SINGLE_REAL_16; break;
-                    case 1: panic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    case 1: kpanic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                     case 2: op->func = FST_SINGLE_REAL_16; break;
                     case 3: op->func = FST_SINGLE_REAL_16_Pop; break;
                     case 4: op->func = FLDENV_16; break;
@@ -1978,7 +1967,7 @@ Op* decodeBlock(CPU* cpu) {
 				ip = decodeEa32(cpu, op, ds, ss, rm, ip);
                 switch ((rm >> 3) & 7) {
                     case 0: op->func = FLD_SINGLE_REAL_32; break;
-                    case 1: panic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    case 1: kpanic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                     case 2: op->func = FST_SINGLE_REAL_32; break;
                     case 3: op->func = FST_SINGLE_REAL_32_Pop; break;
                     case 4: op->func = FLDENV_32; break;
@@ -2005,7 +1994,7 @@ Op* decodeBlock(CPU* cpu) {
                         }
 					// intentional fall through
                     default:
-                        panic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                        kpanic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                 }
             } else if (ea16) {
                 ip = decodeEa16(cpu, op, ds, ss, rm, ip);
@@ -2048,13 +2037,13 @@ Op* decodeBlock(CPU* cpu) {
                         switch (rm & 7) {
                             case 2:op->func = FNCLEX; break;
                             case 3:op->func = FNINIT; break;
-                            default:panic("ESC 3 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                            default:kpanic("ESC 3 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                         }
                         break;
                     }
                     case 5: op->func = FUCOMI_ST0_STj; break;
                     case 6: op->func = FCOMI_ST0_STj_Pop; break;
-                    default:panic("ESC 3 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    default:kpanic("ESC 3 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                 }
             } else if (ea16) {
                 ip = decodeEa16(cpu, op, ds, ss, rm, ip);
@@ -2065,7 +2054,7 @@ Op* decodeBlock(CPU* cpu) {
                     case 3: op->func = FIST_DWORD_INTEGER_16_Pop; break;
                     case 5: op->func = FLD_EXTENDED_REAL_16; break;
                     case 7: op->func = FSTP_EXTENDED_REAL_16; break;
-                    default:panic("ESC 3 EA :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    default:kpanic("ESC 3 EA :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                 }
             } else {
                 ip = decodeEa32(cpu, op, ds, ss, rm, ip);
@@ -2076,7 +2065,7 @@ Op* decodeBlock(CPU* cpu) {
                     case 3: op->func = FIST_DWORD_INTEGER_32_Pop; break;
                     case 5: op->func = FLD_EXTENDED_REAL_32; break;
                     case 7: op->func = FSTP_EXTENDED_REAL_32; break;
-                    default:panic("ESC 3 EA :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    default:kpanic("ESC 3 EA :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                 }
             }
 			break;
@@ -2133,7 +2122,7 @@ Op* decodeBlock(CPU* cpu) {
                     case 3: op->func = FST_STi_Pop; break;
                     case 4: op->func = FUCOM_STi; break;
                     case 5: op->func = FUCOM_STi_Pop; break;
-                    default:panic("ESC 5 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    default:kpanic("ESC 5 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                 }
             } else if (ea16) {
                 ip = decodeEa16(cpu, op, ds, ss, rm, ip);
@@ -2143,7 +2132,7 @@ Op* decodeBlock(CPU* cpu) {
                     case 2: op->func = FST_DOUBLE_REAL_16; break;
                     case 3: op->func = FST_DOUBLE_REAL_16_Pop; break;
                     case 4: op->func = FRSTOR_16; break;
-                    case 5:panic("ESC 5 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    case 5:kpanic("ESC 5 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                     case 6: op->func = FNSAVE_16; break;
                     case 7: op->func = FNSTSW_16; break;
                 }
@@ -2155,7 +2144,7 @@ Op* decodeBlock(CPU* cpu) {
                     case 2: op->func = FST_DOUBLE_REAL_32; break;
                     case 3: op->func = FST_DOUBLE_REAL_32_Pop; break;
                     case 4: op->func = FRSTOR_32; break;
-                    case 5:panic("ESC 5 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    case 5:kpanic("ESC 5 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                     case 6: op->func = FNSAVE_32; break;
                     case 7: op->func = FNSTSW_32; break;
                 }
@@ -2174,7 +2163,7 @@ Op* decodeBlock(CPU* cpu) {
                         if ((rm & 7) == 1)
                             op->func = FCOMPP;
                         else {
-                            panic("ESC 6 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7));
+                            kpanic("ESC 6 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7));
                         }
 						break;
                     break;
@@ -2223,12 +2212,12 @@ Op* decodeBlock(CPU* cpu) {
                         if ((rm & 7)==0)
                             op->func = FNSTSW_AX;
                         else {
-                            panic("ESC 7 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7));
+                            kpanic("ESC 7 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7));
                         }
 						break;
                     case 5: op->func = FUCOMI_ST0_STj_Pop; break;
                     case 6: op->func = FCOMI_ST0_STj_Pop; break;
-                    case 7: panic("ESC 7 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    case 7: kpanic("ESC 7 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
                 }
             } else if (ea16) {
                 ip = decodeEa16(cpu, op, ds, ss, rm, ip);
@@ -2332,7 +2321,7 @@ Op* decodeBlock(CPU* cpu) {
 			continue;
 		case 0xf4: // HLT
 		case 0x2f4:
-			panic("HLT");
+			kpanic("HLT");
 			FINISH_OP();
 			return block;
 		case 0xf5: // CMC
@@ -2376,7 +2365,7 @@ Op* decodeBlock(CPU* cpu) {
 					DECODE_E(dec8);
                     break;
                 default:
-                    panic("Illegal GRP4 Call %d, "+((rm>>3) & 7));
+                    kpanic("Illegal GRP4 Call %d, "+((rm>>3) & 7));
 					break;
             }
             break;
@@ -2394,20 +2383,20 @@ Op* decodeBlock(CPU* cpu) {
 					FINISH_OP();
 					return block;
                 case 0x03:										/* CALL Ep */
-                    panic("Call Ep (0xFF) not implemented");
+                    kpanic("Call Ep (0xFF) not implemented");
                     break;
                 case 0x04:										/* JMP Ev */
 					DECODE_E(jmpEv16);
 					FINISH_OP();
 					return block;
                 case 0x05:										/* JMP Ep */
-                    panic("Jmp Ep (0xFF) not implemented");
+                    kpanic("Jmp Ep (0xFF) not implemented");
                     break;
                 case 0x06:										/* PUSH Ev */
 					DECODE_E(pushEv16);
 					break;
                 default:
-                    panic("CPU:GRP5:Illegal Call %d", (rm>>3)&7);
+                    kpanic("CPU:GRP5:Illegal Call %d", (rm>>3)&7);
                     break;
             }
 			break;
@@ -2425,20 +2414,20 @@ Op* decodeBlock(CPU* cpu) {
 					FINISH_OP();
 					return block;
                 case 0x03:											/* CALL FAR Ed */
-                    panic("CALL FAR Ed not implemented");
+                    kpanic("CALL FAR Ed not implemented");
                     break;
                 case 0x04:											/* JMP NEAR Ed */
 					DECODE_E(jmpNear32);
 					FINISH_OP();
 					return block;
                 case 0x05:											/* JMP FAR Ed */
-                    panic("JMP FAR Ed not implemented");
+                    kpanic("JMP FAR Ed not implemented");
                     break;
                 case 0x06:											/* Push Ed */
 					DECODE_E(pushEd);
 					break;
                 default:
-                    panic("CPU:66:GRP5:Illegal call %d", (rm>>3)&7);
+                    kpanic("CPU:66:GRP5:Illegal call %d", (rm>>3)&7);
                     break;
             }
 			break;
@@ -2648,7 +2637,7 @@ Op* decodeBlock(CPU* cpu) {
 			DECODE_INST_GE(movxz16, 32);
 			break;
 		default:
-			panic("Unknown op code %d", inst);
+			kpanic("Unknown op code %d", inst);
 		}		
 		if (cpu->big) {
 			opCode = 0x200;

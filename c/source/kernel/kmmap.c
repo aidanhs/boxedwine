@@ -4,10 +4,11 @@
 #include "kerror.h"
 #include "kobjectaccess.h"
 #include "ram.h"
+#include "kfmmap.h"
 
 U32 madvise(KThread* thread, U32 addr, U32 len, U32 advice) {
 	if (advice!=K_MADV_DONTNEED)
-		panic("madvise %d is not implemented", advice);
+		kpanic("madvise %d is not implemented", advice);
 	return 0;
 }
 
@@ -15,7 +16,7 @@ U32 mlock(KThread* thread, U32 addr, U32 len) {
 	return 0;
 }
 
-U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, S32 fildes, U64 off) {
+U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
 	BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
     BOOL read = (prot & K_PROT_READ)!=0;
@@ -32,7 +33,7 @@ U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, S32 fildes, 
     }
 
 	if (shared) {
-		panic("Shared mmap not implemented");
+		kpanic("Shared mmap not implemented");
 	}
 	if ((flags & K_MAP_ANONYMOUS) && fildes>=0) {
 		fd = getFileDescriptor(thread->process, fildes);

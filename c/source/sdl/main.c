@@ -9,6 +9,9 @@
 #include "kprocess.h"
 #include "kthread.h"
 #include "kscheduler.h"
+#include "kstat.h"
+#include "virtualfile.h"
+#include "devtty.h"
 
 #ifndef __TEST
 
@@ -47,6 +50,8 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
+
+	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
 		printf("SDL_Init Error: %d", SDL_GetError());

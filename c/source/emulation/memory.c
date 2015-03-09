@@ -5,30 +5,30 @@
 
 
 U8 pf_readb(Memory* memory, U32 data, U32 address) {
-	panic("PF");
+	kpanic("PF");
 	return 0;
 }
 
 void pf_writeb(Memory* memory, U32 data, U32 address, U8 value) {
-	panic("PF");
+	kpanic("PF");
 }
 
 U16 pf_readw(Memory* memory, U32 data, U32 address) {
-	panic("PF");
+	kpanic("PF");
 	return 0;
 }
 
 void pf_writew(Memory* memory, U32 data, U32 address, U16 value) {
-	panic("PF");
+	kpanic("PF");
 }
 
 U32 pf_readd(Memory* memory, U32 data, U32 address) {
-	panic("PF");
+	kpanic("PF");
 	return 0;
 }
 
 void pf_writed(Memory* memory, U32 data, U32 address, U32 value) {
-	panic("PF");
+	kpanic("PF");
 }
 
 void pf_clear(Memory* memory, U32 page, U32 data) {
@@ -109,7 +109,7 @@ void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pag
 			U32 ram = allocRamPage();
 
 			memory->mmu[page] = pageType;
-			memory->data[page] = address-getAddressOfRamPage(ram);
+			memory->data[page] = address-(U32)getAddressOfRamPage(ram);
 			page++;
 			address+=0x1000;
 		}

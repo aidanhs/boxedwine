@@ -43,7 +43,6 @@ BOOL loadProgram(KProcess* process, KThread* thread, OpenNode* openNode, U32* ei
 	U8 buffer[sizeof(Elf32_Ehdr)];
 	Elf32_Ehdr* hdr = (Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
-	U32 fileLen;
 	U32 address=0xFFFFFFFF;
 	U32 i;
 

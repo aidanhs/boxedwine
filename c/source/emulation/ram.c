@@ -9,8 +9,8 @@ static U32 pageCount;
 static U32 freePageCount;
 static U32* freePages;
 
-U32 getAddressOfRamPage(int page) {
-	return (U32)(&ram[page << 12]);
+char* getAddressOfRamPage(int page) {
+	return &ram[page << 12];
 }
 
 void initRAM(U32 pages) {
@@ -35,11 +35,11 @@ U32 allocRamPage() {
 	int result;
 
     if (freePageCount==0) {
-        panic("Ran out of RAM pages");
+        kpanic("Ran out of RAM pages");
     }
     result = freePages[--freePageCount];
     if (ramRefCount[result]!=0) {
-        panic("RAM logic error");
+        kpanic("RAM logic error");
     }
     ramRefCount[result]++;
 	memset(&ram[result<<PAGE_SHIFT], 0, PAGE_SIZE);
@@ -51,13 +51,13 @@ void freeRamPage(int page) {
     if (ramRefCount[page]==0) {
         freePages[freePageCount++]=page;
     } else if (ramRefCount[page]<0) {
-        panic("RAM logic error: freePage");
+        kpanic("RAM logic error: freePage");
     }
 }
 
 void incrementRef(int page) {
     if (ramRefCount[page]==0) {
-        panic("RAM logic error: incrementRef");
+        kpanic("RAM logic error: incrementRef");
     }
     ramRefCount[page]++;
 }
@@ -146,13 +146,13 @@ static void ondemand_ram_writed(Memory* memory, U32 data, U32 address, U32 value
 static void ondemand_ram_clear(Memory* memory, U32 address, U32 data) {
 }
 
-static U8* physicalAddress(Memory* memory, U32 data, U32 address) {
+static U8* physicalAddress(Memory* memory, U32 address, U32 data) {
 	return (U8*)(address-data);
 }
 
 static U8* ondemand_physicalAddress(Memory* memory, U32 address, U32 data) {
 	data = ondemmand(memory, address, data);
-	return physicalAddress(memory, data, address);
+	return physicalAddress(memory, address, data);
 }
 
 
@@ -167,7 +167,7 @@ static U32 ondemmand(Memory* memory, U32 address, U32 data) {
 	BOOL read = data & MEMORY_DATA_READ;
 	BOOL write = data & MEMORY_DATA_WRITE;
 
-	memory->data[page] = (page << PAGE_SHIFT) - getAddressOfRamPage(ram);
+	memory->data[page] = (page << PAGE_SHIFT) - (U32)getAddressOfRamPage(ram);
 	
 	if (read && write)
 		memory->mmu[page] = &ramPageWR;

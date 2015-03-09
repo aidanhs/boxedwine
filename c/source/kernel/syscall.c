@@ -4,6 +4,10 @@
 #include "memory.h"
 #include "kmmap.h"
 #include "decoder.h"
+#include "kio.h"
+#include "log.h"
+
+#define LOG klog
 
 #define __NR_exit 1
 #define __NR_read 3
@@ -118,8 +122,6 @@
 #define ARG5 EDI
 #define ARG6 EBP
 
-#define LOG 
-
 void syscall(CPU* cpu, Op* op) {
 	KThread* thread = cpu->thread;
 	KProcess* process = thread->process;
@@ -184,6 +186,7 @@ void syscall(CPU* cpu, Op* op) {
 			}
 		}
 		EAX = process->brkEnd;
+		LOG("__NR_brk address=%.8X result=%.8X", ARG1, EAX);
 		break;
 		/*
 	case __NR_ioctl:
@@ -240,8 +243,13 @@ void syscall(CPU* cpu, Op* op) {
 		break;
 	case __NR_newselect:
 		break;
+		*/
 	case __NR_writev:
+		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d", ARG1, ARG2, ARG3);
+		EAX=syscall_writev(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_writev: fildes=%d result=%d", ARG1, EAX);
 		break;
+		/*
 	case __NR_sched_yield:
 		break;
 	case __NR_nanosleep:
@@ -354,7 +362,7 @@ void syscall(CPU* cpu, Op* op) {
 		break;
 		*/
 	default:
-		panic("Unknown syscall %d", EAX);
+		kpanic("Unknown syscall %d", EAX);
 		break;
 	}
 	cpu->eip.u32+=op->eipCount;

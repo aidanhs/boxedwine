@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include <sys/stat.h>
 #include <io.h>
 #include <fcntl.h>
@@ -12,10 +11,12 @@
 #include "nodetype.h"
 #include "kstat.h"
 #include "kerror.h"
+#include "kalloc.h"
+
 #include UNISTD
 #include UTIME
 
-static const char* root;
+static char root[1024];
 static int nodeId = 1;
 static KHashmap nodeMap;
 
@@ -32,14 +33,10 @@ void initFileSystem(const char* rootPath) {
 			pathSeperator = '\\';
 	}
 
-	if (rootPath[len-1]!=pathSeperator)
-		root = rootPath;
-	else {
-		char* r = (char*)malloc(len+1);
-		strcpy(r, rootPath);
-		r[len-1] = 0;
-		root = r;
-	}
+	strcpy(root, rootPath);
+
+	if (root[len-1]==pathSeperator)
+		root[len-1] = 0;
 	initHashmap(&nodeMap);
 }
 
@@ -107,22 +104,29 @@ U32 file_write(Memory* memory, OpenNode* node, U32 address, U32 len) {
 
 void file_close(OpenNode* node) {
 	close(node->handle);
-	free(node);
+	freeOpenNode(node);
 }
 
 U32 file_ioctl(KThread* thread, OpenNode* node, U32 request) {
-	return K_ENODEV;
+	return -K_ENODEV;
 }
 
 BOOL file_isWriteReady(OpenNode* node) {
-	return node->isWrite;
+	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
 
 BOOL file_isReadReady(OpenNode* node) {
-	return node->isRead;
+	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-NodeAccess fileAccess = {openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_ioctl, file_isWriteReady, file_isReadReady};
+BOOL file_canMap(OpenNode* node) {
+	return TRUE;
+}
+
+void file_init(OpenNode* node) {
+}
+
+NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_canMap, file_ioctl, file_isWriteReady, file_isReadReady};
 
 BOOL file_isDirectory(Node* node) {
 	struct stat buf;
@@ -161,20 +165,13 @@ U64 file_length(Node* node) {
 OpenNode* file_open(Node* node, U32 flags) {
 	U32 openFlags = O_BINARY;
 	U32 f;
-	OpenNode* result;
-	BOOL isRead = FALSE;
-	BOOL isWrite = FALSE;
 
 	if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
 		openFlags|=O_RDONLY;
-		isRead = TRUE;
 	} else if ((flags & K_O_ACCMODE)==K_O_WRONLY) {
 		openFlags|=O_WRONLY;
-		isWrite = TRUE;
 	} else {
 		openFlags|=O_RDWR;
-		isWrite = TRUE;
-		isRead = TRUE;
 	}
 	if (flags & K_O_CREAT) {
 		openFlags|=O_CREAT;
@@ -191,11 +188,7 @@ OpenNode* file_open(Node* node, U32 flags) {
 	f = open(node->path.nativePath, openFlags);	
 	if (!f)
 		return 0;
-	result = (OpenNode*)malloc(sizeof(OpenNode));
-	result->handle = f;
-	result->access = &fileAccess;
-	result->flags = flags;
-	return result;
+	return allocOpenNode(node, f, flags, node->nodeAccess);
 }
 
 BOOL file_setLastModifiedTime(Node* node, U32 time) {
@@ -264,11 +257,57 @@ Node* getNodeFromLocalPath(const char* currentDirectory, const char* path) {
 		return 0;
 	}
 	
-	result = (Node*)malloc(sizeof(Node));
+	return allocNode(localPath, nativePath, &fileNodeType, &fileAccess, 1);	
+}
+
+OpenNode* freeOpenNodes;
+void freeOpenNode(OpenNode* node) {
+	node->next = freeOpenNodes;
+	freeOpenNodes = node;
+}
+
+OpenNode* allocOpenNode(Node* node, U32 handle, U32 flags, NodeAccess* nodeAccess) {
+	OpenNode* result;
+
+	if (freeOpenNodes) {
+		result = freeOpenNodes;
+		freeOpenNodes = result->next;
+	} else {
+		result = (OpenNode*)kalloc(sizeof(OpenNode));
+	}
+	result->handle = handle;
+	result->flags = flags;
+	result->access = nodeAccess;
+	result->node = node;
+	nodeAccess->init(result);
+	return result;
+}
+
+Node* allocNode(const char* localPath, const char* nativePath, NodeType* nodeType, NodeAccess* nodeAccess, U32 rdev) {
+	Node* result;
+	U32 localLen = 0;
+	U32 nativeLen = 0;
+	if (localPath)
+		localLen=strlen(localPath)+1;
+	if (nativePath)
+		nativeLen=strlen(nativePath)+1;
+	result = (Node*)kalloc(sizeof(Node)+localLen+nativeLen);
 	result->id = nodeId++;
-	result->path.localPath = strdup(localPath);
-	result->path.nativePath = strdup(nativePath);
-	result->nodeType = &fileNodeType;
+	result->data = 0;
+	result->nodeType = nodeType;
+	result->nodeAccess = nodeAccess;
+	if (localPath) {
+		result->path.localPath = (const char*)(result+sizeof(Node));
+		strcpy(result->path.localPath, localPath);
+	} else {
+		result->path.localPath = 0;
+	}
+	if (nativePath) {
+		result->path.nativePath = (const char*)(result+sizeof(Node)+localLen);
+		strcpy(result->path.nativePath, nativePath);
+	} else {
+		result->path.nativePath = 0;
+	}
 	putHashmapValue(&nodeMap, result->path.localPath, result);
 	return result;
 }

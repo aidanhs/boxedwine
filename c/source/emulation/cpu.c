@@ -140,7 +140,7 @@ U32 getCF(CPU* cpu) {
 	case FLAGS_TEST32:
 		return 0;
 	default:
-		panic("getCF Unknown %d",cpu->inst);
+		kpanic("getCF Unknown %d",cpu->inst);
 	}
 	return 0;
 }
@@ -224,7 +224,7 @@ U32 getOF(CPU* cpu) {
 	case FLAGS_SAR32:
 		return 0;
 	default:
-		panic("geOF Unkown %d",cpu->inst);
+		kpanic("geOF Unkown %d",cpu->inst);
 	}
 	return 0;
 }
@@ -299,7 +299,7 @@ U32 getAF(CPU* cpu) {
 	case FLAGS_DSHR32:
 		return 0;			          /* Unkown */
 	default:
-		panic("geAF Unknown %d",cpu->inst);
+		kpanic("geAF Unknown %d",cpu->inst);
 	}
 	return 0;
 }
@@ -361,7 +361,7 @@ U32 getZF(CPU* cpu) {
 	case FLAGS_NEG32:
 		return (cpu->result.u32==0);
 	default:
-		panic("geZF Unknown %d",cpu->inst);
+		kpanic("geZF Unknown %d",cpu->inst);
 	}
 	return 0;
 }
@@ -423,7 +423,7 @@ U32 getSF(CPU* cpu) {
 	case FLAGS_NEG32:
 		return	(cpu->result.u32&0x80000000);
 	default:
-		panic("geSF Unkown %d",cpu->inst);
+		kpanic("geSF Unkown %d",cpu->inst);
 	}
 	return 0;
 }
@@ -502,7 +502,7 @@ U32 pop32(CPU* cpu) {
 }
 
 void exception(CPU* cpu, int code) {
-	panic("Exceptions not implements yet");
+	kpanic("Exceptions not implements yet");
 }
 
 void runBlock(CPU* cpu, Op* block) {

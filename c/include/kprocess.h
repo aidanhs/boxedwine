@@ -32,6 +32,6 @@ typedef struct KProcess {
 
 void processOnExitThread(KThread* thread);
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
-KFileDescriptor* getFileDescriptor(KProcess* process, U32 handle);
+KFileDescriptor* getFileDescriptor(KProcess* process, FD handle);
 
 #endif

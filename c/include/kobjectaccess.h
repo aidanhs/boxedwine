@@ -3,9 +3,9 @@
 
 #include "kobject.h"
 #include "platform.h"
+#include "memory.h"
 
 typedef struct KObjectAccess {
-	void (*close)(KObject* obj);
 	void (*onDelete)(KObject* obj);
     void (*setBlocking)(KObject* obj, BOOL blocking);
     BOOL (*isBlocking)(KObject* obj);

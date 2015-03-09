@@ -34,6 +34,9 @@
     <Filter Include="Source Files\kernel\loader">
       <UniqueIdentifier>{065303d5-14b1-4cd2-b831-1f353464b9fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\kernel\dev">
+      <UniqueIdentifier>{65a2cd8d-1aba-4453-b39a-c466aaff0388}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -159,6 +162,24 @@
     <ClInclude Include="..\..\..\..\source\emulation\conditions.h">
       <Filter>Source Files\emulation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\virtualfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devtty.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kalloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfmmap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -228,6 +249,24 @@
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\kobject.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kio.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\virtualfile.c">
+      <Filter>Source Files\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c">
+      <Filter>Source Files\kernel\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfile.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kalloc.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfmmap.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
   </ItemGroup>

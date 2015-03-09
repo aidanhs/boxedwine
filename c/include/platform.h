@@ -12,6 +12,7 @@
 #define U8 unsigned char
 #define S8 char
 #define BOOL unsigned int
+#define FD S32
 
 #define TRUE 1
 #define FALSE 0

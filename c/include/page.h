@@ -11,7 +11,7 @@ typedef struct {
 	U32 (*readd)(struct Memory* memory, U32 data, U32 address);
 	void (*writed)(struct Memory* memory, U32 data, U32 address, U32 value);
 	void (*clear)(struct Memory* memory, U32 page, U32 data);
-	U8* (*physicalAddress)(struct Memory* memory, U32 data, U32 address);
+	U8* (*physicalAddress)(struct Memory* memory, U32 address, U32 data);
 } Page;
 
 #endif

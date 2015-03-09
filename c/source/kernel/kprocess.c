@@ -8,11 +8,14 @@
 #include "nodeType.h"
 #include "loader.h"
 #include "kmmap.h"
+#include "kfiledescriptor.h"
+#include "kfile.h"
 
 #include <stdlib.h>
 #include <string.h>
 
 void initProcess(KProcess* process, Memory* memory) {
+	memset(process, 0, sizeof(KProcess));
 	process->memory = memory;
 	process->id = addProcess(process);
 	initArray(&process->threads);	
@@ -53,6 +56,35 @@ U32 stringArrayFromNative(KProcess* process, const char** ppStr, int count) {
 	return result;
 }
 
+KFileDescriptor* openFileDescriptor(KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
+	Node* node = getNodeFromLocalPath(process->currentDirectory, localPath);
+	OpenNode* openNode;
+	KObject* kobject;
+	KFileDescriptor* result;
+
+    if (!node) {
+        return 0;
+    }
+	openNode = node->nodeType->open(node, accessFlags);
+	if (!openNode)
+		return 0;
+	result = allocFileDescriptor(process, handle, allocKFile(openNode), accessFlags, descriptorFlags);
+	process->fds[handle] = result;
+	return result;
+}
+
+void initStdio(KProcess* process) {
+    if (!getFileDescriptor(process, 0)) {
+        openFileDescriptor(process, "/dev/tty0", K_O_RDONLY, 0, 0);
+    }
+    if (!getFileDescriptor(process, 1)) {
+        openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 1);
+    }
+    if (!getFileDescriptor(process, 2)) {
+        KFileDescriptor* tty = openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 2);
+    }
+}
+
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env) {
 	Node* node = getNodeFromLocalPath(currentDirectory, args[0]);
 	OpenNode* openNode = 0;
@@ -91,6 +123,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		initProcess(process, memory);
 		initThread(thread, process);
 		addThread(process, thread);
+		initStdio(process);
 
 		if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32))
 			return FALSE;
@@ -122,8 +155,8 @@ void processOnExitThread(KThread* thread) {
 	}
 }
 
-KFileDescriptor* getFileDescriptor(KProcess* process, U32 handle) {
-	if (handle<MAX_FDS_PER_PROCESS)
+KFileDescriptor* getFileDescriptor(KProcess* process, FD handle) {
+	if (handle<MAX_FDS_PER_PROCESS && handle>=0)
 		return process->fds[handle];
 	return 0;
 }

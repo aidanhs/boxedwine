@@ -7,8 +7,10 @@
 typedef struct Node {
 	FilePath path;
 	struct NodeType* nodeType;
-	U32 data; // open file handle, etc
+	struct NodeAccess* nodeAccess;
+	U32 data;
 	U32 id;
+	U32 rdev;
 } Node;
 
 #endif
