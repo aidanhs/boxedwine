@@ -35,9 +35,9 @@ void setup() {
 		initMemory(memory);
 		initRAM(10);
 
-		allocPages(memory, &ramPageWR, TRUE, (STACK_ADDRESS >> PAGE_SHIFT)-1, 1, 0);
-		allocPages(memory, &ramPageWR, TRUE, CODE_ADDRESS >> PAGE_SHIFT, 1, 0);
-		allocPages(memory, &ramPageWR, TRUE, HEAP_ADDRESS >> PAGE_SHIFT, 1, 0);
+		allocPages(memory, &ramPageWR, TRUE, (STACK_ADDRESS >> PAGE_SHIFT)-1, 1, PAGE_READ|PAGE_WRITE, 0);
+		allocPages(memory, &ramPageWR, TRUE, CODE_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE|PAGE_EXEC, 0);
+		allocPages(memory, &ramPageWR, TRUE, HEAP_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE, 0);
 	}
 	initCPU(cpu, memory);	
 

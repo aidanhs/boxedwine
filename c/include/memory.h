@@ -4,13 +4,6 @@
 #include "platform.h"
 #include "page.h"
 
-// if the page isn't backed by RAM yet it could be one of these values
-#define UNRESERVED 0
-#define RESERVED 1
-
-#define MEMORY_DATA_READ 0x80000000
-#define MEMORY_DATA_WRITE 0x40000000
-
 #define PAGE_SIZE 4096
 #define PAGE_MASK 0xFFF
 #define PAGE_SHIFT 12
@@ -19,7 +12,7 @@
 
 typedef struct Memory {
 	Page* mmu[NUMBER_OF_PAGES];
-	U32 data[NUMBER_OF_PAGES];
+	U32 data[NUMBER_OF_PAGES]; // bottom 24 bits is the ram page, top 8 bits is the permissions
 	struct KProcess* process;
 } Memory;
 
@@ -36,19 +29,30 @@ void copyMemory(Memory* memory, U8* data, U32 address, int len);
 
 extern Page invalidPage;
 
-U8 pf_readb(Memory* memory, U32 data, U32 address);
-void pf_writeb(Memory* memory, U32 data, U32 address, U8 value);
-U16 pf_readw(Memory* memory, U32 data, U32 address);
-void pf_writew(Memory* memory, U32 data, U32 address, U16 value);
-U32 pf_readd(Memory* memory, U32 data, U32 address);
-void pf_writed(Memory* memory, U32 data, U32 address, U32 value);
+U8 pf_readb(Memory* memory, U32 address, U32 data);
+void pf_writeb(Memory* memory, U32 address, U32 data, U8 value);
+U16 pf_readw(Memory* memory, U32 address, U32 data);
+void pf_writew(Memory* memory, U32 address, U32 data, U16 value);
+U32 pf_readd(Memory* memory, U32 address, U32 data);
+void pf_writed(Memory* memory, U32 address, U32 data, U32 value);
 
 void initMemory(Memory* memory);
 void destroyMemory(Memory* memory);
 void releaseMemory(Memory* memory, U32 page, U32 pageCount);
 
+// values in the upper byte of data
+#define PAGE_READ 0x01
+#define PAGE_WRITE 0x02
+#define PAGE_EXEC 0x04
+#define PAGE_RESERVED 0xFFFFFFFF
+
+#define IS_PAGE_READ(data) (data & 0x01000000)
+#define IS_PAGE_WRITE(data) (data & 0x02000000)
+#define IS_PAGE_EXEC(data) (data & 0x04000000)
+#define GET_PAGE(data) (data & 0x00FFFFFF)
+
 // data is only used if allocRAM is FALSE
-void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U32 data);
+void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data);
 
 BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32* result);
 // should be called after findFirstAvailablePage, it will not verify that the pages are UNRESERVED before marking them RESERVED

@@ -11,6 +11,6 @@ extern Page ramPageWR;
 extern Page ramOnDemandPage;
 
 U32 allocRamPage();
-char* getAddressOfRamPage(U32 page);
+U8* getAddressOfRamPage(U32 page);
 
 #endif

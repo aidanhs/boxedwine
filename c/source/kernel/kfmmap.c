@@ -8,12 +8,12 @@
 
 // :TODO: what about sync'ing the writes back to the file?
 
-static U32 ondemmandFile(Memory* memory, U32 address, FD data) {
+static void ondemmandFile(Memory* memory, U32 address, U32 data) {
 	KFileDescriptor* fd = getFileDescriptor(memory->process, data);
 	U32 ram = allocRamPage();
 	U32 page = address >> 12;
-	BOOL read = data & MEMORY_DATA_READ;
-	BOOL write = data & MEMORY_DATA_WRITE;
+	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
+	BOOL write = IS_PAGE_WRITE(data);
 	U32 len;
 
 	if (read && write)
@@ -23,51 +23,50 @@ static U32 ondemmandFile(Memory* memory, U32 address, FD data) {
 	else
 		memory->mmu[page] = &ramPageRO;
 
-	memory->data[page] = (page << PAGE_SHIFT) - (U32)getAddressOfRamPage(ram);
+	memory->data[page] = ram;
 
 	len = fd->kobject->access->read(fd->kobject, memory, address, PAGE_SIZE);
 	if (len<PAGE_SIZE) {
 		zeroMemory(memory, address+len, PAGE_SIZE-len);
 	}
 	closeFD(fd);
-	return memory->data[page];
 }
 
-static U8 ondemandfile_ram_readb(Memory* memory, U32 data, U32 address) {	
-	data = ondemmandFile(memory, address, data);	
-	return memory->mmu[data & 0xFFFFF]->readb(memory, data, address);
+static U8 ondemandfile_readb(Memory* memory, U32 address, U32 data) {	
+	ondemmandFile(memory, address, data);	
+	return readb(memory, address);
 }
 
-static void ondemandfile_ram_writeb(Memory* memory, U32 data, U32 address, U8 value) {
-	data = ondemmandFile(memory, address, data);	
-	memory->mmu[data & 0xFFFFF]->writeb(memory, data, address, value);
+static void ondemandfile_writeb(Memory* memory, U32 address, U32 data, U8 value) {
+	ondemmandFile(memory, address, data);	
+	writeb(memory, address, value);
 }
 
-static U16 ondemandfile_ram_readw(Memory* memory, U32 data, U32 address) {
-	data = ondemmandFile(memory, address, data);	
-	return memory->mmu[data & 0xFFFFF]->readw(memory, data, address);
+static U16 ondemandfile_readw(Memory* memory, U32 address, U32 data) {
+	ondemmandFile(memory, address, data);	
+	return readw(memory, address);
 }
 
-static void ondemandfile_ram_writew(Memory* memory, U32 data, U32 address, U16 value) {
-	data = ondemmandFile(memory, address, data);	
-	memory->mmu[data & 0xFFFFF]->writew(memory, data, address, value);
+static void ondemandfile_writew(Memory* memory, U32 address, U32 data, U16 value) {
+	ondemmandFile(memory, address, data);	
+	writew(memory, address, value);
 }
 
-static U32 ondemandfile_ram_readd(Memory* memory, U32 data, U32 address) {
-	data = ondemmandFile(memory, address, data);	
-	return memory->mmu[data & 0xFFFFF]->readd(memory, data, address);
+static U32 ondemandfile_readd(Memory* memory, U32 address, U32 data) {
+	ondemmandFile(memory, address, data);	
+	return readd(memory, address);
 }
 
-static void ondemandfile_ram_writed(Memory* memory, U32 data, U32 address, U32 value) {
-	data = ondemmandFile(memory, address, data);	
-	memory->mmu[data & 0xFFFFF]->writed(memory, data, address, value);
+static void ondemandfile_writed(Memory* memory, U32 address, U32 data, U32 value) {
+	ondemmandFile(memory, address, data);	
+	writed(memory, address, value);
 }
 
-static void ondemandfile_ram_clear(Memory* memory, U32 page, U32 data) {
-	KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(data & 0x3FFFFFFF));
+static void ondemandfile_clear(Memory* memory, U32 page, U32 data) {
+	KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(GET_PAGE(data)));
 	if (fd) {
 		closeFD(fd);
 	}
 }
 
-Page ramOnDemandFilePage = {ondemandfile_ram_readb, ondemandfile_ram_writeb, ondemandfile_ram_readw, ondemandfile_ram_writew, ondemandfile_ram_readd, ondemandfile_ram_writed, ondemandfile_ram_clear};
+Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear};

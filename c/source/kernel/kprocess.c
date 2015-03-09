@@ -59,7 +59,6 @@ U32 stringArrayFromNative(KProcess* process, const char** ppStr, int count) {
 KFileDescriptor* openFileDescriptor(KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
 	Node* node = getNodeFromLocalPath(process->currentDirectory, localPath);
 	OpenNode* openNode;
-	KObject* kobject;
 	KFileDescriptor* result;
 
     if (!node) {

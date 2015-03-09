@@ -71,25 +71,28 @@ U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U
 	for (i=0;i<pageCount;i++) {
 		// This will prevent the next anonymous mmap from using this range
 		if (memory->mmu[i+pageStart]==&invalidPage) {
-			memory->data[i+pageStart]=RESERVED;
+			memory->data[i+pageStart]=PAGE_RESERVED;
 		}
 	}
 	if (write || read || exec) {
-		U32 data = 0;			
+		U32 data = 0;	
+		U32 permissions = 0;
 		Page* page;
 
 		if (write)
-			data|=MEMORY_DATA_WRITE;
-		if (read || exec)
-			data|=MEMORY_DATA_READ;
+			permissions|=PAGE_WRITE;
+		if (read)
+			permissions|=PAGE_READ;
+		if (exec)
+			permissions|=PAGE_EXEC;
 		if (fd) {
 			page=&ramOnDemandFilePage;
 			fd->refCount+=pageCount;
-			data|=fildes;
+			data=fildes;
 		} else {
 			page=&ramOnDemandPage;
 		}
-		allocPages(memory, page, FALSE, pageStart, pageCount, data);
+		allocPages(memory, page, FALSE, pageStart, pageCount, permissions, data);
     }
 	return addr;
 }

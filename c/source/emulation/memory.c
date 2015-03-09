@@ -4,30 +4,30 @@
 #include <string.h>
 
 
-U8 pf_readb(Memory* memory, U32 data, U32 address) {
+U8 pf_readb(Memory* memory, U32 address, U32 data) {
 	kpanic("PF");
 	return 0;
 }
 
-void pf_writeb(Memory* memory, U32 data, U32 address, U8 value) {
+void pf_writeb(Memory* memory, U32 address, U32 data, U8 value) {
 	kpanic("PF");
 }
 
-U16 pf_readw(Memory* memory, U32 data, U32 address) {
-	kpanic("PF");
-	return 0;
-}
-
-void pf_writew(Memory* memory, U32 data, U32 address, U16 value) {
-	kpanic("PF");
-}
-
-U32 pf_readd(Memory* memory, U32 data, U32 address) {
+U16 pf_readw(Memory* memory, U32 address, U32 data) {
 	kpanic("PF");
 	return 0;
 }
 
-void pf_writed(Memory* memory, U32 data, U32 address, U32 value) {
+void pf_writew(Memory* memory, U32 address, U32 data, U16 value) {
+	kpanic("PF");
+}
+
+U32 pf_readd(Memory* memory, U32 address, U32 data) {
+	kpanic("PF");
+	return 0;
+}
+
+void pf_writed(Memory* memory, U32 address, U32 data, U32 value) {
 	kpanic("PF");
 }
 
@@ -38,49 +38,49 @@ Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_write
 
 U8 readb(Memory* memory, U32 address) {
 	int index = address >> 12;
-	return memory->mmu[index]->readb(memory, memory->data[index], address);
+	return memory->mmu[index]->readb(memory, address, memory->data[index]);
 }
 
 void writeb(Memory* memory, U32 address, U8 value) {
 	int index = address >> 12;
-	memory->mmu[index]->writeb(memory, memory->data[index], address, value);
+	memory->mmu[index]->writeb(memory, address, memory->data[index], value);
 }
 
 U16 readw(Memory* memory, U32 address) {
 	int index = address >> 12;
-	return memory->mmu[index]->readw(memory, memory->data[index], address);
+	return memory->mmu[index]->readw(memory, address, memory->data[index]);
 }
 
 void writew(Memory* memory, U32 address, U16 value) {
 	int index = address >> 12;
-	memory->mmu[index]->writew(memory, memory->data[index], address, value);
+	memory->mmu[index]->writew(memory, address, memory->data[index], value);
 }
 
 U32 readd(Memory* memory, U32 address) {
 	int index = address >> 12;
-	return memory->mmu[index]->readd(memory, memory->data[index], address);
+	return memory->mmu[index]->readd(memory, address, memory->data[index]);
 }
 
 void writed(Memory* memory, U32 address, U32 value) {
 	int index = address >> 12;
-	memory->mmu[index]->writed(memory, memory->data[index], address, value);
+	memory->mmu[index]->writed(memory, address, memory->data[index], value);
 }
 
 U64 readq(Memory* memory, U32 address) {
 	int index = address >> 12;
-	U64 result = memory->mmu[index]->readd(memory, memory->data[index], address);
+	U64 result = memory->mmu[index]->readd(memory, address, memory->data[index]);
 	address+=4;
 	index = address >> 12;
-	result |= ((U64)memory->mmu[index]->readd(memory, memory->data[index], address) << 32);
+	result |= ((U64)memory->mmu[index]->readd(memory, address, memory->data[index]) << 32);
 	return result;
 }
 
 void writeq(Memory* memory, U32 address, U64 value) {
 	int index = address >> 12;
-	memory->mmu[index]->writed(memory, memory->data[index], address, (U32)value);
+	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)value);
 	address+=4;
 	index = address >> 12;
-	memory->mmu[index]->writed(memory, memory->data[index], address, (U32)(value >> 32));
+	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)(value >> 32));
 }
 
 void initMemory(Memory* memory) {
@@ -100,7 +100,7 @@ void destroyMemory(Memory* memory) {
 	}
 }
 
-void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U32 data) {
+void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data) {
 	U32 i;
 	U32 address = page << PAGE_SHIFT;
 
@@ -109,14 +109,14 @@ void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pag
 			U32 ram = allocRamPage();
 
 			memory->mmu[page] = pageType;
-			memory->data[page] = address-(U32)getAddressOfRamPage(ram);
+			memory->data[page] = ram | (permissions << 24);
 			page++;
 			address+=0x1000;
 		}
 	} else {
 		for (i=0;i<pageCount;i++) {
 			memory->mmu[page] = pageType;
-			memory->data[page] = data;
+			memory->data[page] = data | (permissions << 24);
 			page++;
 		}
 	}
@@ -143,12 +143,12 @@ BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32
 	U32 i;
 	
 	for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
-		if (memory->data[i]==UNRESERVED && memory->mmu[i]==&invalidPage) {
+		if (memory->data[i]!=PAGE_RESERVED && memory->mmu[i]==&invalidPage) {
 			U32 j;
 			BOOL success = TRUE;
 
 			for (j=1;j<pageCount;j++) {
-				if (memory->data[i+j]!=UNRESERVED || memory->mmu[i+j]!=&invalidPage) {
+				if (memory->data[i+j]==PAGE_RESERVED || memory->mmu[i+j]!=&invalidPage) {
 					success = FALSE;
 					break;
 				}
@@ -176,7 +176,7 @@ void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
 	for (i=startingPage;i<startingPage+pageCount;i++) {
 		memory->mmu[i]->clear(memory, i, memory->data[i]);
 		memory->mmu[i] = &invalidPage;
-		memory->data[i]=UNRESERVED;
+		memory->data[i]=PAGE_RESERVED;
 	}
 }
 

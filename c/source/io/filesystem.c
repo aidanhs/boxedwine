@@ -298,13 +298,13 @@ Node* allocNode(const char* localPath, const char* nativePath, NodeType* nodeTyp
 	result->nodeAccess = nodeAccess;
 	if (localPath) {
 		result->path.localPath = (const char*)(result+sizeof(Node));
-		strcpy(result->path.localPath, localPath);
+		strcpy((char*)result->path.localPath, localPath);
 	} else {
 		result->path.localPath = 0;
 	}
 	if (nativePath) {
 		result->path.nativePath = (const char*)(result+sizeof(Node)+localLen);
-		strcpy(result->path.nativePath, nativePath);
+		strcpy((char*)result->path.nativePath, nativePath);
 	} else {
 		result->path.nativePath = 0;
 	}
