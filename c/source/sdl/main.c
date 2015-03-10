@@ -13,7 +13,11 @@
 #include "virtualfile.h"
 #include "devtty.h"
 
+#include CURDIR
+
 #ifndef __TEST
+
+char curdir[1024];
 
 int main(int argc, char **argv) {
 	int i;
@@ -33,13 +37,22 @@ int main(int argc, char **argv) {
 		}
 	}
 	if (!root) {
-		const char* base = SDL_GetBasePath();
-		int len = strlen(base);
-		char* r;
-		r = (char*)malloc(len+5);
-		strcpy(r, base);
-		strcat(r, "root");
-		root=r;
+		char* base = getcwd(curdir, sizeof(curdir));
+		int len;
+		char pathSeperator;
+
+		if (strchr(base, '\\')!=0) {
+			pathSeperator = '\\';
+		} else {
+			pathSeperator = '/';
+		}
+		len = strlen(base);
+		if (base[len-1]!=pathSeperator) {
+			base[len] = pathSeperator;
+			base[len+1] = 0;
+		}
+		strcat(base, "root");
+		root=base;
 	}
 	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);

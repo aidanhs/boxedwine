@@ -21,11 +21,14 @@
 #define unlink _unlink
 #define ftruncate64(h, l) _chsize(h, (long)l)
 #define lseek64 _lseeki64
+#define getcwd _getcwd
 #define UNISTD <io.h>
 #define UTIME <sys/utime.h>
+#define CURDIR <direct.h>
 #else
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
+#define CURDIR <unistd.h>
 #endif
 
 #ifndef S_ISDIR
