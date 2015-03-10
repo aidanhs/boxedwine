@@ -3,7 +3,14 @@
 
 void kpanic(const char* msg, ...) {
 	int j = 0;
-	int i = 1/j;
+	int i;
+
+	va_list argptr;
+    va_start(argptr, msg);
+    vfprintf(stderr, msg, argptr);
+    va_end(argptr);
+	fprintf(stderr, "\n");
+	i=1/j;
 }
 
 void kwarn(const char* msg, ...) {

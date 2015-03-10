@@ -16,8 +16,8 @@
 #define K_O_APPEND     0x0400
 
 // can change after open
-#define K_O_NONBLOCK = 0x0800;
-#define K_O_CLOEXEC =  0x80000;
+#define K_O_NONBLOCK 0x0800
+#define K_O_CLOEXEC 0x80000
 
 typedef struct NodeType {
 	BOOL (*isDirectory)(Node* node);

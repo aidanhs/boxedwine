@@ -68,4 +68,6 @@
 #define K_EALREADY       114
 #define K_EINPROGRESS    115
 
+#define K_WAIT           999
+
 #endif

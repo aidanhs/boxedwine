@@ -26,7 +26,7 @@ typedef struct CPU {
 	U8		big;
 	FPU     fpu;
 	U64		timeStampCounter;
-	U32     blockCounter; // number of clocks since the start of the block
+	U32     blockCounter; // number of clocks since the start of the block	
 } CPU;
 
 U32 getCF(CPU* cpu);

@@ -4,6 +4,8 @@
 #include "cpu.h"
 #include "memory.h"
 
+#define WAIT_PID 1
+
 typedef struct KThread {
 	U32 id;
 	CPU cpu;
@@ -12,6 +14,8 @@ typedef struct KThread {
 	struct KProcess* process;
 	struct KThread* scheduleNext;
 	struct KThread* schedulePrev;
+	U32     waitType;
+	U32     waitSyscall;
 } KThread;
 
 extern U32 numberOfThreads;

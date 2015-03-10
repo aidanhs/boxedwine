@@ -192,3 +192,16 @@ void memcopyFromNative(Memory* memory, U32 address, const unsigned char* p, U32 
 		writeb(memory, address+i, p[i]);
 	}
 }
+
+static char tmpBuffer[1024];
+
+char* getNativeString(Memory* memory, U32 address) {
+	char c;
+	int i=0;
+
+	do {
+		c = readb(memory, address++);
+		tmpBuffer[i++] = c;
+	} while(c);
+	return tmpBuffer;
+}

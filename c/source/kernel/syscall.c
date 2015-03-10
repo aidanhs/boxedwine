@@ -6,6 +6,8 @@
 #include "decoder.h"
 #include "kio.h"
 #include "log.h"
+#include "kscheduler.h"
+#include "kerror.h"
 
 #define LOG klog
 
@@ -126,23 +128,37 @@ void syscall(CPU* cpu, Op* op) {
 	KThread* thread = cpu->thread;
 	KProcess* process = thread->process;
 	Memory* memory = cpu->memory;
+	U32 result;
 
 	switch (EAX) {
 	case __NR_exit:
 		LOG("__NR_exit %d", ARG1);
 		exitThread(cpu->thread, ARG1);
 		break;
-		/*
 	case __NR_read:
+		LOG("__NR_read: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3);
+		result=syscall_read(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_read: fd=%d result=%d", ARG1, result);
 		break;
 	case __NR_write:
+		LOG("__NR_write: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3);
+		result=syscall_write(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_write: fd=%d result=%d", ARG1, result);
 		break;
 	case __NR_open:
-		break;
+		result=syscall_open(thread, ARG1, ARG2);
+		LOG("__NR_open: name=%s flags=%x result=%d", getNativeString(memory, ARG1), ARG2, result);
+		break;		
 	case __NR_close:
+		result=syscall_close(thread, ARG1);
+		LOG("__NR_close: fd=%d result=%d", ARG1, result);
 		break;
 	case __NR_waitpid:
+		LOG("__NR_waitpid: pid=%d status=%d options=%x", ARG1, ARG2, ARG3);
+		result=syscall_waitpid(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_waitpid: pid=%d result=%d", ARG1, result);
 		break;
+		/*
 	case __NR_link:
 		break;
 	case __NR_unlink:
@@ -185,8 +201,8 @@ void syscall(CPU* cpu, Op* op) {
 				process->brkEnd+=len;
 			}
 		}
-		EAX = process->brkEnd;
-		LOG("__NR_brk address=%.8X result=%.8X", ARG1, EAX);
+		result = process->brkEnd;
+		LOG("__NR_brk address=%.8X result=%.8X", ARG1, result);
 		break;
 		/*
 	case __NR_ioctl:
@@ -246,8 +262,8 @@ void syscall(CPU* cpu, Op* op) {
 		*/
 	case __NR_writev:
 		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d", ARG1, ARG2, ARG3);
-		EAX=syscall_writev(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_writev: fildes=%d result=%d", ARG1, EAX);
+		result=syscall_writev(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_writev: fildes=%d result=%d", ARG1, result);
 		break;
 		/*
 	case __NR_sched_yield:
@@ -364,6 +380,12 @@ void syscall(CPU* cpu, Op* op) {
 	default:
 		kpanic("Unknown syscall %d", EAX);
 		break;
+	}
+	if (result!=K_WAIT) {
+		EAX = result;
+	} else {
+		thread->waitSyscall = EAX;
+		waitThread(thread);
 	}
 	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);

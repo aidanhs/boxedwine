@@ -9,13 +9,14 @@ void initCPU(CPU* cpu, Memory* memory) {
 	cpu->reg8[1] = &cpu->reg[1].u8;
 	cpu->reg8[2] = &cpu->reg[2].u8;
 	cpu->reg8[3] = &cpu->reg[3].u8;
-	cpu->reg8[4] = &cpu->reg[4].h8;
-	cpu->reg8[5] = &cpu->reg[5].h8;
-	cpu->reg8[6] = &cpu->reg[6].h8;
-	cpu->reg8[7] = &cpu->reg[7].h8;
+	cpu->reg8[4] = &cpu->reg[0].h8;
+	cpu->reg8[5] = &cpu->reg[1].h8;
+	cpu->reg8[6] = &cpu->reg[2].h8;
+	cpu->reg8[7] = &cpu->reg[3].h8;
 	cpu->memory = memory;
 	cpu->inst = FLAGS_NONE;
 	cpu->big = 1;
+	cpu->df = 1;
 	FPU_FINIT(&cpu->fpu);
 }
 
@@ -62,13 +63,14 @@ void fillFlagsNoOF(CPU* cpu) {
 U32 getCF(CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:		
+		return cpu->flags & CF;
 	case FLAGS_INC8:
 	case FLAGS_INC16:
 	case FLAGS_INC32:
 	case FLAGS_DEC8:
 	case FLAGS_DEC16:
 	case FLAGS_DEC32:
-		return cpu->flags & CF;
+		return cpu->oldcf;
 	case FLAGS_ADD8:	
 		return (cpu->result.u8<cpu->dst.u8);
 	case FLAGS_ADD16:	

@@ -1,7 +1,7 @@
 void movsb32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -17,7 +17,7 @@ void movsb32_r(CPU* cpu, Op* op) {
 void movsb16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -33,7 +33,7 @@ void movsb16_r(CPU* cpu, Op* op) {
 void movsb32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
         writeb(memory, dBase+EDI, readb(memory, sBase+ESI));
         EDI+=inc;
@@ -44,7 +44,7 @@ void movsb32(CPU* cpu, Op* op) {
 void movsb16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
         writeb(memory, dBase+DI, readb(memory, sBase+SI));
         DI+=inc;
@@ -55,7 +55,7 @@ void movsb16(CPU* cpu, Op* op) {
 void movsw32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -71,7 +71,7 @@ void movsw32_r(CPU* cpu, Op* op) {
 void movsw16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -87,7 +87,7 @@ void movsw16_r(CPU* cpu, Op* op) {
 void movsw32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
         writew(memory, dBase+EDI, readw(memory, sBase+ESI));
         EDI+=inc;
@@ -98,7 +98,7 @@ void movsw32(CPU* cpu, Op* op) {
 void movsw16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
         writew(memory, dBase+DI, readw(memory, sBase+SI));
         DI+=inc;
@@ -109,7 +109,7 @@ void movsw16(CPU* cpu, Op* op) {
 void movsd32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -125,7 +125,7 @@ void movsd32_r(CPU* cpu, Op* op) {
 void movsd16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -141,7 +141,7 @@ void movsd16_r(CPU* cpu, Op* op) {
 void movsd32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
         writed(memory, dBase+EDI, readd(memory, sBase+ESI));
         EDI+=inc;
@@ -152,7 +152,7 @@ void movsd32(CPU* cpu, Op* op) {
 void movsd16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
         writed(memory, dBase+DI, readd(memory, sBase+SI));
         DI+=inc;
@@ -163,13 +163,15 @@ void movsd16(CPU* cpu, Op* op) {
 void cmpsb32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
     U8 v2;
     U32 count = ECX;
     U32 i;
     U32 rep_zero = op->data1;
+	klog(getNativeString(memory, dBase+EDI));
+	klog(getNativeString(memory, sBase+ESI));
     if (count) {
         for (i=0;i<count;i++) {
             v1 = readb(memory, dBase+EDI);
@@ -190,7 +192,7 @@ void cmpsb32_r(CPU* cpu, Op* op) {
 void cmpsb16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
     U8 v2;
@@ -217,7 +219,7 @@ void cmpsb16_r(CPU* cpu, Op* op) {
 void cmpsb32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
     U8 v2;
@@ -235,7 +237,7 @@ void cmpsb32(CPU* cpu, Op* op) {
 void cmpsb16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
     U8 v2;
@@ -253,7 +255,7 @@ void cmpsb16(CPU* cpu, Op* op) {
 void cmpsw32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
     U16 v2;
@@ -280,7 +282,7 @@ void cmpsw32_r(CPU* cpu, Op* op) {
 void cmpsw16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
     U16 v2;
@@ -307,7 +309,7 @@ void cmpsw16_r(CPU* cpu, Op* op) {
 void cmpsw32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
     U16 v2;
@@ -325,7 +327,7 @@ void cmpsw32(CPU* cpu, Op* op) {
 void cmpsw16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
     U16 v2;
@@ -343,7 +345,7 @@ void cmpsw16(CPU* cpu, Op* op) {
 void cmpsd32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
     U32 v2;
@@ -370,7 +372,7 @@ void cmpsd32_r(CPU* cpu, Op* op) {
 void cmpsd16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
     U32 v2;
@@ -397,7 +399,7 @@ void cmpsd16_r(CPU* cpu, Op* op) {
 void cmpsd32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
     U32 v2;
@@ -415,7 +417,7 @@ void cmpsd32(CPU* cpu, Op* op) {
 void cmpsd16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
     U32 v2;
@@ -432,7 +434,7 @@ void cmpsd16(CPU* cpu, Op* op) {
 }
 void stosb32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -446,7 +448,7 @@ void stosb32_r(CPU* cpu, Op* op) {
 }
 void stosb16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -472,7 +474,7 @@ void stosb16(CPU* cpu, Op* op) {
 }
 void stosw32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -486,7 +488,7 @@ void stosw32_r(CPU* cpu, Op* op) {
 }
 void stosw16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -512,7 +514,7 @@ void stosw16(CPU* cpu, Op* op) {
 }
 void stosd32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -526,7 +528,7 @@ void stosd32_r(CPU* cpu, Op* op) {
 }
 void stosd16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -552,7 +554,7 @@ void stosd16(CPU* cpu, Op* op) {
 }
 void lodsb32_r(CPU* cpu, Op* op) {
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -566,7 +568,7 @@ void lodsb32_r(CPU* cpu, Op* op) {
 }
 void lodsb16_r(CPU* cpu, Op* op) {
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -592,7 +594,7 @@ void lodsb16(CPU* cpu, Op* op) {
 }
 void lodsw32_r(CPU* cpu, Op* op) {
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -606,7 +608,7 @@ void lodsw32_r(CPU* cpu, Op* op) {
 }
 void lodsw16_r(CPU* cpu, Op* op) {
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -632,7 +634,7 @@ void lodsw16(CPU* cpu, Op* op) {
 }
 void lodsd32_r(CPU* cpu, Op* op) {
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 count = ECX;
     U32 i;
@@ -646,7 +648,7 @@ void lodsd32_r(CPU* cpu, Op* op) {
 }
 void lodsd16_r(CPU* cpu, Op* op) {
     U32 sBase = cpu->segAddress[op->base];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 count = CX;
     U32 i;
@@ -672,7 +674,7 @@ void lodsd16(CPU* cpu, Op* op) {
 }
 void scasb32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
     U32 count = ECX;
@@ -695,7 +697,7 @@ void scasb32_r(CPU* cpu, Op* op) {
 }
 void scasb16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
     U32 count = CX;
@@ -718,7 +720,7 @@ void scasb16_r(CPU* cpu, Op* op) {
 }
 void scasb32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
             v1 = readb(memory, dBase+EDI);
@@ -732,7 +734,7 @@ void scasb32(CPU* cpu, Op* op) {
 }
 void scasb16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df;
+    S32 inc = cpu->df;
     Memory* memory = cpu->memory;
     U8 v1;
             v1 = readb(memory, dBase+DI);
@@ -746,7 +748,7 @@ void scasb16(CPU* cpu, Op* op) {
 }
 void scasw32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
     U32 count = ECX;
@@ -769,7 +771,7 @@ void scasw32_r(CPU* cpu, Op* op) {
 }
 void scasw16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
     U32 count = CX;
@@ -792,7 +794,7 @@ void scasw16_r(CPU* cpu, Op* op) {
 }
 void scasw32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
             v1 = readw(memory, dBase+EDI);
@@ -806,7 +808,7 @@ void scasw32(CPU* cpu, Op* op) {
 }
 void scasw16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 1;
+    S32 inc = cpu->df << 1;
     Memory* memory = cpu->memory;
     U16 v1;
             v1 = readw(memory, dBase+DI);
@@ -820,7 +822,7 @@ void scasw16(CPU* cpu, Op* op) {
 }
 void scasd32_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
     U32 count = ECX;
@@ -843,7 +845,7 @@ void scasd32_r(CPU* cpu, Op* op) {
 }
 void scasd16_r(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
     U32 count = CX;
@@ -866,7 +868,7 @@ void scasd16_r(CPU* cpu, Op* op) {
 }
 void scasd32(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
             v1 = readd(memory, dBase+EDI);
@@ -880,7 +882,7 @@ void scasd32(CPU* cpu, Op* op) {
 }
 void scasd16(CPU* cpu, Op* op) {
     U32 dBase = cpu->segAddress[ES];
-    U32 inc = cpu->df << 2;
+    S32 inc = cpu->df << 2;
     Memory* memory = cpu->memory;
     U32 v1;
             v1 = readd(memory, dBase+DI);

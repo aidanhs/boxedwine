@@ -11,5 +11,8 @@ void initSystem();
 
 // returns pid
 U32 addProcess(KProcess* process);
+KProcess* getProcessById(U32 pid);
+void removeProcess(KProcess* process);
+U32 getProcessCount();
 
 #endif

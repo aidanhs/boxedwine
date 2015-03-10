@@ -39,6 +39,7 @@ void pf_writed(Memory* memory, U32 address, U32 data, U32 value);
 void initMemory(Memory* memory);
 void destroyMemory(Memory* memory);
 void releaseMemory(Memory* memory, U32 page, U32 pageCount);
+char* getNativeString(Memory* memory, U32 address);
 
 // values in the upper byte of data
 #define PAGE_READ 0x01

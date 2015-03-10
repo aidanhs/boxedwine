@@ -16,6 +16,11 @@
 
 typedef struct KProcess {
 	U32 id;
+	U32 parentId;
+	U32 groupId;
+	U32 signaled;
+	U32 exitCode;
+	BOOL terminated;
 	Memory* memory;
 	KArray threads;
 	U32 args;
@@ -33,5 +38,8 @@ typedef struct KProcess {
 void processOnExitThread(KThread* thread);
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
 KFileDescriptor* getFileDescriptor(KProcess* process, FD handle);
-
+KFileDescriptor* openFile(KProcess* process, const char* localPath, U32 accessFlags);
+U32 syscall_waitpid(KThread* thread, S32 pid, U32 status, U32 options);
+BOOL isProcessStopped(KProcess* process);
+BOOL isProcessTerminated(KProcess* process);
 #endif

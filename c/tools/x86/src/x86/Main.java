@@ -183,7 +183,7 @@ public class Main {
         out("void "+name+"(CPU* cpu, Op* op) {");
         out("    U32 dBase = cpu->segAddress[ES];");
         out("    U32 sBase = cpu->segAddress[op->base];");
-        out("    U32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
+        out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
         out("    Memory* memory = cpu->memory;");
         if (repeat) {
         out("    U32 count = " + CX + ";");
@@ -208,7 +208,7 @@ public class Main {
         out("void "+name+"(CPU* cpu, Op* op) {");
         out("    U32 dBase = cpu->segAddress[ES];");
         out("    U32 sBase = cpu->segAddress[op->base];");
-        out("    U32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
+        out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
         out("    Memory* memory = cpu->memory;");
         out("    U"+bits+" v1;");
         out("    U"+bits+" v2;");
@@ -245,7 +245,7 @@ public class Main {
     static public void scas(String name, String width, String bits, String AX, String DI, String CX, int inc, boolean repeat) throws  IOException {
         out("void "+name+"(CPU* cpu, Op* op) {");
         out("    U32 dBase = cpu->segAddress[ES];");
-        out("    U32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
+        out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
         out("    Memory* memory = cpu->memory;");
         out("    U"+bits+" v1;");
         if (repeat) {
@@ -280,7 +280,7 @@ public class Main {
         out("void "+name+"(CPU* cpu, Op* op) {");
         if (repeat) {
             out("    U32 sBase = cpu->segAddress[op->base];");
-            out("    U32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
+            out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
             out("    Memory* memory = cpu->memory;");
             out("    U32 count = " + CX + ";");
             out("    U32 i;");
@@ -302,7 +302,7 @@ public class Main {
         out("void "+name+"(CPU* cpu, Op* op) {");
         if (repeat) {
         out("    U32 dBase = cpu->segAddress[ES];");
-        out("    U32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
+        out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
         out("    Memory* memory = cpu->memory;");
         out("    U32 count = " + CX + ";");
         out("    U32 i;");

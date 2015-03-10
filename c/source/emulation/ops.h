@@ -1692,12 +1692,14 @@ void stc(CPU* cpu, Op* op) {
 
 void cld(CPU* cpu, Op* op) {
 	removeFlag(DF);
+	cpu->df = 1;
 	CYCLES(2);
 	NEXT();
 }
 
 void std(CPU* cpu, Op* op) {
 	addFlag(DF);
+	cpu->df = -1;
 	CYCLES(2);
 	NEXT();
 }

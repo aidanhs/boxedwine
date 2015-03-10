@@ -49,7 +49,8 @@ if (ea16) {							\
 	} else {						\
 		op->func = name##32;		\
 	}								\
-}
+}									\
+op->data1 = rep_zero;
 
 #define DECODE_GROUP3(BITS)			\
 rm=FETCH8();						\
@@ -2273,6 +2274,7 @@ Op* decodeBlock(CPU* cpu) {
 			FINISH_OP();
 			return block;
 		case 0xe3: // JCXZ
+		case 0x2e3:
 			if (ea16)
 				op->func = jcxz16;
 			else
@@ -2637,7 +2639,7 @@ Op* decodeBlock(CPU* cpu) {
 			DECODE_INST_GE(movxz16, 32);
 			break;
 		default:
-			kpanic("Unknown op code %d", inst);
+			kpanic("Unknown op code %x", inst);
 		}		
 		if (cpu->big) {
 			opCode = 0x200;

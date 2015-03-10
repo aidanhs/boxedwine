@@ -10,6 +10,7 @@
 #include "kmmap.h"
 #include "kfiledescriptor.h"
 #include "kfile.h"
+#include "kerror.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -18,6 +19,7 @@ void initProcess(KProcess* process, Memory* memory) {
 	memset(process, 0, sizeof(KProcess));
 	process->memory = memory;
 	process->id = addProcess(process);
+	process->groupId = 1;
 	initArray(&process->threads);	
 }
 
@@ -56,6 +58,17 @@ U32 stringArrayFromNative(KProcess* process, const char** ppStr, int count) {
 	return result;
 }
 
+U32 getNextFileDescriptorHandle(KProcess* process) {
+	int i;
+
+	for (i=0;i<sizeof(process->fds);i++) {
+		if (!process->fds[i])
+			return i;
+	}
+	kpanic("Ran out of file descriptor handles");
+	return 0;
+}
+
 KFileDescriptor* openFileDescriptor(KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
 	Node* node = getNodeFromLocalPath(process->currentDirectory, localPath);
 	OpenNode* openNode;
@@ -70,6 +83,10 @@ KFileDescriptor* openFileDescriptor(KProcess* process, const char* localPath, U3
 	result = allocFileDescriptor(process, handle, allocKFile(openNode), accessFlags, descriptorFlags);
 	process->fds[handle] = result;
 	return result;
+}
+
+KFileDescriptor* openFile(KProcess* process, const char* localPath, U32 accessFlags) {
+	return openFileDescriptor(process, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process));
 }
 
 void initStdio(KProcess* process) {
@@ -91,6 +108,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	Node* loaderNode = 0;
 	OpenNode* loaderOpenNode = 0;
 	BOOL isElf = TRUE;
+	const char* pArgs[128];
 
 	if (node) {
 		openNode = node->nodeType->open(node, K_O_RDONLY);
@@ -117,6 +135,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		Memory* memory = (Memory*)malloc(sizeof(Memory));
 		KProcess* process = (KProcess*)malloc(sizeof(KProcess));
 		KThread* thread = (KThread*)malloc(sizeof(KThread));		
+		U32 i;
 
 		initMemory(memory);
 		initProcess(process, memory);
@@ -132,7 +151,13 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		// will be on demand, so it's ok that it's a lot larger than we need
 		process->pHeap = mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, process->maxHeapSize, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
-		process->args = stringArrayFromNative(process, args, argc);
+		pArgs[0] = loaderNode->path.localPath;
+		for (i=0;i<argc;i++) {
+			pArgs[i+1] = args[i];
+		}
+		argc++;
+
+		process->args = stringArrayFromNative(process, pArgs, argc);
 		process->env = stringArrayFromNative(process, env, envc);
 
 		setupThreadStack(&thread->cpu, argc, process->args, envc, process->env);
@@ -158,4 +183,67 @@ KFileDescriptor* getFileDescriptor(KProcess* process, FD handle) {
 	if (handle<MAX_FDS_PER_PROCESS && handle>=0)
 		return process->fds[handle];
 	return 0;
+}
+
+BOOL isProcessStopped(KProcess* process) {
+	return FALSE;
+}
+
+BOOL isProcessTerminated(KProcess* process) {
+	return process->terminated;
+}
+
+U32 syscall_waitpid(KThread* thread, S32 pid, U32 status, U32 options) {
+	KProcess* process = 0;
+
+	if (pid>0) {
+		process = getProcessById(pid);		
+		if (!process) {
+            return -K_ECHILD;
+        }				
+        if (!isProcessStopped(process) && !isProcessTerminated(process)) {
+			process = 0;			
+		}
+    } else {
+		U32 i;
+        if (pid==0)
+            pid = thread->process->groupId;
+		for (i=0;i<getProcessCount();i++) {
+			KProcess* p = getProcessById(i);
+			if (p && (isProcessStopped(process) || isProcessTerminated(process))) {
+                if (pid == -1) {
+                    if (p->parentId == thread->process->id) {
+                        process = p;
+						break;
+					}
+                } else {
+                    if (p->groupId == -pid) {
+                        process = p;
+						break;
+					}
+                }
+            }
+		}
+    }
+	if (!process) {
+		if (options!=1) { // WNOHANG
+			return -K_ECHILD;
+		} else {
+			thread->waitType = WAIT_PID;
+			return K_WAIT;
+		}
+	}
+    if (status!=0) {
+        int s = 0;
+        if (isProcessStopped(process)) {
+            s |= 0x7f;
+            s|=((process->signaled & 0xFF)<< 8);
+        } else if (isProcessTerminated(process)) {
+            s|=((process->exitCode & 0xFF) << 8);
+            s|=(process->signaled & 0x7F);
+        }
+        writed(thread->process->memory, status, s);
+    }
+    removeProcess(process);
+    return process->id;
 }

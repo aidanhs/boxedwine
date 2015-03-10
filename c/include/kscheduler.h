@@ -5,6 +5,9 @@
 
 void scheduleThread(KThread* thread);
 void unscheduleThread(KThread* thread);
+void waitThread(KThread* thread);
+void wakeThread(KThread* thread);
+void wakeThreads(U32 wakeType);
 void runSlice();
 
 #endif

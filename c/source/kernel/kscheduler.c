@@ -1,6 +1,41 @@
 #include "kscheduler.h"
 
 KThread* lastThread = 0;
+KThread* waitingThread = 0;
+
+void waitThread(KThread* thread) {
+	unscheduleThread(thread);
+	if (waitingThread == 0) {
+		waitingThread = thread;
+		waitingThread->scheduleNext = 0;
+		waitingThread->schedulePrev = 0;
+	} else {
+		waitingThread->schedulePrev = thread;
+		thread->scheduleNext = waitingThread;
+		thread->schedulePrev = 0;
+		waitingThread = thread;
+	}
+}
+
+void wakeThreads(U32 wakeType) {
+	KThread* thread = waitingThread;
+	while (thread) {
+		KThread* next = thread->scheduleNext;
+
+		if (thread->waitType == wakeType) {
+			wakeThread(thread);
+		}
+		thread = next;
+	}
+}
+
+void wakeThread(KThread* thread) {
+	if (thread->schedulePrev)
+		thread->schedulePrev->scheduleNext = thread->scheduleNext;
+	if (thread->scheduleNext)
+		thread->scheduleNext->schedulePrev = thread->schedulePrev;
+	scheduleThread(thread);
+}
 
 void scheduleThread(KThread* thread) {
 	if (lastThread == 0) {
