@@ -6,9 +6,9 @@
 
 #define WAIT_PID 1
 
-typedef struct KThread {
+struct KThread {
 	U32 id;
-	CPU cpu;
+	struct CPU cpu;
 	U32 stackPageStart;
 	U32 stackPageCount;
 	struct KProcess* process;
@@ -16,11 +16,11 @@ typedef struct KThread {
 	struct KThread* schedulePrev;
 	U32     waitType;
 	U32     waitSyscall;
-} KThread;
+};
 
 extern U32 numberOfThreads;
 
-void initThread(KThread* thread, struct KProcess* process);
-void exitThread(KThread* thread, U32 status);
+void initThread(struct KThread* thread, struct KProcess* process);
+void exitThread(struct KThread* thread, U32 status);
 
 #endif

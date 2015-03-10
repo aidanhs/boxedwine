@@ -3,6 +3,6 @@
 
 #include "page.h"
 
-extern Page ramOnDemandFilePage;
+extern struct Page ramOnDemandFilePage;
 
 #endif

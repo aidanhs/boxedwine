@@ -14,15 +14,15 @@
 #define ADDRESS_PROCESS_FRAME_BUFFER	0xF8000
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
-typedef struct KProcess {
+struct KProcess {
 	U32 id;
 	U32 parentId;
 	U32 groupId;
 	U32 signaled;
 	U32 exitCode;
 	BOOL terminated;
-	Memory* memory;
-	KArray threads;
+	struct Memory* memory;
+	struct KArray threads;
 	U32 args;
 	U32 argc;
 	U32 env;
@@ -32,14 +32,14 @@ typedef struct KProcess {
 	U32 heapSize;
 	U32 maxHeapSize;
 	U32 brkEnd;
-	KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
-} KProcess;
+	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
+};
 
-void processOnExitThread(KThread* thread);
+void processOnExitThread(struct KThread* thread);
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
-KFileDescriptor* getFileDescriptor(KProcess* process, FD handle);
-KFileDescriptor* openFile(KProcess* process, const char* localPath, U32 accessFlags);
-U32 syscall_waitpid(KThread* thread, S32 pid, U32 status, U32 options);
-BOOL isProcessStopped(KProcess* process);
-BOOL isProcessTerminated(KProcess* process);
+struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
+struct KFileDescriptor* openFile(struct KProcess* process, const char* localPath, U32 accessFlags);
+U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
+BOOL isProcessStopped(struct KProcess* process);
+BOOL isProcessTerminatedstruct (struct KProcess* process);
 #endif

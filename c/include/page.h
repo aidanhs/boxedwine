@@ -3,7 +3,7 @@
 
 #include "platform.h"
 
-typedef struct {
+struct Page {
 	U8 (*readb)(struct Memory* memory, U32 address, U32 data);
 	void (*writeb)(struct Memory* memory, U32 address, U32 data, U8 value);
 	U16 (*readw)(struct Memory* memory, U32 address, U32 data);
@@ -12,6 +12,6 @@ typedef struct {
 	void (*writed)(struct Memory* memory, U32 address, U32 data, U32 value);
 	void (*clear)(struct Memory* memory, U32 page, U32 data);
 	U8* (*physicalAddress)(struct Memory* memory, U32 address, U32 data);
-} Page;
+};
 
 #endif

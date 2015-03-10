@@ -1,6 +1,6 @@
 #include "elf.h"
 
-BOOL isValidElf(Elf32_Ehdr* hdr) {
+BOOL isValidElf(struct Elf32_Ehdr* hdr) {
     if (hdr->e_ident[0] != 0x7F || hdr->e_ident[1] != 'E' || hdr->e_ident[2] != 'L' || hdr->e_ident[3] != 'F') {
         return FALSE;
     }

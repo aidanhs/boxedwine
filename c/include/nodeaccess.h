@@ -10,7 +10,7 @@
 #define IOCTL_ARG3 EDI
 #define IOCTL_ARG4 EBP
 
-typedef struct OpenNode {
+struct OpenNode {
 	U32 handle;
 	U32 flags;
 	union {
@@ -19,21 +19,21 @@ typedef struct OpenNode {
 	};
 	struct Node* node;
 	void* data;
-} OpenNode;
+};
 
-typedef struct NodeAccess {
-	void (*init)(OpenNode* node);
-	S64  (*length)(OpenNode* node);
-	BOOL (*setLength)(OpenNode* node, S64 length);
-	S64  (*getFilePointer)(OpenNode* node);
-	S64  (*seek)(OpenNode* node, S64 pos);	
-	U32  (*read)(Memory* memory, OpenNode* node, U32 address, U32 len);
-    U32  (*write)(Memory* memory, OpenNode* node, U32 address, U32 len);
-	void (*close)(OpenNode* node);
-	BOOL (*canMap)(OpenNode* node);
-	U32  (*ioctl)(KThread* thread, OpenNode* node, U32 request);	
-    BOOL (*isWriteReady)(OpenNode* node);
-    BOOL (*isReadReady)(OpenNode* node);
-} NodeAccess;
+struct NodeAccess {
+	void (*init)(struct OpenNode* node);
+	S64  (*length)(struct OpenNode* node);
+	BOOL (*setLength)(struct OpenNode* node, S64 length);
+	S64  (*getFilePointer)(struct OpenNode* node);
+	S64  (*seek)(struct OpenNode* node, S64 pos);	
+	U32  (*read)(struct Memory* memory, struct OpenNode* node, U32 address, U32 len);
+    U32  (*write)(struct Memory* memory, struct OpenNode* node, U32 address, U32 len);
+	void (*close)(struct OpenNode* node);
+	BOOL (*canMap)(struct OpenNode* node);
+	U32  (*ioctl)(struct KThread* thread, struct OpenNode* node, U32 request);	
+    BOOL (*isWriteReady)(struct OpenNode* node);
+    BOOL (*isReadReady)(struct OpenNode* node);
+};
 
 #endif

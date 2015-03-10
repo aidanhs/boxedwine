@@ -5,24 +5,24 @@
 
 // :TODO: what about sync'ing the writes back to the file?
 
-BOOL canReadFD(KFileDescriptor* fd) {
+BOOL canReadFD(struct KFileDescriptor* fd) {
     return (fd->accessFlags & K_O_ACCMODE)==K_O_RDONLY || (fd->accessFlags & K_O_ACCMODE)==K_O_RDWR;
 }
 
-BOOL canWriteFD(KFileDescriptor* fd) {
+BOOL canWriteFD(struct KFileDescriptor* fd) {
     return (fd->accessFlags & K_O_ACCMODE)==K_O_WRONLY || (fd->accessFlags & K_O_ACCMODE)==K_O_RDWR;
 }
 
-static KFileDescriptor* freeFileDescriptors;
+static struct KFileDescriptor* freeFileDescriptors;
 
-KFileDescriptor* allocFileDescriptor(KProcess* process, U32 handle, KObject* kobject, U32 accessFlags, U32 descriptorFlags) {
-	KFileDescriptor* result;
+struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags) {
+	struct KFileDescriptor* result;
 
 	if (freeFileDescriptors) {
-		KFileDescriptor* result = freeFileDescriptors;
+		struct KFileDescriptor* result = freeFileDescriptors;
 		freeFileDescriptors = freeFileDescriptors->next;
 	} else {
-		result = (KFileDescriptor*)kalloc(sizeof(KFileDescriptor));
+		result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor));
 	}
 	result->process = process;
 	result->refCount = 1;
@@ -33,7 +33,7 @@ KFileDescriptor* allocFileDescriptor(KProcess* process, U32 handle, KObject* kob
 	return result;
 }
 
-void closeFD(KFileDescriptor* fd) {
+void closeFD(struct KFileDescriptor* fd) {
 	fd->refCount--;
 	if (!fd->refCount) {
 		closeKObject(fd->kobject);

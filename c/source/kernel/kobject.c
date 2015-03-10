@@ -3,16 +3,16 @@
 #include "kalloc.h"
 #include "ksystem.h"
 
-static KObject* freeKObjects;
+static struct KObject* freeKObjects;
 
-KObject* allocKObject(KObjectAccess* access, void* data) {
-	KObject* result;
+struct KObject* allocKObject(struct KObjectAccess* access, void* data) {
+	struct KObject* result;
 
 	if (freeKObjects) {
 		result = freeKObjects;
 		freeKObjects = freeKObjects->next;
 	} else {
-		result = (KObject*)kalloc(sizeof(KObject));
+		result = (struct KObject*)kalloc(sizeof(struct KObject));
 	}
 	result->access = access;
 	result->refCount = 0;
@@ -20,7 +20,7 @@ KObject* allocKObject(KObjectAccess* access, void* data) {
 	return result;
 }
 
-void closeKObject(KObject* kobject) {
+void closeKObject(struct KObject* kobject) {
 	kobject->refCount--;
 	if (kobject->refCount==0) {
 		kobject->access->onDelete(kobject);
@@ -29,7 +29,7 @@ void closeKObject(KObject* kobject) {
 	}
 }
 
- void writeStat(Memory* memory, U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime) {
+ void writeStat(struct Memory* memory, U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime) {
 	 if (is64) {
 		U32 t = (U32)(mtime/1000); // ms to sec
 		U32 n = (U32)(mtime % 1000) * 1000000;

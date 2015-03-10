@@ -5,13 +5,13 @@
 
 #define EI_NIDENT 16
 
-typedef unsigned long Elf32_Addr;
-typedef unsigned short Elf32_Half;
-typedef unsigned long Elf32_Off;
-typedef signed long Elf32_Sword;
-typedef unsigned long Elf32_Word;
+#define Elf32_Addr unsigned long
+#define Elf32_Half unsigned short
+#define Elf32_Off unsigned long
+#define Elf32_Sword signed long
+#define Elf32_Word unsigned long
 
-typedef struct {
+struct Elf32_Ehdr{
         unsigned char   e_ident[EI_NIDENT];
         Elf32_Half      e_type;
         Elf32_Half      e_machine;
@@ -26,9 +26,9 @@ typedef struct {
         Elf32_Half      e_shentsize;
         Elf32_Half      e_shnum;
         Elf32_Half      e_shstrndx;
-} Elf32_Ehdr;
+};
 
-typedef struct
+struct Elf32_Shdr
 {
     Elf32_Word    sh_name;
     Elf32_Word    sh_type;
@@ -40,9 +40,9 @@ typedef struct
     Elf32_Word    sh_info;
     Elf32_Word    sh_addralign;
     Elf32_Word    sh_entsize;
-} Elf32_Shdr;
+};
 
-typedef struct {
+struct Elf32_Phdr{
        Elf32_Word      p_type;
        Elf32_Off       p_offset;
        Elf32_Addr      p_vaddr;
@@ -51,8 +51,8 @@ typedef struct {
        Elf32_Word      p_memsz;
        Elf32_Word      p_flags;
        Elf32_Word      p_align;
-} Elf32_Phdr;
+};
 
-BOOL isValidElf(Elf32_Ehdr* hdr);
+BOOL isValidElf(struct Elf32_Ehdr* hdr);
 
 #endif

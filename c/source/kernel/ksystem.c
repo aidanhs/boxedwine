@@ -1,22 +1,22 @@
 #include "ksystem.h"
 #include "karray.h"
 
-static KArray processes;
+static struct KArray processes;
 
 void initSystem() {
 	initArray(&processes);
 }
 
-U32 addProcess(KProcess* process) {
+U32 addProcess(struct KProcess* process) {
 	return addObjecToArray(&processes, process);
 }
 
-void removeProcess(KProcess* process) {
+void removeProcess(struct KProcess* process) {
 	removeObjectFromArray((&processes), process->id);
 }
 
-KProcess* getProcessById(U32 pid) {
-	return (KProcess*)getObjectFromArray((&processes), pid);
+struct KProcess* getProcessById(U32 pid) {
+	return (struct KProcess*)getObjectFromArray((&processes), pid);
 }
 
 U32 getProcessCount() {

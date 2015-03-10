@@ -112,22 +112,22 @@ switch (G(rm)) {					\
 		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
 	}
 
-Op* freeOps;
+struct Op* freeOps;
 
-Op* allocOp() {
-	Op* result;
+struct Op* allocOp() {
+	struct Op* result;
 
 	if (freeOps) {
 		result = freeOps;
 		freeOps = result->next;
 	} else {
-		result = (Op*)kalloc(sizeof(Op));
+		result = (struct Op*)kalloc(sizeof(struct Op));
 	}
-	memset(result, 0, sizeof(Op));
+	memset(result, 0, sizeof(struct Op));
 	return result;
 }
 
-void freeOp(Op* op) {
+void freeOp(struct Op* op) {
 	if (op->next)
 		freeOp(op->next);
 	op->next = freeOps;
@@ -144,7 +144,7 @@ void freeOp(Op* op) {
 #define regDI 7
 #define regZero 8
 
-int decodeEa16(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
+int decodeEa16(struct CPU* cpu, struct Op* op, int ds, int ss, int rm, int ip) {
 	if (rm<0x40) {
 		switch (rm & 7) {
 		case 0x00: op->base=ds; op->e1=regBX; op->e2=regSI; return ip;
@@ -176,7 +176,7 @@ int decodeEa16(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 	return ip;
 }
 
- int Sib(int mode, CPU* cpu, int ip, Op* op, int ds, int ss) {
+ int Sib(int mode, struct CPU* cpu, int ip, struct Op* op, int ds, int ss) {
 	int sib=FETCH8();
 	
 	switch (sib&7) {
@@ -222,7 +222,7 @@ int decodeEa16(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 	return ip;
 } 
 
-int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
+int decodeEa32(struct CPU* cpu, struct Op* op, int ds, int ss, int rm, int ip) {
 	op->e1=regZero; 
 	op->e2=regZero; 
 	op->eSib = 0;
@@ -278,7 +278,7 @@ int decodeEa32(CPU* cpu, Op* op, int ds, int ss, int rm, int ip) {
 		op->r1 = G(rm);						\
 	}										
 
-Op* decodeBlock(CPU* cpu) {
+struct Op* decodeBlock(struct CPU* cpu) {
 	int ea16 = cpu->big?0:1;
 	U16 opCode = cpu->big?0x200:0;
 	// :TODO: doesn't handling wrapping in 16-bit mode
@@ -288,8 +288,8 @@ Op* decodeBlock(CPU* cpu) {
 	int rep = 0;
 	int rep_zero = 0;
 	U32 start = ip;
-	Op* op = allocOp();
-	Op* block = op;
+	struct Op* op = allocOp();
+	struct Op* block = op;
 
 	while (1) {
 		U16 inst = (U16)FETCH8()+opCode;

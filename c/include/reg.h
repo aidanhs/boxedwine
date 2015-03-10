@@ -3,7 +3,7 @@
 
 #include "platform.h"
 
-typedef struct {
+struct Reg {
 	union {
 		U32 u32;
 		union {
@@ -17,6 +17,6 @@ typedef struct {
 			U16 h16;
 		};
 	};
-} Reg;
+};
 
 #endif

@@ -4,8 +4,8 @@
 #include "cpu.h"
 #include "block.h"
 
-Op* decodeBlock(CPU* cpu);
-void freeOp(Op* op);
+struct Op* decodeBlock(struct CPU* cpu);
+void freeOp(struct Op* op);
 
 #define G(rm) ((rm >> 3) & 7)
 #define E(rm) (rm & 7)

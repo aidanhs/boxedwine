@@ -59,42 +59,42 @@ public class Main {
     }
 
     static public void condition(String name, String condition) throws IOException {
-        out("void "+name+"_16_reg(CPU* cpu, Op* op) {");
+        out("void "+name+"_16_reg(struct CPU* cpu, struct Op* op) {");
         out("    if ("+condition+") {");
         out("        cpu->reg[op->r1].u16 = cpu->reg[op->r2].u16;");
         out("    }");
         out("    CYCLES(1);");
         out("    NEXT();");
         out("}");
-        out("void "+name+"_16_mem16(CPU* cpu, Op* op) {");
+        out("void "+name+"_16_mem16(struct CPU* cpu, struct Op* op) {");
         out("    if ("+condition+") {");
         out("        cpu->reg[op->r1].u16 = readw(cpu->memory, eaa16(cpu, op));");
         out("    }");
         out("    CYCLES(1);");
         out("    NEXT();");
         out("}");
-        out("void "+name+"_16_mem32(CPU* cpu, Op* op) {");
+        out("void "+name+"_16_mem32(struct CPU* cpu, struct Op* op) {");
         out("    if ("+condition+") {");
         out("        cpu->reg[op->r1].u16 = readw(cpu->memory, eaa32(cpu, op));");
         out("    }");
         out("    CYCLES(1);");
         out("    NEXT();");
         out("}");
-        out("void "+name+"_32_reg(CPU* cpu, Op* op) {");
+        out("void "+name+"_32_reg(struct CPU* cpu, struct Op* op) {");
         out("    if ("+condition+") {");
         out("        cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;");
         out("    }");
         out("    CYCLES(1);");
         out("    NEXT();");
         out("}");
-        out("void "+name+"_32_mem16(CPU* cpu, Op* op) {");
+        out("void "+name+"_32_mem16(struct CPU* cpu, struct Op* op) {");
         out("    if ("+condition+") {");
         out("        cpu->reg[op->r1].u32 = readd(cpu->memory, eaa16(cpu, op));");
         out("    }");
         out("    CYCLES(1);");
         out("    NEXT();");
         out("}");
-        out("void "+name+"_32_mem32(CPU* cpu, Op* op) {");
+        out("void "+name+"_32_mem32(struct CPU* cpu, struct Op* op) {");
         out("    if ("+condition+") {");
         out("        cpu->reg[op->r1].u32 = readd(cpu->memory, eaa32(cpu, op));");
         out("    }");
@@ -180,11 +180,11 @@ public class Main {
     }
 
     static public void movs(String name, String bits, String SI, String DI, String CX, int inc, boolean repeat) throws  IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         out("    U32 dBase = cpu->segAddress[ES];");
         out("    U32 sBase = cpu->segAddress[op->base];");
         out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out("    Memory* memory = cpu->memory;");
+        out("    struct Memory* memory = cpu->memory;");
         if (repeat) {
         out("    U32 count = " + CX + ";");
         out("    U32 i;");
@@ -205,11 +205,11 @@ public class Main {
     }
 
     static public void cmps(String name, String width, String bits, String SI, String DI, String CX, int inc, boolean repeat) throws  IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         out("    U32 dBase = cpu->segAddress[ES];");
         out("    U32 sBase = cpu->segAddress[op->base];");
         out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out("    Memory* memory = cpu->memory;");
+        out("    struct Memory* memory = cpu->memory;");
         out("    U"+bits+" v1;");
         out("    U"+bits+" v2;");
         if (repeat) {
@@ -243,10 +243,10 @@ public class Main {
     }
 
     static public void scas(String name, String width, String bits, String AX, String DI, String CX, int inc, boolean repeat) throws  IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         out("    U32 dBase = cpu->segAddress[ES];");
         out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out("    Memory* memory = cpu->memory;");
+        out("    struct Memory* memory = cpu->memory;");
         out("    U"+bits+" v1;");
         if (repeat) {
             out("    U32 count = " + CX + ";");
@@ -277,11 +277,11 @@ public class Main {
     }
 
     static public void lods(String name, String bits, String SI, String CX, String AX, int inc, boolean repeat) throws  IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         if (repeat) {
             out("    U32 sBase = cpu->segAddress[op->base];");
             out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-            out("    Memory* memory = cpu->memory;");
+            out("    struct Memory* memory = cpu->memory;");
             out("    U32 count = " + CX + ";");
             out("    U32 i;");
             out("    for (i=0;i<count;i++) {");
@@ -299,11 +299,11 @@ public class Main {
     }
 
     static public void stos(String name, String bits, String DI, String CX, String AX, int inc, boolean repeat) throws  IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         if (repeat) {
         out("    U32 dBase = cpu->segAddress[ES];");
         out("    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out("    Memory* memory = cpu->memory;");
+        out("    struct Memory* memory = cpu->memory;");
         out("    U32 count = " + CX + ";");
         out("    U32 i;");
         out("    for (i=0;i<count;i++) {");
@@ -341,12 +341,12 @@ public class Main {
     }
 
     static public void pushPopReg(String name, String bits) throws IOException {
-        out("void push"+name+"(CPU * cpu, Op * op){");
+        out("void push"+name+"(struct CPU* cpu, struct Op* op){");
         out("    push"+bits+"(cpu, "+name.toUpperCase()+");");
         out("    CYCLES(1);");
         out("    NEXT();");
         out("}");
-        out("void pop"+name+"(CPU * cpu, Op * op){");
+        out("void pop"+name+"(struct CPU * cpu, struct Op * op){");
         out("    "+name.toUpperCase()+" = pop"+bits+"(cpu);");
         out("    CYCLES(1);");
         out("    NEXT();");
@@ -378,7 +378,7 @@ public class Main {
     }
 
     static public void incDecBase(String name, String flagName, String destLoad, String destSave1, String destSave2, String op, String cycles, boolean eaa16, boolean eaa32, String bits) throws IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         if (eaa16)
         out("    U32 eaa = eaa16(cpu, op);");
         if (eaa32)
@@ -434,7 +434,7 @@ public class Main {
         arithbase(name+"8_mem32", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mdCycles);
     }
     static public void arithbase(String functionName, String flagName, String source, String loadDest, String saveDest1, String saveDest2, String op, boolean cf, boolean result, boolean eaa16, boolean eaa32, String bits, String cycles)  throws IOException {
-        out("void "+functionName+"(CPU* cpu, Op* op) {");
+        out("void "+functionName+"(struct CPU* cpu, struct Op* op) {");
         if (eaa16)
             out("    U32 eaa = eaa16(cpu, op);");
         if (eaa32)
@@ -543,7 +543,7 @@ public class Main {
     }
 
     static public void shiftBase(String name, boolean eaa16, boolean eaa32, String bits, String shiftSource, String source, String destSave1, String destSave2, String cycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
-        out("void "+name+"(CPU* cpu, Op* op) {");
+        out("void "+name+"(struct CPU* cpu, struct Op* op) {");
         out("    U"+bits+" result;");
         if (eaa16)
             out("    U32 eaa = eaa16(cpu, op);");

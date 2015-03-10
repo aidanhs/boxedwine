@@ -4,6 +4,6 @@
 #include "nodeaccess.h"
 #include "platform.h"
 
-void addVirtualFile(const char* localPath, NodeAccess* nodeAccess, U32 mode);
+void addVirtualFile(const char* localPath, struct NodeAccess* nodeAccess, U32 mode);
 
 #endif

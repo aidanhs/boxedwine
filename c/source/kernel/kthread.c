@@ -6,7 +6,7 @@
 
 U32 numberOfThreads;
 
-void setupStack(KThread* thread) {
+void setupStack(struct KThread* thread) {
 	U32 page = 0;
 	U32 pageCount = (1024*1024) >> PAGE_SHIFT; // 1MB for max stack
 	if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount+2, &page))
@@ -22,14 +22,14 @@ void setupStack(KThread* thread) {
 	thread->cpu.thread = thread;
 }
 
-void initThread(KThread* thread, KProcess* process) {
+void initThread(struct KThread* thread, struct KProcess* process) {
 	initCPU(&thread->cpu, process->memory);
 	thread->process = process;
 	setupStack(thread);
 	numberOfThreads++;
 }
 
-void exitThread(KThread* thread, U32 status) {
+void exitThread(struct KThread* thread, U32 status) {
 	unscheduleThread(thread);	
 	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
 	processOnExitThread(thread);

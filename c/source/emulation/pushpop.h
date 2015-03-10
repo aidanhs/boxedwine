@@ -1,159 +1,159 @@
-void pushAx(CPU * cpu, Op * op){
+void pushAx(struct CPU* cpu, struct Op* op){
     push16(cpu, AX);
     CYCLES(1);
     NEXT();
 }
-void popAx(CPU * cpu, Op * op){
+void popAx(struct CPU * cpu, struct Op * op){
     AX = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEax(CPU * cpu, Op * op){
+void pushEax(struct CPU* cpu, struct Op* op){
     push32(cpu, EAX);
     CYCLES(1);
     NEXT();
 }
-void popEax(CPU * cpu, Op * op){
+void popEax(struct CPU * cpu, struct Op * op){
     EAX = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushCx(CPU * cpu, Op * op){
+void pushCx(struct CPU* cpu, struct Op* op){
     push16(cpu, CX);
     CYCLES(1);
     NEXT();
 }
-void popCx(CPU * cpu, Op * op){
+void popCx(struct CPU * cpu, struct Op * op){
     CX = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEcx(CPU * cpu, Op * op){
+void pushEcx(struct CPU* cpu, struct Op* op){
     push32(cpu, ECX);
     CYCLES(1);
     NEXT();
 }
-void popEcx(CPU * cpu, Op * op){
+void popEcx(struct CPU * cpu, struct Op * op){
     ECX = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushDx(CPU * cpu, Op * op){
+void pushDx(struct CPU* cpu, struct Op* op){
     push16(cpu, DX);
     CYCLES(1);
     NEXT();
 }
-void popDx(CPU * cpu, Op * op){
+void popDx(struct CPU * cpu, struct Op * op){
     DX = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEdx(CPU * cpu, Op * op){
+void pushEdx(struct CPU* cpu, struct Op* op){
     push32(cpu, EDX);
     CYCLES(1);
     NEXT();
 }
-void popEdx(CPU * cpu, Op * op){
+void popEdx(struct CPU * cpu, struct Op * op){
     EDX = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushBx(CPU * cpu, Op * op){
+void pushBx(struct CPU* cpu, struct Op* op){
     push16(cpu, BX);
     CYCLES(1);
     NEXT();
 }
-void popBx(CPU * cpu, Op * op){
+void popBx(struct CPU * cpu, struct Op * op){
     BX = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEbx(CPU * cpu, Op * op){
+void pushEbx(struct CPU* cpu, struct Op* op){
     push32(cpu, EBX);
     CYCLES(1);
     NEXT();
 }
-void popEbx(CPU * cpu, Op * op){
+void popEbx(struct CPU * cpu, struct Op * op){
     EBX = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushSp(CPU * cpu, Op * op){
+void pushSp(struct CPU* cpu, struct Op* op){
     push16(cpu, SP);
     CYCLES(1);
     NEXT();
 }
-void popSp(CPU * cpu, Op * op){
+void popSp(struct CPU * cpu, struct Op * op){
     SP = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEsp(CPU * cpu, Op * op){
+void pushEsp(struct CPU* cpu, struct Op* op){
     push32(cpu, ESP);
     CYCLES(1);
     NEXT();
 }
-void popEsp(CPU * cpu, Op * op){
+void popEsp(struct CPU * cpu, struct Op * op){
     ESP = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushBp(CPU * cpu, Op * op){
+void pushBp(struct CPU* cpu, struct Op* op){
     push16(cpu, BP);
     CYCLES(1);
     NEXT();
 }
-void popBp(CPU * cpu, Op * op){
+void popBp(struct CPU * cpu, struct Op * op){
     BP = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEbp(CPU * cpu, Op * op){
+void pushEbp(struct CPU* cpu, struct Op* op){
     push32(cpu, EBP);
     CYCLES(1);
     NEXT();
 }
-void popEbp(CPU * cpu, Op * op){
+void popEbp(struct CPU * cpu, struct Op * op){
     EBP = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushSi(CPU * cpu, Op * op){
+void pushSi(struct CPU* cpu, struct Op* op){
     push16(cpu, SI);
     CYCLES(1);
     NEXT();
 }
-void popSi(CPU * cpu, Op * op){
+void popSi(struct CPU * cpu, struct Op * op){
     SI = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEsi(CPU * cpu, Op * op){
+void pushEsi(struct CPU* cpu, struct Op* op){
     push32(cpu, ESI);
     CYCLES(1);
     NEXT();
 }
-void popEsi(CPU * cpu, Op * op){
+void popEsi(struct CPU * cpu, struct Op * op){
     ESI = pop32(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushDi(CPU * cpu, Op * op){
+void pushDi(struct CPU* cpu, struct Op* op){
     push16(cpu, DI);
     CYCLES(1);
     NEXT();
 }
-void popDi(CPU * cpu, Op * op){
+void popDi(struct CPU * cpu, struct Op * op){
     DI = pop16(cpu);
     CYCLES(1);
     NEXT();
 }
-void pushEdi(CPU * cpu, Op * op){
+void pushEdi(struct CPU* cpu, struct Op* op){
     push32(cpu, EDI);
     CYCLES(1);
     NEXT();
 }
-void popEdi(CPU * cpu, Op * op){
+void popEdi(struct CPU * cpu, struct Op * op){
     EDI = pop32(cpu);
     CYCLES(1);
     NEXT();

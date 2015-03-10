@@ -5,19 +5,19 @@
 
 // :TODO: make the number of buckets dynamic
 
-void initHashmap(KHashmap* hashMap) {
-	hashMap->buckets = (KHashmapEntry**)calloc(1, sizeof(KHashmapEntry*)*4096);
+void initHashmap(struct KHashmap* hashMap) {
+	hashMap->buckets = (struct KHashmapEntry**)calloc(1, sizeof(struct KHashmapEntry*)*4096);
 	hashMap->numberOfBuckets = 256;
 	hashMap->numberOfEntries = 0;
 }
 
-void destroyHashmap(KHashmap* hashMap) {
+void destroyHashmap(struct KHashmap* hashMap) {
 	U32 i;
 
 	for (i=0;i<hashMap->numberOfBuckets;i++) {
-		KHashmapEntry* entry = hashMap->buckets[i];
+		struct KHashmapEntry* entry = hashMap->buckets[i];
 		while (entry) {
-			KHashmapEntry* next = entry->next;
+			struct KHashmapEntry* next = entry->next;
 			free(entry);
 			entry = next;
 		}
@@ -45,14 +45,14 @@ static U32 calculateHash(const char* key) {
     return hash;
 }
 
-static U32 getIndexFromHash(KHashmap* hashMap, U32 hash) {
+static U32 getIndexFromHash(struct KHashmap* hashMap, U32 hash) {
 	return hash & (hashMap->numberOfBuckets - 1);
 }
 
-KHashmapEntry* getHashmapEntry(KHashmap* hashMap, const char* key) {
+struct KHashmapEntry* getHashmapEntry(struct KHashmap* hashMap, const char* key) {
 	U32 hash = calculateHash(key);
 	U32 index = getIndexFromHash(hashMap, hash);
-	KHashmapEntry* entry = hashMap->buckets[index];
+	struct KHashmapEntry* entry = hashMap->buckets[index];
 	while (entry) {
 		if (!strcmp(key, entry->key)) {
 			return entry;
@@ -62,15 +62,15 @@ KHashmapEntry* getHashmapEntry(KHashmap* hashMap, const char* key) {
 	return 0;
 }
 
-void putHashmapValue(KHashmap* hashMap, const char* key, void* value) {
-	KHashmapEntry* entry = getHashmapEntry(hashMap, key);
+void putHashmapValue(struct KHashmap* hashMap, const char* key, void* value) {
+	struct KHashmapEntry* entry = getHashmapEntry(hashMap, key);
 	if (entry) {
 		entry->value = value;
 	} else {
-		KHashmapEntry* head;
+		struct KHashmapEntry* head;
 		U32 index;
 
-		entry = (KHashmapEntry*)malloc(sizeof(KHashmapEntry));
+		entry = (struct KHashmapEntry*)malloc(sizeof(struct KHashmapEntry));
 		entry->key = key;
 		entry->value = value;
 		entry->hash = calculateHash(key);
@@ -83,18 +83,18 @@ void putHashmapValue(KHashmap* hashMap, const char* key, void* value) {
 	}
 }
 
-void* getHashmapValue(KHashmap* hashMap, const char* key) {
-	KHashmapEntry* entry = getHashmapEntry(hashMap, key);
+void* getHashmapValue(struct KHashmap* hashMap, const char* key) {
+	struct KHashmapEntry* entry = getHashmapEntry(hashMap, key);
 	if (entry)
 		return entry->value;
 	return 0;
 }
 
-void removeHashmapKey(KHashmap* hashMap, const char* key) {
+void removeHashmapKey(struct KHashmap* hashMap, const char* key) {
 	U32 hash = calculateHash(key);
 	U32 index = getIndexFromHash(hashMap, hash);
-	KHashmapEntry* entry = hashMap->buckets[index];
-	KHashmapEntry* prev = 0;
+	struct KHashmapEntry* entry = hashMap->buckets[index];
+	struct KHashmapEntry* prev = 0;
 
 	while (entry) {
 		if (!strcmp(key, entry->key)) {

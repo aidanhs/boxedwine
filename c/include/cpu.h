@@ -7,34 +7,34 @@
 #include "block.h"
 #include "fpu.h"
 
-typedef struct CPU {
-	Reg		reg[9]; // index 8 is 0
+struct CPU {
+	struct Reg		reg[9]; // index 8 is 0
 	U8*		reg8[8];
 	U32		segAddress[6];
 	U32		segValue[7]; // index 6 is for 0, used in LEA instruction
 	U32		ldt[32];
 	U32		flags;
-	Reg		eip;	
-	Memory* memory;
+	struct Reg		eip;	
+	struct Memory* memory;
 	struct KThread* thread;
-	Reg     src;
-	Reg     dst;
-	Reg     result;
+	struct Reg     src;
+	struct Reg     dst;
+	struct Reg     result;
 	int     inst;
 	int	    df;
 	U8      oldcf;
 	U8		big;
-	FPU     fpu;
+	struct FPU     fpu;
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
-} CPU;
+};
 
-U32 getCF(CPU* cpu);
-U32 getOF(CPU* cpu);
-U32 getAF(CPU* cpu);
-U32 getZF(CPU* cpu);
-U32 getSF(CPU* cpu);
-U32 getPF(CPU* cpu);
+U32 getCF(struct CPU* cpu);
+U32 getOF(struct CPU* cpu);
+U32 getAF(struct CPU* cpu);
+U32 getZF(struct CPU* cpu);
+U32 getSF(struct CPU* cpu);
+U32 getPF(struct CPU* cpu);
 
 #define addFlag(f) cpu->flags |= (f)
 #define removeFlag(f) cpu->flags &=~ (f)
@@ -45,9 +45,9 @@ U32 getPF(CPU* cpu);
 #define setPF(cpu, b) if (b) cpu->flags|=PF; else cpu->flags&=~PF
 #define setZF(cpu, b) if (b) cpu->flags|=ZF; else cpu->flags&=~ZF
 
-void fillFlagsNoCFOF(CPU* cpu);
-void fillFlags(CPU* cpu);
-void fillFlagsNoOF(CPU* cpu);
+void fillFlagsNoCFOF(struct CPU* cpu);
+void fillFlags(struct CPU* cpu);
+void fillFlagsNoOF(struct CPU* cpu);
 
 extern U8 parity_lookup[];
 
@@ -69,7 +69,7 @@ extern U8 parity_lookup[];
 #define AC		0x00040000
 #define ID		0x00200000
 
-extern CPU c;
+extern struct CPU c;
 
 #define ES 0
 #define CS 1
@@ -106,14 +106,14 @@ extern CPU c;
 #define ESI cpu->reg[6].u32
 #define EDI cpu->reg[7].u32
 
-void push16(CPU* cpu, U16 value);
-void push32(CPU* cpu, U32 value);
-U16 pop16(CPU* cpu);
-U32 pop32(CPU* cpu);
-void exception(CPU* cpu, int code);
-void initCPU(CPU* cpu, Memory* memory);
-void runBlock(CPU* cpu, Op* block);
-void runCPU(CPU* cpu);
+void push16(struct CPU* cpu, U16 value);
+void push32(struct CPU* cpu, U32 value);
+U16 pop16(struct CPU* cpu);
+U32 pop32(struct CPU* cpu);
+void exception(struct CPU* cpu, int code);
+void initCPU(struct CPU* cpu, struct Memory* memory);
+void runBlock(struct CPU* cpu, struct Op* block);
+void runCPU(struct CPU* cpu);
 
 #define FLAGS_NONE 0
 #define FLAGS_ADD8 1

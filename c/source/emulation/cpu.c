@@ -3,8 +3,8 @@
 #include "decoder.h"
 #include <string.h>
 
-void initCPU(CPU* cpu, Memory* memory) {
-	memset(cpu, 0, sizeof(CPU));
+void initCPU(struct CPU* cpu, struct Memory* memory) {
+	memset(cpu, 0, sizeof(struct CPU));
 	cpu->reg8[0] = &cpu->reg[0].u8;
 	cpu->reg8[1] = &cpu->reg[1].u8;
 	cpu->reg8[2] = &cpu->reg[2].u8;
@@ -20,7 +20,7 @@ void initCPU(CPU* cpu, Memory* memory) {
 	FPU_FINIT(&cpu->fpu);
 }
 
-void fillFlagsNoCFOF(CPU* cpu) {
+void fillFlagsNoCFOF(struct CPU* cpu) {
 	int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
 
 	cpu->inst = FLAGS_NONE;		 
@@ -31,7 +31,7 @@ void fillFlagsNoCFOF(CPU* cpu) {
     cpu->flags = newFlags;
 }
 
-void fillFlags(CPU* cpu) {
+void fillFlags(struct CPU* cpu) {
 	if (cpu->inst!=FLAGS_NONE) {
 		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
 
@@ -46,7 +46,7 @@ void fillFlags(CPU* cpu) {
 	}
 }
 
-void fillFlagsNoOF(CPU* cpu) {
+void fillFlagsNoOF(struct CPU* cpu) {
 	if (cpu->inst!=FLAGS_NONE) {
 		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
 
@@ -60,7 +60,7 @@ void fillFlagsNoOF(CPU* cpu) {
 	}
 }
 
-U32 getCF(CPU* cpu) {
+U32 getCF(struct CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:		
 		return cpu->flags & CF;
@@ -147,7 +147,7 @@ U32 getCF(CPU* cpu) {
 	return 0;
 }
 
-U32 getOF(CPU* cpu) {
+U32 getOF(struct CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:
 		return cpu->flags & OF;
@@ -231,7 +231,7 @@ U32 getOF(CPU* cpu) {
 	return 0;
 }
 
-U32 getAF(CPU* cpu) {
+U32 getAF(struct CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:
 		return cpu->flags & AF;
@@ -306,7 +306,7 @@ U32 getAF(CPU* cpu) {
 	return 0;
 }
 
-U32 getZF(CPU* cpu) {
+U32 getZF(struct CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:
 		return cpu->flags & ZF;
@@ -368,7 +368,7 @@ U32 getZF(CPU* cpu) {
 	return 0;
 }
 
-U32 getSF(CPU* cpu) {
+U32 getSF(struct CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:
 		return cpu->flags & SF;
@@ -449,7 +449,7 @@ U8 parity_lookup[256] = {
   PF, 0, 0, PF, 0, PF, PF, 0, 0, PF, PF, 0, PF, 0, 0, PF
   };
 
-U32 getPF(CPU* cpu) {
+U32 getPF(struct CPU* cpu) {
 	switch (cpu->inst) {
 	case FLAGS_NONE:
 		return cpu->flags & PF;
@@ -459,7 +459,7 @@ U32 getPF(CPU* cpu) {
 	return 0;
 }
 
-void push16(CPU* cpu, U16 value) {
+void push16(struct CPU* cpu, U16 value) {
 	if (cpu->big) {
         ESP-=2;
 		writew(cpu->memory, cpu->segAddress[SS] + ESP, value);
@@ -469,7 +469,7 @@ void push16(CPU* cpu, U16 value) {
     }
 }
 
-void push32(CPU* cpu, U32 value) {
+void push32(struct CPU* cpu, U32 value) {
 	if (cpu->big) {
         ESP-=4;
 		writed(cpu->memory, cpu->segAddress[SS] + ESP, value);
@@ -479,7 +479,7 @@ void push32(CPU* cpu, U32 value) {
     }
 }
 
-U16 pop16(CPU* cpu) {
+U16 pop16(struct CPU* cpu) {
 	if (cpu->big) {
 		int result = readw(cpu->memory, cpu->segAddress[SS] + ESP);
         ESP+=2;
@@ -491,7 +491,7 @@ U16 pop16(CPU* cpu) {
     }
 }
 
-U32 pop32(CPU* cpu) {
+U32 pop32(struct CPU* cpu) {
 	if (cpu->big) {
 		int result = readd(cpu->memory, cpu->segAddress[SS] + ESP);
         ESP+=4;
@@ -503,16 +503,16 @@ U32 pop32(CPU* cpu) {
     }
 }
 
-void exception(CPU* cpu, int code) {
+void exception(struct CPU* cpu, int code) {
 	kpanic("Exceptions not implements yet");
 }
 
-void runBlock(CPU* cpu, Op* block) {
+void runBlock(struct CPU* cpu, struct Op* block) {
 	block->func(cpu, block);
 }
 
-void runCPU(CPU* cpu) {
-	Op* block;
+void runCPU(struct CPU* cpu) {
+	struct Op* block;
 	//if (cpu->eip.u32==0xd0004b7e) {
 	//	int ii=0;
 //	}

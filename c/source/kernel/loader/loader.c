@@ -13,9 +13,9 @@
 
 #include UNISTD
 
-const char* getInterpreter(OpenNode* openNode, BOOL* isElf) {
-	U8 buffer[sizeof(Elf32_Ehdr)];
-	Elf32_Ehdr* hdr = (Elf32_Ehdr*)buffer;
+const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
+	U8 buffer[sizeof(struct Elf32_Ehdr)];
+	struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
 
 	if (len!=sizeof(buffer)) {
@@ -39,9 +39,9 @@ const char* getInterpreter(OpenNode* openNode, BOOL* isElf) {
 
 #define PT_LOAD 1
 
-BOOL loadProgram(KProcess* process, KThread* thread, OpenNode* openNode, U32* eip) {
-	U8 buffer[sizeof(Elf32_Ehdr)];
-	Elf32_Ehdr* hdr = (Elf32_Ehdr*)buffer;
+BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNode* openNode, U32* eip) {
+	U8 buffer[sizeof(struct Elf32_Ehdr)];
+	struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
 	U32 address=0xFFFFFFFF;
 	U32 i;
@@ -55,8 +55,8 @@ BOOL loadProgram(KProcess* process, KThread* thread, OpenNode* openNode, U32* ei
 	len=0;
 	openNode->access->seek(openNode, hdr->e_phoff);	
 	for (i=0;i<hdr->e_phoff;i++) {
-		Elf32_Phdr phdr;		
-		read(openNode->handle, &phdr, sizeof(Elf32_Phdr));
+		struct Elf32_Phdr phdr;		
+		read(openNode->handle, &phdr, sizeof(struct Elf32_Phdr));
 		if (phdr.p_type==PT_LOAD) {
 			if (phdr.p_paddr<address)
 				address=phdr.p_paddr;
@@ -68,9 +68,9 @@ BOOL loadProgram(KProcess* process, KThread* thread, OpenNode* openNode, U32* ei
 	address = mmap64(thread, 0, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
 	process->brkEnd = address+len;
 	for (i=0;i<hdr->e_phnum;i++) {
-		Elf32_Phdr phdr;		
-		openNode->access->seek(openNode, hdr->e_phoff+sizeof(Elf32_Phdr)*i);
-		read(openNode->handle, &phdr, sizeof(phdr));
+		struct Elf32_Phdr phdr;		
+		openNode->access->seek(openNode, hdr->e_phoff+sizeof(struct Elf32_Phdr)*i);
+		read(openNode->handle, &phdr, sizeof(struct Elf32_Phdr));
 		if (phdr.p_type==PT_LOAD) {
 			if (phdr.p_filesz>0) {
 				openNode->access->seek(openNode, phdr.p_offset);

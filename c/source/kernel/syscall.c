@@ -124,10 +124,10 @@
 #define ARG5 EDI
 #define ARG6 EBP
 
-void syscall(CPU* cpu, Op* op) {
-	KThread* thread = cpu->thread;
-	KProcess* process = thread->process;
-	Memory* memory = cpu->memory;
+void syscall(struct CPU* cpu, struct Op* op) {
+	struct KThread* thread = cpu->thread;
+	struct KProcess* process = thread->process;
+	struct Memory* memory = cpu->memory;
 	U32 result;
 
 	switch (EAX) {

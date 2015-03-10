@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-void initArray(KArray* karray) {
+void initArray(struct KArray* karray) {
 	karray->count = 0;
 	karray->maxCount = 10;
 	karray->objects = (void**)malloc(sizeof(void*)*10);
 }
 
-void destroyArray(KArray* karray) {
+void destroyArray(struct KArray* karray) {
 	free(karray->objects);
 }
 
-U32 addObjecToArray(KArray* karray, void* object) {
+U32 addObjecToArray(struct KArray* karray, void* object) {
 	U32 i=0;
 	void** pObjects;
 	U32 newSize;
@@ -38,7 +38,7 @@ U32 addObjecToArray(KArray* karray, void* object) {
 	return index;
 }
 
-void removeObjectFromArray(KArray* karray, U32 index) {
+void removeObjectFromArray(struct KArray* karray, U32 index) {
 	karray->objects[index] = 0;
 	karray->count--;
 }

@@ -8,8 +8,8 @@
 
 #include <errno.h>
 
-U32 syscall_read(KThread* thread, FD handle, U32 buffer, U32 len) {
-	KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
+U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
     if (fd==0) {
         return -K_EBADF;
     }
@@ -19,8 +19,8 @@ U32 syscall_read(KThread* thread, FD handle, U32 buffer, U32 len) {
 	return fd->kobject->access->read(fd->kobject, thread->process->memory, buffer, len);
 }
 
-U32 syscall_write(KThread* thread, FD handle, U32 buffer, U32 len) {
-	KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
+U32 syscall_write(struct KThread* thread, FD handle, U32 buffer, U32 len) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
     if (fd==0) {
         return -K_EBADF;
     }
@@ -30,8 +30,8 @@ U32 syscall_write(KThread* thread, FD handle, U32 buffer, U32 len) {
 	return fd->kobject->access->write(fd->kobject, thread->process->memory, buffer, len);
 }
 
-U32 syscall_open(KThread* thread, U32 name, U32 flags) {
-	KFileDescriptor* fd = openFile(thread->process, getNativeString(thread->process->memory, name), flags);
+U32 syscall_open(struct KThread* thread, U32 name, U32 flags) {
+	struct KFileDescriptor* fd = openFile(thread->process, getNativeString(thread->process->memory, name), flags);
 	if (fd)
 		return fd->handle;
 	switch (errno) {
@@ -48,9 +48,9 @@ U32 syscall_open(KThread* thread, U32 name, U32 flags) {
 //	U32 iov_len;
 //};
 
-U32 syscall_writev(KThread* thread, FD handle, U32 iov, S32 iovcnt) {
-	KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
-	Memory* memory = thread->process->memory;
+U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
+	struct Memory* memory = thread->process->memory;
 	S32 i;
 	U32 len = 0;
 
@@ -75,8 +75,8 @@ U32 syscall_writev(KThread* thread, FD handle, U32 iov, S32 iovcnt) {
     return len;
 }
 
-U32 syscall_close(KThread* thread, FD handle) {
-	KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
+U32 syscall_close(struct KThread* thread, FD handle) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
     if (fd==0) {
         return -K_EBADF;
     }

@@ -3,16 +3,16 @@
 
 #include "platform.h"
 
-typedef struct KArray {
+struct KArray {
 	void** objects;
 	U32 maxCount;
 	U32 count;
-} KArray;
+};
 
-void initArray(KArray* karray);
+void initArray(struct KArray* karray);
 // return index
-U32 addObjecToArray(KArray* karray, void* object);
-void removeObjectFromArray(KArray* karray, U32 index);
+U32 addObjecToArray(struct KArray* karray, void* object);
+void removeObjectFromArray(struct KArray* karray, U32 index);
 #define getObjectFromArray(karray, index) karray->objects[index]
 #define getArrayCount(karray) karray->count
 

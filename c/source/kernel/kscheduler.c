@@ -1,9 +1,9 @@
 #include "kscheduler.h"
 
-KThread* lastThread = 0;
-KThread* waitingThread = 0;
+struct KThread* lastThread = 0;
+struct KThread* waitingThread = 0;
 
-void waitThread(KThread* thread) {
+void waitThread(struct KThread* thread) {
 	unscheduleThread(thread);
 	if (waitingThread == 0) {
 		waitingThread = thread;
@@ -18,9 +18,9 @@ void waitThread(KThread* thread) {
 }
 
 void wakeThreads(U32 wakeType) {
-	KThread* thread = waitingThread;
+	struct KThread* thread = waitingThread;
 	while (thread) {
-		KThread* next = thread->scheduleNext;
+		struct KThread* next = thread->scheduleNext;
 
 		if (thread->waitType == wakeType) {
 			wakeThread(thread);
@@ -29,7 +29,7 @@ void wakeThreads(U32 wakeType) {
 	}
 }
 
-void wakeThread(KThread* thread) {
+void wakeThread(struct KThread* thread) {
 	if (thread->schedulePrev)
 		thread->schedulePrev->scheduleNext = thread->scheduleNext;
 	if (thread->scheduleNext)
@@ -37,7 +37,7 @@ void wakeThread(KThread* thread) {
 	scheduleThread(thread);
 }
 
-void scheduleThread(KThread* thread) {
+void scheduleThread(struct KThread* thread) {
 	if (lastThread == 0) {
 		lastThread = thread;
 		lastThread->scheduleNext = thread;
@@ -49,7 +49,7 @@ void scheduleThread(KThread* thread) {
 	}
 }
 
-void unscheduleThread(KThread* thread) {
+void unscheduleThread(struct KThread* thread) {
 	if (thread == lastThread) {
 		lastThread = thread->schedulePrev;
 		thread->cpu.timeStampCounter = 0xFFFFFFFFFFFFFFFFl; // causes a context change
@@ -61,7 +61,7 @@ void unscheduleThread(KThread* thread) {
 U64 contextTime = 10000;
 
 void runSlice() {
-	CPU* cpu;
+	struct CPU* cpu;
 
 	lastThread = lastThread->scheduleNext;
 	cpu = &lastThread->cpu;

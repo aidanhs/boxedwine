@@ -4,69 +4,69 @@
 #include <string.h>
 
 
-U8 pf_readb(Memory* memory, U32 address, U32 data) {
+U8 pf_readb(struct Memory* memory, U32 address, U32 data) {
 	kpanic("PF");
 	return 0;
 }
 
-void pf_writeb(Memory* memory, U32 address, U32 data, U8 value) {
+void pf_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
 	kpanic("PF");
 }
 
-U16 pf_readw(Memory* memory, U32 address, U32 data) {
-	kpanic("PF");
-	return 0;
-}
-
-void pf_writew(Memory* memory, U32 address, U32 data, U16 value) {
-	kpanic("PF");
-}
-
-U32 pf_readd(Memory* memory, U32 address, U32 data) {
+U16 pf_readw(struct Memory* memory, U32 address, U32 data) {
 	kpanic("PF");
 	return 0;
 }
 
-void pf_writed(Memory* memory, U32 address, U32 data, U32 value) {
+void pf_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
 	kpanic("PF");
 }
 
-void pf_clear(Memory* memory, U32 page, U32 data) {
+U32 pf_readd(struct Memory* memory, U32 address, U32 data) {
+	kpanic("PF");
+	return 0;
 }
 
-Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_writed, pf_clear};
+void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
+	kpanic("PF");
+}
 
-U8 readb(Memory* memory, U32 address) {
+void pf_clear(struct Memory* memory, U32 page, U32 data) {
+}
+
+struct Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_writed, pf_clear};
+
+U8 readb(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 	return memory->mmu[index]->readb(memory, address, memory->data[index]);
 }
 
-void writeb(Memory* memory, U32 address, U8 value) {
+void writeb(struct Memory* memory, U32 address, U8 value) {
 	int index = address >> 12;
 	memory->mmu[index]->writeb(memory, address, memory->data[index], value);
 }
 
-U16 readw(Memory* memory, U32 address) {
+U16 readw(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 	return memory->mmu[index]->readw(memory, address, memory->data[index]);
 }
 
-void writew(Memory* memory, U32 address, U16 value) {
+void writew(struct Memory* memory, U32 address, U16 value) {
 	int index = address >> 12;
 	memory->mmu[index]->writew(memory, address, memory->data[index], value);
 }
 
-U32 readd(Memory* memory, U32 address) {
+U32 readd(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 	return memory->mmu[index]->readd(memory, address, memory->data[index]);
 }
 
-void writed(Memory* memory, U32 address, U32 value) {
+void writed(struct Memory* memory, U32 address, U32 value) {
 	int index = address >> 12;
 	memory->mmu[index]->writed(memory, address, memory->data[index], value);
 }
 
-U64 readq(Memory* memory, U32 address) {
+U64 readq(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 	U64 result = memory->mmu[index]->readd(memory, address, memory->data[index]);
 	address+=4;
@@ -75,7 +75,7 @@ U64 readq(Memory* memory, U32 address) {
 	return result;
 }
 
-void writeq(Memory* memory, U32 address, U64 value) {
+void writeq(struct Memory* memory, U32 address, U64 value) {
 	int index = address >> 12;
 	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)value);
 	address+=4;
@@ -83,7 +83,7 @@ void writeq(Memory* memory, U32 address, U64 value) {
 	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)(value >> 32));
 }
 
-void initMemory(Memory* memory) {
+void initMemory(struct Memory* memory) {
 	int i=0;
 
 	for (i=0;i<0x100000;i++) {
@@ -92,7 +92,7 @@ void initMemory(Memory* memory) {
 	memset(memory->data, 0, sizeof(memory->data));
 }
 
-void destroyMemory(Memory* memory) {
+void destroyMemory(struct Memory* memory) {
 	int i;
 
 	for (i=0;i<0x100000;i++) {
@@ -100,7 +100,7 @@ void destroyMemory(Memory* memory) {
 	}
 }
 
-void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data) {
+void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data) {
 	U32 i;
 	U32 address = page << PAGE_SHIFT;
 
@@ -122,7 +122,7 @@ void allocPages(Memory* memory, Page* pageType, BOOL allocRAM, U32 page, U32 pag
 	}
 }
 
-void zeroMemory(Memory* memory, U32 address, int len) {
+void zeroMemory(struct Memory* memory, U32 address, int len) {
 	int i;
 	for (i=0;i<len;i++) {
 		writeb(memory, address, 0);
@@ -130,7 +130,7 @@ void zeroMemory(Memory* memory, U32 address, int len) {
 	}
 }
 
-void copyMemory(Memory* memory, U8* data, U32 address, int len) {
+void copyMemory(struct Memory* memory, U8* data, U32 address, int len) {
 	int i;
 	for (i=0;i<len;i++) {
 		*data=readb(memory, address);
@@ -139,7 +139,7 @@ void copyMemory(Memory* memory, U8* data, U32 address, int len) {
 	}
 }
 
-BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32* result) {
+BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result) {
 	U32 i;
 	
 	for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
@@ -162,7 +162,7 @@ BOOL findFirstAvailablePage(Memory* memory, U32 startingPage, U32 pageCount, U32
 	return FALSE;
 }
 
-void reservePages(Memory* memory, U32 startingPage, U32 pageCount, U32 status) {
+void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 status) {
 	U32 i;
 	
 	for (i=startingPage;i<startingPage+pageCount;i++) {
@@ -170,7 +170,7 @@ void reservePages(Memory* memory, U32 startingPage, U32 pageCount, U32 status) {
 	}
 }
 
-void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
+void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
 	U32 i;
 	
 	for (i=startingPage;i<startingPage+pageCount;i++) {
@@ -180,12 +180,12 @@ void releaseMemory(Memory* memory, U32 startingPage, U32 pageCount) {
 	}
 }
 
-U8* getPhysicalAddress(Memory* memory, U32 address) {
+U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 	return memory->mmu[index]->physicalAddress(memory, address, memory->data[index]);
 }
 
-void memcopyFromNative(Memory* memory, U32 address, const unsigned char* p, U32 len) {
+void memcopyFromNative(struct Memory* memory, U32 address, const unsigned char* p, U32 len) {
 	U32 i;
 	
 	for (i=0;i<len;i++) {
@@ -195,7 +195,7 @@ void memcopyFromNative(Memory* memory, U32 address, const unsigned char* p, U32 
 
 static char tmpBuffer[1024];
 
-char* getNativeString(Memory* memory, U32 address) {
+char* getNativeString(struct Memory* memory, U32 address) {
 	char c;
 	int i=0;
 

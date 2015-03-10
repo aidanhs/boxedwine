@@ -5,10 +5,10 @@
 
 void initRAM(U32 pages);
 
-extern Page ramPageRO;
-extern Page ramPageWO;
-extern Page ramPageWR;
-extern Page ramOnDemandPage;
+extern struct Page ramPageRO;
+extern struct Page ramPageWO;
+extern struct Page ramPageWR;
+extern struct Page ramOnDemandPage;
 
 U32 allocRamPage();
 U8* getAddressOfRamPage(U32 page);

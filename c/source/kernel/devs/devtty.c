@@ -24,7 +24,7 @@
 
 static U32 activeTTY;
 
-typedef struct TTYData {
+struct TTYData {
 	U32 c_iflag;               /* input mode flags */
     U32 c_oflag;               /* output mode flags */
     U32 c_cflag;               /* control mode flags */
@@ -39,9 +39,9 @@ typedef struct TTYData {
     U32 relsig;
     U32 acqsig;
     BOOL graphics;
-} TTYData;
+};
 
-void readTermios(Memory* memory, U32 address, TTYData* data) {
+void readTermios(struct Memory* memory, U32 address, struct TTYData* data) {
 	int i;
     data->c_iflag = readd(memory, address);
     data->c_oflag = readd(memory, address+4);
@@ -53,7 +53,7 @@ void readTermios(Memory* memory, U32 address, TTYData* data) {
     }
 }
 
-void writeTermios(Memory* memory, U32 address, TTYData* data) {
+void writeTermios(struct Memory* memory, U32 address, struct TTYData* data) {
 	int i;
 
     writed(memory, address, data->c_iflag);
@@ -66,36 +66,36 @@ void writeTermios(Memory* memory, U32 address, TTYData* data) {
     }
 }
 
-void tty_init(OpenNode* node) {
-	TTYData* data = (TTYData*)kalloc(sizeof(TTYData));
-	memset(data, 0, sizeof(TTYData));
+void tty_init(struct OpenNode* node) {
+	struct TTYData* data = (struct TTYData*)kalloc(sizeof(struct TTYData));
+	memset(data, 0, sizeof(struct TTYData));
 	data->mode = VT_AUTO;
 	data->kbMode = K_UNICODE;
 	node->data = data;
 }
 
-S64 tty_length(OpenNode* node) {
+S64 tty_length(struct OpenNode* node) {
 	return 0;
 }
 
-BOOL tty_setLength(OpenNode* node, S64 len) {
+BOOL tty_setLength(struct OpenNode* node, S64 len) {
 	return FALSE;
 }
 
-S64 tty_getFilePointer(OpenNode* node) {
+S64 tty_getFilePointer(struct OpenNode* node) {
 	return 0;
 }
 
-S64 tty_seek(OpenNode* node, S64 pos) {
+S64 tty_seek(struct OpenNode* node, S64 pos) {
 	return 0;
 }
 
-U32 tty_read(Memory* memory, OpenNode* node, U32 address, U32 len) {
+U32 tty_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	return 0;
 }
 
 static char buffer[PAGE_SIZE+1];
-U32 tty_write(Memory* memory, OpenNode* node, U32 address, U32 len) {
+U32 tty_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
 		U8* ram = getPhysicalAddress(memory, address);
 		memcpy(buffer, ram, len);
@@ -118,16 +118,16 @@ U32 tty_write(Memory* memory, OpenNode* node, U32 address, U32 len) {
 	}
 }
 
-OpenNode* freeOpenNodes;
+struct OpenNode* freeOpenNodes;
 
-void tty_close(OpenNode* node) {
+void tty_close(struct OpenNode* node) {
 	freeOpenNode(node);
 }
 
-U32 tty_ioctl(KThread* thread, OpenNode* node, U32 request) {
-	Memory* memory = thread->process->memory;
-	TTYData* data = (TTYData*)node->data;
-	CPU* cpu = &thread->cpu;
+U32 tty_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+	struct Memory* memory = thread->process->memory;
+	struct TTYData* data = (struct TTYData*)node->data;
+	struct CPU* cpu = &thread->cpu;
 
     switch (request) {
         case 0x4B32: // KBSETLED
@@ -221,16 +221,16 @@ U32 tty_ioctl(KThread* thread, OpenNode* node, U32 request) {
     return 0;
 }
 
-BOOL tty_isWriteReady(OpenNode* node) {
+BOOL tty_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
 
-BOOL tty_isReadReady(OpenNode* node) {
+BOOL tty_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-BOOL tty_canMap(OpenNode* node) {
+BOOL tty_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_canMap, tty_ioctl, tty_isWriteReady, tty_isReadReady};
+struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_canMap, tty_ioctl, tty_isWriteReady, tty_isReadReady};

@@ -6,17 +6,17 @@
 #include "ram.h"
 #include "kfmmap.h"
 
-U32 madvise(KThread* thread, U32 addr, U32 len, U32 advice) {
+U32 madvise(struct KThread* thread, U32 addr, U32 len, U32 advice) {
 	if (advice!=K_MADV_DONTNEED)
 		kpanic("madvise %d is not implemented", advice);
 	return 0;
 }
 
-U32 mlock(KThread* thread, U32 addr, U32 len) {
+U32 mlock(struct KThread* thread, U32 addr, U32 len) {
 	return 0;
 }
 
-U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
+U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
 	BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
     BOOL read = (prot & K_PROT_READ)!=0;
@@ -24,8 +24,8 @@ U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U
     BOOL exec = (prot & K_PROT_EXEC)!=0;
 	U32 pageStart = addr >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
-	Memory* memory = thread->process->memory;
-	KFileDescriptor* fd = 0;
+	struct Memory* memory = thread->process->memory;
+	struct KFileDescriptor* fd = 0;
 	U32 i;
 
 	if ((shared && priv) || (!shared && !priv)) {
@@ -77,7 +77,7 @@ U32 mmap64(KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U
 	if (write || read || exec) {
 		U32 data = 0;	
 		U32 permissions = 0;
-		Page* page;
+		struct Page* page;
 
 		if (write)
 			permissions|=PAGE_WRITE;

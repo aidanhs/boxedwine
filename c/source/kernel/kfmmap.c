@@ -8,8 +8,8 @@
 
 // :TODO: what about sync'ing the writes back to the file?
 
-static void ondemmandFile(Memory* memory, U32 address, U32 data) {
-	KFileDescriptor* fd = getFileDescriptor(memory->process, data);
+static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, data);
 	U32 ram = allocRamPage();
 	U32 page = address >> 12;
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
@@ -32,41 +32,41 @@ static void ondemmandFile(Memory* memory, U32 address, U32 data) {
 	closeFD(fd);
 }
 
-static U8 ondemandfile_readb(Memory* memory, U32 address, U32 data) {	
+static U8 ondemandfile_readb(struct Memory* memory, U32 address, U32 data) {	
 	ondemmandFile(memory, address, data);	
 	return readb(memory, address);
 }
 
-static void ondemandfile_writeb(Memory* memory, U32 address, U32 data, U8 value) {
+static void ondemandfile_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
 	ondemmandFile(memory, address, data);	
 	writeb(memory, address, value);
 }
 
-static U16 ondemandfile_readw(Memory* memory, U32 address, U32 data) {
+static U16 ondemandfile_readw(struct Memory* memory, U32 address, U32 data) {
 	ondemmandFile(memory, address, data);	
 	return readw(memory, address);
 }
 
-static void ondemandfile_writew(Memory* memory, U32 address, U32 data, U16 value) {
+static void ondemandfile_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
 	ondemmandFile(memory, address, data);	
 	writew(memory, address, value);
 }
 
-static U32 ondemandfile_readd(Memory* memory, U32 address, U32 data) {
+static U32 ondemandfile_readd(struct Memory* memory, U32 address, U32 data) {
 	ondemmandFile(memory, address, data);	
 	return readd(memory, address);
 }
 
-static void ondemandfile_writed(Memory* memory, U32 address, U32 data, U32 value) {
+static void ondemandfile_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
 	ondemmandFile(memory, address, data);	
 	writed(memory, address, value);
 }
 
-static void ondemandfile_clear(Memory* memory, U32 page, U32 data) {
-	KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(GET_PAGE(data)));
+static void ondemandfile_clear(struct Memory* memory, U32 page, U32 data) {
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(GET_PAGE(data)));
 	if (fd) {
 		closeFD(fd);
 	}
 }
 
-Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear};
+struct Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear};

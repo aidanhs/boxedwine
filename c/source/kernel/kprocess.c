@@ -15,19 +15,19 @@
 #include <stdlib.h>
 #include <string.h>
 
-void initProcess(KProcess* process, Memory* memory) {
-	memset(process, 0, sizeof(KProcess));
+void initProcess(struct KProcess* process, struct Memory* memory) {
+	memset(process, 0, sizeof(struct KProcess));
 	process->memory = memory;
 	process->id = addProcess(process);
 	process->groupId = 1;
 	initArray(&process->threads);	
 }
 
-void addThread(KProcess* process, KThread* thread) {
+void addThread(struct KProcess* process, struct KThread* thread) {
 	thread->id = addObjecToArray(&process->threads, thread);
 }
 
-void setupThreadStack(CPU* cpu, U32 argc, U32 args, U32 envc, U32 env) {
+void setupThreadStack(struct CPU* cpu, U32 argc, U32 args, U32 envc, U32 env) {
 	int i;
 
     push32(cpu, 0);
@@ -39,13 +39,13 @@ void setupThreadStack(CPU* cpu, U32 argc, U32 args, U32 envc, U32 env) {
     push32(cpu, argc);
 }
 
-U32 allocHeap(KProcess* process, U32 len) {
+U32 allocHeap(struct KProcess* process, U32 len) {
 	U32 result = process->pHeap+process->heapSize;
 	process->heapSize+=len;
 	return result;
 }
 
-U32 stringArrayFromNative(KProcess* process, const char** ppStr, int count) {
+U32 stringArrayFromNative(struct KProcess* process, const char** ppStr, int count) {
 	int i;
 	U32 result = allocHeap(process, count*sizeof(U32));
 
@@ -58,7 +58,7 @@ U32 stringArrayFromNative(KProcess* process, const char** ppStr, int count) {
 	return result;
 }
 
-U32 getNextFileDescriptorHandle(KProcess* process) {
+U32 getNextFileDescriptorHandle(struct KProcess* process) {
 	int i;
 
 	for (i=0;i<sizeof(process->fds);i++) {
@@ -69,10 +69,10 @@ U32 getNextFileDescriptorHandle(KProcess* process) {
 	return 0;
 }
 
-KFileDescriptor* openFileDescriptor(KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
-	Node* node = getNodeFromLocalPath(process->currentDirectory, localPath);
-	OpenNode* openNode;
-	KFileDescriptor* result;
+struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
+	struct Node* node = getNodeFromLocalPath(process->currentDirectory, localPath);
+	struct OpenNode* openNode;
+	struct KFileDescriptor* result;
 
     if (!node) {
         return 0;
@@ -85,11 +85,11 @@ KFileDescriptor* openFileDescriptor(KProcess* process, const char* localPath, U3
 	return result;
 }
 
-KFileDescriptor* openFile(KProcess* process, const char* localPath, U32 accessFlags) {
+struct KFileDescriptor* openFile(struct KProcess* process, const char* localPath, U32 accessFlags) {
 	return openFileDescriptor(process, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process));
 }
 
-void initStdio(KProcess* process) {
+void initStdio(struct KProcess* process) {
     if (!getFileDescriptor(process, 0)) {
         openFileDescriptor(process, "/dev/tty0", K_O_RDONLY, 0, 0);
     }
@@ -97,16 +97,16 @@ void initStdio(KProcess* process) {
         openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 1);
     }
     if (!getFileDescriptor(process, 2)) {
-        KFileDescriptor* tty = openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 2);
+        openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 2);
     }
 }
 
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env) {
-	Node* node = getNodeFromLocalPath(currentDirectory, args[0]);
-	OpenNode* openNode = 0;
+	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0]);
+	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
-	Node* loaderNode = 0;
-	OpenNode* loaderOpenNode = 0;
+	struct Node* loaderNode = 0;
+	struct OpenNode* loaderOpenNode = 0;
 	BOOL isElf = TRUE;
 	const char* pArgs[128];
 
@@ -121,7 +121,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		return FALSE;
 	}
 	if (interpreter) {
-		Node* interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter);
+		struct Node* interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter);
 		if (!interpreterNode) {
 			return FALSE;
 		}
@@ -132,9 +132,9 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		loaderOpenNode = loaderNode->nodeType->open(loaderNode, K_O_RDONLY);
 	}
 	if (loaderOpenNode) {
-		Memory* memory = (Memory*)malloc(sizeof(Memory));
-		KProcess* process = (KProcess*)malloc(sizeof(KProcess));
-		KThread* thread = (KThread*)malloc(sizeof(KThread));		
+		struct Memory* memory = (struct Memory*)malloc(sizeof(struct Memory));
+		struct KProcess* process = (struct KProcess*)malloc(sizeof(struct KProcess));
+		struct KThread* thread = (struct KThread*)malloc(sizeof(struct KThread));		
 		U32 i;
 
 		initMemory(memory);
@@ -171,30 +171,30 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	return FALSE;
 }
 
-void processOnExitThread(KThread* thread) {
-	KArray* threads = &thread->process->threads;
+void processOnExitThread(struct KThread* thread) {
+	struct KArray* threads = &thread->process->threads;
 	removeObjectFromArray(threads, thread->id);
 	if (!getArrayCount(threads)) {
 		// :TODO:
 	}
 }
 
-KFileDescriptor* getFileDescriptor(KProcess* process, FD handle) {
+struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle) {
 	if (handle<MAX_FDS_PER_PROCESS && handle>=0)
 		return process->fds[handle];
 	return 0;
 }
 
-BOOL isProcessStopped(KProcess* process) {
+BOOL isProcessStopped(struct KProcess* process) {
 	return FALSE;
 }
 
-BOOL isProcessTerminated(KProcess* process) {
+BOOL isProcessTerminated(struct KProcess* process) {
 	return process->terminated;
 }
 
-U32 syscall_waitpid(KThread* thread, S32 pid, U32 status, U32 options) {
-	KProcess* process = 0;
+U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
+	struct KProcess* process = 0;
 
 	if (pid>0) {
 		process = getProcessById(pid);		
@@ -209,7 +209,7 @@ U32 syscall_waitpid(KThread* thread, S32 pid, U32 status, U32 options) {
         if (pid==0)
             pid = thread->process->groupId;
 		for (i=0;i<getProcessCount();i++) {
-			KProcess* p = getProcessById(i);
+			struct KProcess* p = getProcessById(i);
 			if (p && (isProcessStopped(process) || isProcessTerminated(process))) {
                 if (pid == -1) {
                     if (p->parentId == thread->process->id) {

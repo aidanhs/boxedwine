@@ -4,7 +4,7 @@
 #include "platform.h"
 
 // :TODO: this takes up a lot of memory, a simple inc instruction that is one byte will be decoded into 24-bytes
-typedef struct Op {
+struct Op {
 	void (*func)(struct CPU* cpu, struct Op* op);
 	U8 r1;
 	U8 r2;
@@ -16,6 +16,6 @@ typedef struct Op {
 	U32 eData;
 	U32 data1;
 	struct Op* next;
-} Op;
+};
 
 #endif

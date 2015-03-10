@@ -4,6 +4,6 @@
 #include "kobject.h"
 #include "nodeaccess.h"
 
-KObject* allocKFile(OpenNode* node);
+struct KObject* allocKFile(struct OpenNode* node);
 
 #endif

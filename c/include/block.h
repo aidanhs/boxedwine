@@ -4,8 +4,8 @@
 #include "op.h"
 #include "platform.h"
 
-typedef struct {	
-	Op* ops;
-} Block2;
+struct Block{	
+	struct Op* ops;
+};
 
 #endif

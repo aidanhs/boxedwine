@@ -3,10 +3,10 @@
 
 #include "kthread.h"
 
-void scheduleThread(KThread* thread);
-void unscheduleThread(KThread* thread);
-void waitThread(KThread* thread);
-void wakeThread(KThread* thread);
+void scheduleThread(struct KThread* thread);
+void unscheduleThread(struct KThread* thread);
+void waitThread(struct KThread* thread);
+void wakeThread(struct KThread* thread);
 void wakeThreads(U32 wakeType);
 void runSlice();
 

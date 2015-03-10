@@ -3,6 +3,6 @@
 
 #include "nodeaccess.h"
 
-extern NodeAccess ttyAccess;
+extern struct NodeAccess ttyAccess;
 
 #endif
