@@ -1898,7 +1898,7 @@ void FIST_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
 
 void FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
     U8 value[10];
-    copyMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
+    readMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FBLD(&cpu->fpu, value, cpu->fpu.top);
 	CYCLES(48);
@@ -1907,7 +1907,7 @@ void FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
 
 void FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
     U8 value[10];
-    copyMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
+    readMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FBLD(&cpu->fpu, value, cpu->fpu.top);
 	CYCLES(48);

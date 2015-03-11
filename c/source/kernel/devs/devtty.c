@@ -118,8 +118,6 @@ U32 tty_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len
 	}
 }
 
-struct OpenNode* freeOpenNodes;
-
 void tty_close(struct OpenNode* node) {
 	freeOpenNode(node);
 }

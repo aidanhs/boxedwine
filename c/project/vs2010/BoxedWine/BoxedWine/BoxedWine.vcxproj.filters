@@ -180,6 +180,9 @@
     <ClInclude Include="..\..\..\..\include\kfmmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devurandom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -268,6 +271,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\kfmmap.c">
       <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c">
+      <Filter>Source Files\kernel\dev</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

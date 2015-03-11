@@ -1459,6 +1459,7 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			break;
 		case 0x2a3: // MOV Od, EAX
 			op->func = movDirectEax;
+			op->base = ds;
 			if (ea16) {
 				op->data1 = FETCH16();
 			} else {

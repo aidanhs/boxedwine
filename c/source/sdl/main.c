@@ -12,6 +12,7 @@
 #include "kstat.h"
 #include "virtualfile.h"
 #include "devtty.h"
+#include "devurandom.h"
 
 #include CURDIR
 
@@ -65,6 +66,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
+	addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
 		printf("SDL_Init Error: %d", SDL_GetError());

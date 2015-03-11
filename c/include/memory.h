@@ -25,7 +25,8 @@ void writed(struct Memory* memory, U32 address, U32 value);
 U64 readq(struct Memory* memory, U32 address);
 void writeq(struct Memory* memory, U32 address, U64 value);
 void zeroMemory(struct Memory* memory, U32 address, int len);
-void copyMemory(struct Memory* memory, U8* data, U32 address, int len);
+void readMemory(struct Memory* memory, U8* data, U32 address, int len);
+void writeMemory(struct Memory* memory, U32 address, U8* data, int len);
 
 extern struct Page invalidPage;
 

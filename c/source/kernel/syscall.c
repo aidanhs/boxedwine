@@ -8,6 +8,7 @@
 #include "log.h"
 #include "kscheduler.h"
 #include "kerror.h"
+#include "ksystem.h"
 
 #define LOG klog
 
@@ -176,11 +177,15 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_seek(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_lseek fildes=%d offset=%d whence=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_getpid:
+		result = thread->process->id;
+		LOG("__NR_getpid result=%d", result);
 		break;
 	case __NR_access:
+		result = syscall_access(thread, ARG1, ARG2);
+		LOG("__NR_access filename=%s flags=0x%X result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;
+		/*
 	case __NR_kill:
 		break;
 	case __NR_rename:
@@ -311,7 +316,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		*/
 	case __NR_fstat64:
 		result = syscall_fstat64(thread, ARG1, ARG2);
-		LOG("__NR_fstat64 fildes=%d buf=0X%X result=%d", ARG1, ARG2, result);
+		LOG("__NR_fstat64 fildes=%d buf=%X result=%d", ARG1, ARG2, result);
 		break;
 		/*
 	case __NR_getuid32:
@@ -350,8 +355,22 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_sched_getaffinity:
 		break;
-	case __NR_set_thread_area:
+		*/
+	case __NR_set_thread_area: {
+		struct user_desc desc;
+		readMemory(memory, (U8*)&desc, ARG1, sizeof(struct user_desc));
+		LOG("__NR_set_thread_area entry_number=%d base_addr=%X", desc.entry_number, desc.base_addr);
+        if (desc.entry_number==-1) {
+            desc.entry_number=9;
+			writeMemory(memory, ARG1, (U8*)&desc, sizeof(struct user_desc));
+        }
+        if (desc.base_addr!=0) {
+            thread->cpu.ldt[desc.entry_number] = desc.base_addr;
+        }
+        result=0;		
 		break;
+	}
+		/*
 	case __NR_exit_group:
 		break;
 	case __NR_epoll_create:

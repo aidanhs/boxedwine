@@ -42,4 +42,5 @@ struct KFileDescriptor* openFile(struct KProcess* process, const char* localPath
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
 BOOL isProcessStopped(struct KProcess* process);
 BOOL isProcessTerminatedstruct (struct KProcess* process);
+struct Node* getNode(struct KProcess* process, U32 fileName);
 #endif

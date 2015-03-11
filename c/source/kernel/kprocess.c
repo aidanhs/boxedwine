@@ -248,3 +248,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
     removeProcess(process);
     return process->id;
 }
+
+struct Node* getNode(struct KProcess* process, U32 fileName) {
+	return getNodeFromLocalPath(process->currentDirectory, getNativeString(process->memory, fileName));
+}

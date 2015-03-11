@@ -119,6 +119,7 @@
     <ClInclude Include="..\..\..\..\include\cpu.h" />
     <ClInclude Include="..\..\..\..\include\decoder.h" />
     <ClInclude Include="..\..\..\..\include\devtty.h" />
+    <ClInclude Include="..\..\..\..\include\devurandom.h" />
     <ClInclude Include="..\..\..\..\include\ea.h" />
     <ClInclude Include="..\..\..\..\include\filepath.h" />
     <ClInclude Include="..\..\..\..\include\filesystem.h" />
@@ -172,6 +173,7 @@
     <ClCompile Include="..\..\..\..\source\io\node.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kalloc.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfile.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c" />

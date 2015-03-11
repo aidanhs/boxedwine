@@ -115,3 +115,27 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
     }
 	return fd->kobject->access->stat(fd->kobject, thread->process->memory, buf, TRUE);
 }
+
+U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
+	struct Node* node = getNode(thread->process, fileName);
+
+    if (node==0) {
+        return -K_ENOENT;
+    }
+    if (flags==0)
+        return 0;
+    if ((flags & 4)!=0) {
+		if (!node->nodeType->canRead(node)) {
+            return -K_EACCES;
+        }
+    }
+    if ((flags & 2)!=0) {
+		if (!node->nodeType->canWrite(node)) {
+            return -K_EACCES;
+        }
+    }
+    if ((flags & 1)!=0) {
+        kwarn("access not fully implemented.  Can't test for executable permission");
+    }
+    return 0;
+}

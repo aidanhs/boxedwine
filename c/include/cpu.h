@@ -29,6 +29,18 @@ struct CPU {
 	U32     blockCounter; // number of clocks since the start of the block	
 };
 
+struct user_desc {
+    U32  entry_number;
+    U32 base_addr;
+    U32  limit;
+    U32  seg_32bit:1;
+    U32  contents:2;
+    U32  read_exec_only:1;
+    U32  limit_in_pages:1;
+    U32  seg_not_present:1;
+    U32  useable:1;
+};
+
 U32 getCF(struct CPU* cpu);
 U32 getOF(struct CPU* cpu);
 U32 getAF(struct CPU* cpu);

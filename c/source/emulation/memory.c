@@ -130,10 +130,19 @@ void zeroMemory(struct Memory* memory, U32 address, int len) {
 	}
 }
 
-void copyMemory(struct Memory* memory, U8* data, U32 address, int len) {
+void readMemory(struct Memory* memory, U8* data, U32 address, int len) {
 	int i;
 	for (i=0;i<len;i++) {
 		*data=readb(memory, address);
+		address++;
+		data++;
+	}
+}
+
+void writeMemory(struct Memory* memory, U32 address, U8* data, int len) {
+	int i;
+	for (i=0;i<len;i++) {
+		writeb(memory, address, *data);
 		address++;
 		data++;
 	}

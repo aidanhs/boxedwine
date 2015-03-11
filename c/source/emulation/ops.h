@@ -890,8 +890,8 @@ void lear32_32(struct CPU* cpu, struct Op* op) {
 }
 
 void movs16r16(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = cpu->reg[op->r2].u16;
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
+	cpu->segValue[op->r2] = cpu->reg[op->r1].u16;
+	cpu->segAddress[op->r2] = cpu->ldt[cpu->segValue[op->r2] >> 3];
 	CYCLES(2);
 	NEXT();
 }
@@ -1037,7 +1037,7 @@ void movDirectAx(struct CPU* cpu, struct Op* op) {
 }
 
 void movDirectEax(struct CPU* cpu, struct Op* op) {
-	writed(cpu->memory, cpu->segAddress[DS]+op->data1, EAX);
+	writed(cpu->memory, cpu->segAddress[op->base]+op->data1, EAX);
 	CYCLES(1);
 	NEXT();
 }
