@@ -18,6 +18,7 @@
 void initProcess(struct KProcess* process, struct Memory* memory) {
 	memset(process, 0, sizeof(struct KProcess));
 	process->memory = memory;
+	memory->process = process;
 	process->id = addProcess(process);
 	process->groupId = 1;
 	initArray(&process->threads);	

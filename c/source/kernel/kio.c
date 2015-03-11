@@ -5,6 +5,9 @@
 #include "kobjectaccess.h"
 #include "log.h"
 #include "kerror.h"
+#include "nodetype.h"
+#include "nodeaccess.h"
+#include "node.h"
 
 #include <errno.h>
 
@@ -82,4 +85,33 @@ U32 syscall_close(struct KThread* thread, FD handle) {
     }
 	closeFD(fd);
 	return 0;
+}
+
+S32 syscall_seek(struct KThread* thread, FD handle, S32 offset, U32 whence) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
+	S64 pos;
+
+    if (fd==0) {
+        return -K_EBADF;
+    }
+	if (whence == 0) {
+		pos = offset;
+	} else if (whence == 1) {
+		pos = offset + fd->kobject->access->seek(fd->kobject, 0);
+	} else if (whence == 2) {
+		struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
+		pos = openNode->access->length(openNode) + offset;
+	} else {
+		return -K_EINVAL;
+	}
+	return (S32)fd->kobject->access->seek(fd->kobject, pos);
+}
+
+U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
+	
+    if (fd==0) {
+        return -K_EBADF;
+    }
+	return fd->kobject->access->stat(fd->kobject, thread->process->memory, buf, TRUE);
 }

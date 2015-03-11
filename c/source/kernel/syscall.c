@@ -171,8 +171,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_chmod:
 		break;
+		*/
 	case __NR_lseek:
+		result = syscall_seek(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_lseek fildes=%d offset=%d whence=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_getpid:
 		break;
 	case __NR_access:
@@ -243,8 +247,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_clone:
 		break;
+		*/
 	case __NR_uname:
+		result = syscall_uname(thread, ARG1);
+		LOG("__NR_uname name=%.8X result=%d", ARG1, result);
 		break;
+		/*
 	case __NR_modify_ldt:
 		break;
 	case __NR_mprotect:
@@ -288,16 +296,24 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_ugetrlimit:
 		break;
+		*/
 	case __NR_mmap2:
+		result = mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
+		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
 		break;
+		/*
 	case __NR_ftruncate64:
 		break;
 	case __NR_stat64:
 		break;
 	case __NR_lstat64:
 		break;
+		*/
 	case __NR_fstat64:
+		result = syscall_fstat64(thread, ARG1, ARG2);
+		LOG("__NR_fstat64 fildes=%d buf=0X%X result=%d", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_getuid32:
 		break;
 	case __NR_getgid32:

@@ -9,6 +9,9 @@
 #include "ops.h"
 #include "kalloc.h"
 #include "conditions.h"
+#include "setcc.h"
+
+#define RESTART() if (cpu->big) { opCode = 0x200; ea16 = 0; } else { opCode = 0; ea16 = 1; } ds = DS; ss = SS; rep = 0; continue
 
 #define DECODE_MEMORY(name)						\
 if (ea16) {										\
@@ -261,6 +264,19 @@ int decodeEa32(struct CPU* cpu, struct Op* op, int ds, int ss, int rm, int ip) {
 	op->func = jump##n##;					\
 	op->data1 = FETCH_S##b##();				\
 	FINISH_OP();	
+
+#define SETCC(n)							\
+	rm = FETCH8();							\
+	if (rm>=0xC0) {							\
+		op->func = set##n##_reg;			\
+		op->r1 = E(rm);						\
+	} else if (ea16) {						\
+		op->func = set##n##_mem16;			\
+		ip = decodeEa16(cpu, op, ds, ss, rm, ip);	\
+	} else {								\
+		op->func = set##n##_mem32;			\
+		ip = decodeEa32(cpu, op, ds, ss, rm, ip);	\
+	}
 
 #define CMOV(c, b)							\
 	rm = FETCH8();							\
@@ -973,11 +989,11 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			op->data1 = FETCH32();
 			break;
 		case 0x69: // IMUL Gw,Ew,Iw
-			DECODE_INST_GE(dimul, 16);
+			DECODE_INST_GE(dimulc, 16);
 			op->data1 = FETCH_S16();
 			break;
 		case 0x269: // IMUL Gd,Ed,Id
-			DECODE_INST_GE(dimul, 32);
+			DECODE_INST_GE(dimulc, 32);
 			op->data1 = FETCH32();
 			break;
 		case 0x6a: // Push Ib
@@ -989,11 +1005,11 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			op->data1 = FETCH_S8();
 			break;
 		case 0x6b: // IMUL Gw,Ew,Ib
-			DECODE_INST_GE(dimul, 16);
+			DECODE_INST_GE(dimulc, 16);
 			op->data1 = FETCH_S8();
 			break;
 		case 0x26b: // IMUL Gd,Ed,Ib
-			DECODE_INST_GE(dimul, 32);
+			DECODE_INST_GE(dimulc, 32);
 			op->data1 = FETCH_S8();
 			break;
 		case 0x70: // JO
@@ -1657,8 +1673,9 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			case 7: DECODE_E(sar8); break;
 			}			
 			op->data1 = FETCH8() & 0x1F;
-			if (op->data1==0)
-				continue;		
+			if (op->data1==0) {
+				RESTART();		
+			}
 			switch (G(rm)) {
 				case 0: op->data1 &= 0x7; break;
 				case 1: op->data1 &= 0x7; break;
@@ -1680,8 +1697,9 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			case 7: DECODE_E(sar16); break;
 			}
 			op->data1 = FETCH8() & 0x1F;
-			if (op->data1==0)
-				continue;		
+			if (op->data1==0) {
+				RESTART();		
+			}
 			switch (G(rm)) {
 				case 0: op->data1 &= 0xf; break;
 				case 1: op->data1 &= 0xf; break;
@@ -1703,8 +1721,9 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			case 7: DECODE_E(sar32); break;
 			}
 			op->data1 = FETCH8() & 0x1F;
-			if (op->data1==0)
-				continue;		
+			if (op->data1==0) {
+				RESTART();		
+			}
 			break;
 		case 0xc2: // RETN Iw
 			op->func = retnIw16;
@@ -2628,7 +2647,159 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			return block;
 		case 0x38f:
 			JUMP(NLE, 32);
-			return block;	
+			return block;			
+		case 0x190:
+		case 0x390:
+			SETCC(O);
+			break;
+		case 0x191:
+		case 0x391:
+			SETCC(NO);
+			break;
+		case 0x192:
+		case 0x392:
+			SETCC(B);
+			break;
+		case 0x193:
+		case 0x393:
+			SETCC(NB);
+			break;
+		case 0x194:
+		case 0x394:
+			SETCC(Z);
+			break;
+		case 0x195:
+		case 0x395:
+			SETCC(NZ);
+			break;
+		case 0x196:
+		case 0x396:
+			SETCC(BE);
+			break;
+		case 0x197:
+		case 0x397:
+			SETCC(NBE);
+			break;
+		case 0x198:
+		case 0x398:
+			SETCC(S);
+			break;
+		case 0x199:
+		case 0x399:
+			SETCC(NS);
+			break;
+		case 0x19a:
+		case 0x39a:
+			SETCC(P);
+			break;
+		case 0x19b:
+		case 0x39b:
+			SETCC(NP);
+			break;
+		case 0x19c:
+		case 0x39c:
+			SETCC(L);
+			break;
+		case 0x19d:
+		case 0x39d:
+			SETCC(NL);
+			break;
+		case 0x19e:
+		case 0x39e:
+			SETCC(LE);
+			break;
+		case 0x19f:
+		case 0x39f:
+			SETCC(NLE);
+			break;
+		case 0x1a1: // POP FS
+			op->func = popSeg16;
+			op->r1 = FS;
+			break;
+		case 0x3a1: // POP FS
+			op->func = popSeg32;
+			op->r1 = FS;
+			break;
+		case 0x1a2: // CPUID
+		case 0x3a2:
+			op->func = cpuid;
+			break;		
+		case 0x1a3: // BT Ew,Gw 
+			DECODE_INST_EG(bt, 16);
+			break;
+		case 0x3a3: // BT Ed,Gd
+			DECODE_INST_EG(bt, 32);
+			break;
+		case 0x1a4: // SHLD Ew,Gw,Ib
+			DECODE_INST_EG(dshl, 16);
+			op->data1 = FETCH8();
+			op->data1 &= 0x1F;
+			if (op->data1 == 0) { 
+				RESTART();
+			}
+			break;
+		case 0x3a4: // SHLD Ed,Gd,Ib
+			DECODE_INST_EG(dshl, 32);
+			op->data1 = FETCH8();
+			op->data1 &= 0x1F;
+			if (op->data1 == 0) { 
+				RESTART();
+			}
+			break;
+		case 0x1a5: // SHLD Ew,Gw,Cl
+			DECODE_INST_EG(dshlcl, 16);
+			break;
+		case 0x3a5: // SHLD Ed,Gd,Cl
+			DECODE_INST_EG(dshlcl, 32);
+			break;
+		case 0x1a9: // POP GS
+			op->func = popSeg16;
+			op->r1 = GS;
+			break;
+		case 0x3a9: // POP GS
+			op->func = popSeg32;
+			op->r1 = GS;
+			break;
+		case 0x1ab: // BTS Ew,Gw
+			DECODE_INST_EG(bts, 16);
+			break;
+		case 0x3ab: // BTS Ed,Gd
+			DECODE_INST_EG(bts, 32);
+			break;
+		case 0x1ac: // SHRD Ew,Gw,Ib
+			DECODE_INST_EG(dshr, 16);
+			op->data1 = FETCH8();
+			op->data1 &= 0x1F;
+			if (op->data1 == 0) { 
+				RESTART();
+			}
+			break;
+		case 0x3ac: // SHRD Ed,Gd,Ib
+			DECODE_INST_EG(dshr, 32);
+			op->data1 = FETCH8();
+			op->data1 &= 0x1F;
+			if (op->data1 == 0) { 
+				RESTART();
+			}
+			break;
+		case 0x1ad: // SHRD Ew,Gw,CL
+			DECODE_INST_EG(dshrcl, 16);
+			break;
+		case 0x3ad: // SHRD Ed,Gd,CL
+			DECODE_INST_EG(dshrcl, 32);
+			break;
+		case 0x1af: // IMUL Gw,Ew
+			DECODE_INST_GE(dimul, 16);
+			break;
+		case 0x3af: // IMUL Gd,Ed
+			DECODE_INST_GE(dimul, 32);
+			break;
+		case 0x1b1: // CMPXCHG Ew,Gw
+			DECODE_INST_EG(cmpxchg, 16);
+			break;
+		case 0x3b1: // CMPXCHG Ed,Gd
+			DECODE_INST_EG(cmpxchg, 32);
+			break;
 		case 0x1b6: // MOVZX Gw,Eb
 			DECODE_INST_GE(movxz8, 16);
 			break;
@@ -2637,6 +2808,12 @@ struct Op* decodeBlock(struct CPU* cpu) {
 			break;
 		case 0x3b7: // MOVXZ Gd,Ew
 			DECODE_INST_GE(movxz16, 32);
+			break;
+		case 0x1be: // MOVSX Gw,Eb
+			DECODE_INST_GE(movsx8, 16);
+			break;
+		case 0x3be: // MOVSX Gd,Eb
+			DECODE_INST_GE(movsx8, 32);
 			break;
 		default:
 			kpanic("Unknown op code %x", inst);

@@ -9,7 +9,7 @@
 // :TODO: what about sync'ing the writes back to the file?
 
 static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, data);
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, GET_PAGE(data));
 	U32 ram = allocRamPage();
 	U32 page = address >> 12;
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
@@ -69,4 +69,9 @@ static void ondemandfile_clear(struct Memory* memory, U32 page, U32 data) {
 	}
 }
 
-struct Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear};
+static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address, U32 data) {
+	ondemmandFile(memory, address, data);
+	return getPhysicalAddress(memory, address);
+}
+
+struct Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear, ondemandfile_physicalAddress};

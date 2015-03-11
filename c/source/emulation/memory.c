@@ -193,6 +193,14 @@ void memcopyFromNative(struct Memory* memory, U32 address, const unsigned char* 
 	}
 }
 
+void writeNativeString(struct Memory* memory, U32 address, const char* str) {	
+	while (*str) {
+		writeb(memory, address, *str);
+		str++;
+		address++;
+	}
+}
+
 static char tmpBuffer[1024];
 
 char* getNativeString(struct Memory* memory, U32 address) {

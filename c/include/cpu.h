@@ -46,6 +46,7 @@ U32 getPF(struct CPU* cpu);
 #define setZF(cpu, b) if (b) cpu->flags|=ZF; else cpu->flags&=~ZF
 
 void fillFlagsNoCFOF(struct CPU* cpu);
+void fillFlagsNoCF(struct CPU* cpu);
 void fillFlags(struct CPU* cpu);
 void fillFlagsNoOF(struct CPU* cpu);
 

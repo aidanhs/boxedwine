@@ -22,3 +22,13 @@ struct KProcess* getProcessById(U32 pid) {
 U32 getProcessCount() {
 	return getArrayCount((&processes));
 }
+
+U32 syscall_uname(struct KThread* thread, U32 address) {
+	struct Memory* memory = thread->process->memory;
+
+    writeNativeString(memory, address, "Linux");
+    writeNativeString(memory, address+65, "GNU/Linux");
+    writeNativeString(memory, address+130, "3.11.0-12-generic");
+    writeNativeString(memory, address+260, "i686");
+	return 0;
+}

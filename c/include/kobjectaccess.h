@@ -6,6 +6,7 @@
 #include "memory.h"
 
 struct KObjectAccess {
+	S64  (*seek)(struct KObject* obj, S64 pos);
 	void (*onDelete)(struct KObject* obj);
     void (*setBlocking)(struct KObject* obj, BOOL blocking);
     BOOL (*isBlocking)(struct KObject* obj);

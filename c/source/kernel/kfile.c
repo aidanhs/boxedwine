@@ -74,7 +74,12 @@ BOOL kfile_canMap(struct KObject* obj) {
 	return ((struct OpenNode*)obj->data)->access->canMap((struct OpenNode*)obj->data);
 }
 
-struct KObjectAccess kfileAccess = {kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLockW, kfile_setLock, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_write, kfile_read, kfile_stat, kfile_canMap};
+S64 kfile_seek(struct KObject* obj, S64 pos) {
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	return openNode->access->seek(openNode, pos);
+}
+
+struct KObjectAccess kfileAccess = {kfile_seek, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLockW, kfile_setLock, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_write, kfile_read, kfile_stat, kfile_canMap};
 
 struct KObject* allocKFile(struct OpenNode* node) {
 	return allocKObject(&kfileAccess, (void*)node);

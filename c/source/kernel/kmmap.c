@@ -35,12 +35,12 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 	if (shared) {
 		kpanic("Shared mmap not implemented");
 	}
-	if ((flags & K_MAP_ANONYMOUS) && fildes>=0) {
+	if (!(flags & K_MAP_ANONYMOUS) && fildes>=0) {
 		fd = getFileDescriptor(thread->process, fildes);
         if (fd == 0) {
             return -K_EBADF;
         }
-		if (fd->kobject->access->canMap(fd->kobject)) {
+		if (!fd->kobject->access->canMap(fd->kobject)) {
             return -K_EACCES;
         }
         if (len==0 || (off & 0xFFF)!=0) {

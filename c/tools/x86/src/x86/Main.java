@@ -34,9 +34,61 @@ public class Main {
             fos = new FileOutputStream("conditions.h");
             conditions();
             fos.close();
+            fos = new FileOutputStream("setcc.h");
+            setCC();
+            fos.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    static public void setCC() throws IOException {
+        cc("setO", "getOF(cpu)");
+        cc("setNO", "!getOF(cpu)");
+        cc("setB", "getCF(cpu)");
+        cc("setNB", "!getCF(cpu)");
+        cc("setZ", "getZF(cpu)");
+        cc("setNZ", "!getZF(cpu)");
+        cc("setBE", "getZF(cpu) || getCF(cpu)");
+        cc("setNBE", "!getZF(cpu) && !getCF(cpu)");
+        cc("setS", "getSF(cpu)");
+        cc("setNS", "!getSF(cpu)");
+        cc("setP", "getPF(cpu)");
+        cc("setNP", "!getPF(cpu)");
+        cc("setL", "getSF(cpu)!=getOF(cpu)");
+        cc("setNL", "getSF(cpu)==getOF(cpu)");
+        cc("setLE", "getZF(cpu) || getSF(cpu)!=getOF(cpu)");
+        cc("setNLE", "!getZF(cpu) && getSF(cpu)==getOF(cpu)");
+    }
+
+    static public void cc(String name, String condition) throws IOException {
+        out("void "+name+"_reg(struct CPU* cpu, struct Op* op) {");
+        out("    if ("+condition+") {");
+        out("        *cpu->reg8[op->r1] = 1;");
+        out("    } else {");
+        out("        *cpu->reg8[op->r1] = 0;");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_mem16(struct CPU* cpu, struct Op* op) {");
+        out("    if ("+condition+") {");
+        out("        writeb(cpu->memory, eaa16(cpu, op), 1);");
+        out("    } else {");
+        out("        writeb(cpu->memory, eaa16(cpu, op), 0);");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
+        out("void "+name+"_mem32(struct CPU* cpu, struct Op* op) {");
+        out("    if ("+condition+") {");
+        out("        writeb(cpu->memory, eaa32(cpu, op), 1);");
+        out("    } else {");
+        out("        writeb(cpu->memory, eaa32(cpu, op), 0);");
+        out("    }");
+        out("    CYCLES(1);");
+        out("    NEXT();");
+        out("}");
     }
 
     static public void conditions() throws IOException {

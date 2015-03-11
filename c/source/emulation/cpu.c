@@ -46,6 +46,20 @@ void fillFlags(struct CPU* cpu) {
 	}
 }
 
+void fillFlagsNoCF(struct CPU* cpu) {
+	if (cpu->inst!=FLAGS_NONE) {
+		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+
+		cpu->inst = FLAGS_NONE;		 
+        if (getAF(cpu)) newFlags |= AF;
+        if (getZF(cpu)) newFlags |= ZF;
+        if (getPF(cpu)) newFlags |= PF;
+        if (getSF(cpu)) newFlags |= SF;
+		if (getOF(cpu)) newFlags |= OF;
+        cpu->flags = newFlags;
+	}
+}
+
 void fillFlagsNoOF(struct CPU* cpu) {
 	if (cpu->inst!=FLAGS_NONE) {
 		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
