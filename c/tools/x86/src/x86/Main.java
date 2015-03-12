@@ -37,9 +37,681 @@ public class Main {
             fos = new FileOutputStream("setcc.h");
             setCC();
             fos.close();
+            fos = new FileOutputStream("decode.h");
+            decode();
+            fos.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    static public void eg(String inst, String name, int bits) throws IOException {
+        eg(inst, name, bits, null);
+    }
+    static public void eg(String inst, String name, int bits, String extra) throws IOException {
+        if (bits==8)
+            out("// "+name.toUpperCase()+" Eb,Gb");
+        else if (bits==16)
+            out("// "+name.toUpperCase()+" Ew,Gw");
+        else
+            out("// "+name.toUpperCase()+" Ed,Gd");
+        out("BOOL decode"+inst+"(struct DecodeData* data) {");
+        out("    U8 rm = FETCH8(data);");
+        out("    if (rm>=0xC0) {");
+        out("        data->op->func = "+name+"r"+bits+"r"+bits+";");
+        out("        data->op->r1 = E(rm);");
+        out("        data->op->r2 = G(rm);");
+        out("    } else if (data->ea16) {");
+        out("        data->op->func = "+name+"e"+bits+"r"+bits+"_16;");
+        out("        data->op->r1 = G(rm);");
+        out("        decodeEa16(data, rm);");
+        out("    } else {");
+        out("        data->op->func = "+name+"e"+bits+"r"+bits+"_32;");
+        out("        data->op->r1 = G(rm);");
+        out("        decodeEa32(data, rm);");
+        out("    }");
+        if (extra!=null)
+            out(extra);
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+    static public void ge(String inst, String name, int bits) throws IOException {
+        ge(inst, name, bits, 0, null);
+    }
+
+    static public void ge(String inst, String name, int bits, int data, String comment) throws IOException {
+        if (comment!=null) {
+            out("// "+comment);
+        } else if (bits==8)
+            out("// "+name.toUpperCase()+" Gb,Eb");
+        else if (bits==16)
+            out("// "+name.toUpperCase()+" Gw,Ew");
+        else
+            out("// "+name.toUpperCase()+" Gd,Ed");
+        out("BOOL decode"+inst+"(struct DecodeData* data) {");
+        out("    U8 rm = FETCH8(data);");
+        out("    if (rm>=0xC0) {");
+        out("        data->op->func = "+name+"r"+bits+"r"+bits+";");
+        out("        data->op->r1 = G(rm);");
+        out("        data->op->r2 = E(rm);");
+        out("    } else if (data->ea16) {");
+        out("        data->op->func = "+name+"r"+bits+"e"+bits+"_16;");
+        out("        data->op->r1 = G(rm);");
+        out("        decodeEa16(data, rm);");
+        out("    } else {");
+        out("        data->op->func = "+name+"r"+bits+"e"+bits+"_32;");
+        out("        data->op->r1 = G(rm);");
+        out("        decodeEa32(data, rm);");
+        out("    }");
+        decodeData(data);
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void ad(String inst, String name, int bits) throws IOException {
+        if (bits==8)
+            out("// "+name.toUpperCase()+" Al,Ib");
+        else if (bits==16)
+            out("// "+name.toUpperCase()+" Ax,Iw");
+        else
+            out("// "+name.toUpperCase()+" Eax,Id");
+        out("BOOL decode"+inst+"(struct DecodeData* data) {");
+        out("    data->op->func = "+name+bits+"_reg;");
+        out("    data->op->r1 = 0;");
+        out("    data->op->data1 = FETCH"+bits+"(data);");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+    static public void decodeArith(int base, String name) throws IOException {
+        String h = String.valueOf(base/16);
+        int o = base % 16;
+        eg("0"+h+Integer.toHexString(o), name, 8);
+        eg("0"+h+Integer.toHexString(o+1), name, 16);
+        eg("2"+h+Integer.toHexString(o+1), name, 32);
+
+        ge("0"+h+Integer.toHexString(o+2), name, 8);
+        ge("0"+h+Integer.toHexString(o+3), name, 16);
+        ge("2"+h+Integer.toHexString(o+3), name, 32);
+
+        ad("0"+h+Integer.toHexString(o+4), name, 8);
+        ad("0"+h+Integer.toHexString(o+5), name, 16);
+        ad("2"+h+Integer.toHexString(o+5), name, 32);
+    }
+
+    static public void decodePushSeg(String base, String seg) throws IOException {
+        out("// PUSH "+seg.toUpperCase());
+        out("BOOL decode0"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = pushSeg16;");
+        out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+        out("// PUSH "+seg.toUpperCase());
+        out("BOOL decode2"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = pushSeg32;");
+        out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodePopSeg(String base, String seg) throws IOException {
+        out("// POP "+seg.toUpperCase());
+        out("BOOL decode0"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = popSeg16;");
+        out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+        out("// POP "+seg.toUpperCase());
+        out("BOOL decode2"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = popSeg32;");
+        out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeSeg(String base, String seg) throws IOException {
+        out("// SEG "+seg.toUpperCase());
+        out("BOOL decode0"+base+"(struct DecodeData* data) {");
+        out("    data->ds = "+seg.toUpperCase()+";");
+        out("    data->ss = "+seg.toUpperCase()+";");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeFunc(String base, String func) throws IOException {
+        out("// "+func.toUpperCase());
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeE(String comment, String base, String func, int data) throws IOException {
+        out("// "+comment.toUpperCase());
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    U8 rm = FETCH8(data);");
+        out("    DECODE_E("+func+"_reg, "+func+"_mem16, "+func+"_mem32);");
+        decodeData(data);
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeFuncEAdata(String comment, String base, String func) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        out("    if (data->ea16) {");
+        out("        data->op->data1 = FETCH16(data);");
+        out("    } else {");
+        out("        data->op->data1 = FETCH32(data);");
+        out("    }");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeString(String base, String name) throws IOException {
+        out("// "+name.toUpperCase());
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    if (data->ea16) {");
+        out("        if (data->rep) {");
+        out("            data->op->func = "+name+"16_r;");
+        out("        } else {");
+        out("            data->op->func = "+name+"16;");
+        out("        }");
+        out("    } else {");
+        out("        if (data->rep) {");
+        out("            data->op->func = "+name+"32_r;");
+        out("        } else {");
+        out("            data->op->func = "+name+"32;");
+        out("        }");
+        out("    }");
+        out("    data->op->data1 = data->rep_zero;");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+    static public void decodeFunc(String comment, String base, String func, int reg) throws IOException {
+        decodeFunc(comment, base, func, String.valueOf(reg));
+    }
+    static public void decodeFunc(String comment, String base, String func, String reg) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        out("    data->op->r1 = "+reg+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+    static public void decodeFuncRegData(String comment, String base, String func, int reg, int bits) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        out("    data->op->r1 = "+reg+";");
+        decodeData(bits);
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+    static public void decodeFunc(String comment, String base, String func, int reg1, int reg2) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        out("    data->op->r1 = "+reg1+";");
+        out("    data->op->r2 = "+reg2+";");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeData(int bits) throws IOException {
+        if (bits==8) {
+            out("    data->op->data1 = FETCH8(data);");
+        } else if (bits==16) {
+            out("    data->op->data1 = FETCH16(data);");
+        } else if (bits==32) {
+            out("    data->op->data1 = FETCH32(data);");
+        } else if (bits == -8) {
+            out("    data->op->data1 = FETCH_S8(data);");
+        } else if (bits == -16) {
+            out("    data->op->data1 = FETCH_S16(data);");
+        }
+    }
+    static public void decodeFuncData(String comment, String base, String func, int bits) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        decodeData(bits);
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeFuncDataEndOfBlock(String comment, String base, String func, int bits) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        decodeData(bits);
+        out("    FINISH_OP(data);");
+        out("    return FALSE;");
+        out("}");
+    }
+
+    static public void decodeJump(String base, String c, int bits) throws IOException {
+        out("// J"+c);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = jump"+c+";");
+        decodeData(bits);
+        out("    FINISH_OP(data);");
+        out("    return FALSE;");
+        out("}");
+    }
+
+    static public void decodeGroup3(String comment, String base, int bits) throws IOException {
+        out("// "+comment);
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    U8 rm = FETCH8(data);");
+        out("    switch (G(rm)) {");
+        out("    case 0x00:");
+        out("    case 0x01:");
+        out("        DECODE_E(test"+bits+"_reg, test"+bits+"_mem16, test"+bits+"_mem32);");
+        out("        data->op->data1 = FETCH"+bits+"(data);");
+        out("        break;");
+        out("    case 0x02:");
+        out("        DECODE_E(not"+bits+"_reg, not"+bits+"_mem16, not"+bits+"_mem32);");
+        out("        break;");
+        out("    case 0x03:");
+        out("        DECODE_E(neg"+bits+"_reg, neg"+bits+"_mem16, neg"+bits+"_mem32);");
+        out("        break;");
+        out("    case 0x04:");
+        out("        DECODE_E(mul"+bits+"_reg, mul"+bits+"_mem16, mul"+bits+"_mem32);");
+        out("        break;");
+        out("    case 0x05:");
+        out("        DECODE_E(imul"+bits+"_reg, imul"+bits+"_mem16, imul"+bits+"_mem32);");
+        out("        break;");
+        out("    case 0x06:");
+        out("        DECODE_E(div"+bits+"_reg, div"+bits+"_mem16, div"+bits+"_mem32);");
+        out("        break;");
+        out("    case 0x07:");
+        out("        DECODE_E(idiv"+bits+"_reg, idiv"+bits+"_mem16, idiv"+bits+"_mem32);");
+        out("        break;");
+        out("    }");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decodeCmov(String inst, String c, int bits) throws IOException {
+        out("// CMOV"+c);
+        out("BOOL decode"+inst+"(struct DecodeData* data) {");
+        out("    U8 rm = FETCH8(data);");
+        out("    if (rm>=0xC0) {");
+        out("        data->op->func = cmov"+c+"_"+bits+"_reg;");
+        out("        data->op->r1 = G(rm);");
+        out("        data->op->r2 = E(rm);");
+        out("    } else if (data->ea16) {");
+        out("        data->op->func = cmov"+c+"_"+bits+"_mem16;");
+        out("        data->op->r1 = G(rm);");
+        out("        decodeEa16(data, rm);");
+        out("    } else {");
+        out("        data->op->func = cmov"+c+"_"+bits+"_mem32;");
+        out("        data->op->r1 = G(rm);");
+        out("        decodeEa32(data, rm);");
+        out("    }");
+        out("    NEXT_OP(data);");
+        out("    return TRUE;");
+        out("}");
+    }
+
+    static public void decode() throws IOException {
+        decodeArith(0, "add");
+        decodePushSeg("06", "es");
+        decodePopSeg("07", "es");
+        decodeArith(8, "or");
+        decodePushSeg("0e", "cs");
+        decodeArith(0x10, "adc");
+        decodePushSeg("16", "ss");
+        decodePopSeg("17", "ss");
+        decodeArith(0x18, "sbb");
+        decodePushSeg("1e", "ds");
+        decodePopSeg("1f", "ds");
+        decodeArith(0x20, "and");
+        decodeSeg("26", "es");
+        decodeFunc("027", "daa");
+        decodeArith(0x28, "sub");
+        decodeSeg("2e", "cs");
+        decodeFunc("02f", "das");
+        decodeArith(0x30, "xor");
+        decodeSeg("36", "ss");
+        decodeFunc("037", "aaa");
+        decodeArith(0x38, "cmp");
+        decodeSeg("3e", "ds");
+        decodeFunc("03f", "aas");
+        decodeFunc("INC AX", "040", "inc16_reg", 0);
+        decodeFunc("INC EAX", "240", "inc32_reg", 0);
+        decodeFunc("INC CX", "041", "inc16_reg", 1);
+        decodeFunc("INC ECX", "241", "inc32_reg", 1);
+        decodeFunc("INC DX", "042", "inc16_reg", 2);
+        decodeFunc("INC EDX", "242", "inc32_reg", 2);
+        decodeFunc("INC BX", "043", "inc16_reg", 3);
+        decodeFunc("INC EBX", "243", "inc32_reg", 3);
+        decodeFunc("INC SP", "044", "inc16_reg", 4);
+        decodeFunc("INC ESP", "244", "inc32_reg", 4);
+        decodeFunc("INC BP", "045", "inc16_reg", 5);
+        decodeFunc("INC EBP", "245", "inc32_reg", 5);
+        decodeFunc("INC SI", "046", "inc16_reg", 6);
+        decodeFunc("INC ESI", "246", "inc32_reg", 6);
+        decodeFunc("INC DI", "047", "inc16_reg", 7);
+        decodeFunc("INC EDI", "247", "inc32_reg", 7);
+        decodeFunc("DEC AX", "048", "dec16_reg", 0);
+        decodeFunc("DEC EAX", "248", "dec32_reg", 0);
+        decodeFunc("DEC CX", "049", "dec16_reg", 1);
+        decodeFunc("DEC ECX", "249", "dec32_reg", 1);
+        decodeFunc("DEC DX", "04a", "dec16_reg", 2);
+        decodeFunc("DEC EDX", "24a", "dec32_reg", 2);
+        decodeFunc("DEC BX", "04b", "dec16_reg", 3);
+        decodeFunc("DEC EBX", "24b", "dec32_reg", 3);
+        decodeFunc("DEC SP", "04c", "dec16_reg", 4);
+        decodeFunc("DEC ESP", "24c", "dec32_reg", 4);
+        decodeFunc("DEC BP", "04d", "dec16_reg", 5);
+        decodeFunc("DEC EBP", "24d", "dec32_reg", 5);
+        decodeFunc("DEC SI", "04e", "dec16_reg", 6);
+        decodeFunc("DEC ESI", "24e", "dec32_reg", 6);
+        decodeFunc("DEC DI", "04f", "dec16_reg", 7);
+        decodeFunc("DEC EDI", "24f", "dec32_reg", 7);
+
+        decodeFunc("PUSH AX", "050", "pushAx", 0);
+        decodeFunc("PUSH EAX", "250", "pushEax", 0);
+        decodeFunc("PUSH CX", "051", "pushCx", 1);
+        decodeFunc("PUSH ECX", "251", "pushEcx", 1);
+        decodeFunc("PUSH DX", "052", "pushDx", 2);
+        decodeFunc("PUSH EDX", "252", "pushEdx", 2);
+        decodeFunc("PUSH BX", "053", "pushBx", 3);
+        decodeFunc("PUSH EBX", "253", "pushEbx", 3);
+        decodeFunc("PUSH SP", "054", "pushSp", 4);
+        decodeFunc("PUSH ESP", "254", "pushEsp", 4);
+        decodeFunc("PUSH BP", "055", "pushBp", 5);
+        decodeFunc("PUSH EBP", "255", "pushEbp", 5);
+        decodeFunc("PUSH SI", "056", "pushSi", 6);
+        decodeFunc("PUSH ESI", "256", "pushEsi", 6);
+        decodeFunc("PUSH DI", "057", "pushDi", 7);
+        decodeFunc("PUSH EDI", "257", "pushEdi", 7);
+        decodeFunc("PUSH AX", "058", "popAx", 0);
+        decodeFunc("POP EAX", "258", "popEax", 0);
+        decodeFunc("POP CX", "059", "popCx", 1);
+        decodeFunc("POP ECX", "259", "popEcx", 1);
+        decodeFunc("POP DX", "05a", "popDx", 2);
+        decodeFunc("POP EDX", "25a", "popEdx", 2);
+        decodeFunc("POP BX", "05b", "popBx", 3);
+        decodeFunc("POP EBX", "25b", "popEbx", 3);
+        decodeFunc("POP SP", "05c", "popSp", 4);
+        decodeFunc("POP ESP", "25c", "popEsp", 4);
+        decodeFunc("POP BP", "05d", "popBp", 5);
+        decodeFunc("POP EBP", "25d", "popEbp", 5);
+        decodeFunc("POP SI", "05e", "popSi", 6);
+        decodeFunc("POP ESI", "25e", "popEsi", 6);
+        decodeFunc("POP DI", "05f", "popDi", 7);
+        decodeFunc("POP EDI", "25f", "popEdi", 7);
+        decodeFunc("060", "pusha");
+        decodeFunc("260", "pushad");
+        decodeFunc("061", "popa");
+        decodeFunc("261", "pushad");
+        decodeSeg("64", "fs");
+        decodeSeg("65", "gs");
+        decodeFuncData("PUSH Iw", "068", "push16data", 16);
+        decodeFuncData("PUSH Id", "268", "push32data", 32);
+        ge("069", "dimulc", 16, -16, "IMUL Gw,Ew,Iw");
+        ge("269", "dimulc", 32, 32, "IMUL Gd,Ed,Id");
+        decodeFuncData("Push Ib", "06a", "push16data", -8);
+        decodeFuncData("Push Ib", "26a", "push32data", -8);
+        ge("06b", "dimulc", 16, -8, "IMUL Gw,Ew,Ib");
+        ge("26b", "dimulc", 32, -8, "IMUL Gd,Ed,Ib");
+        decodeJump("070", "O", -8);
+        decodeJump("071", "NO", -8);
+        decodeJump("072", "B", -8);
+        decodeJump("073", "NB", -8);
+        decodeJump("074", "Z", -8);
+        decodeJump("075", "NZ", -8);
+        decodeJump("076", "BE", -8);
+        decodeJump("077", "NBE", -8);
+        decodeJump("078", "S", -8);
+        decodeJump("079", "NS", -8);
+        decodeJump("07a", "P", -8);
+        decodeJump("07b", "NP", -8);
+        decodeJump("07c", "L", -8);
+        decodeJump("07d", "NL", -8);
+        decodeJump("07e", "LE", -8);
+        decodeJump("07f", "NLE", -8);
+        eg("084", "test", 8);
+        eg("085", "test", 16);
+        eg("285", "test", 32);
+        eg("086", "xchg", 8);
+        eg("087", "xchg", 16);
+        eg("287", "xchg", 32);
+        eg("088", "mov", 8);
+        eg("089", "mov", 16);
+        eg("289", "mov", 32);
+        ge("08a", "mov", 8);
+        ge("08b", "mov", 16);
+        ge("28b", "mov", 32);
+
+        decodeFunc("XCHG CX,AX", "091", "xchgr16r16", 0, 1);
+        decodeFunc("XCHG ECX,EAX", "291", "xchgr32r32", 0, 1);
+        decodeFunc("XCHG DX,AX", "092", "xchgr16r16", 0, 2);
+        decodeFunc("XCHG EDX,EAX", "292", "xchgr32r32", 0, 2);
+        decodeFunc("XCHG BX,AX", "093", "xchgr16r16", 0, 3);
+        decodeFunc("XCHG EBX,EAX", "293", "xchgr32r32", 0, 3);
+        decodeFunc("XCHG SP,AX", "094", "xchgr16r16", 0, 4);
+        decodeFunc("XCHG ESP,EAX", "294", "xchgr32r32", 0, 4);
+        decodeFunc("XCHG BP,AX", "095", "xchgr16r16", 0, 5);
+        decodeFunc("XCHG EBP,EAX", "295", "xchgr32r32", 0, 5);
+        decodeFunc("XCHG SI,AX", "096", "xchgr16r16", 0, 6);
+        decodeFunc("XCHG ESI,EAX", "296", "xchgr32r32", 0, 6);
+        decodeFunc("XCHG DI,AX", "097", "xchgr16r16", 0, 7);
+        decodeFunc("XCHG EDI,EAX", "297", "xchgr32r32", 0, 7);
+        decodeFunc("098", "cbw");
+        decodeFunc("298", "cbwe");
+        decodeFunc("099", "cwd");
+        decodeFunc("299", "cwq");
+        decodeFunc("09c", "pushf16");
+        decodeFunc("29c", "pushf32");
+        decodeFunc("09d", "popf16");
+        decodeFunc("29d", "popf32");
+        decodeFunc("09e", "sahf");
+        decodeFunc("09f", "lahf");
+        decodeFuncEAdata("MOV AL,Ob", "0a0", "movAl");
+        decodeFuncEAdata("MOV AX,Ow", "0a1", "movAx");
+        decodeFuncEAdata("MOV EAX,Od", "2a1", "movEax");
+        decodeFuncEAdata("MOV Ob,Al", "0a2", "movDirectAl");
+        decodeFuncEAdata("MOV Ow,Ax", "0a3", "movDirectAx");
+        decodeFuncEAdata("MOV Od,Eax", "2a3", "movDirectEax");
+
+        decodeString("0a4", "movsb");
+        decodeString("0a5", "movsw");
+        decodeString("2a5", "movsd");
+        decodeString("0a6", "cmpsb");
+        decodeString("0a7", "cmpsw");
+        decodeString("2a7", "cmpsd");
+        decodeFuncRegData("TEST AL,Ib", "0a8", "test8_reg", 0, 8);
+        decodeFuncRegData("TEST AX,Iw", "0a9", "test16_reg", 0, 16);
+        decodeFuncRegData("TEST EAX,Id", "2a9", "test32_reg", 0, 32);
+        decodeString("0aa", "stosb");
+        decodeString("0ab", "stosw");
+        decodeString("2ab", "stosd");
+        decodeString("0ac", "lodsb");
+        decodeString("0ad", "lodsw");
+        decodeString("2ad", "lodsd");
+        decodeString("0ae", "scasb");
+        decodeString("0af", "scasw");
+        decodeString("2af", "scasd");
+        decodeFuncRegData("MOV AL,Ib", "0b0", "mov8_reg", 0, 8);
+        decodeFuncRegData("MOV CL,Ib", "0b1", "mov8_reg", 1, 8);
+        decodeFuncRegData("MOV DL,Ib", "0b2", "mov8_reg", 2, 8);
+        decodeFuncRegData("MOV BL,Ib", "0b3", "mov8_reg", 3, 8);
+        decodeFuncRegData("MOV AH,Ib", "0b4", "mov8_reg", 4, 8);
+        decodeFuncRegData("MOV CH,Ib", "0b5", "mov8_reg", 5, 8);
+        decodeFuncRegData("MOV DH,Ib", "0b6", "mov8_reg", 6, 8);
+        decodeFuncRegData("MOV BH,Ib", "0b7", "mov8_reg", 7, 8);
+        decodeFuncRegData("MOV AX,Iw", "0b8", "mov16_reg", 0, 16);
+        decodeFuncRegData("MOV EAX,Id", "2b8", "mov32_reg", 0, 32);
+        decodeFuncRegData("MOV CX,Iw", "0b9", "mov16_reg", 1, 16);
+        decodeFuncRegData("MOV ECX,Id", "2b9", "mov32_reg", 1, 32);
+        decodeFuncRegData("MOV DX,Iw", "0ba", "mov16_reg", 2, 16);
+        decodeFuncRegData("MOV EDX,Id", "2ba", "mov32_reg", 2, 32);
+        decodeFuncRegData("MOV BX,Iw", "0bb", "mov16_reg", 3, 16);
+        decodeFuncRegData("MOV EBX,Id", "2bb", "mov32_reg", 3, 32);
+        decodeFuncRegData("MOV SP,Iw", "0bc", "mov16_reg", 4, 16);
+        decodeFuncRegData("MOV ESP,Id", "2bc", "mov32_reg", 4, 32);
+        decodeFuncRegData("MOV BP,Iw", "0bd", "mov16_reg", 5, 16);
+        decodeFuncRegData("MOV EBP,Id", "2bd", "mov32_reg", 5, 32);
+        decodeFuncRegData("MOV SI,Iw", "0be", "mov16_reg", 6, 16);
+        decodeFuncRegData("MOV ESI,Id", "2be", "mov32_reg", 6, 32);
+        decodeFuncRegData("MOV DI,Iw", "0bf", "mov16_reg", 7, 16);
+        decodeFuncRegData("MOV EDI,Id", "2bf", "mov32_reg", 7, 32);
+        decodeFuncData("RETN Iw", "0c2", "retnIw16", 16);
+        decodeFuncData("RETN Iw", "2c2", "retnIw32", 16);
+        decodeFunc("0c3", "retn16");
+        decodeFunc("2c3", "retn32");
+        decodeE("MOV Eb,Ib", "0c6", "mov8", 8);
+        decodeE("MOV Ew,Iw", "0c7", "mov16", 16);
+        decodeE("MOV Ed,Id", "2c7", "mov32", 32);
+        decodeFunc("0c9", "leave16");
+        decodeFunc("2c9", "leave32");
+        decodeFunc("0d6", "salc");
+        decodeFuncDataEndOfBlock("CALL Jw ", "0e8", "callJw", -16);
+        decodeFuncDataEndOfBlock("CALL Jd ", "2e8", "callJd", 32);
+        decodeFuncDataEndOfBlock("JMP Jw ", "0e9", "jump", -16);
+        decodeFuncDataEndOfBlock("JMP Jd ", "2e9", "jump", 32);
+        decodeFuncDataEndOfBlock("JMP Jb ", "0eb", "jump", -8);
+        decodeFunc("0f5", "cmc");
+        decodeGroup3("GRP3 Eb(,Ib)", "0f6", 8);
+        decodeGroup3("GRP3 Ew(,Iw)", "0f7", 16);
+        decodeGroup3("GRP3 Ed(,Id)", "2f7", 32);
+        decodeFunc("0f8", "clc");
+        decodeFunc("0f9", "stc");
+        decodeFunc("0fc", "cld");
+        decodeFunc("0fd", "std");
+        decodeFunc("131", "rdtsc");
+
+        decodeCmov("140", "O", 16);
+        decodeCmov("340", "O", 32);
+        decodeCmov("141", "NO", 16);
+        decodeCmov("341", "NO", 32);
+        decodeCmov("142", "B", 16);
+        decodeCmov("342", "B", 32);
+        decodeCmov("143", "NB", 16);
+        decodeCmov("343", "NB", 32);
+        decodeCmov("144", "Z", 16);
+        decodeCmov("344", "Z", 32);
+        decodeCmov("145", "NZ", 16);
+        decodeCmov("345", "NZ", 32);
+        decodeCmov("146", "BE", 16);
+        decodeCmov("346", "BE", 32);
+        decodeCmov("147", "NBE", 16);
+        decodeCmov("347", "NBE", 32);
+        decodeCmov("148", "S", 16);
+        decodeCmov("348", "S", 32);
+        decodeCmov("149", "NS", 16);
+        decodeCmov("349", "NS", 32);
+        decodeCmov("14a", "P", 16);
+        decodeCmov("34a", "P", 32);
+        decodeCmov("14b", "NP", 16);
+        decodeCmov("34b", "NP", 32);
+        decodeCmov("14c", "L", 16);
+        decodeCmov("34c", "L", 32);
+        decodeCmov("14d", "NL", 16);
+        decodeCmov("34d", "NL", 32);
+        decodeCmov("14e", "LE", 16);
+        decodeCmov("34e", "LE", 32);
+        decodeCmov("14f", "NLE", 16);
+        decodeCmov("34f", "NLE", 32);
+
+        decodeJump("180", "O", -16);
+        decodeJump("181", "NO", -16);
+        decodeJump("182", "B", -16);
+        decodeJump("183", "NB", -16);
+        decodeJump("184", "Z", -16);
+        decodeJump("185", "NZ", -16);
+        decodeJump("186", "BE", -16);
+        decodeJump("187", "NBE", -16);
+        decodeJump("188", "S", -16);
+        decodeJump("189", "NS", -16);
+        decodeJump("18a", "P", -16);
+        decodeJump("18b", "NP", -16);
+        decodeJump("18c", "L", -16);
+        decodeJump("18d", "NL", -16);
+        decodeJump("18e", "LE", -16);
+        decodeJump("18f", "NLE", -16);
+
+        decodeJump("380", "O", 32);
+        decodeJump("381", "NO", 32);
+        decodeJump("382", "B", 32);
+        decodeJump("383", "NB", 32);
+        decodeJump("384", "Z", 32);
+        decodeJump("385", "NZ", 32);
+        decodeJump("386", "BE", 32);
+        decodeJump("387", "NBE", 32);
+        decodeJump("388", "S", 32);
+        decodeJump("389", "NS", 32);
+        decodeJump("38a", "P", 32);
+        decodeJump("38b", "NP", 32);
+        decodeJump("38c", "L", 32);
+        decodeJump("38d", "NL", 32);
+        decodeJump("38e", "LE", 32);
+        decodeJump("38f", "NLE", 32);
+
+        decodeE("SETO", "190", "setO", 0);
+        decodeE("SETNO", "191", "setNO", 0);
+        decodeE("SETB", "192", "setB", 0);
+        decodeE("SETNB", "193", "setNB", 0);
+        decodeE("SETZ", "194", "setZ", 0);
+        decodeE("SETNZ", "195", "setNZ", 0);
+        decodeE("SETBE", "196", "setBE", 0);
+        decodeE("SETNBE", "197", "setNBE", 0);
+        decodeE("SETS", "198", "setS", 0);
+        decodeE("SETNS", "199", "setNS", 0);
+        decodeE("SETP", "19a", "setP", 0);
+        decodeE("SETNP", "19b", "setNP", 0);
+        decodeE("SETL", "19c", "setL", 0);
+        decodeE("SETNL", "19d", "setNL", 0);
+        decodeE("SETLE", "19e", "setLE", 0);
+        decodeE("SETNLE", "19f", "setNLE", 0);
+
+        decodeFunc("POP FS", "1a1", "popSeg16", "FS");
+        decodeFunc("POP FS", "3a1", "popSeg32", "FS");
+        decodeFunc("1a2", "cpuid");
+        eg("1a3", "bt", 16);
+        eg("3a3", "bt", 32);
+        eg("1a4", "dshl", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return TRUE;\r\n    }");
+        eg("3a4", "dshl", 32, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return TRUE;\r\n    }");
+        eg("1a5", "dshlcl", 16);
+        eg("3a5", "dshlcl", 32);
+        decodeFunc("POP GS", "1a9", "popSeg16", "GS");
+        decodeFunc("POP GS", "3a9", "popSeg32", "GS");
+        eg("1ab", "bts", 16);
+        eg("3ab", "bts", 32);
+        eg("1ac", "dshr", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return TRUE;\r\n    }");
+        eg("3ac", "dshr", 32, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return TRUE;\r\n    }");
+        eg("1ad", "dshrcl", 16);
+        eg("3ad", "dshrcl", 32);
+        ge("1af", "dimul", 16);
+        ge("3af", "dimul", 32);
+        eg("1b1", "cmpxchg", 16);
+        eg("3b1", "cmpxchg", 32);
+        ge("1b6", "movxz8", 16);
+        ge("3b6", "movxz8", 32);
+        ge("3b7", "movxz16", 32);
+
+        ge("1be", "movsx8", 16);
+        ge("3be", "movsx8", 32);
     }
 
     static public void setCC() throws IOException {

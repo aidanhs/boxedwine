@@ -2495,3 +2495,7 @@ void cmpxchge32r32_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
+void nop(struct CPU* cpu, struct Op* op) {
+	CYCLES(1);
+	NEXT();
+}
