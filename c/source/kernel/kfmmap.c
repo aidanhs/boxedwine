@@ -9,13 +9,17 @@
 // :TODO: what about sync'ing the writes back to the file?
 
 static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, GET_PAGE(data));
+	FD fildes = data & 0xFF;
+	U32 offset = ((data >> 8) & 0xFFFF) << PAGE_SHIFT;
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
 	U32 ram = allocRamPage();
 	U32 page = address >> 12;
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
 	BOOL write = IS_PAGE_WRITE(data);
 	U32 len;
-
+	U32 oldPos;
+	
+	address = address & (~PAGE_MASK);
 	if (read && write)
 		memory->mmu[page] = &ramPageWR;
 	else if (write)
@@ -25,7 +29,10 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
 
 	memory->data[page] = ram;
 
+	oldPos = fd->kobject->access->getPos(fd->kobject);
+	fd->kobject->access->seek(fd->kobject, offset);
 	len = fd->kobject->access->read(fd->kobject, memory, address, PAGE_SIZE);
+	fd->kobject->access->seek(fd->kobject, oldPos);
 	if (len<PAGE_SIZE) {
 		zeroMemory(memory, address+len, PAGE_SIZE-len);
 	}

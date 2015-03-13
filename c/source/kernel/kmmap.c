@@ -86,9 +86,16 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 		if (exec)
 			permissions|=PAGE_EXEC;
 		if (fd) {
+			int filePage = off>>PAGE_SHIFT;
 			page=&ramOnDemandFilePage;
 			fd->refCount+=pageCount;
-			data=fildes;
+			if (fildes>0xFF || filePage>0xFFFF) {
+				kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
+			}
+			if (off & PAGE_MASK) {
+				kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
+			}
+			data=fildes | (filePage << 8);
 		} else {
 			page=&ramOnDemandPage;
 		}

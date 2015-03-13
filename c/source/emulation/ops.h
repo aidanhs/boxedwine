@@ -1102,63 +1102,63 @@ void xlat32(struct CPU* cpu, struct Op* op) {
 }
 
 void loopnz16(struct CPU* cpu, struct Op* op) {
-	AX--;
+	CX--;
 	cpu->eip.u32+=op->eipCount;
-	if (AX!=0 && !getZF(cpu))
+	if (CX!=0 && !getZF(cpu))
 		cpu->eip.u32+=op->data1;
 	CYCLES(7);
 }
 
 void loopnz32(struct CPU* cpu, struct Op* op) {
-	EAX--;
+	ECX--;
 	cpu->eip.u32+=op->eipCount;
-	if (EAX!=0 && !getZF(cpu))
+	if (ECX!=0 && !getZF(cpu))
 		cpu->eip.u32+=op->data1;
 	CYCLES(7);
 }
 
 void loopz16(struct CPU* cpu, struct Op* op) {
-	AX--;
+	CX--;
 	cpu->eip.u32+=op->eipCount;
-	if (AX!=0 && getZF(cpu))
+	if (CX!=0 && getZF(cpu))
 		cpu->eip.u32+=op->data1;
 	CYCLES(7);
 }
 
 void loopz32(struct CPU* cpu, struct Op* op) {
-	EAX--;
+	ECX--;
 	cpu->eip.u32+=op->eipCount;
-	if (EAX!=0 && getZF(cpu))
+	if (ECX!=0 && getZF(cpu))
 		cpu->eip.u32+=op->data1;
 	CYCLES(7);
 }
 
 void loop16(struct CPU* cpu, struct Op* op) {
-	AX--;
+	CX--;
 	cpu->eip.u32+=op->eipCount;
-	if (AX!=0)
+	if (CX!=0)
 		cpu->eip.u32+=op->data1;
 	CYCLES(5);
 }
 
 void loop32(struct CPU* cpu, struct Op* op) {
-	EAX--;
+	ECX--;
 	cpu->eip.u32+=op->eipCount;
-	if (EAX!=0)
+	if (ECX!=0)
 		cpu->eip.u32+=op->data1;
 	CYCLES(5);
 }
 
 void jcxz16(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32+=op->eipCount;
-	if (AX==0)
+	if (CX==0)
 		cpu->eip.u32+=op->data1;
 	CYCLES(5);
 }
 
 void jcxz32(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32+=op->eipCount;
-	if (EAX==0)
+	if (ECX==0)
 		cpu->eip.u32+=op->data1;
 	CYCLES(5);
 }

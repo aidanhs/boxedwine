@@ -2360,6 +2360,7 @@ BOOL decode0a0(struct DecodeData* data) {
     } else {
         data->op->data1 = FETCH32(data);
     }
+    data->op->base = data->ds;
     NEXT_OP(data);
     return TRUE;
 }
@@ -2371,6 +2372,7 @@ BOOL decode0a1(struct DecodeData* data) {
     } else {
         data->op->data1 = FETCH32(data);
     }
+    data->op->base = data->ds;
     NEXT_OP(data);
     return TRUE;
 }
@@ -2382,6 +2384,7 @@ BOOL decode2a1(struct DecodeData* data) {
     } else {
         data->op->data1 = FETCH32(data);
     }
+    data->op->base = data->ds;
     NEXT_OP(data);
     return TRUE;
 }
@@ -2393,6 +2396,7 @@ BOOL decode0a2(struct DecodeData* data) {
     } else {
         data->op->data1 = FETCH32(data);
     }
+    data->op->base = data->ds;
     NEXT_OP(data);
     return TRUE;
 }
@@ -2404,6 +2408,7 @@ BOOL decode0a3(struct DecodeData* data) {
     } else {
         data->op->data1 = FETCH32(data);
     }
+    data->op->base = data->ds;
     NEXT_OP(data);
     return TRUE;
 }
@@ -2415,6 +2420,7 @@ BOOL decode2a3(struct DecodeData* data) {
     } else {
         data->op->data1 = FETCH32(data);
     }
+    data->op->base = data->ds;
     NEXT_OP(data);
     return TRUE;
 }

@@ -213,6 +213,7 @@ public class Main {
         out("    } else {");
         out("        data->op->data1 = FETCH32(data);");
         out("    }");
+        out("    data->op->base = data->ds;");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");

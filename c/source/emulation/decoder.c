@@ -1469,7 +1469,7 @@ DECODER decoder[1024] = {
 	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 380
-	decode380, decode381, decode380, decode383, decode384, decode385, decode386, decode387,
+	decode380, decode381, decode382, decode383, decode384, decode385, decode386, decode387,
 	decode388, decode389, decode38a, decode38b, decode38c, decode38d, decode38e, decode38f,
 	// 390
 	decode190, decode191, decode192, decode193, decode194, decode195, decode196, decode197,
