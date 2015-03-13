@@ -19,7 +19,7 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle
 	struct KFileDescriptor* result;
 
 	if (freeFileDescriptors) {
-		struct KFileDescriptor* result = freeFileDescriptors;
+		result = freeFileDescriptors;
 		freeFileDescriptors = freeFileDescriptors->next;
 	} else {
 		result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor));

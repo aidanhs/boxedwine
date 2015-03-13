@@ -86,7 +86,7 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 		if (exec)
 			permissions|=PAGE_EXEC;
 		if (fd) {
-			int filePage = off>>PAGE_SHIFT;
+			int filePage = (int)(off>>PAGE_SHIFT);
 			page=&ramOnDemandFilePage;
 			fd->refCount+=pageCount;
 			if (fildes>0xFF || filePage>0xFFFF) {

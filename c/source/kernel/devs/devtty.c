@@ -143,7 +143,7 @@ U32 tty_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
             U32 kbentry = IOCTL_ARG1;
             U32 table = readb(memory, kbentry);
             U32 index = readb(memory, kbentry+1);
-            U32 value = readw(memory, kbentry+2);
+            //U32 value = readw(memory, kbentry+2);
             switch (table) {
                 case 0: // K_NORMTAB
                     writew(memory, kbentry+2, index);

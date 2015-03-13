@@ -11,7 +11,7 @@ BOOL urandom_initialized;
 void urandom_init(struct OpenNode* node) {
 	if (!urandom_initialized) {
 		urandom_initialized = TRUE;
-		srand(time(0));
+		srand((U32)time(0));
 	}
 }
 

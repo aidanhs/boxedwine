@@ -73,9 +73,6 @@ static void FPU_FCLEX(struct FPU* fpu) {
     fpu->sw &= 0x7f00;            //should clear exceptions
 }
 
-static void FPU_FNOP() {
-}
-
 static void FPU_PUSH(struct FPU* fpu, double in) {
     fpu->top = (fpu->top - 1) & 7;
     //actually check if empty

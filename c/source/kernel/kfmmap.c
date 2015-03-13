@@ -17,7 +17,7 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
 	BOOL write = IS_PAGE_WRITE(data);
 	U32 len;
-	U32 oldPos;
+	U64 oldPos;
 	
 	address = address & (~PAGE_MASK);
 	if (read && write)

@@ -3322,7 +3322,7 @@ const U32 FLOAT_NAN_BITS = 0x7fd00000;
 
 #define POSITIVE_INFINITY *(const float *)&FLOAT_POSITIVE_INFINITY_BITS
 #define NEGATIVE_INFINITY *(const float *)&FLOAT_NEGATIVE_INFINITY_BITS
-#define NAN *(const float *)&FLOAT_NAN_BITS
+#define TEST_NAN *(const float *)&FLOAT_NAN_BITS
 
 #ifdef PLATFORM_MSVC
 #include <float.h>
@@ -3438,14 +3438,14 @@ void doF32Add() {
     F32Add(POSITIVE_INFINITY, 0.0f, POSITIVE_INFINITY);
     F32Add(0.0f, NEGATIVE_INFINITY, NEGATIVE_INFINITY);
     F32Add(NEGATIVE_INFINITY, 0.0f, NEGATIVE_INFINITY);
-    F32Add(NEGATIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32Add(NEGATIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
     F32Add(POSITIVE_INFINITY, 1.0f, POSITIVE_INFINITY);
     F32Add(POSITIVE_INFINITY, 2.0f, POSITIVE_INFINITY);
     F32Add(POSITIVE_INFINITY, POSITIVE_INFINITY, POSITIVE_INFINITY);
 
-    F32Add(NAN, 2.0f, NAN);
-    F32Add(NAN, NAN, NAN);
-    F32Add(-2.0f, NAN, NAN);
+    F32Add(TEST_NAN, 2.0f, TEST_NAN);
+    F32Add(TEST_NAN, TEST_NAN, TEST_NAN);
+    F32Add(-2.0f, TEST_NAN, TEST_NAN);
 
     F32Add(0.0f, 1.0f, 1.0f);
     F32Add(1.0f, 0.0f, 1.0f);
@@ -3479,11 +3479,11 @@ void doF32Sub() {
     F32Sub(NEGATIVE_INFINITY, POSITIVE_INFINITY, NEGATIVE_INFINITY);
     F32Sub(POSITIVE_INFINITY, 1.0f, POSITIVE_INFINITY);
     F32Sub(POSITIVE_INFINITY, 2.0f, POSITIVE_INFINITY);
-    F32Sub(POSITIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32Sub(POSITIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
 
-    F32Sub(NAN, 2.0f, NAN);
-    F32Sub(NAN, NAN, NAN);
-    F32Sub(-2.0f, NAN, NAN);
+    F32Sub(TEST_NAN, 2.0f, TEST_NAN);
+    F32Sub(TEST_NAN, TEST_NAN, TEST_NAN);
+    F32Sub(-2.0f, TEST_NAN, TEST_NAN);
 
     F32Sub(0.0f, 1.0f, -1.0f);
     F32Sub(1.0f, 0.0f, 1.0f);
@@ -3517,11 +3517,11 @@ void doF32SubR() {
     F32SubR(NEGATIVE_INFINITY, POSITIVE_INFINITY, POSITIVE_INFINITY);
     F32SubR(POSITIVE_INFINITY, 1.0f, NEGATIVE_INFINITY);
     F32SubR(POSITIVE_INFINITY, 2.0f, NEGATIVE_INFINITY);
-    F32SubR(POSITIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32SubR(POSITIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
 
-    F32SubR(NAN, 2.0f, NAN);
-    F32SubR(NAN, NAN, NAN);
-    F32SubR(-2.0f, NAN, NAN);
+    F32SubR(TEST_NAN, 2.0f, TEST_NAN);
+    F32SubR(TEST_NAN, TEST_NAN, TEST_NAN);
+    F32SubR(-2.0f, TEST_NAN, TEST_NAN);
 
     F32SubR(0.0f, 1.0f, 1.0f);
     F32SubR(1.0f, 0.0f, -1.0f);
@@ -3548,18 +3548,18 @@ void doF32Mul() {
     F32Mul(-0.0f, 0.0f, 0.0f);
     F32Mul(0.0f, -0.0f, 0.0f);
 
-    F32Mul(0.0f, POSITIVE_INFINITY, NAN);
-    F32Mul(POSITIVE_INFINITY, 0.0f, NAN);
-    F32Mul(0.0f, NEGATIVE_INFINITY, NAN);
-    F32Mul(NEGATIVE_INFINITY, 0.0f, NAN);
+    F32Mul(0.0f, POSITIVE_INFINITY, TEST_NAN);
+    F32Mul(POSITIVE_INFINITY, 0.0f, TEST_NAN);
+    F32Mul(0.0f, NEGATIVE_INFINITY, TEST_NAN);
+    F32Mul(NEGATIVE_INFINITY, 0.0f, TEST_NAN);
     F32Mul(NEGATIVE_INFINITY, POSITIVE_INFINITY, NEGATIVE_INFINITY);
     F32Mul(POSITIVE_INFINITY, 1.0f, POSITIVE_INFINITY);
     F32Mul(POSITIVE_INFINITY, 2.0f, POSITIVE_INFINITY);
     F32Mul(POSITIVE_INFINITY, POSITIVE_INFINITY, POSITIVE_INFINITY);
 
-    F32Mul(NAN, 2.0f, NAN);
-    F32Mul(NAN, NAN, NAN);
-    F32Mul(-2.0f, NAN, NAN);
+    F32Mul(TEST_NAN, 2.0f, TEST_NAN);
+    F32Mul(TEST_NAN, TEST_NAN, TEST_NAN);
+    F32Mul(-2.0f, TEST_NAN, TEST_NAN);
 
     F32Mul(0.0f, 1.0f, 0.0f);
     F32Mul(1.0f, 0.0f, 0.0f);
@@ -3582,22 +3582,22 @@ void F32Div(float x, float y, float r) {
 }
 
 void doF32Div() {
-    F32Div(0.0f, 0.0f, NAN);
-    F32Div(-0.0f, 0.0f, NAN);
-    F32Div(0.0f, -0.0f, NAN);
+    F32Div(0.0f, 0.0f, TEST_NAN);
+    F32Div(-0.0f, 0.0f, TEST_NAN);
+    F32Div(0.0f, -0.0f, TEST_NAN);
 
     F32Div(0.0f, POSITIVE_INFINITY, 0.0f);
     F32Div(POSITIVE_INFINITY, 0.0f, POSITIVE_INFINITY);
     F32Div(0.0f, NEGATIVE_INFINITY, -0.0f);
     F32Div(NEGATIVE_INFINITY, 0.0f, NEGATIVE_INFINITY);
-    F32Div(NEGATIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32Div(NEGATIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
     F32Div(POSITIVE_INFINITY, 1.0f, POSITIVE_INFINITY);
     F32Div(POSITIVE_INFINITY, 2.0f, POSITIVE_INFINITY);
-    F32Div(POSITIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32Div(POSITIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
 
-    F32Div(NAN, 2.0f, NAN);
-    F32Div(NAN, NAN, NAN);
-    F32Div(-2.0f, NAN, NAN);
+    F32Div(TEST_NAN, 2.0f, TEST_NAN);
+    F32Div(TEST_NAN, TEST_NAN, TEST_NAN);
+    F32Div(-2.0f, TEST_NAN, TEST_NAN);
 
     F32Div(0.0f, 1.0f, 0.0f);
     F32Div(1.0f, 0.0f, POSITIVE_INFINITY);
@@ -3620,22 +3620,22 @@ void F32DivR(float x, float y, float r) {
 }
 
 void doF32DivR() {
-    F32DivR(0.0f, 0.0f, NAN);
-    F32DivR(-0.0f, 0.0f, NAN);
-    F32DivR(0.0f, -0.0f, NAN);
+    F32DivR(0.0f, 0.0f, TEST_NAN);
+    F32DivR(-0.0f, 0.0f, TEST_NAN);
+    F32DivR(0.0f, -0.0f, TEST_NAN);
 
     F32DivR(0.0f, POSITIVE_INFINITY, POSITIVE_INFINITY);
     F32DivR(POSITIVE_INFINITY, 0.0f, 0.0f);
     F32DivR(0.0f, NEGATIVE_INFINITY, NEGATIVE_INFINITY);
     F32DivR(NEGATIVE_INFINITY, 0.0f, -0.0f);
-    F32DivR(NEGATIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32DivR(NEGATIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
     F32DivR(POSITIVE_INFINITY, 1.0f, 0.0f);
     F32DivR(POSITIVE_INFINITY, 2.0f, 0.0f);
-    F32DivR(POSITIVE_INFINITY, POSITIVE_INFINITY, NAN);
+    F32DivR(POSITIVE_INFINITY, POSITIVE_INFINITY, TEST_NAN);
 
-    F32DivR(NAN, 2.0f, NAN);
-    F32DivR(NAN, NAN, NAN);
-    F32DivR(-2.0f, NAN, NAN);
+    F32DivR(TEST_NAN, 2.0f, TEST_NAN);
+    F32DivR(TEST_NAN, TEST_NAN, TEST_NAN);
+    F32DivR(-2.0f, TEST_NAN, TEST_NAN);
 
     F32DivR(0.0f, 1.0f, POSITIVE_INFINITY);
     F32DivR(1.0f, 0.0f, 0.0f);
@@ -3710,9 +3710,9 @@ void doF32Com() {
     F32Com(POSITIVE_INFINITY, 2.0f, GREATER);
     F32Com(POSITIVE_INFINITY, POSITIVE_INFINITY, EQUAL);
 
-    F32Com(NAN, 2.0f, UNORDERED);
-    F32Com(NAN, NAN, UNORDERED);
-    F32Com(-2.0f, NAN, UNORDERED);
+    F32Com(TEST_NAN, 2.0f, UNORDERED);
+    F32Com(TEST_NAN, TEST_NAN, UNORDERED);
+    F32Com(-2.0f, TEST_NAN, UNORDERED);
 
     F32Com(0.0f, 1.0f, LESS);
     F32Com(1.0f, 0.0f, GREATER);
@@ -3748,9 +3748,9 @@ void doF32ComP() {
     F32ComP(POSITIVE_INFINITY, 2.0f, GREATER);
     F32ComP(POSITIVE_INFINITY, POSITIVE_INFINITY, EQUAL);
 
-    F32ComP(NAN, 2.0f, UNORDERED);
-    F32ComP(NAN, NAN, UNORDERED);
-    F32ComP(-2.0f, NAN, UNORDERED);
+    F32ComP(TEST_NAN, 2.0f, UNORDERED);
+    F32ComP(TEST_NAN, TEST_NAN, UNORDERED);
+    F32ComP(-2.0f, TEST_NAN, UNORDERED);
 
     F32ComP(0.0f, 1.0f, LESS);
     F32ComP(1.0f, 0.0f, GREATER);
@@ -3806,7 +3806,7 @@ void doFSTFloat(int op, int group, int pop) {
     FSTFloat(op, group, -0.00001f, pop);
     FSTFloat(op, group, 1010.01f, pop);
     FSTFloat(op, group, -1010.01f, pop);
-    FSTFloat(op, group, NAN, pop);
+    FSTFloat(op, group, TEST_NAN, pop);
     FSTFloat(op, group, POSITIVE_INFINITY, pop);
     FSTFloat(op, group, NEGATIVE_INFINITY, pop);
 }
@@ -3900,7 +3900,7 @@ void doFCHS() {
     runTestCPU();
     assertTrue(getTopFloat()==0.001234f);
 
-    fldf32(NAN);
+    fldf32(TEST_NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 0));
     runTestCPU();
@@ -3936,7 +3936,7 @@ void doFABS() {
     runTestCPU();
     assertTrue(getTopFloat()==0.001234f);
 
-    fldf32(NAN);
+    fldf32(TEST_NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 1));
     runTestCPU();
@@ -3990,7 +3990,7 @@ void doFTST() {
     runTestCPU();
     assertTest(LESS);
 
-    fldf32(NAN);
+    fldf32(TEST_NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 4));
     runTestCPU();
@@ -4008,7 +4008,7 @@ void doFXAM() {
     runTestCPU();
     assertTest(0x4000);
 
-    fldf32(NAN);
+    fldf32(TEST_NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 4, 5));
     runTestCPU();
@@ -4126,7 +4126,7 @@ void doF2XM1() {
     pushCode8(rm(false, 6, 0));
     assertTrue(getTopFloat() == 0.0f);
 
-    fldf32(NAN);
+    fldf32(TEST_NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 0));
     runTestCPU();
@@ -4217,7 +4217,7 @@ void doFYL2X() {
 
     fpu_init();
     fldf32(10.0f);
-    fldf32(NAN);
+    fldf32(TEST_NAN);
     newInstruction(0xd9, 0);
     pushCode8(rm(false, 6, 1));
     runTestCPU();
