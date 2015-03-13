@@ -12,6 +12,7 @@ BOOL virtual_isDirectory(struct Node* node) {
 }
 
 struct Node* virtual_list(struct Node* node) {
+    return 0;
 }
 
 BOOL virtual_remove(struct Node* node) {

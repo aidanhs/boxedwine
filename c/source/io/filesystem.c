@@ -47,15 +47,15 @@ S64 openfile_length(struct OpenNode* node) {
 }
 
 BOOL file_setLength(struct OpenNode* node, S64 len) {
-	return ftruncate64(node->handle, len)==0;
+	return ftruncate(node->handle, (U32)len)==0;
 }
 
 S64 file_getFilePointer(struct OpenNode* node) {
-	return lseek64(node->handle, 0, SEEK_CUR);
+	return lseek(node->handle, 0, SEEK_CUR);
 }
 
 S64 file_seek(struct OpenNode* node, S64 pos) {
-	return lseek64(node->handle, pos, SEEK_SET);
+	return lseek(node->handle, (U32)pos, SEEK_SET);
 }
 
 U32 file_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
@@ -137,6 +137,7 @@ BOOL file_isDirectory(struct Node* node) {
 }
 
 struct Node* file_list(struct Node* node) {
+    return 0;
 }
 
 BOOL file_remove(struct Node* node) {

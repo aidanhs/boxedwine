@@ -4405,7 +4405,7 @@ void run(void (*functionPtr)(), char* name) {
 	didFail = 0;
 	setup();
 	functionPtr();
-	printf(name);
+	printf("%s", name);
 	printf(" ... ");
 	if (didFail) {
 		printf("FAILED\n");
@@ -4752,6 +4752,7 @@ int main(int argc, char **argv) {
 	run(testGrp40x2fe, "Grp4 2fe");
 	run(testGrp50x0ff, "Grp5 0ff");
 	run(testGrp50x2ff, "Grp5 2ff");
+	return 0;
 }
 
 #endif
