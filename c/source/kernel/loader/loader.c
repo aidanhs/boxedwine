@@ -4,7 +4,7 @@
 #include "filesystem.h"
 #include "nodeaccess.h"
 #include "node.h"
-#include "nodeType.h"
+#include "nodetype.h"
 #include "kmmap.h"
 #include "kthread.h"
 #include "kprocess.h"

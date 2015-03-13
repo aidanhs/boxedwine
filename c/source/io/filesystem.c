@@ -209,11 +209,11 @@ U32 file_getMode(struct Node* node) {
 			result |= K__S_IFDIR;
 		else
 			result |= K__S_IFREG;
-		if (buf.st_mode & _S_IREAD)
+		if (buf.st_mode & S_IREAD)
 			result |= K__S_IREAD;
-		if (buf.st_mode & _S_IWRITE)
+		if (buf.st_mode & S_IWRITE)
 			result |= K__S_IWRITE;
-		if (buf.st_mode & _S_IEXEC)
+		if (buf.st_mode & S_IEXEC)
 			result |= K__S_IEXEC;
 	}
 	return result;

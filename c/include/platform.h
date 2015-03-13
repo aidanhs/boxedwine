@@ -17,7 +17,7 @@
 #define TRUE 1
 #define FALSE 0
 
-#ifdef _MSC_VER
+#ifdef PLATFORM_MSVC
 #define unlink _unlink
 #define ftruncate64(h, l) _chsize(h, (long)l)
 #define lseek64 _lseeki64
@@ -29,6 +29,7 @@
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
 #define CURDIR <unistd.h>
+#define O_BINARY 0
 #endif
 
 #ifndef S_ISDIR

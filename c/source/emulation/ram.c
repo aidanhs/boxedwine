@@ -110,7 +110,7 @@ static void ram_clear(struct Memory* memory, U32 page, U32 data) {
 	freeRamPage(GET_PAGE(data));
 }
 
-U32 ondemmand(struct Memory* memory, U32 address, U32 data);
+static U32 ondemmand(struct Memory* memory, U32 address, U32 data);
 
 static U8 ondemand_ram_readb(struct Memory* memory, U32 address, U32 data) {
 	data = ondemmand(memory, address, data);

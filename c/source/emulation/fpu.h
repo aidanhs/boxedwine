@@ -2,11 +2,11 @@
 
 #define FMASK_TEST (CF | PF | AF | ZF | SF | OF)    
 
-//#ifdef VISUAL_STDIO_OLD
+#ifdef PLATFORM_MSVC
 #include <float.h>
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
-//#endif
+#endif
 
 struct FPU_Float {
 	union {

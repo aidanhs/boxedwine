@@ -3,6 +3,8 @@
 
 #include "platform.h"
 
+struct Memory;
+
 struct Page {
 	U8 (*readb)(struct Memory* memory, U32 address, U32 data);
 	void (*writeb)(struct Memory* memory, U32 address, U32 data, U8 value);

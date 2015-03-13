@@ -5,7 +5,7 @@
 #include "ksystem.h"
 #include "filesystem.h"
 #include "nodeaccess.h"
-#include "nodeType.h"
+#include "nodetype.h"
 #include "loader.h"
 #include "kmmap.h"
 #include "kfiledescriptor.h"

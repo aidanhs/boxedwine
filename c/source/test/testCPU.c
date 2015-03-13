@@ -3324,11 +3324,11 @@ const U32 FLOAT_NAN_BITS = 0x7fd00000;
 #define NEGATIVE_INFINITY *(const float *)&FLOAT_NEGATIVE_INFINITY_BITS
 #define NAN *(const float *)&FLOAT_NAN_BITS
 
-//#ifdef VISUAL_STDIO_OLD
+#ifdef PLATFORM_MSVC
 #include <float.h>
 #define isnan(x) _isnan(x)
 #define isinf(x) (!_finite(x))
-//#endif
+#endif
 
  static U8 rm(int ea, int group, int sub) {
     int result = (group & 7) << 3 | (sub & 7);

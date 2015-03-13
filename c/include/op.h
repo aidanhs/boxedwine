@@ -3,6 +3,9 @@
 
 #include "platform.h"
 
+struct Op;
+struct CPU;
+
 // :TODO: this takes up a lot of memory, a simple inc instruction that is one byte will be decoded into 24-bytes
 struct Op {
 	void (*func)(struct CPU* cpu, struct Op* op);
