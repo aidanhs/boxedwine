@@ -19,7 +19,7 @@
 
 #ifdef PLATFORM_MSVC
 #define unlink _unlink
-#define ftruncate64(h, l) _chsize(h, (long)l)
+#define ftruncate(h, l) _chsize(h, (long)l)
 #define lseek64 _lseeki64
 #define getcwd _getcwd
 #define UNISTD <io.h>
