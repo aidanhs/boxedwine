@@ -66,7 +66,7 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
     for (i=0;i<iovcnt;i++) {
 		U32 buf = readd(memory, iov+i*8);
 		U32 len = readd(memory, iov+i*8+4);
-		U32 result = fd->kobject->access->write(fd->kobject, memory, buf, len);
+		S32 result = fd->kobject->access->write(fd->kobject, memory, buf, len);
         if (result<0) {
             if (i>0) {
                 kwarn("writev partial fail: TODO file pointer should not change");

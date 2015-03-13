@@ -129,7 +129,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	struct KThread* thread = cpu->thread;
 	struct KProcess* process = thread->process;
 	struct Memory* memory = cpu->memory;
-	U32 result;
+	U32 result=0;
 
 	switch (EAX) {
 	case __NR_exit:

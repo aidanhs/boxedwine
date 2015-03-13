@@ -807,7 +807,7 @@ BOOL decode0d9(struct DecodeData* data) {
 					case 1: data->op->func = FABS; break;
 					case 4: data->op->func = FTST; break;
 					case 5: data->op->func = FXAM; break;
-					default: kpanic("ESC 1:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+					default: kpanic("ESC 1:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
 				}
 				break;
 			}
@@ -821,7 +821,7 @@ BOOL decode0d9(struct DecodeData* data) {
 					case 4: data->op->func = FLDLG2; break;
 					case 5: data->op->func = FLDLN2; break;
 					case 6: data->op->func = FLDZ; break;
-					case 7: kpanic("ESC 1:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+					case 7: kpanic("ESC 1:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
 				}
 				break;
 			}
@@ -858,7 +858,7 @@ BOOL decode0d9(struct DecodeData* data) {
 		decodeEa16(data, rm);
 		switch ((rm >> 3) & 7) {
 			case 0: data->op->func = FLD_SINGLE_REAL_16; break;
-			case 1: kpanic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+			case 1: kpanic("ESC 1 EA:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
 			case 2: data->op->func = FST_SINGLE_REAL_16; break;
 			case 3: data->op->func = FST_SINGLE_REAL_16_Pop; break;
 			case 4: data->op->func = FLDENV_16; break;
@@ -870,7 +870,7 @@ BOOL decode0d9(struct DecodeData* data) {
 		decodeEa32(data, rm);
 		switch ((rm >> 3) & 7) {
 			case 0: data->op->func = FLD_SINGLE_REAL_32; break;
-			case 1: kpanic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+			case 1: kpanic("ESC 1 EA:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
 			case 2: data->op->func = FST_SINGLE_REAL_32; break;
 			case 3: data->op->func = FST_SINGLE_REAL_32_Pop; break;
 			case 4: data->op->func = FLDENV_32; break;
@@ -900,7 +900,7 @@ BOOL decode0da(struct DecodeData* data) {
                 }
 			// intentional fall through
             default:
-                kpanic("ESC 1 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                kpanic("ESC 1 EA:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
         }
     } else if (data->ea16) {
         decodeEa16(data, rm);
@@ -946,13 +946,13 @@ BOOL decode0db(struct DecodeData* data) {
                 switch (rm & 7) {
                     case 2:data->op->func = FNCLEX; break;
                     case 3:data->op->func = FNINIT; break;
-                    default:kpanic("ESC 3 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+                    default:kpanic("ESC 3 :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
                 }
                 break;
             }
             case 5: data->op->func = FUCOMI_ST0_STj; break;
             case 6: data->op->func = FCOMI_ST0_STj_Pop; break;
-            default:kpanic("ESC 3 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            default:kpanic("ESC 3 :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
         }
     } else if (data->ea16) {
         decodeEa16(data, rm);
@@ -963,7 +963,7 @@ BOOL decode0db(struct DecodeData* data) {
             case 3: data->op->func = FIST_DWORD_INTEGER_16_Pop; break;
             case 5: data->op->func = FLD_EXTENDED_REAL_16; break;
             case 7: data->op->func = FSTP_EXTENDED_REAL_16; break;
-            default:kpanic("ESC 3 EA :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            default:kpanic("ESC 3 EA :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
         }
     } else {
         decodeEa32(data, rm);
@@ -974,7 +974,7 @@ BOOL decode0db(struct DecodeData* data) {
             case 3: data->op->func = FIST_DWORD_INTEGER_32_Pop; break;
             case 5: data->op->func = FLD_EXTENDED_REAL_32; break;
             case 7: data->op->func = FSTP_EXTENDED_REAL_32; break;
-            default:kpanic("ESC 3 EA :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            default:kpanic("ESC 3 EA :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
         }
     }
 	NEXT_OP(data);
@@ -1037,7 +1037,7 @@ BOOL decode0dd(struct DecodeData* data) {
             case 3: data->op->func = FST_STi_Pop; break;
             case 4: data->op->func = FUCOM_STi; break;
             case 5: data->op->func = FUCOM_STi_Pop; break;
-            default:kpanic("ESC 5 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            default:kpanic("ESC 5 :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
         }
     } else if (data->ea16) {
         decodeEa16(data, rm);
@@ -1047,7 +1047,7 @@ BOOL decode0dd(struct DecodeData* data) {
             case 2: data->op->func = FST_DOUBLE_REAL_16; break;
             case 3: data->op->func = FST_DOUBLE_REAL_16_Pop; break;
             case 4: data->op->func = FRSTOR_16; break;
-            case 5:kpanic("ESC 5 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            case 5:kpanic("ESC 5 EA:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
             case 6: data->op->func = FNSAVE_16; break;
             case 7: data->op->func = FNSTSW_16; break;
         }
@@ -1059,7 +1059,7 @@ BOOL decode0dd(struct DecodeData* data) {
             case 2: data->op->func = FST_DOUBLE_REAL_32; break;
             case 3: data->op->func = FST_DOUBLE_REAL_32_Pop; break;
             case 4: data->op->func = FRSTOR_32; break;
-            case 5:kpanic("ESC 5 EA:Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            case 5:kpanic("ESC 5 EA:Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
             case 6: data->op->func = FNSAVE_32; break;
             case 7: data->op->func = FNSTSW_32; break;
         }
@@ -1081,7 +1081,7 @@ BOOL decode0de(struct DecodeData* data) {
                 if ((rm & 7) == 1)
                     data->op->func = FCOMPP;
                 else {
-                    kpanic("ESC 6 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7));
+                    kpanic("ESC 6 :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7));
                 }
 				break;
             break;
@@ -1133,12 +1133,12 @@ BOOL decode0df(struct DecodeData* data) {
                 if ((rm & 7)==0)
                     data->op->func = FNSTSW_AX;
                 else {
-                    kpanic("ESC 7 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7));
+                    kpanic("ESC 7 :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7));
                 }
 				break;
             case 5: data->op->func = FUCOMI_ST0_STj_Pop; break;
             case 6: data->op->func = FCOMI_ST0_STj_Pop; break;
-            case 7: kpanic("ESC 7 :Unhandled group %d subfunction %d" + ((rm >> 3) & 7), + (rm & 7)); break;
+            case 7: kpanic("ESC 7 :Unhandled group %d subfunction %d", ((rm >> 3) & 7), + (rm & 7)); break;
         }
     } else if (data->ea16) {
         decodeEa16(data, rm);
@@ -1249,7 +1249,7 @@ BOOL decode0fe(struct DecodeData* data) {
 			DECODE_E(dec8_reg, dec8_mem16, dec8_mem32);
             break;
         default:
-            kpanic("Illegal GRP4 Call %d, "+((rm>>3) & 7));
+            kpanic("Illegal GRP4 Call %d, ",((rm>>3) & 7));
 			break;
     }
 	NEXT_OP(data);
