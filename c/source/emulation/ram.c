@@ -75,14 +75,26 @@ static void ram_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
 }
 
 static U16 ram_readw(struct Memory* memory, U32 address, U32 data) {
-	if ((address & 0xFFF) < 0xFFF)
+	if ((address & 0xFFF) < 0xFFF) {
+#ifdef UNALIGNED_MEMORY
+		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		return ram[index] | (ram[index+1] << 8);
+#else
 		return *(U16*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]);
+#endif
+	}
 	return ram[(data << PAGE_SHIFT)+(address & 0xFFF)] | (readb(memory, address+1) << 8);
 }
 
 static void ram_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
 	if ((address & 0xFFF) < 0xFFF) {
+#ifdef UNALIGNED_MEMORY
+		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		ram[index] = (U8)value;
+		ram[index+1] = (U8)(value >> 8);
+#else
 		*(U16*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]) = value;
+#endif
 	} else {
 		ram[(data << PAGE_SHIFT)+(address & 0xFFF)] = (U8)value;
 		writeb(memory, address+1, value >> 8);
@@ -90,14 +102,28 @@ static void ram_writew(struct Memory* memory, U32 address, U32 data, U16 value) 
 }
 
 static U32 ram_readd(struct Memory* memory, U32 address, U32 data) {
-	if ((address & 0xFFF) < 0xFFD)
+	if ((address & 0xFFF) < 0xFFD) {
+#ifdef UNALIGNED_MEMORY
+		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		return ram[index] | (ram[index+1] << 8) | (ram[index+2] << 16) | (ram[index+3] << 24);
+#else
 		return *(U32*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]);
+#endif
+	}
 	return ram[(data << PAGE_SHIFT)+(address & 0xFFF)] | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16)| (readb(memory, address+3) << 24);
 }
 
 static void ram_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
 	if ((address & 0xFFF) < 0xFFD) {
+#ifdef UNALIGNED_MEMORY
+		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		ram[index++] = (U8)value;
+		ram[index++] = (U8)(value >> 8);
+		ram[index++] = (U8)(value >> 16);
+		ram[index] = (U8)(value >> 24);
+#else
 		*(U32*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]) = value;
+#endif
 	} else {
 		ram[(data << PAGE_SHIFT)+(address & 0xFFF)] = value;
 		writeb(memory, address+1, value >> 8);
