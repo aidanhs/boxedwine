@@ -55,8 +55,6 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
         if (addr & (PAGE_SIZE-1)) {
             return -K_EINVAL;
         }
-		if (pageStart+pageCount>ADDRESS_PROCESS_MMAP_START)
-			return -K_EINVAL;
     } else {
         if (pageStart == 0 || pageStart+pageCount> ADDRESS_PROCESS_STACK_START)
             pageStart = ADDRESS_PROCESS_MMAP_START;
@@ -74,8 +72,7 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 			memory->data[i+pageStart]=PAGE_RESERVED;
 		}
 	}
-	if (write || read || exec) {
-		U32 data = 0;	
+	if (write || read || exec) {		
 		U32 permissions = 0;
 		struct Page* page;
 
@@ -85,21 +82,25 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 			permissions|=PAGE_READ;
 		if (exec)
 			permissions|=PAGE_EXEC;
-		if (fd) {
-			int filePage = (int)(off>>PAGE_SHIFT);
-			page=&ramOnDemandFilePage;
-			fd->refCount+=pageCount;
-			if (fildes>0xFF || filePage>0xFFFF) {
-				kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
+		for (i=0;i<pageCount;i++) {
+			U32 data = 0;	
+			if (fd) {
+				int filePage = (int)(off>>PAGE_SHIFT);
+				page=&ramOnDemandFilePage;
+				fd->refCount+=pageCount;
+				if (fildes>0xFF || filePage>0xFFFF) {
+					kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
+				}
+				if (off & PAGE_MASK) {
+					kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
+				}
+				data=fildes | (filePage << 8);
+				off+=4096;
+			} else {
+				page=&ramOnDemandPage;
 			}
-			if (off & PAGE_MASK) {
-				kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
-			}
-			data=fildes | (filePage << 8);
-		} else {
-			page=&ramOnDemandPage;
+			allocPages(memory, page, FALSE, pageStart++, 1, permissions, data);
 		}
-		allocPages(memory, page, FALSE, pageStart, pageCount, permissions, data);
     }
 	return addr;
 }
