@@ -15,5 +15,6 @@ struct KProcess* getProcessById(U32 pid);
 void removeProcess(struct KProcess* process);
 U32 getProcessCount();
 U32 syscall_uname(struct KThread* thread, U32 address);
+U32 getMilliesSinceStart();
 
 #endif

@@ -37,7 +37,7 @@
 #define K_ENOSYS         38
 #define K_ENOTEMPTY      39
 #define K_ELOOP          40
-#define K_EWOULDBLOCK    EAGAIN
+#define K_EWOULDBLOCK    K_EAGAIN
 #define K_EBADFD         77
 #define K_ENOTSOCK       88
 #define K_EDESTADDRREQ   89

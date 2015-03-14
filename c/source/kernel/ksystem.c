@@ -32,3 +32,7 @@ U32 syscall_uname(struct KThread* thread, U32 address) {
     writeNativeString(memory, address+260, "i686");
 	return 0;
 }
+
+U32 getMilliesSinceStart() {
+	return 0;
+}

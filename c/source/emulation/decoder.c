@@ -262,7 +262,7 @@ BOOL decode262(struct DecodeData* data) {
 }
 
 BOOL invalidOp(struct DecodeData* data) {
-	kpanic("Invalid instruction %d", data->inst);
+	kpanic("Invalid instruction %x", data->inst);
 	return FALSE;
 }
 

@@ -129,7 +129,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	struct KThread* thread = cpu->thread;
 	struct KProcess* process = thread->process;
 	struct Memory* memory = cpu->memory;
-	U32 result=0;
+	S32 result=0;
 
 	switch (EAX) {
 	case __NR_exit:
@@ -363,8 +363,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_tkill:
 		break;
+		*/
 	case __NR_futex:
+		result = syscall_futex(thread, ARG1, ARG2, ARG3, ARG4);
+		//LOG("__NR_futex address=%X op=%d result=%d", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_sched_getaffinity:
 		break;
 		*/
@@ -428,7 +432,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		kpanic("Unknown syscall %d", EAX);
 		break;
 	}
-	if (result!=K_WAIT) {
+	if (result!=-K_WAIT) {
 		EAX = result;
 	} else {
 		thread->waitSyscall = EAX;

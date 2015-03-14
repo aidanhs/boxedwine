@@ -22,5 +22,6 @@ extern U32 numberOfThreads;
 
 void initThread(struct KThread* thread, struct KProcess* process);
 void exitThread(struct KThread* thread, U32 status);
+U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime);
 
 #endif
