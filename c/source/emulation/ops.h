@@ -806,7 +806,7 @@ void movxz8r32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void movxz8r32e32_32(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u16 = readb(cpu->memory, eaa32(cpu, op));
+	cpu->reg[op->r1].u32 = readb(cpu->memory, eaa32(cpu, op));
 	CYCLES(3);
 	NEXT();
 }
@@ -1007,31 +1007,31 @@ void lahf(struct CPU* cpu, struct Op* op) {
 }
 
 void movAl(struct CPU* cpu, struct Op* op) {
-	AL = readb(cpu->memory, cpu->segAddress[DS]+op->data1);
+	AL = readb(cpu->memory, cpu->segAddress[op->base]+op->data1);
 	CYCLES(1);
 	NEXT();
 }
 
 void movAx(struct CPU* cpu, struct Op* op) {
-	AX = readw(cpu->memory, cpu->segAddress[DS]+op->data1);
+	AX = readw(cpu->memory, cpu->segAddress[op->base]+op->data1);
 	CYCLES(1);
 	NEXT();
 }
 
 void movEax(struct CPU* cpu, struct Op* op) {
-	EAX = readd(cpu->memory, cpu->segAddress[DS]+op->data1);
+	EAX = readd(cpu->memory, cpu->segAddress[op->base]+op->data1);
 	CYCLES(1);
 	NEXT();
 }
 
 void movDirectAl(struct CPU* cpu, struct Op* op) {
-	writeb(cpu->memory, cpu->segAddress[DS]+op->data1, AL);
+	writeb(cpu->memory, cpu->segAddress[op->base]+op->data1, AL);
 	CYCLES(1);
 	NEXT();
 }
 
 void movDirectAx(struct CPU* cpu, struct Op* op) {
-	writew(cpu->memory, cpu->segAddress[DS]+op->data1, AX);
+	writew(cpu->memory, cpu->segAddress[op->base]+op->data1, AX);
 	CYCLES(1);
 	NEXT();
 }
@@ -2481,7 +2481,7 @@ void cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void cmpxchge32r32_32(struct CPU* cpu, struct Op* op) {
-	U32 address = eaa16(cpu, op);
+	U32 address = eaa32(cpu, op);
 	cpu->dst.u32 = readd(cpu->memory, address);
     cpu->src.u32 = cpu->reg[op->r1].u32;
     cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;

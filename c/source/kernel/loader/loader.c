@@ -65,7 +65,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 		}
 	}
 
-	address = mmap64(thread, 0, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
+	address = syscall_mmap64(thread, 0, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
 	process->brkEnd = address+len;
 	for (i=0;i<hdr->e_phnum;i++) {
 		struct Elf32_Phdr phdr;		

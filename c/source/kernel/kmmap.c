@@ -16,7 +16,7 @@ U32 mlock(struct KThread* thread, U32 addr, U32 len) {
 	return 0;
 }
 
-U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
+U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
 	BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
     BOOL read = (prot & K_PROT_READ)!=0;
@@ -74,7 +74,6 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 	}
 	if (write || read || exec) {		
 		U32 permissions = 0;
-		struct Page* page;
 
 		if (write)
 			permissions|=PAGE_WRITE;
@@ -82,25 +81,66 @@ U32 mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fi
 			permissions|=PAGE_READ;
 		if (exec)
 			permissions|=PAGE_EXEC;
-		for (i=0;i<pageCount;i++) {
-			U32 data = 0;	
-			if (fd) {
-				int filePage = (int)(off>>PAGE_SHIFT);
-				page=&ramOnDemandFilePage;
-				fd->refCount+=pageCount;
-				if (fildes>0xFF || filePage>0xFFFF) {
-					kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
+		if (fd) {
+			for (i=0;i<pageCount;i++) {
+				U32 data = 0;	
+				if (fd) {
+					int filePage = (int)(off>>PAGE_SHIFT);
+					fd->refCount+=pageCount;
+					if (fildes>0xFF || filePage>0xFFFF) {
+						kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
+					}
+					if (off & PAGE_MASK) {
+						kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
+					}
+					data=fildes | (filePage << 8);
+					off+=4096;
 				}
-				if (off & PAGE_MASK) {
-					kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
-				}
-				data=fildes | (filePage << 8);
-				off+=4096;
-			} else {
-				page=&ramOnDemandPage;
+				allocPages(memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
 			}
-			allocPages(memory, page, FALSE, pageStart++, 1, permissions, data);
+		} else {
+			allocPages(memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
 		}
+		
     }
 	return addr;
+}
+
+U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
+	BOOL read = (prot & K_PROT_READ)!=0;
+    BOOL write = (prot & K_PROT_WRITE)!=0;
+    BOOL exec = (prot & K_PROT_EXEC)!=0;
+	U32 pageStart = address >> PAGE_SHIFT;
+    U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
+	struct Memory* memory = thread->process->memory;
+	U32 permissions = 0;
+	U32 i;
+
+	if (write)
+		permissions|=PAGE_WRITE;
+	if (read)
+		permissions|=PAGE_READ;
+	if (exec)
+		permissions|=PAGE_EXEC;
+
+	for (i=pageStart;i<pageStart+pageCount;i++) {
+		struct Page* page = memory->mmu[i];
+		if (page == &ramOnDemandPage || page==&ramOnDemandFilePage) {
+			U32 data = memory->data[i];
+			data&=~0xFF000000;
+
+			data|=(permissions << 24);
+			memory->data[i] = data;
+		} else if (page==&ramPageRO || page==&ramPageWO || page==&ramPageWR) {
+			if (read && write)
+				memory->mmu[i] = &ramPageWR;
+			else if (write)
+				memory->mmu[i] = &ramPageWO;
+			else
+				memory->mmu[i] = &ramPageRO;
+		} else {
+			kpanic("syscall_mprotect unknown page type");
+		}
+	}
+	return 0;
 }

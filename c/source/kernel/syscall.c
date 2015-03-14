@@ -206,7 +206,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 			if (len<=alreadyAllocated) {
 				process->brkEnd+=len;
 			} else {
-				mmap64(thread, process->brkEnd, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
+				syscall_mmap64(thread, process->brkEnd, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
 				process->brkEnd+=len;
 			}
 		}
@@ -260,8 +260,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_modify_ldt:
 		break;
+		*/
 	case __NR_mprotect:
+		result = syscall_mprotect(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_mprotect address=%X len=%d prot=%X", ARG1, ARG2, ARG3);
 		break;
+		/*
 	case __NR_getpgid:
 		break;
 	case __NR_fchdir:
@@ -303,7 +307,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 		*/
 	case __NR_mmap2:
-		result = mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
+		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
 		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
 		break;
 	case __NR_ftruncate64: {
