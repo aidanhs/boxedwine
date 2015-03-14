@@ -306,12 +306,20 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
 		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
 		break;
-		/*
-	case __NR_ftruncate64:
+	case __NR_ftruncate64: {
+		U64 len = ARG2 | ((U64)ARG3 << 32);
+		result = syscall_ftruncate64(thread, ARG1, len);
+		LOG("__NR_ftruncate64 fildes=%d length=%llu result=%d", ARG1, len, result);
 		break;
+	}
 	case __NR_stat64:
+		result = syscall_stat64(thread, ARG1, ARG2);
+		LOG("__NR_stat64 path=%s buf=%X result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;
+		/*
 	case __NR_lstat64:
+		result = syscall_lstat64(thread, ARG1, ARG2);
+		LOG("__NR_lstat64 path=%s buf=%X result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;
 		*/
 	case __NR_fstat64:

@@ -139,3 +139,35 @@ U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
     }
     return 0;
 }
+
+U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	struct OpenNode* openNode;
+
+    if (fd==0) {
+        return -K_EBADF;
+    }
+	openNode = (struct OpenNode*)fd->kobject->data;
+	if (openNode->node->nodeType->isDirectory(openNode->node)) {
+		return -K_EISDIR;
+	}
+	if (!canWriteFD(fd)) {
+		return -K_EINVAL;
+	}
+	if (!openNode->access->setLength(openNode, length)) {
+		return -K_EIO;
+	}
+	return 0;
+}
+
+U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
+	struct Node* node = getNode(thread->process, path);
+	U64 len;
+
+    if (node==0) {
+        return -K_ENOENT;
+    }
+	len = node->nodeType->length(node);
+	writeStat(thread->process->memory, buffer, TRUE, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
+	return 0;
+}
