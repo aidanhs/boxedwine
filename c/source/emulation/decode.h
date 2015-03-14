@@ -4520,6 +4520,44 @@ BOOL decode3b7(struct DecodeData* data) {
     NEXT_OP(data);
     return TRUE;
 }
+// BSR Gw,Ew
+BOOL decode1bd(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = bsrr16r16;
+        data->op->r1 = G(rm);
+        data->op->r2 = E(rm);
+    } else if (data->ea16) {
+        data->op->func = bsrr16e16_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+    } else {
+        data->op->func = bsrr16e16_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+    }
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSR Gd,Ed
+BOOL decode3bd(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = bsrr32r32;
+        data->op->r1 = G(rm);
+        data->op->r2 = E(rm);
+    } else if (data->ea16) {
+        data->op->func = bsrr32e32_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+    } else {
+        data->op->func = bsrr32e32_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+    }
+    NEXT_OP(data);
+    return TRUE;
+}
 // MOVSX8 Gw,Ew
 BOOL decode1be(struct DecodeData* data) {
     U8 rm = FETCH8(data);

@@ -1397,7 +1397,7 @@ DECODER decoder[1024] = {
 	invalidOp, decode1a9, invalidOp, decode1ab, decode1ac, decode1ad, invalidOp, decode1af,
 	// 1b0
 	invalidOp, decode1b1, invalidOp, invalidOp, invalidOp, invalidOp, decode1b6, invalidOp,
-	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode1be, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode1bd, decode1be, invalidOp,
 	// 1c0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -1479,7 +1479,7 @@ DECODER decoder[1024] = {
 	invalidOp, decode3a9, invalidOp, decode3ab, decode3ac, decode3ad, invalidOp, decode3af,
 	// 3b0
 	invalidOp, decode3b1, invalidOp, invalidOp, invalidOp, invalidOp, decode3b6, decode3b7,
-	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3be, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3bd, decode3be, invalidOp,
 	// 3c0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

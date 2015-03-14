@@ -2499,3 +2499,87 @@ void nop(struct CPU* cpu, struct Op* op) {
 	CYCLES(1);
 	NEXT();
 }
+
+void bsrr16r16(struct CPU* cpu, struct Op* op) {
+	U16 value = cpu->reg[op->r1].u16;
+	if (value==0) {
+		addFlag(ZF);
+	} else {
+		U32 result = 15;
+		while ((value & 0x8000)==0) { result--; value<<=1; }
+		removeFlag(ZF);
+	}
+	cpu->inst = FLAGS_NONE;
+	CYCLES(7);
+	NEXT();
+}
+
+void bsrr16e16_16(struct CPU* cpu, struct Op* op) {
+	U16 value = readw(cpu->memory, eaa16(cpu, op));
+	if (value==0) {
+		addFlag(ZF);
+	} else {
+		U32 result = 15;
+		while ((value & 0x8000)==0) { result--; value<<=1; }
+		removeFlag(ZF);
+	}
+	cpu->inst = FLAGS_NONE;
+	CYCLES(7);
+	NEXT();
+}
+
+void bsrr16e16_32(struct CPU* cpu, struct Op* op) {
+	U16 value = readw(cpu->memory, eaa32(cpu, op));
+	if (value==0) {
+		addFlag(ZF);
+	} else {
+		U32 result = 15;
+		while ((value & 0x8000)==0) { result--; value<<=1; }
+		removeFlag(ZF);
+	}
+	cpu->inst = FLAGS_NONE;
+	CYCLES(7);
+	NEXT();
+}
+
+void bsrr32r32(struct CPU* cpu, struct Op* op) {
+	U32 value = cpu->reg[op->r1].u32;
+	if (value==0) {
+		addFlag(ZF);
+	} else {
+		U32 result = 31;
+		while ((value & 0x80000000)==0) { result--; value<<=1; }
+		removeFlag(ZF);
+	}
+	cpu->inst = FLAGS_NONE;
+	CYCLES(7);
+	NEXT();
+}
+
+void bsrr32e32_16(struct CPU* cpu, struct Op* op) {
+	U32 value = readd(cpu->memory, eaa16(cpu, op));
+	if (value==0) {
+		addFlag(ZF);
+	} else {
+		U32 result = 31;
+		while ((value & 0x80000000)==0) { result--; value<<=1; }
+		removeFlag(ZF);
+	}
+	cpu->inst = FLAGS_NONE;
+	CYCLES(7);
+	NEXT();
+}
+
+void bsrr32e32_32(struct CPU* cpu, struct Op* op) {
+	U32 value = readd(cpu->memory, eaa32(cpu, op));
+	if (value==0) {
+		addFlag(ZF);
+	} else {
+		U32 result = 31;
+		while ((value & 0x80000000)==0) { result--; value<<=1; }
+		removeFlag(ZF);
+	}
+	cpu->inst = FLAGS_NONE;
+	CYCLES(7);
+	NEXT();
+}
