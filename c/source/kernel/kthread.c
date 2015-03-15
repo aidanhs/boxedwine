@@ -32,6 +32,10 @@ void initThread(struct KThread* thread, struct KProcess* process) {
 }
 
 void exitThread(struct KThread* thread, U32 status) {
+	if (thread->clear_child_tid) {
+		writed(thread->process->memory, thread->clear_child_tid, 0);
+		syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
+	}
 	unscheduleThread(thread);	
 	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
 	processOnExitThread(thread);

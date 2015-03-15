@@ -171,3 +171,33 @@ U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
 	writeStat(thread->process->memory, buffer, TRUE, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
 	return 0;
 }
+
+U32 syscall_ioctl(struct KThread* thread, FD fildes, U32 request) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+
+    if (fd==0) {
+        return -K_EBADF;
+    }
+	return fd->kobject->access->ioctl(thread, fd->kobject, request);
+}
+
+U32 syscall_dup2(struct KThread* thread, FD fildes, FD fildes2) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	struct KFileDescriptor* fd2;
+
+    if (!fd || fildes2<0) {
+        return -K_EBADF;
+    }
+    if (fildes == fildes2) {
+        return fildes;
+    }
+    fd2 = getFileDescriptor(thread->process, fildes2);
+    if (fd2) {
+		if (fd2->refCount>1) {
+			kpanic("Not sure what to do on a dup2 where the refcount is %d", fd2->refCount);
+		}
+		closeFD(fd2);			
+    } 
+	allocFileDescriptor(thread->process, fildes2, fd->kobject, fd->accessFlags, fd->descriptorFlags);
+    return fildes2;
+}

@@ -402,6 +402,7 @@ void dimulr32e32_32(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpO(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -410,6 +411,7 @@ void jumpO(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNO(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -418,6 +420,7 @@ void jumpNO(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpB(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -426,6 +429,7 @@ void jumpB(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNB(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -434,6 +438,7 @@ void jumpNB(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpZ(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -442,6 +447,7 @@ void jumpZ(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNZ(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -450,6 +456,7 @@ void jumpNZ(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpBE(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getZF(cpu) || getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -458,6 +465,7 @@ void jumpBE(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNBE(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getZF(cpu) && !getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -466,6 +474,7 @@ void jumpNBE(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpS(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getSF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -474,6 +483,7 @@ void jumpS(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNS(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getSF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -482,6 +492,7 @@ void jumpNS(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpP(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getPF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -490,6 +501,7 @@ void jumpP(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNP(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getPF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -498,6 +510,7 @@ void jumpNP(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpL(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getSF(cpu)!=getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -506,6 +519,7 @@ void jumpL(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNL(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getSF(cpu)==getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -514,6 +528,7 @@ void jumpNL(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpLE(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (getZF(cpu) || getSF(cpu)!=getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -522,6 +537,7 @@ void jumpLE(struct CPU* cpu, struct Op* op) {
 }
 
 void jumpNLE(struct CPU* cpu, struct Op* op) {
+	DONE();
 	if (!getZF(cpu) && getSF(cpu)==getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
 	}
@@ -1043,23 +1059,29 @@ void movDirectEax(struct CPU* cpu, struct Op* op) {
 }
 
 void retnIw16(struct CPU* cpu, struct Op* op) {
-	cpu->eip.u32 = pop16(cpu);
+	U16 eip = pop16(cpu);	
 	SP = SP+op->data1;
+	DONE();
+	cpu->eip.u32 = pop16(cpu);
 	CYCLES(3);
 }
 
 void retnIw32(struct CPU* cpu, struct Op* op) {
-	cpu->eip.u32 = pop32(cpu);
+	U32 eip = pop32(cpu);		
 	SP = SP+op->data1;
+	DONE();	
+	cpu->eip.u32 = eip;
 	CYCLES(3);
 }
 
 void retn16(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = pop16(cpu);
 	CYCLES(2);
 }
 
 void retn32(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = pop32(cpu);
 	CYCLES(2);
 }
@@ -1103,6 +1125,7 @@ void xlat32(struct CPU* cpu, struct Op* op) {
 
 void loopnz16(struct CPU* cpu, struct Op* op) {
 	CX--;
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (CX!=0 && !getZF(cpu))
 		cpu->eip.u32+=op->data1;
@@ -1111,6 +1134,7 @@ void loopnz16(struct CPU* cpu, struct Op* op) {
 
 void loopnz32(struct CPU* cpu, struct Op* op) {
 	ECX--;
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (ECX!=0 && !getZF(cpu))
 		cpu->eip.u32+=op->data1;
@@ -1119,6 +1143,7 @@ void loopnz32(struct CPU* cpu, struct Op* op) {
 
 void loopz16(struct CPU* cpu, struct Op* op) {
 	CX--;
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (CX!=0 && getZF(cpu))
 		cpu->eip.u32+=op->data1;
@@ -1127,6 +1152,7 @@ void loopz16(struct CPU* cpu, struct Op* op) {
 
 void loopz32(struct CPU* cpu, struct Op* op) {
 	ECX--;
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (ECX!=0 && getZF(cpu))
 		cpu->eip.u32+=op->data1;
@@ -1135,6 +1161,7 @@ void loopz32(struct CPU* cpu, struct Op* op) {
 
 void loop16(struct CPU* cpu, struct Op* op) {
 	CX--;
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (CX!=0)
 		cpu->eip.u32+=op->data1;
@@ -1143,6 +1170,7 @@ void loop16(struct CPU* cpu, struct Op* op) {
 
 void loop32(struct CPU* cpu, struct Op* op) {
 	ECX--;
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (ECX!=0)
 		cpu->eip.u32+=op->data1;
@@ -1150,6 +1178,7 @@ void loop32(struct CPU* cpu, struct Op* op) {
 }
 
 void jcxz16(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (CX==0)
 		cpu->eip.u32+=op->data1;
@@ -1157,6 +1186,7 @@ void jcxz16(struct CPU* cpu, struct Op* op) {
 }
 
 void jcxz32(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32+=op->eipCount;
 	if (ECX==0)
 		cpu->eip.u32+=op->data1;
@@ -1165,17 +1195,20 @@ void jcxz32(struct CPU* cpu, struct Op* op) {
 
 void callJw(struct CPU* cpu, struct Op* op) {
 	push16(cpu, cpu->eip.u32 + op->eipCount);
+	DONE();
 	cpu->eip.u32 += op->eipCount + op->data1;
 	CYCLES(1);
 }
 
 void callJd(struct CPU* cpu, struct Op* op) {
 	push32(cpu, cpu->eip.u32 + op->eipCount);
+	DONE();
 	cpu->eip.u32 += op->eipCount + (S32)op->data1;
 	CYCLES(1);
 }
 
 void jump(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 += op->eipCount + (S32)op->data1;
 	CYCLES(1);
 }
@@ -1820,35 +1853,43 @@ void std(struct CPU* cpu, struct Op* op) {
 
 void callEv16_reg(struct CPU* cpu, struct Op* op) {
 	push16(cpu, cpu->eip.u32+op->eipCount);
+	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u16;
 	CYCLES(2);
 }
 
 void callEv16_mem16(struct CPU* cpu, struct Op* op) {
-	U32 eip = cpu->eip.u32+op->eipCount;	
-	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
-	push16(cpu, eip);
+	U32 oldeip = cpu->eip.u32+op->eipCount;	
+	U32 neweip = readw(cpu->memory, eaa16(cpu, op));
+	push16(cpu, oldeip);
+	DONE();
+	cpu->eip.u32 = neweip;
 	CYCLES(4);
 }
 
 void callEv16_mem32(struct CPU* cpu, struct Op* op) {
-	U32 eip = cpu->eip.u32+op->eipCount;	
-	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
-	push16(cpu, eip);
+	U32 oldeip = cpu->eip.u32+op->eipCount;	
+	U32 neweip = readw(cpu->memory, eaa32(cpu, op));
+	push16(cpu, oldeip);
+	DONE();
+	cpu->eip.u32 = neweip;
 	CYCLES(4);
 }
 
 void jmpEv16_reg(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u16;
 	CYCLES(2);
 }
 
 void jmpEv16_mem16(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
 	CYCLES(2);
 }
 
 void jmpEv16_mem32(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
 	CYCLES(2);
 }
@@ -1891,35 +1932,43 @@ void pushEd_mem32(struct CPU* cpu, struct Op* op) {
 
 void callNear32_reg(struct CPU* cpu, struct Op* op) {
 	push32(cpu, cpu->eip.u32+op->eipCount);
+	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u32;
 	CYCLES(2);
 }
 
 void callNear32_mem16(struct CPU* cpu, struct Op* op) {
 	U32 eip = cpu->eip.u32+op->eipCount;	
-	cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
+	U32 neweip = readd(cpu->memory, eaa16(cpu, op));
 	push32(cpu, eip);
+	DONE();
+	cpu->eip.u32 = neweip;
 	CYCLES(4);
 }
 
 void callNear32_mem32(struct CPU* cpu, struct Op* op) {
 	U32 eip = cpu->eip.u32+op->eipCount;	
-	cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
+	U32 neweip = readd(cpu->memory, eaa32(cpu, op));
 	push32(cpu, eip);
+	DONE();
+	cpu->eip.u32 = neweip;
 	CYCLES(4);
 }
 
 void jmpNear32_reg(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u32;
 	CYCLES(2);
 }
 
 void jmpNear32_mem16(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
 	CYCLES(4);
 }
 
 void jmpNear32_mem32(struct CPU* cpu, struct Op* op) {
+	DONE();
 	cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
 	CYCLES(4);
 }

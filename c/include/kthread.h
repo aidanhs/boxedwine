@@ -16,6 +16,7 @@ struct KThread {
 	struct KThread* schedulePrev;
 	U32     waitType;
 	U32     waitSyscall;
+	U32     clear_child_tid;
 };
 
 extern U32 numberOfThreads;

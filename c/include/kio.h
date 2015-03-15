@@ -14,5 +14,7 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf);
 U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags);
 U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length);
 U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer);
+U32 syscall_ioctl(struct KThread* thread, FD fildes, U32 request);
+U32 syscall_dup2(struct KThread* thread, FD fildes, FD fildes2);
 
 #endif

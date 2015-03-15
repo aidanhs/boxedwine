@@ -280,3 +280,25 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 struct Node* getNode(struct KProcess* process, U32 fileName) {
 	return getNodeFromLocalPath(process->currentDirectory, getNativeString(process->memory, fileName));
 }
+
+const char* getModuleName(struct CPU* cpu) {
+	struct KProcess* process = cpu->thread->process;
+	U32 i;
+
+	for (i=0;i<process->mappedFilesCount;i++) {
+		if (cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+			return process->mappedFiles[i].name;
+	}
+	return "Unknown";
+}
+
+U32 getModuleEip(struct CPU* cpu) {
+	struct KProcess* process = cpu->thread->process;
+	U32 i;
+
+	for (i=0;i<process->mappedFilesCount;i++) {
+		if (cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+			return cpu->eip.u32-process->mappedFiles[i].address;
+	}
+	return 0;
+}

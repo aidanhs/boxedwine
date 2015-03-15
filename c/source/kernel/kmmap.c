@@ -5,6 +5,8 @@
 #include "kobjectaccess.h"
 #include "ram.h"
 #include "kfmmap.h"
+#include "nodeaccess.h"
+#include "node.h"
 
 U32 madvise(struct KThread* thread, U32 addr, U32 len, U32 advice) {
 	if (advice!=K_MADV_DONTNEED)
@@ -82,6 +84,13 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 		if (exec)
 			permissions|=PAGE_EXEC;
 		if (fd) {
+			if (off==0) {
+				struct KProcess* process = thread->process;
+				process->mappedFiles[process->mappedFilesCount].address = pageStart << PAGE_SHIFT;
+				process->mappedFiles[process->mappedFilesCount].len = pageCount << PAGE_SHIFT;
+				process->mappedFiles[process->mappedFilesCount].name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
+				process->mappedFilesCount++;
+			}
 			for (i=0;i<pageCount;i++) {
 				U32 data = 0;	
 				if (fd) {

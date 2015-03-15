@@ -28,6 +28,9 @@ int main(int argc, char **argv) {
 	int envc=0;
 	int mb=64;
 
+#ifdef LOG_OPS
+	logFile = fopen("log.txt", "w");
+#endif
 	for (i=1;i<argc;i++) {
 		if (!strcmp(argv[i], "-root") && i+1<argc) {
 			root = argv[i+1];

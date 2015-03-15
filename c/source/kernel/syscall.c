@@ -10,7 +10,21 @@
 #include "kerror.h"
 #include "ksystem.h"
 
+#include <stdarg.h>
+
+#ifdef LOG_OPS
+void logsyscall(const char* fmt, ...) {
+	va_list args;
+    va_start(args, fmt);
+	if (logFile)
+		vfprintf(logFile, fmt, args);
+    va_end(args);
+}
+
+#define LOG logsyscall
+#else
 #define LOG klog
+#endif
 
 #define __NR_exit 1
 #define __NR_read 3
@@ -213,15 +227,21 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = process->brkEnd;
 		LOG("__NR_brk address=%.8X result=%.8X", ARG1, result);
 		break;
-		/*
 	case __NR_ioctl:
+		result = syscall_ioctl(thread, ARG1, ARG2);
+		LOG("__NR_ioctl fd=%d request=%d result=%X", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_setpgid:
 		break;
 	case __NR_umask:
 		break;
+		*/
 	case __NR_dup2:
+		result = syscall_dup2(thread, ARG1, ARG2);
+		LOG("__NR_dup2 fildes1=%d fildes2=%d result=%d", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_getppid:
 		break;
 	case __NR_getpgrp:
@@ -366,7 +386,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		*/
 	case __NR_futex:
 		result = syscall_futex(thread, ARG1, ARG2, ARG3, ARG4);
-		//LOG("__NR_futex address=%X op=%d result=%d", ARG1, ARG2, result);
+		LOG("__NR_futex address=%X op=%d result=%d", ARG1, ARG2, result);
 		break;
 		/*
 	case __NR_sched_getaffinity:
@@ -395,8 +415,13 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_epoll_wait:
 		break;
+		*/
 	case __NR_set_tid_address:
+		thread->clear_child_tid = ARG1;
+		result = thread->id;
+		LOG("__NR_set_tid_address address=%X result=%d", ARG1, result);
 		break;
+		/*
 	case __NR_clock_gettime:
 		break;
 	case __NR_clock_getres:
@@ -417,8 +442,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_openat:
 		break;
+		*/
 	case __NR_set_robust_list:
+		kwarn("syscall __NR_set_robust_list not implemented");
+		result = -1;
 		break;
+		/*
 	case __NR_getcpu:
 		break;
 	case __NR_utimensat:

@@ -3,32 +3,52 @@
 #include "ram.h"
 #include <string.h>
 
+void pf(struct Memory* memory, U32 address) {
+	U32 start = 0;
+	U32 i;
+
+	kwarn("Page Fault at %.8X", address);
+	kwarn("Valid address ranges:");
+	for (i=0;i<NUMBER_OF_PAGES;i++) {
+		if (!start) {
+			if (memory->mmu[i] != &invalidPage) {
+				start = i;
+			}
+		} else {
+			if (memory->mmu[i] == &invalidPage) {
+				kwarn("    %.8X - %.8X", start*PAGE_SIZE, i*PAGE_SIZE);
+				start = 0;
+			}
+		}
+	}
+	kpanic("pf");
+}
 
 U8 pf_readb(struct Memory* memory, U32 address, U32 data) {
-	kpanic("PF");
+	pf(memory, address);
 	return 0;
 }
 
 void pf_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
-	kpanic("PF");
+	pf(memory, address);
 }
 
 U16 pf_readw(struct Memory* memory, U32 address, U32 data) {
-	kpanic("PF");
+	pf(memory, address);
 	return 0;
 }
 
 void pf_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
-	kpanic("PF");
+	pf(memory, address);
 }
 
 U32 pf_readd(struct Memory* memory, U32 address, U32 data) {
-	kpanic("PF");
+	pf(memory, address);
 	return 0;
 }
 
 void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
-	kpanic("PF");
+	pf(memory, address);
 }
 
 void pf_clear(struct Memory* memory, U32 page, U32 data) {

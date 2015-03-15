@@ -14,6 +14,14 @@
 #define ADDRESS_PROCESS_FRAME_BUFFER	0xF8000
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
+// only used for debugging
+struct MapedFiles {
+	const char* name;
+	U32 address;
+	U32 len;
+};
+#define MAX_MAPPED_FILE 50
+
 struct KProcess {
 	U32 id;
 	U32 parentId;
@@ -33,6 +41,8 @@ struct KProcess {
 	U32 maxHeapSize;
 	U32 brkEnd;
 	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
+	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
+	U32 mappedFilesCount;
 };
 
 void processOnExitThread(struct KThread* thread);
@@ -43,4 +53,6 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
 BOOL isProcessStopped(struct KProcess* process);
 BOOL isProcessTerminatedstruct (struct KProcess* process);
 struct Node* getNode(struct KProcess* process, U32 fileName);
+const char* getModuleName(struct CPU* cpu);
+U32 getModuleEip(struct CPU* cpu);
 #endif
