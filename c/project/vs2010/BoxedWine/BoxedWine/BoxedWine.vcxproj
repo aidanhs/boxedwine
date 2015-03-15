@@ -156,6 +156,7 @@
     <ClInclude Include="..\..\..\..\include\virtualfile.h" />
     <ClInclude Include="..\..\..\..\source\emulation\arith.h" />
     <ClInclude Include="..\..\..\..\source\emulation\conditions.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\decode.h" />
     <ClInclude Include="..\..\..\..\source\emulation\fpu.h" />
     <ClInclude Include="..\..\..\..\source\emulation\incdec.h" />
     <ClInclude Include="..\..\..\..\source\emulation\ops.h" />

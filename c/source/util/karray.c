@@ -2,10 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-void initArray(struct KArray* karray) {
+void initArray(struct KArray* karray, int startingIndex) {
 	karray->count = 0;
 	karray->maxCount = 10;
 	karray->objects = (void**)malloc(sizeof(void*)*10);
+	karray->startingIndex = startingIndex;
 }
 
 void destroyArray(struct KArray* karray) {
@@ -22,7 +23,7 @@ U32 addObjecToArray(struct KArray* karray, void* object) {
 		if (karray->objects[i]==0) {
 			karray->objects[i] = object;
 			karray->count++;
-			return i;
+			return i+karray->startingIndex;
 		}
 	}
 	index = karray->maxCount;
@@ -35,10 +36,10 @@ U32 addObjecToArray(struct KArray* karray, void* object) {
 	karray->objects = pObjects;
 	karray->objects[karray->maxCount] = object;
 	karray->maxCount = newSize;
-	return index;
+	return index+karray->startingIndex;
 }
 
 void removeObjectFromArray(struct KArray* karray, U32 index) {
-	karray->objects[index] = 0;
+	karray->objects[index-karray->startingIndex] = 0;
 	karray->count--;
 }

@@ -527,9 +527,9 @@ void runBlock(struct CPU* cpu, struct Op* block) {
 
 void runCPU(struct CPU* cpu) {
 	struct Op* block;
-	//if (cpu->eip.u32==0xd0004b7e) {
+	//if (cpu->eip.u32==0xD01BE894) {
 	//	int ii=0;
-//	}
+	//}
 	block = decodeBlock(cpu);
 	runBlock(cpu, block);
 	freeOp(block);

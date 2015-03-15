@@ -21,7 +21,7 @@ void initProcess(struct KProcess* process, struct Memory* memory) {
 	memory->process = process;
 	process->id = addProcess(process);
 	process->groupId = 1;
-	initArray(&process->threads);	
+	initArray(&process->threads, 1000);	
 }
 
 void addThread(struct KProcess* process, struct KThread* thread) {
@@ -150,7 +150,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		process->heapSize = 0;
 		process->maxHeapSize = 1024*1024;
 		// will be on demand, so it's ok that it's a lot larger than we need
-		process->pHeap = mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, process->maxHeapSize, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
+		process->pHeap = syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, process->maxHeapSize, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
 		pArgs[0] = loaderNode->path.localPath;
 		for (i=0;i<argc;i++) {

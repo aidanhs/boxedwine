@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 		strcat(base, "root");
 		root=base;
 	}
+	initSystem();
 	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);
 
@@ -64,6 +65,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
+	//ppenv[envc++] = "LD_DEBUG=all";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);

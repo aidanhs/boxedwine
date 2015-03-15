@@ -183,6 +183,9 @@
     <ClInclude Include="..\..\..\..\include\devurandom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\decode.h">
+      <Filter>Source Files\emulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">

@@ -77,6 +77,8 @@ struct futex* allocFutex(struct KThread* thread, U32 address, U32 millies) {
 			return &system_futex[i];
 		}
 	}
+	kpanic("ran out of futexes");
+	return 0;
 }
 
 void freeFutex(struct futex* f) {

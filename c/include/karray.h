@@ -7,9 +7,10 @@ struct KArray {
 	void** objects;
 	U32 maxCount;
 	U32 count;
+	U32 startingIndex;
 };
 
-void initArray(struct KArray* karray);
+void initArray(struct KArray* karray, int startingIndex);
 // return index
 U32 addObjecToArray(struct KArray* karray, void* object);
 void removeObjectFromArray(struct KArray* karray, U32 index);
