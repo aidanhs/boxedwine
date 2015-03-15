@@ -14,6 +14,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 void initProcess(struct KProcess* process, struct Memory* memory) {
 	memset(process, 0, sizeof(struct KProcess));
@@ -21,22 +22,49 @@ void initProcess(struct KProcess* process, struct Memory* memory) {
 	memory->process = process;
 	process->id = addProcess(process);
 	process->groupId = 1;
-	initArray(&process->threads, 1000);	
+	initArray(&process->threads, 100);	
 }
 
 void addThread(struct KProcess* process, struct KThread* thread) {
 	thread->id = addObjecToArray(&process->threads, thread);
 }
 
-void setupThreadStack(struct CPU* cpu, U32 argc, U32 args, U32 envc, U32 env) {
+void writeStackString(struct CPU* cpu, const char* s) {
+	int count = (strlen(s)+4)/4;
 	int i;
 
+	for (i=0;i<count;i++) {
+		push32(cpu, 0);
+	}
+	writeNativeString(cpu->memory, ESP, s);
+}
+
+void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, const char** env) {
+	U32 a[128];
+	U32 e[128];
+	int i;
+
+	if (argc>128)
+		kpanic("Too many args: 128 is max");
+	if (envc>128)
+		kpanic("Too many env: 128 is max");
+	for (i=0;i<envc;i++) {
+		writeStackString(cpu, env[i]);
+		e[i]=ESP;
+	}
+	for (i=0;i<argc;i++) {
+		writeStackString(cpu, args[i]);
+		a[i]=ESP;
+	}
     push32(cpu, 0);
-    for (i=envc-1;i>=0;i--)
-		push32(cpu, readd(cpu->memory, env+sizeof(U32)*i));
+	push32(cpu, a[0]);
+    for (i=envc-1;i>=0;i--) {
+		push32(cpu, e[i]);
+	}
     push32(cpu, 0);
-    for (i=argc;i>=0;i--)
-        push32(cpu, readd(cpu->memory, args+sizeof(U32)*i));
+    for (i=argc-1;i>=0;i--) {
+		push32(cpu, a[i]);
+	}
     push32(cpu, argc);
 }
 
@@ -158,10 +186,10 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		}
 		argc++;
 
-		process->args = stringArrayFromNative(process, pArgs, argc);
-		process->env = stringArrayFromNative(process, env, envc);
+		//process->args = stringArrayFromNative(process, pArgs, argc);
+		//process->env = stringArrayFromNative(process, env, envc);
 
-		setupThreadStack(&thread->cpu, argc, process->args, envc, process->env);
+		setupThreadStack(&thread->cpu, argc, pArgs, envc, env);
 
 		// :TODO: these should be copies		
 		process->currentDirectory = strdup(currentDirectory);
@@ -231,7 +259,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 			return -K_ECHILD;
 		} else {
 			thread->waitType = WAIT_PID;
-			return K_WAIT;
+			return -K_WAIT;
 		}
 	}
     if (status!=0) {

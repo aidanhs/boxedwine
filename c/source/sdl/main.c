@@ -13,6 +13,7 @@
 #include "virtualfile.h"
 #include "devtty.h"
 #include "devurandom.h"
+#include "ksystem.h"
 
 #include CURDIR
 
