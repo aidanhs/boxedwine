@@ -4,6 +4,7 @@
 #include "kobject.h"
 #include "platform.h"
 #include "memory.h"
+#include "kthread.h"
 
 struct KObjectAccess {
 	U32  (*ioctl)(struct KThread* thread, struct KObject* obj, U32 request);

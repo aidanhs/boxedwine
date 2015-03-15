@@ -1062,7 +1062,7 @@ void retnIw16(struct CPU* cpu, struct Op* op) {
 	U16 eip = pop16(cpu);	
 	SP = SP+op->data1;
 	DONE();
-	cpu->eip.u32 = pop16(cpu);
+	cpu->eip.u32 = eip;
 	CYCLES(3);
 }
 
