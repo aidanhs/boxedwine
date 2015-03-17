@@ -61,14 +61,17 @@ public class Main {
         out("        data->op->func = "+name+"r"+bits+"r"+bits+";");
         out("        data->op->r1 = E(rm);");
         out("        data->op->r2 = G(rm);");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", R"+bits+"(data->op->r1),R"+bits+"(data->op->r2));");
         out("    } else if (data->ea16) {");
         out("        data->op->func = "+name+"e"+bits+"r"+bits+"_16;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa16(data, rm);");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", M"+bits+"(data, rm, data->op),R"+bits+"(data->op->r2));");
         out("    } else {");
         out("        data->op->func = "+name+"e"+bits+"r"+bits+"_32;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa32(data, rm);");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", M"+bits+"(data, rm, data->op),R"+bits+"(data->op->r2));");
         out("    }");
         if (extra!=null)
             out(extra);
@@ -95,14 +98,17 @@ public class Main {
         out("        data->op->func = "+name+"r"+bits+"r"+bits+";");
         out("        data->op->r1 = G(rm);");
         out("        data->op->r2 = E(rm);");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", R"+bits+"(data->op->r1),R"+bits+"(data->op->r2));");
         out("    } else if (data->ea16) {");
         out("        data->op->func = "+name+"r"+bits+"e"+bits+"_16;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa16(data, rm);");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", R"+bits+"(data->op->r1),M"+bits+"(data, rm, data->op));");
         out("    } else {");
         out("        data->op->func = "+name+"r"+bits+"e"+bits+"_32;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa32(data, rm);");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", R"+bits+"(data->op->r1),M"+bits+"(data, rm, data->op));");
         out("    }");
         decodeData(data);
         out("    NEXT_OP(data);");
@@ -121,6 +127,7 @@ public class Main {
         out("    data->op->func = "+name+bits+"_reg;");
         out("    data->op->r1 = 0;");
         out("    data->op->data1 = FETCH"+bits+"(data);");
+        out("    LOG_OP2(\""+name.toUpperCase()+"\", R"+bits+"(0), itoa(data->op->data1, tmp, 16));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -146,6 +153,7 @@ public class Main {
         out("BOOL decode0"+base+"(struct DecodeData* data) {");
         out("    data->op->func = pushSeg16;");
         out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    LOG_OP1(\"PUSH\", EABASE(data->op->r1));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -153,6 +161,7 @@ public class Main {
         out("BOOL decode2"+base+"(struct DecodeData* data) {");
         out("    data->op->func = pushSeg32;");
         out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    LOG_OP1(\"PUSH\", EABASE(data->op->r1));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -163,6 +172,7 @@ public class Main {
         out("BOOL decode0"+base+"(struct DecodeData* data) {");
         out("    data->op->func = popSeg16;");
         out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    LOG_OP1(\"POP\", EABASE(data->op->r1));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -170,6 +180,7 @@ public class Main {
         out("BOOL decode2"+base+"(struct DecodeData* data) {");
         out("    data->op->func = popSeg32;");
         out("    data->op->r1 = "+seg.toUpperCase()+";");
+        out("    LOG_OP1(\"POP\", EABASE(data->op->r1));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -184,21 +195,36 @@ public class Main {
         out("}");
     }
 
-    static public void decodeFunc(String base, String func) throws IOException {
+    static public void decodeFunc(String base, String func, String asm) throws IOException {
         out("// "+func.toUpperCase());
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = "+func+";");
+        out("    LOG_OP(\""+asm+"\");");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
     }
 
-    static public void decodeE(String comment, String base, String func, int data) throws IOException {
+    static public void decodeFuncEndOfBlock(String base, String func, String asm) throws IOException {
+        out("// "+func.toUpperCase());
+        out("BOOL decode"+base+"(struct DecodeData* data) {");
+        out("    data->op->func = "+func+";");
+        out("    LOG_OP(\""+asm+"\");");
+        out("    FINISH_OP(data);");
+        out("    return FALSE;");
+        out("}");
+    }
+
+    static public void decodeE(String asm, String comment, String base, String func, int data, int bits) throws IOException {
         out("// "+comment.toUpperCase());
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    U8 rm = FETCH8(data);");
         out("    DECODE_E("+func+"_reg, "+func+"_mem16, "+func+"_mem32);");
         decodeData(data);
+        if (data!=0)
+        out("    LOG_E"+bits+"C(\""+asm+"\", rm, data);");
+        else
+        out("    LOG_E"+bits+"(\""+asm+"\", rm, data);");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -248,16 +274,18 @@ public class Main {
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = "+func+";");
         out("    data->op->r1 = "+reg+";");
+        out("    LOG_OP(\""+comment+"\");");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
     }
-    static public void decodeFuncRegData(String comment, String base, String func, int reg, int bits) throws IOException {
+    static public void decodeFuncRegData(String asm, String comment, String base, String func, int reg, int bits) throws IOException {
         out("// "+comment);
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = "+func+";");
         out("    data->op->r1 = "+reg+";");
         decodeData(bits);
+        out("    LOG_OP2(\""+asm+"\", R"+bits+"(data->op->r1), itoa(data->op->data1, tmp, 16));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -286,21 +314,23 @@ public class Main {
             out("    data->op->data1 = FETCH_S16(data);");
         }
     }
-    static public void decodeFuncData(String comment, String base, String func, int bits) throws IOException {
+    static public void decodeFuncData(String asm, String comment, String base, String func, int bits) throws IOException {
         out("// "+comment);
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = "+func+";");
         decodeData(bits);
+        out("    LOG_OP1(\""+asm+"\", itoa(data->op->data1, tmp, 16));");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
     }
 
-    static public void decodeFuncDataEndOfBlock(String comment, String base, String func, int bits) throws IOException {
+    static public void decodeFuncDataEndOfBlock(String asm, String comment, String base, String func, int bits) throws IOException {
         out("// "+comment);
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = "+func+";");
         decodeData(bits);
+        out("    LOG_OP1(\""+asm+"\", itoa(data->op->data1, tmp, 16));");
         out("    FINISH_OP(data);");
         out("    return FALSE;");
         out("}");
@@ -311,6 +341,7 @@ public class Main {
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = jump"+c+";");
         decodeData(bits);
+        out("    LOG_OP1(\"J"+c+"\", itoa((int)data->op->data1, tmp, 10));");
         out("    FINISH_OP(data);");
         out("    return FALSE;");
         out("}");
@@ -325,24 +356,31 @@ public class Main {
         out("    case 0x01:");
         out("        DECODE_E(test"+bits+"_reg, test"+bits+"_mem16, test"+bits+"_mem32);");
         out("        data->op->data1 = FETCH"+bits+"(data);");
+        out("        LOG_E"+bits+"C(\"TEST\", rm, data);");
         out("        break;");
         out("    case 0x02:");
         out("        DECODE_E(not"+bits+"_reg, not"+bits+"_mem16, not"+bits+"_mem32);");
+        out("        LOG_E"+bits+"(\"NOT\", rm, data);");
         out("        break;");
         out("    case 0x03:");
         out("        DECODE_E(neg"+bits+"_reg, neg"+bits+"_mem16, neg"+bits+"_mem32);");
+        out("        LOG_E"+bits+"(\"NEG\", rm, data);");
         out("        break;");
         out("    case 0x04:");
         out("        DECODE_E(mul"+bits+"_reg, mul"+bits+"_mem16, mul"+bits+"_mem32);");
+        out("        LOG_E"+bits+"(\"MUL\", rm, data);");
         out("        break;");
         out("    case 0x05:");
         out("        DECODE_E(imul"+bits+"_reg, imul"+bits+"_mem16, imul"+bits+"_mem32);");
+        out("        LOG_E"+bits+"(\"IMUL\", rm, data);");
         out("        break;");
         out("    case 0x06:");
         out("        DECODE_E(div"+bits+"_reg, div"+bits+"_mem16, div"+bits+"_mem32);");
+        out("        LOG_E"+bits+"(\"DIV\", rm, data);");
         out("        break;");
         out("    case 0x07:");
         out("        DECODE_E(idiv"+bits+"_reg, idiv"+bits+"_mem16, idiv"+bits+"_mem32);");
+        out("        LOG_E"+bits+"(\"IDIV\", rm, data);");
         out("        break;");
         out("    }");
         out("    NEXT_OP(data);");
@@ -358,14 +396,17 @@ public class Main {
         out("        data->op->func = cmov"+c+"_"+bits+"_reg;");
         out("        data->op->r1 = G(rm);");
         out("        data->op->r2 = E(rm);");
+        out("        LOG_OP2(\"CMOV\", R"+bits+"(data->op->r1), R"+bits+"(data->op->r2));");
         out("    } else if (data->ea16) {");
         out("        data->op->func = cmov"+c+"_"+bits+"_mem16;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa16(data, rm);");
+        out("        LOG_OP2(\"CMOV\", R"+bits+"(data->op->r1), M"+bits+"(data, rm, data->op));");
         out("    } else {");
         out("        data->op->func = cmov"+c+"_"+bits+"_mem32;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa32(data, rm);");
+        out("        LOG_OP2(\"CMOV\", R"+bits+"(data->op->r1), M"+bits+"(data, rm, data->op));");
         out("    }");
         out("    NEXT_OP(data);");
         out("    return TRUE;");
@@ -386,16 +427,16 @@ public class Main {
         decodePopSeg("1f", "ds");
         decodeArith(0x20, "and");
         decodeSeg("26", "es");
-        decodeFunc("027", "daa");
+        decodeFunc("027", "daa", "DAA");
         decodeArith(0x28, "sub");
         decodeSeg("2e", "cs");
-        decodeFunc("02f", "das");
+        decodeFunc("02f", "das", "DAS");
         decodeArith(0x30, "xor");
         decodeSeg("36", "ss");
-        decodeFunc("037", "aaa");
+        decodeFunc("037", "aaa", "AAA");
         decodeArith(0x38, "cmp");
         decodeSeg("3e", "ds");
-        decodeFunc("03f", "aas");
+        decodeFunc("03f", "aas", "AAS");
         decodeFunc("INC AX", "040", "inc16_reg", 0);
         decodeFunc("INC EAX", "240", "inc32_reg", 0);
         decodeFunc("INC CX", "041", "inc16_reg", 1);
@@ -461,18 +502,18 @@ public class Main {
         decodeFunc("POP ESI", "25e", "popEsi", 6);
         decodeFunc("POP DI", "05f", "popDi", 7);
         decodeFunc("POP EDI", "25f", "popEdi", 7);
-        decodeFunc("060", "pusha");
-        decodeFunc("260", "pushad");
-        decodeFunc("061", "popa");
-        decodeFunc("261", "pushad");
+        decodeFunc("060", "pusha", "PUSHA");
+        decodeFunc("260", "pushad", "PUSHA");
+        decodeFunc("061", "popa", "POPA");
+        decodeFunc("261", "popad", "POPA");
         decodeSeg("64", "fs");
         decodeSeg("65", "gs");
-        decodeFuncData("PUSH Iw", "068", "push16data", 16);
-        decodeFuncData("PUSH Id", "268", "push32data", 32);
+        decodeFuncData("PUSH", "PUSH Iw", "068", "push16data", 16);
+        decodeFuncData("PUSH", "PUSH Id", "268", "push32data", 32);
         ge("069", "dimulc", 16, -16, "IMUL Gw,Ew,Iw");
         ge("269", "dimulc", 32, 32, "IMUL Gd,Ed,Id");
-        decodeFuncData("Push Ib", "06a", "push16data", -8);
-        decodeFuncData("Push Ib", "26a", "push32data", -8);
+        decodeFuncData("PUSH", "PUSH Ib", "06a", "push16data", -8);
+        decodeFuncData("PUSH", "PUSH Ib", "26a", "push32data", -8);
         ge("06b", "dimulc", 16, -8, "IMUL Gw,Ew,Ib");
         ge("26b", "dimulc", 32, -8, "IMUL Gd,Ed,Ib");
         decodeJump("070", "O", -8);
@@ -518,16 +559,16 @@ public class Main {
         decodeFunc("XCHG ESI,EAX", "296", "xchgr32r32", 0, 6);
         decodeFunc("XCHG DI,AX", "097", "xchgr16r16", 0, 7);
         decodeFunc("XCHG EDI,EAX", "297", "xchgr32r32", 0, 7);
-        decodeFunc("098", "cbw");
-        decodeFunc("298", "cbwe");
-        decodeFunc("099", "cwd");
-        decodeFunc("299", "cwq");
-        decodeFunc("09c", "pushf16");
-        decodeFunc("29c", "pushf32");
-        decodeFunc("09d", "popf16");
-        decodeFunc("29d", "popf32");
-        decodeFunc("09e", "sahf");
-        decodeFunc("09f", "lahf");
+        decodeFunc("098", "cbw", "CBW");
+        decodeFunc("298", "cbwe", "CBWE");
+        decodeFunc("099", "cwd", "CWD");
+        decodeFunc("299", "cwq", "CWQ");
+        decodeFunc("09c", "pushf16", "PUSHF");
+        decodeFunc("29c", "pushf32", "PUSHF");
+        decodeFunc("09d", "popf16", "POPF");
+        decodeFunc("29d", "popf32", "POPF");
+        decodeFunc("09e", "sahf", "SAHF");
+        decodeFunc("09f", "lahf", "LAHF");
         decodeFuncEAdata("MOV AL,Ob", "0a0", "movAl");
         decodeFuncEAdata("MOV AX,Ow", "0a1", "movAx");
         decodeFuncEAdata("MOV EAX,Od", "2a1", "movEax");
@@ -541,9 +582,9 @@ public class Main {
         decodeString("0a6", "cmpsb");
         decodeString("0a7", "cmpsw");
         decodeString("2a7", "cmpsd");
-        decodeFuncRegData("TEST AL,Ib", "0a8", "test8_reg", 0, 8);
-        decodeFuncRegData("TEST AX,Iw", "0a9", "test16_reg", 0, 16);
-        decodeFuncRegData("TEST EAX,Id", "2a9", "test32_reg", 0, 32);
+        decodeFuncRegData("TEST", "TEST AL,Ib", "0a8", "test8_reg", 0, 8);
+        decodeFuncRegData("TEST", "TEST AX,Iw", "0a9", "test16_reg", 0, 16);
+        decodeFuncRegData("TEST", "TEST EAX,Id", "2a9", "test32_reg", 0, 32);
         decodeString("0aa", "stosb");
         decodeString("0ab", "stosw");
         decodeString("2ab", "stosd");
@@ -553,54 +594,54 @@ public class Main {
         decodeString("0ae", "scasb");
         decodeString("0af", "scasw");
         decodeString("2af", "scasd");
-        decodeFuncRegData("MOV AL,Ib", "0b0", "mov8_reg", 0, 8);
-        decodeFuncRegData("MOV CL,Ib", "0b1", "mov8_reg", 1, 8);
-        decodeFuncRegData("MOV DL,Ib", "0b2", "mov8_reg", 2, 8);
-        decodeFuncRegData("MOV BL,Ib", "0b3", "mov8_reg", 3, 8);
-        decodeFuncRegData("MOV AH,Ib", "0b4", "mov8_reg", 4, 8);
-        decodeFuncRegData("MOV CH,Ib", "0b5", "mov8_reg", 5, 8);
-        decodeFuncRegData("MOV DH,Ib", "0b6", "mov8_reg", 6, 8);
-        decodeFuncRegData("MOV BH,Ib", "0b7", "mov8_reg", 7, 8);
-        decodeFuncRegData("MOV AX,Iw", "0b8", "mov16_reg", 0, 16);
-        decodeFuncRegData("MOV EAX,Id", "2b8", "mov32_reg", 0, 32);
-        decodeFuncRegData("MOV CX,Iw", "0b9", "mov16_reg", 1, 16);
-        decodeFuncRegData("MOV ECX,Id", "2b9", "mov32_reg", 1, 32);
-        decodeFuncRegData("MOV DX,Iw", "0ba", "mov16_reg", 2, 16);
-        decodeFuncRegData("MOV EDX,Id", "2ba", "mov32_reg", 2, 32);
-        decodeFuncRegData("MOV BX,Iw", "0bb", "mov16_reg", 3, 16);
-        decodeFuncRegData("MOV EBX,Id", "2bb", "mov32_reg", 3, 32);
-        decodeFuncRegData("MOV SP,Iw", "0bc", "mov16_reg", 4, 16);
-        decodeFuncRegData("MOV ESP,Id", "2bc", "mov32_reg", 4, 32);
-        decodeFuncRegData("MOV BP,Iw", "0bd", "mov16_reg", 5, 16);
-        decodeFuncRegData("MOV EBP,Id", "2bd", "mov32_reg", 5, 32);
-        decodeFuncRegData("MOV SI,Iw", "0be", "mov16_reg", 6, 16);
-        decodeFuncRegData("MOV ESI,Id", "2be", "mov32_reg", 6, 32);
-        decodeFuncRegData("MOV DI,Iw", "0bf", "mov16_reg", 7, 16);
-        decodeFuncRegData("MOV EDI,Id", "2bf", "mov32_reg", 7, 32);
-        decodeFuncData("RETN Iw", "0c2", "retnIw16", 16);
-        decodeFuncData("RETN Iw", "2c2", "retnIw32", 16);
-        decodeFunc("0c3", "retn16");
-        decodeFunc("2c3", "retn32");
-        decodeE("MOV Eb,Ib", "0c6", "mov8", 8);
-        decodeE("MOV Ew,Iw", "0c7", "mov16", 16);
-        decodeE("MOV Ed,Id", "2c7", "mov32", 32);
-        decodeFunc("0c9", "leave16");
-        decodeFunc("2c9", "leave32");
-        decodeFunc("0d6", "salc");
-        decodeFuncDataEndOfBlock("CALL Jw ", "0e8", "callJw", -16);
-        decodeFuncDataEndOfBlock("CALL Jd ", "2e8", "callJd", 32);
-        decodeFuncDataEndOfBlock("JMP Jw ", "0e9", "jump", -16);
-        decodeFuncDataEndOfBlock("JMP Jd ", "2e9", "jump", 32);
-        decodeFuncDataEndOfBlock("JMP Jb ", "0eb", "jump", -8);
-        decodeFunc("0f5", "cmc");
+        decodeFuncRegData("MOV", "MOV AL,Ib", "0b0", "mov8_reg", 0, 8);
+        decodeFuncRegData("MOV", "MOV CL,Ib", "0b1", "mov8_reg", 1, 8);
+        decodeFuncRegData("MOV", "MOV DL,Ib", "0b2", "mov8_reg", 2, 8);
+        decodeFuncRegData("MOV", "MOV BL,Ib", "0b3", "mov8_reg", 3, 8);
+        decodeFuncRegData("MOV", "MOV AH,Ib", "0b4", "mov8_reg", 4, 8);
+        decodeFuncRegData("MOV", "MOV CH,Ib", "0b5", "mov8_reg", 5, 8);
+        decodeFuncRegData("MOV", "MOV DH,Ib", "0b6", "mov8_reg", 6, 8);
+        decodeFuncRegData("MOV", "MOV BH,Ib", "0b7", "mov8_reg", 7, 8);
+        decodeFuncRegData("MOV", "MOV AX,Iw", "0b8", "mov16_reg", 0, 16);
+        decodeFuncRegData("MOV", "MOV EAX,Id", "2b8", "mov32_reg", 0, 32);
+        decodeFuncRegData("MOV", "MOV CX,Iw", "0b9", "mov16_reg", 1, 16);
+        decodeFuncRegData("MOV", "MOV ECX,Id", "2b9", "mov32_reg", 1, 32);
+        decodeFuncRegData("MOV", "MOV DX,Iw", "0ba", "mov16_reg", 2, 16);
+        decodeFuncRegData("MOV", "MOV EDX,Id", "2ba", "mov32_reg", 2, 32);
+        decodeFuncRegData("MOV", "MOV BX,Iw", "0bb", "mov16_reg", 3, 16);
+        decodeFuncRegData("MOV", "MOV EBX,Id", "2bb", "mov32_reg", 3, 32);
+        decodeFuncRegData("MOV", "MOV SP,Iw", "0bc", "mov16_reg", 4, 16);
+        decodeFuncRegData("MOV", "MOV ESP,Id", "2bc", "mov32_reg", 4, 32);
+        decodeFuncRegData("MOV", "MOV BP,Iw", "0bd", "mov16_reg", 5, 16);
+        decodeFuncRegData("MOV", "MOV EBP,Id", "2bd", "mov32_reg", 5, 32);
+        decodeFuncRegData("MOV", "MOV SI,Iw", "0be", "mov16_reg", 6, 16);
+        decodeFuncRegData("MOV", "MOV ESI,Id", "2be", "mov32_reg", 6, 32);
+        decodeFuncRegData("MOV", "MOV DI,Iw", "0bf", "mov16_reg", 7, 16);
+        decodeFuncRegData("MOV", "MOV EDI,Id", "2bf", "mov32_reg", 7, 32);
+        decodeFuncDataEndOfBlock("RETN", "RETN Iw", "0c2", "retnIw16", 16);
+        decodeFuncDataEndOfBlock("RETN", "RETN Iw", "2c2", "retnIw32", 16);
+        decodeFuncEndOfBlock("0c3", "retn16", "RETN");
+        decodeFuncEndOfBlock("2c3", "retn32", "RETN");
+        decodeE("MOV", "MOV Eb,Ib", "0c6", "mov8", 8, 8);
+        decodeE("MOV", "MOV Ew,Iw", "0c7", "mov16", 16, 16);
+        decodeE("MOV", "MOV Ed,Id", "2c7", "mov32", 32, 32);
+        decodeFunc("0c9", "leave16", "LEAVE");
+        decodeFunc("2c9", "leave32", "LEAVE");
+        decodeFunc("0d6", "salc", "SALC");
+        decodeFuncDataEndOfBlock("CALL", "CALL Jw ", "0e8", "callJw", -16);
+        decodeFuncDataEndOfBlock("CALL", "CALL Jd ", "2e8", "callJd", 32);
+        decodeFuncDataEndOfBlock("JMP", "JMP Jw ", "0e9", "jump", -16);
+        decodeFuncDataEndOfBlock("JMP", "JMP Jd ", "2e9", "jump", 32);
+        decodeFuncDataEndOfBlock("JMP", "JMP Jb ", "0eb", "jump", -8);
+        decodeFunc("0f5", "cmc", "CMC");
         decodeGroup3("GRP3 Eb(,Ib)", "0f6", 8);
         decodeGroup3("GRP3 Ew(,Iw)", "0f7", 16);
         decodeGroup3("GRP3 Ed(,Id)", "2f7", 32);
-        decodeFunc("0f8", "clc");
-        decodeFunc("0f9", "stc");
-        decodeFunc("0fc", "cld");
-        decodeFunc("0fd", "std");
-        decodeFunc("131", "rdtsc");
+        decodeFunc("0f8", "clc", "CLC");
+        decodeFunc("0f9", "stc", "STC");
+        decodeFunc("0fc", "cld", "CLD");
+        decodeFunc("0fd", "std", "STD");
+        decodeFunc("131", "rdtsc", "RDTSC");
 
         decodeCmov("140", "O", 16);
         decodeCmov("340", "O", 32);
@@ -669,26 +710,26 @@ public class Main {
         decodeJump("38e", "LE", 32);
         decodeJump("38f", "NLE", 32);
 
-        decodeE("SETO", "190", "setO", 0);
-        decodeE("SETNO", "191", "setNO", 0);
-        decodeE("SETB", "192", "setB", 0);
-        decodeE("SETNB", "193", "setNB", 0);
-        decodeE("SETZ", "194", "setZ", 0);
-        decodeE("SETNZ", "195", "setNZ", 0);
-        decodeE("SETBE", "196", "setBE", 0);
-        decodeE("SETNBE", "197", "setNBE", 0);
-        decodeE("SETS", "198", "setS", 0);
-        decodeE("SETNS", "199", "setNS", 0);
-        decodeE("SETP", "19a", "setP", 0);
-        decodeE("SETNP", "19b", "setNP", 0);
-        decodeE("SETL", "19c", "setL", 0);
-        decodeE("SETNL", "19d", "setNL", 0);
-        decodeE("SETLE", "19e", "setLE", 0);
-        decodeE("SETNLE", "19f", "setNLE", 0);
+        decodeE("SETO", "SETO", "190", "setO", 0, 8);
+        decodeE("SETNO", "SETNO", "191", "setNO", 0, 8);
+        decodeE("SETB", "SETB", "192", "setB", 0, 8);
+        decodeE("SETNB", "SETNB", "193", "setNB", 0, 8);
+        decodeE("SETZ", "SETZ", "194", "setZ", 0, 8);
+        decodeE("SETNZ", "SETNZ", "195", "setNZ", 0, 8);
+        decodeE("SETBE", "SETBE", "196", "setBE", 0, 8);
+        decodeE("SETNBE", "SETNBE", "197", "setNBE", 0, 8);
+        decodeE("SETS", "SETS", "198", "setS", 0, 8);
+        decodeE("SETNS", "SETNS", "199", "setNS", 0, 8);
+        decodeE("SETP", "SETP", "19a", "setP", 0, 8);
+        decodeE("SETNP", "SETNP", "19b", "setNP", 0, 8);
+        decodeE("SETL", "SETL", "19c", "setL", 0, 8);
+        decodeE("SETNL", "SETNL", "19d", "setNL", 0, 8);
+        decodeE("SETLE", "SETLE", "19e", "setLE", 0, 8);
+        decodeE("SETNLE", "SETNLE", "19f", "setNLE", 0, 8);
 
         decodeFunc("POP FS", "1a1", "popSeg16", "FS");
         decodeFunc("POP FS", "3a1", "popSeg32", "FS");
-        decodeFunc("1a2", "cpuid");
+        decodeFunc("1a2", "cpuid", "CPUID");
         eg("1a3", "bt", 16);
         eg("3a3", "bt", 32);
         eg("1a4", "dshl", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return TRUE;\r\n    }");
@@ -714,6 +755,7 @@ public class Main {
         ge("1bd", "bsr", 16);
         ge("3bd", "bsr", 32);
 
+        // :TODO: op log isn't correct, the src should be 8 bits
         ge("1be", "movsx8", 16);
         ge("3be", "movsx8", 32);
     }

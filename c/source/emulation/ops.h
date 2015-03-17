@@ -858,7 +858,7 @@ void movsx8r32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void movsx8r32e32_32(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u16 = (S8)readb(cpu->memory, eaa32(cpu, op));
+	cpu->reg[op->r1].u32 = (S8)readb(cpu->memory, eaa32(cpu, op));
 	CYCLES(3);
 	NEXT();
 }

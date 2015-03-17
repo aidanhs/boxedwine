@@ -5,14 +5,17 @@ BOOL decode000(struct DecodeData* data) {
         data->op->func = addr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("ADD", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adde8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADD", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = adde8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADD", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -24,14 +27,17 @@ BOOL decode001(struct DecodeData* data) {
         data->op->func = addr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("ADD", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adde16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADD", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = adde16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADD", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -43,14 +49,17 @@ BOOL decode201(struct DecodeData* data) {
         data->op->func = addr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("ADD", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adde32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADD", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = adde32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADD", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -62,14 +71,17 @@ BOOL decode002(struct DecodeData* data) {
         data->op->func = addr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("ADD", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = addr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADD", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = addr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADD", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -81,14 +93,17 @@ BOOL decode003(struct DecodeData* data) {
         data->op->func = addr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("ADD", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = addr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADD", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = addr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADD", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -100,14 +115,17 @@ BOOL decode203(struct DecodeData* data) {
         data->op->func = addr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("ADD", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = addr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADD", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = addr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADD", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -117,6 +135,7 @@ BOOL decode004(struct DecodeData* data) {
     data->op->func = add8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("ADD", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -125,6 +144,7 @@ BOOL decode005(struct DecodeData* data) {
     data->op->func = add16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("ADD", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -133,6 +153,7 @@ BOOL decode205(struct DecodeData* data) {
     data->op->func = add32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("ADD", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -140,6 +161,7 @@ BOOL decode205(struct DecodeData* data) {
 BOOL decode006(struct DecodeData* data) {
     data->op->func = pushSeg16;
     data->op->r1 = ES;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -147,6 +169,7 @@ BOOL decode006(struct DecodeData* data) {
 BOOL decode206(struct DecodeData* data) {
     data->op->func = pushSeg32;
     data->op->r1 = ES;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -154,6 +177,7 @@ BOOL decode206(struct DecodeData* data) {
 BOOL decode007(struct DecodeData* data) {
     data->op->func = popSeg16;
     data->op->r1 = ES;
+    LOG_OP1("POP", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -161,6 +185,7 @@ BOOL decode007(struct DecodeData* data) {
 BOOL decode207(struct DecodeData* data) {
     data->op->func = popSeg32;
     data->op->r1 = ES;
+    LOG_OP1("POP", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -171,14 +196,17 @@ BOOL decode008(struct DecodeData* data) {
         data->op->func = orr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("OR", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = ore8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("OR", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = ore8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("OR", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -190,14 +218,17 @@ BOOL decode009(struct DecodeData* data) {
         data->op->func = orr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("OR", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = ore16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("OR", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = ore16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("OR", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -209,14 +240,17 @@ BOOL decode209(struct DecodeData* data) {
         data->op->func = orr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("OR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = ore32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("OR", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = ore32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("OR", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -228,14 +262,17 @@ BOOL decode00a(struct DecodeData* data) {
         data->op->func = orr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("OR", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = orr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("OR", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = orr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("OR", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -247,14 +284,17 @@ BOOL decode00b(struct DecodeData* data) {
         data->op->func = orr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("OR", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = orr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("OR", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = orr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("OR", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -266,14 +306,17 @@ BOOL decode20b(struct DecodeData* data) {
         data->op->func = orr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("OR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = orr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("OR", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = orr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("OR", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -283,6 +326,7 @@ BOOL decode00c(struct DecodeData* data) {
     data->op->func = or8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("OR", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -291,6 +335,7 @@ BOOL decode00d(struct DecodeData* data) {
     data->op->func = or16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("OR", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -299,6 +344,7 @@ BOOL decode20d(struct DecodeData* data) {
     data->op->func = or32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("OR", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -306,6 +352,7 @@ BOOL decode20d(struct DecodeData* data) {
 BOOL decode00e(struct DecodeData* data) {
     data->op->func = pushSeg16;
     data->op->r1 = CS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -313,6 +360,7 @@ BOOL decode00e(struct DecodeData* data) {
 BOOL decode20e(struct DecodeData* data) {
     data->op->func = pushSeg32;
     data->op->r1 = CS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -323,14 +371,17 @@ BOOL decode010(struct DecodeData* data) {
         data->op->func = adcr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("ADC", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adce8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADC", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = adce8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADC", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -342,14 +393,17 @@ BOOL decode011(struct DecodeData* data) {
         data->op->func = adcr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("ADC", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adce16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADC", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = adce16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADC", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -361,14 +415,17 @@ BOOL decode211(struct DecodeData* data) {
         data->op->func = adcr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("ADC", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adce32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADC", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = adce32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADC", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -380,14 +437,17 @@ BOOL decode012(struct DecodeData* data) {
         data->op->func = adcr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("ADC", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adcr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADC", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = adcr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADC", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -399,14 +459,17 @@ BOOL decode013(struct DecodeData* data) {
         data->op->func = adcr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("ADC", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adcr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADC", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = adcr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADC", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -418,14 +481,17 @@ BOOL decode213(struct DecodeData* data) {
         data->op->func = adcr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("ADC", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = adcr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("ADC", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = adcr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("ADC", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -435,6 +501,7 @@ BOOL decode014(struct DecodeData* data) {
     data->op->func = adc8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("ADC", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -443,6 +510,7 @@ BOOL decode015(struct DecodeData* data) {
     data->op->func = adc16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("ADC", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -451,6 +519,7 @@ BOOL decode215(struct DecodeData* data) {
     data->op->func = adc32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("ADC", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -458,6 +527,7 @@ BOOL decode215(struct DecodeData* data) {
 BOOL decode016(struct DecodeData* data) {
     data->op->func = pushSeg16;
     data->op->r1 = SS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -465,6 +535,7 @@ BOOL decode016(struct DecodeData* data) {
 BOOL decode216(struct DecodeData* data) {
     data->op->func = pushSeg32;
     data->op->r1 = SS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -472,6 +543,7 @@ BOOL decode216(struct DecodeData* data) {
 BOOL decode017(struct DecodeData* data) {
     data->op->func = popSeg16;
     data->op->r1 = SS;
+    LOG_OP1("POP", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -479,6 +551,7 @@ BOOL decode017(struct DecodeData* data) {
 BOOL decode217(struct DecodeData* data) {
     data->op->func = popSeg32;
     data->op->r1 = SS;
+    LOG_OP1("POP", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -489,14 +562,17 @@ BOOL decode018(struct DecodeData* data) {
         data->op->func = sbbr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("SBB", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sbbe8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SBB", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = sbbe8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SBB", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -508,14 +584,17 @@ BOOL decode019(struct DecodeData* data) {
         data->op->func = sbbr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("SBB", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sbbe16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SBB", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = sbbe16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SBB", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -527,14 +606,17 @@ BOOL decode219(struct DecodeData* data) {
         data->op->func = sbbr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("SBB", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sbbe32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SBB", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = sbbe32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SBB", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -546,14 +628,17 @@ BOOL decode01a(struct DecodeData* data) {
         data->op->func = sbbr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("SBB", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sbbr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SBB", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = sbbr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SBB", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -565,14 +650,17 @@ BOOL decode01b(struct DecodeData* data) {
         data->op->func = sbbr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("SBB", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sbbr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SBB", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = sbbr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SBB", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -584,14 +672,17 @@ BOOL decode21b(struct DecodeData* data) {
         data->op->func = sbbr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("SBB", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sbbr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SBB", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = sbbr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SBB", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -601,6 +692,7 @@ BOOL decode01c(struct DecodeData* data) {
     data->op->func = sbb8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("SBB", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -609,6 +701,7 @@ BOOL decode01d(struct DecodeData* data) {
     data->op->func = sbb16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("SBB", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -617,6 +710,7 @@ BOOL decode21d(struct DecodeData* data) {
     data->op->func = sbb32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("SBB", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -624,6 +718,7 @@ BOOL decode21d(struct DecodeData* data) {
 BOOL decode01e(struct DecodeData* data) {
     data->op->func = pushSeg16;
     data->op->r1 = DS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -631,6 +726,7 @@ BOOL decode01e(struct DecodeData* data) {
 BOOL decode21e(struct DecodeData* data) {
     data->op->func = pushSeg32;
     data->op->r1 = DS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -638,6 +734,7 @@ BOOL decode21e(struct DecodeData* data) {
 BOOL decode01f(struct DecodeData* data) {
     data->op->func = popSeg16;
     data->op->r1 = DS;
+    LOG_OP1("POP", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -645,6 +742,7 @@ BOOL decode01f(struct DecodeData* data) {
 BOOL decode21f(struct DecodeData* data) {
     data->op->func = popSeg32;
     data->op->r1 = DS;
+    LOG_OP1("POP", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }
@@ -655,14 +753,17 @@ BOOL decode020(struct DecodeData* data) {
         data->op->func = andr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("AND", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = ande8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("AND", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = ande8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("AND", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -674,14 +775,17 @@ BOOL decode021(struct DecodeData* data) {
         data->op->func = andr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("AND", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = ande16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("AND", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = ande16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("AND", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -693,14 +797,17 @@ BOOL decode221(struct DecodeData* data) {
         data->op->func = andr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("AND", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = ande32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("AND", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = ande32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("AND", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -712,14 +819,17 @@ BOOL decode022(struct DecodeData* data) {
         data->op->func = andr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("AND", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = andr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("AND", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = andr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("AND", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -731,14 +841,17 @@ BOOL decode023(struct DecodeData* data) {
         data->op->func = andr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("AND", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = andr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("AND", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = andr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("AND", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -750,14 +863,17 @@ BOOL decode223(struct DecodeData* data) {
         data->op->func = andr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("AND", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = andr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("AND", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = andr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("AND", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -767,6 +883,7 @@ BOOL decode024(struct DecodeData* data) {
     data->op->func = and8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("AND", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -775,6 +892,7 @@ BOOL decode025(struct DecodeData* data) {
     data->op->func = and16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("AND", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -783,6 +901,7 @@ BOOL decode225(struct DecodeData* data) {
     data->op->func = and32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("AND", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -795,6 +914,7 @@ BOOL decode026(struct DecodeData* data) {
 // DAA
 BOOL decode027(struct DecodeData* data) {
     data->op->func = daa;
+    LOG_OP("DAA");
     NEXT_OP(data);
     return TRUE;
 }
@@ -805,14 +925,17 @@ BOOL decode028(struct DecodeData* data) {
         data->op->func = subr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("SUB", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sube8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SUB", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = sube8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SUB", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -824,14 +947,17 @@ BOOL decode029(struct DecodeData* data) {
         data->op->func = subr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("SUB", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sube16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SUB", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = sube16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SUB", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -843,14 +969,17 @@ BOOL decode229(struct DecodeData* data) {
         data->op->func = subr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("SUB", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = sube32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SUB", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = sube32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SUB", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -862,14 +991,17 @@ BOOL decode02a(struct DecodeData* data) {
         data->op->func = subr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("SUB", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = subr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SUB", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = subr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SUB", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -881,14 +1013,17 @@ BOOL decode02b(struct DecodeData* data) {
         data->op->func = subr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("SUB", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = subr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SUB", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = subr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SUB", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -900,14 +1035,17 @@ BOOL decode22b(struct DecodeData* data) {
         data->op->func = subr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("SUB", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = subr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("SUB", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = subr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("SUB", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -917,6 +1055,7 @@ BOOL decode02c(struct DecodeData* data) {
     data->op->func = sub8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("SUB", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -925,6 +1064,7 @@ BOOL decode02d(struct DecodeData* data) {
     data->op->func = sub16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("SUB", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -933,6 +1073,7 @@ BOOL decode22d(struct DecodeData* data) {
     data->op->func = sub32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("SUB", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -945,6 +1086,7 @@ BOOL decode02e(struct DecodeData* data) {
 // DAS
 BOOL decode02f(struct DecodeData* data) {
     data->op->func = das;
+    LOG_OP("DAS");
     NEXT_OP(data);
     return TRUE;
 }
@@ -955,14 +1097,17 @@ BOOL decode030(struct DecodeData* data) {
         data->op->func = xorr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("XOR", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xore8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XOR", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = xore8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XOR", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -974,14 +1119,17 @@ BOOL decode031(struct DecodeData* data) {
         data->op->func = xorr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("XOR", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xore16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XOR", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = xore16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XOR", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -993,14 +1141,17 @@ BOOL decode231(struct DecodeData* data) {
         data->op->func = xorr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("XOR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xore32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XOR", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = xore32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XOR", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1012,14 +1163,17 @@ BOOL decode032(struct DecodeData* data) {
         data->op->func = xorr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("XOR", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xorr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XOR", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = xorr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XOR", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1031,14 +1185,17 @@ BOOL decode033(struct DecodeData* data) {
         data->op->func = xorr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("XOR", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xorr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XOR", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = xorr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XOR", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1050,14 +1207,17 @@ BOOL decode233(struct DecodeData* data) {
         data->op->func = xorr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("XOR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xorr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XOR", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = xorr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XOR", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1067,6 +1227,7 @@ BOOL decode034(struct DecodeData* data) {
     data->op->func = xor8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("XOR", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1075,6 +1236,7 @@ BOOL decode035(struct DecodeData* data) {
     data->op->func = xor16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("XOR", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1083,6 +1245,7 @@ BOOL decode235(struct DecodeData* data) {
     data->op->func = xor32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("XOR", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1095,6 +1258,7 @@ BOOL decode036(struct DecodeData* data) {
 // AAA
 BOOL decode037(struct DecodeData* data) {
     data->op->func = aaa;
+    LOG_OP("AAA");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1105,14 +1269,17 @@ BOOL decode038(struct DecodeData* data) {
         data->op->func = cmpr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("CMP", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpe8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMP", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = cmpe8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMP", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1124,14 +1291,17 @@ BOOL decode039(struct DecodeData* data) {
         data->op->func = cmpr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("CMP", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpe16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMP", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = cmpe16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMP", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1143,14 +1313,17 @@ BOOL decode239(struct DecodeData* data) {
         data->op->func = cmpr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("CMP", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpe32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMP", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = cmpe32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMP", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1162,14 +1335,17 @@ BOOL decode03a(struct DecodeData* data) {
         data->op->func = cmpr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMP", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMP", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = cmpr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMP", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1181,14 +1357,17 @@ BOOL decode03b(struct DecodeData* data) {
         data->op->func = cmpr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMP", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMP", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = cmpr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMP", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1200,14 +1379,17 @@ BOOL decode23b(struct DecodeData* data) {
         data->op->func = cmpr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMP", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMP", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = cmpr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMP", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1217,6 +1399,7 @@ BOOL decode03c(struct DecodeData* data) {
     data->op->func = cmp8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("CMP", R8(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1225,6 +1408,7 @@ BOOL decode03d(struct DecodeData* data) {
     data->op->func = cmp16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("CMP", R16(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1233,6 +1417,7 @@ BOOL decode23d(struct DecodeData* data) {
     data->op->func = cmp32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("CMP", R32(0), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1245,6 +1430,7 @@ BOOL decode03e(struct DecodeData* data) {
 // AAS
 BOOL decode03f(struct DecodeData* data) {
     data->op->func = aas;
+    LOG_OP("AAS");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1252,6 +1438,7 @@ BOOL decode03f(struct DecodeData* data) {
 BOOL decode040(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 0;
+    LOG_OP("INC AX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1259,6 +1446,7 @@ BOOL decode040(struct DecodeData* data) {
 BOOL decode240(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 0;
+    LOG_OP("INC EAX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1266,6 +1454,7 @@ BOOL decode240(struct DecodeData* data) {
 BOOL decode041(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 1;
+    LOG_OP("INC CX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1273,6 +1462,7 @@ BOOL decode041(struct DecodeData* data) {
 BOOL decode241(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 1;
+    LOG_OP("INC ECX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1280,6 +1470,7 @@ BOOL decode241(struct DecodeData* data) {
 BOOL decode042(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 2;
+    LOG_OP("INC DX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1287,6 +1478,7 @@ BOOL decode042(struct DecodeData* data) {
 BOOL decode242(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 2;
+    LOG_OP("INC EDX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1294,6 +1486,7 @@ BOOL decode242(struct DecodeData* data) {
 BOOL decode043(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 3;
+    LOG_OP("INC BX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1301,6 +1494,7 @@ BOOL decode043(struct DecodeData* data) {
 BOOL decode243(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 3;
+    LOG_OP("INC EBX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1308,6 +1502,7 @@ BOOL decode243(struct DecodeData* data) {
 BOOL decode044(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 4;
+    LOG_OP("INC SP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1315,6 +1510,7 @@ BOOL decode044(struct DecodeData* data) {
 BOOL decode244(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 4;
+    LOG_OP("INC ESP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1322,6 +1518,7 @@ BOOL decode244(struct DecodeData* data) {
 BOOL decode045(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 5;
+    LOG_OP("INC BP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1329,6 +1526,7 @@ BOOL decode045(struct DecodeData* data) {
 BOOL decode245(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 5;
+    LOG_OP("INC EBP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1336,6 +1534,7 @@ BOOL decode245(struct DecodeData* data) {
 BOOL decode046(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 6;
+    LOG_OP("INC SI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1343,6 +1542,7 @@ BOOL decode046(struct DecodeData* data) {
 BOOL decode246(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 6;
+    LOG_OP("INC ESI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1350,6 +1550,7 @@ BOOL decode246(struct DecodeData* data) {
 BOOL decode047(struct DecodeData* data) {
     data->op->func = inc16_reg;
     data->op->r1 = 7;
+    LOG_OP("INC DI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1357,6 +1558,7 @@ BOOL decode047(struct DecodeData* data) {
 BOOL decode247(struct DecodeData* data) {
     data->op->func = inc32_reg;
     data->op->r1 = 7;
+    LOG_OP("INC EDI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1364,6 +1566,7 @@ BOOL decode247(struct DecodeData* data) {
 BOOL decode048(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 0;
+    LOG_OP("DEC AX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1371,6 +1574,7 @@ BOOL decode048(struct DecodeData* data) {
 BOOL decode248(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 0;
+    LOG_OP("DEC EAX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1378,6 +1582,7 @@ BOOL decode248(struct DecodeData* data) {
 BOOL decode049(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 1;
+    LOG_OP("DEC CX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1385,6 +1590,7 @@ BOOL decode049(struct DecodeData* data) {
 BOOL decode249(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 1;
+    LOG_OP("DEC ECX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1392,6 +1598,7 @@ BOOL decode249(struct DecodeData* data) {
 BOOL decode04a(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 2;
+    LOG_OP("DEC DX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1399,6 +1606,7 @@ BOOL decode04a(struct DecodeData* data) {
 BOOL decode24a(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 2;
+    LOG_OP("DEC EDX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1406,6 +1614,7 @@ BOOL decode24a(struct DecodeData* data) {
 BOOL decode04b(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 3;
+    LOG_OP("DEC BX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1413,6 +1622,7 @@ BOOL decode04b(struct DecodeData* data) {
 BOOL decode24b(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 3;
+    LOG_OP("DEC EBX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1420,6 +1630,7 @@ BOOL decode24b(struct DecodeData* data) {
 BOOL decode04c(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 4;
+    LOG_OP("DEC SP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1427,6 +1638,7 @@ BOOL decode04c(struct DecodeData* data) {
 BOOL decode24c(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 4;
+    LOG_OP("DEC ESP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1434,6 +1646,7 @@ BOOL decode24c(struct DecodeData* data) {
 BOOL decode04d(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 5;
+    LOG_OP("DEC BP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1441,6 +1654,7 @@ BOOL decode04d(struct DecodeData* data) {
 BOOL decode24d(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 5;
+    LOG_OP("DEC EBP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1448,6 +1662,7 @@ BOOL decode24d(struct DecodeData* data) {
 BOOL decode04e(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 6;
+    LOG_OP("DEC SI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1455,6 +1670,7 @@ BOOL decode04e(struct DecodeData* data) {
 BOOL decode24e(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 6;
+    LOG_OP("DEC ESI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1462,6 +1678,7 @@ BOOL decode24e(struct DecodeData* data) {
 BOOL decode04f(struct DecodeData* data) {
     data->op->func = dec16_reg;
     data->op->r1 = 7;
+    LOG_OP("DEC DI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1469,6 +1686,7 @@ BOOL decode04f(struct DecodeData* data) {
 BOOL decode24f(struct DecodeData* data) {
     data->op->func = dec32_reg;
     data->op->r1 = 7;
+    LOG_OP("DEC EDI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1476,6 +1694,7 @@ BOOL decode24f(struct DecodeData* data) {
 BOOL decode050(struct DecodeData* data) {
     data->op->func = pushAx;
     data->op->r1 = 0;
+    LOG_OP("PUSH AX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1483,6 +1702,7 @@ BOOL decode050(struct DecodeData* data) {
 BOOL decode250(struct DecodeData* data) {
     data->op->func = pushEax;
     data->op->r1 = 0;
+    LOG_OP("PUSH EAX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1490,6 +1710,7 @@ BOOL decode250(struct DecodeData* data) {
 BOOL decode051(struct DecodeData* data) {
     data->op->func = pushCx;
     data->op->r1 = 1;
+    LOG_OP("PUSH CX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1497,6 +1718,7 @@ BOOL decode051(struct DecodeData* data) {
 BOOL decode251(struct DecodeData* data) {
     data->op->func = pushEcx;
     data->op->r1 = 1;
+    LOG_OP("PUSH ECX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1504,6 +1726,7 @@ BOOL decode251(struct DecodeData* data) {
 BOOL decode052(struct DecodeData* data) {
     data->op->func = pushDx;
     data->op->r1 = 2;
+    LOG_OP("PUSH DX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1511,6 +1734,7 @@ BOOL decode052(struct DecodeData* data) {
 BOOL decode252(struct DecodeData* data) {
     data->op->func = pushEdx;
     data->op->r1 = 2;
+    LOG_OP("PUSH EDX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1518,6 +1742,7 @@ BOOL decode252(struct DecodeData* data) {
 BOOL decode053(struct DecodeData* data) {
     data->op->func = pushBx;
     data->op->r1 = 3;
+    LOG_OP("PUSH BX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1525,6 +1750,7 @@ BOOL decode053(struct DecodeData* data) {
 BOOL decode253(struct DecodeData* data) {
     data->op->func = pushEbx;
     data->op->r1 = 3;
+    LOG_OP("PUSH EBX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1532,6 +1758,7 @@ BOOL decode253(struct DecodeData* data) {
 BOOL decode054(struct DecodeData* data) {
     data->op->func = pushSp;
     data->op->r1 = 4;
+    LOG_OP("PUSH SP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1539,6 +1766,7 @@ BOOL decode054(struct DecodeData* data) {
 BOOL decode254(struct DecodeData* data) {
     data->op->func = pushEsp;
     data->op->r1 = 4;
+    LOG_OP("PUSH ESP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1546,6 +1774,7 @@ BOOL decode254(struct DecodeData* data) {
 BOOL decode055(struct DecodeData* data) {
     data->op->func = pushBp;
     data->op->r1 = 5;
+    LOG_OP("PUSH BP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1553,6 +1782,7 @@ BOOL decode055(struct DecodeData* data) {
 BOOL decode255(struct DecodeData* data) {
     data->op->func = pushEbp;
     data->op->r1 = 5;
+    LOG_OP("PUSH EBP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1560,6 +1790,7 @@ BOOL decode255(struct DecodeData* data) {
 BOOL decode056(struct DecodeData* data) {
     data->op->func = pushSi;
     data->op->r1 = 6;
+    LOG_OP("PUSH SI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1567,6 +1798,7 @@ BOOL decode056(struct DecodeData* data) {
 BOOL decode256(struct DecodeData* data) {
     data->op->func = pushEsi;
     data->op->r1 = 6;
+    LOG_OP("PUSH ESI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1574,6 +1806,7 @@ BOOL decode256(struct DecodeData* data) {
 BOOL decode057(struct DecodeData* data) {
     data->op->func = pushDi;
     data->op->r1 = 7;
+    LOG_OP("PUSH DI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1581,6 +1814,7 @@ BOOL decode057(struct DecodeData* data) {
 BOOL decode257(struct DecodeData* data) {
     data->op->func = pushEdi;
     data->op->r1 = 7;
+    LOG_OP("PUSH EDI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1588,6 +1822,7 @@ BOOL decode257(struct DecodeData* data) {
 BOOL decode058(struct DecodeData* data) {
     data->op->func = popAx;
     data->op->r1 = 0;
+    LOG_OP("PUSH AX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1595,6 +1830,7 @@ BOOL decode058(struct DecodeData* data) {
 BOOL decode258(struct DecodeData* data) {
     data->op->func = popEax;
     data->op->r1 = 0;
+    LOG_OP("POP EAX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1602,6 +1838,7 @@ BOOL decode258(struct DecodeData* data) {
 BOOL decode059(struct DecodeData* data) {
     data->op->func = popCx;
     data->op->r1 = 1;
+    LOG_OP("POP CX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1609,6 +1846,7 @@ BOOL decode059(struct DecodeData* data) {
 BOOL decode259(struct DecodeData* data) {
     data->op->func = popEcx;
     data->op->r1 = 1;
+    LOG_OP("POP ECX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1616,6 +1854,7 @@ BOOL decode259(struct DecodeData* data) {
 BOOL decode05a(struct DecodeData* data) {
     data->op->func = popDx;
     data->op->r1 = 2;
+    LOG_OP("POP DX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1623,6 +1862,7 @@ BOOL decode05a(struct DecodeData* data) {
 BOOL decode25a(struct DecodeData* data) {
     data->op->func = popEdx;
     data->op->r1 = 2;
+    LOG_OP("POP EDX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1630,6 +1870,7 @@ BOOL decode25a(struct DecodeData* data) {
 BOOL decode05b(struct DecodeData* data) {
     data->op->func = popBx;
     data->op->r1 = 3;
+    LOG_OP("POP BX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1637,6 +1878,7 @@ BOOL decode05b(struct DecodeData* data) {
 BOOL decode25b(struct DecodeData* data) {
     data->op->func = popEbx;
     data->op->r1 = 3;
+    LOG_OP("POP EBX");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1644,6 +1886,7 @@ BOOL decode25b(struct DecodeData* data) {
 BOOL decode05c(struct DecodeData* data) {
     data->op->func = popSp;
     data->op->r1 = 4;
+    LOG_OP("POP SP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1651,6 +1894,7 @@ BOOL decode05c(struct DecodeData* data) {
 BOOL decode25c(struct DecodeData* data) {
     data->op->func = popEsp;
     data->op->r1 = 4;
+    LOG_OP("POP ESP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1658,6 +1902,7 @@ BOOL decode25c(struct DecodeData* data) {
 BOOL decode05d(struct DecodeData* data) {
     data->op->func = popBp;
     data->op->r1 = 5;
+    LOG_OP("POP BP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1665,6 +1910,7 @@ BOOL decode05d(struct DecodeData* data) {
 BOOL decode25d(struct DecodeData* data) {
     data->op->func = popEbp;
     data->op->r1 = 5;
+    LOG_OP("POP EBP");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1672,6 +1918,7 @@ BOOL decode25d(struct DecodeData* data) {
 BOOL decode05e(struct DecodeData* data) {
     data->op->func = popSi;
     data->op->r1 = 6;
+    LOG_OP("POP SI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1679,6 +1926,7 @@ BOOL decode05e(struct DecodeData* data) {
 BOOL decode25e(struct DecodeData* data) {
     data->op->func = popEsi;
     data->op->r1 = 6;
+    LOG_OP("POP ESI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1686,6 +1934,7 @@ BOOL decode25e(struct DecodeData* data) {
 BOOL decode05f(struct DecodeData* data) {
     data->op->func = popDi;
     data->op->r1 = 7;
+    LOG_OP("POP DI");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1693,30 +1942,35 @@ BOOL decode05f(struct DecodeData* data) {
 BOOL decode25f(struct DecodeData* data) {
     data->op->func = popEdi;
     data->op->r1 = 7;
+    LOG_OP("POP EDI");
     NEXT_OP(data);
     return TRUE;
 }
 // PUSHA
 BOOL decode060(struct DecodeData* data) {
     data->op->func = pusha;
+    LOG_OP("PUSHA");
     NEXT_OP(data);
     return TRUE;
 }
 // PUSHAD
 BOOL decode260(struct DecodeData* data) {
     data->op->func = pushad;
+    LOG_OP("PUSHA");
     NEXT_OP(data);
     return TRUE;
 }
 // POPA
 BOOL decode061(struct DecodeData* data) {
     data->op->func = popa;
+    LOG_OP("POPA");
     NEXT_OP(data);
     return TRUE;
 }
-// PUSHAD
+// POPAD
 BOOL decode261(struct DecodeData* data) {
-    data->op->func = pushad;
+    data->op->func = popad;
+    LOG_OP("POPA");
     NEXT_OP(data);
     return TRUE;
 }
@@ -1736,6 +1990,7 @@ BOOL decode065(struct DecodeData* data) {
 BOOL decode068(struct DecodeData* data) {
     data->op->func = push16data;
     data->op->data1 = FETCH16(data);
+    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1743,6 +1998,7 @@ BOOL decode068(struct DecodeData* data) {
 BOOL decode268(struct DecodeData* data) {
     data->op->func = push32data;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1753,14 +2009,17 @@ BOOL decode069(struct DecodeData* data) {
         data->op->func = dimulcr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("DIMULC", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dimulcr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DIMULC", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = dimulcr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DIMULC", R16(data->op->r1),M16(data, rm, data->op));
     }
     data->op->data1 = FETCH_S16(data);
     NEXT_OP(data);
@@ -1773,30 +2032,35 @@ BOOL decode269(struct DecodeData* data) {
         data->op->func = dimulcr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("DIMULC", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dimulcr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DIMULC", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = dimulcr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DIMULC", R32(data->op->r1),M32(data, rm, data->op));
     }
     data->op->data1 = FETCH32(data);
     NEXT_OP(data);
     return TRUE;
 }
-// Push Ib
+// PUSH Ib
 BOOL decode06a(struct DecodeData* data) {
     data->op->func = push16data;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
-// Push Ib
+// PUSH Ib
 BOOL decode26a(struct DecodeData* data) {
     data->op->func = push32data;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -1807,14 +2071,17 @@ BOOL decode06b(struct DecodeData* data) {
         data->op->func = dimulcr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("DIMULC", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dimulcr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DIMULC", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = dimulcr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DIMULC", R16(data->op->r1),M16(data, rm, data->op));
     }
     data->op->data1 = FETCH_S8(data);
     NEXT_OP(data);
@@ -1827,14 +2094,17 @@ BOOL decode26b(struct DecodeData* data) {
         data->op->func = dimulcr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("DIMULC", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dimulcr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DIMULC", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = dimulcr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DIMULC", R32(data->op->r1),M32(data, rm, data->op));
     }
     data->op->data1 = FETCH_S8(data);
     NEXT_OP(data);
@@ -1844,6 +2114,7 @@ BOOL decode26b(struct DecodeData* data) {
 BOOL decode070(struct DecodeData* data) {
     data->op->func = jumpO;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JO", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1851,6 +2122,7 @@ BOOL decode070(struct DecodeData* data) {
 BOOL decode071(struct DecodeData* data) {
     data->op->func = jumpNO;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNO", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1858,6 +2130,7 @@ BOOL decode071(struct DecodeData* data) {
 BOOL decode072(struct DecodeData* data) {
     data->op->func = jumpB;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JB", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1865,6 +2138,7 @@ BOOL decode072(struct DecodeData* data) {
 BOOL decode073(struct DecodeData* data) {
     data->op->func = jumpNB;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNB", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1872,6 +2146,7 @@ BOOL decode073(struct DecodeData* data) {
 BOOL decode074(struct DecodeData* data) {
     data->op->func = jumpZ;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JZ", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1879,6 +2154,7 @@ BOOL decode074(struct DecodeData* data) {
 BOOL decode075(struct DecodeData* data) {
     data->op->func = jumpNZ;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNZ", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1886,6 +2162,7 @@ BOOL decode075(struct DecodeData* data) {
 BOOL decode076(struct DecodeData* data) {
     data->op->func = jumpBE;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JBE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1893,6 +2170,7 @@ BOOL decode076(struct DecodeData* data) {
 BOOL decode077(struct DecodeData* data) {
     data->op->func = jumpNBE;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNBE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1900,6 +2178,7 @@ BOOL decode077(struct DecodeData* data) {
 BOOL decode078(struct DecodeData* data) {
     data->op->func = jumpS;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JS", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1907,6 +2186,7 @@ BOOL decode078(struct DecodeData* data) {
 BOOL decode079(struct DecodeData* data) {
     data->op->func = jumpNS;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNS", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1914,6 +2194,7 @@ BOOL decode079(struct DecodeData* data) {
 BOOL decode07a(struct DecodeData* data) {
     data->op->func = jumpP;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JP", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1921,6 +2202,7 @@ BOOL decode07a(struct DecodeData* data) {
 BOOL decode07b(struct DecodeData* data) {
     data->op->func = jumpNP;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNP", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1928,6 +2210,7 @@ BOOL decode07b(struct DecodeData* data) {
 BOOL decode07c(struct DecodeData* data) {
     data->op->func = jumpL;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JL", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1935,6 +2218,7 @@ BOOL decode07c(struct DecodeData* data) {
 BOOL decode07d(struct DecodeData* data) {
     data->op->func = jumpNL;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNL", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1942,6 +2226,7 @@ BOOL decode07d(struct DecodeData* data) {
 BOOL decode07e(struct DecodeData* data) {
     data->op->func = jumpLE;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JLE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1949,6 +2234,7 @@ BOOL decode07e(struct DecodeData* data) {
 BOOL decode07f(struct DecodeData* data) {
     data->op->func = jumpNLE;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JNLE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -1959,14 +2245,17 @@ BOOL decode084(struct DecodeData* data) {
         data->op->func = testr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("TEST", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = teste8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("TEST", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = teste8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("TEST", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1978,14 +2267,17 @@ BOOL decode085(struct DecodeData* data) {
         data->op->func = testr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("TEST", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = teste16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("TEST", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = teste16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("TEST", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -1997,14 +2289,17 @@ BOOL decode285(struct DecodeData* data) {
         data->op->func = testr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("TEST", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = teste32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("TEST", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = teste32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("TEST", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2016,14 +2311,17 @@ BOOL decode086(struct DecodeData* data) {
         data->op->func = xchgr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("XCHG", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xchge8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XCHG", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = xchge8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XCHG", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2035,14 +2333,17 @@ BOOL decode087(struct DecodeData* data) {
         data->op->func = xchgr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("XCHG", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xchge16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XCHG", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = xchge16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XCHG", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2054,14 +2355,17 @@ BOOL decode287(struct DecodeData* data) {
         data->op->func = xchgr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("XCHG", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = xchge32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("XCHG", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = xchge32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("XCHG", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2073,14 +2377,17 @@ BOOL decode088(struct DecodeData* data) {
         data->op->func = movr8r8;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("MOV", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = move8r8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOV", M8(data, rm, data->op),R8(data->op->r2));
     } else {
         data->op->func = move8r8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOV", M8(data, rm, data->op),R8(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2092,14 +2399,17 @@ BOOL decode089(struct DecodeData* data) {
         data->op->func = movr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("MOV", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = move16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOV", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = move16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOV", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2111,14 +2421,17 @@ BOOL decode289(struct DecodeData* data) {
         data->op->func = movr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("MOV", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = move32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOV", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = move32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOV", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2130,14 +2443,17 @@ BOOL decode08a(struct DecodeData* data) {
         data->op->func = movr8r8;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOV", R8(data->op->r1),R8(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movr8e8_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOV", R8(data->op->r1),M8(data, rm, data->op));
     } else {
         data->op->func = movr8e8_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOV", R8(data->op->r1),M8(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2149,14 +2465,17 @@ BOOL decode08b(struct DecodeData* data) {
         data->op->func = movr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOV", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOV", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = movr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOV", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2168,14 +2487,17 @@ BOOL decode28b(struct DecodeData* data) {
         data->op->func = movr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOV", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOV", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = movr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOV", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -2295,60 +2617,70 @@ BOOL decode297(struct DecodeData* data) {
 // CBW
 BOOL decode098(struct DecodeData* data) {
     data->op->func = cbw;
+    LOG_OP("CBW");
     NEXT_OP(data);
     return TRUE;
 }
 // CBWE
 BOOL decode298(struct DecodeData* data) {
     data->op->func = cbwe;
+    LOG_OP("CBWE");
     NEXT_OP(data);
     return TRUE;
 }
 // CWD
 BOOL decode099(struct DecodeData* data) {
     data->op->func = cwd;
+    LOG_OP("CWD");
     NEXT_OP(data);
     return TRUE;
 }
 // CWQ
 BOOL decode299(struct DecodeData* data) {
     data->op->func = cwq;
+    LOG_OP("CWQ");
     NEXT_OP(data);
     return TRUE;
 }
 // PUSHF16
 BOOL decode09c(struct DecodeData* data) {
     data->op->func = pushf16;
+    LOG_OP("PUSHF");
     NEXT_OP(data);
     return TRUE;
 }
 // PUSHF32
 BOOL decode29c(struct DecodeData* data) {
     data->op->func = pushf32;
+    LOG_OP("PUSHF");
     NEXT_OP(data);
     return TRUE;
 }
 // POPF16
 BOOL decode09d(struct DecodeData* data) {
     data->op->func = popf16;
+    LOG_OP("POPF");
     NEXT_OP(data);
     return TRUE;
 }
 // POPF32
 BOOL decode29d(struct DecodeData* data) {
     data->op->func = popf32;
+    LOG_OP("POPF");
     NEXT_OP(data);
     return TRUE;
 }
 // SAHF
 BOOL decode09e(struct DecodeData* data) {
     data->op->func = sahf;
+    LOG_OP("SAHF");
     NEXT_OP(data);
     return TRUE;
 }
 // LAHF
 BOOL decode09f(struct DecodeData* data) {
     data->op->func = lahf;
+    LOG_OP("LAHF");
     NEXT_OP(data);
     return TRUE;
 }
@@ -2543,6 +2875,7 @@ BOOL decode0a8(struct DecodeData* data) {
     data->op->func = test8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("TEST", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2551,6 +2884,7 @@ BOOL decode0a9(struct DecodeData* data) {
     data->op->func = test16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("TEST", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2559,6 +2893,7 @@ BOOL decode2a9(struct DecodeData* data) {
     data->op->func = test32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("TEST", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2738,6 +3073,7 @@ BOOL decode0b0(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2746,6 +3082,7 @@ BOOL decode0b1(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 1;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2754,6 +3091,7 @@ BOOL decode0b2(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 2;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2762,6 +3100,7 @@ BOOL decode0b3(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 3;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2770,6 +3109,7 @@ BOOL decode0b4(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 4;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2778,6 +3118,7 @@ BOOL decode0b5(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 5;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2786,6 +3127,7 @@ BOOL decode0b6(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 6;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2794,6 +3136,7 @@ BOOL decode0b7(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 7;
     data->op->data1 = FETCH8(data);
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2802,6 +3145,7 @@ BOOL decode0b8(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2810,6 +3154,7 @@ BOOL decode2b8(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2818,6 +3163,7 @@ BOOL decode0b9(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 1;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2826,6 +3172,7 @@ BOOL decode2b9(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 1;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2834,6 +3181,7 @@ BOOL decode0ba(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 2;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2842,6 +3190,7 @@ BOOL decode2ba(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 2;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2850,6 +3199,7 @@ BOOL decode0bb(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 3;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2858,6 +3208,7 @@ BOOL decode2bb(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 3;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2866,6 +3217,7 @@ BOOL decode0bc(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 4;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2874,6 +3226,7 @@ BOOL decode2bc(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 4;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2882,6 +3235,7 @@ BOOL decode0bd(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 5;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2890,6 +3244,7 @@ BOOL decode2bd(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 5;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2898,6 +3253,7 @@ BOOL decode0be(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 6;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2906,6 +3262,7 @@ BOOL decode2be(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 6;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2914,6 +3271,7 @@ BOOL decode0bf(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 7;
     data->op->data1 = FETCH16(data);
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2922,6 +3280,7 @@ BOOL decode2bf(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 7;
     data->op->data1 = FETCH32(data);
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
     NEXT_OP(data);
     return TRUE;
 }
@@ -2929,33 +3288,38 @@ BOOL decode2bf(struct DecodeData* data) {
 BOOL decode0c2(struct DecodeData* data) {
     data->op->func = retnIw16;
     data->op->data1 = FETCH16(data);
-    NEXT_OP(data);
-    return TRUE;
+    LOG_OP1("RETN", itoa(data->op->data1, tmp, 16));
+    FINISH_OP(data);
+    return FALSE;
 }
 // RETN Iw
 BOOL decode2c2(struct DecodeData* data) {
     data->op->func = retnIw32;
     data->op->data1 = FETCH16(data);
-    NEXT_OP(data);
-    return TRUE;
+    LOG_OP1("RETN", itoa(data->op->data1, tmp, 16));
+    FINISH_OP(data);
+    return FALSE;
 }
 // RETN16
 BOOL decode0c3(struct DecodeData* data) {
     data->op->func = retn16;
-    NEXT_OP(data);
-    return TRUE;
+    LOG_OP("RETN");
+    FINISH_OP(data);
+    return FALSE;
 }
 // RETN32
 BOOL decode2c3(struct DecodeData* data) {
     data->op->func = retn32;
-    NEXT_OP(data);
-    return TRUE;
+    LOG_OP("RETN");
+    FINISH_OP(data);
+    return FALSE;
 }
 // MOV EB,IB
 BOOL decode0c6(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(mov8_reg, mov8_mem16, mov8_mem32);
     data->op->data1 = FETCH8(data);
+    LOG_E8C("MOV", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -2964,6 +3328,7 @@ BOOL decode0c7(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(mov16_reg, mov16_mem16, mov16_mem32);
     data->op->data1 = FETCH16(data);
+    LOG_E16C("MOV", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -2972,24 +3337,28 @@ BOOL decode2c7(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(mov32_reg, mov32_mem16, mov32_mem32);
     data->op->data1 = FETCH32(data);
+    LOG_E32C("MOV", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
 // LEAVE16
 BOOL decode0c9(struct DecodeData* data) {
     data->op->func = leave16;
+    LOG_OP("LEAVE");
     NEXT_OP(data);
     return TRUE;
 }
 // LEAVE32
 BOOL decode2c9(struct DecodeData* data) {
     data->op->func = leave32;
+    LOG_OP("LEAVE");
     NEXT_OP(data);
     return TRUE;
 }
 // SALC
 BOOL decode0d6(struct DecodeData* data) {
     data->op->func = salc;
+    LOG_OP("SALC");
     NEXT_OP(data);
     return TRUE;
 }
@@ -2997,6 +3366,7 @@ BOOL decode0d6(struct DecodeData* data) {
 BOOL decode0e8(struct DecodeData* data) {
     data->op->func = callJw;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("CALL", itoa(data->op->data1, tmp, 16));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3004,6 +3374,7 @@ BOOL decode0e8(struct DecodeData* data) {
 BOOL decode2e8(struct DecodeData* data) {
     data->op->func = callJd;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("CALL", itoa(data->op->data1, tmp, 16));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3011,6 +3382,7 @@ BOOL decode2e8(struct DecodeData* data) {
 BOOL decode0e9(struct DecodeData* data) {
     data->op->func = jump;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JMP", itoa(data->op->data1, tmp, 16));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3018,6 +3390,7 @@ BOOL decode0e9(struct DecodeData* data) {
 BOOL decode2e9(struct DecodeData* data) {
     data->op->func = jump;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JMP", itoa(data->op->data1, tmp, 16));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3025,12 +3398,14 @@ BOOL decode2e9(struct DecodeData* data) {
 BOOL decode0eb(struct DecodeData* data) {
     data->op->func = jump;
     data->op->data1 = FETCH_S8(data);
+    LOG_OP1("JMP", itoa(data->op->data1, tmp, 16));
     FINISH_OP(data);
     return FALSE;
 }
 // CMC
 BOOL decode0f5(struct DecodeData* data) {
     data->op->func = cmc;
+    LOG_OP("CMC");
     NEXT_OP(data);
     return TRUE;
 }
@@ -3042,24 +3417,31 @@ BOOL decode0f6(struct DecodeData* data) {
     case 0x01:
         DECODE_E(test8_reg, test8_mem16, test8_mem32);
         data->op->data1 = FETCH8(data);
+        LOG_E8C("TEST", rm, data);
         break;
     case 0x02:
         DECODE_E(not8_reg, not8_mem16, not8_mem32);
+        LOG_E8("NOT", rm, data);
         break;
     case 0x03:
         DECODE_E(neg8_reg, neg8_mem16, neg8_mem32);
+        LOG_E8("NEG", rm, data);
         break;
     case 0x04:
         DECODE_E(mul8_reg, mul8_mem16, mul8_mem32);
+        LOG_E8("MUL", rm, data);
         break;
     case 0x05:
         DECODE_E(imul8_reg, imul8_mem16, imul8_mem32);
+        LOG_E8("IMUL", rm, data);
         break;
     case 0x06:
         DECODE_E(div8_reg, div8_mem16, div8_mem32);
+        LOG_E8("DIV", rm, data);
         break;
     case 0x07:
         DECODE_E(idiv8_reg, idiv8_mem16, idiv8_mem32);
+        LOG_E8("IDIV", rm, data);
         break;
     }
     NEXT_OP(data);
@@ -3073,24 +3455,31 @@ BOOL decode0f7(struct DecodeData* data) {
     case 0x01:
         DECODE_E(test16_reg, test16_mem16, test16_mem32);
         data->op->data1 = FETCH16(data);
+        LOG_E16C("TEST", rm, data);
         break;
     case 0x02:
         DECODE_E(not16_reg, not16_mem16, not16_mem32);
+        LOG_E16("NOT", rm, data);
         break;
     case 0x03:
         DECODE_E(neg16_reg, neg16_mem16, neg16_mem32);
+        LOG_E16("NEG", rm, data);
         break;
     case 0x04:
         DECODE_E(mul16_reg, mul16_mem16, mul16_mem32);
+        LOG_E16("MUL", rm, data);
         break;
     case 0x05:
         DECODE_E(imul16_reg, imul16_mem16, imul16_mem32);
+        LOG_E16("IMUL", rm, data);
         break;
     case 0x06:
         DECODE_E(div16_reg, div16_mem16, div16_mem32);
+        LOG_E16("DIV", rm, data);
         break;
     case 0x07:
         DECODE_E(idiv16_reg, idiv16_mem16, idiv16_mem32);
+        LOG_E16("IDIV", rm, data);
         break;
     }
     NEXT_OP(data);
@@ -3104,24 +3493,31 @@ BOOL decode2f7(struct DecodeData* data) {
     case 0x01:
         DECODE_E(test32_reg, test32_mem16, test32_mem32);
         data->op->data1 = FETCH32(data);
+        LOG_E32C("TEST", rm, data);
         break;
     case 0x02:
         DECODE_E(not32_reg, not32_mem16, not32_mem32);
+        LOG_E32("NOT", rm, data);
         break;
     case 0x03:
         DECODE_E(neg32_reg, neg32_mem16, neg32_mem32);
+        LOG_E32("NEG", rm, data);
         break;
     case 0x04:
         DECODE_E(mul32_reg, mul32_mem16, mul32_mem32);
+        LOG_E32("MUL", rm, data);
         break;
     case 0x05:
         DECODE_E(imul32_reg, imul32_mem16, imul32_mem32);
+        LOG_E32("IMUL", rm, data);
         break;
     case 0x06:
         DECODE_E(div32_reg, div32_mem16, div32_mem32);
+        LOG_E32("DIV", rm, data);
         break;
     case 0x07:
         DECODE_E(idiv32_reg, idiv32_mem16, idiv32_mem32);
+        LOG_E32("IDIV", rm, data);
         break;
     }
     NEXT_OP(data);
@@ -3130,30 +3526,35 @@ BOOL decode2f7(struct DecodeData* data) {
 // CLC
 BOOL decode0f8(struct DecodeData* data) {
     data->op->func = clc;
+    LOG_OP("CLC");
     NEXT_OP(data);
     return TRUE;
 }
 // STC
 BOOL decode0f9(struct DecodeData* data) {
     data->op->func = stc;
+    LOG_OP("STC");
     NEXT_OP(data);
     return TRUE;
 }
 // CLD
 BOOL decode0fc(struct DecodeData* data) {
     data->op->func = cld;
+    LOG_OP("CLD");
     NEXT_OP(data);
     return TRUE;
 }
 // STD
 BOOL decode0fd(struct DecodeData* data) {
     data->op->func = std;
+    LOG_OP("STD");
     NEXT_OP(data);
     return TRUE;
 }
 // RDTSC
 BOOL decode131(struct DecodeData* data) {
     data->op->func = rdtsc;
+    LOG_OP("RDTSC");
     NEXT_OP(data);
     return TRUE;
 }
@@ -3164,14 +3565,17 @@ BOOL decode140(struct DecodeData* data) {
         data->op->func = cmovO_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovO_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovO_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3183,14 +3587,17 @@ BOOL decode340(struct DecodeData* data) {
         data->op->func = cmovO_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovO_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovO_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3202,14 +3609,17 @@ BOOL decode141(struct DecodeData* data) {
         data->op->func = cmovNO_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNO_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNO_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3221,14 +3631,17 @@ BOOL decode341(struct DecodeData* data) {
         data->op->func = cmovNO_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNO_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNO_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3240,14 +3653,17 @@ BOOL decode142(struct DecodeData* data) {
         data->op->func = cmovB_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovB_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovB_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3259,14 +3675,17 @@ BOOL decode342(struct DecodeData* data) {
         data->op->func = cmovB_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovB_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovB_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3278,14 +3697,17 @@ BOOL decode143(struct DecodeData* data) {
         data->op->func = cmovNB_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNB_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNB_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3297,14 +3719,17 @@ BOOL decode343(struct DecodeData* data) {
         data->op->func = cmovNB_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNB_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNB_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3316,14 +3741,17 @@ BOOL decode144(struct DecodeData* data) {
         data->op->func = cmovZ_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovZ_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovZ_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3335,14 +3763,17 @@ BOOL decode344(struct DecodeData* data) {
         data->op->func = cmovZ_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovZ_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovZ_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3354,14 +3785,17 @@ BOOL decode145(struct DecodeData* data) {
         data->op->func = cmovNZ_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNZ_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNZ_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3373,14 +3807,17 @@ BOOL decode345(struct DecodeData* data) {
         data->op->func = cmovNZ_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNZ_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNZ_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3392,14 +3829,17 @@ BOOL decode146(struct DecodeData* data) {
         data->op->func = cmovBE_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovBE_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovBE_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3411,14 +3851,17 @@ BOOL decode346(struct DecodeData* data) {
         data->op->func = cmovBE_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovBE_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovBE_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3430,14 +3873,17 @@ BOOL decode147(struct DecodeData* data) {
         data->op->func = cmovNBE_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNBE_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNBE_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3449,14 +3895,17 @@ BOOL decode347(struct DecodeData* data) {
         data->op->func = cmovNBE_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNBE_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNBE_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3468,14 +3917,17 @@ BOOL decode148(struct DecodeData* data) {
         data->op->func = cmovS_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovS_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovS_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3487,14 +3939,17 @@ BOOL decode348(struct DecodeData* data) {
         data->op->func = cmovS_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovS_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovS_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3506,14 +3961,17 @@ BOOL decode149(struct DecodeData* data) {
         data->op->func = cmovNS_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNS_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNS_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3525,14 +3983,17 @@ BOOL decode349(struct DecodeData* data) {
         data->op->func = cmovNS_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNS_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNS_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3544,14 +4005,17 @@ BOOL decode14a(struct DecodeData* data) {
         data->op->func = cmovP_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovP_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovP_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3563,14 +4027,17 @@ BOOL decode34a(struct DecodeData* data) {
         data->op->func = cmovP_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovP_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovP_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3582,14 +4049,17 @@ BOOL decode14b(struct DecodeData* data) {
         data->op->func = cmovNP_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNP_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNP_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3601,14 +4071,17 @@ BOOL decode34b(struct DecodeData* data) {
         data->op->func = cmovNP_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNP_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNP_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3620,14 +4093,17 @@ BOOL decode14c(struct DecodeData* data) {
         data->op->func = cmovL_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovL_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovL_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3639,14 +4115,17 @@ BOOL decode34c(struct DecodeData* data) {
         data->op->func = cmovL_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovL_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovL_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3658,14 +4137,17 @@ BOOL decode14d(struct DecodeData* data) {
         data->op->func = cmovNL_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNL_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNL_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3677,14 +4159,17 @@ BOOL decode34d(struct DecodeData* data) {
         data->op->func = cmovNL_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNL_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNL_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3696,14 +4181,17 @@ BOOL decode14e(struct DecodeData* data) {
         data->op->func = cmovLE_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovLE_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovLE_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3715,14 +4203,17 @@ BOOL decode34e(struct DecodeData* data) {
         data->op->func = cmovLE_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovLE_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovLE_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3734,14 +4225,17 @@ BOOL decode14f(struct DecodeData* data) {
         data->op->func = cmovNLE_16_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R16(data->op->r1), R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNLE_16_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = cmovNLE_16_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3753,14 +4247,17 @@ BOOL decode34f(struct DecodeData* data) {
         data->op->func = cmovNLE_32_reg;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("CMOV", R32(data->op->r1), R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmovNLE_32_mem16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     } else {
         data->op->func = cmovNLE_32_mem32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -3769,6 +4266,7 @@ BOOL decode34f(struct DecodeData* data) {
 BOOL decode180(struct DecodeData* data) {
     data->op->func = jumpO;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JO", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3776,6 +4274,7 @@ BOOL decode180(struct DecodeData* data) {
 BOOL decode181(struct DecodeData* data) {
     data->op->func = jumpNO;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNO", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3783,6 +4282,7 @@ BOOL decode181(struct DecodeData* data) {
 BOOL decode182(struct DecodeData* data) {
     data->op->func = jumpB;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JB", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3790,6 +4290,7 @@ BOOL decode182(struct DecodeData* data) {
 BOOL decode183(struct DecodeData* data) {
     data->op->func = jumpNB;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNB", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3797,6 +4298,7 @@ BOOL decode183(struct DecodeData* data) {
 BOOL decode184(struct DecodeData* data) {
     data->op->func = jumpZ;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JZ", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3804,6 +4306,7 @@ BOOL decode184(struct DecodeData* data) {
 BOOL decode185(struct DecodeData* data) {
     data->op->func = jumpNZ;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNZ", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3811,6 +4314,7 @@ BOOL decode185(struct DecodeData* data) {
 BOOL decode186(struct DecodeData* data) {
     data->op->func = jumpBE;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JBE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3818,6 +4322,7 @@ BOOL decode186(struct DecodeData* data) {
 BOOL decode187(struct DecodeData* data) {
     data->op->func = jumpNBE;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNBE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3825,6 +4330,7 @@ BOOL decode187(struct DecodeData* data) {
 BOOL decode188(struct DecodeData* data) {
     data->op->func = jumpS;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JS", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3832,6 +4338,7 @@ BOOL decode188(struct DecodeData* data) {
 BOOL decode189(struct DecodeData* data) {
     data->op->func = jumpNS;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNS", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3839,6 +4346,7 @@ BOOL decode189(struct DecodeData* data) {
 BOOL decode18a(struct DecodeData* data) {
     data->op->func = jumpP;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JP", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3846,6 +4354,7 @@ BOOL decode18a(struct DecodeData* data) {
 BOOL decode18b(struct DecodeData* data) {
     data->op->func = jumpNP;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNP", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3853,6 +4362,7 @@ BOOL decode18b(struct DecodeData* data) {
 BOOL decode18c(struct DecodeData* data) {
     data->op->func = jumpL;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JL", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3860,6 +4370,7 @@ BOOL decode18c(struct DecodeData* data) {
 BOOL decode18d(struct DecodeData* data) {
     data->op->func = jumpNL;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNL", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3867,6 +4378,7 @@ BOOL decode18d(struct DecodeData* data) {
 BOOL decode18e(struct DecodeData* data) {
     data->op->func = jumpLE;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JLE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3874,6 +4386,7 @@ BOOL decode18e(struct DecodeData* data) {
 BOOL decode18f(struct DecodeData* data) {
     data->op->func = jumpNLE;
     data->op->data1 = FETCH_S16(data);
+    LOG_OP1("JNLE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3881,6 +4394,7 @@ BOOL decode18f(struct DecodeData* data) {
 BOOL decode380(struct DecodeData* data) {
     data->op->func = jumpO;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JO", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3888,6 +4402,7 @@ BOOL decode380(struct DecodeData* data) {
 BOOL decode381(struct DecodeData* data) {
     data->op->func = jumpNO;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNO", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3895,6 +4410,7 @@ BOOL decode381(struct DecodeData* data) {
 BOOL decode382(struct DecodeData* data) {
     data->op->func = jumpB;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JB", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3902,6 +4418,7 @@ BOOL decode382(struct DecodeData* data) {
 BOOL decode383(struct DecodeData* data) {
     data->op->func = jumpNB;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNB", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3909,6 +4426,7 @@ BOOL decode383(struct DecodeData* data) {
 BOOL decode384(struct DecodeData* data) {
     data->op->func = jumpZ;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JZ", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3916,6 +4434,7 @@ BOOL decode384(struct DecodeData* data) {
 BOOL decode385(struct DecodeData* data) {
     data->op->func = jumpNZ;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNZ", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3923,6 +4442,7 @@ BOOL decode385(struct DecodeData* data) {
 BOOL decode386(struct DecodeData* data) {
     data->op->func = jumpBE;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JBE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3930,6 +4450,7 @@ BOOL decode386(struct DecodeData* data) {
 BOOL decode387(struct DecodeData* data) {
     data->op->func = jumpNBE;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNBE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3937,6 +4458,7 @@ BOOL decode387(struct DecodeData* data) {
 BOOL decode388(struct DecodeData* data) {
     data->op->func = jumpS;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JS", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3944,6 +4466,7 @@ BOOL decode388(struct DecodeData* data) {
 BOOL decode389(struct DecodeData* data) {
     data->op->func = jumpNS;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNS", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3951,6 +4474,7 @@ BOOL decode389(struct DecodeData* data) {
 BOOL decode38a(struct DecodeData* data) {
     data->op->func = jumpP;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JP", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3958,6 +4482,7 @@ BOOL decode38a(struct DecodeData* data) {
 BOOL decode38b(struct DecodeData* data) {
     data->op->func = jumpNP;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNP", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3965,6 +4490,7 @@ BOOL decode38b(struct DecodeData* data) {
 BOOL decode38c(struct DecodeData* data) {
     data->op->func = jumpL;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JL", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3972,6 +4498,7 @@ BOOL decode38c(struct DecodeData* data) {
 BOOL decode38d(struct DecodeData* data) {
     data->op->func = jumpNL;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNL", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3979,6 +4506,7 @@ BOOL decode38d(struct DecodeData* data) {
 BOOL decode38e(struct DecodeData* data) {
     data->op->func = jumpLE;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JLE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3986,6 +4514,7 @@ BOOL decode38e(struct DecodeData* data) {
 BOOL decode38f(struct DecodeData* data) {
     data->op->func = jumpNLE;
     data->op->data1 = FETCH32(data);
+    LOG_OP1("JNLE", itoa((int)data->op->data1, tmp, 10));
     FINISH_OP(data);
     return FALSE;
 }
@@ -3993,6 +4522,7 @@ BOOL decode38f(struct DecodeData* data) {
 BOOL decode190(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setO_reg, setO_mem16, setO_mem32);
+    LOG_E8("SETO", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4000,6 +4530,7 @@ BOOL decode190(struct DecodeData* data) {
 BOOL decode191(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNO_reg, setNO_mem16, setNO_mem32);
+    LOG_E8("SETNO", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4007,6 +4538,7 @@ BOOL decode191(struct DecodeData* data) {
 BOOL decode192(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setB_reg, setB_mem16, setB_mem32);
+    LOG_E8("SETB", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4014,6 +4546,7 @@ BOOL decode192(struct DecodeData* data) {
 BOOL decode193(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNB_reg, setNB_mem16, setNB_mem32);
+    LOG_E8("SETNB", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4021,6 +4554,7 @@ BOOL decode193(struct DecodeData* data) {
 BOOL decode194(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setZ_reg, setZ_mem16, setZ_mem32);
+    LOG_E8("SETZ", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4028,6 +4562,7 @@ BOOL decode194(struct DecodeData* data) {
 BOOL decode195(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNZ_reg, setNZ_mem16, setNZ_mem32);
+    LOG_E8("SETNZ", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4035,6 +4570,7 @@ BOOL decode195(struct DecodeData* data) {
 BOOL decode196(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setBE_reg, setBE_mem16, setBE_mem32);
+    LOG_E8("SETBE", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4042,6 +4578,7 @@ BOOL decode196(struct DecodeData* data) {
 BOOL decode197(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNBE_reg, setNBE_mem16, setNBE_mem32);
+    LOG_E8("SETNBE", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4049,6 +4586,7 @@ BOOL decode197(struct DecodeData* data) {
 BOOL decode198(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setS_reg, setS_mem16, setS_mem32);
+    LOG_E8("SETS", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4056,6 +4594,7 @@ BOOL decode198(struct DecodeData* data) {
 BOOL decode199(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNS_reg, setNS_mem16, setNS_mem32);
+    LOG_E8("SETNS", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4063,6 +4602,7 @@ BOOL decode199(struct DecodeData* data) {
 BOOL decode19a(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setP_reg, setP_mem16, setP_mem32);
+    LOG_E8("SETP", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4070,6 +4610,7 @@ BOOL decode19a(struct DecodeData* data) {
 BOOL decode19b(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNP_reg, setNP_mem16, setNP_mem32);
+    LOG_E8("SETNP", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4077,6 +4618,7 @@ BOOL decode19b(struct DecodeData* data) {
 BOOL decode19c(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setL_reg, setL_mem16, setL_mem32);
+    LOG_E8("SETL", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4084,6 +4626,7 @@ BOOL decode19c(struct DecodeData* data) {
 BOOL decode19d(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNL_reg, setNL_mem16, setNL_mem32);
+    LOG_E8("SETNL", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4091,6 +4634,7 @@ BOOL decode19d(struct DecodeData* data) {
 BOOL decode19e(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setLE_reg, setLE_mem16, setLE_mem32);
+    LOG_E8("SETLE", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4098,6 +4642,7 @@ BOOL decode19e(struct DecodeData* data) {
 BOOL decode19f(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     DECODE_E(setNLE_reg, setNLE_mem16, setNLE_mem32);
+    LOG_E8("SETNLE", rm, data);
     NEXT_OP(data);
     return TRUE;
 }
@@ -4105,6 +4650,7 @@ BOOL decode19f(struct DecodeData* data) {
 BOOL decode1a1(struct DecodeData* data) {
     data->op->func = popSeg16;
     data->op->r1 = FS;
+    LOG_OP("POP FS");
     NEXT_OP(data);
     return TRUE;
 }
@@ -4112,12 +4658,14 @@ BOOL decode1a1(struct DecodeData* data) {
 BOOL decode3a1(struct DecodeData* data) {
     data->op->func = popSeg32;
     data->op->r1 = FS;
+    LOG_OP("POP FS");
     NEXT_OP(data);
     return TRUE;
 }
 // CPUID
 BOOL decode1a2(struct DecodeData* data) {
     data->op->func = cpuid;
+    LOG_OP("CPUID");
     NEXT_OP(data);
     return TRUE;
 }
@@ -4128,14 +4676,17 @@ BOOL decode1a3(struct DecodeData* data) {
         data->op->func = btr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("BT", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = bte16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("BT", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = bte16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("BT", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4147,14 +4698,17 @@ BOOL decode3a3(struct DecodeData* data) {
         data->op->func = btr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("BT", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = bte32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("BT", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = bte32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("BT", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4166,14 +4720,17 @@ BOOL decode1a4(struct DecodeData* data) {
         data->op->func = dshlr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHL", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshle16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHL", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = dshle16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHL", M16(data, rm, data->op),R16(data->op->r2));
     }
     data->op->data1 = FETCH8(data);
     data->op->data1 &= 0x1f;
@@ -4191,14 +4748,17 @@ BOOL decode3a4(struct DecodeData* data) {
         data->op->func = dshlr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHL", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshle32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHL", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = dshle32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHL", M32(data, rm, data->op),R32(data->op->r2));
     }
     data->op->data1 = FETCH8(data);
     data->op->data1 &= 0x1f;
@@ -4216,14 +4776,17 @@ BOOL decode1a5(struct DecodeData* data) {
         data->op->func = dshlclr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHLCL", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshlcle16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHLCL", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = dshlcle16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHLCL", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4235,14 +4798,17 @@ BOOL decode3a5(struct DecodeData* data) {
         data->op->func = dshlclr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHLCL", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshlcle32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHLCL", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = dshlcle32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHLCL", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4251,6 +4817,7 @@ BOOL decode3a5(struct DecodeData* data) {
 BOOL decode1a9(struct DecodeData* data) {
     data->op->func = popSeg16;
     data->op->r1 = GS;
+    LOG_OP("POP GS");
     NEXT_OP(data);
     return TRUE;
 }
@@ -4258,6 +4825,7 @@ BOOL decode1a9(struct DecodeData* data) {
 BOOL decode3a9(struct DecodeData* data) {
     data->op->func = popSeg32;
     data->op->r1 = GS;
+    LOG_OP("POP GS");
     NEXT_OP(data);
     return TRUE;
 }
@@ -4268,14 +4836,17 @@ BOOL decode1ab(struct DecodeData* data) {
         data->op->func = btsr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("BTS", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = btse16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("BTS", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = btse16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("BTS", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4287,14 +4858,17 @@ BOOL decode3ab(struct DecodeData* data) {
         data->op->func = btsr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("BTS", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = btse32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("BTS", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = btse32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("BTS", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4306,14 +4880,17 @@ BOOL decode1ac(struct DecodeData* data) {
         data->op->func = dshrr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHR", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshre16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHR", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = dshre16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHR", M16(data, rm, data->op),R16(data->op->r2));
     }
     data->op->data1 = FETCH8(data);
     data->op->data1 &= 0x1f;
@@ -4331,14 +4908,17 @@ BOOL decode3ac(struct DecodeData* data) {
         data->op->func = dshrr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshre32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHR", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = dshre32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHR", M32(data, rm, data->op),R32(data->op->r2));
     }
     data->op->data1 = FETCH8(data);
     data->op->data1 &= 0x1f;
@@ -4356,14 +4936,17 @@ BOOL decode1ad(struct DecodeData* data) {
         data->op->func = dshrclr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHRCL", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshrcle16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHRCL", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = dshrcle16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHRCL", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4375,14 +4958,17 @@ BOOL decode3ad(struct DecodeData* data) {
         data->op->func = dshrclr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("DSHRCL", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dshrcle32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DSHRCL", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = dshrcle32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DSHRCL", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4394,14 +4980,17 @@ BOOL decode1af(struct DecodeData* data) {
         data->op->func = dimulr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("DIMUL", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dimulr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DIMUL", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = dimulr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DIMUL", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4413,14 +5002,17 @@ BOOL decode3af(struct DecodeData* data) {
         data->op->func = dimulr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("DIMUL", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = dimulr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("DIMUL", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = dimulr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("DIMUL", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4432,14 +5024,17 @@ BOOL decode1b1(struct DecodeData* data) {
         data->op->func = cmpxchgr16r16;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("CMPXCHG", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpxchge16r16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMPXCHG", M16(data, rm, data->op),R16(data->op->r2));
     } else {
         data->op->func = cmpxchge16r16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMPXCHG", M16(data, rm, data->op),R16(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4451,14 +5046,17 @@ BOOL decode3b1(struct DecodeData* data) {
         data->op->func = cmpxchgr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
+        LOG_OP2("CMPXCHG", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = cmpxchge32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("CMPXCHG", M32(data, rm, data->op),R32(data->op->r2));
     } else {
         data->op->func = cmpxchge32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("CMPXCHG", M32(data, rm, data->op),R32(data->op->r2));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4470,14 +5068,17 @@ BOOL decode1b6(struct DecodeData* data) {
         data->op->func = movxz8r16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOVXZ8", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movxz8r16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOVXZ8", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = movxz8r16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOVXZ8", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4489,14 +5090,17 @@ BOOL decode3b6(struct DecodeData* data) {
         data->op->func = movxz8r32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOVXZ8", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movxz8r32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOVXZ8", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = movxz8r32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOVXZ8", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4508,14 +5112,17 @@ BOOL decode3b7(struct DecodeData* data) {
         data->op->func = movxz16r32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOVXZ16", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movxz16r32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOVXZ16", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = movxz16r32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOVXZ16", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4527,14 +5134,17 @@ BOOL decode1bd(struct DecodeData* data) {
         data->op->func = bsrr16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("BSR", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = bsrr16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("BSR", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = bsrr16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("BSR", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4546,14 +5156,17 @@ BOOL decode3bd(struct DecodeData* data) {
         data->op->func = bsrr32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("BSR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = bsrr32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("BSR", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = bsrr32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("BSR", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4565,14 +5178,17 @@ BOOL decode1be(struct DecodeData* data) {
         data->op->func = movsx8r16r16;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOVSX8", R16(data->op->r1),R16(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movsx8r16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOVSX8", R16(data->op->r1),M16(data, rm, data->op));
     } else {
         data->op->func = movsx8r16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOVSX8", R16(data->op->r1),M16(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;
@@ -4584,14 +5200,17 @@ BOOL decode3be(struct DecodeData* data) {
         data->op->func = movsx8r32r32;
         data->op->r1 = G(rm);
         data->op->r2 = E(rm);
+        LOG_OP2("MOVSX8", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
         data->op->func = movsx8r32e32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
+        LOG_OP2("MOVSX8", R32(data->op->r1),M32(data, rm, data->op));
     } else {
         data->op->func = movsx8r32e32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
+        LOG_OP2("MOVSX8", R32(data->op->r1),M32(data, rm, data->op));
     }
     NEXT_OP(data);
     return TRUE;

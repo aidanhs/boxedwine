@@ -77,7 +77,178 @@ void NEXT_OP(struct DecodeData* data) {
 	}
 }
 
+const char* RB(int r) {
+	switch (r) {
+	case 0: return "AL";
+	case 1: return "CL";
+	case 2: return "DL";
+	case 3: return "BL";
+	case 4: return "AH";
+	case 5: return "CH";
+	case 6: return "DH";
+	case 7: return "BH";
+	default: return "0";
+	}
+}
 
+const char* RW(int r) {
+	switch (r) {
+	case 0: return "AX";
+	case 1: return "CX";
+	case 2: return "DX";
+	case 3: return "BX";
+	case 4: return "SP";
+	case 5: return "BP";
+	case 6: return "SI";
+	case 7: return "DI";
+	default: return "0";
+	}
+}
+
+const char* RD(int r) {
+	switch (r) {
+	case 0: return "EAX";
+	case 1: return "ECX";
+	case 2: return "EDX";
+	case 3: return "EBX";
+	case 4: return "ESP";
+	case 5: return "EBP";
+	case 6: return "ESI";
+	case 7: return "EDI";
+	default: return "0";
+	}
+}
+
+#define R8 RB
+#define R16 RW
+#define R32 RD
+
+char tmp[64];
+
+const char* EABASE(int base) {
+	switch (base) {
+	case ES: return "ES";
+	case CS: return "CS";
+	case SS: return "SS";
+	case DS: return "DS";
+	case FS: return "FS";
+	case GS: return "GS";
+	default: return "0";
+	}
+}
+
+void SIB(char* s, struct Op* op) {
+	BOOL added = FALSE;
+	if (op->e1<8) {
+		strcat(s, RD(op->e1));
+		added = TRUE;
+	}
+	if (op->e2<8 && op->eSib>0) {
+		if (added) {
+			strcat(s, "+");
+		}
+		sprintf(s+strlen(s), "(%s<<%d)", RD(op->e2), op->eSib);
+		added = TRUE;
+	}
+	if (op->eData) {
+		if (added) {
+			strcat(s, "+");
+		}
+		sprintf(s+strlen(s), "%X", op->eData); 
+	}
+}
+
+void EAA16(char* s, int rm, struct Op* op) {
+	switch (rm & 7) {
+	case 0x00: strcat(s, "BX+SI"); break;
+	case 0x01: strcat(s, "BX+DI"); break;
+	case 0x02: strcat(s, "BP+SI"); break;
+	case 0x03: strcat(s, "BP+DI"); break;
+	case 0x04: strcat(s, "SI"); break;
+	case 0x05: strcat(s, "DI"); break;
+	case 0x06: 
+		if (rm<0x40) {
+			sprintf(s+strlen(s), "%X", op->eData); 
+		} else {
+			strcat(s, "BP");
+		}
+		break;
+	case 0x07: strcat(s, "BX"); break;
+	}
+	if (rm>0x40) {
+		sprintf(s+strlen(s), "+%X", op->eData); 
+	}
+}
+
+void EAA32(char* s, int rm, struct Op* op) {
+	switch (rm & 7) {
+	case 0x00: strcat(s, "EAX"); break;
+	case 0x01: strcat(s, "ECX"); break;
+	case 0x02: strcat(s, "EDX"); break;
+	case 0x03: strcat(s, "EBX"); break;
+	case 0x04: SIB(s, op); return;
+	case 0x05: 
+		if (rm<0x40) {
+			sprintf(s+strlen(s), "%X", op->eData); 
+		} else {
+			strcat(s, "EBP");
+		}
+		break;
+	case 0x06: strcat(s, "ESI"); break;
+	case 0x07: strcat(s, "EDI"); break;
+	}
+	if (rm>0x40) {
+		sprintf(s+strlen(s), "+%X", op->eData); 
+	}	
+}
+
+const char* M16(struct DecodeData* data, int rm, struct Op* op) {
+	strcpy(tmp, "WORD PTR [");
+	if (op->base != SEG_ZERO) {
+		strcat(tmp, EABASE(op->base));
+		strcat(tmp, ":");
+	}
+
+	if (data->ea16) {
+		EAA16(tmp, rm, op);
+	} else {
+		EAA32(tmp, rm, op);
+	}
+	strcat(tmp, "]");
+	return tmp;
+}
+
+const char* M8(struct DecodeData* data, int rm, struct Op* op) {
+	strcpy(tmp, "BYTE PTR [");
+	if (op->base != SEG_ZERO) {
+		strcat(tmp, EABASE(op->base));
+		strcat(tmp, ":");
+	}
+
+	if (data->ea16) {
+		EAA16(tmp, rm, op);
+	} else {
+		EAA32(tmp, rm, op);
+	}
+	strcat(tmp, "]");
+	return tmp;
+}
+
+const char* M32(struct DecodeData* data, int rm, struct Op* op) {
+	strcpy(tmp, "DWORD PTR [");
+	if (op->base != SEG_ZERO) {
+		strcat(tmp, EABASE(op->base));
+		strcat(tmp, ":");
+	}
+
+	if (data->ea16) {
+		EAA16(tmp, rm, op);
+	} else {
+		EAA32(tmp, rm, op);
+	}
+	strcat(tmp, "]");
+	return tmp;
+}
 
 #define regAX 0
 #define regCX 1
@@ -221,6 +392,85 @@ if (rm >= 0xc0 ) {					\
 	DECODE_MEMORY(m16, m32);		\
 }
 
+#ifdef LOG_OPS
+char tmpc[32];
+
+void LOG_E8(const char* name, int rm, struct DecodeData* data) {
+	if (rm >= 0xc0 ) {
+		LOG_OP1(name, RB(data->op->r1));
+	} else {
+		LOG_OP1(name, M8(data, rm, data->op));
+	}
+}
+
+void LOG_E8C(const char* name, int rm, struct DecodeData* data) {
+	sprintf(tmpc, "%X", data->op->data1);
+	if (rm >= 0xc0 ) {
+		LOG_OP2(name, RB(data->op->r1), tmpc);
+	} else {
+		LOG_OP2(name, M8(data, rm, data->op), tmpc);
+	}
+}
+
+void LOG_E8Cl(const char* name, int rm, struct DecodeData* data) {
+	if (rm >= 0xc0 ) {
+		LOG_OP2(name, RB(data->op->r1), "CL");
+	} else {
+		LOG_OP2(name, M8(data, rm, data->op), "CL");
+	}
+}
+
+void LOG_E16(const char* name, int rm, struct DecodeData* data) {
+	if (rm >= 0xc0 ) {
+		LOG_OP1(name, RW(data->op->r1));
+	} else {
+		LOG_OP1(name, M16(data, rm, data->op));
+	}
+}
+
+void LOG_E16C(const char* name, int rm, struct DecodeData* data) {
+	sprintf(tmpc, "%X", data->op->data1);
+	if (rm >= 0xc0 ) {
+		LOG_OP2(name, RW(data->op->r1), tmpc);
+	} else {
+		LOG_OP2(name, M16(data, rm, data->op), tmpc);
+	}
+}
+
+void LOG_E16Cl(const char* name, int rm, struct DecodeData* data) {
+	if (rm >= 0xc0 ) {
+		LOG_OP2(name, RW(data->op->r1), "CL");
+	} else {
+		LOG_OP2(name, M16(data, rm, data->op), "CL");
+	}
+}
+
+void LOG_E32(const char* name, int rm, struct DecodeData* data) {
+	if (rm >= 0xc0 ) {
+		LOG_OP1(name, RD(data->op->r1));
+	} else {
+		LOG_OP1(name, M32(data, rm, data->op));
+	}
+}
+
+void LOG_E32C(const char* name, int rm, struct DecodeData* data) {
+	sprintf(tmpc, "%X", data->op->data1);
+	if (rm >= 0xc0 ) {
+		LOG_OP2(name, RD(data->op->r1), tmpc);
+	} else {
+		LOG_OP2(name, M32(data, rm, data->op), tmpc);
+	}
+}
+
+void LOG_E32Cl(const char* name, int rm, struct DecodeData* data) {
+	if (rm >= 0xc0 ) {
+		LOG_OP2(name, RD(data->op->r1), "CL");
+	} else {
+		LOG_OP2(name, M32(data, rm, data->op), "CL");
+	}
+}
+#endif
+
 #include "decode.h"
 
 // 2 byte opcodes
@@ -241,6 +491,7 @@ BOOL decode062(struct DecodeData* data) {
 		data->op->r1 = G(rm);
 		decodeEa32(data, rm);
 	}
+	LOG_OP2("BOUND", RW(data->op->r1), M16(data, rm, data->op));
 	NEXT_OP(data);
     return TRUE;
 }
@@ -257,6 +508,7 @@ BOOL decode262(struct DecodeData* data) {
 		data->op->r1 = G(rm);
 		decodeEa32(data, rm);
 	}
+	LOG_OP2("BOUND", RD(data->op->r1), M32(data, rm, data->op));
 	NEXT_OP(data);
     return TRUE;
 }
@@ -304,6 +556,18 @@ BOOL decode080(struct DecodeData* data) {
 	case 7: DECODE_E(cmp8_reg, cmp8_mem16, cmp8_mem32); break;
 	}			
 	data->op->data1 = FETCH8(data);			
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E8C("ADD", rm, data); break;
+	case 1: LOG_E8C("OR", rm, data); break;
+	case 2: LOG_E8C("ADC", rm, data); break;
+	case 3: LOG_E8C("SBB", rm, data); break;
+	case 4: LOG_E8C("AND", rm, data); break;
+	case 5: LOG_E8C("SUB", rm, data); break;
+	case 6: LOG_E8C("XOR", rm, data); break;
+	case 7: LOG_E8C("CMP", rm, data); break;
+	}
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -322,6 +586,18 @@ BOOL decode081(struct DecodeData* data) {
 	case 7: DECODE_E(cmp16_reg, cmp16_mem16, cmp16_mem32); break;
 	}			
 	data->op->data1 = FETCH16(data);			
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E16C("ADD", rm, data); break;
+	case 1: LOG_E16C("OR", rm, data); break;
+	case 2: LOG_E16C("ADC", rm, data); break;
+	case 3: LOG_E16C("SBB", rm, data); break;
+	case 4: LOG_E16C("AND", rm, data); break;
+	case 5: LOG_E16C("SUB", rm, data); break;
+	case 6: LOG_E16C("XOR", rm, data); break;
+	case 7: LOG_E16C("CMP", rm, data); break;
+	}
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -340,6 +616,18 @@ BOOL decode281(struct DecodeData* data) {
 	case 7: DECODE_E(cmp32_reg, cmp32_mem16, cmp32_mem32); break;
 	}			
 	data->op->data1 = FETCH32(data);			
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E32C("ADD", rm, data); break;
+	case 1: LOG_E32C("OR", rm, data); break;
+	case 2: LOG_E32C("ADC", rm, data); break;
+	case 3: LOG_E32C("SBB", rm, data); break;
+	case 4: LOG_E32C("AND", rm, data); break;
+	case 5: LOG_E32C("SUB", rm, data); break;
+	case 6: LOG_E32C("XOR", rm, data); break;
+	case 7: LOG_E32C("CMP", rm, data); break;
+	}
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -359,6 +647,18 @@ BOOL decode083(struct DecodeData* data) {
 	}			
 	data->op->data1 = FETCH_S8(data);			
 	data->op->data1 &= 0xFFFF;
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E16C("ADD", rm, data); break;
+	case 1: LOG_E16C("OR", rm, data); break;
+	case 2: LOG_E16C("ADC", rm, data); break;
+	case 3: LOG_E16C("SBB", rm, data); break;
+	case 4: LOG_E16C("AND", rm, data); break;
+	case 5: LOG_E16C("SUB", rm, data); break;
+	case 6: LOG_E16C("XOR", rm, data); break;
+	case 7: LOG_E16C("CMP", rm, data); break;
+	}
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -377,6 +677,18 @@ BOOL decode283(struct DecodeData* data) {
 	case 7: DECODE_E(cmp32_reg, cmp32_mem16, cmp32_mem32); break;
 	}			
 	data->op->data1 = FETCH_S8(data);			
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E32C("ADD", rm, data); break;
+	case 1: LOG_E32C("OR", rm, data); break;
+	case 2: LOG_E32C("ADC", rm, data); break;
+	case 3: LOG_E32C("SBB", rm, data); break;
+	case 4: LOG_E32C("AND", rm, data); break;
+	case 5: LOG_E32C("SUB", rm, data); break;
+	case 6: LOG_E32C("XOR", rm, data); break;
+	case 7: LOG_E32C("CMP", rm, data); break;
+	}
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -388,34 +700,40 @@ BOOL decode08c(struct DecodeData* data) {
 		data->op->func = movr16s16;
 		data->op->r1 = E(rm);
 		data->op->r2 = G(rm);
+		LOG_OP2("MOV", RW(data->op->r1), EABASE(data->op->r2));
 	} else if (data->ea16) {
 		data->op->func = move16s16_16;
 		data->op->r1 = G(rm);
 		decodeEa16(data, rm);
+		LOG_OP2("MOV", M16(data, rm, data->op), EABASE(data->op->r2));
 	} else {
 		data->op->func = move16s16_32;
 		data->op->r1 = G(rm);
 		decodeEa32(data, rm);
+		LOG_OP2("MOV", M16(data, rm, data->op), EABASE(data->op->r2));
 	}
 	NEXT_OP(data);
 	return TRUE;
 }
 
-// Mov Ew,Sw
+// Mov Ed,Sw
 BOOL decode28c(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		data->op->func = movr32s16;
 		data->op->r1 = E(rm);
 		data->op->r2 = G(rm);
+		LOG_OP2("MOV", RD(data->op->r1), EABASE(data->op->r2));
 	} else if (data->ea16) {
 		data->op->func = move16s16_16;
 		data->op->r1 = G(rm);
 		decodeEa16(data, rm);
+		LOG_OP2("MOV", M16(data, rm, data->op), EABASE(data->op->r2));
 	} else {
 		data->op->func = move16s16_32;
 		data->op->r1 = G(rm);
 		decodeEa32(data, rm);
+		LOG_OP2("MOV", M16(data, rm, data->op), EABASE(data->op->r2));
 	}
 	NEXT_OP(data);
 	return TRUE;
@@ -423,17 +741,18 @@ BOOL decode28c(struct DecodeData* data) {
 
 // LEA Gw
 BOOL decode08d(struct DecodeData* data) {
-	U8 rm = FETCH8(data);
+	U8 rm = FETCH8(data);	
 	if (data->ea16) {
 		data->op->func =lear16_16;
 		data->op->r1 = G(rm);
-		decodeEa16(data, rm);
+		decodeEa16(data, rm);		
 	} else {
 		data->op->func = lear16_32;
 		data->op->r1 = G(rm);
 		decodeEa32(data, rm);
-	}
+	}	
 	data->op->base = SEG_ZERO;
+	LOG_OP2("LEA", RW(data->op->r1), M16(data, rm, data->op));
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -451,6 +770,7 @@ BOOL decode28d(struct DecodeData* data) {
 		decodeEa32(data, rm);
 	}
 	data->op->base = SEG_ZERO;
+	LOG_OP2("LEA", RD(data->op->r1), M32(data, rm, data->op));
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -462,14 +782,17 @@ BOOL decode08e(struct DecodeData* data) {
 		data->op->func = movs16r16;
 		data->op->r1 = E(rm);
 		data->op->r2 = G(rm);
+		LOG_OP2("MOV", EABASE(data->op->r2), RW(data->op->r1));
 	} else if (data->ea16) {
 		data->op->func = movs16e16_16;
 		data->op->r1 = G(rm);
 		decodeEa16(data, rm);
+		LOG_OP2("MOV", EABASE(data->op->r2), M16(data, rm, data->op));
 	} else {
 		data->op->func = movs16e16_32;
 		data->op->r1 = G(rm);
 		decodeEa32(data, rm);
+		LOG_OP2("MOV", EABASE(data->op->r2), M16(data, rm, data->op));
 	}
 	NEXT_OP(data);
 	return TRUE;
@@ -480,21 +803,23 @@ BOOL decode08f(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		switch (E(rm)) {
-		case 0: data->op->func = popAx; break;
-		case 1: data->op->func = popCx; break;
-		case 2: data->op->func = popDx; break;
-		case 3: data->op->func = popBx; break;
-		case 4: data->op->func = popSp; break;
-		case 5: data->op->func = popBp; break;
-		case 6: data->op->func = popSi; break;
-		case 7: data->op->func = popDi; break;
-		}
+		case 0: data->op->func = popAx; LOG_OP("POP AX"); break;
+		case 1: data->op->func = popCx; LOG_OP("POP CX"); break;
+		case 2: data->op->func = popDx; LOG_OP("POP DX"); break;
+		case 3: data->op->func = popBx; LOG_OP("POP BX"); break;
+		case 4: data->op->func = popSp; LOG_OP("POP SP"); break;
+		case 5: data->op->func = popBp; LOG_OP("POP BP"); break;
+		case 6: data->op->func = popSi; LOG_OP("POP SI"); break;
+		case 7: data->op->func = popDi; LOG_OP("POP DI"); break;
+		}		
 	} else if (data->ea16) {
 		data->op->func = pope16_16;
 		decodeEa16(data, rm);
+		LOG_OP1("POP", M16(data, rm, data->op));
 	} else {
 		data->op->func = pope16_32;
 		decodeEa32(data, rm);
+		LOG_OP1("POP", M16(data, rm, data->op));
 	}
 	NEXT_OP(data);
 	return TRUE;
@@ -505,21 +830,23 @@ BOOL decode28f(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		switch (E(rm)) {
-		case 0: data->op->func = popEax; break;
-		case 1: data->op->func = popEcx; break;
-		case 2: data->op->func = popEdx; break;
-		case 3: data->op->func = popEbx; break;
-		case 4: data->op->func = popEsp; break;
-		case 5: data->op->func = popEbp; break;
-		case 6: data->op->func = popEsi; break;
-		case 7: data->op->func = popEdi; break;
+		case 0: data->op->func = popEax; LOG_OP("POP EAX"); break;
+		case 1: data->op->func = popEcx; LOG_OP("POP ECX"); break;
+		case 2: data->op->func = popEdx; LOG_OP("POP EDX"); break;
+		case 3: data->op->func = popEbx; LOG_OP("POP EBX"); break;
+		case 4: data->op->func = popEsp; LOG_OP("POP ESP"); break;
+		case 5: data->op->func = popEbp; LOG_OP("POP EBP"); break;
+		case 6: data->op->func = popEsi; LOG_OP("POP ESI"); break;
+		case 7: data->op->func = popEdi; LOG_OP("POP EDI"); break;
 		}
 	} else if (data->ea16) {
 		data->op->func = pope32_16;
 		decodeEa16(data, rm);
+		LOG_OP1("POP", M32(data, rm, data->op));
 	} else {
 		data->op->func = pope32_32;
 		decodeEa32(data, rm);
+		LOG_OP1("POP", M32(data, rm, data->op));
 	}
 	NEXT_OP(data);
 	return TRUE;
@@ -528,6 +855,7 @@ BOOL decode28f(struct DecodeData* data) {
 // NOP
 BOOL decode090(struct DecodeData* data) {
 	data->op->func = nop;
+	LOG_OP("NOP");
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -535,6 +863,7 @@ BOOL decode090(struct DecodeData* data) {
 // Wait
 BOOL decode09b(struct DecodeData* data) {
 	data->op->func = nop;
+	LOG_OP("WAIT");
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -557,6 +886,18 @@ BOOL decode0c0(struct DecodeData* data) {
 		RESTART(data);	
 		return TRUE;
 	}
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E8C("ROL", rm, data); break;
+	case 1: LOG_E8C("ROR", rm, data); break;
+	case 2: LOG_E8C("RCL", rm, data); break;
+	case 3: LOG_E8C("RCR", rm, data); break;	
+	case 4: LOG_E8C("SHL", rm, data); break;
+	case 5: LOG_E8C("SHR", rm, data); break;
+	case 6: LOG_E8C("SAL", rm, data); break;
+	case 7: LOG_E8C("SAR", rm, data); break;
+	}	
+#endif
 	switch (G(rm)) {
 		case 0: data->op->data1 &= 0x7; break;
 		case 1: data->op->data1 &= 0x7; break;
@@ -586,6 +927,18 @@ BOOL decode0c1(struct DecodeData* data) {
 		RESTART(data);	
 		return TRUE;
 	}
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E16C("ROL", rm, data); break;
+	case 1: LOG_E16C("ROR", rm, data); break;
+	case 2: LOG_E16C("RCL", rm, data); break;
+	case 3: LOG_E16C("RCR", rm, data); break;	
+	case 4: LOG_E16C("SHL", rm, data); break;
+	case 5: LOG_E16C("SHR", rm, data); break;
+	case 6: LOG_E16C("SAL", rm, data); break;
+	case 7: LOG_E16C("SAR", rm, data); break;
+	}	
+#endif
 	switch (G(rm)) {
 		case 0: data->op->data1 &= 0xf; break;
 		case 1: data->op->data1 &= 0xf; break;
@@ -615,6 +968,18 @@ BOOL decode2c1(struct DecodeData* data) {
 		RESTART(data);	
 		return TRUE;
 	}
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E32C("ROL", rm, data); break;
+	case 1: LOG_E32C("ROR", rm, data); break;
+	case 2: LOG_E32C("RCL", rm, data); break;
+	case 3: LOG_E32C("RCR", rm, data); break;	
+	case 4: LOG_E32C("SHL", rm, data); break;
+	case 5: LOG_E32C("SHR", rm, data); break;
+	case 6: LOG_E32C("SAL", rm, data); break;
+	case 7: LOG_E32C("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -624,6 +989,7 @@ BOOL decode0cd(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm==0x80) {
 		data->op->func = syscall;
+		LOG_OP("INT 80");
 		FINISH_OP(data);		
 	} else {
 		kpanic("Unhandled interrupt %d", rm);
@@ -645,6 +1011,18 @@ BOOL decode0d0(struct DecodeData* data) {
 	case 7: DECODE_E(sar8_reg, sar8_mem16, sar8_mem32); break;
 	}			
 	data->op->data1 = 1;
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E8C("ROL", rm, data); break;
+	case 1: LOG_E8C("ROR", rm, data); break;
+	case 2: LOG_E8C("RCL", rm, data); break;
+	case 3: LOG_E8C("RCR", rm, data); break;	
+	case 4: LOG_E8C("SHL", rm, data); break;
+	case 5: LOG_E8C("SHR", rm, data); break;
+	case 6: LOG_E8C("SAL", rm, data); break;
+	case 7: LOG_E8C("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -663,6 +1041,18 @@ BOOL decode0d1(struct DecodeData* data) {
 	case 7: DECODE_E(sar16_reg, sar16_mem16, sar16_mem32); break;
 	}			
 	data->op->data1 = 1;
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E16C("ROL", rm, data); break;
+	case 1: LOG_E16C("ROR", rm, data); break;
+	case 2: LOG_E16C("RCL", rm, data); break;
+	case 3: LOG_E16C("RCR", rm, data); break;	
+	case 4: LOG_E16C("SHL", rm, data); break;
+	case 5: LOG_E16C("SHR", rm, data); break;
+	case 6: LOG_E16C("SAL", rm, data); break;
+	case 7: LOG_E16C("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -681,6 +1071,18 @@ BOOL decode2d1(struct DecodeData* data) {
 	case 7: DECODE_E(sar32_reg, sar32_mem32, sar32_mem32); break;
 	}			
 	data->op->data1 = 1;
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E32C("ROL", rm, data); break;
+	case 1: LOG_E32C("ROR", rm, data); break;
+	case 2: LOG_E32C("RCL", rm, data); break;
+	case 3: LOG_E32C("RCR", rm, data); break;	
+	case 4: LOG_E32C("SHL", rm, data); break;
+	case 5: LOG_E32C("SHR", rm, data); break;
+	case 6: LOG_E32C("SAL", rm, data); break;
+	case 7: LOG_E32C("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -697,7 +1099,19 @@ BOOL decode0d2(struct DecodeData* data) {
 	case 4: DECODE_E(shl8cl_reg, shl8cl_mem16, shl8cl_mem32); break;
 	case 5: DECODE_E(shr8cl_reg, shr8cl_mem16, shr8cl_mem32); break;
 	case 7: DECODE_E(sar8cl_reg, sar8cl_mem16, sar8cl_mem32); break;
-	}			
+	}	
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E8Cl("ROL", rm, data); break;
+	case 1: LOG_E8Cl("ROR", rm, data); break;
+	case 2: LOG_E8Cl("RCL", rm, data); break;
+	case 3: LOG_E8Cl("RCR", rm, data); break;	
+	case 4: LOG_E8Cl("SHL", rm, data); break;
+	case 5: LOG_E8Cl("SHR", rm, data); break;
+	case 6: LOG_E8Cl("SAL", rm, data); break;
+	case 7: LOG_E8Cl("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -715,6 +1129,18 @@ BOOL decode0d3(struct DecodeData* data) {
 	case 5: DECODE_E(shr16cl_reg, shr16cl_mem16, shr16cl_mem32); break;
 	case 7: DECODE_E(sar16cl_reg, sar16cl_mem16, sar16cl_mem32); break;
 	}			
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E16Cl("ROL", rm, data); break;
+	case 1: LOG_E16Cl("ROR", rm, data); break;
+	case 2: LOG_E16Cl("RCL", rm, data); break;
+	case 3: LOG_E16Cl("RCR", rm, data); break;	
+	case 4: LOG_E16Cl("SHL", rm, data); break;
+	case 5: LOG_E16Cl("SHR", rm, data); break;
+	case 6: LOG_E16Cl("SAL", rm, data); break;
+	case 7: LOG_E16Cl("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -732,6 +1158,18 @@ BOOL decode2d3(struct DecodeData* data) {
 	case 5: DECODE_E(shr32cl_reg, shr32cl_mem32, shr32cl_mem32); break;
 	case 7: DECODE_E(sar32cl_reg, sar32cl_mem32, sar32cl_mem32); break;
 	}			
+#ifdef LOG_OPS
+	switch (G(rm)) {
+	case 0: LOG_E32Cl("ROL", rm, data); break;
+	case 1: LOG_E32Cl("ROR", rm, data); break;
+	case 2: LOG_E32Cl("RCL", rm, data); break;
+	case 3: LOG_E32Cl("RCR", rm, data); break;	
+	case 4: LOG_E32Cl("SHL", rm, data); break;
+	case 5: LOG_E32Cl("SHR", rm, data); break;
+	case 6: LOG_E32Cl("SAL", rm, data); break;
+	case 7: LOG_E32Cl("SAR", rm, data); break;
+	}	
+#endif
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -742,7 +1180,8 @@ BOOL decode0d7(struct DecodeData* data) {
 		data->op->func = xlat16;
 	else
 		data->op->func = xlat32;
-	data->op->base = data->ds;			
+	data->op->base = data->ds;
+	LOG_OP("XLAT");
 	NEXT_OP(data);
 	return TRUE;
 }
@@ -1176,6 +1615,7 @@ BOOL decode0e0(struct DecodeData* data) {
 	else
 		data->op->func = loopnz32;
 	data->op->data1 = FETCH_S8(data);
+	LOG_OP1("LOOPNZ", itoa(data->op->data1, tmp, 16));
 	FINISH_OP(data);
 	return FALSE;
 }
@@ -1187,6 +1627,7 @@ BOOL decode0e1(struct DecodeData* data) {
 	else
 		data->op->func = loopz32;
 	data->op->data1 = FETCH_S8(data);
+	LOG_OP1("LOOPZ", itoa(data->op->data1, tmp, 16));
 	FINISH_OP(data);
 	return FALSE;
 }
@@ -1198,6 +1639,7 @@ BOOL decode0e2(struct DecodeData* data) {
 	else
 		data->op->func = loop32;
 	data->op->data1 = FETCH_S8(data);
+	LOG_OP1("LOOP", itoa(data->op->data1, tmp, 10));
 	FINISH_OP(data);
 	return FALSE;
 }
@@ -1209,6 +1651,7 @@ BOOL decode0e3(struct DecodeData* data) {
 	else
 		data->op->func = jcxz32;
 	data->op->data1 = FETCH_S8(data);
+	LOG_OP1("JCXZ", itoa(data->op->data1, tmp, 10));
 	FINISH_OP(data);
 	return FALSE;
 }
@@ -1244,9 +1687,11 @@ BOOL decode0fe(struct DecodeData* data) {
     switch ((rm>>3)&7) {
         case 0x00:										// INC Eb 
 			DECODE_E(inc8_reg, inc8_mem16, inc8_mem32);
+			LOG_E8("INC", rm, data);
             break;
         case 0x01:										// DEC Eb 
 			DECODE_E(dec8_reg, dec8_mem16, dec8_mem32);
+			LOG_E8("DEC", rm, data);
             break;
         default:
             kpanic("Illegal GRP4 Call %d, ",((rm>>3) & 7));
@@ -1262,12 +1707,15 @@ BOOL decode0ff(struct DecodeData* data) {
 	switch ((rm>>3)&7) {
         case 0x00:										// INC Ew 
 			DECODE_E(inc16_reg, inc16_mem16, inc16_mem32);
+			LOG_E16("INC", rm, data);
             break;
         case 0x01:										// DEC Ew 
 			DECODE_E(dec16_reg, dec16_mem16, dec16_mem32);
+			LOG_E16("DEC", rm, data);
             break;
         case 0x02:										// CALL Ev 
 			DECODE_E(callEv16_reg, callEv16_mem16, callEv16_mem32);
+			LOG_E16("CALL", rm, data);
 			FINISH_OP(data);
 			return FALSE;
         case 0x03:										// CALL Ep 
@@ -1275,6 +1723,7 @@ BOOL decode0ff(struct DecodeData* data) {
             break;
         case 0x04:										// JMP Ev 
 			DECODE_E(jmpEv16_reg, jmpEv16_mem16, jmpEv16_mem32);
+			LOG_E16("JMP", rm, data);
 			FINISH_OP(data);
 			return FALSE;
         case 0x05:										// JMP Ep 
@@ -1282,6 +1731,7 @@ BOOL decode0ff(struct DecodeData* data) {
             break;
         case 0x06:										// PUSH Ev 
 			DECODE_E(pushEv16_reg, pushEv16_mem16, pushEv16_mem32);
+			LOG_E16("PUSH", rm, data);
 			break;
         default:
             kpanic("CPU:GRP5:Illegal Call %d", (rm>>3)&7);
@@ -1297,12 +1747,15 @@ BOOL decode2ff(struct DecodeData* data) {
 	switch ((rm>>3)&7) {
         case 0x00:											// INC Ed 
 			DECODE_E(inc32_reg, inc32_mem16, inc32_mem32);
+			LOG_E32("INC", rm, data);
 			break;
         case 0x01:											// DEC Ed 
 			DECODE_E(dec32_reg, dec32_mem16, dec32_mem32);
+			LOG_E32("DEC", rm, data);
             break;
         case 0x02:											// CALL NEAR Ed 
 			DECODE_E(callNear32_reg, callNear32_mem16, callNear32_mem32);
+			LOG_E32("CALL", rm, data);
 			FINISH_OP(data);
 			return FALSE;
         case 0x03:											// CALL FAR Ed 
@@ -1310,6 +1763,7 @@ BOOL decode2ff(struct DecodeData* data) {
             break;
         case 0x04:											// JMP NEAR Ed 
 			DECODE_E(jmpNear32_reg, jmpNear32_mem16, jmpNear32_mem32);
+			LOG_E32("JMP", rm, data);
 			FINISH_OP(data);
 			return FALSE;
         case 0x05:											// JMP FAR Ed 
@@ -1317,6 +1771,7 @@ BOOL decode2ff(struct DecodeData* data) {
             break;
         case 0x06:											// Push Ed 
 			DECODE_E(pushEd_reg, pushEd_mem16, pushEd_mem32);
+			LOG_E32("PUSH", rm, data);
 			break;
         default:
             kpanic("CPU:66:GRP5:Illegal call %d", (rm>>3)&7);
