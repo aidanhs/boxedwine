@@ -38,6 +38,7 @@ U32 pf_readd(struct Memory* memory, U32 address, U32 data);
 void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value);
 
 void initMemory(struct Memory* memory);
+void cloneMemory(struct Memory* memory, struct Memory* from);
 void destroyMemory(struct Memory* memory);
 void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
 char* getNativeString(struct Memory* memory, U32 address);
@@ -49,6 +50,7 @@ void writeNativeString(struct Memory* memory, U32 address, const char* str);
 #define PAGE_EXEC 0x04
 #define PAGE_RESERVED 0xFFFFFFFF
 
+#define GET_PAGE_PERMISSIONS(data) (data & 0xFF000000)
 #define IS_PAGE_READ(data) (data & 0x01000000)
 #define IS_PAGE_WRITE(data) (data & 0x02000000)
 #define IS_PAGE_EXEC(data) (data & 0x04000000)

@@ -1,11 +1,17 @@
 #include "memory.h"
 #include "log.h"
 #include "ram.h"
+#include "kscheduler.h"
+#include "kprocess.h"
+
 #include <string.h>
 
 void pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;
+	struct CPU* cpu = &lastThread->cpu;
+
+	printf("%.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X %s at %.8X\n", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, getModuleName(cpu), getModuleEip(cpu));
 
 	kwarn("Page Fault at %.8X", address);
 	kwarn("Valid address ranges:");
@@ -110,6 +116,22 @@ void initMemory(struct Memory* memory) {
 		memory->mmu[i] = &invalidPage;
 	}
 	memset(memory->data, 0, sizeof(memory->data));
+}
+
+void cloneMemory(struct Memory* memory, struct Memory* from) {
+	int i=0;
+
+	memcpy(memory, from, sizeof(struct Memory));
+	for (i=0;i<0x100000;i++) {
+		struct Page* page = memory->mmu[i];
+		if (page == &ramPageRO || page == &ramPageWR || page == &ramPageWO) {
+			memory->mmu[i] = &ramCopyOnWritePage;
+			from->mmu[i] = &ramCopyOnWritePage;
+			incrementRamRef(GET_PAGE(memory->data[i]));
+		} else if (page == &ramCopyOnWritePage) {
+			incrementRamRef(GET_PAGE(memory->data[i]));
+		}
+	}
 }
 
 void destroyMemory(struct Memory* memory) {

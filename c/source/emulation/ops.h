@@ -863,6 +863,24 @@ void movsx8r32e32_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
+void movsx16r32r32(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S16)cpu->reg[op->r2].u16;
+	CYCLES(3);
+	NEXT();
+}
+
+void movsx16r32e32_16(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S16)readw(cpu->memory, eaa16(cpu, op));
+	CYCLES(3);
+	NEXT();
+}
+
+void movsx16r32e32_32(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S16)readw(cpu->memory, eaa32(cpu, op));
+	CYCLES(3);
+	NEXT();
+}
+
 void movxz16r32r32(struct CPU* cpu, struct Op* op) {
 	cpu->reg[op->r1].u32 = cpu->reg[op->r2].u16;
 	CYCLES(3);

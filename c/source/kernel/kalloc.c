@@ -9,6 +9,7 @@ static U32 freeLen;
 void* kalloc(U32 len) {
 	void* result;
 
+	len=(len+3) & ~3;
 	if (len>PAGE_SIZE) {
 		kpanic("Tried to allocate more than 4k in the kernel");
 	}

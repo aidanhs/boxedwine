@@ -5,7 +5,7 @@
 
 static struct KObject* freeKObjects;
 
-struct KObject* allocKObject(struct KObjectAccess* access, void* data) {
+struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data) {
 	struct KObject* result;
 
 	if (freeKObjects) {
@@ -15,8 +15,9 @@ struct KObject* allocKObject(struct KObjectAccess* access, void* data) {
 		result = (struct KObject*)kalloc(sizeof(struct KObject));
 	}
 	result->access = access;
-	result->refCount = 0;
+	result->refCount = 1;
 	result->data = data;
+	result->type = type;
 	return result;
 }
 

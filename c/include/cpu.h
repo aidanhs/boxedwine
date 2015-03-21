@@ -123,6 +123,7 @@ void push16(struct CPU* cpu, U16 value);
 void push32(struct CPU* cpu, U32 value);
 U16 pop16(struct CPU* cpu);
 U32 pop32(struct CPU* cpu);
+U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
 void initCPU(struct CPU* cpu, struct Memory* memory);
 void runBlock(struct CPU* cpu, struct Op* block);

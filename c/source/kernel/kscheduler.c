@@ -58,15 +58,20 @@ void unscheduleThread(struct KThread* thread) {
 	thread->scheduleNext->schedulePrev = thread->schedulePrev;
 }
 
-U64 contextTime = 10000;
+U64 contextTime = 100000;
 
-void runSlice() {
+void runThreadSlice(struct KThread* thread) {
 	struct CPU* cpu;
 
-	lastThread = lastThread->scheduleNext;
-	cpu = &lastThread->cpu;
+	cpu = &thread->cpu;
+	cpu->blockCounter = 0;
 	do {
 		runCPU(cpu);
 	} while (cpu->blockCounter < contextTime);
 	cpu->timeStampCounter+=cpu->blockCounter;
+}
+
+void runSlice() {
+	lastThread = lastThread->scheduleNext;
+	runThreadSlice(lastThread);
 }

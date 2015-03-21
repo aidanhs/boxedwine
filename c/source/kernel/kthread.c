@@ -5,12 +5,13 @@
 #include "ram.h"
 #include "ksystem.h"
 #include "kerror.h"
+#include "ksignal.h"
 
-U32 numberOfThreads;
+#include <string.h>
 
 void setupStack(struct KThread* thread) {
 	U32 page = 0;
-	U32 pageCount = (1024*1024) >> PAGE_SHIFT; // 1MB for max stack
+	U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
 	if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount+2, &page))
 		kpanic("Failed to allocate stack for thread");
 	allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount, PAGE_READ|PAGE_WRITE, 0);
@@ -25,10 +26,25 @@ void setupStack(struct KThread* thread) {
 }
 
 void initThread(struct KThread* thread, struct KProcess* process) {
+	memset(thread, 0, sizeof(struct KThread));
 	initCPU(&thread->cpu, process->memory);
 	thread->process = process;
+	process->threadCount++;
+	thread->id = addThread(thread);
 	setupStack(thread);
-	numberOfThreads++;
+}
+
+void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process) {
+	memset(thread, 0, sizeof(struct KThread));
+	memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
+	thread->cpu.thread = thread;
+	thread->cpu.memory = process->memory;
+	thread->cpu.blockCounter = 0;
+	thread->process = process;
+	thread->stackPageStart = from->stackPageStart;
+	thread->stackPageCount = from->stackPageCount;
+	thread->id = addThread(thread);
+	process->threadCount++;
 }
 
 void exitThread(struct KThread* thread, U32 status) {
@@ -38,8 +54,8 @@ void exitThread(struct KThread* thread, U32 status) {
 	}
 	unscheduleThread(thread);	
 	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
-	processOnExitThread(thread);
-	numberOfThreads--;
+	thread->process->threadCount--;
+	processOnExitThread(thread);	
 }
 
 
@@ -119,7 +135,7 @@ U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pT
         }
 		allocFutex(thread, address, millies);
         return -K_WAIT;
-    } else if (op==FUTEX_WAKE_PRIVATE || FUTEX_WAKE==1) {
+    } else if (op==FUTEX_WAKE_PRIVATE || op==FUTEX_WAKE) {
 		int i;
 		U32 count = 0;
 		for (i=0;i<MAX_FUTEXES && count<=value;i++) {
@@ -134,4 +150,39 @@ U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pT
         kwarn("syscall __NR_futex op %d not implemented", op);
         return -1;
     }
+}
+
+void runSignals(struct KThread* thread) {
+    U32 todo = thread->process->pendingSignals & ~thread->sigMask;
+	if (thread->stackBeforeSignal) {
+		thread->cpu.reg[4].u32 = thread->stackBeforeSignal;
+		thread->stackBeforeSignal = 0;
+	}
+    if (todo!=0) {
+		U32 i;
+
+        for (i=0;i<32;i++) {
+            if ((todo & (1 << i))!=0) {
+                runSignal(thread, i+1);
+				return;
+            }
+        }
+    }
+}
+
+void runSignal(struct KThread* thread, U32 signal) {
+	struct KSigAction* action = &thread->process->sigActions[signal];
+
+    if (action->sa_handler==K_SIG_DFL) {
+
+    } else if (action->sa_handler != K_SIG_IGN) {
+        thread->stackBeforeSignal = thread->cpu.reg[4].u32;
+        if (thread->alternateStack!=0) {
+            thread->cpu.reg[4].u32 = thread->alternateStack;
+        }
+		push32(&thread->cpu, signal);
+		push32(&thread->cpu, thread->cpu.eip.u32);
+        thread->cpu.eip.u32 = action->sa_handler;
+    }
+    thread->process->pendingSignals &= ~(1l << (signal - 1));
 }

@@ -5,6 +5,7 @@
 #include "kobject.h"
 #include "kobjectaccess.h"
 #include "kfiledescriptor.h"
+#include <string.h>
 
 // :TODO: what about sync'ing the writes back to the file?
 
@@ -27,14 +28,15 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
 	else
 		memory->mmu[page] = &ramPageRO;
 
-	memory->data[page] = ram;
+	memory->data[page] = ram | GET_PAGE_PERMISSIONS(data);
 
 	oldPos = fd->kobject->access->getPos(fd->kobject);
 	fd->kobject->access->seek(fd->kobject, offset);
 	len = fd->kobject->access->read(fd->kobject, memory, address, PAGE_SIZE);
 	fd->kobject->access->seek(fd->kobject, oldPos);
 	if (len<PAGE_SIZE) {
-		zeroMemory(memory, address+len, PAGE_SIZE-len);
+		// don't call zeroMemory because it might be read only
+		memset(getAddressOfRamPage(ram)+len, 0, PAGE_SIZE-len);
 	}
 	closeFD(fd);
 }

@@ -17,10 +17,18 @@
 
 // can change after open
 #define K_O_NONBLOCK 0x0800
+#define K_O_ASYNC 0x2000
 #define K_O_CLOEXEC 0x80000
+
+// type of lock
+#define K_F_RDLCK	   0
+#define K_F_WRLCK	   1
+#define K_F_UNLCK	   2
 
 struct NodeType {
 	BOOL (*isDirectory)(struct Node* node);
+	BOOL (*exists)(struct Node* node);
+	U32 (*rename)(struct Node* oldNode, struct Node* newNode);
 	struct Node* (*list)(struct Node* node);
 	BOOL (*remove)(struct Node* node);
 	U64 (*lastModified)(struct Node* node);

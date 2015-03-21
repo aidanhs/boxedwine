@@ -16,5 +16,10 @@ U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length);
 U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer);
 U32 syscall_ioctl(struct KThread* thread, FD fildes, U32 request);
 U32 syscall_dup2(struct KThread* thread, FD fildes, FD fildes2);
+U32 syscall_dup(struct KThread* thread, FD fildes);
+U32 syscall_unlink(struct KThread* thread, U32 path);
+U32 syscall_fchmod(struct KThread* thread, FD fd, U32 mod);
+U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName);
+U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer);
 
 #endif

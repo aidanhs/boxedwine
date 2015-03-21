@@ -218,6 +218,18 @@ const char* M16(struct DecodeData* data, int rm, struct Op* op) {
 	return tmp;
 }
 
+const char* O16(struct Op* op) {
+	strcpy(tmp, "WORD PTR [");
+	if (op->base != SEG_ZERO) {
+		strcat(tmp, EABASE(op->base));
+		strcat(tmp, ":");
+	}
+
+	sprintf(tmp+strlen(tmp), "+%X", op->data1); 
+	strcat(tmp, "]");
+	return tmp;
+}
+
 const char* M8(struct DecodeData* data, int rm, struct Op* op) {
 	strcpy(tmp, "BYTE PTR [");
 	if (op->base != SEG_ZERO) {
@@ -234,6 +246,18 @@ const char* M8(struct DecodeData* data, int rm, struct Op* op) {
 	return tmp;
 }
 
+const char* O8(struct Op* op) {
+	strcpy(tmp, "BYTE PTR [");
+	if (op->base != SEG_ZERO) {
+		strcat(tmp, EABASE(op->base));
+		strcat(tmp, ":");
+	}
+
+	sprintf(tmp+strlen(tmp), "+%X", op->data1); 
+	strcat(tmp, "]");
+	return tmp;
+}
+
 const char* M32(struct DecodeData* data, int rm, struct Op* op) {
 	strcpy(tmp, "DWORD PTR [");
 	if (op->base != SEG_ZERO) {
@@ -246,6 +270,18 @@ const char* M32(struct DecodeData* data, int rm, struct Op* op) {
 	} else {
 		EAA32(tmp, rm, op);
 	}
+	strcat(tmp, "]");
+	return tmp;
+}
+
+const char* O32(struct Op* op) {
+	strcpy(tmp, "DWORD PTR [");
+	if (op->base != SEG_ZERO) {
+		strcat(tmp, EABASE(op->base));
+		strcat(tmp, ":");
+	}
+
+	sprintf(tmp+strlen(tmp), "+%X", op->data1); 
 	strcat(tmp, "]");
 	return tmp;
 }
@@ -1934,7 +1970,7 @@ DECODER decoder[1024] = {
 	invalidOp, decode3a9, invalidOp, decode3ab, decode3ac, decode3ad, invalidOp, decode3af,
 	// 3b0
 	invalidOp, decode3b1, invalidOp, invalidOp, invalidOp, invalidOp, decode3b6, decode3b7,
-	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3bd, decode3be, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3bd, decode3be, decode3bf,
 	// 3c0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

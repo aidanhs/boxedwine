@@ -66,12 +66,12 @@ public class Main {
         out("        data->op->func = "+name+"e"+bits+"r"+bits+"_16;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa16(data, rm);");
-        out("        LOG_OP2(\""+name.toUpperCase()+"\", M"+bits+"(data, rm, data->op),R"+bits+"(data->op->r2));");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", M"+bits+"(data, rm, data->op),R"+bits+"(data->op->r1));");
         out("    } else {");
         out("        data->op->func = "+name+"e"+bits+"r"+bits+"_32;");
         out("        data->op->r1 = G(rm);");
         out("        decodeEa32(data, rm);");
-        out("        LOG_OP2(\""+name.toUpperCase()+"\", M"+bits+"(data, rm, data->op),R"+bits+"(data->op->r2));");
+        out("        LOG_OP2(\""+name.toUpperCase()+"\", M"+bits+"(data, rm, data->op),R"+bits+"(data->op->r1));");
         out("    }");
         if (extra!=null)
             out(extra);
@@ -230,7 +230,7 @@ public class Main {
         out("}");
     }
 
-    static public void decodeFuncEAdata(String comment, String base, String func) throws IOException {
+    static public void decodeFuncEAdata(String comment, String base, String func, String log) throws IOException {
         out("// "+comment);
         out("BOOL decode"+base+"(struct DecodeData* data) {");
         out("    data->op->func = "+func+";");
@@ -240,6 +240,7 @@ public class Main {
         out("        data->op->data1 = FETCH32(data);");
         out("    }");
         out("    data->op->base = data->ds;");
+        out("    "+log);
         out("    NEXT_OP(data);");
         out("    return TRUE;");
         out("}");
@@ -569,12 +570,12 @@ public class Main {
         decodeFunc("29d", "popf32", "POPF");
         decodeFunc("09e", "sahf", "SAHF");
         decodeFunc("09f", "lahf", "LAHF");
-        decodeFuncEAdata("MOV AL,Ob", "0a0", "movAl");
-        decodeFuncEAdata("MOV AX,Ow", "0a1", "movAx");
-        decodeFuncEAdata("MOV EAX,Od", "2a1", "movEax");
-        decodeFuncEAdata("MOV Ob,Al", "0a2", "movDirectAl");
-        decodeFuncEAdata("MOV Ow,Ax", "0a3", "movDirectAx");
-        decodeFuncEAdata("MOV Od,Eax", "2a3", "movDirectEax");
+        decodeFuncEAdata("MOV AL,Ob", "0a0", "movAl", "LOG_OP2(\"MOV\", \"AL\", O8(data->op));");
+        decodeFuncEAdata("MOV AX,Ow", "0a1", "movAx", "LOG_OP2(\"MOV\", \"AX\", O16(data->op));");
+        decodeFuncEAdata("MOV EAX,Od", "2a1", "movEax", "LOG_OP2(\"MOV\", \"EAX\", O32(data->op));");
+        decodeFuncEAdata("MOV Ob,Al", "0a2", "movDirectAl", "LOG_OP2(\"MOV\", O8(data->op), \"AL\");");
+        decodeFuncEAdata("MOV Ow,Ax", "0a3", "movDirectAx", "LOG_OP2(\"MOV\", O16(data->op), \"AX\");");
+        decodeFuncEAdata("MOV Od,Eax", "2a3", "movDirectEax", "LOG_OP2(\"MOV\", O32(data->op), \"EAX\");");
 
         decodeString("0a4", "movsb");
         decodeString("0a5", "movsw");
@@ -758,6 +759,7 @@ public class Main {
         // :TODO: op log isn't correct, the src should be 8 bits
         ge("1be", "movsx8", 16);
         ge("3be", "movsx8", 32);
+        ge("3bf", "movsx16", 32);
     }
 
     static public void setCC() throws IOException {

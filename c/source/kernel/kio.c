@@ -8,8 +8,11 @@
 #include "nodetype.h"
 #include "nodeaccess.h"
 #include "node.h"
+#include "filesystem.h"
+#include "kstat.h"
 
 #include <errno.h>
+#include <string.h>
 
 U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
@@ -172,6 +175,26 @@ U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
 	return 0;
 }
 
+U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
+	struct Node* node = getNode(thread->process, path);
+	struct Node* link;
+	U64 len;
+	char tmp[MAX_PATH];
+
+    if (node==0) {
+        return -K_ENOENT;
+    }
+	strcpy(tmp, node->path.localPath);
+	strcat(tmp, ".link");
+	link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
+	if (!link) {
+		return syscall_stat64(thread, path, buffer);
+	}
+	len = link->nodeType->length(node);
+	writeStat(thread->process->memory, buffer, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
+	return 0;
+}
+
 U32 syscall_ioctl(struct KThread* thread, FD fildes, U32 request) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
 
@@ -200,4 +223,56 @@ U32 syscall_dup2(struct KThread* thread, FD fildes, FD fildes2) {
     } 
 	allocFileDescriptor(thread->process, fildes2, fd->kobject, fd->accessFlags, fd->descriptorFlags);
     return fildes2;
+}
+
+U32 syscall_dup(struct KThread* thread, FD fildes) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	U32 result;
+
+    if (!fd) {
+        return -K_EBADF;
+    }
+	result = getNextFileDescriptorHandle(thread->process, 0);
+	allocFileDescriptor(thread->process, result, fd->kobject, fd->accessFlags, fd->descriptorFlags);
+	return result;
+}
+
+U32 syscall_unlink(struct KThread* thread, U32 path) {
+	struct Node* node = getNode(thread->process, path);
+
+    if (node==0) {
+        return -K_ENOENT;
+    }
+	if (!node->nodeType->remove(node)) {
+		kwarn("filed to remove file: errno=%d", errno);
+		return -K_EBUSY;
+	}
+	return 0;
+}
+
+U32 syscall_fchmod(struct KThread* thread, FD fd, U32 mod) {
+	kwarn("fchmod is not implemented");
+	return 0;
+}
+
+U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
+	struct Node* oldNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, oldName), TRUE);
+	struct Node* newNode;
+
+	if (!oldNode) {
+		return -K_ENOENT;
+	}
+	newNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, newName), FALSE);
+	if (newNode->nodeType->exists(newNode)) {
+		if (newNode->nodeType->isDirectory(newNode)) {
+			if (newNode->nodeType->list(newNode)) {
+				return -K_ENOTEMPTY;
+			}
+			if (!oldNode->nodeType->isDirectory(oldNode)) {
+				return -K_EISDIR;
+			}
+		}
+		newNode->nodeType->remove(newNode);
+	}
+	return oldNode->nodeType->rename(oldNode, newNode);
 }

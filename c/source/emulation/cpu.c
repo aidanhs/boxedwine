@@ -517,6 +517,14 @@ U32 pop32(struct CPU* cpu) {
     }
 }
 
+U32 peek32(struct CPU* cpu, U32 index) {
+	if (cpu->big) {
+		return readd(cpu->memory, cpu->segAddress[SS] + ESP+4*index);
+    } else {
+		return readd(cpu->memory, cpu->segAddress[SS] + SP+4*index);
+    }
+}
+
 void exception(struct CPU* cpu, int code) {
 	kpanic("Exceptions not implements yet");
 }

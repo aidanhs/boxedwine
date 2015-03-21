@@ -3,6 +3,7 @@
 
 #define K_S_IFMT         0xF000
 #define K_S_IFSOCK       0xC000
+#define K__S_IFLNK		 0xA000
 #define K__S_IFDIR       0x4000
 #define K__S_IFCHR       0x2000
 #define K__S_IFIFO       0x1000

@@ -9,6 +9,9 @@
 #include "kscheduler.h"
 #include "kerror.h"
 #include "ksystem.h"
+#include "ksignal.h"
+#include "filesystem.h"
+#include "ksocket.h"
 
 #include <stdarg.h>
 
@@ -23,7 +26,7 @@ void logsyscall(const char* fmt, ...) {
 
 #define LOG logsyscall
 #else
-#define LOG klog
+#define LOG printf("%d/%d",thread->id, process->id); klog
 #endif
 
 #define __NR_exit 1
@@ -139,6 +142,12 @@ void logsyscall(const char* fmt, ...) {
 #define ARG5 EDI
 #define ARG6 EBP
 
+#define SARG2 readd(memory, ARG2)
+#define SARG3 readd(memory, ARG2+4)
+#define SARG4 readd(memory, ARG2+8)
+#define SARG5 readd(memory, ARG2+12)
+#define SARG6 readd(memory, ARG2+16)
+
 void syscall(struct CPU* cpu, struct Op* op) {
 	struct KThread* thread = cpu->thread;
 	struct KProcess* process = thread->process;
@@ -173,11 +182,16 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result=syscall_waitpid(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_waitpid: pid=%d result=%d", ARG1, result);
 		break;
-		/*
 	case __NR_link:
+		result = 0;
+		kwarn("syscall link not implememented: %s -> %s", getNativeString(memory, ARG1), getNativeString(memory, ARG2));
+		LOG("__NR_link path1=%X(%s) path2=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);
 		break;
 	case __NR_unlink:
+		result =syscall_unlink(thread, ARG1);
+		LOG("__NR_unlink path=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), result);
 		break;
+		/*
 	case __NR_execve:
 		break;
 	case __NR_chdir:
@@ -202,14 +216,23 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_kill:
 		break;
+		*/
 	case __NR_rename:
+		result = syscall_rename(thread, ARG1, ARG2);
+		LOG("__NR_rename oldName=%X(%s) newName=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);
 		break;
+		/*
 	case __NR_mkdir:
 		break;
 	case __NR_rmdir:
 		break;
+		*/
 	case __NR_dup:
+		result = syscall_dup(thread, ARG1);
+		LOG("__NR_dup fildes=%d result=%d", ARG1, result);
 		break;
+		break;
+		/*
 	case __NR_pipe:
 		break;
 		*/
@@ -234,20 +257,30 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_setpgid:
 		break;
-	case __NR_umask:
-		break;
 		*/
+	case __NR_umask:
+		result = ARG1;
+		kwarn("syscall umask not implemented");
+		LOG("__NR_umask cmask=%X result=%d", ARG1, result);
+		break;
 	case __NR_dup2:
 		result = syscall_dup2(thread, ARG1, ARG2);
 		LOG("__NR_dup2 fildes1=%d fildes2=%d result=%d", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_getppid:
+		result = thread->process->parentId;
+		LOG("__NR_getppid result=%d", result);
 		break;
 	case __NR_getpgrp:
+		result = thread->process->groupId;
+		LOG("__NR_getpgrp result=%d", result);
 		break;
 	case __NR_setsid:
+		result = 1; // :TODO:
+		kwarn("__NR_setsid not implemented");
+		LOG("__NR_setsid result=%d", result);
 		break;
+		/*
 	case __NR_gettimeofday:
 		break;
 	case __NR_symlink:
@@ -258,21 +291,97 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_munmap:
 		break;
+		*/
 	case __NR_fchmod:
+		result = syscall_fchmod(thread, ARG1, ARG2);
+		LOG("__NR_fchmod fd=%d mod=%X result=%d", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_setpriority:
 		break;
+		*/
 	case __NR_socketcall:
+		switch (ARG1) {
+			case 1: // SYS_SOCKET
+				result = ksocket(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", result);
+				break;
+			case 2: // SYS_BIND
+				result = kbind(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_BIND: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
+				break;
+			case 3: // SYS_CONNECT
+				result = kconnect(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_CONNECT: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
+				break;
+			case 4: // SYS_LISTEN				
+				result = klisten(thread, SARG2, SARG3);
+				LOG("SYS_LISTEN: socket=%d backlog=%d result=%d", SARG2, SARG3, result);
+				break;
+			case 5: // SYS_ACCEPT
+				result = kaccept(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_ACCEPT: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
+				break;			
+			case 6: // SYS_GETSOCKNAME
+				result = kgetsockname(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_GETSOCKNAME: socket=%d address=%X len=%d result=%d", SARG2, SARG3, SARG4, result);
+				break;			
+			case 7: // SYS_GETPEERNAME
+				result = kgetpeername(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_GETPEERNAME: socket=%d address=%X len=%d result=%d", SARG2, SARG3, SARG4, result);
+				break;		
+			case 8: // SYS_SOCKETPAIR
+				result = ksocketpair(thread, SARG2, SARG3, SARG4, SARG5);
+				LOG("SYS_SOCKETPAIR: af=%d(%s) type=%d(%s) socks=%X(%d,%d) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", readd(memory, SARG5), readd(memory, SARG5+4), result);
+				break;
+			case 9: // SYS_SEND
+				result = ksend(thread, SARG2, SARG3, SARG4, SARG5);
+				LOG("SYS_SEND: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
+				break;
+			case 10: // SYS_RECV
+				result = krecv(thread, SARG2, SARG3, SARG4, SARG5);
+				LOG("SYS_RECV: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
+				break;
+			//case 11: // SYS_SENDTO
+			//case 12: // SYS_RECVFROM
+			case 13: // SYS_SHUTDOWN
+				result = kshutdown(thread, SARG2, SARG3);
+				LOG("SYS_SHUTDOWN: socket=%d how=%d result=%d", SARG2, SARG3, result);
+				break;
+			case 14: // SYS_SETSOCKOPT
+				result = ksetsockopt(thread, SARG2, SARG3, SARG4, SARG5, SARG6);
+				LOG("SYS_SETSOCKOPT: socket=%d level=%d name=%d value=%d, len=%d result=%d", SARG2, SARG3, SARG4, SARG5, SARG6, result);
+				break;
+			case 15: // SYS_GETSOCKOPT
+				result = kgetsockopt(thread, SARG2, SARG3, SARG4, SARG5, SARG6);
+				LOG("SYS_GETSOCKOPT: socket=%d level=%d name=%d value=%d, len=%d result=%d", SARG2, SARG3, SARG4, SARG5, SARG6, result);
+				break;		
+			case 16: // SYS_SENDMSG
+				result = ksendmsg(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_SENDMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
+				break;
+			case 17: // SYS_RECVMSG
+				result = ksendmsg(thread, SARG2, SARG3, SARG4);
+				LOG("SYS_RECVMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
+				break;
+			//case 18: // SYS_ACCEPT4
+			default:
+				kpanic("Unknown socket syscall: %d"+ARG1);
+		}
 		break;
+		/*
 	case __NR_setitimer:
 		break;
 	case __NR_ipc:
 		break;
 	case __NR_fsync:
 		break;
-	case __NR_clone:
-		break;
 		*/
+	case __NR_clone:
+		LOG("__NR_clone flags=%X child_stack=%X ptid=%X tls=%X ctid=%X", ARG1, ARG2, ARG3, ARG4, ARG5);
+		result = syscall_clone(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
+		LOG("__NR_clone flags=%X child_stack=%X ptid=%X tls=%X ctid=%X result=%d", ARG1, ARG2, ARG3, ARG4, ARG5, result);
+		break;
 	case __NR_uname:
 		result = syscall_uname(thread, ARG1);
 		LOG("__NR_uname name=%.8X result=%d", ARG1, result);
@@ -305,27 +414,43 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_sched_yield:
 		break;
+		*/
 	case __NR_nanosleep:
+		result = 0;
+		LOG("__NR_nanosleep req=%X(%d.%.09d sec) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
+		/*
 	case __NR_mremap:
 		break;
 	case __NR_poll:
 		break;
 	case __NR_prctl:
 		break;
+		*/
 	case __NR_rt_sigaction:
-		break;
+		result = syscall_sigaction(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_rt_sigaction sig=%d act=%X oact=%X result=%d", ARG1, ARG2, ARG3, result);
+		break;		
 	case __NR_rt_sigprocmask:
+		result = syscall_sigprocmask(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_rt_sigprocmask how=%d set=%X oset=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_pread64:
 		break;
+		*/
 	case __NR_getcwd:
+		result = syscall_getcwd(thread, ARG1, ARG2);
+		LOG("__NR_getcwd buf=%X size=%d result=%d (%s)", ARG1, ARG2, result, getNativeString(memory, ARG1));
 		break;
+		/*
 	case __NR_sigaltstack:
 		break;
-	case __NR_ugetrlimit:
-		break;
 		*/
+	case __NR_ugetrlimit:
+		result = syscall_ugetrlimit(thread, ARG1, ARG2);
+		LOG("__NR_ugetrlimit resource=%d rlim=%X result=%d", ARG1, ARG2, result);		
+		break;
 	case __NR_mmap2:
 		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
 		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
@@ -340,27 +465,32 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_stat64(thread, ARG1, ARG2);
 		LOG("__NR_stat64 path=%s buf=%X result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;
-		/*
 	case __NR_lstat64:
 		result = syscall_lstat64(thread, ARG1, ARG2);
 		LOG("__NR_lstat64 path=%s buf=%X result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;
-		*/
 	case __NR_fstat64:
 		result = syscall_fstat64(thread, ARG1, ARG2);
 		LOG("__NR_fstat64 fildes=%d buf=%X result=%d", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_getuid32:
+		result = UID;
 		break;
 	case __NR_getgid32:
+		result = GID;
 		break;
 	case __NR_geteuid32:
+		result = UID;
 		break;
 	case __NR_getegid32:
+		result = GID;
 		break;
 	case __NR_fchown32:
+		result = 0;
+		kwarn("__NR_fchown32 not implemented");
+		LOG("__NR_fchown32 fd=%d owner=%d group=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_setresuid32:
 		break;
 	case __NR_getresuid32:
@@ -377,8 +507,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_getdents64:
 		break;
+		*/
 	case __NR_fcntl64:
+		result = syscall_fcntrl(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_fcntl64 fildes=%d cmd=%d arg=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_gettid:
 		break;
 	case __NR_tkill:

@@ -13,6 +13,7 @@
 #include "virtualfile.h"
 #include "devtty.h"
 #include "devurandom.h"
+#include "devnull.h"
 #include "ksystem.h"
 
 #include CURDIR
@@ -69,10 +70,12 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
-	//ppenv[envc++] = "LD_DEBUG=all";
+	ppenv[envc++] = "LD_DEBUG=all";
+	ppenv[envc++] = "LD_BIND_NOW=1";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
+	addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
 		printf("SDL_Init Error: %d", SDL_GetError());
@@ -86,7 +89,7 @@ int main(int argc, char **argv) {
 		argv = &argv[i];
 	}
 	if (startProcess("/home/username", argc, argv, envc, ppenv)) {
-		while (numberOfThreads>0) {
+		while (getThreadCount()>0) {
 			runSlice();
 		}
 	}

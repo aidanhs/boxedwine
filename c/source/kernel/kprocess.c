@@ -11,6 +11,8 @@
 #include "kfiledescriptor.h"
 #include "kfile.h"
 #include "kerror.h"
+#include "kobject.h"
+#include "kobjectaccess.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -21,12 +23,30 @@ void initProcess(struct KProcess* process, struct Memory* memory) {
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
-	process->groupId = 1;
-	initArray(&process->threads, 100);	
+	process->groupId = 1;	
 }
 
-void addThread(struct KProcess* process, struct KThread* thread) {
-	thread->id = addObjecToArray(&process->threads, thread);
+void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory* memory) {
+	U32 i;
+
+	memset(process, 0, sizeof(struct KProcess));
+	process->memory = memory;
+	memory->process = process;
+	process->id = addProcess(process);
+
+	process->parentId = from->id;;
+	process->groupId = from->groupId;
+	strcpy(process->currentDirectory, from->currentDirectory);
+	process->brkEnd = from->brkEnd;
+	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
+		if (from->fds[i]) {
+			process->fds[i] = allocFileDescriptor(process, i, from->fds[i]->kobject, from->fds[i]->accessFlags, from->fds[i]->descriptorFlags);
+			process->fds[i]->refCount = from->fds[i]->refCount;
+		}
+	}
+	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
+	process->mappedFilesCount = from->mappedFilesCount;
+	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
 }
 
 void writeStackString(struct CPU* cpu, const char* s) {
@@ -68,29 +88,10 @@ void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, co
     push32(cpu, argc);
 }
 
-U32 allocHeap(struct KProcess* process, U32 len) {
-	U32 result = process->pHeap+process->heapSize;
-	process->heapSize+=len;
-	return result;
-}
-
-U32 stringArrayFromNative(struct KProcess* process, const char** ppStr, int count) {
-	int i;
-	U32 result = allocHeap(process, count*sizeof(U32));
-
-	for (i=0;i<count;i++) {
-		int len = strlen(ppStr[i]);
-		U32 s = allocHeap(process, len+1);
-		memcopyFromNative(process->memory, s, (const unsigned char*)ppStr[i], len+1);
-		writed(process->memory, result+i*sizeof(U32), s);
-	}
-	return result;
-}
-
-U32 getNextFileDescriptorHandle(struct KProcess* process) {
+U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
 	int i;
 
-	for (i=0;i<sizeof(process->fds);i++) {
+	for (i=after;i<sizeof(process->fds);i++) {
 		if (!process->fds[i])
 			return i;
 	}
@@ -99,23 +100,30 @@ U32 getNextFileDescriptorHandle(struct KProcess* process) {
 }
 
 struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
-	struct Node* node = getNodeFromLocalPath(process->currentDirectory, localPath);
+	struct Node* node = getNodeFromLocalPath(process->currentDirectory, localPath, (accessFlags & K_O_CREAT)==0);
 	struct OpenNode* openNode;
 	struct KFileDescriptor* result;
+	struct KObject* kobject;
 
     if (!node) {
         return 0;
     }
-	openNode = node->nodeType->open(node, accessFlags);
-	if (!openNode)
-		return 0;
-	result = allocFileDescriptor(process, handle, allocKFile(openNode), accessFlags, descriptorFlags);
-	process->fds[handle] = result;
+	if (node->kobject) {
+		kobject = node->kobject;
+		kobject->refCount++;
+	} else {
+		openNode = node->nodeType->open(node, accessFlags);
+		if (!openNode)
+			return 0;
+		kobject = allocKFile(openNode);
+	}
+	result = allocFileDescriptor(process, handle, kobject, accessFlags, descriptorFlags);
+	closeKObject(kobject);	
 	return result;
 }
 
 struct KFileDescriptor* openFile(struct KProcess* process, const char* localPath, U32 accessFlags) {
-	return openFileDescriptor(process, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process));
+	return openFileDescriptor(process, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process, 0));
 }
 
 void initStdio(struct KProcess* process) {
@@ -131,13 +139,14 @@ void initStdio(struct KProcess* process) {
 }
 
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env) {
-	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0]);
+	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
 	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
 	struct Node* loaderNode = 0;
 	struct OpenNode* loaderOpenNode = 0;
 	BOOL isElf = TRUE;
 	const char* pArgs[128];
+	int argIndex;
 
 	if (node) {
 		openNode = node->nodeType->open(node, K_O_RDONLY);
@@ -150,13 +159,13 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		return FALSE;
 	}
 	if (interpreter) {
-		struct Node* interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter);
+		struct Node* interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter, TRUE);
 		if (!interpreterNode) {
 			return FALSE;
 		}
 	}
 	// :TODO: should probably get this from the elf file
-	loaderNode = getNodeFromLocalPath(currentDirectory, "/lib/ld-linux.so.2");
+	loaderNode = getNodeFromLocalPath(currentDirectory, "/lib/ld-linux.so.2", TRUE);
 	if (loaderNode) {
 		loaderOpenNode = loaderNode->nodeType->open(loaderNode, K_O_RDONLY);
 	}
@@ -169,30 +178,28 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		initMemory(memory);
 		initProcess(process, memory);
 		initThread(thread, process);
-		addThread(process, thread);
 		initStdio(process);
 
 		if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32))
 			return FALSE;
 
-		process->heapSize = 0;
-		process->maxHeapSize = 1024*1024;
-		// will be on demand, so it's ok that it's a lot larger than we need
-		process->pHeap = syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, process->maxHeapSize, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
+		// :TODO: why will it crash in strchr libc if I remove this
+		syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
 		pArgs[0] = loaderNode->path.localPath;
-		for (i=0;i<argc;i++) {
-			pArgs[i+1] = args[i];
+		argIndex = 1;
+		if (interpreter) {
+			pArgs[1] = interpreter;
+			argIndex = 2;
 		}
-		argc++;
-
-		//process->args = stringArrayFromNative(process, pArgs, argc);
-		//process->env = stringArrayFromNative(process, env, envc);
+		for (i=0;i<argc;i++) {
+			pArgs[i+argIndex] = args[i];
+		}
+		argc+=argIndex;
 
 		setupThreadStack(&thread->cpu, argc, pArgs, envc, env);
 
-		// :TODO: these should be copies		
-		process->currentDirectory = strdup(currentDirectory);
+		strcpy(process->currentDirectory, currentDirectory);
 
 		scheduleThread(thread);
 		return TRUE;
@@ -201,9 +208,10 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 }
 
 void processOnExitThread(struct KThread* thread) {
-	struct KArray* threads = &thread->process->threads;
-	removeObjectFromArray(threads, thread->id);
-	if (!getArrayCount(threads)) {
+	struct KProcess* process = thread->process;
+	process->threadCount--;
+	removeThread(thread);
+	if (!process->threadCount) {
 		// :TODO:
 	}
 }
@@ -278,7 +286,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 }
 
 struct Node* getNode(struct KProcess* process, U32 fileName) {
-	return getNodeFromLocalPath(process->currentDirectory, getNativeString(process->memory, fileName));
+	return getNodeFromLocalPath(process->currentDirectory, getNativeString(process->memory, fileName), TRUE);
 }
 
 const char* getModuleName(struct CPU* cpu) {
@@ -301,4 +309,91 @@ U32 getModuleEip(struct CPU* cpu) {
 			return cpu->eip.u32-process->mappedFiles[i].address;
 	}
 	return 0;
+}
+
+U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size) {
+	U32 len = strlen(thread->process->currentDirectory);
+	if (len+1>size)
+		return -K_ERANGE;
+	writeNativeString(thread->process->memory, buffer, thread->process->currentDirectory);
+	return len;
+}
+
+#define CSIGNAL         0x000000ff      /* signal mask to be sent at exit */
+#define K_CLONE_VM        0x00000100      /* set if VM shared between processes */
+#define K_CLONE_FS        0x00000200      /* set if fs info shared between processes */
+#define K_CLONE_FILES     0x00000400      /* set if open files shared between processes */
+#define K_CLONE_SIGHAND   0x00000800      /* set if signal handlers and blocked signals shared */
+#define K_CLONE_PTRACE    0x00002000      /* set if we want to let tracing continue on the child too */
+#define K_CLONE_VFORK     0x00004000      /* set if the parent wants the child to wake it up on mm_release */
+#define K_CLONE_PARENT    0x00008000      /* set if we want to have the same parent as the cloner */
+#define K_CLONE_THREAD    0x00010000      /* Same thread group? */
+#define K_CLONE_NEWNS     0x00020000      /* New namespace group? */
+#define K_CLONE_SYSVSEM   0x00040000      /* share system V SEM_UNDO semantics */
+#define K_CLONE_SETTLS    0x00080000      /* create a new TLS for the child */
+#define K_CLONE_PARENT_SETTID     0x00100000      /* set the TID in the parent */
+#define K_CLONE_CHILD_CLEARTID    0x00200000      /* clear the TID in the child */
+#define K_CLONE_DETACHED          0x00400000      /* Unused, ignored */
+#define K_CLONE_UNTRACED          0x00800000      /* set if the tracing process can't force K_CLONE_PTRACE on this clone */
+#define K_CLONE_CHILD_SETTID      0x01000000      /* set the TID in the child */
+/* 0x02000000 was previously the unused K_CLONE_STOPPED (Start in stopped state)
+and is now available for re-use. */
+#define K_CLONE_NEWUTS            0x04000000      /* New utsname group? */
+#define K_CLONE_NEWIPC            0x08000000      /* New ipcs */
+#define K_CLONE_NEWUSER           0x10000000      /* New user namespace */
+#define K_CLONE_NEWPID            0x20000000      /* New pid namespace */
+#define K_CLONE_NEWNET            0x40000000      /* New network namespace */
+#define K_CLONE_IO                0x80000000      /* Clone io context */
+
+U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid) {
+	if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID)) {
+        struct Memory* newMemory = (struct Memory*)malloc(sizeof(struct Memory));
+		struct KProcess* newProcess = (struct KProcess*)malloc(sizeof(struct KProcess));
+		struct KThread* newThread = (struct KThread*)malloc(sizeof(struct KThread));
+		newProcess->parentId = thread->process->id;        
+
+		cloneMemory(newMemory, thread->process->memory);
+		cloneProcess(newProcess, thread->process, newMemory);
+		cloneThread(newThread, thread, newProcess);
+		initStdio(newProcess);
+
+        if ((flags & K_CLONE_CHILD_SETTID)!=0) {
+            if (ctid!=0) {
+                writed(newThread->process->memory, ctid, newThread->id);
+            }
+        }
+        if ((flags & K_CLONE_CHILD_CLEARTID)!=0) {
+            newThread->clear_child_tid = ctid;
+        }
+        if (child_stack!=0)
+            newThread->cpu.reg[4].u32 = child_stack;
+        newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
+        newThread->cpu.reg[0].u32 = 0;
+		runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first
+		scheduleThread(newThread);
+        return newProcess->id;
+    } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
+		struct KThread* newThread = (struct KThread*)malloc(sizeof(struct KThread));
+        struct user_desc desc;
+
+		readMemory(thread->process->memory, (U8*)&desc, tls, sizeof(struct user_desc));
+
+		initThread(newThread, thread->process);		
+
+        if (desc.base_addr!=0) {
+            newThread->cpu.ldt[desc.entry_number] = desc.base_addr;
+			newThread->cpu.segAddress[GS] = desc.base_addr;
+			newThread->cpu.segValue[GS] = desc.entry_number;
+        }
+        newThread->clear_child_tid = ctid;
+		writed(thread->process->memory, ptid, newThread->id);
+        newThread->cpu.reg[4].u32 = child_stack;
+        newThread->cpu.reg[4].u32+=8;
+        newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
+		scheduleThread(newThread);
+		return thread->process->id;
+    } else {
+        kpanic("sys_clone does not implement flags: %X", flags);
+        return 0;
+    }
 }

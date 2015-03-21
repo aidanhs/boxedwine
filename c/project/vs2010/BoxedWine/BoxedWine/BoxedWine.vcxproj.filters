@@ -111,9 +111,6 @@
     <ClInclude Include="..\..\..\..\include\kstring.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\include\pathutils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\include\khashmap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -186,6 +183,18 @@
     <ClInclude Include="..\..\..\..\source\emulation\decode.h">
       <Filter>Source Files\emulation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ksignal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfilelock.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devnull.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ksocket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -236,9 +245,6 @@
     <ClCompile Include="..\..\..\..\source\util\kstring.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\util\pathutils.c">
-      <Filter>Source Files\util</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\khashmap.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
@@ -277,6 +283,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c">
       <Filter>Source Files\kernel\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\ksignal.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c">
+      <Filter>Source Files\kernel\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\ksocket.c">
+      <Filter>Source Files\kernel</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

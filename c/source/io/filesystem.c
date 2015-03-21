@@ -4,13 +4,15 @@
 #include <fcntl.h>
 
 #include "filesystem.h"
-#include "pathutils.h"
 #include "khashmap.h"
 #include "nodeaccess.h"
 #include "nodetype.h"
 #include "kstat.h"
 #include "kerror.h"
 #include "kalloc.h"
+#include "log.h"
+#include "kprocess.h"
+#include "kfiledescriptor.h"
 
 #include UNISTD
 #include UTIME
@@ -127,6 +129,55 @@ void file_init(struct OpenNode* node) {
 
 struct NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_canMap, file_ioctl, file_isWriteReady, file_isReadReady};
 
+S64 dir_length(struct OpenNode* node) {	
+	return 0;
+}
+
+BOOL dir_setLength(struct OpenNode* node, S64 len) {
+	return FALSE;
+}
+
+S64 dir_getFilePointer(struct OpenNode* node) {
+	return 0;
+}
+
+S64 dir_seek(struct OpenNode* node, S64 pos) {
+	return 0;
+}
+
+U32 dir_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+	return 0;
+}
+
+U32 dir_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+	return 0;
+}
+
+void dir_close(struct OpenNode* node) {
+	freeOpenNode(node);
+}
+
+U32 dir_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+	return -K_ENODEV;
+}
+
+BOOL dir_isWriteReady(struct OpenNode* node) {
+	return FALSE;
+}
+
+BOOL dir_isReadReady(struct OpenNode* node) {
+	return FALSE;
+}
+
+BOOL dir_canMap(struct OpenNode* node) {
+	return FALSE;
+}
+
+void dir_init(struct OpenNode* node) {
+}
+
+struct NodeAccess dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_canMap, dir_ioctl, dir_isWriteReady, dir_isReadReady};
+
 BOOL file_isDirectory(struct Node* node) {
 	struct stat buf;
 
@@ -166,6 +217,9 @@ struct OpenNode* file_open(struct Node* node, U32 flags) {
 	U32 openFlags = O_BINARY;
 	U32 f;
 
+	if (node->nodeType->isDirectory(node)) {
+		return allocOpenNode(node, 0, flags, &dirAccess);
+	}
 	if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
 		openFlags|=O_RDONLY;
 	} else if ((flags & K_O_ACCMODE)==K_O_WRONLY) {
@@ -177,7 +231,7 @@ struct OpenNode* file_open(struct Node* node, U32 flags) {
 		openFlags|=O_CREAT;
 	}
 	if (flags & K_O_EXCL) {
-		openFlags|=K_O_EXCL;
+		openFlags|=O_EXCL;
 	}
 	if (flags & K_O_TRUNC) {
 		openFlags|=O_TRUNC;
@@ -185,10 +239,10 @@ struct OpenNode* file_open(struct Node* node, U32 flags) {
 	if (flags & K_O_APPEND) {
 		openFlags|=O_APPEND;
 	}
-	f = open(node->path.nativePath, openFlags);	
-	if (!f)
+	f = open(node->path.nativePath, openFlags, 0666);	
+	if (!f || f==0xFFFFFFFF)
 		return 0;
-	return allocOpenNode(node, f, flags, node->nodeAccess);
+	return allocOpenNode(node, f, flags, &fileAccess);
 }
 
 BOOL file_setLastModifiedTime(struct Node* node, U32 time) {
@@ -228,13 +282,25 @@ BOOL file_canWrite(struct Node* node) {
 	return file_getMode(node) & K__S_IREAD;
 }
 
-struct NodeType fileNodeType = {file_isDirectory, file_list, file_remove, file_lastModified, file_length, file_open, file_setLastModifiedTime, file_canRead, file_canWrite, file_getType, file_getMode};
+BOOL file_exists(struct Node* node) {
+	return doesPathExist(node->path.nativePath);
+}
 
-struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path) {
-	char localPath[MAX_PATH];
-	char nativePath[MAX_PATH];
+U32 file_rename(struct Node* oldNode, struct Node* newNode) {
+	if (!rename(oldNode->path.nativePath, newNode->path.nativePath))
+		return 0;
+	return K_EIO;
+}
+
+struct NodeType fileNodeType = {file_isDirectory, file_exists, file_rename, file_list, file_remove, file_lastModified, file_length, file_open, file_setLastModifiedTime, file_canRead, file_canWrite, file_getType, file_getMode};
+
+struct Node* getNodeInCache(const char* localPath) {
+	return (struct Node*)getHashmapValue(&nodeMap, localPath);
+}
+
+struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath) {
 	struct Node* result;
-	
+
 	if (path[0]=='/')
 		strcpy(localPath, path);
 	else {
@@ -243,21 +309,44 @@ struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path
 		strcat(localPath, path);
 	}	
 
+	normalizePath(localPath);
 	result = (struct Node*)getHashmapValue(&nodeMap, localPath);
-	if (result)
+	if (result) {
+		if (result->path.nativePath)
+			strcpy(nativePath, result->path.nativePath);
+		else {
+			nativePath[0]=0;
+		}
 		return result;
-
-	strcpy(nativePath, root);
+	}
+	strcpy(nativePath, root);	
 	strcat(nativePath, localPath);
-	localPathToRemote(nativePath);	
-	normalizePath(nativePath);
-	followLinks(nativePath);
+	while (TRUE) {
+		localPathToRemote(nativePath+strlen(root)); // don't convert colon's in the root path			
+		if (followLinks(nativePath)) {
+			normalizePath(nativePath);
+			memmove(nativePath+strlen(root), nativePath, strlen(nativePath)+1);
+			memcpy(nativePath, root, strlen(root));
+		} else {
+			break;
+		}
+	}
+	return 0;
+}
+
+struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing) {
+	char localPath[MAX_PATH];
+	char nativePath[MAX_PATH];
+	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, nativePath);
+		
+	if (result)
+		return result;		
 	
-	if (!doesPathExist(nativePath)) {
+	if (existing && !doesPathExist(nativePath)) {
 		return 0;
 	}
 	
-	return allocNode(localPath, nativePath, &fileNodeType, &fileAccess, 1);	
+	return allocNode(localPath, nativePath, &fileNodeType, 1);	
 }
 
 struct OpenNode* freeOpenNodes;
@@ -275,6 +364,9 @@ struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct 
 	} else {
 		result = (struct OpenNode*)kalloc(sizeof(struct OpenNode));
 	}
+	if (handle == 0xFFFFFFFF) {
+		int ii=0;
+	}
 	result->handle = handle;
 	result->flags = flags;
 	result->access = nodeAccess;
@@ -283,7 +375,7 @@ struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct 
 	return result;
 }
 
-struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, struct NodeAccess* nodeAccess, U32 rdev) {
+struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev) {
 	struct Node* result;
 	U32 localLen = 0;
 	U32 nativeLen = 0;
@@ -293,9 +385,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 		nativeLen=strlen(nativePath)+1;
 	result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
 	result->id = nodeId++;
-	result->data = 0;
 	result->nodeType = nodeType;
-	result->nodeAccess = nodeAccess;
 	if (localPath) {
 		result->path.localPath = (const char*)result+sizeof(struct Node);
 		strcpy((char*)result->path.localPath, localPath);
@@ -310,4 +400,133 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	}
 	putHashmapValue(&nodeMap, result->path.localPath, result);
 	return result;
+}
+
+BOOL normalizePath(char* path) {
+	int len = strlen(path);
+	int i;
+	int lastDir = -1;
+	int lastDir2 = -1;
+
+	for (i=0;i<len;i++) {
+		if (path[i]=='.') {
+			if (i+1<len && path[i+1]=='.') {
+				if (lastDir2>=0) {
+					memmove(path+lastDir2, path+i+2, len-i-1);					
+					return normalizePath(path);
+				}
+				return FALSE;
+			}
+		} else if (path[i]=='/') {
+			lastDir2 = lastDir;
+			lastDir = i;
+		}
+	}
+	return TRUE;
+}
+
+void localPathToRemote(char* path) {
+	int len = strlen(path);
+	int i;
+
+	for (i=0;i<len;i++) {
+		if (path[i]=='/')
+			path[i]=pathSeperator;
+		else if (path[i]==':') {
+			memmove(path+i+9, path+i+1, strlen(path+i+1)+1);
+			memcpy(path+i, "(_colon_)", 9);
+			i+=8;
+			len+=8;
+		}
+	}
+}
+
+void remotePathToLocal(char* path) {
+	int len = strlen(path);
+	int i;
+	int rootlen = strlen(root);
+
+	if (strncmp(path, root, rootlen)==0) {
+		memmove(path, path+rootlen, strlen(path)-rootlen+1); 
+	}
+	for (i=0;i<len;i++) {
+		if (path[i]==pathSeperator)
+			path[i]='/';		
+	}
+	// :TODO: is reversing the colon code necessary
+}
+
+BOOL readLink(const char* path, char* buffer) {
+	struct stat buf;
+	int h;
+	char tmp[MAX_PATH];
+
+	if (stat(path, &buf)!=0) {
+		return FALSE;
+	}
+	if (buf.st_size>=MAX_PATH) {
+		kwarn("%s contains a link longer than the MAX_PATH: %d", path, MAX_PATH);
+		return FALSE;
+	}
+	h = open(path, O_RDONLY);
+	if (!h)
+		return FALSE;
+	read(h, tmp, buf.st_size);
+	tmp[buf.st_size]=0;
+	if (tmp[0]!='/') {
+		int len = strrchr(path, pathSeperator)-path;
+		memcpy(buffer, path, len);
+		buffer[len+1]=0;
+		strcat(buffer, tmp);
+		remotePathToLocal(buffer);
+	} else {
+		strcpy(buffer, tmp);
+	}
+	close(h);
+	return TRUE;
+}
+
+BOOL followLinks(char* path) {
+	int len;
+	int i;
+	char tmp[MAX_PATH];
+
+	if (doesPathExist(path))
+		return FALSE;
+	strcpy(tmp, path);
+	strcat(tmp, ".link");
+	if (doesPathExist(tmp)) {
+		if (readLink(tmp, tmp)) {
+			strcpy(path, tmp);
+			return TRUE;
+		}
+	}
+
+	len = strlen(path);
+	for (i=0;i<len;i++) {
+		if (path[i]==pathSeperator) {
+			strcpy(tmp, path); // don't include path seperator
+			tmp[i]=0;
+			if (!doesPathExist(tmp)) {
+				strcat(tmp, ".link");
+				if (doesPathExist(tmp)) {
+					if (readLink(tmp, tmp)) {
+						strcat(tmp, path+i); 
+						strcpy(path, tmp);						
+						return TRUE;
+					}
+				}
+			}
+		}
+	}
+	return FALSE;
+}
+
+BOOL doesPathExist(const char* path) {
+	struct stat buf;
+
+	if (stat(path, &buf)==0) {
+		return TRUE;
+	}
+	return FALSE;
 }

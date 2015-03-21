@@ -184,6 +184,7 @@
     <ClInclude Include="..\..\..\..\include\block.h" />
     <ClInclude Include="..\..\..\..\include\cpu.h" />
     <ClInclude Include="..\..\..\..\include\decoder.h" />
+    <ClInclude Include="..\..\..\..\include\devnull.h" />
     <ClInclude Include="..\..\..\..\include\devtty.h" />
     <ClInclude Include="..\..\..\..\include\devurandom.h" />
     <ClInclude Include="..\..\..\..\include\ea.h" />
@@ -195,6 +196,7 @@
     <ClInclude Include="..\..\..\..\include\kerror.h" />
     <ClInclude Include="..\..\..\..\include\kfile.h" />
     <ClInclude Include="..\..\..\..\include\kfiledescriptor.h" />
+    <ClInclude Include="..\..\..\..\include\kfilelock.h" />
     <ClInclude Include="..\..\..\..\include\kfmmap.h" />
     <ClInclude Include="..\..\..\..\include\khashmap.h" />
     <ClInclude Include="..\..\..\..\include\kio.h" />
@@ -203,6 +205,8 @@
     <ClInclude Include="..\..\..\..\include\kobjectaccess.h" />
     <ClInclude Include="..\..\..\..\include\kprocess.h" />
     <ClInclude Include="..\..\..\..\include\kscheduler.h" />
+    <ClInclude Include="..\..\..\..\include\ksignal.h" />
+    <ClInclude Include="..\..\..\..\include\ksocket.h" />
     <ClInclude Include="..\..\..\..\include\kstat.h" />
     <ClInclude Include="..\..\..\..\include\kstring.h" />
     <ClInclude Include="..\..\..\..\include\ksystem.h" />
@@ -215,7 +219,6 @@
     <ClInclude Include="..\..\..\..\include\nodeType.h" />
     <ClInclude Include="..\..\..\..\include\op.h" />
     <ClInclude Include="..\..\..\..\include\page.h" />
-    <ClInclude Include="..\..\..\..\include\pathutils.h" />
     <ClInclude Include="..\..\..\..\include\platform.h" />
     <ClInclude Include="..\..\..\..\include\ram.h" />
     <ClInclude Include="..\..\..\..\include\reg.h" />
@@ -239,17 +242,21 @@
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kalloc.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfile.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfmmap.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kio.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kmmap.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kobject.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kprocess.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kscheduler.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\ksignal.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\ksocket.c" />
     <ClCompile Include="..\..\..\..\source\kernel\ksystem.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kthread.c" />
     <ClCompile Include="..\..\..\..\source\kernel\loader\elf.c" />
@@ -261,7 +268,6 @@
     <ClCompile Include="..\..\..\..\source\util\khashmap.c" />
     <ClCompile Include="..\..\..\..\source\util\kstring.c" />
     <ClCompile Include="..\..\..\..\source\util\log.c" />
-    <ClCompile Include="..\..\..\..\source\util\pathutils.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
