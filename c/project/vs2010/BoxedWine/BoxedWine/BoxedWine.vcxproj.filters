@@ -37,6 +37,12 @@
     <Filter Include="Source Files\kernel\dev">
       <UniqueIdentifier>{65a2cd8d-1aba-4453-b39a-c466aaff0388}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\platform">
+      <UniqueIdentifier>{df8e0f6c-c0ac-4f03-bc3f-0932a07fcbfd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\platform\windows">
+      <UniqueIdentifier>{475f9338-43dc-46f7-afab-dc1f31190e49}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -295,6 +301,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\ksocket.c">
       <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\platform\windows\platform.c">
+      <Filter>Source Files\platform\windows</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

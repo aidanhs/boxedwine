@@ -5133,6 +5133,50 @@ BOOL decode3b7(struct DecodeData* data) {
     NEXT_OP(data);
     return TRUE;
 }
+// BTC Ed,Gd
+BOOL decode3bb(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = btcr32r32;
+        data->op->r1 = E(rm);
+        data->op->r2 = G(rm);
+        LOG_OP2("BTC", R32(data->op->r1),R32(data->op->r2));
+    } else if (data->ea16) {
+        data->op->func = btce32r32_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("BTC", M32(data, rm, data->op),R32(data->op->r1));
+    } else {
+        data->op->func = btce32r32_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("BTC", M32(data, rm, data->op),R32(data->op->r1));
+    }
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSF Gd,Ed
+BOOL decode3bc(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = bsfr32r32;
+        data->op->r1 = G(rm);
+        data->op->r2 = E(rm);
+        LOG_OP2("BSF", R32(data->op->r1),R32(data->op->r2));
+    } else if (data->ea16) {
+        data->op->func = bsfr32e32_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("BSF", R32(data->op->r1),M32(data, rm, data->op));
+    } else {
+        data->op->func = bsfr32e32_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("BSF", R32(data->op->r1),M32(data, rm, data->op));
+    }
+    NEXT_OP(data);
+    return TRUE;
+}
 // BSR Gw,Ew
 BOOL decode1bd(struct DecodeData* data) {
     U8 rm = FETCH8(data);

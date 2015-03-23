@@ -8,6 +8,10 @@
 
 static int cseip;
 
+U32 getMilliesSinceStart() {
+	return 0;
+}
+
 #define STACK_ADDRESS 0xE0001000
 #define HEAP_ADDRESS 0xF0000000
 #define CODE_ADDRESS 0xD0000000

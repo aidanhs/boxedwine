@@ -65,12 +65,12 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 		}
 	}
 
-	address = syscall_mmap64(thread, 0, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
+	address = syscall_mmap64(thread, ADDRESS_PROCESS_LOADER<<PAGE_SHIFT, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS|K_MAP_FIXED, -1, 0);
 	process->brkEnd = address+len;
 	process->mappedFiles[0].address = address;
 	process->mappedFiles[0].len = len;
 	process->mappedFiles[0].name = openNode->node->path.localPath;
-	process->mappedFilesCount++;
+	process->mappedFiles[0].inUse = TRUE;
 
 	for (i=0;i<hdr->e_phnum;i++) {
 		struct Elf32_Phdr phdr;		

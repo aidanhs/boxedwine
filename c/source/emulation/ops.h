@@ -2480,7 +2480,7 @@ void cmpxchgr16r16(struct CPU* cpu, struct Op* op) {
     cpu->result.u16 = cpu->dst.u16 - AX;
     cpu->inst = FLAGS_CMP16;
 	if (AX == cpu->dst.u16) {
-        cpu->dst.u16 = cpu->src.u16;
+        cpu->reg[op->r1].u16 = cpu->src.u16;
     } else {
         AX = cpu->dst.u16;
     }
@@ -2524,7 +2524,7 @@ void cmpxchgr32r32(struct CPU* cpu, struct Op* op) {
     cpu->result.u32 = cpu->dst.u32 - EAX;
     cpu->inst = FLAGS_CMP32;
 	if (EAX == cpu->dst.u32) {
-        cpu->dst.u32 = cpu->src.u32;
+        cpu->reg[op->r1].u32 = cpu->src.u32;
     } else {
         EAX = cpu->dst.u32;
     }
@@ -2575,6 +2575,7 @@ void bsrr16r16(struct CPU* cpu, struct Op* op) {
 		U32 result = 15;
 		while ((value & 0x8000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
+		cpu->reg[op->r2].u16 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2589,6 +2590,7 @@ void bsrr16e16_16(struct CPU* cpu, struct Op* op) {
 		U32 result = 15;
 		while ((value & 0x8000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
+		cpu->reg[op->r2].u16 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2603,6 +2605,7 @@ void bsrr16e16_32(struct CPU* cpu, struct Op* op) {
 		U32 result = 15;
 		while ((value & 0x8000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
+		cpu->reg[op->r2].u16 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2617,6 +2620,7 @@ void bsrr32r32(struct CPU* cpu, struct Op* op) {
 		U32 result = 31;
 		while ((value & 0x80000000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
+		cpu->reg[op->r2].u32 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2631,6 +2635,7 @@ void bsrr32e32_16(struct CPU* cpu, struct Op* op) {
 		U32 result = 31;
 		while ((value & 0x80000000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
+		cpu->reg[op->r2].u32 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2645,8 +2650,204 @@ void bsrr32e32_32(struct CPU* cpu, struct Op* op) {
 		U32 result = 31;
 		while ((value & 0x80000000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
+		cpu->reg[op->r2].u32 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
+	NEXT();
+}
+
+void bt_reg(struct CPU* cpu, struct Op* op) {
+	fillFlagsNoCF(cpu);
+    setCF(cpu, cpu->reg[op->r1].u32 & op->data1);
+	CYCLES(4);
+	NEXT();
+}
+
+void bt_mem16(struct CPU* cpu, struct Op* op) {
+	fillFlagsNoCF(cpu);
+	setCF(cpu, readd(cpu->memory, eaa16(cpu, op)) & op->data1);
+	CYCLES(4);
+	NEXT();
+}
+
+void bt_mem32(struct CPU* cpu, struct Op* op) {
+	fillFlagsNoCF(cpu);
+	setCF(cpu, readd(cpu->memory, eaa32(cpu, op)) & op->data1);
+	CYCLES(4);
+	NEXT();
+}
+
+void bts_reg(struct CPU* cpu, struct Op* op) {
+	fillFlagsNoCF(cpu);
+    setCF(cpu, cpu->reg[op->r1].u32 & op->data1);
+	cpu->reg[op->r1].u32 |= op->data1;
+	CYCLES(7);
+	NEXT();
+}
+
+void bts_mem16(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa16(cpu, op);
+	U32 value = readd(cpu->memory, eaa16(cpu, op));
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & op->data1);
+	writed(cpu->memory, address, value | op->data1);
+	CYCLES(8);
+	NEXT();
+}
+
+void bts_mem32(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa32(cpu, op);
+	U32 value = readd(cpu->memory, eaa32(cpu, op));
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & op->data1);
+	writed(cpu->memory, address, value | op->data1);
+	CYCLES(8);
+	NEXT();
+}
+
+void btr_reg(struct CPU* cpu, struct Op* op) {
+	fillFlagsNoCF(cpu);
+    setCF(cpu, cpu->reg[op->r1].u32 & op->data1);
+	cpu->reg[op->r1].u32 &= ~op->data1;
+	CYCLES(7);
+	NEXT();
+}
+
+void btr_mem16(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa16(cpu, op);
+	U32 value = readd(cpu->memory, eaa16(cpu, op));
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & op->data1);
+	writed(cpu->memory, address, value & ~op->data1);
+	CYCLES(8);
+	NEXT();
+}
+
+void btr_mem32(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa32(cpu, op);
+	U32 value = readd(cpu->memory, eaa32(cpu, op));
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & op->data1);
+	writed(cpu->memory, address, value & ~op->data1);
+	CYCLES(8);
+	NEXT();
+}
+
+void btc_reg(struct CPU* cpu, struct Op* op) {
+	fillFlagsNoCF(cpu);
+    setCF(cpu, cpu->reg[op->r1].u32 & op->data1);
+	cpu->reg[op->r1].u32 ^= op->data1;
+	CYCLES(7);
+	NEXT();
+}
+
+void btc_mem16(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa16(cpu, op);
+	U32 value = readd(cpu->memory, eaa32(cpu, op));
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & op->data1);
+	writed(cpu->memory, address, value ^ op->data1);
+	CYCLES(8);
+	NEXT();
+}
+
+void btc_mem32(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa32(cpu, op);
+	U32 value = readd(cpu->memory, eaa32(cpu, op));
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & op->data1);
+	writed(cpu->memory, address, value ^ op->data1);
+	CYCLES(8);
+	NEXT();
+}
+
+void btcr32r32(struct CPU* cpu, struct Op* op) {
+	U32 mask = 1 << cpu->reg[op->r2].u32 & 31;
+	fillFlagsNoCF(cpu);
+    setCF(cpu, cpu->reg[op->r1].u32 & mask);
+	cpu->reg[op->r1].u32 ^= mask;
+	CYCLES(7);
+	NEXT();
+}
+
+void btce32r32_16(struct CPU* cpu, struct Op* op) {
+	U32 mask = 1 << cpu->reg[op->r1].u32 & 31;
+	U32 address = eaa16(cpu, op)+((((S32)cpu->reg[op->r1].u32)>>3) & ~3);
+	U32 value = readd(cpu->memory, address);
+
+	fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+	writed(cpu->memory, address, value ^ mask);
+	CYCLES(13);
+	NEXT();
+}
+
+void btce32r32_32(struct CPU* cpu, struct Op* op) {
+	U32 mask = 1 << cpu->reg[op->r1].u32 & 31;
+	U32 address = eaa32(cpu, op)+((((S32)cpu->reg[op->r1].u32)>>3) & ~3);
+	U32 value = readd(cpu->memory, address);
+
+	fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+	writed(cpu->memory, address, value ^ mask);
+	CYCLES(13);
+	NEXT();
+}
+
+void bsfr32r32(struct CPU* cpu, struct Op* op) {
+	U32 value=cpu->reg[op->r1].u32;
+
+	fillFlagsNoZF(cpu);
+    
+    if (value==0) {
+        addFlag(ZF);
+    } else {
+        U32 result = 0;
+        while ((value & 0x01)==0) { result++; value>>=1; }
+        removeFlag(ZF);
+        cpu->reg[op->r2].u32=result;
+    }
+	CYCLES(6);
+	NEXT();
+}
+
+void bsfr32e32_16(struct CPU* cpu, struct Op* op) {
+	U32 value=readd(cpu->memory, eaa16(cpu, op));
+
+	fillFlagsNoZF(cpu);
+    
+    if (value==0) {
+        addFlag(ZF);
+    } else {
+        U32 result = 0;
+        while ((value & 0x01)==0) { result++; value>>=1; }
+        removeFlag(ZF);
+        cpu->reg[op->r2].u32=result;
+    }
+	CYCLES(6);
+	NEXT();
+}
+
+void bsfr32e32_32(struct CPU* cpu, struct Op* op) {
+	U32 value=readd(cpu->memory, eaa32(cpu, op));
+
+	fillFlagsNoZF(cpu);
+    
+    if (value==0) {
+        addFlag(ZF);
+    } else {
+        U32 result = 0;
+        while ((value & 0x01)==0) { result++; value>>=1; }
+        removeFlag(ZF);
+        cpu->reg[op->r2].u32=result;
+    }
+	CYCLES(6);
 	NEXT();
 }

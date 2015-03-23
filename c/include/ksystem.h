@@ -20,6 +20,8 @@ void removeProcess(struct KProcess* process);
 U32 getProcessCount();
 U32 syscall_uname(struct KThread* thread, U32 address);
 U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim);
+U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp);
+
 U32 getMilliesSinceStart();
 
 // returns tid

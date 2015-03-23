@@ -22,6 +22,10 @@
 
 char curdir[1024];
 
+U32 getMilliesSinceStart() {
+	return SDL_GetTicks();
+}
+
 int main(int argc, char **argv) {
 	int i;
 	const char* root = 0;
@@ -61,6 +65,10 @@ int main(int argc, char **argv) {
 		root=base;
 	}
 	initSystem();
+	if (!doesPathExist(root)) {
+		printf("root %s does not exist", root);
+		return 0;
+	}
 	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);
 
@@ -70,15 +78,15 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
-	ppenv[envc++] = "LD_DEBUG=all";
-	ppenv[envc++] = "LD_BIND_NOW=1";
+	//ppenv[envc++] = "LD_DEBUG=all";
+	//ppenv[envc++] = "LD_BIND_NOW=1";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
 	addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
-		printf("SDL_Init Error: %d", SDL_GetError());
+		printf("SDL_Init Error: %s", SDL_GetError());
 		return 1;
 	}	
 	argc = argc-i;

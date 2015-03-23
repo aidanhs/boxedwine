@@ -753,6 +753,9 @@ public class Main {
         ge("3b6", "movxz8", 32);
         ge("3b7", "movxz16", 32);
 
+        eg("3bb", "btc", 32);
+        ge("3bc", "bsf", 32);
+
         ge("1bd", "bsr", 16);
         ge("3bd", "bsr", 32);
 

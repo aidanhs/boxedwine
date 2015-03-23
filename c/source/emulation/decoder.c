@@ -1817,6 +1817,36 @@ BOOL decode2ff(struct DecodeData* data) {
 	return TRUE;
 }
 
+#define DECODE_BT(r, m16, m32) DECODE_E(r, m16, m32); data->op->data1 = 1 << (FETCH8(data) & 31)
+
+// GRP8 Ed,Ib
+BOOL decode3ba(struct DecodeData* data) {
+	U8 rm=FETCH8(data);
+	switch ((rm>>3)&7) {
+        case 0x04: // BT 
+			DECODE_BT(bt_reg, bt_mem16, bt_mem32);
+			LOG_E32("BT", rm, data);
+			break;
+        case 0x05: // BTS
+			DECODE_BT(bts_reg, bts_mem16, bts_mem32);
+			LOG_E32("BTS", rm, data);
+            break;
+        case 0x06: // BTR
+			DECODE_BT(btr_reg, btr_mem16, btr_mem32);
+			LOG_E32("BTR", rm, data);
+			break;
+        case 0x07: // BTC
+			DECODE_BT(btc_reg, btc_mem16, btc_mem32);
+			LOG_E32("BTC", rm, data);
+			break;
+        default:
+            kpanic("GRP8 illegal call %d", (rm>>3)&7);
+            break;
+    }
+	NEXT_OP(data);
+	return TRUE;
+}
+
 typedef BOOL (*DECODER)(struct DecodeData* obj);
 
 DECODER decoder[1024] = {
@@ -1970,7 +2000,7 @@ DECODER decoder[1024] = {
 	invalidOp, decode3a9, invalidOp, decode3ab, decode3ac, decode3ad, invalidOp, decode3af,
 	// 3b0
 	invalidOp, decode3b1, invalidOp, invalidOp, invalidOp, invalidOp, decode3b6, decode3b7,
-	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3bd, decode3be, decode3bf,
+	invalidOp, invalidOp, decode3ba, decode3bb, decode3bc, decode3bd, decode3be, decode3bf,
 	// 3c0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

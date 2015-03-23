@@ -2,6 +2,8 @@
 #include "karray.h"
 #include "log.h"
 
+#include <time.h>
+
 static struct KArray processes;
 static struct KArray threads;
 
@@ -45,15 +47,10 @@ U32 getThreadCount() {
 
 U32 syscall_uname(struct KThread* thread, U32 address) {
 	struct Memory* memory = thread->process->memory;
-
     writeNativeString(memory, address, "Linux");
     writeNativeString(memory, address+65, "GNU/Linux");
     writeNativeString(memory, address+130, "3.11.0-12-generic");
     writeNativeString(memory, address+260, "i686");
-	return 0;
-}
-
-U32 getMilliesSinceStart() {
 	return 0;
 }
 
@@ -76,5 +73,13 @@ U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim) {
         default:
             kpanic("sys call __NR_ugetrlimit resource %d not implemented", resource);
     }
+	return 0;
+}
+
+U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
+	struct Memory* memory = thread->process->memory;
+	U64 m = getSystemTimeAsMicroSeconds();
+    writed(memory, tp, (U32)(m/1000000l));
+    writed(memory, tp+4, (U32)(m % 1000000l)*1000);
 	return 0;
 }

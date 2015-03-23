@@ -10,6 +10,7 @@
 struct KObjectAccess {
 	U32  (*ioctl)(struct KThread* thread, struct KObject* obj, U32 request);
 	S64  (*seek)(struct KObject* obj, S64 pos);
+	S64  (*length)(struct KObject* obj);
 	S64  (*getPos)(struct KObject* obj);
 	void (*onDelete)(struct KObject* obj);
     void (*setBlocking)(struct KObject* obj, BOOL blocking);

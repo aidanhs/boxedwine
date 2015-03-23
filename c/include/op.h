@@ -26,4 +26,6 @@ struct Op {
 #endif
 };
 
+void freeOp(struct Op* op);
+
 #endif

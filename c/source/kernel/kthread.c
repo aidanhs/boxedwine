@@ -108,7 +108,7 @@ void freeFutex(struct futex* f) {
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime) {
 	struct Memory* memory = thread->process->memory;
 
-	if (op==FUTEX_WAIT || FUTEX_WAIT_PRIVATE==0) {
+	if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
 		struct futex* f=getFutex(thread, address);
 		U32 millies;
 
@@ -138,7 +138,7 @@ U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pT
     } else if (op==FUTEX_WAKE_PRIVATE || op==FUTEX_WAKE) {
 		int i;
 		U32 count = 0;
-		for (i=0;i<MAX_FUTEXES && count<=value;i++) {
+		for (i=0;i<MAX_FUTEXES && count<value;i++) {
 			if (system_futex[i].address==address && !system_futex[i].wake) {
 				system_futex[i].wake = TRUE;
 				wakeThread(system_futex[i].thread);				

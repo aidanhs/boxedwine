@@ -3,6 +3,7 @@
 
 #include "kobject.h"
 #include "platform.h"
+#include "kthread.h"
 
 #define K_F_DUPFD    0
 #define K_F_GETFD    1

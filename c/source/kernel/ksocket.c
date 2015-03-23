@@ -29,10 +29,6 @@ BOOL unixsocket_isDirectory(struct Node* node) {
 	return FALSE;
 }
 
-struct Node* unixsocket_list(struct Node* node) {
-    return 0;
-}
-
 BOOL unixsocket_remove(struct Node* node) {
 	return 0;
 }
@@ -79,14 +75,15 @@ U32 unixsocket_rename(struct Node* oldNode, struct Node* newNode) {
 	return -K_EIO;
 }
 
-struct NodeType unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_list, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode};
+struct NodeType unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode};
 
 void unixsocket_onDelete(struct KObject* obj) {
-	((struct OpenNode*)obj->data)->access->close((struct OpenNode*)obj->data);
+
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
-	((struct OpenNode*)obj->data)->access->close((struct OpenNode*)obj->data);
+	struct KSocket* s = (struct KSocket*)obj->data;
+	s->blocking = blocking;
 }
 
 BOOL unixsocket_isBlocking(struct KObject* obj) {
@@ -159,7 +156,11 @@ BOOL unixsocket_supportsLocks(struct KObject* obj) {
 	return FALSE;
 }
 
-struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_canMap};
+S64 unixsocket_klength(struct KObject* obj) {
+	return -1;
+}
+
+struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_canMap};
 
 char tmpSocketName[32];
 
@@ -177,13 +178,14 @@ const char* socketAddressName(struct KThread* thread, U32 address, U32 len) {
 struct KSocket* freeSockets;
 
 struct KSocket* allocSocket() {
+	struct KSocket* result;
 	if (freeSockets) {
-		struct KSocket* result = freeSockets;
-		freeSockets = result->next;
-		memset(result, 0, sizeof(struct KSocket*));
-		return result;
+		result = freeSockets;
+		freeSockets = result->next;		
+	} else {
+		result = (struct KSocket*)kalloc(sizeof(struct KSocket));
 	}
-	return (struct KSocket*)kalloc(sizeof(struct KSocket));
+	memset(result, 0, sizeof(struct KSocket));
 }
 
 U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
@@ -212,8 +214,8 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	}
 	s = (struct KSocket*)fd->kobject->data;
 	if (s->domain==K_AF_UNIX) {
-		char localPath[MAX_PATH];
-		char nativePath[MAX_PATH];
+		char localPath[MAX_FILEPATH_LEN];
+		char nativePath[MAX_FILEPATH_LEN];
 		const char* path = getNativeString(thread->process->memory, address+3);
 		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, path, localPath, nativePath);
 

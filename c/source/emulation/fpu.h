@@ -1419,7 +1419,7 @@ void FADD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
 }
 
 void FADD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
-    FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
+    FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();

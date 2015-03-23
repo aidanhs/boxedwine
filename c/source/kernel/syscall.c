@@ -26,6 +26,7 @@ void logsyscall(const char* fmt, ...) {
 
 #define LOG logsyscall
 #else
+//#define LOG
 #define LOG printf("%d/%d",thread->id, process->id); klog
 #endif
 
@@ -43,6 +44,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_chmod 15
 #define __NR_lseek 19
 #define __NR_getpid 20
+#define __NR_alarm 27
 #define __NR_access 33
 #define __NR_kill 37
 #define __NR_rename 38
@@ -170,7 +172,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_write: fd=%d result=%d", ARG1, result);
 		break;
 	case __NR_open:
-		result=syscall_open(thread, ARG1, ARG2);
+		result=syscall_open(thread, process->currentDirectory, ARG1, ARG2);
 		LOG("__NR_open: name=%s flags=%x result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;		
 	case __NR_close:
@@ -196,8 +198,14 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_chdir:
 		break;
+		*/
 	case __NR_time:
+		result = (U32)(getSystemTimeAsMicroSeconds() / 1000000l);
+		if (ARG1)
+			writed(memory, ARG1, result);
+		LOG("__NR_time tloc=%X result=%X", ARG1, result);
 		break;
+		/*
 	case __NR_chmod:
 		break;
 		*/
@@ -208,6 +216,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_getpid:
 		result = thread->process->id;
 		LOG("__NR_getpid result=%d", result);
+		break;
+	case __NR_alarm:
+		result = syscall_alarm(thread, ARG1);
+		LOG("__NR_alarm seconds=%d result=%d", ARG1, result);
 		break;
 	case __NR_access:
 		result = syscall_access(thread, ARG1, ARG2);
@@ -243,8 +255,9 @@ void syscall(struct CPU* cpu, struct Op* op) {
 			if (len<=alreadyAllocated) {
 				process->brkEnd+=len;
 			} else {
-				syscall_mmap64(thread, process->brkEnd, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS, -1, 0);
-				process->brkEnd+=len;
+				if (syscall_mmap64(thread, process->brkEnd, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS|K_MAP_FIXED, -1, 0)==process->brkEnd) {
+					process->brkEnd+=len;
+				}				
 			}
 		}
 		result = process->brkEnd;
@@ -289,9 +302,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_mmap:
 		break;
-	case __NR_munmap:
-		break;
 		*/
+	case __NR_munmap:
+		result = syscall_unmap(thread, ARG1, ARG2);
+		LOG("__NR_munmap address=%X len=%d result=%d", ARG1, ARG2, result);
+		break;
 	case __NR_fchmod:
 		result = syscall_fchmod(thread, ARG1, ARG2);
 		LOG("__NR_fchmod fd=%d mod=%X result=%d", ARG1, ARG2, result);
@@ -366,7 +381,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 				break;
 			//case 18: // SYS_ACCEPT4
 			default:
-				kpanic("Unknown socket syscall: %d"+ARG1);
+				kpanic("Unknown socket syscall: %d",ARG1);
 		}
 		break;
 		/*
@@ -399,10 +414,21 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_fchdir:
 		break;
-	case __NR__llseek:
+		*/
+	case __NR__llseek: {
+		S64 r64 = syscall_llseek(thread, ARG1, ((U64)ARG2)<<32|ARG3, ARG5);
+		result = (S32)r64;
+		LOG("__NR__llseek fildes=%d offset=%.8X%.8X pResult=%X whence=%d result=%d", ARG1, ARG2, ARG3, ARG4, ARG5);
+		if (ARG4) {
+			writeq(memory, ARG4, r64);
+		}
 		break;
+		}
 	case __NR_getdents:
+		result = syscall_getdents(thread, ARG1, ARG2, ARG3, FALSE);
+		LOG("__NR_getdents fd=%d dir=%X count=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_newselect:
 		break;
 		*/
@@ -493,21 +519,43 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_setresuid32:
 		break;
+		*/
 	case __NR_getresuid32:
+		if (ARG1)
+			writed(memory, ARG1, process->userId);
+		if (ARG2)
+			writed(memory, ARG2, process->userId);
+		if (ARG3)
+			writed(memory, ARG3, process->userId);
+		result=0;
+		LOG("__NR_getresuid32 ruid=%X(%d) euid=%X(%d) suid=%X(%d) result=%d", ARG1, process->userId, ARG2, process->userId, ARG3, process->userId, result);
 		break;
 	case __NR_getresgid32:
+		if (ARG1)
+			writed(memory, ARG1, process->groupId);
+		if (ARG2)
+			writed(memory, ARG2, process->groupId);
+		if (ARG3)
+			writed(memory, ARG3, process->groupId);
+		result=0;
+		LOG("__NR_getresgid32 rgid=%X(%d) egid=%X(%d) sgid=%X(%d) result=%d", ARG1, process->groupId, ARG2, process->groupId, ARG3, process->groupId, result);
 		break;
+		/*
 	case __NR_chown32:
 		break;
 	case __NR_setuid32:
 		break;
 	case __NR_setgid32:
 		break;
+		*/
 	case __NR_madvise:
+		result = 0;
+		LOG("__NR_madvise address=%X len=%d advise=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_getdents64:
+		result = syscall_getdents(thread, ARG1, ARG2, ARG3, TRUE);
+		LOG("__NR_getdents64 fd=%d dir=%X count=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		*/
 	case __NR_fcntl64:
 		result = syscall_fcntrl(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_fcntl64 fildes=%d cmd=%d arg=%d result=%d", ARG1, ARG2, ARG3, result);
@@ -555,11 +603,17 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = thread->id;
 		LOG("__NR_set_tid_address address=%X result=%d", ARG1, result);
 		break;
-		/*
 	case __NR_clock_gettime:
+		result = syscall_clock_gettime(thread, ARG1, ARG2);
+		//LOG("__NR_clock_gettime clock_id=%d tp=%X result=%d", ARG1, ARG2, result);
 		break;
 	case __NR_clock_getres:
+        writed(memory, ARG2, 0);
+		writed(memory, ARG2+4, 1000000);
+		result = 0;
+		LOG("__NR_clock_getres clock_id=%d res=%X result=%d", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_statfs64:
 		break;
 	case __NR_fstatfs64:
@@ -574,9 +628,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_inotify_rm_watch:
 		break;
-	case __NR_openat:
-		break;
 		*/
+	case __NR_openat: {
+		result=syscall_openat(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_openat: dirfd=%d name=%s flags=%x result=%d", ARG1, getNativeString(memory, ARG2), ARG3, result);
+		break;	
+	}
 	case __NR_set_robust_list:
 		kwarn("syscall __NR_set_robust_list not implemented");
 		result = -1;

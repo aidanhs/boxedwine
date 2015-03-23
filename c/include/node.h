@@ -9,6 +9,7 @@ struct KObject;
 
 struct Node {
 	FilePath path;
+	const char* name;
 	struct NodeType* nodeType;
 	U32 id;
 	U32 rdev;

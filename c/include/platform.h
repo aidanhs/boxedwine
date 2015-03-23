@@ -1,7 +1,9 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
-#define MAX_PATH 1024
+#define MAX_FILEPATH_LEN 1024
+// maximum number of files per directory
+#define MAX_DIR_LISTING 4096
 
 #define U64 unsigned long long int
 #define S64 long long int
@@ -35,5 +37,9 @@
 #ifndef S_ISDIR
 # define S_ISDIR(ST_MODE) (((ST_MODE) & _S_IFMT) == _S_IFDIR)
 #endif
+
+struct Node;
+int listNodes(struct Node* dir, struct Node** nodes, int maxCount);
+U64 getSystemTimeAsMicroSeconds();
 
 #endif

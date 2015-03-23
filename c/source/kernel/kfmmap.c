@@ -28,7 +28,7 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
 	else
 		memory->mmu[page] = &ramPageRO;
 
-	memory->data[page] = ram | GET_PAGE_PERMISSIONS(data);
+	memory->data[page] = ram | GET_PAGE_PERMISSIONS(data) | PAGE_IN_RAM;
 
 	oldPos = fd->kobject->access->getPos(fd->kobject);
 	fd->kobject->access->seek(fd->kobject, offset);

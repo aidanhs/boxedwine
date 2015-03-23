@@ -13,6 +13,7 @@
 #include "log.h"
 #include "kprocess.h"
 #include "kfiledescriptor.h"
+#include "ram.h"
 
 #include UNISTD
 #include UTIME
@@ -129,8 +130,35 @@ void file_init(struct OpenNode* node) {
 
 struct NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_canMap, file_ioctl, file_isWriteReady, file_isReadReady};
 
+struct DirData {
+	S32 pos;
+	struct Node* nodes[MAX_DIR_LISTING];
+	U32 count;
+	struct DirData* next;
+};
+
+struct DirData* freeDirDatas;
+void freeDirData(struct DirData* data) {
+	data->next = freeDirDatas;
+	freeDirDatas = data;
+}
+
+struct DirData* allocDirData() {
+	struct DirData* result;
+
+	if (freeDirDatas) {
+		result = freeDirDatas;
+		freeDirDatas = result->next;
+	} else {
+		result = (struct DirData*)kalloc(sizeof(struct DirData));
+	}
+	memset(result, 0, sizeof(struct DirData));
+	return result;
+}
+
 S64 dir_length(struct OpenNode* node) {	
-	return 0;
+	struct DirData* data = (struct DirData*)node->data;
+	return data->count;
 }
 
 BOOL dir_setLength(struct OpenNode* node, S64 len) {
@@ -138,11 +166,17 @@ BOOL dir_setLength(struct OpenNode* node, S64 len) {
 }
 
 S64 dir_getFilePointer(struct OpenNode* node) {
-	return 0;
+	struct DirData* data = (struct DirData*)node->data;
+	return data->pos;
 }
 
 S64 dir_seek(struct OpenNode* node, S64 pos) {
-	return 0;
+	struct DirData* data = (struct DirData*)node->data;
+	if (pos>=0 && pos<data->count)
+		data->pos = (S32)pos;
+	else
+		data->pos = data->count-1;
+	return data->pos;
 }
 
 U32 dir_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
@@ -154,6 +188,10 @@ U32 dir_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len
 }
 
 void dir_close(struct OpenNode* node) {
+	struct DirData* data = (struct DirData*)node->data;
+	if (data) {
+		freeDirData(data);
+	}
 	freeOpenNode(node);
 }
 
@@ -174,6 +212,21 @@ BOOL dir_canMap(struct OpenNode* node) {
 }
 
 void dir_init(struct OpenNode* node) {
+	struct DirData* data = allocDirData();
+	node->data = data;
+	data->count = listNodes(node->node, data->nodes, MAX_DIR_LISTING);
+}
+
+U32 getDirCount(struct OpenNode* node) {
+	struct DirData* data = (struct DirData*)node->data;
+	return data->count;
+}
+
+struct Node* getDirNode(struct OpenNode* node, U32 index) {
+	struct DirData* data = (struct DirData*)node->data;
+	if (index<data->count)
+		return data->nodes[index];
+	return 0;
 }
 
 struct NodeAccess dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_canMap, dir_ioctl, dir_isWriteReady, dir_isReadReady};
@@ -185,10 +238,6 @@ BOOL file_isDirectory(struct Node* node) {
 		return S_ISDIR(buf.st_mode);
 	}
 	return FALSE;
-}
-
-struct Node* file_list(struct Node* node) {
-    return 0;
 }
 
 BOOL file_remove(struct Node* node) {
@@ -292,7 +341,7 @@ U32 file_rename(struct Node* oldNode, struct Node* newNode) {
 	return K_EIO;
 }
 
-struct NodeType fileNodeType = {file_isDirectory, file_exists, file_rename, file_list, file_remove, file_lastModified, file_length, file_open, file_setLastModifiedTime, file_canRead, file_canWrite, file_getType, file_getMode};
+struct NodeType fileNodeType = {file_isDirectory, file_exists, file_rename, file_remove, file_lastModified, file_length, file_open, file_setLastModifiedTime, file_canRead, file_canWrite, file_getType, file_getMode};
 
 struct Node* getNodeInCache(const char* localPath) {
 	return (struct Node*)getHashmapValue(&nodeMap, localPath);
@@ -335,8 +384,8 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 }
 
 struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing) {
-	char localPath[MAX_PATH];
-	char nativePath[MAX_PATH];
+	char localPath[MAX_FILEPATH_LEN];
+	char nativePath[MAX_FILEPATH_LEN];
 	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, nativePath);
 		
 	if (result)
@@ -364,9 +413,7 @@ struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct 
 	} else {
 		result = (struct OpenNode*)kalloc(sizeof(struct OpenNode));
 	}
-	if (handle == 0xFFFFFFFF) {
-		int ii=0;
-	}
+	memset(result, 0, sizeof(struct OpenNode));
 	result->handle = handle;
 	result->flags = flags;
 	result->access = nodeAccess;
@@ -384,6 +431,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	if (nativePath)
 		nativeLen=strlen(nativePath)+1;
 	result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
+	memset(result, 0, sizeof(struct Node)+localLen+nativeLen);
 	result->id = nodeId++;
 	result->nodeType = nodeType;
 	if (localPath) {
@@ -398,6 +446,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	} else {
 		result->path.nativePath = 0;
 	}
+	result->name = strrchr(result->path.localPath, '/')+1;
 	putHashmapValue(&nodeMap, result->path.localPath, result);
 	return result;
 }
@@ -459,13 +508,13 @@ void remotePathToLocal(char* path) {
 BOOL readLink(const char* path, char* buffer) {
 	struct stat buf;
 	int h;
-	char tmp[MAX_PATH];
+	char tmp[MAX_FILEPATH_LEN];
 
 	if (stat(path, &buf)!=0) {
 		return FALSE;
 	}
-	if (buf.st_size>=MAX_PATH) {
-		kwarn("%s contains a link longer than the MAX_PATH: %d", path, MAX_PATH);
+	if (buf.st_size>=MAX_FILEPATH_LEN) {
+		kwarn("%s contains a link longer than the MAX_PATH: %d", path, MAX_FILEPATH_LEN);
 		return FALSE;
 	}
 	h = open(path, O_RDONLY);
@@ -489,7 +538,7 @@ BOOL readLink(const char* path, char* buffer) {
 BOOL followLinks(char* path) {
 	int len;
 	int i;
-	char tmp[MAX_PATH];
+	char tmp[MAX_FILEPATH_LEN];
 
 	if (doesPathExist(path))
 		return FALSE;

@@ -1,13 +1,52 @@
 #include "memory.h"
 #include "log.h"
+#include "op.h"
+
 #include <string.h>
 #include <stdlib.h>
+
+struct CodePageEntry {
+	struct Op* op;
+	U32 offset;
+	struct CodePageEntry* next;
+};
+
+#define CODE_ENTRIES 128
+
+struct CodePage {
+	struct CodePageEntry* entries[CODE_ENTRIES];
+};
 
 static U8* ram;
 static U8* ramRefCount;
 static U32 pageCount;
 static U32 freePageCount;
 static U32* freePages;
+static struct CodePage* codePages;
+
+void addCode(struct Op* op, int ramPage, int offset) {
+	struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> 5]);
+	if (!*entry) {
+		*entry = (struct CodePageEntry*)malloc(sizeof(struct CodePageEntry));
+		(*entry)->next = 0;
+	} else {
+		struct CodePageEntry* add = (struct CodePageEntry*)malloc(sizeof(struct CodePageEntry));
+		add->next = *entry;
+		*entry = add;
+	}
+	(*entry)->offset = offset;
+	(*entry)->op = op;
+}
+
+struct Op* getCode(int ramPage, int offset) {
+	struct CodePageEntry* entry = codePages[ramPage].entries[offset >> 5];
+	while (entry) {
+		if (entry->offset == offset)
+			return entry->op;
+		entry = entry->next;
+	}
+	return 0;
+}
 
 U8* getAddressOfRamPage(int page) {
 	return &ram[page << 12];
@@ -25,6 +64,8 @@ void initRAM(U32 pages) {
 		freePages[i] = i;
 		ramRefCount[i] = 0;
 	}
+	codePages = (struct CodePage*)malloc(pages*sizeof(struct CodePage));
+	memset(codePages, 0, sizeof(struct CodePage)*pages);
 }
 
 U32 getPageCount() {
@@ -43,12 +84,23 @@ U32 allocRamPage() {
     }
     ramRefCount[result]++;
 	memset(&ram[result<<PAGE_SHIFT], 0, PAGE_SIZE);
+	memset(&codePages[result], 0, sizeof(struct CodePage));
     return result;
 }
 
 void freeRamPage(int page) {
     ramRefCount[page]--;
     if (ramRefCount[page]==0) {
+		int i;
+		struct CodePageEntry** entries = codePages[page].entries;
+
+		for (i=0;i<CODE_ENTRIES;i++) {
+			struct CodePageEntry* entry = entries[i];
+			while (entry) {
+				freeOp(entry->op);
+				entry = entry->next;
+			}
+		}
         freePages[freePageCount++]=page;
     } else if (ramRefCount[page]<0) {
         kpanic("RAM logic error: freePage");
@@ -214,7 +266,7 @@ static U32 ondemmand(struct Memory* memory, U32 address, U32 data) {
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
 	BOOL write = IS_PAGE_WRITE(data);
 
-	memory->data[page] = GET_PAGE_PERMISSIONS(memory->data[page])|ram;
+	memory->data[page] = GET_PAGE_PERMISSIONS(memory->data[page])|ram|PAGE_IN_RAM;
 	
 	if (read && write)
 		memory->mmu[page] = &ramPageWR;
@@ -235,7 +287,7 @@ static U32 copyOnWrite(struct Memory* memory, U32 address, U32 data) {
 		U32 oldRamPage = GET_PAGE(memory->data[page]);
 		memcpy(getAddressOfRamPage(ram), getAddressOfRamPage(oldRamPage), PAGE_SIZE);
 		freeRamPage(oldRamPage);
-		memory->data[page] = GET_PAGE_PERMISSIONS(memory->data[page]) | ram;
+		memory->data[page] = GET_PAGE_PERMISSIONS(memory->data[page]) | ram | PAGE_IN_RAM;
 	}	
 	
 	if (read && write)

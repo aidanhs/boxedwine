@@ -27,6 +27,11 @@ void pf(struct Memory* memory, U32 address) {
 			}
 		}
 	}
+	kwarn("Mapped Files:");
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (memory->process->mappedFiles[i].inUse)
+			kwarn("    %.8X - %.8X %s", memory->process->mappedFiles[i].address, memory->process->mappedFiles[i].address+memory->process->mappedFiles[i].len, memory->process->mappedFiles[i].name);
+	}
 	kpanic("pf");
 }
 
@@ -64,31 +69,58 @@ struct Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, p
 
 U8 readb(struct Memory* memory, U32 address) {
 	int index = address >> 12;
+#ifdef LOG_OPS
+	U8 result = memory->mmu[index]->readb(memory, address, memory->data[index]);
+	fprintf(logFile, "readb %X @%X\n", result, address);
+	return result;
+#else
 	return memory->mmu[index]->readb(memory, address, memory->data[index]);
+#endif
 }
 
 void writeb(struct Memory* memory, U32 address, U8 value) {
 	int index = address >> 12;
+#ifdef LOG_OPS
+	fprintf(logFile, "writeb %X @%X\n", value, address);
+#endif
 	memory->mmu[index]->writeb(memory, address, memory->data[index], value);
 }
 
 U16 readw(struct Memory* memory, U32 address) {
 	int index = address >> 12;
+#ifdef LOG_OPS
+	U16 result = memory->mmu[index]->readw(memory, address, memory->data[index]);
+	fprintf(logFile, "readw %X @%X\n", result, address);
+	return result;
+#else
 	return memory->mmu[index]->readw(memory, address, memory->data[index]);
+#endif
 }
 
 void writew(struct Memory* memory, U32 address, U16 value) {
 	int index = address >> 12;
+#ifdef LOG_OPS
+	fprintf(logFile, "writew %X @%X\n", value, address);
+#endif
 	memory->mmu[index]->writew(memory, address, memory->data[index], value);
 }
 
 U32 readd(struct Memory* memory, U32 address) {
 	int index = address >> 12;
+#ifdef LOG_OPS
+	U32 result = memory->mmu[index]->readd(memory, address, memory->data[index]);
+	fprintf(logFile, "readd %X @%X\n", result, address);
+	return result;
+#else
 	return memory->mmu[index]->readd(memory, address, memory->data[index]);
+#endif
 }
 
 void writed(struct Memory* memory, U32 address, U32 value) {
 	int index = address >> 12;
+#ifdef LOG_OPS
+	fprintf(logFile, "writed %X @%X\n", value, address);
+#endif
 	memory->mmu[index]->writed(memory, address, memory->data[index], value);
 }
 
@@ -151,14 +183,14 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
 			U32 ram = allocRamPage();
 
 			memory->mmu[page] = pageType;
-			memory->data[page] = ram | (permissions << 24);
+			memory->data[page] = ram | (permissions << 24) | PAGE_IN_RAM;
 			page++;
 			address+=0x1000;
 		}
 	} else {
 		for (i=0;i<pageCount;i++) {
 			memory->mmu[page] = pageType;
-			memory->data[page] = data | (permissions << 24);
+			memory->data[page] = data | (permissions << 24) ;
 			page++;
 		}
 	}
@@ -227,7 +259,7 @@ void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
 	for (i=startingPage;i<startingPage+pageCount;i++) {
 		memory->mmu[i]->clear(memory, i, memory->data[i]);
 		memory->mmu[i] = &invalidPage;
-		memory->data[i]=PAGE_RESERVED;
+		memory->data[i]=0;
 	}
 }
 
@@ -250,6 +282,7 @@ void writeNativeString(struct Memory* memory, U32 address, const char* str) {
 		str++;
 		address++;
 	}
+	writeb(memory, address, 0);
 }
 
 static char tmpBuffer[1024];

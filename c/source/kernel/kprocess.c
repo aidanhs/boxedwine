@@ -13,6 +13,7 @@
 #include "kerror.h"
 #include "kobject.h"
 #include "kobjectaccess.h"
+#include "kalloc.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +25,8 @@ void initProcess(struct KProcess* process, struct Memory* memory) {
 	memory->process = process;
 	process->id = addProcess(process);
 	process->groupId = 1;	
+	process->parentId = 1;
+	process->userId = UID;
 }
 
 void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory* memory) {
@@ -36,6 +39,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 
 	process->parentId = from->id;;
 	process->groupId = from->groupId;
+	process->userId = from->userId;
 	strcpy(process->currentDirectory, from->currentDirectory);
 	process->brkEnd = from->brkEnd;
 	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
@@ -45,7 +49,6 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 		}
 	}
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
-	process->mappedFilesCount = from->mappedFilesCount;
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
 }
 
@@ -76,8 +79,9 @@ void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, co
 		writeStackString(cpu, args[i]);
 		a[i]=ESP;
 	}
-    push32(cpu, 0);
+	push32(cpu, 0);	
 	push32(cpu, a[0]);
+    push32(cpu, 0);	
     for (i=envc-1;i>=0;i--) {
 		push32(cpu, e[i]);
 	}
@@ -99,12 +103,15 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
 	return 0;
 }
 
-struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
-	struct Node* node = getNodeFromLocalPath(process->currentDirectory, localPath, (accessFlags & K_O_CREAT)==0);
+struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
+	struct Node* node;
 	struct OpenNode* openNode;
 	struct KFileDescriptor* result;
 	struct KObject* kobject;
 
+	if (!currentDirectory)
+		currentDirectory = process->currentDirectory;
+	node = getNodeFromLocalPath(currentDirectory, localPath, (accessFlags & K_O_CREAT)==0);
     if (!node) {
         return 0;
     }
@@ -122,19 +129,19 @@ struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char*
 	return result;
 }
 
-struct KFileDescriptor* openFile(struct KProcess* process, const char* localPath, U32 accessFlags) {
-	return openFileDescriptor(process, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process, 0));
+struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags) {
+	return openFileDescriptor(process, currentDirectory, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process, 0));
 }
 
 void initStdio(struct KProcess* process) {
     if (!getFileDescriptor(process, 0)) {
-        openFileDescriptor(process, "/dev/tty0", K_O_RDONLY, 0, 0);
+        openFileDescriptor(process, 0, "/dev/tty0", K_O_RDONLY, 0, 0);
     }
     if (!getFileDescriptor(process, 1)) {
-        openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 1);
+        openFileDescriptor(process, 0, "/dev/tty0", K_O_WRONLY, 0, 1);
     }
     if (!getFileDescriptor(process, 2)) {
-        openFileDescriptor(process, "/dev/tty0", K_O_WRONLY, 0, 2);
+        openFileDescriptor(process, 0, "/dev/tty0", K_O_WRONLY, 0, 2);
     }
 }
 
@@ -170,9 +177,9 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		loaderOpenNode = loaderNode->nodeType->open(loaderNode, K_O_RDONLY);
 	}
 	if (loaderOpenNode) {
-		struct Memory* memory = (struct Memory*)malloc(sizeof(struct Memory));
-		struct KProcess* process = (struct KProcess*)malloc(sizeof(struct KProcess));
-		struct KThread* thread = (struct KThread*)malloc(sizeof(struct KThread));		
+		struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
+		struct KProcess* process = (struct KProcess*)kalloc(sizeof(struct KProcess));
+		struct KThread* thread = (struct KThread*)kalloc(sizeof(struct KThread));		
 		U32 i;
 
 		initMemory(memory);
@@ -184,7 +191,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 			return FALSE;
 
 		// :TODO: why will it crash in strchr libc if I remove this
-		syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
+		//syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
 		pArgs[0] = loaderNode->path.localPath;
 		argIndex = 1;
@@ -293,8 +300,8 @@ const char* getModuleName(struct CPU* cpu) {
 	struct KProcess* process = cpu->thread->process;
 	U32 i;
 
-	for (i=0;i<process->mappedFilesCount;i++) {
-		if (cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (process->mappedFiles[i].inUse && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
 			return process->mappedFiles[i].name;
 	}
 	return "Unknown";
@@ -304,8 +311,8 @@ U32 getModuleEip(struct CPU* cpu) {
 	struct KProcess* process = cpu->thread->process;
 	U32 i;
 
-	for (i=0;i<process->mappedFilesCount;i++) {
-		if (cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (process->mappedFiles[i].inUse && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
 			return cpu->eip.u32-process->mappedFiles[i].address;
 	}
 	return 0;
@@ -347,9 +354,9 @@ and is now available for re-use. */
 
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid) {
 	if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID)) {
-        struct Memory* newMemory = (struct Memory*)malloc(sizeof(struct Memory));
-		struct KProcess* newProcess = (struct KProcess*)malloc(sizeof(struct KProcess));
-		struct KThread* newThread = (struct KThread*)malloc(sizeof(struct KThread));
+        struct Memory* newMemory = (struct Memory*)kalloc(sizeof(struct Memory));
+		struct KProcess* newProcess = (struct KProcess*)kalloc(sizeof(struct KProcess));
+		struct KThread* newThread = (struct KThread*)kalloc(sizeof(struct KThread));
 		newProcess->parentId = thread->process->id;        
 
 		cloneMemory(newMemory, thread->process->memory);
@@ -373,7 +380,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 		scheduleThread(newThread);
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
-		struct KThread* newThread = (struct KThread*)malloc(sizeof(struct KThread));
+		struct KThread* newThread = (struct KThread*)kalloc(sizeof(struct KThread));
         struct user_desc desc;
 
 		readMemory(thread->process->memory, (U8*)&desc, tls, sizeof(struct user_desc));
@@ -396,4 +403,31 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         kpanic("sys_clone does not implement flags: %X", flags);
         return 0;
     }
+}
+
+void runProcessTimer(struct KTimer* timer) {
+	removeTimer(timer);
+	timer->millies = 0;
+}
+
+U32 syscall_alarm(struct KThread* thread, U32 seconds) {
+	U32 prev = thread->process->timer.millies;
+	if (seconds == 0) {
+		if (thread->process->timer.millies!=0) {
+			removeTimer(&thread->process->timer);
+			thread->process->timer.millies = 0;
+		}
+	} else {
+		if (thread->process->timer.millies!=0) {
+			thread->process->timer.millies = seconds*1000+getMilliesSinceStart();
+		} else {
+			thread->process->timer.millies = seconds*1000+getMilliesSinceStart();
+			thread->process->timer.process = thread->process;
+			addTimer(&thread->process->timer);
+		}
+	}
+	if (prev) {
+		return (prev-getMilliesSinceStart())/1000;
+	}
+	return 0;
 }

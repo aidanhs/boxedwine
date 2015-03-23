@@ -19,6 +19,7 @@ struct MapedFiles {
 	const char* name;
 	U32 address;
 	U32 len;
+	BOOL inUse;
 };
 #define MAX_MAPPED_FILE 50
 #define MAX_SIG_ACTIONS 64
@@ -30,28 +31,38 @@ struct KSigAction {
     U32 sa_flags;
 };
 
+struct KProcess;
+
+struct KTimer {
+	struct KProcess* process;
+	U32 millies;
+	struct KTimer* next;
+	struct KTimer* prev;
+};
+
 struct KProcess {
 	U32 id;
 	U32 parentId;
 	U32 groupId;
+	U32 userId;
 	U32 pendingSignals;
 	U32 signaled;
 	U32 exitCode;
 	BOOL terminated;
 	struct Memory* memory;
 	U32 threadCount;
-	char currentDirectory[MAX_PATH];
+	char currentDirectory[MAX_FILEPATH_LEN];
 	U32 brkEnd;
 	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
 	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
 	struct KSigAction sigActions[MAX_SIG_ACTIONS];
-	U32 mappedFilesCount;
+	struct KTimer timer;
 };
 
 void processOnExitThread(struct KThread* thread);
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
-struct KFileDescriptor* openFile(struct KProcess* process, const char* localPath, U32 accessFlags);
+struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags);
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
 BOOL isProcessStopped(struct KProcess* process);
 BOOL isProcessTerminatedstruct (struct KProcess* process);
@@ -62,5 +73,7 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
 
 U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size);
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid);
+U32 syscall_alarm(struct KThread* thread, U32 seconds);
+void runProcessTimer(struct KTimer* timer);
 
 #endif

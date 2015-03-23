@@ -86,10 +86,21 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 		if (fd) {
 			if (off==0) {
 				struct KProcess* process = thread->process;
-				process->mappedFiles[process->mappedFilesCount].address = pageStart << PAGE_SHIFT;
-				process->mappedFiles[process->mappedFilesCount].len = pageCount << PAGE_SHIFT;
-				process->mappedFiles[process->mappedFilesCount].name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
-				process->mappedFilesCount++;
+				int index = -1;
+				for (i=0;i<MAX_MAPPED_FILE;i++) {
+					if (!process->mappedFiles[i].inUse) {
+						index = i;
+						break;
+					}
+				}
+				if (index<0) {
+					kwarn("MAX_MAPPED_FILE is not large enough");
+				} else {
+					process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
+					process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
+					process->mappedFiles[index].name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
+					process->mappedFiles[index].inUse = TRUE;
+				}
 			}
 			for (i=0;i<pageCount;i++) {
 				U32 data = 0;	
@@ -136,7 +147,7 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 		struct Page* page = memory->mmu[i];
 		if (page == &ramOnDemandPage || page==&ramOnDemandFilePage) {
 			U32 data = memory->data[i];
-			data&=~0xFF000000;
+			data&=~PAGE_PERMISSION_MASK;
 
 			data|=(permissions << 24);
 			memory->data[i] = data;
@@ -150,6 +161,20 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 		} else {
 			kpanic("syscall_mprotect unknown page type");
 		}
+	}
+	return 0;
+}
+
+U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
+	U32 pageStart = address >> PAGE_SHIFT;
+    U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
+	U32 i;
+	struct Memory* memory = thread->process->memory;
+
+	for (i=0;i<pageCount;i++) {
+		memory->mmu[i+pageStart]->clear(memory, i+pageStart, memory->data[i+pageStart]);
+		memory->mmu[i+pageStart]=&invalidPage;
+		memory->data[i+pageStart]=0;
 	}
 	return 0;
 }

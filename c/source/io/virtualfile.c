@@ -12,10 +12,6 @@ BOOL virtual_isDirectory(struct Node* node) {
 	return FALSE;
 }
 
-struct Node* virtual_list(struct Node* node) {
-    return 0;
-}
-
 BOOL virtual_remove(struct Node* node) {
 	return 0;
 }
@@ -95,7 +91,7 @@ U32 virtual_rename(struct Node* oldNode, struct Node* newNode) {
 	return -K_EIO;
 }
 
-struct NodeType virtualNodeType = {virtual_isDirectory, virtual_exists, virtual_rename, virtual_list, virtual_remove, virtual_lastModified, virtual_length, virtual_open, virtual_setLastModifiedTime, virtual_canRead, virtual_canWrite, virtual_getType, virtual_getMode};
+struct NodeType virtualNodeType = {virtual_isDirectory, virtual_exists, virtual_rename, virtual_remove, virtual_lastModified, virtual_length, virtual_open, virtual_setLastModifiedTime, virtual_canRead, virtual_canWrite, virtual_getType, virtual_getMode};
 
 void addVirtualFile(const char* localPath, struct NodeAccess* nodeAccess, U32 mode) {
 	struct Node* node = allocNode(localPath, 0, &virtualNodeType, nextrdev++);

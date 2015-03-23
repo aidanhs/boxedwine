@@ -29,7 +29,6 @@ struct NodeType {
 	BOOL (*isDirectory)(struct Node* node);
 	BOOL (*exists)(struct Node* node);
 	U32 (*rename)(struct Node* oldNode, struct Node* newNode);
-	struct Node* (*list)(struct Node* node);
 	BOOL (*remove)(struct Node* node);
 	U64 (*lastModified)(struct Node* node);
     U64 (*length)(struct Node* node);

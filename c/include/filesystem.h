@@ -3,6 +3,7 @@
 
 #include "node.h"
 #include "platform.h"
+#include "nodeaccess.h"
 
 extern char pathSeperator;
 
@@ -14,6 +15,9 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess);
 void freeOpenNode(struct OpenNode* node);
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath);
+
+U32 getDirCount(struct OpenNode* node);
+struct Node* getDirNode(struct OpenNode* node, U32 index);
 
 // returns FALSE if the path tried to escape root
 BOOL normalizePath(char* path);

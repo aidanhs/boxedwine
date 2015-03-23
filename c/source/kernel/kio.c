@@ -36,8 +36,8 @@ U32 syscall_write(struct KThread* thread, FD handle, U32 buffer, U32 len) {
 	return fd->kobject->access->write(fd->kobject, thread->process->memory, buffer, len);
 }
 
-U32 syscall_open(struct KThread* thread, U32 name, U32 flags) {
-	struct KFileDescriptor* fd = openFile(thread->process, getNativeString(thread->process->memory, name), flags);
+U32 syscall_open(struct KThread* thread, const char* currentDirectory, U32 name, U32 flags) {
+	struct KFileDescriptor* fd = openFile(thread->process, currentDirectory, getNativeString(thread->process->memory, name), flags);
 	if (fd)
 		return fd->handle;
 	switch (errno) {
@@ -47,6 +47,30 @@ U32 syscall_open(struct KThread* thread, U32 name, U32 flags) {
 	case EISDIR: return -K_EISDIR;
 	}
 	return -K_EINVAL;
+}
+
+U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
+	const char* currentDirectory=0;
+	U32 result = 0;
+	if (dirfd==-100) { // AT_FDCWD
+		currentDirectory = thread->process->currentDirectory;
+	} else {
+		struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
+		if (!fd) {
+			result = -K_EBADF;
+		} else if (fd->kobject->type!=KTYPE_FILE){
+			result = -K_ENOTDIR;
+		} else {
+			struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
+			currentDirectory = openNode->node->path.localPath;
+			if (openNode->node->nodeType->isDirectory(openNode->node)) {
+				result = -K_ENOTDIR;
+			}
+		}
+	}
+	if (result==0)
+		result = syscall_open(thread, currentDirectory, name, flags);
+	return result;
 }
 
 //struct iovec {
@@ -150,6 +174,9 @@ U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length) {
     if (fd==0) {
         return -K_EBADF;
     }
+	if (fd->kobject->type!=KTYPE_FILE) {
+		return -K_EINVAL;
+	}
 	openNode = (struct OpenNode*)fd->kobject->data;
 	if (openNode->node->nodeType->isDirectory(openNode->node)) {
 		return -K_EISDIR;
@@ -179,7 +206,7 @@ U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
 	struct Node* node = getNode(thread->process, path);
 	struct Node* link;
 	U64 len;
-	char tmp[MAX_PATH];
+	char tmp[MAX_FILEPATH_LEN];
 
     if (node==0) {
         return -K_ENOENT;
@@ -265,9 +292,12 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 	newNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, newName), FALSE);
 	if (newNode->nodeType->exists(newNode)) {
 		if (newNode->nodeType->isDirectory(newNode)) {
-			if (newNode->nodeType->list(newNode)) {
+			struct OpenNode* openNode = newNode->nodeType->open(newNode, K_O_RDONLY); 
+			if (openNode->access->length(openNode)) {
+				openNode->access->close(openNode);
 				return -K_ENOTEMPTY;
 			}
+			openNode->access->close(openNode);
 			if (!oldNode->nodeType->isDirectory(oldNode)) {
 				return -K_EISDIR;
 			}
@@ -275,4 +305,86 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 		newNode->nodeType->remove(newNode);
 	}
 	return oldNode->nodeType->rename(oldNode, newNode);
+}
+
+S64 syscall_llseek(struct KThread* thread, FD fildes, S64 offset, U32 whence) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	S64 pos;
+
+    if (!fd) {
+        return -K_EBADF;
+    }
+	if (whence==0) { // SEEK_SET
+		pos = offset;
+	} else if (whence==1) { // SEEK_CUR
+		pos = fd->kobject->access->getPos(fd->kobject);
+		if (pos<0)
+			return pos;
+		pos+=offset;
+	} else if (whence==2) { // SEEK_END
+		pos = fd->kobject->access->length(fd->kobject);
+		if (pos<0)
+			return pos;
+		pos+=offset;
+	} else {
+		return -K_EINVAL;
+	}
+	return fd->kobject->access->seek(fd->kobject, pos);
+}
+
+U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOOL is64) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	struct OpenNode* openNode;
+	U32 len = 0;
+	U32 entries;
+	U32 i;
+	struct Memory* memory = thread->process->memory;
+
+    if (!fd) {
+        return -K_EBADF;
+    }
+	if (fd->kobject->type!=KTYPE_FILE) {
+		return -K_ENOTDIR;
+	}
+	openNode = (struct OpenNode*)fd->kobject->data;
+	if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+		return -K_ENOTDIR;
+	}
+	entries = getDirCount(openNode);
+	for (i=(U32)openNode->access->getFilePointer(openNode);i<entries;i++) {
+		struct Node* entry = getDirNode(openNode, i);
+		U32 recordLen;
+
+		if (is64) {
+			recordLen = 24+strlen(entry->name);
+            recordLen=(recordLen+3) / 4 * 4;
+            if (recordLen+len>count) {
+                if (len==0)
+                    return -K_EINVAL;
+                return len;
+            }
+            writeq(memory, dirp, entry->id);
+            writeq(memory, dirp+8, i);
+            writew(memory, dirp+16, recordLen);
+			writeb(memory, dirp+18, entry->nodeType->getType(entry));
+			writeNativeString(memory, dirp+19, entry->name);
+        } else {
+			recordLen = 12+strlen(entry->name);
+            recordLen=(recordLen+3) / 4 * 4;
+            if (recordLen+len>count) {
+                if (len==0)
+                    return -K_EINVAL;
+                return len;
+            }
+            writed(memory, dirp, entry->id);
+            writed(memory, dirp+4, i);
+            writew(memory, dirp+8, recordLen);
+			writeNativeString(memory, dirp+10, entry->name);
+            writeb(memory, dirp+recordLen-1, entry->nodeType->getType(entry));
+        }
+        dirp+=recordLen;
+        len+=recordLen;
+		openNode->access->seek(openNode, i+1);
+	}
+	return 0;
 }

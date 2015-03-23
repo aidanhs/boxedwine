@@ -21,5 +21,6 @@ U32 madvise(struct KThread* thread, U32 addr, U32 len, U32 advice);
 U32 mlock(struct KThread* thread, U32 addr, U32 len);
 U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, S32 fildes, U64 off);
 U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot);
+U32 syscall_unmap(struct KThread* thread, U32 address, U32 len);
 
 #endif

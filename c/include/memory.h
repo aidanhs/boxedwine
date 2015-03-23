@@ -49,12 +49,15 @@ void writeNativeString(struct Memory* memory, U32 address, const char* str);
 #define PAGE_WRITE 0x02
 #define PAGE_EXEC 0x04
 #define PAGE_RESERVED 0xFFFFFFFF
+#define PAGE_IN_RAM 0x80000000
+#define PAGE_PERMISSION_MASK 0x7F000000
 
-#define GET_PAGE_PERMISSIONS(data) (data & 0xFF000000)
+#define GET_PAGE_PERMISSIONS(data) (data & PAGE_PERMISSION_MASK)
 #define IS_PAGE_READ(data) (data & 0x01000000)
 #define IS_PAGE_WRITE(data) (data & 0x02000000)
 #define IS_PAGE_EXEC(data) (data & 0x04000000)
 #define GET_PAGE(data) (data & 0x00FFFFFF)
+#define IS_PAGE_IN_RAM(data) (data & PAGE_IN_RAM)
 
 // data is only used if allocRAM is FALSE
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data);

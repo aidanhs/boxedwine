@@ -1,6 +1,9 @@
 #include "cpu.h"
 #include "log.h"
 #include "decoder.h"
+#include "ram.h"
+#include "platform.h"
+
 #include <string.h>
 
 void initCPU(struct CPU* cpu, struct Memory* memory) {
@@ -53,6 +56,20 @@ void fillFlagsNoCF(struct CPU* cpu) {
 		cpu->inst = FLAGS_NONE;		 
         if (getAF(cpu)) newFlags |= AF;
         if (getZF(cpu)) newFlags |= ZF;
+        if (getPF(cpu)) newFlags |= PF;
+        if (getSF(cpu)) newFlags |= SF;
+		if (getOF(cpu)) newFlags |= OF;
+        cpu->flags = newFlags;
+	}
+}
+
+void fillFlagsNoZF(struct CPU* cpu) {
+	if (cpu->inst!=FLAGS_NONE) {
+		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+
+		cpu->inst = FLAGS_NONE;		 
+        if (getAF(cpu)) newFlags |= AF;
+        if (getCF(cpu)) newFlags |= CF;
         if (getPF(cpu)) newFlags |= PF;
         if (getSF(cpu)) newFlags |= SF;
 		if (getOF(cpu)) newFlags |= OF;
@@ -535,10 +552,17 @@ void runBlock(struct CPU* cpu, struct Op* block) {
 
 void runCPU(struct CPU* cpu) {
 	struct Op* block;
-	//if (cpu->eip.u32==0xD01BE894) {
-	//	int ii=0;
-	//}
-	block = decodeBlock(cpu);
+	U32 data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
+	if (IS_PAGE_IN_RAM(data)) {
+		block = getCode(GET_PAGE(data), cpu->eip.u32 & 0xFFF);
+		if (!block) {
+			block = decodeBlock(cpu);
+			addCode(block, GET_PAGE(data), cpu->eip.u32 & 0xFFF);
+		}
+	} else {		
+		block = decodeBlock(cpu);
+		data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
+		addCode(block, GET_PAGE(data), cpu->eip.u32 & 0xFFF);
+	}
 	runBlock(cpu, block);
-	freeOp(block);
 }
