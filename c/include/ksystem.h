@@ -13,6 +13,8 @@
 
 void initSystem();
 
+extern U64 startTime;
+
 // returns pid
 U32 addProcess(struct KProcess* process);
 struct KProcess* getProcessById(U32 pid);
@@ -21,6 +23,7 @@ U32 getProcessCount();
 U32 syscall_uname(struct KThread* thread, U32 address);
 U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim);
 U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp);
+BOOL getNextProcess(U32* index, struct KProcess** process);
 
 U32 getMilliesSinceStart();
 

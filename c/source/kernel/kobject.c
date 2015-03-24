@@ -2,6 +2,7 @@
 #include "kobjectaccess.h"
 #include "kalloc.h"
 #include "ksystem.h"
+#include <string.h>
 
 static struct KObject* freeKObjects;
 
@@ -11,6 +12,7 @@ struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data)
 	if (freeKObjects) {
 		result = freeKObjects;
 		freeKObjects = freeKObjects->next;
+		memset(result, 0, sizeof(struct KObject));
 	} else {
 		result = (struct KObject*)kalloc(sizeof(struct KObject));
 	}

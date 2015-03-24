@@ -2041,22 +2041,22 @@ void btr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void bte16r16_16(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u16 & 15);
+	U32 mask=1 << (cpu->reg[op->r1].u16 & 15);
 	U32 address = eaa16(cpu, op);
 
 	fillFlagsNoCF(cpu);
-    address+=(((S16)cpu->reg[op->r2].u16)>>4)*2;
+    address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
     setCF(cpu, (readw(cpu->memory, address) & mask));
 	CYCLES(9);
 	NEXT();
 }
 
 void bte16r16_32(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u16 & 15);
+	U32 mask=1 << (cpu->reg[op->r1].u16 & 15);
 	U32 address = eaa32(cpu, op);
 
 	fillFlagsNoCF(cpu);
-    address+=(((S16)cpu->reg[op->r2].u16)>>4)*2;
+    address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
     setCF(cpu, (readw(cpu->memory, address) & mask));
 	CYCLES(9);
 	NEXT();
@@ -2071,22 +2071,22 @@ void btr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void bte32r32_16(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u32 & 31);
+	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
 	U32 address = eaa16(cpu, op);
 
 	fillFlagsNoCF(cpu);
-    address+=(((S32)cpu->reg[op->r2].u16)>>5)*4;
+    address+=(((S32)cpu->reg[op->r1].u16)>>5)*4;
     setCF(cpu, readd(cpu->memory, address) & mask);
 	CYCLES(9);
 	NEXT();
 }
 
 void bte32r32_32(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u32 & 31);
+	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
 	U32 address = eaa32(cpu, op);
 
 	fillFlagsNoCF(cpu);
-    address+=(((S32)cpu->reg[op->r2].u16)>>5)*4;
+    address+=(((S32)cpu->reg[op->r1].u16)>>5)*4;
     setCF(cpu, readd(cpu->memory, address) & mask);
 	CYCLES(9);
 	NEXT();
@@ -2174,7 +2174,7 @@ void dshlclr16r16(struct CPU* cpu, struct Op* op) {
 	cpu->src.u32 = CL;
 	cpu->dst.u32 = (cpu->reg[op->r1].u16<<16)|(U32)(cpu->reg[op->r2].u16);
 	result=cpu->dst.u32 << cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (op->data1 - 16));
+  	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r2].u16) << (cpu->src.u32 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	cpu->reg[op->r1].u16 = cpu->result.u16;
 	cpu->inst=FLAGS_DSHL16;
@@ -2188,7 +2188,7 @@ void dshlcle16r16_16(struct CPU* cpu, struct Op* op) {
 	cpu->src.u32 = CL;
 	cpu->dst.u32 = (readw(cpu->memory, address)<<16)|(U32)(cpu->reg[op->r1].u16);
 	result=cpu->dst.u32 << cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (op->data1 - 16));
+  	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (cpu->src.u32 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	writew(cpu->memory, address, cpu->result.u16);
 	cpu->inst=FLAGS_DSHL16;
@@ -2202,7 +2202,7 @@ void dshlcle16r16_32(struct CPU* cpu, struct Op* op) {
 	cpu->src.u32 = CL;
 	cpu->dst.u32 = (readw(cpu->memory, address)<<16)|(U32)(cpu->reg[op->r1].u16);
 	result=cpu->dst.u32 << cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (op->data1 - 16));
+  	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (cpu->src.u32 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	writew(cpu->memory, address, cpu->result.u16);
 	cpu->inst=FLAGS_DSHL16;
@@ -2213,7 +2213,7 @@ void dshlcle16r16_32(struct CPU* cpu, struct Op* op) {
 void dshlclr32r32(struct CPU* cpu, struct Op* op) {
 	cpu->src.u32=CL;
 	cpu->dst.u32=cpu->reg[op->r1].u32;
-	cpu->result.u32=(cpu->reg[op->r1].u32 << op->data1) | (cpu->reg[op->r2].u32 >> (32-op->data1));
+	cpu->result.u32=(cpu->reg[op->r1].u32 << cpu->src.u32) | (cpu->reg[op->r2].u32 >> (32-cpu->src.u32));
 	cpu->reg[op->r1].u32 = cpu->result.u32;	
 	cpu->inst=FLAGS_DSHL32;
 	CYCLES(4);
@@ -2225,7 +2225,7 @@ void dshlcle32r32_16(struct CPU* cpu, struct Op* op) {
 
 	cpu->src.u32=CL;
 	cpu->dst.u32=readd(cpu->memory, address);
-	cpu->result.u32=(cpu->dst.u32 << op->data1) | (cpu->reg[op->r1].u32 >> (32-op->data1));
+	cpu->result.u32=(cpu->dst.u32 << cpu->src.u32) | (cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
 	writed(cpu->memory, address, cpu->result.u32);
 	cpu->inst=FLAGS_DSHL32;
 	CYCLES(5);
@@ -2237,7 +2237,7 @@ void dshlcle32r32_32(struct CPU* cpu, struct Op* op) {
 
 	cpu->src.u32=CL;
 	cpu->dst.u32=readd(cpu->memory, address);
-	cpu->result.u32=(cpu->dst.u32 << op->data1) | (cpu->reg[op->r1].u32 >> (32-op->data1));
+	cpu->result.u32=(cpu->dst.u32 << cpu->src.u32) | (cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
 	writed(cpu->memory, address, cpu->result.u32);
 	cpu->inst=FLAGS_DSHL32;
 	CYCLES(5);
@@ -2254,12 +2254,12 @@ void btsr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void btse16r16_16(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u16 & 15);
+	U32 mask=1 << (cpu->reg[op->r1].u16 & 15);
 	U32 address = eaa16(cpu, op);
 	U16 value;
 
 	fillFlagsNoCF(cpu);
-    address+=(((S16)cpu->reg[op->r2].u16)>>4)*2;
+    address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
 	value = readw(cpu->memory, address);
     setCF(cpu, value & mask);
 	writew(cpu->memory, address, value | mask);
@@ -2268,12 +2268,12 @@ void btse16r16_16(struct CPU* cpu, struct Op* op) {
 }
 
 void btse16r16_32(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u16 & 15);
+	U32 mask=1 << (cpu->reg[op->r1].u16 & 15);
 	U32 address = eaa16(cpu, op);
 	U16 value;
 
 	fillFlagsNoCF(cpu);
-    address+=(((S16)cpu->reg[op->r2].u16)>>4)*2;
+    address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
 	value = readw(cpu->memory, address);
     setCF(cpu, value & mask);
 	writew(cpu->memory, address, value | mask);
@@ -2291,12 +2291,12 @@ void btsr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void btse32r32_16(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u32 & 31);
+	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
 	U32 address = eaa16(cpu, op);
 	U32 value;
 
 	fillFlagsNoCF(cpu);
-    address+=(((S32)cpu->reg[op->r2].u16)>>5)*4;
+    address+=(((S32)cpu->reg[op->r1].u16)>>5)*4;
 	value = readd(cpu->memory, address);
 	setCF(cpu, value & mask);
 	writed(cpu->memory, address, value|mask);
@@ -2305,12 +2305,12 @@ void btse32r32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void btse32r32_32(struct CPU* cpu, struct Op* op) {
-	U32 mask=1 << (cpu->reg[op->r2].u32 & 31);
+	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
 	U32 address = eaa32(cpu, op);
 	U32 value;
 
 	fillFlagsNoCF(cpu);
-    address+=(((S32)cpu->reg[op->r2].u16)>>5)*4;
+    address+=(((S32)cpu->reg[op->r1].u16)>>5)*4;
 	value = readd(cpu->memory, address);
 	setCF(cpu, value & mask);
 	writed(cpu->memory, address, value|mask);
@@ -2337,9 +2337,9 @@ void dshre16r16_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
 
 	cpu->src.u32 = op->data1;
-	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r2].u16)<<16);
+	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
 	result=cpu->dst.u32 >> cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (32 - op->data1));
+  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - op->data1));
 	cpu->result.u16=(U16)result;
 	writew(cpu->memory, address, cpu->result.u16);
 	cpu->inst=FLAGS_DSHR16;
@@ -2352,9 +2352,9 @@ void dshre16r16_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
 
 	cpu->src.u32 = op->data1;
-	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r2].u16)<<16);
+	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
 	result=cpu->dst.u32 >> cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (32 - op->data1));
+  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - op->data1));
 	cpu->result.u16=(U16)result;
 	writew(cpu->memory, address, cpu->result.u16);
 	cpu->inst=FLAGS_DSHR16;
@@ -2402,7 +2402,7 @@ void dshrclr16r16(struct CPU* cpu, struct Op* op) {
 	cpu->src.u32 = CL;
 	cpu->dst.u32 = (cpu->reg[op->r1].u16)|((U32)(cpu->reg[op->r2].u16)<<16);
 	result=cpu->dst.u32 >> cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (32 - op->data1));
+  	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r2].u16) << (32 - cpu->src.u32));
 	cpu->result.u16=(U16)result;
 	cpu->reg[op->r1].u16 = cpu->result.u16;
 	cpu->inst=FLAGS_DSHR16;
@@ -2415,9 +2415,9 @@ void dshrcle16r16_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
 
 	cpu->src.u32 = CL;
-	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r2].u16)<<16);
+	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
 	result=cpu->dst.u32 >> cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (32 - op->data1));
+  	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - cpu->src.u32));
 	cpu->result.u16=(U16)result;
 	writew(cpu->memory, address, cpu->result.u16);
 	cpu->inst=FLAGS_DSHR16;
@@ -2430,9 +2430,9 @@ void dshrcle16r16_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
 
 	cpu->src.u32 = CL;
-	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r2].u16)<<16);
+	cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
 	result=cpu->dst.u32 >> cpu->src.u8;
-  	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (32 - op->data1));
+  	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - cpu->src.u32));
 	cpu->result.u16=(U16)result;
 	writew(cpu->memory, address, cpu->result.u16);
 	cpu->inst=FLAGS_DSHR16;
@@ -2443,7 +2443,7 @@ void dshrcle16r16_32(struct CPU* cpu, struct Op* op) {
 void dshrclr32r32(struct CPU* cpu, struct Op* op) {
 	cpu->src.u32=CL;
 	cpu->dst.u32=cpu->reg[op->r1].u32;
-	cpu->result.u32=(cpu->reg[op->r1].u32 >> op->data1) | (cpu->reg[op->r2].u32 << (32-op->data1));
+	cpu->result.u32=(cpu->reg[op->r1].u32 >> cpu->src.u32) | (cpu->reg[op->r2].u32 << (32-cpu->src.u32));
 	cpu->reg[op->r1].u32 = cpu->result.u32;	
 	cpu->inst=FLAGS_DSHR32;
 	CYCLES(4);
@@ -2455,7 +2455,7 @@ void dshrcle32r32_16(struct CPU* cpu, struct Op* op) {
 
 	cpu->src.u32=CL;
 	cpu->dst.u32=readd(cpu->memory, address);
-	cpu->result.u32=(cpu->dst.u32 >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1));
+	cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32) | (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
 	writed(cpu->memory, address, cpu->result.u32);
 	cpu->inst=FLAGS_DSHR32;
 	CYCLES(4);
@@ -2467,7 +2467,7 @@ void dshrcle32r32_32(struct CPU* cpu, struct Op* op) {
 
 	cpu->src.u32=CL;
 	cpu->dst.u32=readd(cpu->memory, address);
-	cpu->result.u32=(cpu->dst.u32 >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1));
+	cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32) | (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
 	writed(cpu->memory, address, cpu->result.u32);
 	cpu->inst=FLAGS_DSHR32;
 	CYCLES(4);
@@ -2590,7 +2590,7 @@ void bsrr16e16_16(struct CPU* cpu, struct Op* op) {
 		U32 result = 15;
 		while ((value & 0x8000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
-		cpu->reg[op->r2].u16 = result;
+		cpu->reg[op->r1].u16 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2605,7 +2605,7 @@ void bsrr16e16_32(struct CPU* cpu, struct Op* op) {
 		U32 result = 15;
 		while ((value & 0x8000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
-		cpu->reg[op->r2].u16 = result;
+		cpu->reg[op->r1].u16 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2635,7 +2635,7 @@ void bsrr32e32_16(struct CPU* cpu, struct Op* op) {
 		U32 result = 31;
 		while ((value & 0x80000000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
-		cpu->reg[op->r2].u32 = result;
+		cpu->reg[op->r1].u32 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2650,7 +2650,7 @@ void bsrr32e32_32(struct CPU* cpu, struct Op* op) {
 		U32 result = 31;
 		while ((value & 0x80000000)==0) { result--; value<<=1; }
 		removeFlag(ZF);
-		cpu->reg[op->r2].u32 = result;
+		cpu->reg[op->r1].u32 = result;
 	}
 	cpu->inst = FLAGS_NONE;
 	CYCLES(7);
@@ -2829,7 +2829,7 @@ void bsfr32e32_16(struct CPU* cpu, struct Op* op) {
         U32 result = 0;
         while ((value & 0x01)==0) { result++; value>>=1; }
         removeFlag(ZF);
-        cpu->reg[op->r2].u32=result;
+        cpu->reg[op->r1].u32=result;
     }
 	CYCLES(6);
 	NEXT();
@@ -2846,7 +2846,7 @@ void bsfr32e32_32(struct CPU* cpu, struct Op* op) {
         U32 result = 0;
         while ((value & 0x01)==0) { result++; value>>=1; }
         removeFlag(ZF);
-        cpu->reg[op->r2].u32=result;
+        cpu->reg[op->r1].u32=result;
     }
 	CYCLES(6);
 	NEXT();

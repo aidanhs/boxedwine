@@ -249,12 +249,13 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 			process = 0;			
 		}
     } else {
-		U32 i;
+		U32 index=0;
+		struct KProcess* p=0;
+
         if (pid==0)
             pid = thread->process->groupId;
-		for (i=0;i<getProcessCount();i++) {
-			struct KProcess* p = getProcessById(i);
-			if (p && (isProcessStopped(process) || isProcessTerminated(process))) {
+		while (getNextProcess(&index, &p)) {
+			if (p && (isProcessStopped(p) || isProcessTerminated(p))) {
                 if (pid == -1) {
                     if (p->parentId == thread->process->id) {
                         process = p;
@@ -270,7 +271,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 		}
     }
 	if (!process) {
-		if (options!=1) { // WNOHANG
+		if (options==1) { // WNOHANG
 			return -K_ECHILD;
 		} else {
 			thread->waitType = WAIT_PID;
@@ -374,9 +375,9 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         }
         if (child_stack!=0)
             newThread->cpu.reg[4].u32 = child_stack;
-        newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
+        newThread->cpu.eip.u32 += 2;
         newThread->cpu.reg[0].u32 = 0;
-		runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first
+		//runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first
 		scheduleThread(newThread);
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {

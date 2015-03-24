@@ -68,7 +68,6 @@ void writeTermios(struct Memory* memory, U32 address, struct TTYData* data) {
 
 void tty_init(struct OpenNode* node) {
 	struct TTYData* data = (struct TTYData*)kalloc(sizeof(struct TTYData));
-	memset(data, 0, sizeof(struct TTYData));
 	data->mode = VT_AUTO;
 	data->kbMode = K_UNICODE;
 	node->data = data;

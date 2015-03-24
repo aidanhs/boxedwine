@@ -24,6 +24,10 @@ struct KProcess* getProcessById(U32 pid) {
 	return (struct KProcess*)getObjectFromArray((&processes), pid);
 }
 
+BOOL getNextProcess(U32* index, struct KProcess** process) {
+	return getNextObjectFromArray((&processes), index, process);
+}
+
 U32 getProcessCount() {
 	return getArrayCount((&processes));
 }
@@ -76,10 +80,20 @@ U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim) {
 	return 0;
 }
 
+U64 startTime;
+
 U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
 	struct Memory* memory = thread->process->memory;
 	U64 m = getSystemTimeAsMicroSeconds();
-    writed(memory, tp, (U32)(m/1000000l));
-    writed(memory, tp+4, (U32)(m % 1000000l)*1000);
+	if (clock_id==0) { // CLOCK_REALTIME
+		writed(memory, tp, (U32)(m/1000000l));
+		writed(memory, tp+4, (U32)(m % 1000000l)*1000);
+	} else if (clock_id==1 || clock_id==4 || clock_id==6) { // CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC_COARSE
+		U64 diff = m - startTime;
+		writed(memory, tp, (U32)(diff/1000000l));
+		writed(memory, tp+4, (U32)(diff % 1000000l)*1000);
+	} else {
+		kpanic("Unknown clock id for clock_gettime: %d",clock_id);
+	}
 	return 0;
 }

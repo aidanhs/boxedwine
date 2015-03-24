@@ -37,6 +37,7 @@ void initThread(struct KThread* thread, struct KProcess* process) {
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process) {
 	memset(thread, 0, sizeof(struct KThread));
 	memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
+	onCreateCPU(&thread->cpu); // sets up the 8-bit high low regs
 	thread->cpu.thread = thread;
 	thread->cpu.memory = process->memory;
 	thread->cpu.blockCounter = 0;

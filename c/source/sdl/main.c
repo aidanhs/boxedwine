@@ -33,6 +33,7 @@ int main(int argc, char **argv) {
 	int envc=0;
 	int mb=64;
 
+	startTime = getSystemTimeAsMicroSeconds();
 #ifdef LOG_OPS
 	logFile = fopen("log.txt", "w");
 #endif

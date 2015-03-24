@@ -31,7 +31,6 @@ U32 addObjecToArray(struct KArray* karray, void* object) {
 	newSize=karray->maxCount*2;
 	pObjects = (void**)kalloc(sizeof(void*)*newSize);
 	memcpy(pObjects, karray->objects, karray->maxCount);
-	memset(pObjects+karray->maxCount, 0, karray->maxCount);	
 	karray->count++;
 	free(karray->objects);
 	karray->objects = pObjects;
@@ -43,4 +42,13 @@ U32 addObjecToArray(struct KArray* karray, void* object) {
 void removeObjectFromArray(struct KArray* karray, U32 index) {
 	karray->objects[index-karray->startingIndex] = 0;
 	karray->count--;
+}
+
+BOOL getNextObjectFromArray(struct KArray* karray, U32* index, void** result) {
+	if (*index<karray->maxCount) {
+		*result = getObjectFromArray(karray, *index);
+		*index=*index+1;
+		return TRUE;
+	}
+	return FALSE;
 }

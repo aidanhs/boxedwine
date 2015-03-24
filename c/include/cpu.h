@@ -27,6 +27,7 @@ struct CPU {
 	struct FPU     fpu;
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
+	BOOL log;
 };
 
 struct user_desc {
@@ -127,6 +128,7 @@ U32 pop32(struct CPU* cpu);
 U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
 void initCPU(struct CPU* cpu, struct Memory* memory);
+void onCreateCPU(struct CPU* cpu);
 void runBlock(struct CPU* cpu, struct Op* block);
 void runCPU(struct CPU* cpu);
 

@@ -7,6 +7,8 @@
 #include "kerror.h"
 #include "log.h"
 
+#include <string.h>
+
 // :TODO: what about sync'ing the writes back to the file?
 
 BOOL canReadFD(struct KFileDescriptor* fd) {
@@ -25,6 +27,7 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle
 	if (freeFileDescriptors) {
 		result = freeFileDescriptors;
 		freeFileDescriptors = freeFileDescriptors->next;
+		memset(result, 0, sizeof(struct KFileDescriptor));
 	} else {
 		result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor));
 	}

@@ -149,10 +149,10 @@ struct DirData* allocDirData() {
 	if (freeDirDatas) {
 		result = freeDirDatas;
 		freeDirDatas = result->next;
+		memset(result, 0, sizeof(struct DirData));
 	} else {
 		result = (struct DirData*)kalloc(sizeof(struct DirData));
-	}
-	memset(result, 0, sizeof(struct DirData));
+	}	
 	return result;
 }
 
@@ -410,10 +410,10 @@ struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct 
 	if (freeOpenNodes) {
 		result = freeOpenNodes;
 		freeOpenNodes = result->next;
+		memset(result, 0, sizeof(struct OpenNode));
 	} else {
 		result = (struct OpenNode*)kalloc(sizeof(struct OpenNode));
-	}
-	memset(result, 0, sizeof(struct OpenNode));
+	}	
 	result->handle = handle;
 	result->flags = flags;
 	result->access = nodeAccess;
@@ -431,7 +431,6 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	if (nativePath)
 		nativeLen=strlen(nativePath)+1;
 	result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
-	memset(result, 0, sizeof(struct Node)+localLen+nativeLen);
 	result->id = nodeId++;
 	result->nodeType = nodeType;
 	if (localPath) {

@@ -6,8 +6,7 @@
 
 #include <string.h>
 
-void initCPU(struct CPU* cpu, struct Memory* memory) {
-	memset(cpu, 0, sizeof(struct CPU));
+void onCreateCPU(struct CPU* cpu) {
 	cpu->reg8[0] = &cpu->reg[0].u8;
 	cpu->reg8[1] = &cpu->reg[1].u8;
 	cpu->reg8[2] = &cpu->reg[2].u8;
@@ -16,6 +15,11 @@ void initCPU(struct CPU* cpu, struct Memory* memory) {
 	cpu->reg8[5] = &cpu->reg[1].h8;
 	cpu->reg8[6] = &cpu->reg[2].h8;
 	cpu->reg8[7] = &cpu->reg[3].h8;
+}
+
+void initCPU(struct CPU* cpu, struct Memory* memory) {
+	memset(cpu, 0, sizeof(struct CPU));
+	onCreateCPU(cpu);
 	cpu->memory = memory;
 	cpu->inst = FLAGS_NONE;
 	cpu->big = 1;

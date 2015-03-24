@@ -2,6 +2,8 @@
 #include "kprocess.h"
 #include "ksystem.h"
 
+#include <stdio.h>
+
 struct KThread* lastThread = 0;
 struct KThread* waitingThread = 0;
 struct KTimer* timers = 0;
@@ -67,6 +69,8 @@ void wakeThread(struct KThread* thread) {
 }
 
 void scheduleThread(struct KThread* thread) {
+	struct KThread* t;
+
 	if (lastThread == 0) {
 		lastThread = thread;
 		lastThread->scheduleNext = thread;
@@ -74,20 +78,35 @@ void scheduleThread(struct KThread* thread) {
 	} else {
 		thread->scheduleNext = lastThread;
 		thread->schedulePrev = lastThread->schedulePrev;
+		lastThread->schedulePrev->scheduleNext = thread;
 		lastThread->schedulePrev = thread;
 		if (lastThread->scheduleNext==lastThread) {
 			lastThread->scheduleNext = thread;
 		}
 	}
+	printf("schedulThread\n");	
+	t = lastThread;
+	do {
+		printf("  id=%d\n", t->id);
+		t = t->scheduleNext;
+	} while (t!=lastThread);
 }
 
 void unscheduleThread(struct KThread* thread) {
+	struct KThread* t;
+
 	if (thread == lastThread) {
-		lastThread = thread->schedulePrev;
-		thread->cpu.blockCounter = 0xFFFFFF00; // causes a context change
+		lastThread = thread->schedulePrev;		
 	}
 	thread->schedulePrev->scheduleNext = thread->scheduleNext;
 	thread->scheduleNext->schedulePrev = thread->schedulePrev;
+	thread->cpu.blockCounter = 0xFFFFFF00; // causes a context change
+	printf("unschedulThread\n");	
+	t = lastThread;
+	do {
+		printf("  id=%d\n", t->id);
+		t = t->scheduleNext;
+	} while (t!=lastThread);
 }
 
 U64 contextTime = 100000;

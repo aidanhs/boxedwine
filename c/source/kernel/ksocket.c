@@ -182,10 +182,10 @@ struct KSocket* allocSocket() {
 	if (freeSockets) {
 		result = freeSockets;
 		freeSockets = result->next;		
+		memset(result, 0, sizeof(struct KSocket));
 	} else {
 		result = (struct KSocket*)kalloc(sizeof(struct KSocket));
-	}
-	memset(result, 0, sizeof(struct KSocket));
+	}	
 }
 
 U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
@@ -199,6 +199,7 @@ U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
 		s->type = type;
 		return result->handle;
 	} 
+	thread->cpu.log = TRUE;
 	return -K_EAFNOSUPPORT;
 }
 

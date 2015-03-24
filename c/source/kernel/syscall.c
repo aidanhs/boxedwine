@@ -53,6 +53,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_dup 41
 #define __NR_pipe 42
 #define __NR_brk 45
+#define __NR_getgid 47
 #define __NR_ioctl 54
 #define __NR_setpgid 57
 #define __NR_umask 60
@@ -262,6 +263,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		}
 		result = process->brkEnd;
 		LOG("__NR_brk address=%.8X result=%.8X", ARG1, result);
+		break;
+	case __NR_getgid:
+		result = process->groupId;
+		LOG("__NR_getgid result=%d", result);
 		break;
 	case __NR_ioctl:
 		result = syscall_ioctl(thread, ARG1, ARG2);
@@ -605,7 +610,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_clock_gettime:
 		result = syscall_clock_gettime(thread, ARG1, ARG2);
-		//LOG("__NR_clock_gettime clock_id=%d tp=%X result=%d", ARG1, ARG2, result);
+		LOG("__NR_clock_gettime clock_id=%d tp=%X result=%d", ARG1, ARG2, result);
 		break;
 	case __NR_clock_getres:
         writed(memory, ARG2, 0);
@@ -654,10 +659,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	}
 	if (result!=-K_WAIT) {
 		EAX = result;
+		cpu->eip.u32+=op->eipCount;
+		CYCLES(1);
 	} else {
 		thread->waitSyscall = EAX;
 		waitThread(thread);
-	}
-	cpu->eip.u32+=op->eipCount;
-	CYCLES(1);
+	}	
 }

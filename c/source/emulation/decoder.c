@@ -41,10 +41,10 @@ struct Op* allocOp() {
 	if (freeOps) {
 		result = freeOps;
 		freeOps = result->next;
+		memset(result, 0, sizeof(struct Op));
 	} else {
 		result = (struct Op*)kalloc(sizeof(struct Op));
-	}
-	memset(result, 0, sizeof(struct Op));
+	}	
 	return result;
 }
 
