@@ -82,8 +82,10 @@ void newInstruction(int instruction, int flags) {
     EBP=0;
     ESI=0;
     EDI=0;
-    cpu->eip.u32=0;    
-    pushCode8(instruction);
+    cpu->eip.u32=0;   
+	if (instruction>0xFF)
+		pushCode8(0x0F);
+    pushCode8(instruction & 0xFF);
 }
 
 void newInstructionWithRM(int instruction, int rm, int flags) {
@@ -828,6 +830,120 @@ void EwGw(int instruction, struct Data* data) {
             runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200, 16);
+        }
+		data++;
+    }
+}
+
+void EwGwEffective(int instruction, struct Data* data) {
+    while (data->valid) {
+		int ew;
+		int gw;
+		int rm;
+
+        for (ew = 0; ew < 8; ew++) {
+            for (gw = 0; gw < 8; gw++) {
+				struct Reg* e;
+				struct Reg* g;
+
+                if (ew == gw)
+                    continue;
+                rm = ew | (gw << 3) | 0xC0;
+                newInstructionWithRM(instruction, rm, data->flags);
+                pushConstant(data);
+                e = &cpu->reg[E(rm)];
+                g = &cpu->reg[G(rm)];
+                e->u32 = DEFAULT;
+                g->u32 = DEFAULT;
+                e->u16 = data->var1;
+                g->u16 = data->var2;
+                runTestCPU();
+                assertResult(data, cpu, instruction, e->u16, g->u16, E(rm), G(rm), 0, 16);
+            }
+        }
+
+        for (gw = 0; gw < 8; gw++) {
+			struct Reg* g;
+			U32 result;
+			int offset = 0;
+
+            rm = (gw << 3);
+            if (cpu->big) {
+				offset = (data->var2 >> 5)*4;
+                rm += 5; 
+			} else {
+				offset = (data->var2 >> 4)*2;
+                rm += 6;
+			}
+            newInstructionWithRM(instruction, rm, data->flags);
+            if (cpu->big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            pushConstant(data);
+            writed(cpu->memory, cpu->segAddress[DS] + 200+offset, DEFAULT);
+            writew(cpu->memory, cpu->segAddress[DS] + 200+offset, data->var1);
+            g = &cpu->reg[G(rm)];
+            g->u32 = DEFAULT;
+            g->u16 = data->var2;
+            runTestCPU();
+            result = readw(cpu->memory, cpu->segAddress[DS] + 200 + offset);
+            assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200 + offset, 16);
+        }
+		data++;
+    }
+}
+
+void EdGdEffective(int instruction, struct Data* data) {
+    while (data->valid) {
+		int ed;
+		int gd;
+		int rm;
+
+        for (ed = 0; ed < 8; ed++) {
+            for (gd = 0; gd < 8; gd++) {
+				struct Reg* e;
+				struct Reg* g;
+
+                if (ed == gd)
+                    continue;
+                rm = ed | (gd << 3) | 0xC0;
+                newInstructionWithRM(instruction, rm, data->flags);
+                pushConstant(data);
+                e = &cpu->reg[E(rm)];
+                g = &cpu->reg[G(rm)];
+                e->u32 = data->var1;
+                g->u32 = data->var2;
+                runTestCPU();
+                assertResult(data, cpu, instruction, e->u32, g->u32, E(rm), G(rm), 0, 32);
+            }
+        }
+
+        for (gd = 0; gd < 8; gd++) {
+			struct Reg* g;
+			U32 result;
+			int offset = 0;
+
+            rm = (gd << 3);
+            if (cpu->big) {
+				offset = (data->var2 >> 5)*4;
+                rm += 5; 
+			} else {
+				offset = (data->var2 >> 4)*2;
+                rm += 6;
+			}
+            newInstructionWithRM(instruction, rm, data->flags);
+            if (cpu->big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            pushConstant(data);
+            writed(cpu->memory, cpu->segAddress[DS] + 200+offset, data->var1);
+            g = &cpu->reg[G(rm)];
+            g->u32 = data->var2;
+            runTestCPU();
+            result = readd(cpu->memory, cpu->segAddress[DS] + 200 + offset);
+            assertResult(data, cpu, instruction, result, g->u32, G(rm), -1, cpu->segAddress[DS] + 200 + offset, 32);
         }
 		data++;
     }
@@ -2775,6 +2891,22 @@ static struct Data stc[] = {
 		endData()
 };
 
+static struct Data btw[] = {
+        allocData(0xFFFD, 1, 0xFFFD, CF, false, false),
+        allocData(0x10, 4, 0x10, 0, true, false),
+		allocData(0xFFFD, 33, 0xFFFD, CF, false, false),
+        allocData(0x10, 36, 0x10, 0, true, false),
+		endData()
+};
+
+static struct Data btd[] = {
+        allocData(0xFFFDFFFF, 17, 0xFFFDFFFF, CF, false, false),
+        allocData(0x100000, 20, 0x100000, 0, true, false),
+		allocData(0xFFFDFFFF, 81, 0xFFFDFFFF, CF, false, false),
+        allocData(0x100000, 84, 0x100000, 0, true, false),
+		endData()
+};
+
 void testAdd0x000() {cpu->big = false;EbGb(0x00, addb);}
 void testAdd0x200() {cpu->big = true;EbGb(0x00, addb);}
 void testAdd0x001() {cpu->big = false;EwGw(0x01, addw);}
@@ -3079,7 +3211,7 @@ void testXchgDiAx0x097() {cpu->big = false;Reg16Reg16(0x97, xchgw, &cpu->reg[0],
 void testXchgEdiEax0x297() {cpu->big = true;Reg32Reg32(0x97, xchgd, &cpu->reg[0], &cpu->reg[7]);}
 
 void testCbw0x098() {cpu->big = false;EwReg(0x98, 0, cbw);}
-void testCwde0x298() {cpu->big = true;EdReg(0x298, 0, cwde);}
+void testCwde0x298() {cpu->big = true;EdReg(0x98, 0, cwde);}
 void testCwd0x099() {cpu->big = false;Reg16Reg16(0x99, cwd, &cpu->reg[0], &cpu->reg[2]);}
 void testCdq0x299() {cpu->big = true;Reg32Reg32(0x99, cdq, &cpu->reg[0], &cpu->reg[2]);}
 
@@ -4405,6 +4537,16 @@ void testGrp50x2ff() {
 	Ed(0xff, 1, decd);
 }
 
+void testBt0x1a3() {
+	cpu->big=false;
+	EwGwEffective(0x1a3, btw);
+}
+
+void testBt0x3a3() {
+	cpu->big=true;
+	EdGdEffective(0x1a3, btd);
+}
+
 void run(void (*functionPtr)(), char* name) {
 	didFail = 0;
 	setup();
@@ -4756,6 +4898,8 @@ int main(int argc, char **argv) {
 	run(testGrp40x2fe, "Grp4 2fe");
 	run(testGrp50x0ff, "Grp5 0ff");
 	run(testGrp50x2ff, "Grp5 2ff");
+	run(testBt0x1a3, "BT 1a3");
+	run(testBt0x3a3, "BT 3a3");
 	return 0;
 }
 
