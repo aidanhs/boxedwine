@@ -276,6 +276,14 @@ void memcopyFromNative(struct Memory* memory, U32 address, const unsigned char* 
 	}
 }
 
+void memcopyToNative(struct Memory* memory, U32 address, unsigned char* p, U32 len) {
+	U32 i;
+	
+	for (i=0;i<len;i++) {
+		p[i] = readb(memory, address+i);
+	}
+}
+
 void writeNativeString(struct Memory* memory, U32 address, const char* str) {	
 	while (*str) {
 		writeb(memory, address, *str);
