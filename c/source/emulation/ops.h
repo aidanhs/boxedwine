@@ -2094,10 +2094,12 @@ void bte32r32_32(struct CPU* cpu, struct Op* op) {
 
 void dshlr16r16(struct CPU* cpu, struct Op* op) {
 	U32 result;
-
+	U32 tmp;
 	cpu->src.u32 = op->data1;
-	cpu->dst.u32 = (cpu->reg[op->r1].u16<<16)|(U32)(cpu->reg[op->r2].u16);
-	result=cpu->dst.u32 << cpu->src.u8;
+	cpu->dst.u32 = cpu->reg[op->r1].u16;
+	cpu->dst2.u32 = cpu->reg[op->r2].u16;
+	tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
+	result=tmp << cpu->src.u8;
   	if (op->data1>16) result |= ((U32)(cpu->reg[op->r2].u16) << (op->data1 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	cpu->reg[op->r1].u16 = cpu->result.u16;
@@ -2109,9 +2111,13 @@ void dshlr16r16(struct CPU* cpu, struct Op* op) {
 void dshle16r16_16(struct CPU* cpu, struct Op* op) {
 	U32 result;
 	U32 address = eaa16(cpu, op);
+	U32 tmp;
+
 	cpu->src.u32 = op->data1;
-	cpu->dst.u32 = (readw(cpu->memory, address)<<16)|(U32)(cpu->reg[op->r1].u16);
-	result=cpu->dst.u32 << cpu->src.u8;
+	cpu->dst.u32 = readw(cpu->memory, address);
+	cpu->dst2.u32 = cpu->reg[op->r1].u16;
+	tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
+	result=tmp << cpu->src.u8;
   	if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (op->data1 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	writew(cpu->memory, address, cpu->result.u16);
@@ -2123,9 +2129,13 @@ void dshle16r16_16(struct CPU* cpu, struct Op* op) {
 void dshle16r16_32(struct CPU* cpu, struct Op* op) {
 	U32 result;
 	U32 address = eaa32(cpu, op);
+	U32 tmp;
+
 	cpu->src.u32 = op->data1;
-	cpu->dst.u32 = (readw(cpu->memory, address)<<16)|(U32)(cpu->reg[op->r1].u16);
-	result=cpu->dst.u32 << cpu->src.u8;
+	cpu->dst.u32 = readw(cpu->memory, address);
+	cpu->dst2.u32 = cpu->reg[op->r1].u16;
+	tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
+	result=tmp << cpu->src.u8;
   	if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (op->data1 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	writew(cpu->memory, address, cpu->result.u16);
@@ -2170,10 +2180,13 @@ void dshle32r32_32(struct CPU* cpu, struct Op* op) {
 
 void dshlclr16r16(struct CPU* cpu, struct Op* op) {
 	U32 result;
+	U32 tmp;
 
 	cpu->src.u32 = CL;
-	cpu->dst.u32 = (cpu->reg[op->r1].u16<<16)|(U32)(cpu->reg[op->r2].u16);
-	result=cpu->dst.u32 << cpu->src.u8;
+	cpu->dst.u32 = cpu->reg[op->r1].u16;
+	cpu->dst2.u32 = cpu->reg[op->r2].u16;
+	tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
+	result=tmp << cpu->src.u8;
   	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r2].u16) << (cpu->src.u32 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	cpu->reg[op->r1].u16 = cpu->result.u16;
@@ -2185,9 +2198,13 @@ void dshlclr16r16(struct CPU* cpu, struct Op* op) {
 void dshlcle16r16_16(struct CPU* cpu, struct Op* op) {
 	U32 result;
 	U32 address = eaa16(cpu, op);
+	U32 tmp;
+
 	cpu->src.u32 = CL;
-	cpu->dst.u32 = (readw(cpu->memory, address)<<16)|(U32)(cpu->reg[op->r1].u16);
-	result=cpu->dst.u32 << cpu->src.u8;
+	cpu->dst.u32 = readw(cpu->memory, address);
+	cpu->dst2.u32 = cpu->reg[op->r1].u16;
+	tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
+	result=tmp << cpu->src.u8;
   	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (cpu->src.u32 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	writew(cpu->memory, address, cpu->result.u16);
@@ -2199,9 +2216,13 @@ void dshlcle16r16_16(struct CPU* cpu, struct Op* op) {
 void dshlcle16r16_32(struct CPU* cpu, struct Op* op) {
 	U32 result;
 	U32 address = eaa32(cpu, op);
+	U32 tmp;
+
 	cpu->src.u32 = CL;
-	cpu->dst.u32 = (readw(cpu->memory, address)<<16)|(U32)(cpu->reg[op->r1].u16);
-	result=cpu->dst.u32 << cpu->src.u8;
+	cpu->dst.u32 = readw(cpu->memory, address);
+	cpu->dst2.u32 = cpu->reg[op->r1].u16;
+	tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
+	result=tmp << cpu->src.u8;
   	if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (cpu->src.u32 - 16));
 	cpu->result.u16=(U16)(result >> 16);
 	writew(cpu->memory, address, cpu->result.u16);
@@ -2476,11 +2497,11 @@ void dshrcle32r32_32(struct CPU* cpu, struct Op* op) {
 
 void cmpxchgr16r16(struct CPU* cpu, struct Op* op) {
 	cpu->dst.u16 = cpu->reg[op->r1].u16;
-    cpu->src.u16 = cpu->reg[op->r2].u16;
+    cpu->src.u16 = AX;
     cpu->result.u16 = cpu->dst.u16 - AX;
     cpu->inst = FLAGS_CMP16;
 	if (AX == cpu->dst.u16) {
-        cpu->reg[op->r1].u16 = cpu->src.u16;
+        cpu->reg[op->r1].u16 = cpu->reg[op->r2].u16;
     } else {
         AX = cpu->dst.u16;
     }
@@ -2491,11 +2512,11 @@ void cmpxchgr16r16(struct CPU* cpu, struct Op* op) {
 void cmpxchge16r16_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
 	cpu->dst.u16 = readw(cpu->memory, address);
-    cpu->src.u16 = cpu->reg[op->r1].u16;
+    cpu->src.u16 = AX;
     cpu->result.u16 = cpu->dst.u16 - AX;
     cpu->inst = FLAGS_CMP16;
 	if (AX == cpu->dst.u16) {
-        writew(cpu->memory, address, cpu->src.u16);
+        writew(cpu->memory, address, cpu->reg[op->r1].u16);
     } else {
         AX = cpu->dst.u16;
     }
@@ -2506,11 +2527,11 @@ void cmpxchge16r16_16(struct CPU* cpu, struct Op* op) {
 void cmpxchge16r16_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
 	cpu->dst.u16 = readw(cpu->memory, address);
-    cpu->src.u16 = cpu->reg[op->r1].u16;
+    cpu->src.u16 = AX;
     cpu->result.u16 = cpu->dst.u16 - AX;
     cpu->inst = FLAGS_CMP16;
 	if (AX == cpu->dst.u16) {
-        writew(cpu->memory, address, cpu->src.u16);
+        writew(cpu->memory, address, cpu->reg[op->r1].u16);
     } else {
         AX = cpu->dst.u16;
     }
@@ -2520,11 +2541,11 @@ void cmpxchge16r16_32(struct CPU* cpu, struct Op* op) {
 
 void cmpxchgr32r32(struct CPU* cpu, struct Op* op) {
 	cpu->dst.u32 = cpu->reg[op->r1].u32;
-    cpu->src.u32 = cpu->reg[op->r2].u32;
+    cpu->src.u32 = EAX;
     cpu->result.u32 = cpu->dst.u32 - EAX;
     cpu->inst = FLAGS_CMP32;
 	if (EAX == cpu->dst.u32) {
-        cpu->reg[op->r1].u32 = cpu->src.u32;
+        cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;
     } else {
         EAX = cpu->dst.u32;
     }
@@ -2535,11 +2556,11 @@ void cmpxchgr32r32(struct CPU* cpu, struct Op* op) {
 void cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
 	cpu->dst.u32 = readd(cpu->memory, address);
-    cpu->src.u32 = cpu->reg[op->r1].u32;
+    cpu->src.u32 = EAX;
     cpu->result.u32 = cpu->dst.u32 - EAX;
     cpu->inst = FLAGS_CMP32;
 	if (EAX == cpu->dst.u32) {
-        writed(cpu->memory, address, cpu->src.u32);
+        writed(cpu->memory, address, cpu->reg[op->r1].u32);
     } else {
         EAX = cpu->dst.u32;
     }
@@ -2550,11 +2571,11 @@ void cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
 void cmpxchge32r32_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
 	cpu->dst.u32 = readd(cpu->memory, address);
-    cpu->src.u32 = cpu->reg[op->r1].u32;
+    cpu->src.u32 = EAX;
     cpu->result.u32 = cpu->dst.u32 - EAX;
     cpu->inst = FLAGS_CMP32;
 	if (EAX == cpu->dst.u32) {
-        writed(cpu->memory, address, cpu->src.u32);
+        writed(cpu->memory, address, cpu->reg[op->r1].u32);
     } else {
         EAX = cpu->dst.u32;
     }

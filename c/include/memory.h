@@ -69,5 +69,6 @@ void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 st
 U8* getPhysicalAddress(struct Memory* memory, U32 address);
 
 void memcopyFromNative(struct Memory* memory, U32 address, const unsigned char* p, U32 len);
+void memcopyToNative(struct Memory* memory, U32 address, unsigned char* p, U32 len);
 
 #endif

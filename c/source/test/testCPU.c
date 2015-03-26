@@ -835,6 +835,65 @@ void EwGw(int instruction, struct Data* data) {
     }
 }
 
+void EwGwCl(int instruction, struct Data* data) {
+    while (data->valid) {
+		int ew;
+		int gw;
+		int rm;
+
+        for (ew = 0; ew < 8; ew++) {
+            for (gw = 0; gw < 8; gw++) {
+				struct Reg* e;
+				struct Reg* g;
+
+                if (ew == gw || ew==1 || gw==1)
+                    continue;
+                rm = ew | (gw << 3) | 0xC0;
+                newInstructionWithRM(instruction, rm, data->flags);
+				ECX=DEFAULT;
+				CL=data->constant;
+                e = &cpu->reg[E(rm)];
+                g = &cpu->reg[G(rm)];
+                e->u32 = DEFAULT;
+                g->u32 = DEFAULT;
+                e->u16 = data->var1;
+                g->u16 = data->var2;
+                runTestCPU();
+                assertResult(data, cpu, instruction, e->u16, g->u16, E(rm), G(rm), 0, 16);
+            }
+        }
+
+        for (gw = 0; gw < 8; gw++) {
+			struct Reg* g;
+			U32 result;
+
+			if (gw==1)
+				continue;
+            rm = (gw << 3);
+            if (cpu->big)
+                rm += 5;
+            else
+                rm += 6;
+            newInstructionWithRM(instruction, rm, data->flags);
+            if (cpu->big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            ECX=DEFAULT;
+			CL=data->constant;
+            writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+            writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+            g = &cpu->reg[G(rm)];
+            g->u32 = DEFAULT;
+            g->u16 = data->var2;
+            runTestCPU();
+            result = readw(cpu->memory, cpu->segAddress[DS] + 200);
+            assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200, 16);
+        }
+		data++;
+    }
+}
+
 void EwGwEffective(int instruction, struct Data* data) {
     while (data->valid) {
 		int ew;
@@ -1348,6 +1407,61 @@ void EdGd(int instruction, struct Data* data) {
             else
                 pushCode16(200);
             pushConstant(data);
+            writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+            g = &cpu->reg[gd];
+            g->u32 = data->var2;
+            runTestCPU();
+            result = readd(cpu->memory, cpu->segAddress[DS] + 200);
+            assertResult(data, cpu, instruction, result, g->u32, -1, -1, 0, 0);
+        }
+		data++;
+    }
+}
+
+void EdGdCl(int instruction, struct Data* data) {
+    while (data->valid) {
+		int ed;
+		int gd;
+		int rm;
+
+        for (ed = 0; ed < 8; ed++) {
+            for (gd = 0; gd < 8; gd++) {
+				struct Reg* e;
+				struct Reg* g;
+
+                if (ed == gd || ed==1 || gd==1)
+                    continue;
+                rm = ed | (gd << 3) | 0xC0;
+                newInstructionWithRM(instruction, rm, data->flags);
+                ECX = DEFAULT;
+				CL = data->constant;
+                e = &cpu->reg[ed];
+                g = &cpu->reg[gd];
+                e->u32 = data->var1;
+                g->u32 = data->var2;
+                runTestCPU();
+                assertResult(data, cpu, instruction, e->u32, g->u32, -1, -1, 0, 0);
+            }
+        }
+
+        for (gd = 0; gd < 8; gd++) {
+			struct Reg* g;
+			U32 result;
+
+			if (gd==1)
+				continue;
+            rm = (gd << 3);
+            if (cpu->big)
+                rm += 5;
+            else
+                rm += 6;
+            newInstructionWithRM(instruction, rm, data->flags);
+            if (cpu->big)
+                pushCode32(200);
+            else
+                pushCode16(200);
+            ECX = DEFAULT;
+			CL = data->constant;
             writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
             g = &cpu->reg[gd];
             g->u32 = data->var2;
@@ -2904,6 +3018,66 @@ static struct Data btd[] = {
         allocData(0x100000, 20, 0x100000, 0, true, false),
 		allocData(0xFFFDFFFF, 81, 0xFFFDFFFF, CF, false, false),
         allocData(0x100000, 84, 0x100000, 0, true, false),
+		endData()
+};
+
+static struct Data btsw[] = {
+        allocData(0xFFFD, 1, 0xFFFF, CF, false, false),
+        allocData(0x10, 4, 0x10, 0, true, false),
+		allocData(0xFFFD, 33, 0xFFFF, CF, false, false),
+        allocData(0x10, 36, 0x10, 0, true, false),
+		endData()
+};
+
+static struct Data btsd[] = {
+        allocData(0xFFFDFFFF, 17, 0xFFFFFFFF, CF, false, false),
+        allocData(0x100000, 20, 0x100000, 0, true, false),
+		allocData(0xFFFDFFFF, 81, 0xFFFFFFFF, CF, false, false),
+        allocData(0x100000, 84, 0x100000, 0, true, false),
+		endData()
+};
+
+static struct Data shld16[] = {
+		allocDataConst(0x1234, 0x5678, 0x2345, 4, 8, 0, true, false),
+		allocDataConst(0x8080, 0x8000, 0x0101, 1, 8, 0, true, true),
+		allocDataConst(0x4080, 0x8000, 0x8101, 1, 8, 0, false, true),
+		allocDataConst(0x2080, 0x8000, 0x4101, 1, 8, 0, false, false),
+		allocDataConst(0x4080, 0x8000, 0x0202, 2, 8, 0, true, false),
+		allocDataConst(0x1234, 0x5678, 0x6785, 20, 8, 0, true, false),
+		allocDataConst(0x8080, 0x8000, 0x0001, 17, 8, 0, true, true),
+		allocDataConst(0x4080, 0x4000, 0x8000, 17, 8, 0, false, true),
+		allocDataConst(0x2080, 0x2000, 0x4000, 17, 8, 0, false, false),
+		endData()
+};
+
+static struct Data shld32[] = {
+		allocDataConst(0x12345678, 0x90abcdef, 0x4567890a, 12, 8, 0, true, false),
+		allocDataConst(0x80808080, 0x80000000, 0x01010101, 1, 8, 0, true, true),
+		allocDataConst(0x40808080, 0x80000000, 0x81010101, 1, 8, 0, false, true),
+		allocDataConst(0x20808080, 0x80000000, 0x41010101, 1, 8, 0, false, false),
+		allocDataConst(0x40808080, 0x80000000, 0x02020202, 2, 8, 0, true, false),
+		allocDataConst(0x12345678, 0x90abcdef, 0x34567890, 40, 8, 0, false, false),
+		endData()
+};
+
+static struct Data shrd16[] = {
+		allocDataConst(0x1234, 0x5678, 0x8123, 4, 8, 0, false, true),
+		allocDataConst(0x0101, 0x0001, 0x8080, 1, 8, 0, true, true),
+		allocDataConst(0x0102, 0x0001, 0x8081, 1, 8, 0, false, true),
+		allocDataConst(0x0101, 0x0002, 0x0080, 1, 8, 0, true, false),
+		allocDataConst(0x8080, 0x0001, 0x6020, 2, 8, 0, false, true),
+		allocDataConst(0x1234, 0x5678, 0x8567, 20, 8, 0, true, true),
+		allocDataConst(0x0101, 0x0001, 0x8000, 17, 8, 0, true, true),
+		allocDataConst(0x0102, 0x0002, 0x0001, 17, 8, 0, false, false),
+		endData()
+};
+
+static struct Data shrd32[] = {
+		allocDataConst(0x12345678, 0x90abcdef, 0xbcdef123, 20, 8, 0, false, true),
+		allocDataConst(0x01010101, 0x00000001, 0x80808080, 1, 8, 0, true, true),
+		allocDataConst(0x01010102, 0x00000001, 0x80808081, 1, 8, 0, false, true),
+		allocDataConst(0x01010101, 0x00000002, 0x00808080, 1, 8, 0, true, false),
+		allocDataConst(0x80808080, 0x00000001, 0x60202020, 2, 8, 0, false, true),
 		endData()
 };
 
@@ -4547,6 +4721,56 @@ void testBt0x3a3() {
 	EdGdEffective(0x1a3, btd);
 }
 
+void testShld0x1a4() {
+	cpu->big=false;
+	EwGw(0x1a4, shld16);
+}
+
+void testShld0x3a4() {
+	cpu->big=true;
+	EdGd(0x1a4, shld32);
+}
+
+void testShld0x1a5() {
+	cpu->big=false;
+	EwGwCl(0x1a5, shld16);
+}
+
+void testShld0x3a5() {
+	cpu->big=true;
+	EdGdCl(0x1a5, shld32);
+}
+
+void testBts0x1ab() {
+	cpu->big=false;
+	EwGwEffective(0x1ab, btsw);
+}
+
+void testBts0x3ab() {
+	cpu->big=true;
+	EdGdEffective(0x1ab, btsd);
+}
+
+void testShrd0x1ac() {
+	cpu->big=false;
+	EwGw(0x1ac, shrd16);
+}
+
+void testShrd0x3ac() {
+	cpu->big=true;
+	EdGd(0x1ac, shrd32);
+}
+
+void testShrd0x1ad() {
+	cpu->big=false;
+	EwGwCl(0x1ad, shrd16);
+}
+
+void testShrd0x3ad() {
+	cpu->big=true;
+	EdGdCl(0x1ad, shrd32);
+}
+
 void run(void (*functionPtr)(), char* name) {
 	didFail = 0;
 	setup();
@@ -4900,6 +5124,16 @@ int main(int argc, char **argv) {
 	run(testGrp50x2ff, "Grp5 2ff");
 	run(testBt0x1a3, "BT 1a3");
 	run(testBt0x3a3, "BT 3a3");
+	run(testShld0x1a4, "SHLD 1a4");
+	run(testShld0x3a4, "SHLD 3a4");
+	run(testShld0x1a5, "SHLD 1a5");
+	run(testShld0x3a5, "SHLD 3a5");
+	run(testBts0x1ab, "BTS 1ab");
+	run(testBts0x3ab, "BTS 3ab");
+	run(testShrd0x1ac, "SHRD 1ac");
+	run(testShrd0x3ac, "SHRD 3ac");
+	run(testShrd0x1ad, "SHRD 1ad");
+	run(testShrd0x3ad, "SHRD 3ad");
 	return 0;
 }
 

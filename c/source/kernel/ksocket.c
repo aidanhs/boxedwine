@@ -13,6 +13,10 @@
 #include <string.h>
 #include <stdio.h>
 
+struct KSockAddress {
+	U16 family;
+	U8 data[256];
+};
 struct KSocket {
 	U32 domain;
 	U32 type;
@@ -23,6 +27,11 @@ struct KSocket {
 	struct Node* node;
 	struct KSocket* next;
 	struct KSocket* connection;
+	struct KSockAddress destAddress;
+	U32 recvBufferLen;
+	U32 sendBufferLen;
+	BOOL inClosed;
+	BOOL outClosed;
 };
 
 BOOL unixsocket_isDirectory(struct Node* node) {
@@ -198,7 +207,17 @@ U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
 		s->protocol = protocol;
 		s->type = type;
 		return result->handle;
-	} 
+	} else if (domain==K_AF_NETLINK) {
+        // just fake it so that libudev doesn't crash
+		struct KSocket* s = allocSocket();
+		struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, s);
+		struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
+		closeKObject(kSocket);
+		s->domain = domain;
+		s->protocol = protocol;
+		s->type = type;
+		return result->handle;
+    }
 	return -K_EAFNOSUPPORT;
 }
 
@@ -216,13 +235,12 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	if (s->domain==K_AF_UNIX) {
 		char localPath[MAX_FILEPATH_LEN];
 		char nativePath[MAX_FILEPATH_LEN];
-		const char* path = getNativeString(thread->process->memory, address+3);
-		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, path, localPath, nativePath);
+		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, socketAddressName(thread, address, len), localPath, nativePath);
 
 		if (node && node->nodeType->exists(node)) {
 			return -K_EADDRINUSE;
 		}
-		if (!strlen(path)) {
+		if (!strlen(localPath)) {
 			return -K_ENOENT;
 		}
 		if (!node) {
@@ -236,6 +254,45 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 }
 
 U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (s->connection || s->destAddress.family) {
+		return -K_EISCONN;
+	}
+	s->destAddress.family = readw(thread->process->memory, address);
+	if (len-2>sizeof(s->destAddress.data)) {
+		kpanic("Socket address is too big");
+	}
+	memcopyToNative(thread->process->memory, address+2, s->destAddress.data, len-2);
+	if (s->type==K_SOCK_DGRAM) {
+		return 0;
+	} else if (s->type==K_SOCK_STREAM) {
+		if (s->domain==K_AF_UNIX) {
+			char localPath[MAX_FILEPATH_LEN];
+			char nativePath[MAX_FILEPATH_LEN];
+			struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, s->destAddress.data, localPath, nativePath);
+		
+			if (!node) {
+				s->destAddress.family = 0;
+				return -K_ECONNREFUSED;
+			}
+			kwarn("connect");
+			// :TODO: wake up sleeping theads
+		} else {
+			kpanic("connect not implemented for domain %d", s->domain);
+		}
+	} else {
+		kpanic("connect not implemented for type %d", s->type);
+	}
+	return 0;
 }
 
 U32 klisten(struct KThread* thread, U32 socket, U32 backog) {
@@ -278,9 +335,70 @@ U32 krecv(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
 }
 
 U32 kshutdown(struct KThread* thread, U32 socket, U32 how) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+    if (s->type == K_SOCK_DGRAM) {
+        kpanic("shutdown on SOCK_DGRAM not implemented");
+    }
+    if (!s->connection) {
+        return -K_ENOTCONN;
+    }
+    if (how == K_SHUT_RD) {
+        s->inClosed=1;
+        s->connection->outClosed=1;
+    } else if (how == K_SHUT_WR) {
+        s->outClosed=1;
+        s->connection->inClosed=1;
+    } else if (how == K_SHUT_RDWR) {
+        s->outClosed=1;
+        s->inClosed=1;
+        s->connection->outClosed=1;
+        s->connection->inClosed=1;
+    }
+	// :TODO: wake up sleeping theads
+	return 0;
 }
 
 U32 ksetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 value, U32 len) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (level == K_SOL_SOCKET) {
+        switch (name) {
+            case K_SO_RCVBUF:
+                if (len!=4)
+                    kpanic("setsockopt SO_RCVBUF expecting len of 4");
+                s->recvBufferLen = readd(thread->process->memory, value);
+            case K_SO_SNDBUF:
+                if (len != 4)
+                    kpanic("setsockopt SO_SNDBUF expecting len of 4");
+				s->sendBufferLen = readd(thread->process->memory, value);
+            case K_SO_PASSCRED:
+                break;
+            case K_SO_ATTACH_FILTER:
+                break;
+            default:
+                kwarn("setsockopt name %d not implemented", name);
+        }
+    } else {
+        kpanic("setsockopt level %d not implemented", level);
+    }
+    return 0;
 }
 
 U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 value, U32 len) {

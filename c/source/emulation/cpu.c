@@ -139,8 +139,10 @@ U32 getCF(struct CPU* cpu) {
 	case FLAGS_SHL16:
 		if (cpu->src.u8>16) return 0;
 		else return (cpu->dst.u16 >> (16-cpu->src.u8)) & 1;
-	case FLAGS_SHL32:
-	case FLAGS_DSHL16:	/* Hmm this is not correct for shift higher than 16 */
+	case FLAGS_DSHL16:
+		if (cpu->src.u8>16) return (cpu->dst2.u16 >> (32-cpu->src.u8)) & 1;
+		else return (cpu->dst.u16 >> (16-cpu->src.u8)) & 1;
+	case FLAGS_SHL32:	
 	case FLAGS_DSHL32:
 		return (cpu->dst.u32 >> (32 - cpu->src.u8)) & 1;
 	case FLAGS_SHR8:

@@ -19,6 +19,7 @@ struct CPU {
 	struct KThread* thread;
 	struct Reg     src;
 	struct Reg     dst;
+	struct Reg     dst2;
 	struct Reg     result;
 	int     inst;
 	int	    df;
