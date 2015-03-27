@@ -47,5 +47,7 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
 U32 ksendmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags);
 U32 krecvmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags);
 
+U32 syscall_pipe(struct KThread* thread, U32 address);
+
 const char* socketAddressName(struct KThread* thread, U32 address, U32 len);
 #endif

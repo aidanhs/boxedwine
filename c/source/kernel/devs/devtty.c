@@ -66,11 +66,12 @@ void writeTermios(struct Memory* memory, U32 address, struct TTYData* data) {
     }
 }
 
-void tty_init(struct OpenNode* node) {
+BOOL tty_init(struct KProcess* process, struct OpenNode* node) {
 	struct TTYData* data = (struct TTYData*)kalloc(sizeof(struct TTYData));
 	data->mode = VT_AUTO;
 	data->kbMode = K_UNICODE;
 	node->data = data;
+	return TRUE;
 }
 
 S64 tty_length(struct OpenNode* node) {
@@ -226,8 +227,12 @@ BOOL tty_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
+U32 tty_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+	return 0;
+}
+
 BOOL tty_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_canMap, tty_ioctl, tty_isWriteReady, tty_isReadReady};
+struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_isWriteReady, tty_isReadReady};

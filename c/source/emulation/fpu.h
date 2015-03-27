@@ -1325,7 +1325,7 @@ void FIST_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
 }
 
 void FIST_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
-    FPU_FST_I32(cpu, eaa16(cpu, op));
+    FPU_FST_I32(cpu, eaa32(cpu, op));
 	CYCLES(6);
 	NEXT();
 }
@@ -1691,7 +1691,7 @@ void FNSTSW_16(struct CPU* cpu, struct Op* op) {
 
 void FNSTSW_32(struct CPU* cpu, struct Op* op) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
-	writew(cpu->memory, eaa16(cpu, op), cpu->fpu.sw);
+	writew(cpu->memory, eaa32(cpu, op), cpu->fpu.sw);
 	CYCLES(2);
 	NEXT();
 }
@@ -1846,7 +1846,7 @@ void FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 }
 
 void FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
-    S16 value = (S16)readw(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
+    S16 value = (S16)readw(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I16(&cpu->fpu, value, cpu->fpu.top);
 	CYCLES(1);
@@ -1904,7 +1904,7 @@ void FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
 
 void FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
     U8 value[10];
-    readMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
+    readMemory(cpu->memory, value, eaa32(cpu, op), 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FBLD(&cpu->fpu, value, cpu->fpu.top);
 	CYCLES(48);

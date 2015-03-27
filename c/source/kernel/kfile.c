@@ -49,11 +49,11 @@ BOOL kfile_isWriteReady(struct KObject* obj) {
 	return TRUE;
 }
 
-U32  kfile_write(struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
+U32  kfile_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
 	return ((struct OpenNode*)obj->data)->access->write(memory, (struct OpenNode*)obj->data, buffer, len);
 }
 
-U32  kfile_read(struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
+U32  kfile_read(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
 	return ((struct OpenNode*)obj->data)->access->read(memory, (struct OpenNode*)obj->data, buffer, len);
 }
 
@@ -64,6 +64,10 @@ U32 kfile_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is6
 
 	writeStat(memory, address, is64, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
 	return 0;
+}
+
+U32 kfile_map(struct KObject* obj, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+	return ((struct OpenNode*)obj->data)->access->map((struct OpenNode*)obj->data, memory, address, len, prot, flags, off);
 }
 
 BOOL kfile_canMap(struct KObject* obj) {
@@ -94,7 +98,7 @@ S64 kfile_length(struct KObject* obj) {
 	return openNode->access->length(openNode);
 }
 
-struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_write, kfile_read, kfile_stat, kfile_canMap};
+struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_write, kfile_read, kfile_stat, kfile_map, kfile_canMap};
 
 struct KObject* allocKFile(struct OpenNode* node) {
 	return allocKObject(&kfileAccess, KTYPE_FILE, (void*)node);

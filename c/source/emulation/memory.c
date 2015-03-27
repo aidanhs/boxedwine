@@ -5,7 +5,7 @@
 #include "kprocess.h"
 
 #include <string.h>
-#undef LOG_OPS
+//#undef LOG_OPS
 void pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;
@@ -268,7 +268,7 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 	return memory->mmu[index]->physicalAddress(memory, address, memory->data[index]);
 }
 
-void memcopyFromNative(struct Memory* memory, U32 address, const unsigned char* p, U32 len) {
+void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {
 	U32 i;
 	
 	for (i=0;i<len;i++) {
@@ -276,7 +276,7 @@ void memcopyFromNative(struct Memory* memory, U32 address, const unsigned char* 
 	}
 }
 
-void memcopyToNative(struct Memory* memory, U32 address, unsigned char* p, U32 len) {
+void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
 	U32 i;
 	
 	for (i=0;i<len;i++) {

@@ -43,6 +43,9 @@
     <Filter Include="Source Files\platform\windows">
       <UniqueIdentifier>{475f9338-43dc-46f7-afab-dc1f31190e49}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\kernel\proc">
+      <UniqueIdentifier>{bfa23f1c-66aa-4a3b-b672-d6e6192a9a6d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -201,6 +204,15 @@
     <ClInclude Include="..\..\..\..\include\ksocket.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\meminfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bufferaccess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devfb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -304,6 +316,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\platform\windows\platform.c">
       <Filter>Source Files\platform\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\proc\meminfo.c">
+      <Filter>Source Files\kernel\proc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\proc\bufferaccess.c">
+      <Filter>Source Files\kernel\proc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c">
+      <Filter>Source Files\kernel\dev</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

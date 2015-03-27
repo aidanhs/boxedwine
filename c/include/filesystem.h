@@ -12,7 +12,7 @@ struct Node* getNodeInCache(const char* localPath);
 void initFileSystem(const char* rootPath);
 // slots will be big enough to hold a void*
 struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev);
-struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess);
+struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess);
 void freeOpenNode(struct OpenNode* node);
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath);
 

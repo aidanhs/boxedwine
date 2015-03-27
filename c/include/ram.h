@@ -19,5 +19,7 @@ int getRamRefCount(int page);
 void incrementRamRef(int page);
 void addCode(struct Op* op, int ramPage, int offset);
 struct Op* getCode(int ramPage, int offset);
+U32 getPageCount();
+U32 getFreePageCount();
 
 #endif

@@ -22,7 +22,7 @@ U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
     if (!canReadFD(fd)) {
         return -K_EINVAL;
     }
-	return fd->kobject->access->read(fd->kobject, thread->process->memory, buffer, len);
+	return fd->kobject->access->read(thread, fd->kobject, thread->process->memory, buffer, len);
 }
 
 U32 syscall_write(struct KThread* thread, FD handle, U32 buffer, U32 len) {
@@ -33,7 +33,7 @@ U32 syscall_write(struct KThread* thread, FD handle, U32 buffer, U32 len) {
     if (!canWriteFD(fd)) {
         return -K_EINVAL;
     }
-	return fd->kobject->access->write(fd->kobject, thread->process->memory, buffer, len);
+	return fd->kobject->access->write(thread, fd->kobject, thread->process->memory, buffer, len);
 }
 
 U32 syscall_open(struct KThread* thread, const char* currentDirectory, U32 name, U32 flags) {
@@ -93,7 +93,7 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
     for (i=0;i<iovcnt;i++) {
 		U32 buf = readd(memory, iov+i*8);
 		U32 len = readd(memory, iov+i*8+4);
-		S32 result = fd->kobject->access->write(fd->kobject, memory, buf, len);
+		S32 result = fd->kobject->access->write(thread, fd->kobject, memory, buf, len);
         if (result<0) {
             if (i>0) {
                 kwarn("writev partial fail: TODO file pointer should not change");
@@ -292,7 +292,7 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 	newNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, newName), FALSE);
 	if (newNode->nodeType->exists(newNode)) {
 		if (newNode->nodeType->isDirectory(newNode)) {
-			struct OpenNode* openNode = newNode->nodeType->open(newNode, K_O_RDONLY); 
+			struct OpenNode* openNode = newNode->nodeType->open(thread->process, newNode, K_O_RDONLY); 
 			if (openNode->access->length(openNode)) {
 				openNode->access->close(openNode);
 				return -K_ENOTEMPTY;
@@ -386,5 +386,5 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
         len+=recordLen;
 		openNode->access->seek(openNode, i+1);
 	}
-	return 0;
+	return len;
 }

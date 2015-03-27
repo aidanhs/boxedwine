@@ -36,7 +36,7 @@ BOOL virtual_canWrite(struct Node* node) {
 	return virtual_getMode(node) & K__S_IWRITE;
 }
 
-struct OpenNode* virtual_open(struct Node* node, U32 flags) {
+struct OpenNode* virtual_open(struct KProcess* process, struct Node* node, U32 flags) {
 	if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
 		if (!virtual_canRead(node))
 			return 0;
@@ -61,7 +61,7 @@ struct OpenNode* virtual_open(struct Node* node, U32 flags) {
 	if (flags & K_O_APPEND) {
 		kwarn("What about appending a virtual file");
 	}
-	return allocOpenNode(node, 0, flags, (struct NodeAccess*)node->pData2);
+	return allocOpenNode(process, node, 0, flags, (struct NodeAccess*)node->pData2);
 }
 
 BOOL virtual_setLastModifiedTime(struct Node* node, U32 time) {
@@ -93,8 +93,9 @@ U32 virtual_rename(struct Node* oldNode, struct Node* newNode) {
 
 struct NodeType virtualNodeType = {virtual_isDirectory, virtual_exists, virtual_rename, virtual_remove, virtual_lastModified, virtual_length, virtual_open, virtual_setLastModifiedTime, virtual_canRead, virtual_canWrite, virtual_getType, virtual_getMode};
 
-void addVirtualFile(const char* localPath, struct NodeAccess* nodeAccess, U32 mode) {
+struct Node* addVirtualFile(const char* localPath, struct NodeAccess* nodeAccess, U32 mode) {
 	struct Node* node = allocNode(localPath, 0, &virtualNodeType, nextrdev++);
 	node->data1 = mode;
 	node->pData2 = nodeAccess;
+	return node;
 }

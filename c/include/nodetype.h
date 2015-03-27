@@ -32,7 +32,7 @@ struct NodeType {
 	BOOL (*remove)(struct Node* node);
 	U64 (*lastModified)(struct Node* node);
     U64 (*length)(struct Node* node);
-    struct OpenNode* (*open)(struct Node* node, U32 flags);
+    struct OpenNode* (*open)(struct KProcess* process, struct Node* node, U32 flags);
 	BOOL (*setLastModifiedTime)(struct Node* node, U32 time);
 	BOOL (*canRead)(struct Node* node);
 	BOOL (*canWrite)(struct Node* node);

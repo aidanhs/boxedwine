@@ -9,9 +9,12 @@
 #include "virtualfile.h"
 #include "kstat.h"
 #include "kalloc.h"
+#include "kscheduler.h"
 
 #include <string.h>
 #include <stdio.h>
+
+#define BUFFER_LEN 131072
 
 struct KSockAddress {
 	U16 family;
@@ -28,10 +31,14 @@ struct KSocket {
 	struct KSocket* next;
 	struct KSocket* connection;
 	struct KSockAddress destAddress;
-	U32 recvBufferLen;
-	U32 sendBufferLen;
+	U32 recvLen;
+	U32 sendLen;
 	BOOL inClosed;
 	BOOL outClosed;
+	char recvBuffer[BUFFER_LEN];
+	U32 recvBufferReadPos;
+	U32 recvBufferWritePos;
+	U32 recvBufferLen;
 };
 
 BOOL unixsocket_isDirectory(struct Node* node) {
@@ -62,7 +69,7 @@ BOOL unixsocket_canWrite(struct Node* node) {
 	return TRUE;
 }
 
-struct OpenNode* unixsocket_open(struct Node* node, U32 flags) {
+struct OpenNode* unixsocket_open(struct KProcess* process, struct Node* node, U32 flags) {
 	kwarn("unixsocket_open was called, this shouldn't happen.  syscall_open should detect we have a kobject already");
 	return 0;
 }
@@ -130,18 +137,64 @@ BOOL unixsocket_isWriteReady(struct KObject* obj) {
 	return TRUE;
 }
 
-U32 unixsocket_write(struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
-	return ((struct OpenNode*)obj->data)->access->write(memory, (struct OpenNode*)obj->data, buffer, len);
+U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
+	struct KSocket* s = (struct KSocket*)obj->data;
+	U32 count=0;
+
+	if (s->outClosed || !s->connection)
+		return -K_EPIPE;
+	if (s->connection->recvBufferLen==BUFFER_LEN) {
+		if (s->blocking) {
+			thread->waitType = WAIT_FD;
+			return -K_WAIT;
+		}
+		return -K_EWOULDBLOCK;
+	}
+	while (s->connection->recvBufferLen<BUFFER_LEN && len) {
+		s->connection->recvBuffer[s->connection->recvBufferWritePos] = readb(memory, buffer);
+		buffer++;
+		len--;
+		count++;
+		s->connection->recvBufferLen++;
+		s->connection->recvBufferWritePos++;
+		if (s->recvBufferWritePos>=BUFFER_LEN)
+			s->recvBufferWritePos = 0;
+	}
+	wakeThreads(WAIT_FD);
+	return count;
 }
 
-U32 unixsocket_read(struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
-	return ((struct OpenNode*)obj->data)->access->read(memory, (struct OpenNode*)obj->data, buffer, len);
+U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
+	struct KSocket* s = (struct KSocket*)obj->data;
+	U32 count = 0;
+	if (s->inClosed || !s->connection)
+		return -K_EPIPE;
+	if (!s->recvBufferLen) {
+		if (!s->blocking)
+			return -K_EWOULDBLOCK;
+		thread->waitType = WAIT_FD;
+		return -K_WAIT;
+	}
+	while (len && s->recvBufferLen) {
+		writeb(memory, buffer, s->recvBuffer[s->recvBufferReadPos]);
+		buffer++;
+		count++;
+		len--;
+		s->recvBufferLen--;
+		s->recvBufferReadPos++;
+		if (s->recvBufferReadPos>=BUFFER_LEN)
+			s->recvBufferReadPos = 0;
+	}
+	return count;
 }
 
 U32 unixsocket_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
-	struct KSocket* s = (struct KSocket*)obj->data;
+	struct KSocket* s = (struct KSocket*)obj->data;	
+	writeStat(memory, address, is64, 1, (s->node?s->node->id:0), K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, (s->node?s->node->rdev:0), 0, 4096, 0, s->lastModifiedTime);
+	return 0;
+}
 
-	writeStat(memory, address, is64, 1, s->node->id, K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, s->node->rdev, 0, 4096, 0, s->lastModifiedTime);
+U32 unixsocket_map(struct KObject* obj, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 	return 0;
 }
 
@@ -169,7 +222,7 @@ S64 unixsocket_klength(struct KObject* obj) {
 	return -1;
 }
 
-struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_canMap};
+struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_map, unixsocket_canMap};
 
 char tmpSocketName[32];
 
@@ -195,6 +248,9 @@ struct KSocket* allocSocket() {
 	} else {
 		result = (struct KSocket*)kalloc(sizeof(struct KSocket));
 	}	
+	result->recvLen = 128*1024;
+	result->sendLen = 128*1024;
+	return result;
 }
 
 U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
@@ -326,6 +382,36 @@ U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 len) {
 }
 
 U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 socks) {
+	FD fd1;
+	FD fd2;
+	struct KFileDescriptor* f1;
+	struct KFileDescriptor* f2;
+	struct KSocket* s1;
+	struct KSocket* s2;
+
+	if (af!=K_AF_UNIX) {
+        kpanic("socketpair with adress family %d not implemented", af);
+    }
+    if (type!=K_SOCK_DGRAM && type!=K_SOCK_STREAM) {
+        kpanic("socketpair with type %d not implemented", type);
+    }
+	fd1 = ksocket(thread, af, type, protocol);
+	fd2 = ksocket(thread, af, type, protocol);
+	f1 = getFileDescriptor(thread->process, fd1);
+	f2 = getFileDescriptor(thread->process, fd2);
+    s1 = (struct KSocket*)(f1->kobject->data);
+	s2 = (struct KSocket*)(f2->kobject->data);
+	
+	s1->connection = s2;
+	s2->connection = s1;
+	s1->inClosed = FALSE;
+	s1->outClosed = FALSE;
+	s2->inClosed = FALSE;
+	s2->outClosed = FALSE;
+
+	writed(thread->process->memory, socks, fd1);
+    writed(thread->process->memory, socks+4, fd2);
+	return 0;
 }
 
 U32 ksend(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
@@ -383,11 +469,11 @@ U32 ksetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
             case K_SO_RCVBUF:
                 if (len!=4)
                     kpanic("setsockopt SO_RCVBUF expecting len of 4");
-                s->recvBufferLen = readd(thread->process->memory, value);
+                s->recvLen = readd(thread->process->memory, value);
             case K_SO_SNDBUF:
                 if (len != 4)
                     kpanic("setsockopt SO_SNDBUF expecting len of 4");
-				s->sendBufferLen = readd(thread->process->memory, value);
+				s->sendLen = readd(thread->process->memory, value);
             case K_SO_PASSCRED:
                 break;
             case K_SO_ATTACH_FILTER:
@@ -408,4 +494,8 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags) {
 }
 
 U32 krecvmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags) {
+}
+
+U32 syscall_pipe(struct KThread* thread, U32 address) {
+	return ksocketpair(thread, K_AF_UNIX, K_SOCK_STREAM, 0, address);
 }

@@ -25,9 +25,10 @@ void logsyscall(const char* fmt, ...) {
 }
 
 #define LOG logsyscall
-#else
-//#define LOG
+#elif defined LOG_SYSCALLS
 #define LOG printf("%d/%d",thread->id, process->id); klog
+#else
+#define LOG
 #endif
 
 #define __NR_exit 1
@@ -245,10 +246,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_dup fildes=%d result=%d", ARG1, result);
 		break;
 		break;
-		/*
 	case __NR_pipe:
+		result = syscall_pipe(thread, ARG1);
+		LOG("__NR_pipe fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG2), result);
 		break;
-		*/
 	case __NR_brk:
 		if (ARG1 > process->brkEnd) {
 			U32 len = ARG1-process->brkEnd;
@@ -272,10 +273,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_ioctl(thread, ARG1, ARG2);
 		LOG("__NR_ioctl fd=%d request=%d result=%X", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_setpgid:
+		result = syscall_setpgid(thread, ARG1, ARG2);
+		LOG("__NR_setpgid pid=%d pgid=%d result=%d", ARG1, ARG2, result);
 		break;
-		*/
 	case __NR_umask:
 		result = ARG1;
 		kwarn("syscall umask not implemented");
@@ -414,9 +415,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_mprotect(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_mprotect address=%X len=%d prot=%X", ARG1, ARG2, ARG3);
 		break;
-		/*
 	case __NR_getpgid:
+		result = syscall_getpgid(thread, ARG1);
+		LOG("__NR_getpgid pid=%d result=%d", ARG1, result);
 		break;
+		/*
 	case __NR_fchdir:
 		break;
 		*/
@@ -529,11 +532,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		if (ARG1)
 			writed(memory, ARG1, process->userId);
 		if (ARG2)
-			writed(memory, ARG2, process->userId);
+			writed(memory, ARG2, process->effectiveUserId);
 		if (ARG3)
 			writed(memory, ARG3, process->userId);
 		result=0;
-		LOG("__NR_getresuid32 ruid=%X(%d) euid=%X(%d) suid=%X(%d) result=%d", ARG1, process->userId, ARG2, process->userId, ARG3, process->userId, result);
+		LOG("__NR_getresuid32 ruid=%X(%d) euid=%X(%d) suid=%X(%d) result=%d", ARG1, process->userId, ARG2, process->effectiveUserId, ARG3, process->userId, result);
 		break;
 	case __NR_getresgid32:
 		if (ARG1)
@@ -548,11 +551,17 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_chown32:
 		break;
+		*/
 	case __NR_setuid32:
+		process->effectiveUserId = ARG1;
+		result = 0;
+		LOG("__NR_setuid32 uid=%d result=%d", ARG1, result);
 		break;
 	case __NR_setgid32:
+		process->groupId = ARG1;
+		result = 0;
+		LOG("__NR_setgid32 gid=%d result=%d", ARG1, result);
 		break;
-		*/
 	case __NR_madvise:
 		result = 0;
 		LOG("__NR_madvise address=%X len=%d advise=%d result=%d", ARG1, ARG2, ARG3, result);

@@ -3,7 +3,7 @@
 
 #include "nodeaccess.h"
 #include "platform.h"
+#include "node.h"
 
-void addVirtualFile(const char* localPath, struct NodeAccess* nodeAccess, U32 mode);
-
+struct Node* addVirtualFile(const char* localPath, struct NodeAccess* nodeAccess, U32 mode);
 #endif

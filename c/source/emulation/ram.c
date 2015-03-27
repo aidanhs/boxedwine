@@ -72,6 +72,10 @@ U32 getPageCount() {
     return pageCount;
 }
 
+U32 getFreePageCount() {
+	return freePageCount;
+}
+
 U32 allocRamPage() {
 	int result;
 

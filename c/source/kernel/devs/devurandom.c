@@ -8,11 +8,12 @@
 
 BOOL urandom_initialized;
 
-void urandom_init(struct OpenNode* node) {
+BOOL urandom_init(struct KProcess* process, struct OpenNode* node) {
 	if (!urandom_initialized) {
 		urandom_initialized = TRUE;
 		srand((U32)time(0));
 	}
+	return TRUE;
 }
 
 S64 urandom_length(struct OpenNode* node) {
@@ -51,8 +52,6 @@ U32 urandom_write(struct Memory* memory, struct OpenNode* node, U32 address, U32
 	return 0;
 }
 
-struct OpenNode* freeOpenNodes;
-
 void urandom_close(struct OpenNode* node) {
 	freeOpenNode(node);
 }
@@ -69,8 +68,12 @@ BOOL urandom_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
+U32 urandom_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+	return 0;
+}
+
 BOOL urandom_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess urandomAccess = {urandom_init, urandom_length, urandom_setLength, urandom_getFilePointer, urandom_seek, urandom_read, urandom_write, urandom_close, urandom_canMap, urandom_ioctl, urandom_isWriteReady, urandom_isReadReady};
+struct NodeAccess urandomAccess = {urandom_init, urandom_length, urandom_setLength, urandom_getFilePointer, urandom_seek, urandom_read, urandom_write, urandom_close, urandom_map, urandom_canMap, urandom_ioctl, urandom_isWriteReady, urandom_isReadReady};

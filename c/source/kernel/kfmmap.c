@@ -32,7 +32,7 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
 
 	oldPos = fd->kobject->access->getPos(fd->kobject);
 	fd->kobject->access->seek(fd->kobject, offset);
-	len = fd->kobject->access->read(fd->kobject, memory, address, PAGE_SIZE);
+	len = fd->kobject->access->read(0, fd->kobject, memory, address, PAGE_SIZE);
 	fd->kobject->access->seek(fd->kobject, oldPos);
 	if (len<PAGE_SIZE) {
 		// don't call zeroMemory because it might be read only

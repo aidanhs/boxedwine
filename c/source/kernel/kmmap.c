@@ -35,7 +35,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
     }
 
 	if (shared) {
-		kpanic("Shared mmap not implemented");
+		kwarn("Shared mmap not implemented");
 	}
 	if (!(flags & K_MAP_ANONYMOUS) && fildes>=0) {
 		fd = getFileDescriptor(thread->process, fildes);
@@ -68,6 +68,12 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return -K_ENOMEM;
 		addr = pageStart << PAGE_SHIFT;
     }
+	if (fd) {
+		U32 result = fd->kobject->access->map(fd->kobject, memory, addr, len, prot, flags, off);
+		if (result) {
+			return result;
+		}
+	}
 	for (i=0;i<pageCount;i++) {
 		// This will prevent the next anonymous mmap from using this range
 		if (memory->mmu[i+pageStart]==&invalidPage) {
@@ -83,7 +89,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			permissions|=PAGE_READ;
 		if (exec)
 			permissions|=PAGE_EXEC;
-		if (fd) {
+		if (fd) {			
 			if (off==0) {
 				struct KProcess* process = thread->process;
 				int index = -1;

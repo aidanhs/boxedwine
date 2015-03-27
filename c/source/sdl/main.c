@@ -15,6 +15,9 @@
 #include "devurandom.h"
 #include "devnull.h"
 #include "ksystem.h"
+#include "meminfo.h"
+#include "bufferaccess.h"
+#include "devfb.h"
 
 #include CURDIR
 
@@ -32,6 +35,10 @@ int main(int argc, char **argv) {
 	const char* ppenv[32];
 	int envc=0;
 	int mb=64;
+	int cx = 800;
+	int cy = 600;
+	int bpp = 32;
+	int fullscreen = 0;
 
 	startTime = getSystemTimeAsMicroSeconds();
 #ifdef LOG_OPS
@@ -72,6 +79,7 @@ int main(int argc, char **argv) {
 	}
 	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);
+	initFB(cx, cy, bpp, fullscreen);
 
 	ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";
@@ -83,13 +91,14 @@ int main(int argc, char **argv) {
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
+	addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
 	addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
 	addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
-
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
-		printf("SDL_Init Error: %s", SDL_GetError());
-		return 1;
-	}	
+	addVirtualFile("/proc/meminfo", &meminfoAccess, K__S_IREAD);
+	bufferAccess.data = ""; // no kernel arguments
+	addVirtualFile("/proc/cmdline", &bufferAccess, K__S_IREAD); // kernel command line
+	addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
+		
 	argc = argc-i;
 	if (argc==0) {
 		argv[0]="/init.sh";

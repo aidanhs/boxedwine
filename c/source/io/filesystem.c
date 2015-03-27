@@ -121,14 +121,19 @@ BOOL file_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
+U32 file_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+	return 0;
+}
+
 BOOL file_canMap(struct OpenNode* node) {
 	return TRUE;
 }
 
-void file_init(struct OpenNode* node) {
+BOOL file_init(struct KProcess* process, struct OpenNode* node) {
+	return TRUE;
 }
 
-struct NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_canMap, file_ioctl, file_isWriteReady, file_isReadReady};
+struct NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_map, file_canMap, file_ioctl, file_isWriteReady, file_isReadReady};
 
 struct DirData {
 	S32 pos;
@@ -172,10 +177,10 @@ S64 dir_getFilePointer(struct OpenNode* node) {
 
 S64 dir_seek(struct OpenNode* node, S64 pos) {
 	struct DirData* data = (struct DirData*)node->data;
-	if (pos>=0 && pos<data->count)
+	if (pos>=0 && pos<=data->count)
 		data->pos = (S32)pos;
 	else
-		data->pos = data->count-1;
+		data->pos = data->count;
 	return data->pos;
 }
 
@@ -207,14 +212,19 @@ BOOL dir_isReadReady(struct OpenNode* node) {
 	return FALSE;
 }
 
+U32 dir_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+	return 0;
+}
+
 BOOL dir_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-void dir_init(struct OpenNode* node) {
+BOOL dir_init(struct KProcess* process, struct OpenNode* node) {
 	struct DirData* data = allocDirData();
 	node->data = data;
 	data->count = listNodes(node->node, data->nodes, MAX_DIR_LISTING);
+	return TRUE;
 }
 
 U32 getDirCount(struct OpenNode* node) {
@@ -229,12 +239,25 @@ struct Node* getDirNode(struct OpenNode* node, U32 index) {
 	return 0;
 }
 
-struct NodeAccess dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_canMap, dir_ioctl, dir_isWriteReady, dir_isReadReady};
+struct NodeAccess dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_map, dir_canMap, dir_ioctl, dir_isWriteReady, dir_isReadReady};
+
+char pathTmp[MAX_FILEPATH_LEN];
+
+const char* pathMakeWindowsHappy(const char* path) {
+	if (path[strlen(path)-1]==pathSeperator) {
+		strcpy(pathTmp, path);
+		pathTmp[strlen(path)-1]=0;
+		return pathTmp;
+	}
+	return path;
+}
 
 BOOL file_isDirectory(struct Node* node) {
 	struct stat buf;
+	const char* path = node->path.nativePath;
 
-	if (stat(node->path.nativePath, &buf)==0) {
+	path = pathMakeWindowsHappy(path);
+	if (stat(path, &buf)==0) {
 		return S_ISDIR(buf.st_mode);
 	}
 	return FALSE;
@@ -246,8 +269,10 @@ BOOL file_remove(struct Node* node) {
 
 U64 file_lastModified(struct Node* node) {
 	struct stat buf;
+	const char* path = node->path.nativePath;
 
-	if (stat(node->path.nativePath, &buf)==0) {
+	path = pathMakeWindowsHappy(path);
+	if (stat(path, &buf)==0) {
 		return buf.st_mtime;
 	}
 	return 0;
@@ -255,19 +280,21 @@ U64 file_lastModified(struct Node* node) {
 
 U64 file_length(struct Node* node) {
 	struct stat buf;
+	const char* path = node->path.nativePath;
 
-	if (stat(node->path.nativePath, &buf)==0) {
+	path = pathMakeWindowsHappy(path);
+	if (stat(path, &buf)==0) {
 		return buf.st_size;
 	}
 	return 0;
 }
 
-struct OpenNode* file_open(struct Node* node, U32 flags) {
+struct OpenNode* file_open(struct KProcess* process, struct Node* node, U32 flags) {
 	U32 openFlags = O_BINARY;
 	U32 f;
 
 	if (node->nodeType->isDirectory(node)) {
-		return allocOpenNode(node, 0, flags, &dirAccess);
+		return allocOpenNode(process, node, 0, flags, &dirAccess);
 	}
 	if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
 		openFlags|=O_RDONLY;
@@ -291,7 +318,7 @@ struct OpenNode* file_open(struct Node* node, U32 flags) {
 	f = open(node->path.nativePath, openFlags, 0666);	
 	if (!f || f==0xFFFFFFFF)
 		return 0;
-	return allocOpenNode(node, f, flags, &fileAccess);
+	return allocOpenNode(process, node, f, flags, &fileAccess);
 }
 
 BOOL file_setLastModifiedTime(struct Node* node, U32 time) {
@@ -308,7 +335,10 @@ U32 file_getType(struct Node* node) {
 U32 file_getMode(struct Node* node) {
 	struct stat buf;
 	U32 result = 0;
-	if (stat(node->path.nativePath, &buf)==0) {
+	const char* path = node->path.nativePath;
+
+	path = pathMakeWindowsHappy(path);
+	if (stat(path, &buf)==0) {
 		if (S_ISDIR(buf.st_mode))
 			result |= K__S_IFDIR;
 		else
@@ -404,7 +434,7 @@ void freeOpenNode(struct OpenNode* node) {
 	freeOpenNodes = node;
 }
 
-struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess) {
+struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess) {
 	struct OpenNode* result;
 
 	if (freeOpenNodes) {
@@ -418,8 +448,10 @@ struct OpenNode* allocOpenNode(struct Node* node, U32 handle, U32 flags, struct 
 	result->flags = flags;
 	result->access = nodeAccess;
 	result->node = node;
-	nodeAccess->init(result);
-	return result;
+	if (nodeAccess->init(process, result));
+		return result;
+	freeOpenNode(result);
+	return 0;
 }
 
 struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev) {
@@ -509,6 +541,7 @@ BOOL readLink(const char* path, char* buffer) {
 	int h;
 	char tmp[MAX_FILEPATH_LEN];
 
+	path = pathMakeWindowsHappy(path);
 	if (stat(path, &buf)!=0) {
 		return FALSE;
 	}
@@ -573,6 +606,7 @@ BOOL followLinks(char* path) {
 BOOL doesPathExist(const char* path) {
 	struct stat buf;
 
+	path = pathMakeWindowsHappy(path);
 	if (stat(path, &buf)==0) {
 		return TRUE;
 	}

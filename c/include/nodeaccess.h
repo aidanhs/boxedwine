@@ -5,6 +5,8 @@
 #include "memory.h"
 #include "kthread.h"
 
+struct KProcess;
+
 #define IOCTL_ARG1 EDX
 #define IOCTL_ARG2 ESI
 #define IOCTL_ARG3 EDI
@@ -19,10 +21,11 @@ struct OpenNode {
 	};
 	struct Node* node;
 	void* data;
+	U32 idata;
 };
 
 struct NodeAccess {
-	void (*init)(struct OpenNode* node);
+	BOOL (*init)(struct KProcess* process, struct OpenNode* node);
 	S64  (*length)(struct OpenNode* node);
 	BOOL (*setLength)(struct OpenNode* node, S64 length);
 	S64  (*getFilePointer)(struct OpenNode* node);
@@ -30,10 +33,12 @@ struct NodeAccess {
 	U32  (*read)(struct Memory* memory, struct OpenNode* node, U32 address, U32 len);
     U32  (*write)(struct Memory* memory, struct OpenNode* node, U32 address, U32 len);
 	void (*close)(struct OpenNode* node);
+	U32  (*map)(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off);
 	BOOL (*canMap)(struct OpenNode* node);
 	U32  (*ioctl)(struct KThread* thread, struct OpenNode* node, U32 request);	
     BOOL (*isWriteReady)(struct OpenNode* node);
     BOOL (*isReadReady)(struct OpenNode* node);
+	void* data;
 };
 
 #endif

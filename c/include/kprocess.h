@@ -6,6 +6,7 @@
 #include "kthread.h"
 #include "karray.h"
 #include "kfiledescriptor.h"
+#include "nodeaccess.h"
 
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_STACK_START		0xE0000
@@ -45,6 +46,7 @@ struct KProcess {
 	U32 parentId;
 	U32 groupId;
 	U32 userId;
+	U32 effectiveUserId;
 	U32 pendingSignals;
 	U32 signaled;
 	U32 exitCode;
@@ -57,6 +59,9 @@ struct KProcess {
 	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
 	struct KSigAction sigActions[MAX_SIG_ACTIONS];
 	struct KTimer timer;
+	char commandLine[1024];
+	struct NodeAccess commandLineAccess;
+	struct Node* commandLineNode;
 };
 
 void processOnExitThread(struct KThread* thread);
@@ -74,6 +79,8 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
 U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size);
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid);
 U32 syscall_alarm(struct KThread* thread, U32 seconds);
+U32 syscall_getpgid(struct KThread* thread, U32 pid);
+U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid);
 void runProcessTimer(struct KTimer* timer);
 
 #endif

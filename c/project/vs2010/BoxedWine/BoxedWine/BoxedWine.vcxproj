@@ -94,7 +94,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include;..\..\..\..\lib\sdl1\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
@@ -182,8 +182,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h" />
+    <ClInclude Include="..\..\..\..\include\bufferaccess.h" />
     <ClInclude Include="..\..\..\..\include\cpu.h" />
     <ClInclude Include="..\..\..\..\include\decoder.h" />
+    <ClInclude Include="..\..\..\..\include\devfb.h" />
     <ClInclude Include="..\..\..\..\include\devnull.h" />
     <ClInclude Include="..\..\..\..\include\devtty.h" />
     <ClInclude Include="..\..\..\..\include\devurandom.h" />
@@ -213,6 +215,7 @@
     <ClInclude Include="..\..\..\..\include\kthread.h" />
     <ClInclude Include="..\..\..\..\include\loader.h" />
     <ClInclude Include="..\..\..\..\include\log.h" />
+    <ClInclude Include="..\..\..\..\include\meminfo.h" />
     <ClInclude Include="..\..\..\..\include\memory.h" />
     <ClInclude Include="..\..\..\..\include\node.h" />
     <ClInclude Include="..\..\..\..\include\nodeaccess.h" />
@@ -243,6 +246,7 @@
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c" />
@@ -262,6 +266,8 @@
     <ClCompile Include="..\..\..\..\source\kernel\kthread.c" />
     <ClCompile Include="..\..\..\..\source\kernel\loader\elf.c" />
     <ClCompile Include="..\..\..\..\source\kernel\loader\loader.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\proc\bufferaccess.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\proc\meminfo.c" />
     <ClCompile Include="..\..\..\..\source\kernel\syscall.c" />
     <ClCompile Include="..\..\..\..\source\sdl\main.c" />
     <ClCompile Include="..\..\..\..\source\test\testCPU.c" />

@@ -363,7 +363,7 @@ void dimulr16e16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void dimulr32r32(struct CPU* cpu, struct Op* op) {
-	S64 res=(S32)(cpu->reg[op->r2].u32) * (S64)((S32)cpu->reg[op->r1].u16);
+	S64 res=(S32)(cpu->reg[op->r2].u32) * (S64)((S32)cpu->reg[op->r1].u32);
 	fillFlagsNoCFOF(cpu);
 	if (res>=-2147483647l && res<=2147483647l) {
 		removeFlag(CF|OF);
@@ -376,7 +376,7 @@ void dimulr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void dimulr32e32_16(struct CPU* cpu, struct Op* op) {
-	S64 res=(S32)(readd(cpu->memory, eaa16(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u16);
+	S64 res=(S32)(readd(cpu->memory, eaa16(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u32);
 	fillFlagsNoCFOF(cpu);
 	if (res>=-2147483647l && res<=2147483647l) {
 		removeFlag(CF|OF);
@@ -389,7 +389,7 @@ void dimulr32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void dimulr32e32_32(struct CPU* cpu, struct Op* op) {
-	S64 res=(S32)(readd(cpu->memory, eaa32(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u16);
+	S64 res=(S32)(readd(cpu->memory, eaa32(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u32);
 	fillFlagsNoCFOF(cpu);
 	if (res>=-2147483647l && res<=2147483647l) {
 		removeFlag(CF|OF);

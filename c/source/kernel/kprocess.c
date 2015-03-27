@@ -14,12 +14,26 @@
 #include "kobject.h"
 #include "kobjectaccess.h"
 #include "kalloc.h"
+#include "virtualfile.h"
+#include "kstat.h"
+#include "bufferaccess.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 
-void initProcess(struct KProcess* process, struct Memory* memory) {
+void setupCommandlineNode(struct KProcess* process) {
+	char tmp[128];
+
+	makeBufferAccess(&process->commandLineAccess);
+	process->commandLineAccess.data = process->commandLine;
+	sprintf(tmp, "/proc/%d/cmdline", process->id);
+	process->commandLineNode = addVirtualFile(tmp, &process->commandLineAccess, K__S_IREAD);
+}
+
+void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, const char** args) {	
+	U32 i;
+
 	memset(process, 0, sizeof(struct KProcess));
 	process->memory = memory;
 	memory->process = process;
@@ -27,6 +41,14 @@ void initProcess(struct KProcess* process, struct Memory* memory) {
 	process->groupId = 1;	
 	process->parentId = 1;
 	process->userId = UID;
+	process->effectiveUserId = UID;
+	setupCommandlineNode(process);
+	process->commandLine[0]=0;
+	for (i=0;i<argc;i++) {
+		if (i>0)
+			strcat(process->commandLine, " ");
+		strcat(process->commandLine, args[i]);
+	}
 }
 
 void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory* memory) {
@@ -40,6 +62,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	process->parentId = from->id;;
 	process->groupId = from->groupId;
 	process->userId = from->userId;
+	process->effectiveUserId = from->effectiveUserId;
 	strcpy(process->currentDirectory, from->currentDirectory);
 	process->brkEnd = from->brkEnd;
 	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
@@ -50,6 +73,8 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	}
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
+	strcpy(process->commandLine, from->commandLine);
+	setupCommandlineNode(process);	
 }
 
 void writeStackString(struct CPU* cpu, const char* s) {
@@ -119,7 +144,7 @@ struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char*
 		kobject = node->kobject;
 		kobject->refCount++;
 	} else {
-		openNode = node->nodeType->open(node, accessFlags);
+		openNode = node->nodeType->open(process, node, accessFlags);
 		if (!openNode)
 			return 0;
 		kobject = allocKFile(openNode);
@@ -154,9 +179,19 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	BOOL isElf = TRUE;
 	const char* pArgs[128];
 	int argIndex;
+	struct KProcess* process = (struct KProcess*)kalloc(sizeof(struct KProcess));
+	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));		
+	struct KThread* thread = (struct KThread*)kalloc(sizeof(struct KThread));		
+	U32 i;
+	struct Node* interpreterNode = 0;
+
+	initMemory(memory);
+	initProcess(process, memory, argc, args);
+	initThread(thread, process);
+	initStdio(process);
 
 	if (node) {
-		openNode = node->nodeType->open(node, K_O_RDONLY);
+		openNode = node->nodeType->open(process, node, K_O_RDONLY);
 	}
 	if (openNode) {
 		interpreter = getInterpreter(openNode, &isElf);
@@ -166,50 +201,38 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 		return FALSE;
 	}
 	if (interpreter) {
-		struct Node* interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter, TRUE);
-		if (!interpreterNode) {
-			return FALSE;
+		interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter, TRUE);		
+	}
+	if (interpreterNode || isElf) {
+		// :TODO: should probably get this from the elf file
+		loaderNode = getNodeFromLocalPath(currentDirectory, "/lib/ld-linux.so.2", TRUE);
+		if (loaderNode) {
+			loaderOpenNode = loaderNode->nodeType->open(process, loaderNode, K_O_RDONLY);
 		}
-	}
-	// :TODO: should probably get this from the elf file
-	loaderNode = getNodeFromLocalPath(currentDirectory, "/lib/ld-linux.so.2", TRUE);
-	if (loaderNode) {
-		loaderOpenNode = loaderNode->nodeType->open(loaderNode, K_O_RDONLY);
-	}
-	if (loaderOpenNode) {
-		struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
-		struct KProcess* process = (struct KProcess*)kalloc(sizeof(struct KProcess));
-		struct KThread* thread = (struct KThread*)kalloc(sizeof(struct KThread));		
-		U32 i;
-
-		initMemory(memory);
-		initProcess(process, memory);
-		initThread(thread, process);
-		initStdio(process);
-
-		if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32))
-			return FALSE;
-
-		// :TODO: why will it crash in strchr libc if I remove this
-		//syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
+		if (loaderOpenNode) {		
+			if (loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {
+				// :TODO: why will it crash in strchr libc if I remove this
+				//syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
-		pArgs[0] = loaderNode->path.localPath;
-		argIndex = 1;
-		if (interpreter) {
-			pArgs[1] = interpreter;
-			argIndex = 2;
+				pArgs[0] = loaderNode->path.localPath;
+				argIndex = 1;
+				if (interpreter) {
+					pArgs[1] = interpreter;
+					argIndex = 2;
+				}
+				for (i=0;i<argc;i++) {
+					pArgs[i+argIndex] = args[i];
+				}
+				argc+=argIndex;
+
+				setupThreadStack(&thread->cpu, argc, pArgs, envc, env);
+
+				strcpy(process->currentDirectory, currentDirectory);
+
+				scheduleThread(thread);
+				return TRUE;
+			}
 		}
-		for (i=0;i<argc;i++) {
-			pArgs[i+argIndex] = args[i];
-		}
-		argc+=argIndex;
-
-		setupThreadStack(&thread->cpu, argc, pArgs, envc, env);
-
-		strcpy(process->currentDirectory, currentDirectory);
-
-		scheduleThread(thread);
-		return TRUE;
 	}
 	return FALSE;
 }
@@ -430,5 +453,32 @@ U32 syscall_alarm(struct KThread* thread, U32 seconds) {
 	if (prev) {
 		return (prev-getMilliesSinceStart())/1000;
 	}
+	return 0;
+}
+
+U32 syscall_getpgid(struct KThread* thread, U32 pid) {	
+    struct KProcess* process;
+    if (pid==0)
+        process = thread->process;
+    else
+        process = getProcessById(pid);
+    if (!process)
+        return -K_ESRCH;
+    return process->groupId;
+}
+
+U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {	
+	struct KProcess* process;
+    if (pid==0)
+        process = thread->process;
+    else
+        process = getProcessById(pid);
+    if (!process)
+        return -K_ESRCH;
+	if (gpid<0)
+        return -K_EINVAL;
+	if (gpid==0)
+		gpid=process->id;
+    process->groupId = gpid;
 	return 0;
 }

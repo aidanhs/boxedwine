@@ -5,6 +5,7 @@
 #include "memory.h"
 
 #define WAIT_PID 1
+#define WAIT_FD 2
 
 struct KThread {
 	U32 id;
