@@ -135,6 +135,7 @@ void runThreadSlice(struct KThread* thread) {
 }
 
 void runSlice() {
+	// :TODO: what about when all threads are sleeping?
 	lastThread = lastThread->scheduleNext;
 	runThreadSlice(lastThread);
 }

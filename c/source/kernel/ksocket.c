@@ -94,7 +94,13 @@ U32 unixsocket_rename(struct Node* oldNode, struct Node* newNode) {
 struct NodeType unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode};
 
 void unixsocket_onDelete(struct KObject* obj) {
-
+	struct KSocket* s = (struct KSocket*)obj->data;
+	if (s->connection) {
+		s->connection->connection = 0;
+		s->connection->inClosed = 1;
+		s->connection->outClosed = 1;
+		wakeThreads(WAIT_FD);
+	}
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -126,15 +132,18 @@ U32 unixsocket_setLock(struct KObject* obj, struct Memory* memory, U32 address, 
 }
 
 BOOL unixsocket_isOpen(struct KObject* obj) {
-	return TRUE;
+	struct KSocket* s = (struct KSocket*)obj->data;
+	return s->listening || s->connection!=0;
 }
 
 BOOL unixsocket_isReadReady(struct KObject* obj) {
-	return TRUE;
+	struct KSocket* s = (struct KSocket*)obj->data;
+	return s->inClosed || s->recvBufferLen;
 }
 
 BOOL unixsocket_isWriteReady(struct KObject* obj) {
-	return TRUE;
+	struct KSocket* s = (struct KSocket*)obj->data;
+	return s->connection!=0;
 }
 
 U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
@@ -167,9 +176,11 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
 	struct KSocket* s = (struct KSocket*)obj->data;
 	U32 count = 0;
-	if (s->inClosed || !s->connection)
+	if (!s->inClosed && !s->connection)
 		return -K_EPIPE;
 	if (!s->recvBufferLen) {
+		if (s->inClosed)
+			return 0;
 		if (!s->blocking)
 			return -K_EWOULDBLOCK;
 		thread->waitType = WAIT_FD;

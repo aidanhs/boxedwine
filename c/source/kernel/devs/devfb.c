@@ -335,7 +335,6 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 			if (fb.yoffset!=0) {
 				int ii=0;
 			}
-			thread->cpu.log = TRUE;
 			break;
 		}
 		case 0x4611: // FBIOBLANK

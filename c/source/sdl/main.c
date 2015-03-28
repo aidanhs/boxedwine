@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
+	ppenv[envc++] = "PATH=/bin:/usr/bin:/usr/local/bin";
 	//ppenv[envc++] = "LD_DEBUG=all";
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 
@@ -107,7 +108,7 @@ int main(int argc, char **argv) {
 		argv = &argv[i];
 	}
 	if (startProcess("/home/username", argc, argv, envc, ppenv)) {
-		while (getThreadCount()>0) {
+		while (getProcessCount()>0) {
 			runSlice();
 		}
 	}

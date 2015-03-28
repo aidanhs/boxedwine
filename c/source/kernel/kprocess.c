@@ -34,10 +34,11 @@ void setupCommandlineNode(struct KProcess* process) {
 void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, const char** args) {	
 	U32 i;
 
-	memset(process, 0, sizeof(struct KProcess));
+	memset(process, 0, sizeof(struct KProcess));	
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
+	initArray(&process->threads, 10+process->id);
 	process->groupId = 1;	
 	process->parentId = 1;
 	process->userId = UID;
@@ -51,10 +52,27 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 	}
 }
 
+U32 processAddThread(struct KProcess* process, struct KThread* thread) {
+	return addObjecToArray(&process->threads, thread);
+}
+
+void processRemoveThread(struct KProcess* process, struct KThread* thread) {
+	removeObjectFromArray(&process->threads, thread->id);
+}
+
+struct KThread* processGetThreadById(struct KProcess* process, U32 tid) {
+	return (struct KThread*)getObjectFromArray(&process->threads, tid);
+}
+
+U32 processGetThreadCount(struct KProcess* process) {
+	return getArrayCount(&process->threads);
+}
+
 void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory* memory) {
 	U32 i;
 
 	memset(process, 0, sizeof(struct KProcess));
+	initArray(&process->threads, 10);
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
@@ -73,6 +91,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	}
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
+	memcpy(process->path, from->path, sizeof(process->path));
 	strcpy(process->commandLine, from->commandLine);
 	setupCommandlineNode(process);	
 }
@@ -87,23 +106,31 @@ void writeStackString(struct CPU* cpu, const char* s) {
 	writeNativeString(cpu->memory, ESP, s);
 }
 
-void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, const char** env) {
-	U32 a[128];
-	U32 e[128];
+void setupPath(struct KProcess* process, const char* str) {
+	U32 i = 0;
+	U32 len = strlen(str);
+	U32 pathIndex = 0;
+	U32 charIndex = 0;
+
+	for (i=0;i<len;i++) {
+		char c = str[i];
+		if (c==':') {
+			process->path[pathIndex][charIndex]=0;
+			pathIndex++;
+			charIndex=0;
+			if (pathIndex>=MAX_PATHS) {
+				kpanic("ran out of slots for PATH %s", str);
+			}
+		} else {
+			process->path[pathIndex][charIndex]=c;
+			charIndex++;
+		}
+	}
+}
+
+void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	int i;
 
-	if (argc>128)
-		kpanic("Too many args: 128 is max");
-	if (envc>128)
-		kpanic("Too many env: 128 is max");
-	for (i=0;i<envc;i++) {
-		writeStackString(cpu, env[i]);
-		e[i]=ESP;
-	}
-	for (i=0;i<argc;i++) {
-		writeStackString(cpu, args[i]);
-		a[i]=ESP;
-	}
 	push32(cpu, 0);	
 	push32(cpu, a[0]);
     push32(cpu, 0);	
@@ -115,6 +142,74 @@ void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, co
 		push32(cpu, a[i]);
 	}
     push32(cpu, argc);
+}
+
+void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, const char** env) {
+	U32 a[128];
+	U32 e[128];
+	int i;
+
+	if (argc>128)
+		kpanic("Too many args: 128 is max");
+	if (envc>128)
+		kpanic("Too many env: 128 is max");
+	for (i=0;i<envc;i++) {
+		writeStackString(cpu, env[i]);
+		if (strncmp(env[i], "PATH=", 5)==0) {
+			setupPath(cpu->thread->process, env[i]+5);
+		}
+		e[i]=ESP;
+	}
+	for (i=0;i<argc;i++) {
+		writeStackString(cpu, args[i]);
+		a[i]=ESP;
+	}
+	pushThreadStack(cpu, argc, a, envc, e);
+}
+
+void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 env) {
+	U32 a[128];
+	U32 argc=0;
+	U32 e[128];
+	U32 envc=0;
+	int i;
+
+	i=0;
+	while (TRUE) {
+		char* str = getNativeString(cpu->memory, readd(cpu->memory, env+i*4));
+		if (!str[0])
+			break;
+		if (strncmp(str, "PATH=", 5)==0) {
+			setupPath(cpu->thread->process, str+5);
+		}
+		if (envc>=128)
+			kpanic("Too many env: 128 is max");
+		writeStackString(cpu, str);
+		e[i]=ESP;
+		i++;
+		envc++;
+	}
+	i=0;
+	for (i=0;i<3;i++) {
+		if (preArgs[i]) {
+			writeStackString(cpu, preArgs[i]);
+			a[argc]=ESP;
+			argc++;
+		}
+	}
+	i=0;
+	while (TRUE) {
+		char* str = getNativeString(cpu->memory, readd(cpu->memory, args+i*4));
+		if (!str[0])
+			break;
+		if (argc>=128)
+			kpanic("Too many args: 128 is max");
+		writeStackString(cpu, str);
+		a[argc]=ESP;
+		i++;
+		argc++;
+	}
+	pushThreadStack(cpu, argc, a, envc, e);
 }
 
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
@@ -181,7 +276,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	int argIndex;
 	struct KProcess* process = (struct KProcess*)kalloc(sizeof(struct KProcess));
 	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));		
-	struct KThread* thread = (struct KThread*)kalloc(sizeof(struct KThread));		
+	struct KThread* thread = allocThread();
 	U32 i;
 	struct Node* interpreterNode = 0;
 
@@ -237,11 +332,8 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	return FALSE;
 }
 
-void processOnExitThread(struct KThread* thread) {
-	struct KProcess* process = thread->process;
-	process->threadCount--;
-	removeThread(thread);
-	if (!process->threadCount) {
+void processOnExitThread(struct KProcess* process) {
+	if (!processGetThreadCount(process)) {
 		// :TODO:
 	}
 }
@@ -480,5 +572,119 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {
 	if (gpid==0)
 		gpid=process->id;
     process->groupId = gpid;
+	return 0;
+}
+
+struct Node* findInPath(struct KProcess* process, const char* arg) {
+	struct Memory* memory = process->memory;
+	struct Node* node = getNodeFromLocalPath(process->currentDirectory, arg, TRUE);
+	U32 i;
+
+	if (arg[0]!='/') {
+		for (i=0;i<MAX_PATHS && !node;i++) {
+			if (process->path[i][0])
+				node = getNodeFromLocalPath(process->path[i], arg, TRUE);
+		}
+	}
+	return node;
+}
+
+U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
+	struct KProcess* process = thread->process;
+	struct Memory* memory = process->memory;
+	struct Node* node = findInPath(process, getNativeString(memory, readd(memory, argv)));
+	struct OpenNode* openNode = 0;
+	const char* interpreter = 0;
+	struct Node* loaderNode = 0;
+	struct OpenNode* loaderOpenNode = 0;
+	BOOL isElf = TRUE;
+	struct Node* interpreterNode = 0;
+	struct KThread* processThread;
+	U32 threadIndex = 0;
+	U32 i;
+	const char* preArgs[3]={0};
+	int preArgCount;
+
+	if (node) {
+		openNode = node->nodeType->open(process, node, K_O_RDONLY);
+	}
+	if (openNode) {
+		interpreter = getInterpreter(openNode, &isElf);
+		openNode->access->close(openNode);
+	}
+	if (!interpreter && !isElf) {
+		return FALSE;
+	}
+	if (interpreter) {
+		interpreterNode = getNodeFromLocalPath(process->currentDirectory, interpreter, TRUE);		
+	}
+	if (!interpreterNode && !isElf) {
+		return -K_ENOENT;
+	}
+	// :TODO: should probably get this from the elf file
+	loaderNode = getNodeFromLocalPath(process->currentDirectory, "/lib/ld-linux.so.2", TRUE);
+	if (loaderNode) {
+		loaderOpenNode = loaderNode->nodeType->open(process, loaderNode, K_O_RDONLY);
+	}
+	if (!loaderOpenNode) {
+		return -K_ENOENT;
+	}
+			
+	process->commandLine[0]=0;
+	i=0;
+	while (TRUE) {
+		char* arg = getNativeString(memory, readd(memory, argv+i*4));
+		if (!arg[0]) {
+			break;
+		}
+		if (i>0)
+			strcat(process->commandLine, " ");
+		strcat(process->commandLine, arg);
+		i++;
+	}
+	preArgCount=0;
+	preArgs[preArgCount++] = loaderNode->path.localPath;
+	if (interpreter) {
+		preArgs[preArgCount++] = interpreter;
+	}
+	preArgs[preArgCount++] = node->path.localPath;
+	initStackPointer(thread);
+	setupThreadStack2(&thread->cpu, preArgs, argv+4, envp);
+
+	// reset memory must come after we grab the args and env
+	resetMemory(memory, thread->stackPageStart, thread->stackPageCount); // keep the stack we just setup
+	memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
+	if (process->timer.millies!=0) {
+		removeTimer(&process->timer);
+		process->timer.millies = 0;
+	}
+	thread->alternateStack = 0;
+	while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
+		if (processThread && processThread!=thread) {
+			destroyThread(processThread);
+			threadIndex=0; // start the iterator over since we removed something
+		}
+	}
+	threadClearFutexes(thread);
+	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
+		if (process->fds[i] && (process->fds[i]->descriptorFlags & K_O_CLOEXEC)) {
+			process->fds[i]->refCount = 1; // make sure it is really closed
+			closeFD(process->fds[i]);
+		}
+	}
+	if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {		
+		// :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
+		kpanic("program failed to load, but memory was already reset");
+	}		
+	return -K_CONTINUE;
+}
+
+U32 syscall_chdir(struct KThread* thread, U32 path) {
+	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), TRUE);
+	if (!node)
+		return -K_ENOENT;
+	if (!node->nodeType->isDirectory(node))
+		return -K_ENOTDIR;
+	strcpy(thread->process->currentDirectory, node->path.localPath);
 	return 0;
 }

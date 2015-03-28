@@ -24,6 +24,7 @@ struct MapedFiles {
 };
 #define MAX_MAPPED_FILE 50
 #define MAX_SIG_ACTIONS 64
+#define MAX_PATHS 5
 
 struct KSigAction {
 	U32 sa_handler;
@@ -52,7 +53,6 @@ struct KProcess {
 	U32 exitCode;
 	BOOL terminated;
 	struct Memory* memory;
-	U32 threadCount;
 	char currentDirectory[MAX_FILEPATH_LEN];
 	U32 brkEnd;
 	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
@@ -62,9 +62,11 @@ struct KProcess {
 	char commandLine[1024];
 	struct NodeAccess commandLineAccess;
 	struct Node* commandLineNode;
+	struct KArray threads;
+	char path[MAX_PATHS][MAX_FILEPATH_LEN];
 };
 
-void processOnExitThread(struct KThread* thread);
+void processOnExitThread(struct KProcess* process);
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
 struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags);
@@ -76,11 +78,20 @@ const char* getModuleName(struct CPU* cpu);
 U32 getModuleEip(struct CPU* cpu);
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
 
+// returns tid
+U32 processAddThread(struct KProcess* process, struct KThread* thread);
+void processRemoveThread(struct KProcess* process, struct KThread* thread);
+struct KThread* processGetThreadById(struct KProcess* process, U32 tid);
+U32 processGetThreadCount(struct KProcess* process);
+
 U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size);
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid);
 U32 syscall_alarm(struct KThread* thread, U32 seconds);
 U32 syscall_getpgid(struct KThread* thread, U32 pid);
 U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid);
+U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp);
+U32 syscall_chdir(struct KThread* thread, U32 path);
+
 void runProcessTimer(struct KTimer* timer);
 
 #endif

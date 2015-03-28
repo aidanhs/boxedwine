@@ -27,10 +27,4 @@ BOOL getNextProcess(U32* index, struct KProcess** process);
 
 U32 getMilliesSinceStart();
 
-// returns tid
-U32 addThread(struct KThread* thread);
-void removeThread(struct KThread* thread);
-struct KThread* getThreadById(U32 tid);
-U32 getThreadCount();
-
 #endif

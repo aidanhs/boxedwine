@@ -23,11 +23,15 @@ struct KThread {
 	U32     clear_child_tid;
 };
 
+struct KThread* allocThread();
 void initThread(struct KThread* thread, struct KProcess* process);
+void destroyThread(struct KThread* thread);
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process);
 void exitThread(struct KThread* thread, U32 status);
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime);
 void runSignals(struct KThread* thread);
 void runSignal(struct KThread* thread, U32 signal);
+void threadClearFutexes(struct KThread* thread);
+void initStackPointer(struct KThread* thread);
 
 #endif

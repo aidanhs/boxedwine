@@ -5,11 +5,9 @@
 #include <time.h>
 
 static struct KArray processes;
-static struct KArray threads;
 
 void initSystem() {
-	initArray(&processes, 100);
-	initArray(&threads, 200);	
+	initArray(&processes, 1000);		
 }
 
 U32 addProcess(struct KProcess* process) {
@@ -17,35 +15,19 @@ U32 addProcess(struct KProcess* process) {
 }
 
 void removeProcess(struct KProcess* process) {
-	removeObjectFromArray((&processes), process->id);
+	removeObjectFromArray(&processes, process->id);
 }
 
 struct KProcess* getProcessById(U32 pid) {
-	return (struct KProcess*)getObjectFromArray((&processes), pid);
+	return (struct KProcess*)getObjectFromArray(&processes, pid);
 }
 
 BOOL getNextProcess(U32* index, struct KProcess** process) {
-	return getNextObjectFromArray((&processes), index, process);
+	return getNextObjectFromArray(&processes, index, process);
 }
 
 U32 getProcessCount() {
 	return getArrayCount((&processes));
-}
-
-U32 addThread(struct KThread* thread) {
-	return addObjecToArray(&threads, thread);
-}
-
-void removeThread(struct KThread* thread) {
-	removeObjectFromArray((&threads), thread->id);
-}
-
-struct KThread* getThreadById(U32 tid) {
-	return (struct KThread*)getObjectFromArray((&threads), tid);
-}
-
-U32 getThreadCount() {
-	return getArrayCount((&threads));
 }
 
 

@@ -6,31 +6,44 @@
 #include "ksystem.h"
 #include "kerror.h"
 #include "ksignal.h"
+#include "kalloc.h"
 
 #include <string.h>
+
+struct KThread* allocThread() {
+	return (struct KThread*)kalloc(sizeof(struct KThread));		
+}
+
+void freeThread(struct KThread* thread) {
+	// :TODO:
+}
 
 void setupStack(struct KThread* thread) {
 	U32 page = 0;
 	U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
-	if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount+2, &page))
+	pageCount+=2; // guard pages
+	if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount, &page))
 		kpanic("Failed to allocate stack for thread");
-	allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount, PAGE_READ|PAGE_WRITE, 0);
+	allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0);
 	// 1 page above (catch stack underrun)
-	reservePages(thread->cpu.memory, page+pageCount+1, 1, PAGE_RESERVED);
+	reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
 	// 1 page below (catch stack overrun)
 	reservePages(thread->cpu.memory, page, 1, PAGE_RESERVED);
 	thread->stackPageCount = pageCount;
 	thread->stackPageStart = page;
-	thread->cpu.reg[4].u32 = (page+pageCount+1) << PAGE_SHIFT; // one page away from the top
+	initStackPointer(thread);
 	thread->cpu.thread = thread;
+}
+
+void initStackPointer(struct KThread* thread) {
+	thread->cpu.reg[4].u32 = (thread->stackPageStart+thread->stackPageCount-1) << PAGE_SHIFT; // one page away from the top
 }
 
 void initThread(struct KThread* thread, struct KProcess* process) {
 	memset(thread, 0, sizeof(struct KThread));
 	initCPU(&thread->cpu, process->memory);
 	thread->process = process;
-	process->threadCount++;
-	thread->id = addThread(thread);
+	thread->id = processAddThread(process, thread);
 	setupStack(thread);
 }
 
@@ -44,21 +57,31 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
 	thread->process = process;
 	thread->stackPageStart = from->stackPageStart;
 	thread->stackPageCount = from->stackPageCount;
-	thread->id = addThread(thread);
-	process->threadCount++;
+	thread->id = processAddThread(process, thread);
 }
 
 void exitThread(struct KThread* thread, U32 status) {
+	struct KProcess* process = thread->process;
+
 	if (thread->clear_child_tid) {
-		writed(thread->process->memory, thread->clear_child_tid, 0);
+		writed(process->memory, thread->clear_child_tid, 0);
 		syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
 	}
-	unscheduleThread(thread);	
-	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
-	thread->process->threadCount--;
-	processOnExitThread(thread);	
+	destroyThread(thread);
+	processOnExitThread(process);	
 }
 
+void cleanupThread(struct KThread* thread) {
+	unscheduleThread(thread);	
+	threadClearFutexes(thread);
+	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
+}
+
+void destroyThread(struct KThread* thread) {
+	processRemoveThread(thread->process, thread);
+	cleanupThread(thread);
+	freeThread(thread);
+}
 
 #define FUTEX_WAIT 0
 #define FUTEX_WAKE 1
@@ -104,6 +127,16 @@ struct futex* allocFutex(struct KThread* thread, U32 address, U32 millies) {
 
 void freeFutex(struct futex* f) {
 	f->thread = 0;
+}
+
+void threadClearFutexes(struct KThread* thread) {
+	U32 i;
+
+	for (i=0;i<MAX_FUTEXES;i++) {
+		if (system_futex[i].thread == thread) {
+			system_futex[i].thread = 0;
+		}
+	}
 }
 
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime) {

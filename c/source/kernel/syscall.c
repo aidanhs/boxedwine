@@ -19,8 +19,10 @@
 void logsyscall(const char* fmt, ...) {
 	va_list args;
     va_start(args, fmt);
-	if (logFile)
+	if (logFile) {
 		vfprintf(logFile, fmt, args);
+		fprintf(logFile, "\n");
+	}
     va_end(args);
 }
 
@@ -166,6 +168,9 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_read:
 		LOG("__NR_read: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3);
 		result=syscall_read(thread, ARG1, ARG2, ARG3);
+		if (result==2176) {
+			cpu->log = TRUE;
+		}
 		LOG("__NR_read: fd=%d result=%d", ARG1, result);
 		break;
 	case __NR_write:
@@ -195,12 +200,15 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result =syscall_unlink(thread, ARG1);
 		LOG("__NR_unlink path=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), result);
 		break;
-		/*
 	case __NR_execve:
+		// can't log after the call because the memory might have been reset
+		LOG("__NR_execve path=%X(%s) argv=%X envp=%X", ARG1, getNativeString(memory, ARG1), ARG2, ARG3);
+		result = syscall_execve(thread, ARG1, ARG2, ARG3);		
 		break;
 	case __NR_chdir:
+		result = syscall_chdir(thread, ARG1);
+		LOG("__NR_chdir path=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), result);
 		break;
-		*/
 	case __NR_time:
 		result = (U32)(getSystemTimeAsMicroSeconds() / 1000000l);
 		if (ARG1)
@@ -666,12 +674,14 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		kpanic("Unknown syscall %d", EAX);
 		break;
 	}
-	if (result!=-K_WAIT) {
+	if (result==-K_CONTINUE) {
+		CYCLES(1);
+	} else if (result==-K_WAIT) {
+		thread->waitSyscall = EAX;
+		waitThread(thread);		
+	} else {
 		EAX = result;
 		cpu->eip.u32+=op->eipCount;
 		CYCLES(1);
-	} else {
-		thread->waitSyscall = EAX;
-		waitThread(thread);
 	}	
 }

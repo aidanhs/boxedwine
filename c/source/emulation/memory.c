@@ -150,6 +150,18 @@ void initMemory(struct Memory* memory) {
 	memset(memory->data, 0, sizeof(memory->data));
 }
 
+void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {
+	U32 i=0;
+
+	for (i=0;i<0x100000;i++) {
+		if (i<exceptStart || i>=exceptStart+exceptCount) {
+			memory->mmu[i]->clear(memory, i, memory->data[i]);
+			memory->mmu[i] = &invalidPage;
+			memory->data[i] = 0;
+		}
+	}
+}
+
 void cloneMemory(struct Memory* memory, struct Memory* from) {
 	int i=0;
 
@@ -299,6 +311,10 @@ char* getNativeString(struct Memory* memory, U32 address) {
 	char c;
 	int i=0;
 
+	if (!address) {
+		tmpBuffer[0]=0;
+		return tmpBuffer;
+	}
 	do {
 		c = readb(memory, address++);
 		tmpBuffer[i++] = c;

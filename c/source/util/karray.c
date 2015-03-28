@@ -46,9 +46,15 @@ void removeObjectFromArray(struct KArray* karray, U32 index) {
 
 BOOL getNextObjectFromArray(struct KArray* karray, U32* index, void** result) {
 	if (*index<karray->maxCount) {
-		*result = getObjectFromArray(karray, *index);
+		*result = getObjectFromArray(karray, *index+karray->startingIndex);
 		*index=*index+1;
 		return TRUE;
 	}
 	return FALSE;
+}
+
+void* getObjectFromArray(struct KArray* karray, U32 index) {
+	if (index>=karray->startingIndex && index<karray->startingIndex+karray->count)
+		return karray->objects[index-karray->startingIndex];
+	return 0;
 }
