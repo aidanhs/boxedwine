@@ -65,6 +65,7 @@ void wakeThread(struct KThread* thread) {
 	if (waitingThread==thread) {
 		waitingThread=thread->scheduleNext;
 	}
+	thread->waitType = WAIT_NONE;
 	scheduleThread(thread);
 }
 
@@ -93,9 +94,14 @@ void scheduleThread(struct KThread* thread) {
 }
 
 void unscheduleThread(struct KThread* thread) {
-	struct KThread* t;
+	struct KThread* t;	
 
 	if (thread == lastThread) {
+		if (lastThread->scheduleNext == lastThread) {
+			printf("unschedulThread\n");
+			lastThread = 0;
+			return;
+		}
 		lastThread = thread->schedulePrev;		
 	}
 	thread->schedulePrev->scheduleNext = thread->scheduleNext;
@@ -134,8 +140,11 @@ void runThreadSlice(struct KThread* thread) {
 	cpu->timeStampCounter+=cpu->blockCounter;
 }
 
-void runSlice() {
-	// :TODO: what about when all threads are sleeping?
-	lastThread = lastThread->scheduleNext;
-	runThreadSlice(lastThread);
+BOOL runSlice() {
+	if (lastThread) {
+		lastThread = lastThread->scheduleNext;
+		runThreadSlice(lastThread);
+		return TRUE;
+	}
+	return FALSE;
 }

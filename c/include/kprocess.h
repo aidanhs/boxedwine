@@ -64,6 +64,7 @@ struct KProcess {
 	struct Node* commandLineNode;
 	struct KArray threads;
 	char path[MAX_PATHS][MAX_FILEPATH_LEN];
+	struct KProcess* next;
 };
 
 void processOnExitThread(struct KProcess* process);
@@ -77,6 +78,7 @@ struct Node* getNode(struct KProcess* process, U32 fileName);
 const char* getModuleName(struct CPU* cpu);
 U32 getModuleEip(struct CPU* cpu);
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
+void signalProcess(struct KProcess* process, U32 signal);
 
 // returns tid
 U32 processAddThread(struct KProcess* process, struct KThread* thread);
@@ -91,6 +93,7 @@ U32 syscall_getpgid(struct KThread* thread, U32 pid);
 U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid);
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp);
 U32 syscall_chdir(struct KThread* thread, U32 path);
+U32 syscall_exitgroup(struct KThread* thread, U32 code);
 
 void runProcessTimer(struct KTimer* timer);
 

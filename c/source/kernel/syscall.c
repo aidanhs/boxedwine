@@ -496,6 +496,13 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_mmap2:
 		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
 		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
+		if (result==0xD02F0000) {
+			static int ii=0;
+			ii++;
+			if (ii==3) {
+				cpu->log = TRUE;
+			}
+		}
 		break;
 	case __NR_ftruncate64: {
 		U64 len = ARG2 | ((U64)ARG3 << 32);
@@ -610,9 +617,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
         result=0;		
 		break;
 	}
-		/*
 	case __NR_exit_group:
+		LOG("__NR_exit_group code=%d", ARG1);
+		result = syscall_exitgroup(thread, ARG1);		
 		break;
+		/*
 	case __NR_epoll_create:
 		break;
 	case __NR_epoll_ctl:

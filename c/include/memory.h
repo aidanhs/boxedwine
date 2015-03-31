@@ -37,10 +37,10 @@ void pf_writew(struct Memory* memory, U32 address, U32 data, U16 value);
 U32 pf_readd(struct Memory* memory, U32 address, U32 data);
 void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value);
 
-void initMemory(struct Memory* memory);
+struct Memory* allocMemory();
 void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount);
 void cloneMemory(struct Memory* memory, struct Memory* from);
-void destroyMemory(struct Memory* memory);
+void freeMemory(struct Memory* memory);
 void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
 char* getNativeString(struct Memory* memory, U32 address);
 void writeNativeString(struct Memory* memory, U32 address, const char* str);

@@ -3,9 +3,10 @@
 #include "ram.h"
 #include "kscheduler.h"
 #include "kprocess.h"
+#include "kalloc.h"
 
 #include <string.h>
-//#undef LOG_OPS
+#undef LOG_OPS
 void pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;
@@ -141,13 +142,14 @@ void writeq(struct Memory* memory, U32 address, U64 value) {
 	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)(value >> 32));
 }
 
-void initMemory(struct Memory* memory) {
+struct Memory* allocMemory() {
 	int i=0;
-
+	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
 	for (i=0;i<0x100000;i++) {
 		memory->mmu[i] = &invalidPage;
 	}
 	memset(memory->data, 0, sizeof(memory->data));
+	return memory;
 }
 
 void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {
@@ -178,12 +180,13 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
 	}
 }
 
-void destroyMemory(struct Memory* memory) {
+void freeMemory(struct Memory* memory) {
 	int i;
 
 	for (i=0;i<0x100000;i++) {
 		memory->mmu[i]->clear(memory, i, memory->data[i]);
 	}
+	// :TODO:
 }
 
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data) {

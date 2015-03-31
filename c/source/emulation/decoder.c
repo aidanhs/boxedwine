@@ -143,12 +143,20 @@ void SIB(char* s, struct Op* op) {
 		strcat(s, RD(op->e1));
 		added = TRUE;
 	}
-	if (op->e2<8 && op->eSib>0) {
-		if (added) {
-			strcat(s, "+");
+	if (op->e2<8) {
+		if (op->eSib>0) {
+			if (added) {
+				strcat(s, "+");
+			}
+			sprintf(s+strlen(s), "(%s<<%d)", RD(op->e2), op->eSib);
+			added = TRUE;
+		} else {
+			if (added) {
+				strcat(s, "+");
+			}
+			sprintf(s+strlen(s), "%s", RD(op->e2));
+			added = TRUE;
 		}
-		sprintf(s+strlen(s), "(%s<<%d)", RD(op->e2), op->eSib);
-		added = TRUE;
 	}
 	if (op->eData) {
 		if (added) {

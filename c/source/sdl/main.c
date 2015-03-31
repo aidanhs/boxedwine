@@ -109,7 +109,9 @@ int main(int argc, char **argv) {
 	}
 	if (startProcess("/home/username", argc, argv, envc, ppenv)) {
 		while (getProcessCount()>0) {
-			runSlice();
+			while (runSlice()) {
+			}
+			SDL_Delay(10);
 		}
 	}
 	SDL_Quit();

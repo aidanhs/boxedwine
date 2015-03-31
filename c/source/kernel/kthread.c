@@ -10,12 +10,32 @@
 
 #include <string.h>
 
+struct KThread* freeThreads;
+
 struct KThread* allocThread() {
+	if (freeThreads) {
+		struct KThread* result = freeThreads;
+		freeThreads = freeThreads->scheduleNext;
+		memset(result, 0, sizeof(struct KThread));
+		return result;
+	}
 	return (struct KThread*)kalloc(sizeof(struct KThread));		
 }
 
 void freeThread(struct KThread* thread) {
-	// :TODO:
+	struct KProcess* process = thread->process;
+	processRemoveThread(thread->process, thread);
+	if (thread->waitType!=WAIT_NONE) {
+		wakeThread(thread);
+	}	
+	unscheduleThread(thread);	
+	threadClearFutexes(thread);
+	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
+	processOnExitThread(thread->process);
+	thread->scheduleNext = freeThreads;	
+	freeThreads = thread;
+	process->terminated = TRUE;
+	wakeThreads(WAIT_PID);
 }
 
 void setupStack(struct KThread* thread) {
@@ -67,19 +87,6 @@ void exitThread(struct KThread* thread, U32 status) {
 		writed(process->memory, thread->clear_child_tid, 0);
 		syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
 	}
-	destroyThread(thread);
-	processOnExitThread(process);	
-}
-
-void cleanupThread(struct KThread* thread) {
-	unscheduleThread(thread);	
-	threadClearFutexes(thread);
-	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
-}
-
-void destroyThread(struct KThread* thread) {
-	processRemoveThread(thread->process, thread);
-	cleanupThread(thread);
 	freeThread(thread);
 }
 
@@ -218,5 +225,5 @@ void runSignal(struct KThread* thread, U32 signal) {
 		push32(&thread->cpu, thread->cpu.eip.u32);
         thread->cpu.eip.u32 = action->sa_handler;
     }
-    thread->process->pendingSignals &= ~(1l << (signal - 1));
+    thread->process->pendingSignals &= ~(1 << (signal - 1));
 }

@@ -17,6 +17,7 @@
 #include "virtualfile.h"
 #include "kstat.h"
 #include "bufferaccess.h"
+#include "ksignal.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +51,39 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 			strcat(process->commandLine, " ");
 		strcat(process->commandLine, args[i]);
 	}
+}
+
+struct KProcess* freeProcesses;
+
+struct KProcess* allocProcess() {
+	if (freeProcesses) {
+		struct KProcess* result = freeProcesses;
+		freeProcesses = freeProcesses->next;
+		memset(result, 0, sizeof(struct KProcess));
+		return result;
+	}
+	return (struct KProcess*)kalloc(sizeof(struct KProcess));		
+}
+
+void cleanupProcess(struct KProcess* process) {
+	U32 i;
+
+	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
+		if (process->fds[i]) {
+			process->fds[i]->refCount = 1; // make sure it is really closed
+			closeFD(process->fds[i]);
+		}
+	}
+	if (process->memory) {
+		freeMemory(process->memory);
+		process->memory = 0;
+	}
+}
+
+void freeProcess(struct KProcess* process) {
+	cleanupProcess(process);
+	process->next = process;	
+	freeProcesses = process;
 }
 
 U32 processAddThread(struct KProcess* process, struct KThread* thread) {
@@ -274,13 +308,12 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	BOOL isElf = TRUE;
 	const char* pArgs[128];
 	int argIndex;
-	struct KProcess* process = (struct KProcess*)kalloc(sizeof(struct KProcess));
-	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));		
+	struct KProcess* process = allocProcess();
+	struct Memory* memory = allocMemory();		
 	struct KThread* thread = allocThread();
 	U32 i;
 	struct Node* interpreterNode = 0;
 
-	initMemory(memory);
 	initProcess(process, memory, argc, args);
 	initThread(thread, process);
 	initStdio(process);
@@ -334,7 +367,15 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 
 void processOnExitThread(struct KProcess* process) {
 	if (!processGetThreadCount(process)) {
-		// :TODO:
+		struct KProcess* parent = getProcessById(process->parentId);
+		if (parent && parent->sigActions[K_SIGCHLD].sa_handler!=K_SIG_DFL) {
+			if (parent->sigActions[K_SIGCHLD].sa_handler==K_SIG_IGN) {
+				freeProcess(process); 
+			} else {
+				signalProcess(parent, K_SIGCHLD);
+			}
+		}
+		cleanupProcess(process); // release RAM, sockets, etc now.  No reason to wait to do that until waitpid is called
 	}
 }
 
@@ -354,6 +395,7 @@ BOOL isProcessTerminated(struct KProcess* process) {
 
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 	struct KProcess* process = 0;
+	U32 result;
 
 	if (pid>0) {
 		process = getProcessById(pid);		
@@ -404,8 +446,10 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
         }
         writed(thread->process->memory, status, s);
     }
+	result = process->id;
     removeProcess(process);
-    return process->id;
+	freeProcess(process);
+    return result;
 }
 
 struct Node* getNode(struct KProcess* process, U32 fileName) {
@@ -470,9 +514,9 @@ and is now available for re-use. */
 
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid) {
 	if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID)) {
-        struct Memory* newMemory = (struct Memory*)kalloc(sizeof(struct Memory));
-		struct KProcess* newProcess = (struct KProcess*)kalloc(sizeof(struct KProcess));
-		struct KThread* newThread = (struct KThread*)kalloc(sizeof(struct KThread));
+        struct Memory* newMemory = allocMemory();
+		struct KProcess* newProcess = allocProcess();
+		struct KThread* newThread = allocThread();
 		newProcess->parentId = thread->process->id;        
 
 		cloneMemory(newMemory, thread->process->memory);
@@ -524,6 +568,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 void runProcessTimer(struct KTimer* timer) {
 	removeTimer(timer);
 	timer->millies = 0;
+	signalProcess(timer->process, K_SIGALRM);
 }
 
 U32 syscall_alarm(struct KThread* thread, U32 seconds) {
@@ -661,7 +706,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	thread->alternateStack = 0;
 	while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
 		if (processThread && processThread!=thread) {
-			destroyThread(processThread);
+			freeThread(processThread);
 			threadIndex=0; // start the iterator over since we removed something
 		}
 	}
@@ -675,7 +720,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {		
 		// :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
 		kpanic("program failed to load, but memory was already reset");
-	}		
+	}			
 	return -K_CONTINUE;
 }
 
@@ -687,4 +732,41 @@ U32 syscall_chdir(struct KThread* thread, U32 path) {
 		return -K_ENOTDIR;
 	strcpy(thread->process->currentDirectory, node->path.localPath);
 	return 0;
+}
+
+U32 syscall_exitgroup(struct KThread* thread, U32 code) {
+	U32 threadIndex=0;
+	struct KThread* processThread = 0;
+	struct KProcess* process = thread->process;
+
+	while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
+		if (processThread && processThread!=thread) {
+			freeThread(processThread);
+			threadIndex=0; // start the iterator over since we removed something
+		}
+	}
+	process->exitCode = code;
+	freeThread(thread);
+	thread->cpu.blockCounter = 0xFFFFFF00; // cause the current slice to end
+	if (getProcessCount()==1) {
+		// no one left to wait on this process
+		removeProcess(process);
+	}
+	return -K_CONTINUE;
+}
+
+void signalProcess(struct KProcess* process, U32 signal) {	
+	struct KThread* thread = 0;
+	U32 threadIndex = 0;
+
+	process->pendingSignals |= (1 << signal);
+
+	// give each thread a chance to run a signal, some or all of them might have the signal masked off.  
+	// In that case when the user unmasks the signal with sigprocmask it will be caught then
+	while (process->pendingSignals && getNextObjectFromArray(&process->threads, &threadIndex, (void**)&thread)) {
+		if (thread) {
+			runSignals(thread);
+			threadIndex=0; // start the iterator over since we might have removed something
+		}
+	}
 }

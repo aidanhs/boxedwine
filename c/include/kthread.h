@@ -4,6 +4,7 @@
 #include "cpu.h"
 #include "memory.h"
 
+#define WAIT_NONE 0
 #define WAIT_PID 1
 #define WAIT_FD 2
 
@@ -25,7 +26,7 @@ struct KThread {
 
 struct KThread* allocThread();
 void initThread(struct KThread* thread, struct KProcess* process);
-void destroyThread(struct KThread* thread);
+void freeThread(struct KThread* thread);
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process);
 void exitThread(struct KThread* thread, U32 status);
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime);
