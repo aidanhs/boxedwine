@@ -214,16 +214,16 @@ void runSignals(struct KThread* thread) {
 void runSignal(struct KThread* thread, U32 signal) {
 	struct KSigAction* action = &thread->process->sigActions[signal];
 
-    if (action->sa_handler==K_SIG_DFL) {
+    if (action->handler==K_SIG_DFL) {
 
-    } else if (action->sa_handler != K_SIG_IGN) {
+    } else if (action->handler != K_SIG_IGN) {
         thread->stackBeforeSignal = thread->cpu.reg[4].u32;
         if (thread->alternateStack!=0) {
             thread->cpu.reg[4].u32 = thread->alternateStack;
         }
 		push32(&thread->cpu, signal);
 		push32(&thread->cpu, thread->cpu.eip.u32);
-        thread->cpu.eip.u32 = action->sa_handler;
+        thread->cpu.eip.u32 = action->handler;
     }
     thread->process->pendingSignals &= ~(1 << (signal - 1));
 }

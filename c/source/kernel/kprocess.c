@@ -368,8 +368,8 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 void processOnExitThread(struct KProcess* process) {
 	if (!processGetThreadCount(process)) {
 		struct KProcess* parent = getProcessById(process->parentId);
-		if (parent && parent->sigActions[K_SIGCHLD].sa_handler!=K_SIG_DFL) {
-			if (parent->sigActions[K_SIGCHLD].sa_handler==K_SIG_IGN) {
+		if (parent && parent->sigActions[K_SIGCHLD].handler!=K_SIG_DFL) {
+			if (parent->sigActions[K_SIGCHLD].handler==K_SIG_IGN) {
 				freeProcess(process); 
 			} else {
 				signalProcess(parent, K_SIGCHLD);

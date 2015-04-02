@@ -4,17 +4,17 @@
 #include "log.h"
 
 void writeSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
-	writed(memory, address, signal->sa_handler);
-    writed(memory, address+4, signal->sa_sigaction);
-    writed(memory, address+8, signal->sa_mask);
-    writed(memory, address+12, signal->sa_flags);
+	writed(memory, address, signal->handler);
+    writed(memory, address+4, signal->sigaction);
+    writed(memory, address+8, signal->mask);
+    writed(memory, address+12, signal->flags);
 }
 
 void readSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
-	signal->sa_handler = readd(memory, address);
-    signal->sa_sigaction = readd(memory, address+4);
-    signal->sa_mask = readd(memory, address+8);
-    signal->sa_flags = readd(memory, address+12);
+	signal->handler = readd(memory, address);
+    signal->sigaction = readd(memory, address+4);
+    signal->mask = readd(memory, address+8);
+    signal->flags = readd(memory, address+12);
 }
 
 U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {

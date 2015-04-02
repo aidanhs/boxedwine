@@ -28,10 +28,10 @@ struct MapedFiles {
 #define MAX_PATHS 5
 
 struct KSigAction {
-	U32 sa_handler;
-    U32 sa_sigaction;
-    U32 sa_mask;
-    U32 sa_flags;
+	U32 handler;
+    U32 sigaction;
+    U32 mask;
+    U32 flags;
 };
 
 struct KProcess {
