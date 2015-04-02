@@ -5287,3 +5287,67 @@ BOOL decode3bf(struct DecodeData* data) {
     NEXT_OP(data);
     return TRUE;
 }
+// BSWAP
+BOOL decode3c8(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 0;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3c9(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 1;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3ca(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 2;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3cb(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 3;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3cc(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 4;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3cd(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 5;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3ce(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 6;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}
+// BSWAP
+BOOL decode3cf(struct DecodeData* data) {
+    data->op->func = bswap32;
+    data->op->r1 = 7;
+    LOG_OP("BSWAP");
+    NEXT_OP(data);
+    return TRUE;
+}

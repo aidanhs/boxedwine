@@ -205,6 +205,7 @@
     <ClInclude Include="..\..\..\..\include\kmmap.h" />
     <ClInclude Include="..\..\..\..\include\kobject.h" />
     <ClInclude Include="..\..\..\..\include\kobjectaccess.h" />
+    <ClInclude Include="..\..\..\..\include\kpoll.h" />
     <ClInclude Include="..\..\..\..\include\kprocess.h" />
     <ClInclude Include="..\..\..\..\include\kscheduler.h" />
     <ClInclude Include="..\..\..\..\include\ksignal.h" />
@@ -258,6 +259,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\kio.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kmmap.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kobject.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kpoll.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kprocess.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kscheduler.c" />
     <ClCompile Include="..\..\..\..\source\kernel\ksignal.c" />

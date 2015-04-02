@@ -6,6 +6,7 @@
 #include "kobjectaccess.h"
 #include "kerror.h"
 #include "log.h"
+#include "kscheduler.h"
 
 #include <string.h>
 
@@ -74,10 +75,10 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
             return 0;
 		// blocking is at the file description level, not the file descriptor level
         case K_F_GETFL:
-			return fd->accessFlags | (fd->kobject->access->isBlocking(fd->kobject)?K_O_NONBLOCK:0) | (fd->kobject->access->isAsync(fd->kobject, thread->process)?K_O_ASYNC:0);
+			return fd->accessFlags | (fd->kobject->access->isBlocking(fd->kobject)?0:K_O_NONBLOCK) | (fd->kobject->access->isAsync(fd->kobject, thread->process)?K_O_ASYNC:0);
         case K_F_SETFL:
             fd->accessFlags = arg;
-			fd->kobject->access->setBlocking(fd->kobject, arg & K_O_NONBLOCK);
+			fd->kobject->access->setBlocking(fd->kobject, (arg & K_O_NONBLOCK)==0);
 			fd->kobject->access->setAsync(fd->kobject, thread->process, arg & K_O_ASYNC);
             return 0;
         case K_F_GETLK: 
@@ -114,5 +115,143 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
         default:
             kwarn("fcntl: unknown command: %d", cmd);
             return -K_EINVAL;
+    }
+}
+
+U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout) {
+	U32 i;
+	struct Memory* memory = thread->process->memory;
+	U32 result;
+
+	if (!thread->waitStartTime) {
+		U32 address = pfds;
+
+		thread->pollCount = nfds;
+		for (i=0;i<nfds;i++) {
+			thread->pollData[i].fd = readd(memory, address);address+=4;
+			thread->pollData[i].events = readw(memory, address);address+=2;
+			thread->pollData[i].revents = readw(memory, address);address+=2;
+		}
+	}
+
+	result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
+	if (result < 0)
+		return result;
+	pfds+=6;
+	for (i=0;i<nfds;i++) {
+		writew(memory, pfds, thread->pollData[i].revents);
+		pfds+=8;
+	}
+	return result;
+}
+
+U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, U32 errorfds, U32 timeout) {
+	if (nfds>0) {
+		struct Memory* memory = thread->process->memory;
+		S32 result = 0;
+		U32 i;
+		int count = 0;
+
+		if (!thread->waitStartTime) {
+			U32 i;			
+
+			thread->pollCount = 0;
+			for (i=0;i<nfds;) {
+				U32 readbits = 0;
+				U32 writebits = 0;
+				U32 errorbits = 0;
+				U32 b;
+
+				if (readfds!=0) {
+					readbits = readb(memory, readfds+i/8);
+				}
+				if (writefds!=0) {
+					writebits = readb(memory, writefds + i / 8);
+				}
+				if (errorfds!=0) {
+					errorbits = readb(memory, errorfds + i / 8);
+				}
+				for (b = 0; b < 8 && i < nfds; b++, i++) {
+					U32 mask = 1 << b;
+					U32 r = readbits & mask;
+					U32 w = writebits & mask;
+					U32 e = errorbits & mask;
+					if (r || w || e) {
+						U32 events = 0;
+						if (r)
+							events |= K_POLLIN;
+						if (w)
+							events |= K_POLLHUP;
+						if (e)
+							events |= K_POLLERR;
+						if (thread->pollCount>=MAX_POLL_DATA) {
+							kpanic("%d fd limit reached in poll", MAX_POLL_DATA);
+						}
+						thread->pollData[thread->pollCount].events = events;
+						thread->pollData[thread->pollCount].fd = i;
+						thread->pollCount++;
+					}
+				}
+			}
+		}
+        if (timeout==0)
+            timeout = 0xFFFFFFFF;
+        else {
+            timeout = readd(memory, timeout)*1000+readd(memory, timeout+4)/1000;
+        }
+
+		result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
+		if (result < 0)
+			return result;
+
+		if (readfds)
+			zeroMemory(memory, readfds, (nfds+7)/8);
+		if (writefds)
+			zeroMemory(memory, writefds, (nfds+7)/8);
+		if (errorfds)
+			zeroMemory(memory, errorfds, (nfds+7)/8);
+
+		if (result == 0)
+            return 0;
+        
+		for (i=0;i<thread->pollCount;i++) {
+            U32 found = 0;
+			FD fd = thread->pollData[i].fd;
+			U32 revent = thread->pollData[i].revents;
+
+            if (readfds!=0 && ((revent & K_POLLIN) || (revent & K_POLLHUP))) {
+                U8 v = readb(memory, readfds+fd/8);
+                v |= 1 << (fd % 8);
+                writeb(memory, readfds+fd/8, v);
+                found = 1;
+            }
+			if (writefds!=0 && (revent & K_POLLOUT)) {
+                U8 v = readb(memory, writefds+fd/8);
+                v |= 1 << (fd % 8);
+                writeb(memory, writefds+fd/8, v);
+                found = 1;
+            }
+			if (errorfds!=0 && (revent & K_POLLERR)) {
+                U8 v = readb(memory, errorfds+fd/8);
+                v |= 1 << (fd % 8);
+                writeb(memory, errorfds+fd/8, v);
+                found = 1;
+            }
+            if (found) {
+                count++;
+            }
+        }
+        return count;
+    } else {
+        if (timeout == 0) {
+			timeout = 0xFFFFFFFF;
+		}
+		thread->waitType = WAIT_SLEEP;
+		thread->timer.process = thread->process;
+		thread->timer.thread = thread;
+		thread->timer.millies = thread->waitStartTime+timeout;			
+		// :TODO: if signaled return EINTR
+		addTimer(&thread->timer);
+		return -K_WAIT;
     }
 }

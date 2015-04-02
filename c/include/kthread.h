@@ -3,10 +3,15 @@
 
 #include "cpu.h"
 #include "memory.h"
+#include "kpoll.h"
+#include "ktimer.h"
 
 #define WAIT_NONE 0
 #define WAIT_PID 1
 #define WAIT_FD 2
+#define WAIT_SLEEP 3
+
+#define MAX_POLL_DATA 128
 
 struct KThread {
 	U32 id;
@@ -21,7 +26,11 @@ struct KThread {
 	struct KThread* schedulePrev;
 	U32     waitType;
 	U32     waitSyscall;
+	U32	    waitStartTime;
 	U32     clear_child_tid;
+	struct KPollData pollData[MAX_POLL_DATA];
+	U32 pollCount;
+	struct KTimer timer;
 };
 
 struct KThread* allocThread();

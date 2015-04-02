@@ -763,6 +763,15 @@ public class Main {
         ge("1be", "movsx8", 16);
         ge("3be", "movsx8", 32);
         ge("3bf", "movsx16", 32);
+
+        decodeFunc("BSWAP", "3c8", "bswap32", "0");
+        decodeFunc("BSWAP", "3c9", "bswap32", "1");
+        decodeFunc("BSWAP", "3ca", "bswap32", "2");
+        decodeFunc("BSWAP", "3cb", "bswap32", "3");
+        decodeFunc("BSWAP", "3cc", "bswap32", "4");
+        decodeFunc("BSWAP", "3cd", "bswap32", "5");
+        decodeFunc("BSWAP", "3ce", "bswap32", "6");
+        decodeFunc("BSWAP", "3cf", "bswap32", "7");
     }
 
     static public void setCC() throws IOException {

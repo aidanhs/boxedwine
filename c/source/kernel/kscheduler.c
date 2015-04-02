@@ -1,6 +1,7 @@
 #include "kscheduler.h"
 #include "kprocess.h"
 #include "ksystem.h"
+#include "devfb.h"
 
 #include <stdio.h>
 
@@ -19,15 +20,21 @@ void addTimer(struct KTimer* timer) {
 		timer->prev = 0;
 		timers = timer;
 	}
+	timer->active = 1;
 }
 
 void removeTimer(struct KTimer* timer) {
-	if (timer->prev)
-		timer->prev->next = timer->next;
-	if (timer->next)
-		timer->next->prev = timer->prev;
-	if (timers==timer) {
-		timers=timer->next;
+	if (timer->active) {
+		if (timer->prev)
+			timer->prev->next = timer->next;
+		if (timer->next)
+			timer->next->prev = timer->prev;
+		if (timers==timer) {
+			timers=timer->next;
+		}
+		timer->prev = 0;
+		timer->next = 0;
+		timer->active = 0;
 	}
 }
 
@@ -85,7 +92,7 @@ void scheduleThread(struct KThread* thread) {
 			lastThread->scheduleNext = thread;
 		}
 	}
-	printf("schedulThread\n");	
+	printf("schedulThread %d\n", thread->id);	
 	t = lastThread;
 	do {
 		printf("  id=%d\n", t->id);
@@ -100,6 +107,7 @@ void unscheduleThread(struct KThread* thread) {
 		if (lastThread->scheduleNext == lastThread) {
 			printf("unschedulThread\n");
 			lastThread = 0;
+			thread->cpu.blockCounter = 0xFFFFFF00;
 			return;
 		}
 		lastThread = thread->schedulePrev;		
@@ -107,7 +115,7 @@ void unscheduleThread(struct KThread* thread) {
 	thread->schedulePrev->scheduleNext = thread->scheduleNext;
 	thread->scheduleNext->schedulePrev = thread->schedulePrev;
 	thread->cpu.blockCounter = 0xFFFFFF00; // causes a context change
-	printf("unschedulThread\n");	
+	printf("unschedulThread %d\n", thread->id);	
 	t = lastThread;
 	do {
 		printf("  id=%d\n", t->id);
@@ -119,28 +127,39 @@ U64 contextTime = 100000;
 
 void runThreadSlice(struct KThread* thread) {
 	struct CPU* cpu;
-	struct KTimer* timer = timers;
 
 	cpu = &thread->cpu;
 	cpu->blockCounter = 0;
 
-	if (timer) {
-		U32 millies = getMilliesSinceStart();
-		while (timer) {
-			struct KTimer* nextTimer = timer->next;
-			if (timer->millies<=millies) {
-				runProcessTimer(timer);
-			}
-			timer = nextTimer;
-		}
-	}
 	do {
 		runCPU(cpu);
 	} while (cpu->blockCounter < contextTime);
 	cpu->timeStampCounter+=cpu->blockCounter;
 }
 
+void runTimers() {
+	struct KTimer* timer = timers;
+
+	if (timer) {
+		U32 millies = getMilliesSinceStart();
+		while (timer) {
+			struct KTimer* nextTimer = timer->next;
+			if (timer->millies<=millies) {
+				if (timer->thread) {
+					removeTimer(timer);
+					wakeThread(timer->thread);
+				} else {
+					runProcessTimer(timer);
+				}
+			}
+			timer = nextTimer;
+		}
+	}
+}
+
 BOOL runSlice() {
+	runTimers();
+	flipFB();
 	if (lastThread) {
 		lastThread = lastThread->scheduleNext;
 		runThreadSlice(lastThread);

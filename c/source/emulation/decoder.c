@@ -2011,7 +2011,7 @@ DECODER decoder[1024] = {
 	invalidOp, invalidOp, decode3ba, decode3bb, decode3bc, decode3bd, decode3be, decode3bf,
 	// 3c0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	decode3c8, decode3c9, decode3ca, decode3cb, decode3cc, decode3cd, decode3ce, decode3cf,
 	// 3d0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

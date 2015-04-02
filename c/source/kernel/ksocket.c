@@ -10,29 +10,38 @@
 #include "kstat.h"
 #include "kalloc.h"
 #include "kscheduler.h"
+#include "ksystem.h"
+#include "kio.h"
 
 #include <string.h>
 #include <stdio.h>
 
 #define BUFFER_LEN 131072
+#define MAX_PENDING_CONNECTIONS 10
 
 struct KSockAddress {
 	U16 family;
-	U8 data[256];
+	char data[256];
 };
 struct KSocket {
 	U32 domain;
 	U32 type;
 	U32 protocol;
+	U32 pid;
 	U64 lastModifiedTime;
 	BOOL blocking;
 	BOOL listening;
+	U32 nl_port;
 	struct Node* node;
 	struct KSocket* next;
 	struct KSocket* connection;
+	BOOL connected; // this will be 0 and connection will be set while connect is blocking
 	struct KSockAddress destAddress;
 	U32 recvLen;
 	U32 sendLen;
+	struct KSocket* connecting;
+	struct KSocket* pendingConnections[MAX_PENDING_CONNECTIONS];
+	U32 pendingConnectionsCount;
 	BOOL inClosed;
 	BOOL outClosed;
 	char recvBuffer[BUFFER_LEN];
@@ -101,6 +110,15 @@ void unixsocket_onDelete(struct KObject* obj) {
 		s->connection->outClosed = 1;
 		wakeThreads(WAIT_FD);
 	}
+	if (s->connecting) {
+		U32 i=0;
+		for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
+			if (s->connecting->pendingConnections[i]==s) {
+				s->connecting->pendingConnections[i] = 0;
+				s->connecting->pendingConnectionsCount--;
+			}
+		}
+	}
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -109,15 +127,16 @@ void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
 }
 
 BOOL unixsocket_isBlocking(struct KObject* obj) {
-	return FALSE;
+	struct KSocket* s = (struct KSocket*)obj->data;
+	return s->blocking;
 }
 
 void unixsocket_setAsync(struct KObject* obj, struct KProcess* process, BOOL isAsync) {
-	kpanic("unixsocket_setAsync not implemented yet");
+	if (isAsync)
+		kpanic("unixsocket_setAsync not implemented yet");
 }
 
 BOOL unixsocket_isAsync(struct KObject* obj, struct KProcess* process) {
-	kwarn("unixsocket_isAsync not implemented yet");
 	return FALSE;
 }
 
@@ -133,12 +152,12 @@ U32 unixsocket_setLock(struct KObject* obj, struct Memory* memory, U32 address, 
 
 BOOL unixsocket_isOpen(struct KObject* obj) {
 	struct KSocket* s = (struct KSocket*)obj->data;
-	return s->listening || s->connection!=0;
+	return s->listening || s->connection;
 }
 
 BOOL unixsocket_isReadReady(struct KObject* obj) {
 	struct KSocket* s = (struct KSocket*)obj->data;
-	return s->inClosed || s->recvBufferLen;
+	return s->inClosed || s->recvBufferLen || s->pendingConnectionsCount;
 }
 
 BOOL unixsocket_isWriteReady(struct KObject* obj) {
@@ -261,18 +280,22 @@ struct KSocket* allocSocket() {
 	}	
 	result->recvLen = 128*1024;
 	result->sendLen = 128*1024;
+	result->blocking = 1;
 	return result;
 }
 
-U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
+U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct KSocket** returnSocket) {
 	if (domain==K_AF_UNIX) {
 		struct KSocket* s = allocSocket();
 		struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, s);
 		struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
 		closeKObject(kSocket);
+		s->pid = thread->process->id;
 		s->domain = domain;
 		s->protocol = protocol;
 		s->type = type;
+		if (returnSocket)
+			*returnSocket = s;
 		return result->handle;
 	} else if (domain==K_AF_NETLINK) {
         // just fake it so that libudev doesn't crash
@@ -280,17 +303,25 @@ U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
 		struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, s);
 		struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
 		closeKObject(kSocket);
+		s->pid = thread->process->id;
 		s->domain = domain;
 		s->protocol = protocol;
 		s->type = type;
+		if (returnSocket)
+			*returnSocket = s;
 		return result->handle;
     }
 	return -K_EAFNOSUPPORT;
 }
 
+U32 ksocket(struct KThread* thread, U32 domain, U32 type, U32 protocol) {
+	return ksocket2(thread, domain, type, protocol, 0);
+}
+
 U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
 	struct KSocket* s;
+	U32 family;
 
 	if (!fd) {
 		return -K_EBADF;
@@ -299,7 +330,8 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		return -K_ENOTSOCK;
 	}
 	s = (struct KSocket*)fd->kobject->data;
-	if (s->domain==K_AF_UNIX) {
+	family = readw(thread->process->memory, address);
+	if (family==K_AF_UNIX) {
 		char localPath[MAX_FILEPATH_LEN];
 		char nativePath[MAX_FILEPATH_LEN];
 		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, socketAddressName(thread, address, len), localPath, nativePath);
@@ -316,7 +348,15 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		node->kobject = fd->kobject;
 		s->node = node;
 		return 0;
-	}
+	} else if (family == K_AF_NETLINK) {
+		U32 port = readd(thread->process->memory, address+4);
+        if (port == 0) {
+			port = thread->process->id;
+        }
+		s->nl_port = port;
+        s->listening = 1;
+        return 0;
+    }
 	return -K_EAFNOSUPPORT;
 }
 
@@ -331,28 +371,62 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		return -K_ENOTSOCK;
 	}
 	s = (struct KSocket*)fd->kobject->data;
-	if (s->connection || s->destAddress.family) {
+	if (s->connected) {
 		return -K_EISCONN;
-	}
-	s->destAddress.family = readw(thread->process->memory, address);
+	}	
 	if (len-2>sizeof(s->destAddress.data)) {
 		kpanic("Socket address is too big");
 	}
+	s->destAddress.family = readw(thread->process->memory, address);
 	memcopyToNative(thread->process->memory, address+2, s->destAddress.data, len-2);
 	if (s->type==K_SOCK_DGRAM) {
+		s->connected = 1;		
 		return 0;
 	} else if (s->type==K_SOCK_STREAM) {
 		if (s->domain==K_AF_UNIX) {
 			char localPath[MAX_FILEPATH_LEN];
 			char nativePath[MAX_FILEPATH_LEN];
 			struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, s->destAddress.data, localPath, nativePath);
-		
+			struct KSocket* destination = 0;
+
 			if (!node) {
 				s->destAddress.family = 0;
 				return -K_ECONNREFUSED;
 			}
-			kwarn("connect");
-			// :TODO: wake up sleeping theads
+			destination = (struct KSocket*)node->kobject->data;
+			if (s->connection) {
+				s->connected = 1;
+				return 0;
+			}
+			if (s->connecting) {
+				if (s->blocking) {
+					thread->waitType = WAIT_FD;
+					return -K_WAIT;
+				} else {
+					return -K_EINPROGRESS;
+				}
+			} else {
+				U32 i;
+				for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
+					if (!destination->pendingConnections[i]) {
+						destination->pendingConnections[i] = s;
+						destination->pendingConnectionsCount++;
+						s->connecting = destination;
+						wakeThreads(WAIT_FD);
+						break;
+					}
+				}
+				if (!s->connecting) {
+					kwarn("connect: destination socket pending connections queue is full");
+					return -K_ECONNREFUSED;
+				}
+				if (!s->blocking) {
+					return -K_EINPROGRESS;
+				}
+				// :TODO: what about a time out
+				thread->waitType = WAIT_FD;
+				return -K_WAIT;
+			}
 		} else {
 			kpanic("connect not implemented for domain %d", s->domain);
 		}
@@ -384,12 +458,112 @@ U32 klisten(struct KThread* thread, U32 socket, U32 backog) {
 }
 
 U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+	struct KSocket* connection = 0;
+	struct KSocket* resultSocket = 0;
+	U32 i;
+	U32 result;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (!s->listening) {
+		return -K_EINVAL;
+	}
+	if (!s->pendingConnections) {
+		if (!s->blocking)
+			return -K_EWOULDBLOCK;
+		thread->waitType = WAIT_FD;
+		return -K_WAIT;
+	}
+	// :TODO: should make this FIFO
+	for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
+		if (s->pendingConnections[i]) {
+			connection = s->pendingConnections[i];
+			s->pendingConnections[i] = 0;
+			s->pendingConnectionsCount--;
+		}
+	}
+	if (!connection) {
+		kpanic("socket pending connection count was greater than 0 but could not find a connnection");
+	}
+	result = ksocket2(thread, connection->domain, connection->type, connection->protocol, &resultSocket);
+	if (!resultSocket) {
+		kpanic("ksocket2 failed to create a socket in accept");
+	}
+
+	connection->connection = resultSocket;
+	resultSocket->connection = connection;
+	connection->inClosed = FALSE;
+	connection->outClosed = FALSE;
+	resultSocket->inClosed = FALSE;
+	resultSocket->outClosed = FALSE;
+	connection->connecting = 0;
+	wakeThreads(WAIT_FD);
+	return result;
 }
 
-U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 len) {
+U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+	struct Memory* memory = thread->process->memory;
+	U32 len = readd(memory, plen);
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (s->domain == K_AF_NETLINK) {
+		if (len>0 && len<12)
+            kpanic("getsocketname: AF_NETLINK wrong address size");
+        writew(memory, address, s->domain);
+        writew(memory, address+2, 0);
+        writed(memory, address+4, s->nl_port);
+        writed(memory, address+8, 0);
+		writed(memory, plen, 12);
+	} else if (s->domain == K_AF_UNIX) {
+		writew(memory, address, s->destAddress.family);
+		len-=2;
+		if (len>sizeof(s->destAddress.data))
+			len = sizeof(s->destAddress.data);
+		memcopyFromNative(memory, address+2, s->destAddress.data, len);
+		writed(memory, plen, 2+strlen(s->destAddress.data)+1);
+	} else {
+		kwarn("getsockname not implemented");
+        return -K_EACCES;
+	}
+    return 0;
 }
 
-U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 len) {
+U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 plen) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+	struct Memory* memory = thread->process->memory;
+	U32 len = readd(memory, plen);
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (!s->connection)
+        return -K_ENOTCONN;
+	writew(memory, address, s->destAddress.family);
+	len-=2;
+	if (len>sizeof(s->destAddress.data))
+		len = sizeof(s->destAddress.data);
+	memcopyFromNative(memory, address+2, s->destAddress.data, len);
+	writed(memory, plen, 2+strlen(s->destAddress.data)+1);
+    return 0;
 }
 
 U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 socks) {
@@ -419,6 +593,8 @@ U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 sock
 	s1->outClosed = FALSE;
 	s2->inClosed = FALSE;
 	s2->outClosed = FALSE;
+	s1->connected = TRUE;
+	s2->connected = TRUE;
 
 	writed(thread->process->memory, socks, fd1);
     writed(thread->process->memory, socks+4, fd2);
@@ -426,9 +602,33 @@ U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 sock
 }
 
 U32 ksend(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	if (flags != 0) {
+		kpanic("send with flags=%X not implemented", flags);
+	}
+	return syscall_write(thread, socket, buffer, len);
 }
 
 U32 krecv(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	if (flags != 0) {
+		kpanic("send with flags=%X not implemented", flags);
+	}
+	return syscall_read(thread, socket, buffer, len);
 }
 
 U32 kshutdown(struct KThread* thread, U32 socket, U32 how) {
@@ -499,6 +699,49 @@ U32 ksetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
 }
 
 U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 value, U32 len) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+	struct Memory* memory = thread->process->memory;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (level == K_SOL_SOCKET) {
+        if (name == K_SO_RCVBUF) {
+            if (len!=4)
+                kpanic("getsockopt SO_RCVBUF expecting len of 4");
+			writed(memory, value, s->recvLen);
+        } else if (name == K_SO_SNDBUF) {
+            if (len != 4)
+                kpanic("getsockopt SO_SNDBUF expecting len of 4");
+			writed(memory, value, s->sendLen);
+        } else if (name == K_SO_ERROR) {
+            if (len != 4)
+                kpanic("getsockopt SO_ERROR expecting len of 4");
+            writed(memory, value, 0);
+        } else if (name == K_SO_PEERCRED) {
+			if (s->domain!=K_AF_UNIX) {
+				return -K_EINVAL; // :TODO: is this right
+			}
+			if (!s->connection) {
+				return -K_EINVAL; // :TODO: is this right
+			}
+			if (readd(memory, len) != 12)
+				kpanic("getsockopt SO_PEERCRED expecting len of 12");
+			writed(memory, value, s->connection->pid);
+			writed(memory, value+4, UID);
+			writed(memory, value+8, GID);
+        } else {
+            kpanic("getsockopt name %d not implemented", name);
+        }
+    } else {
+        kpanic("getsockopt level %d not implemented", level);
+    }
+    return 0;
 }
 
 U32 ksendmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags) {

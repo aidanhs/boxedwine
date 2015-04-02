@@ -39,7 +39,7 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
-	initArray(&process->threads, 10+process->id);
+	initArray(&process->threads, process->id<<5);
 	process->groupId = 1;	
 	process->parentId = 1;
 	process->userId = UID;
@@ -105,11 +105,11 @@ U32 processGetThreadCount(struct KProcess* process) {
 void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory* memory) {
 	U32 i;
 
-	memset(process, 0, sizeof(struct KProcess));
-	initArray(&process->threads, 10);
+	memset(process, 0, sizeof(struct KProcess));	
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
+	initArray(&process->threads, process->id<<5);
 
 	process->parentId = from->id;;
 	process->groupId = from->groupId;
@@ -566,8 +566,12 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 }
 
 void runProcessTimer(struct KTimer* timer) {
-	removeTimer(timer);
-	timer->millies = 0;
+	if (timer->resetMillies==0) {
+		removeTimer(timer);
+		timer->millies = 0;
+	} else {
+		timer->millies = timer->resetMillies + getMilliesSinceStart();
+	}
 	signalProcess(timer->process, K_SIGALRM);
 }
 
@@ -579,6 +583,7 @@ U32 syscall_alarm(struct KThread* thread, U32 seconds) {
 			thread->process->timer.millies = 0;
 		}
 	} else {
+		thread->process->timer.resetMillies = 0;
 		if (thread->process->timer.millies!=0) {
 			thread->process->timer.millies = seconds*1000+getMilliesSinceStart();
 		} else {
@@ -590,6 +595,43 @@ U32 syscall_alarm(struct KThread* thread, U32 seconds) {
 	if (prev) {
 		return (prev-getMilliesSinceStart())/1000;
 	}
+	return 0;
+}
+
+U32 syscall_setitimer(struct KThread* thread, U32 which, U32 newValue, U32 oldValue) {
+	struct Memory* memory = thread->process->memory;	
+
+	if (which != 0) { // ITIMER_REAL
+		kpanic("setitimer which=%d not supported", which);
+	}
+	if (oldValue) {
+		U32 remaining = thread->process->timer.millies - getMilliesSinceStart();
+
+		writed(memory, oldValue, thread->process->timer.resetMillies / 1000);
+		writed(memory, oldValue, (thread->process->timer.resetMillies % 1000) * 1000);
+		writed(memory, oldValue+8, remaining / 1000);
+		writed(memory, oldValue+12, (remaining % 1000)*1000);		
+	}
+	if (newValue) {
+		U32 millies = readd(memory, newValue+8)*1000+readd(memory, newValue+12)/1000;
+		U32 resetMillies = readd(memory, newValue)*1000+readd(memory, newValue+4)/1000;
+
+		if (millies == 0) {
+			if (thread->process->timer.millies!=0) {
+				removeTimer(&thread->process->timer);
+				thread->process->timer.millies = 0;
+			}
+		} else {
+			thread->process->timer.resetMillies = resetMillies;			
+			if (thread->process->timer.millies!=0) {
+				thread->process->timer.millies = millies+getMilliesSinceStart();
+			} else {
+				thread->process->timer.millies = millies+getMilliesSinceStart();
+				thread->process->timer.process = thread->process;
+				addTimer(&thread->process->timer);
+			}
+		}
+	}	
 	return 0;
 }
 

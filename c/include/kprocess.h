@@ -7,6 +7,7 @@
 #include "karray.h"
 #include "kfiledescriptor.h"
 #include "nodeaccess.h"
+#include "ktimer.h"
 
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_STACK_START		0xE0000
@@ -31,15 +32,6 @@ struct KSigAction {
     U32 sa_sigaction;
     U32 sa_mask;
     U32 sa_flags;
-};
-
-struct KProcess;
-
-struct KTimer {
-	struct KProcess* process;
-	U32 millies;
-	struct KTimer* next;
-	struct KTimer* prev;
 };
 
 struct KProcess {
@@ -94,6 +86,7 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid);
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp);
 U32 syscall_chdir(struct KThread* thread, U32 path);
 U32 syscall_exitgroup(struct KThread* thread, U32 code);
+U32 syscall_setitimer(struct KThread* thread, U32 which, U32 newValue, U32 oldValue);
 
 void runProcessTimer(struct KTimer* timer);
 

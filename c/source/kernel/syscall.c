@@ -168,9 +168,6 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_read:
 		LOG("__NR_read: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3);
 		result=syscall_read(thread, ARG1, ARG2, ARG3);
-		if (result==2176) {
-			cpu->log = TRUE;
-		}
 		LOG("__NR_read: fd=%d result=%d", ARG1, result);
 		break;
 	case __NR_write:
@@ -332,8 +329,8 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_socketcall:
 		switch (ARG1) {
 			case 1: // SYS_SOCKET
-				result = ksocket(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", result);
+				result = ksocket(thread, SARG2, SARG3 & 0xFF, SARG4);
+				LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", (SARG3 & 0xFF), (SARG3 & 0xFF)==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", result);
 				break;
 			case 2: // SYS_BIND
 				result = kbind(thread, SARG2, SARG3, SARG4);
@@ -398,9 +395,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 				kpanic("Unknown socket syscall: %d",ARG1);
 		}
 		break;
-		/*
 	case __NR_setitimer:
+		result = syscall_setitimer(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_setitimer which=%d newValue=%d oldValue=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_ipc:
 		break;
 	case __NR_fsync:
@@ -444,10 +443,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_getdents(thread, ARG1, ARG2, ARG3, FALSE);
 		LOG("__NR_getdents fd=%d dir=%X count=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_newselect:
+		LOG("__NR_newselect nfd=%d readfds=%X writefds=%X errorfds=%X timeout=%d", ARG1, ARG2, ARG3, ARG4, ARG5);
+		result = syscall_select(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
+		LOG("__NR_newselect nfd=%d result=%d", ARG1, result);
 		break;
-		*/
 	case __NR_writev:
 		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d", ARG1, ARG2, ARG3);
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
@@ -458,14 +458,29 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 		*/
 	case __NR_nanosleep:
-		result = 0;
+		if (thread->waitStartTime) {
+			thread->waitStartTime = 0;
+			result = 0;
+		} else {
+			thread->waitStartTime = getMilliesSinceStart();
+			thread->timer.millies = thread->waitStartTime+readd(memory, ARG1)*1000+readd(memory, ARG1+4)/1000000;
+			thread->timer.process = process;
+			thread->timer.thread = thread;
+			thread->waitType = WAIT_SLEEP;
+			addTimer(&thread->timer);
+			result = -K_WAIT;
+		}
 		LOG("__NR_nanosleep req=%X(%d.%.09d sec) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
 		/*
 	case __NR_mremap:
 		break;
+		*/
 	case __NR_poll:
+		result = syscall_poll(thread, ARG1, ARG2, ARG3);		
+		LOG("__NR_poll pfds=%X nfds=%d timeout=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
+		/*
 	case __NR_prctl:
 		break;
 		*/
@@ -496,13 +511,6 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_mmap2:
 		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
 		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
-		if (result==0xD02F0000) {
-			static int ii=0;
-			ii++;
-			if (ii==3) {
-				cpu->log = TRUE;
-			}
-		}
 		break;
 	case __NR_ftruncate64: {
 		U64 len = ARG2 | ((U64)ARG3 << 32);
@@ -686,7 +694,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	if (result==-K_CONTINUE) {
 		CYCLES(1);
 	} else if (result==-K_WAIT) {
-		thread->waitSyscall = EAX;
+		thread->waitSyscall = EAX;		
 		waitThread(thread);		
 	} else {
 		EAX = result;

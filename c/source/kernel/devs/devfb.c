@@ -14,6 +14,7 @@ U32 windowCX;
 U32 windowCY;
 U32 windowBPP;
 U32 windowFullScreen;
+U32 updateAvailable;
 
 SDL_Surface* surface;
 
@@ -211,6 +212,7 @@ static U8 fb_readb(struct Memory* memory, U32 address, U32 data) {
 }
 
 static void fb_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
+	updateAvailable=1;
 	((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
@@ -219,6 +221,7 @@ static U16 fb_readw(struct Memory* memory, U32 address, U32 data) {
 }
 
 static void fb_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
+	updateAvailable=1;
 	((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
@@ -227,6 +230,7 @@ static U32 fb_readd(struct Memory* memory, U32 address, U32 data) {
 }
 
 static void fb_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
+	updateAvailable=1;
 	((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
@@ -262,7 +266,7 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.height = 300;
 		fb_var_screeninfo.width = 400;
 
-		if (SDL_Init(SDL_INIT_VIDEO) != 0){
+		if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
 			kwarn("SDL_Init Error: %s", SDL_GetError());
 			return FALSE;
 		}
@@ -270,6 +274,9 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 
 		fb_fix_screeninfo.smem_len = surface->pitch*windowCY;
 		fb_fix_screeninfo.line_length = surface->pitch;
+		if (SDL_MUSTLOCK(surface)) {
+			SDL_LockSurface(surface);
+		}
 	}
 	node->idata = 0; // file pos;	
 	return TRUE;
@@ -375,3 +382,17 @@ BOOL fb_canMap(struct OpenNode* node) {
 }
 
 struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_isWriteReady, fb_isReadReady};
+
+void flipFB() {
+	if (updateAvailable) {
+		if (SDL_MUSTLOCK(surface)) {
+			SDL_UnlockSurface(surface);
+			SDL_Flip(surface);
+			SDL_LockSurface(surface);
+		} else {
+			SDL_Flip(surface);
+			SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
+		}
+		updateAvailable=0;
+	}
+}

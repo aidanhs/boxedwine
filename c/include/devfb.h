@@ -5,5 +5,6 @@
 
 extern struct NodeAccess fbAccess;
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen);
+void flipFB();
 
 #endif

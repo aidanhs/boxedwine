@@ -110,8 +110,14 @@ int main(int argc, char **argv) {
 	if (startProcess("/home/username", argc, argv, envc, ppenv)) {
 		while (getProcessCount()>0) {
 			while (runSlice()) {
+				SDL_Event event;
+				while (SDL_PollEvent(&event)) {
+					if (event.type == SDL_QUIT) {
+						SDL_Quit();
+					}
+				};
 			}
-			SDL_Delay(10);
+			SDL_Delay(20);
 		}
 	}
 	SDL_Quit();

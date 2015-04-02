@@ -62,7 +62,7 @@ U32 kfile_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is6
 	struct Node* node = openNode->node;
 	U64 len = node->nodeType->length(node);
 
-	writeStat(memory, address, is64, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
+	writeStat(memory, address, is64, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 512, (len+511)/512, node->nodeType->lastModified(node));
 	return 0;
 }
 

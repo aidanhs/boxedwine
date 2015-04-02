@@ -792,7 +792,7 @@ void move16s16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void movxz8r16r16(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u16 = cpu->reg[op->r2].u8;
+	cpu->reg[op->r1].u16 = *cpu->reg8[op->r2];
 	CYCLES(3);
 	NEXT();
 }
@@ -810,7 +810,7 @@ void movxz8r16e16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void movxz8r32r32(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = cpu->reg[op->r2].u8;
+	cpu->reg[op->r1].u32 = *cpu->reg8[op->r2];
 	CYCLES(3);
 	NEXT();
 }
@@ -828,7 +828,7 @@ void movxz8r32e32_32(struct CPU* cpu, struct Op* op) {
 }
 
 void movsx8r16r16(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u16 = (S8)cpu->reg[op->r2].u8;
+	cpu->reg[op->r1].u16 = (S8)*cpu->reg8[op->r2];
 	CYCLES(3);
 	NEXT();
 }
@@ -846,7 +846,7 @@ void movsx8r16e16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void movsx8r32r32(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S8)cpu->reg[op->r2].u8;
+	cpu->reg[op->r1].u32 = (S8)(*cpu->reg8[op->r2]);
 	CYCLES(3);
 	NEXT();
 }
@@ -2870,5 +2870,13 @@ void bsfr32e32_32(struct CPU* cpu, struct Op* op) {
         cpu->reg[op->r1].u32=result;
     }
 	CYCLES(6);
+	NEXT();
+}
+
+void bswap32(struct CPU* cpu, struct Op* op) {
+	U32 val = cpu->reg[op->r1].u32;
+
+	cpu->reg[op->r1].u32 = (((val & 0xff000000) >> 24) | ((val & 0x00ff0000) >>  8) | ((val & 0x0000ff00) <<  8) | ((val & 0x000000ff) << 24));
+	CYCLES(1);
 	NEXT();
 }

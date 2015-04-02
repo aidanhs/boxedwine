@@ -45,5 +45,7 @@ void closeFD(struct KFileDescriptor* fd);
 struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags);
 
 U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg);
+U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, U32 errorfds, U32 timeout);
+U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout);
 
 #endif
