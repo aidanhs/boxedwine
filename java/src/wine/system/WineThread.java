@@ -25,7 +25,7 @@ public class WineThread {
     public int alternateStack;
     public int alternateStackSize;
     public int sigMask;
-    public int clear_child_tid;
+    public int clear_child_tid; // :TODO: same as ctid
     public String currentDirectory; // used by openat
     public int ctid;
 

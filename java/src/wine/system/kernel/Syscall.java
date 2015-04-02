@@ -1,6 +1,8 @@
 package wine.system.kernel;
 
 import wine.emulation.Memory;
+import wine.emulation.PageHandler;
+import wine.emulation.RAMHandler;
 import wine.system.ExitThreadException;
 import wine.system.WineSystem;
 import wine.system.WineThread;
@@ -9,8 +11,10 @@ import wine.system.io.FileDescriptor;
 import wine.system.io.SocketAddress;
 import wine.util.Log;
 
+import java.util.Vector;
+
 public class Syscall {
-    static public boolean log = false;
+    static public boolean log = true;
 
     static public final int __NR_exit = 1;
     static public final int __NR_read = 3;
@@ -245,6 +249,7 @@ public class Syscall {
             }
             case __NR_unlink: {
                 int path = getter.next();
+                Log.log("__NR_unlink: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") result="+result);
                 result = Fs.unlink(thread, path);
                 if (log)
                     Log.log("__NR_unlink: path=0x"+Integer.toHexString(path)+"("+memory.readCString(path)+") result="+result);
@@ -830,7 +835,7 @@ public class Syscall {
                 int errorfds = getter.next();
                 int timeout = getter.next();
                 if (log)
-                    Log.log("__NR_newselect: ndfs=0x"+Integer.toHexString(ndfs)+" readfds=0x"+Integer.toHexString(readfds)+" writefds=0x"+Integer.toHexString(writefds)+" errorfds=0x"+Integer.toHexString(errorfds)+" timeout=0x"+Integer.toHexString(timeout));
+                    Log.log("__NR_newselect: ndfs=0x"+Integer.toHexString(ndfs)+" readfds=0x"+Integer.toHexString(readfds)+" writefds=0x"+Integer.toHexString(writefds)+" errorfds=0x"+Integer.toHexString(errorfds)+" timeout=0x"+Integer.toHexString(timeout)+"("+(timeout==0?"null":memory.readd(timeout))+")");
                 result = Select.select(thread, ndfs, readfds, writefds, errorfds, timeout);
                 if (log)
                     Log.log("__NR_newselect: ndfs=0x"+Integer.toHexString(ndfs)+" readfds=0x"+Integer.toHexString(readfds)+" writefds=0x"+Integer.toHexString(writefds)+" errorfds=0x"+Integer.toHexString(errorfds)+" timeout=0x"+Integer.toHexString(timeout)+" result="+result);
@@ -983,18 +988,24 @@ public class Syscall {
             case __NR_stat64: {
                 int path = getter.next();
                 int buf = getter.next();
+                if (log)
+                    Log.log("__NR_stat64: path="+memory.readCString(path));
                 result = Fs.__xstat64(thread, 0, path, buf);
                 break;
             }
             case __NR_lstat64: {
                 int path = getter.next();
                 int buf = getter.next();
+                if (log)
+                    Log.log("__NR_lstat64: path="+memory.readCString(path));
                 result = Fs.__lxstat64(thread, 0, path, buf);
                 break;
             }
             case __NR_fstat64: {
                 int fildes = getter.next();
                 int buf = getter.next();
+                if (log)
+                    Log.log("__NR_fstat64: fildes="+fildes);
                 result = Fs.__fxstat64(0, fildes, buf);
                 break;
             }
@@ -1084,6 +1095,7 @@ public class Syscall {
             }
             case __NR_setuid32: {
                 int uid = getter.next();
+                // :TODO: not right
                 thread.process.groupId = uid;
                 if (log)
                     Log.log("__NR_setuid32: uid="+uid+" result="+result);
@@ -1129,47 +1141,61 @@ public class Syscall {
             case __NR_tkill:
                 Log.panic("syscall __NR_tkill not implemented");
                 break;
-            case __NR_futex: {
+            case __NR_futex: synchronized (WineSystem.futex) {
                 int address = getter.next();
                 int op = getter.next();
+                int physicalAddress = address;
+
+                PageHandler handler = memory.handlers[address>>>12];
+                if (handler instanceof RAMHandler) {
+                    RAMHandler r = (RAMHandler)handler;
+                    physicalAddress = (r.getPhysicalPage()<<12) + (address & 0xFFF);
+                }
                 if (op==128 || op==0) {
                     int value = getter.next();
                     int pTime = getter.next();
                     long startTime = System.currentTimeMillis();
-                    long stopTime;
+                    long sleepTime;
                     if (pTime == 0)
-                        stopTime = Long.MAX_VALUE;
+                        sleepTime = Long.MAX_VALUE;
                     else {
                         int seconds = memory.readd(pTime);
                         int nano = memory.readd(pTime + 4);
-                        stopTime = seconds * 1000l + nano / 1000000l + startTime;
+                        sleepTime = seconds * 1000l + nano / 1000000l + startTime;
                     }
-                    boolean changed = false;
-                    boolean timeout = false;
-                    int count = 0;
-
-                    while (true) {
-                        changed = memory.readd(address) != value;
-                        if (changed)
-                            break;
-                        timeout = System.currentTimeMillis() > stopTime;
-                        if (timeout)
-                            break;
-                        try {
-                            if (count>20)
-                                Thread.sleep(10);
-                        } catch (InterruptedException e) {
-                            thread.interrupted();
+                    if (memory.readd(address) != value)
+                        return Errno.EWOULDBLOCK;
+                    Vector<WineThread> threads = WineSystem.futex.get(physicalAddress);
+                    if (threads == null) {
+                        threads = new Vector<WineThread>();
+                        threads.add(thread);
+                        WineSystem.futex.put(physicalAddress, threads);
+                    } else {
+                        if (threads.contains(thread)) {
+                            Log.panic("Called futex with a thread that should already be asleep");
                         }
-                        count++;
+                        threads.add(thread);
                     }
-                    if (timeout) {
+                    try {
+                        Thread.sleep(1000);
                         return -Errno.ETIMEDOUT;
+                    } catch (InterruptedException e) {
+                        return 0;
                     }
-                    return 0;
                 } else if (op==129 || op==1) {
                     int value = getter.next();
-                    return 0;
+                    Vector<WineThread> threads = WineSystem.futex.get(physicalAddress);
+                    result = 0;
+                    if (threads!=null) {
+                        for (int i = 0; i < value; i++) {
+                            if (threads.size() > 0) {
+                                WineThread t = threads.remove(0);
+                                t.jThread.interrupt();
+                                result++;
+                            }
+                        }
+                    }
+                    return result;
                 } else {
                     Log.warn("syscall __NR_futex op "+op+" not implemented");
                     return -1;

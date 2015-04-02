@@ -92,12 +92,14 @@ void scheduleThread(struct KThread* thread) {
 			lastThread->scheduleNext = thread;
 		}
 	}
+	/*
 	printf("schedulThread %d\n", thread->id);	
 	t = lastThread;
 	do {
-		printf("  id=%d\n", t->id);
+		printf("  id=%d (%s) pid=%d @memory=%X\n", t->id, t->process->commandLine, t->process->id, t->process->memory);
 		t = t->scheduleNext;
 	} while (t!=lastThread);
+	*/
 }
 
 void unscheduleThread(struct KThread* thread) {
@@ -105,7 +107,7 @@ void unscheduleThread(struct KThread* thread) {
 
 	if (thread == lastThread) {
 		if (lastThread->scheduleNext == lastThread) {
-			printf("unschedulThread\n");
+			//printf("unschedulThread\n");
 			lastThread = 0;
 			thread->cpu.blockCounter = 0xFFFFFF00;
 			return;
@@ -115,12 +117,14 @@ void unscheduleThread(struct KThread* thread) {
 	thread->schedulePrev->scheduleNext = thread->scheduleNext;
 	thread->scheduleNext->schedulePrev = thread->schedulePrev;
 	thread->cpu.blockCounter = 0xFFFFFF00; // causes a context change
+	/*
 	printf("unschedulThread %d\n", thread->id);	
 	t = lastThread;
 	do {
-		printf("  id=%d\n", t->id);
+		printf("  id=%d (%s) pid=%d @memory=%X\n", t->id, t->process->commandLine, t->process->id, t->process->memory);
 		t = t->scheduleNext;
 	} while (t!=lastThread);
+	*/
 }
 
 U64 contextTime = 100000;

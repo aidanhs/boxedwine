@@ -1825,7 +1825,7 @@ class Instructions {
             int var1=(value2<<16)|value1;
             cpu.left = var1;
             int tempd=var1 << value3;
-            if (value3>16) tempd |= (value2 << (32-value3 ));
+            if (value3>16) tempd |= (value1 << (32-value3 ));
             cpu.result = tempd;
             cpu.lazyFlags = this;
             return cpu.result;

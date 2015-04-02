@@ -4,6 +4,7 @@ import wine.system.kernel.Process;
 
 import java.net.InetAddress;
 import java.util.Hashtable;
+import java.util.Vector;
 
 public class WineSystem {
     final static public Hashtable<Integer, Process> processes = new Hashtable<Integer, wine.system.kernel.Process>();
@@ -13,6 +14,7 @@ public class WineSystem {
     final static public int SCREEN_WIDTH = 1024;
     final static public int SCREEN_HEIGHT = 768;
     static public String[] path;
+    final static public Hashtable<Integer, Vector<WineThread>> futex = new Hashtable<Integer, Vector<WineThread>>();
 
     static public String hostName() {
         if (System.getProperty("os.name").startsWith("Windows")) {

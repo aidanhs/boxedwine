@@ -64,6 +64,7 @@ void initThread(struct KThread* thread, struct KProcess* process) {
 	initCPU(&thread->cpu, process->memory);
 	thread->process = process;
 	thread->id = processAddThread(process, thread);
+	thread->sigMask = -1;
 	setupStack(thread);
 }
 
@@ -75,6 +76,7 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
 	thread->cpu.memory = process->memory;
 	thread->cpu.blockCounter = 0;
 	thread->process = process;
+	thread->sigMask = from->sigMask;
 	thread->stackPageStart = from->stackPageStart;
 	thread->stackPageCount = from->stackPageCount;
 	thread->id = processAddThread(process, thread);
@@ -204,11 +206,11 @@ void runSignals(struct KThread* thread) {
 
         for (i=0;i<32;i++) {
             if ((todo & (1 << i))!=0) {
-                runSignal(thread, i+1);
+				runSignal(thread, i+1);
 				return;
             }
         }
-    }
+    }	
 }
 
 void runSignal(struct KThread* thread, U32 signal) {
@@ -224,6 +226,7 @@ void runSignal(struct KThread* thread, U32 signal) {
 		push32(&thread->cpu, signal);
 		push32(&thread->cpu, thread->cpu.eip.u32);
         thread->cpu.eip.u32 = action->handler;
+		thread->cpu.log = 1;
     }
     thread->process->pendingSignals &= ~(1 << (signal - 1));
 }

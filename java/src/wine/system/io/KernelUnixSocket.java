@@ -67,7 +67,7 @@ public class KernelUnixSocket extends KernelSocket {
     }
 
     public boolean isNonBlocking() {
-        return blocking;
+        return !blocking;
     }
 
     public void setAsync(Process process, boolean remove) {

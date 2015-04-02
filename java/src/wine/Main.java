@@ -20,9 +20,6 @@ public class Main {
         int cy = 768;
         int bpp = 32;
 
-        if (args.length==0)
-            args = new String[] {"/bin/sh", "/init.sh"};
-
         Vector<String> env = new Vector<String>();
         Vector<String> programArgs = new Vector<String>();
         String root = System.getProperty("user.dir")+ File.separator+"root";
@@ -33,7 +30,7 @@ public class Main {
         env.add("USER=username");
         env.add("DISPLAY=:0");
         env.add("LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib");
-//        env.add("LD_DEBUG=all");
+        //env.add("LD_DEBUG=all");
 //        env.add("LD_BIND_NOW=1");
 
         for (i=0;i<args.length;i++) {
@@ -84,22 +81,26 @@ public class Main {
             WineSystem.path = new String[] {"/bin","/usr/bin","/usr/local/bin"};
             env.add("PATH=/bin:/usr/bin:/usr/local/bin");
         }
-        String program = args[i++];
-        if (!program.startsWith("/")) {
-            for (String p : WineSystem.path) {
-                if (FSNode.getNode(p+"/"+program, true)!=null) {
-                    program = p+"/"+program;
-                    break;
+        if (args.length>i+1) {
+            String program = args[i++];
+            if (!program.startsWith("/")) {
+                for (String p : WineSystem.path) {
+                    if (FSNode.getNode(p + "/" + program, true) != null) {
+                        program = p + "/" + program;
+                        break;
+                    }
                 }
             }
+
+            programArgs.add(program);
+
+            for (; i < args.length; i++) {
+                programArgs.add(args[i]);
+            }
+        } else {
+            programArgs.add("/bin/sh");
+            programArgs.add("/init.sh");
         }
-
-        programArgs.add(program);
-
-        for (;i<args.length;i++) {
-            programArgs.add(args[i]);
-        }
-
         RAM.init(m * 1024 * 1024);
         if (wine.system.kernel.Process.create("/home/username", programArgs, env)==null) {
             System.out.println("Failed to start wine");

@@ -29,6 +29,8 @@ void setupCommandlineNode(struct KProcess* process) {
 	makeBufferAccess(&process->commandLineAccess);
 	process->commandLineAccess.data = process->commandLine;
 	sprintf(tmp, "/proc/%d/cmdline", process->id);
+
+	// :TODO: this will replace the previous one if it exists and leak memory 
 	process->commandLineNode = addVirtualFile(tmp, &process->commandLineAccess, K__S_IREAD);
 }
 
@@ -82,7 +84,7 @@ void cleanupProcess(struct KProcess* process) {
 
 void freeProcess(struct KProcess* process) {
 	cleanupProcess(process);
-	process->next = process;	
+	process->next = freeProcesses;	
 	freeProcesses = process;
 }
 
@@ -198,8 +200,11 @@ void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, co
 		writeStackString(cpu, args[i]);
 		a[i]=ESP;
 	}
+
 	pushThreadStack(cpu, argc, a, envc, e);
 }
+
+char tmpEnv[16*1024];
 
 void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 env) {
 	U32 a[128];
@@ -207,10 +212,13 @@ void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 en
 	U32 e[128];
 	U32 envc=0;
 	int i;
+	U32 pos = 0;
 
 	i=0;
+	// copy env into tmp before writing back onto the stack because some of the env's might be on the stack
 	while (TRUE) {
-		char* str = getNativeString(cpu->memory, readd(cpu->memory, env+i*4));
+		U32 p = readd(cpu->memory, env+i*4);
+		char* str = getNativeString(cpu->memory, p);
 		if (!str[0])
 			break;
 		if (strncmp(str, "PATH=", 5)==0) {
@@ -218,10 +226,16 @@ void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 en
 		}
 		if (envc>=128)
 			kpanic("Too many env: 128 is max");
+		strcpy(tmpEnv+pos, str);
+		e[i]=pos;
+		pos+=strlen(str)+1;
+		i++;
+		envc++;		
+	}
+	for (i=0;i<envc;i++) {
+		char* str = tmpEnv+e[i];
 		writeStackString(cpu, str);
 		e[i]=ESP;
-		i++;
-		envc++;
 	}
 	i=0;
 	for (i=0;i<3;i++) {
@@ -691,6 +705,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	U32 i;
 	const char* preArgs[3]={0};
 	int preArgCount;
+	
 
 	if (node) {
 		openNode = node->nodeType->open(process, node, K_O_RDONLY);
@@ -735,7 +750,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		preArgs[preArgCount++] = interpreter;
 	}
 	preArgs[preArgCount++] = node->path.localPath;
-	initStackPointer(thread);
+	memset(&thread->cpu.reg, 0, sizeof(thread->cpu.reg));
+	initStackPointer(thread);	
 	setupThreadStack2(&thread->cpu, preArgs, argv+4, envp);
 
 	// reset memory must come after we grab the args and env
@@ -808,7 +824,6 @@ void signalProcess(struct KProcess* process, U32 signal) {
 	while (process->pendingSignals && getNextObjectFromArray(&process->threads, &threadIndex, (void**)&thread)) {
 		if (thread) {
 			runSignals(thread);
-			threadIndex=0; // start the iterator over since we might have removed something
 		}
 	}
 }

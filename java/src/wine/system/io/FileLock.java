@@ -29,7 +29,7 @@ public class FileLock {
         l_len=memory.readd(address);address+=4;
         if (l_len==0)
             l_len=Long.MAX_VALUE;
-        l_pid=memory.readw(address);
+        l_pid=memory.readd(address);
 
         if (l_whence!= Io.SEEK_SET) {
             Log.panic("Lock with l_whence "+l_whence+" not implemented");

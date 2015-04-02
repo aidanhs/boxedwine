@@ -102,8 +102,15 @@ U32 unixsocket_rename(struct Node* oldNode, struct Node* newNode) {
 
 struct NodeType unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode};
 
+void freeSocket(struct KSocket* socket);
+
 void unixsocket_onDelete(struct KObject* obj) {
 	struct KSocket* s = (struct KSocket*)obj->data;
+	if (s->node) {
+		if (s->node->kobject==obj) {
+			s->node->kobject = 0;
+		}		
+	}
 	if (s->connection) {
 		s->connection->connection = 0;
 		s->connection->inClosed = 1;
@@ -119,6 +126,7 @@ void unixsocket_onDelete(struct KObject* obj) {
 			}
 		}
 	}
+	freeSocket(s);
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -259,7 +267,7 @@ char tmpSocketName[32];
 const char* socketAddressName(struct KThread* thread, U32 address, U32 len) {
 	U16 family = readw(thread->process->memory, address);
 	if (family == K_AF_UNIX) {
-		return getNativeString(thread->process->memory, address+3);
+		return getNativeString(thread->process->memory, address+2);
 	} else if (family == K_AF_NETLINK) {
 		sprintf(tmpSocketName, "port %d", readd(thread->process->memory, address+4));
 		return tmpSocketName;
@@ -282,6 +290,11 @@ struct KSocket* allocSocket() {
 	result->sendLen = 128*1024;
 	result->blocking = 1;
 	return result;
+}
+
+void freeSocket(struct KSocket* socket) {
+	socket->next = freeSockets;
+	freeSockets = socket;
 }
 
 U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct KSocket** returnSocket) {

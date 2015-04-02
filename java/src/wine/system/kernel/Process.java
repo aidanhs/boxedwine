@@ -798,6 +798,6 @@ public class Process {
         }
         thread.process.memory.memcpy(buf, cwd, 0, cwd.length);
         thread.process.memory.writeb(buf+cwd.length, 0);
-        return buf;
+        return cwd.length;
     }
 }

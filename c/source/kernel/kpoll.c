@@ -52,7 +52,9 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 
 		thread->timer.process = thread->process;
 		thread->timer.thread = thread;
-		thread->timer.millies = thread->waitStartTime+timeout;
+		if (timeout<0xF0000000)
+			timeout+=thread->waitStartTime;
+		thread->timer.millies = timeout;
 		addTimer(&thread->timer);
 	}
 	return -K_WAIT;

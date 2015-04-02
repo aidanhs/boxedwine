@@ -165,15 +165,13 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_exit %d", ARG1);
 		exitThread(cpu->thread, ARG1);
 		break;
-	case __NR_read:
-		LOG("__NR_read: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3);
+	case __NR_read:		
 		result=syscall_read(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_read: fd=%d result=%d", ARG1, result);
+		LOG("__NR_read: fd=%d buf=0x%X len=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-	case __NR_write:
-		LOG("__NR_write: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3);
+	case __NR_write:		
 		result=syscall_write(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_write: fd=%d result=%d", ARG1, result);
+		LOG("__NR_write: fd=%d buf=0x%X len=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_open:
 		result=syscall_open(thread, process->currentDirectory, ARG1, ARG2);
@@ -183,10 +181,9 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result=syscall_close(thread, ARG1);
 		LOG("__NR_close: fd=%d result=%d", ARG1, result);
 		break;
-	case __NR_waitpid:
-		LOG("__NR_waitpid: pid=%d status=%d options=%x", ARG1, ARG2, ARG3);
+	case __NR_waitpid:		
 		result=syscall_waitpid(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_waitpid: pid=%d result=%d", ARG1, result);
+		LOG("__NR_waitpid: pid=%d status=%d options=%x result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_link:
 		result = 0;
@@ -399,14 +396,20 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_setitimer(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_setitimer which=%d newValue=%d oldValue=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_ipc:
+        if (ARG1 == 23) { // IPCOP_shmget
+            // :TODO:
+            result = -K_EACCES;
+			LOG("__NR_ipc IPCOP_shmget key=%d size=%d flags=%X result=%d", ARG2, ARG3, ARG4, result);
+        } else {
+            kpanic("__NR_ipc op %d not implemented", ARG1);
+        }
 		break;
+		/*
 	case __NR_fsync:
 		break;
 		*/
 	case __NR_clone:
-		LOG("__NR_clone flags=%X child_stack=%X ptid=%X tls=%X ctid=%X", ARG1, ARG2, ARG3, ARG4, ARG5);
 		result = syscall_clone(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
 		LOG("__NR_clone flags=%X child_stack=%X ptid=%X tls=%X ctid=%X result=%d", ARG1, ARG2, ARG3, ARG4, ARG5, result);
 		break;
@@ -443,15 +446,13 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_getdents(thread, ARG1, ARG2, ARG3, FALSE);
 		LOG("__NR_getdents fd=%d dir=%X count=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-	case __NR_newselect:
-		LOG("__NR_newselect nfd=%d readfds=%X writefds=%X errorfds=%X timeout=%d", ARG1, ARG2, ARG3, ARG4, ARG5);
+	case __NR_newselect:		
 		result = syscall_select(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
-		LOG("__NR_newselect nfd=%d result=%d", ARG1, result);
+		LOG("__NR_newselect nfd=%d readfds=%X writefds=%X errorfds=%X timeout=%d result=%d", ARG1, ARG2, ARG3, ARG4, ARG5, result);
 		break;
-	case __NR_writev:
-		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d", ARG1, ARG2, ARG3);
+	case __NR_writev:		
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_writev: fildes=%d result=%d", ARG1, result);
+		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
 		/*
 	case __NR_sched_yield:

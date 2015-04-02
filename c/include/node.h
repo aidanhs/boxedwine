@@ -14,7 +14,7 @@ struct Node {
 	U32 id;
 	U32 rdev;
 	struct KFileLock* locks;
-	struct KObject* kobject;
+	struct KObject* kobject; // used only for sockets
 	union {
 		void* pData1;
 		U32 data1;

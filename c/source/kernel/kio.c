@@ -92,8 +92,8 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
     }
     for (i=0;i<iovcnt;i++) {
 		U32 buf = readd(memory, iov+i*8);
-		U32 len = readd(memory, iov+i*8+4);
-		S32 result = fd->kobject->access->write(thread, fd->kobject, memory, buf, len);
+		U32 toWrite = readd(memory, iov+i*8+4);
+		S32 result = fd->kobject->access->write(thread, fd->kobject, memory, buf, toWrite);
         if (result<0) {
             if (i>0) {
                 kwarn("writev partial fail: TODO file pointer should not change");
@@ -267,7 +267,7 @@ U32 syscall_dup(struct KThread* thread, FD fildes) {
 U32 syscall_unlink(struct KThread* thread, U32 path) {
 	struct Node* node = getNode(thread->process, path);
 
-    if (node==0) {
+	if (node==0 || !node->nodeType->exists(node)) {
         return -K_ENOENT;
     }
 	if (!node->nodeType->remove(node)) {
