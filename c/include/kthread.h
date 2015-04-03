@@ -27,6 +27,8 @@ struct KThread {
 	U32     waitType;
 	U32     waitSyscall;
 	U32	    waitStartTime;
+	U32     waitData1;
+	U32     waitData2;
 	U32     clear_child_tid;
 	struct KPollData pollData[MAX_POLL_DATA];
 	U32 pollCount;

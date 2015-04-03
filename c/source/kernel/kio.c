@@ -83,6 +83,11 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
 	struct Memory* memory = thread->process->memory;
 	S32 i;
 	U32 len = 0;
+	U32 start = thread->waitData1;
+	U32 startOffset = thread->waitData2;
+
+	thread->waitData1 = 0;
+	thread->waitData2 = 0;
 
     if (fd==0) {
         return -K_EBADF;
@@ -90,10 +95,30 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
     if (!canWriteFD(fd)) {
         return -K_EINVAL;
     }
-    for (i=0;i<iovcnt;i++) {
-		U32 buf = readd(memory, iov+i*8);
-		U32 toWrite = readd(memory, iov+i*8+4);
-		S32 result = fd->kobject->access->write(thread, fd->kobject, memory, buf, toWrite);
+    for (i=start;i<iovcnt;i++) {
+		U32 buf = readd(memory, iov+i*8)+startOffset;
+		U32 toWrite = readd(memory, iov+i*8+4)-startOffset;
+		BOOL blocking = fd->kobject->access->isBlocking(fd->kobject);
+		S32 result;
+
+		startOffset = 0;
+		if (blocking) {
+			fd->kobject->access->setBlocking(fd->kobject, 0);
+		}
+		result = fd->kobject->access->write(thread, fd->kobject, memory, buf, toWrite);
+		if (blocking) {
+			fd->kobject->access->setBlocking(fd->kobject, 1);
+			if (result == -K_EWOULDBLOCK) {
+				thread->waitType = WAIT_FD;
+				return -K_WAIT;
+			}
+			if (result > 0 && result!=toWrite) {
+				thread->waitData1 = i;
+				thread->waitData2 = result;
+				thread->waitType = WAIT_FD;
+				return -K_WAIT;
+			}			
+		}
         if (result<0) {
             if (i>0) {
                 kwarn("writev partial fail: TODO file pointer should not change");

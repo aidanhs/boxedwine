@@ -12,11 +12,13 @@
 #include "kscheduler.h"
 #include "ksystem.h"
 #include "kio.h"
+#include "ram.h"
 
 #include <string.h>
 #include <stdio.h>
 
-#define BUFFER_LEN 131072
+#define MAX_BUFFER_SIZE 4*1024*1024
+
 #define MAX_PENDING_CONNECTIONS 10
 
 struct KSockAddress {
@@ -44,9 +46,10 @@ struct KSocket {
 	U32 pendingConnectionsCount;
 	BOOL inClosed;
 	BOOL outClosed;
-	char recvBuffer[BUFFER_LEN];
+	U32 recvPage[MAX_BUFFER_SIZE/PAGE_SIZE];
 	U32 recvBufferReadPos;
 	U32 recvBufferWritePos;
+	U32 recvAllocatedPages;
 	U32 recvBufferLen;
 };
 
@@ -106,6 +109,8 @@ void freeSocket(struct KSocket* socket);
 
 void unixsocket_onDelete(struct KObject* obj) {
 	struct KSocket* s = (struct KSocket*)obj->data;
+	U32 i=0;
+
 	if (s->node) {
 		if (s->node->kobject==obj) {
 			s->node->kobject = 0;
@@ -117,16 +122,26 @@ void unixsocket_onDelete(struct KObject* obj) {
 		s->connection->outClosed = 1;
 		wakeThreads(WAIT_FD);
 	}
-	if (s->connecting) {
-		U32 i=0;
+	if (s->connecting) {		
 		for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
-			if (s->connecting->pendingConnections[i]==s) {
+			if (s->connecting->pendingConnections[i]==s) {				
 				s->connecting->pendingConnections[i] = 0;
 				s->connecting->pendingConnectionsCount--;
 			}
 		}
 	}
+	for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
+		if (s->pendingConnections[i]) {				
+			s->pendingConnections[i]->connecting = 0;
+			s->pendingConnectionsCount--;
+		}
+	}
+	for (i=0;i<s->recvAllocatedPages;i++) {
+		freeRamPage(s->recvPage[i]);
+	}
+	s->recvAllocatedPages = 0;
 	freeSocket(s);
+	wakeThreads(WAIT_FD);
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -179,22 +194,34 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 
 	if (s->outClosed || !s->connection)
 		return -K_EPIPE;
-	if (s->connection->recvBufferLen==BUFFER_LEN) {
+	if (s->connection->recvBufferLen==MAX_BUFFER_SIZE) {
 		if (s->blocking) {
 			thread->waitType = WAIT_FD;
 			return -K_WAIT;
 		}
 		return -K_EWOULDBLOCK;
 	}
-	while (s->connection->recvBufferLen<BUFFER_LEN && len) {
-		s->connection->recvBuffer[s->connection->recvBufferWritePos] = readb(memory, buffer);
-		buffer++;
-		len--;
-		count++;
-		s->connection->recvBufferLen++;
-		s->connection->recvBufferWritePos++;
-		if (s->recvBufferWritePos>=BUFFER_LEN)
-			s->recvBufferWritePos = 0;
+	//printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
+	while (s->connection->recvBufferLen<MAX_BUFFER_SIZE && len) {
+		U32 page = s->connection->recvBufferWritePos / 4096;
+		U32 index = s->connection->recvBufferWritePos % 4096;
+		U32 todo = len;
+
+		if (todo>4096-index)
+			todo = 4096-index;
+		if (page>=s->connection->recvAllocatedPages) {
+			s->connection->recvPage[page] = allocRamPage();
+			s->connection->recvAllocatedPages++;
+		}
+		memcopyToNative(memory, buffer, (char*)getAddressOfRamPage(s->connection->recvPage[page])+index, todo);
+
+		buffer+=todo;
+		len-=todo;
+		count+=todo;
+		s->connection->recvBufferLen+=todo;
+		s->connection->recvBufferWritePos+=todo;
+		if (s->connection->recvBufferWritePos>=MAX_BUFFER_SIZE)
+			s->connection->recvBufferWritePos = 0;
 	}
 	wakeThreads(WAIT_FD);
 	return count;
@@ -214,14 +241,32 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* 
 		return -K_WAIT;
 	}
 	while (len && s->recvBufferLen) {
-		writeb(memory, buffer, s->recvBuffer[s->recvBufferReadPos]);
-		buffer++;
-		count++;
-		len--;
-		s->recvBufferLen--;
-		s->recvBufferReadPos++;
-		if (s->recvBufferReadPos>=BUFFER_LEN)
+		U32 page = s->recvBufferReadPos / 4096;
+		U32 index = s->recvBufferReadPos % 4096;
+		U32 todo = len;
+		if (todo>4096-index)
+			todo = 4096-index;
+		if (todo>s->recvBufferLen)
+			todo = s->recvBufferLen;
+		memcopyFromNative(memory, buffer, (char*)getAddressOfRamPage(s->recvPage[page])+index, todo);
+
+		buffer+=todo;
+		count+=todo;
+		len-=todo;
+		s->recvBufferLen-=todo;
+		s->recvBufferReadPos+=todo;
+		if (s->recvBufferReadPos>=MAX_BUFFER_SIZE)
 			s->recvBufferReadPos = 0;
+		if (s->recvBufferLen==0) {
+			U32 i;
+
+			for (i=1;i<s->recvAllocatedPages;i++) {
+				freeRamPage(s->recvPage[i]);
+			}
+			s->recvAllocatedPages=1;
+			s->recvBufferReadPos = 0;
+			s->recvBufferWritePos = 0;
+		}
 	}
 	return count;
 }
@@ -286,8 +331,8 @@ struct KSocket* allocSocket() {
 	} else {
 		result = (struct KSocket*)kalloc(sizeof(struct KSocket));
 	}	
-	result->recvLen = 128*1024;
-	result->sendLen = 128*1024;
+	result->recvLen = 1048576;
+	result->sendLen = 1048576;
 	result->blocking = 1;
 	return result;
 }
@@ -396,13 +441,16 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		s->connected = 1;		
 		return 0;
 	} else if (s->type==K_SOCK_STREAM) {
+		if (s->destAddress.data[0]==0) {
+			return -K_ENOENT;
+		}
 		if (s->domain==K_AF_UNIX) {
 			char localPath[MAX_FILEPATH_LEN];
 			char nativePath[MAX_FILEPATH_LEN];
 			struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, s->destAddress.data, localPath, nativePath);
 			struct KSocket* destination = 0;
 
-			if (!node) {
+			if (!node || !node->kobject) {
 				s->destAddress.family = 0;
 				return -K_ECONNREFUSED;
 			}
@@ -500,6 +548,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 			connection = s->pendingConnections[i];
 			s->pendingConnections[i] = 0;
 			s->pendingConnectionsCount--;
+			break;
 		}
 	}
 	if (!connection) {

@@ -29,8 +29,10 @@ void logsyscall(const char* fmt, ...) {
 #define LOG logsyscall
 #elif defined LOG_SYSCALLS
 #define LOG printf("%d/%d",thread->id, process->id); klog
+#define SOCKET_LOG printf("%d/%d",thread->id, process->id); klog
 #else
 #define LOG
+#define SOCKET_LOG
 #endif
 
 #define __NR_exit 1
@@ -327,65 +329,65 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		switch (ARG1) {
 			case 1: // SYS_SOCKET
 				result = ksocket(thread, SARG2, SARG3 & 0xFF, SARG4);
-				LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", (SARG3 & 0xFF), (SARG3 & 0xFF)==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", result);
+				SOCKET_LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", (SARG3 & 0xFF), (SARG3 & 0xFF)==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", result);
 				break;
 			case 2: // SYS_BIND
 				result = kbind(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_BIND: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
+				SOCKET_LOG("SYS_BIND: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
 				break;
 			case 3: // SYS_CONNECT
 				result = kconnect(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_CONNECT: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
+				SOCKET_LOG("SYS_CONNECT: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
 				break;
 			case 4: // SYS_LISTEN				
 				result = klisten(thread, SARG2, SARG3);
-				LOG("SYS_LISTEN: socket=%d backlog=%d result=%d", SARG2, SARG3, result);
+				SOCKET_LOG("SYS_LISTEN: socket=%d backlog=%d result=%d", SARG2, SARG3, result);
 				break;
 			case 5: // SYS_ACCEPT
 				result = kaccept(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_ACCEPT: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
+				SOCKET_LOG("SYS_ACCEPT: socket=%d address=%X(%s) len=%d result=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4, result);
 				break;			
 			case 6: // SYS_GETSOCKNAME
 				result = kgetsockname(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_GETSOCKNAME: socket=%d address=%X len=%d result=%d", SARG2, SARG3, SARG4, result);
+				SOCKET_LOG("SYS_GETSOCKNAME: socket=%d address=%X len=%d result=%d", SARG2, SARG3, SARG4, result);
 				break;			
 			case 7: // SYS_GETPEERNAME
 				result = kgetpeername(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_GETPEERNAME: socket=%d address=%X len=%d result=%d", SARG2, SARG3, SARG4, result);
+				SOCKET_LOG("SYS_GETPEERNAME: socket=%d address=%X len=%d result=%d", SARG2, SARG3, SARG4, result);
 				break;		
 			case 8: // SYS_SOCKETPAIR
 				result = ksocketpair(thread, SARG2, SARG3, SARG4, SARG5);
-				LOG("SYS_SOCKETPAIR: af=%d(%s) type=%d(%s) socks=%X(%d,%d) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", readd(memory, SARG5), readd(memory, SARG5+4), result);
+				SOCKET_LOG("SYS_SOCKETPAIR: af=%d(%s) type=%d(%s) socks=%X(%d,%d) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", readd(memory, SARG5), readd(memory, SARG5+4), result);
 				break;
 			case 9: // SYS_SEND
 				result = ksend(thread, SARG2, SARG3, SARG4, SARG5);
-				LOG("SYS_SEND: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
+				SOCKET_LOG("SYS_SEND: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
 				break;
 			case 10: // SYS_RECV
 				result = krecv(thread, SARG2, SARG3, SARG4, SARG5);
-				LOG("SYS_RECV: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
+				SOCKET_LOG("SYS_RECV: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
 				break;
 			//case 11: // SYS_SENDTO
 			//case 12: // SYS_RECVFROM
 			case 13: // SYS_SHUTDOWN
 				result = kshutdown(thread, SARG2, SARG3);
-				LOG("SYS_SHUTDOWN: socket=%d how=%d result=%d", SARG2, SARG3, result);
+				SOCKET_LOG("SYS_SHUTDOWN: socket=%d how=%d result=%d", SARG2, SARG3, result);
 				break;
 			case 14: // SYS_SETSOCKOPT
 				result = ksetsockopt(thread, SARG2, SARG3, SARG4, SARG5, SARG6);
-				LOG("SYS_SETSOCKOPT: socket=%d level=%d name=%d value=%d, len=%d result=%d", SARG2, SARG3, SARG4, SARG5, SARG6, result);
+				SOCKET_LOG("SYS_SETSOCKOPT: socket=%d level=%d name=%d value=%d, len=%d result=%d", SARG2, SARG3, SARG4, SARG5, SARG6, result);
 				break;
 			case 15: // SYS_GETSOCKOPT
 				result = kgetsockopt(thread, SARG2, SARG3, SARG4, SARG5, SARG6);
-				LOG("SYS_GETSOCKOPT: socket=%d level=%d name=%d value=%d, len=%d result=%d", SARG2, SARG3, SARG4, SARG5, SARG6, result);
+				SOCKET_LOG("SYS_GETSOCKOPT: socket=%d level=%d name=%d value=%d, len=%d result=%d", SARG2, SARG3, SARG4, SARG5, SARG6, result);
 				break;		
 			case 16: // SYS_SENDMSG
 				result = ksendmsg(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_SENDMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
+				SOCKET_LOG("SYS_SENDMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
 				break;
 			case 17: // SYS_RECVMSG
 				result = ksendmsg(thread, SARG2, SARG3, SARG4);
-				LOG("SYS_RECVMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
+				SOCKET_LOG("SYS_RECVMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
 				break;
 			//case 18: // SYS_ACCEPT4
 			default:
@@ -598,9 +600,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_fcntrl(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_fcntl64 fildes=%d cmd=%d arg=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_gettid:
+		result = thread->id;
+		LOG("__NR_gettid result=%d", result);
 		break;
+		/*
 	case __NR_tkill:
 		break;
 		*/
