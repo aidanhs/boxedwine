@@ -243,6 +243,16 @@ static U8* fb_physicalAddress(struct Memory* memory, U32 address, U32 data) {
 
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
 
+U32 GET_SHIFT(U32 n) {
+	U32 i;
+
+	for (i=0;i<32;i++) {
+		if (n & (1<<i))
+			return i;
+	}
+	return 0;
+}
+
 BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 	if (!fbinit) {
 		if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
@@ -261,11 +271,17 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.yres_virtual = windowCY;
 
 		fb_var_screeninfo.bits_per_pixel = windowBPP;
-		fb_var_screeninfo.red.offset = surface->format->Rshift;
-		fb_var_screeninfo.red.length = 8;
-		fb_var_screeninfo.green.offset = surface->format->Gshift;
-		fb_var_screeninfo.green.length = 8;
-		fb_var_screeninfo.blue.offset = surface->format->Bshift;
+		if (surface->format->Rshift == 0 && surface->format->Gshift == 0) {
+			fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);
+			fb_var_screeninfo.green.offset = GET_SHIFT(surface->format->Gmask);
+			fb_var_screeninfo.blue.offset = GET_SHIFT(surface->format->Bmask);
+		} else {
+			fb_var_screeninfo.red.offset = surface->format->Rshift;
+			fb_var_screeninfo.green.offset = surface->format->Gshift;
+			fb_var_screeninfo.blue.offset = surface->format->Bshift;
+		}
+		fb_var_screeninfo.red.length = 8;			
+		fb_var_screeninfo.green.length = 8;		
 		fb_var_screeninfo.blue.length = 8;
 		fb_var_screeninfo.transp.offset = 0;
 		fb_var_screeninfo.transp.length = 0;
