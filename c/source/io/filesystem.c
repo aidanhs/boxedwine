@@ -448,7 +448,7 @@ struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 
 	result->flags = flags;
 	result->access = nodeAccess;
 	result->node = node;
-	if (nodeAccess->init(process, result));
+	if (nodeAccess->init(process, result))
 		return result;
 	freeOpenNode(result);
 	return 0;

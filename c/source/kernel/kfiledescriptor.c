@@ -121,7 +121,7 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
 U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout) {
 	U32 i;
 	struct Memory* memory = thread->process->memory;
-	U32 result;
+	S32 result;
 
 	if (!thread->waitStartTime) {
 		U32 address = pfds;
