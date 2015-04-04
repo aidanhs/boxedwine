@@ -552,7 +552,10 @@ BOOL readLink(const char* path, char* buffer) {
 	h = open(path, O_RDONLY);
 	if (!h)
 		return FALSE;
-	read(h, tmp, buf.st_size);
+	if (read(h, tmp, buf.st_size)!=buf.st_size) {
+		close(h);
+		return FALSE;
+	}
 	tmp[buf.st_size]=0;
 	if (tmp[0]!='/') {
 		int len = strrchr(path, pathSeperator)-path;

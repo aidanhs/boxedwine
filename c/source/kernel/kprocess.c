@@ -677,7 +677,6 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {
 }
 
 struct Node* findInPath(struct KProcess* process, const char* arg) {
-	struct Memory* memory = process->memory;
 	struct Node* node = getNodeFromLocalPath(process->currentDirectory, arg, TRUE);
 	U32 i;
 

@@ -29,7 +29,7 @@ U32 getMilliesSinceStart() {
 	return SDL_GetTicks();
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char **argv) {
 	int i;
 	const char* root = 0;
 	const char* ppenv[32];
@@ -40,7 +40,9 @@ int main(int argc, char **argv) {
 	int bpp = 32;
 	int fullscreen = 0;
 
+	printf("Starting ...\n");
 	startTime = getSystemTimeAsMicroSeconds();
+	printf("Start time = %d", startTime);
 #ifdef LOG_OPS
 	logFile = fopen("log.txt", "w");
 #endif
@@ -72,6 +74,7 @@ int main(int argc, char **argv) {
 		strcat(base, "root");
 		root=base;
 	}
+	printf("Using root directory: %s", root);
 	initSystem();
 	if (!doesPathExist(root)) {
 		printf("root %s does not exist", root);
@@ -107,6 +110,7 @@ int main(int argc, char **argv) {
 	} else {
 		argv = &argv[i];
 	}
+	printf("Launching %s", argv[0]);
 	if (startProcess("/home/username", argc, argv, envc, ppenv)) {
 		while (getProcessCount()>0) {
 			SDL_Event event;

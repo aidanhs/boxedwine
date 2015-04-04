@@ -77,7 +77,7 @@ void wakeThread(struct KThread* thread) {
 }
 
 void scheduleThread(struct KThread* thread) {
-	struct KThread* t;
+	//struct KThread* t;
 
 	if (lastThread == 0) {
 		lastThread = thread;
@@ -103,7 +103,7 @@ void scheduleThread(struct KThread* thread) {
 }
 
 void unscheduleThread(struct KThread* thread) {
-	struct KThread* t;	
+	//struct KThread* t;	
 
 	if (thread == lastThread) {
 		if (lastThread->scheduleNext == lastThread) {

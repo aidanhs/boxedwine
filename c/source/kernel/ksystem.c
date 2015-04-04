@@ -23,7 +23,7 @@ struct KProcess* getProcessById(U32 pid) {
 }
 
 BOOL getNextProcess(U32* index, struct KProcess** process) {
-	return getNextObjectFromArray(&processes, index, process);
+	return getNextObjectFromArray(&processes, index, (void**)process);
 }
 
 U32 getProcessCount() {
