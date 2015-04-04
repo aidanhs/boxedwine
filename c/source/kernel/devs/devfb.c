@@ -245,6 +245,12 @@ struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_wri
 
 BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 	if (!fbinit) {
+		if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
+			kwarn("SDL_Init Error: %s", SDL_GetError());
+			return FALSE;
+		}
+		surface=SDL_SetVideoMode(windowCX,windowCY,windowBPP, SDL_HWSURFACE);
+
 		fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
 		fb_fix_screeninfo.type = 0; // FB_TYPE_PACKED_PIXELS
 		fb_fix_screeninfo.smem_start = ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;		
@@ -255,22 +261,16 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.yres_virtual = windowCY;
 
 		fb_var_screeninfo.bits_per_pixel = windowBPP;
-		fb_var_screeninfo.red.offset = 16;
+		fb_var_screeninfo.red.offset = surface->format->Rshift;
 		fb_var_screeninfo.red.length = 8;
-		fb_var_screeninfo.green.offset = 8;
+		fb_var_screeninfo.green.offset = surface->format->Gshift;
 		fb_var_screeninfo.green.length = 8;
-		fb_var_screeninfo.blue.offset = 0;
+		fb_var_screeninfo.blue.offset = surface->format->Bshift;
 		fb_var_screeninfo.blue.length = 8;
-		fb_var_screeninfo.transp.offset = 24;
-		fb_var_screeninfo.transp.length = 8;
+		fb_var_screeninfo.transp.offset = 0;
+		fb_var_screeninfo.transp.length = 0;
 		fb_var_screeninfo.height = 300;
-		fb_var_screeninfo.width = 400;
-
-		if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
-			kwarn("SDL_Init Error: %s", SDL_GetError());
-			return FALSE;
-		}
-		surface=SDL_SetVideoMode(windowCX,windowCY,windowBPP, SDL_HWSURFACE);
+		fb_var_screeninfo.width = 400;		
 
 		fb_fix_screeninfo.smem_len = surface->pitch*windowCY;
 		fb_fix_screeninfo.line_length = surface->pitch;
