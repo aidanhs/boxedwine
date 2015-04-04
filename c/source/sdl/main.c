@@ -29,7 +29,7 @@ U32 getMilliesSinceStart() {
 	return SDL_GetTicks();
 }
 
-int main(int argc, const char **argv) {
+int main(int argc, char **argv) {
 	int i;
 	const char* root = 0;
 	const char* ppenv[32];
@@ -42,7 +42,6 @@ int main(int argc, const char **argv) {
 
 	printf("Starting ...\n");
 	startTime = getSystemTimeAsMicroSeconds();
-	printf("Start time = %d", startTime);
 #ifdef LOG_OPS
 	logFile = fopen("log.txt", "w");
 #endif
@@ -111,7 +110,7 @@ int main(int argc, const char **argv) {
 		argv = &argv[i];
 	}
 	printf("Launching %s", argv[0]);
-	if (startProcess("/home/username", argc, argv, envc, ppenv)) {
+	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv)) {
 		while (getProcessCount()>0) {
 			SDL_Event event;
 			BOOL ran = runSlice();

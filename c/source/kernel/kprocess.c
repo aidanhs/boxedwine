@@ -211,7 +211,7 @@ void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 en
 	U32 argc=0;
 	U32 e[128];
 	U32 envc=0;
-	int i;
+	U32 i;
 	U32 pos = 0;
 
 	i=0;

@@ -31,8 +31,8 @@ void logsyscall(const char* fmt, ...) {
 #define LOG printf("%d/%d",thread->id, process->id); klog
 #define SOCKET_LOG printf("%d/%d",thread->id, process->id); klog
 #else
-#define LOG klog
-#define SOCKET_LOG klog
+#define LOG if (0) klog
+#define SOCKET_LOG if (0) klog
 #endif
 
 #define __NR_exit 1
