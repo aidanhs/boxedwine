@@ -19,6 +19,10 @@
 #include "bufferaccess.h"
 #include "devfb.h"
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/emscripten.h>
+#endif
+
 #include CURDIR
 
 #ifndef __TEST
@@ -27,6 +31,25 @@ char curdir[1024];
 
 U32 getMilliesSinceStart() {
 	return SDL_GetTicks();
+}
+
+void mainloop() {
+	U32 startTime = SDL_GetTicks();
+	while (1) {
+		SDL_Event event;
+		BOOL ran = runSlice();
+                                
+		while (SDL_PollEvent(&event)) {
+			if (event.type == SDL_QUIT) {
+				SDL_Quit();
+			}
+		};
+		if (!ran) {
+			break;
+		}
+		if (SDL_GetTicks()-startTime>20)
+			break;
+	};
 }
 
 int main(int argc, char **argv) {
@@ -41,6 +64,7 @@ int main(int argc, char **argv) {
 	int fullscreen = 0;
 
 	printf("Starting ...\n");
+
 	startTime = getSystemTimeAsMicroSeconds();
 #ifdef LOG_OPS
 	logFile = fopen("log.txt", "w");
@@ -111,6 +135,9 @@ int main(int argc, char **argv) {
 	}
 	printf("Launching %s", argv[0]);
 	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv)) {
+#ifdef __EMSCRIPTEN__
+                emscripten_set_main_loop(mainloop, 0, 1);
+#else
 		while (getProcessCount()>0) {
 			SDL_Event event;
 			BOOL ran = runSlice();
@@ -123,6 +150,7 @@ int main(int argc, char **argv) {
 			if (!ran)
 				SDL_Delay(20);
 		}
+#endif
 	}
 	SDL_Quit();
 	
