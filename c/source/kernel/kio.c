@@ -10,9 +10,12 @@
 #include "node.h"
 #include "filesystem.h"
 #include "kstat.h"
+#include "kprocess.h"
 
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
+#include <direct.h>
 
 U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
@@ -412,4 +415,115 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 		openNode->access->seek(openNode, i+1);
 	}
 	return len;
+}
+
+char tmpPath[MAX_FILEPATH_LEN];
+
+U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) {
+	struct Memory* memory = thread->process->memory;
+	const char* s = getNativeString(memory, path);
+	struct Node* node;
+
+	// :TODO: move these to the virtual filesystem
+    if (!strcmp("/proc/self/exe", s)) {
+		U32 len = strlen(thread->process->exe);
+		if (len+1>bufSize)
+			len=bufSize-1;
+		memcopyFromNative(memory, buffer, thread->process->exe, len);
+		writeb(memory, buffer+len, 0);
+        return len;
+    } else if (!strncmp("/proc/self/fd/", s, 14)) {
+        int h = atoi(s+14);
+        struct KFileDescriptor* fd = getFileDescriptor(thread->process, h);
+		int len;
+		struct OpenNode* openNode;
+
+        if (!fd)
+            return -K_EINVAL;
+		if (fd->kobject->type!=KTYPE_FILE) {
+			return -K_EINVAL;
+		}
+		openNode = (struct OpenNode*)fd->kobject->data;
+		len = strlen(openNode->node->path.localPath);
+		if (len+1>(int)bufSize)
+			len=bufSize-1;
+		memcopyFromNative(memory, buffer, openNode->node->path.localPath, len);
+		writeb(memory, buffer+len, 0);
+        return len;        
+    }
+	strcpy(tmpPath, s);
+	strcat(tmpPath, ".link");
+	node = getNodeFromLocalPath(thread->process->currentDirectory, tmpPath, TRUE);
+    if (!node)
+        return -K_EINVAL;
+	if (kreadLink(node->path.nativePath, tmpPath)) {
+		U32 len = strlen(tmpPath);
+		if (len+1>bufSize)
+			len=bufSize-1;
+		memcopyFromNative(memory, buffer, tmpPath, len);
+		writeb(memory, buffer+len, 0);
+        return len; 
+	}
+    return -K_EINVAL;
+}
+
+U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
+	struct Memory* memory = thread->process->memory;
+	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(memory, path), FALSE);
+
+	if (!node) {
+		kpanic("Oops, syscall_mkdir couldn't find node");
+	}
+	if (node->nodeType->exists(node)) {
+		return -K_EEXIST;
+	}
+	if (mkdir(node->path.nativePath)!=0)
+		return -K_EACCES;
+	return 0;
+}
+
+U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
+	struct Memory* memory = thread->process->memory;
+	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(memory, path), FALSE);
+	if (!node) {
+		return -K_ENOENT;
+	}
+	// This seems to be the only fields WINE looks at
+    writed(memory, address, 0xEF53); // f_type (EXT3)
+    writed(memory, address+60, 512); // f_frsize
+    writed(memory, address+4, 512); // f_bsize
+    return 0;
+}
+
+U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	struct Memory* memory = thread->process->memory;
+
+	if (!fd) {
+        return -K_EBADF;
+    }
+    // This seems to be the only fields WINE looks at
+    writed(memory, address, 0xEF53); // f_type (EXT3)
+    writed(memory, address+60, 512); // f_frsize
+    writed(memory, address+4, 512); // f_bsize
+    return 0;
+}
+
+U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64 offset) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	S64 pos;
+	U32 result;
+	struct OpenNode* openNode;
+
+	if (fd==0 || fd->kobject->type!=KTYPE_FILE) {
+        return -K_EBADF;
+    }
+	openNode = (struct OpenNode*)fd->kobject->data;
+	if (openNode->node->nodeType->isDirectory(openNode->node)) {
+		return -K_EISDIR;
+	}
+	pos = fd->kobject->access->seek(fd->kobject, offset);
+	result = fd->kobject->access->read(thread, fd->kobject, thread->process->memory, address, len);
+	fd->kobject->access->seek(fd->kobject, pos);
+	return result;
 }

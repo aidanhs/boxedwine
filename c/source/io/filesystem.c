@@ -482,6 +482,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	return result;
 }
 
+// home/. dir should return the same node as /home/ dirs which should be the same as /home, so remove trailing . and /
 BOOL normalizePath(char* path) {
 	int len = strlen(path);
 	int i;
@@ -496,11 +497,17 @@ BOOL normalizePath(char* path) {
 					return normalizePath(path);
 				}
 				return FALSE;
+			} else if (i==len-1 && lastDir==i-1) {
+				path[i]=0;
+				len--;
 			}
 		} else if (path[i]=='/') {
 			lastDir2 = lastDir;
 			lastDir = i;
 		}
+	}
+	if (path[len-1]=='/') {
+		path[len-1]=0;
 	}
 	return TRUE;
 }
@@ -536,7 +543,7 @@ void remotePathToLocal(char* path) {
 	// :TODO: is reversing the colon code necessary
 }
 
-BOOL readLink(const char* path, char* buffer) {
+BOOL kreadLink(const char* path, char* buffer) {
 	struct stat buf;
 	int h;
 	char tmp[MAX_FILEPATH_LEN];
@@ -580,7 +587,7 @@ BOOL followLinks(char* path) {
 	strcpy(tmp, path);
 	strcat(tmp, ".link");
 	if (doesPathExist(tmp)) {
-		if (readLink(tmp, tmp)) {
+		if (kreadLink(tmp, tmp)) {
 			strcpy(path, tmp);
 			return TRUE;
 		}
@@ -594,7 +601,7 @@ BOOL followLinks(char* path) {
 			if (!doesPathExist(tmp)) {
 				strcat(tmp, ".link");
 				if (doesPathExist(tmp)) {
-					if (readLink(tmp, tmp)) {
+					if (kreadLink(tmp, tmp)) {
 						strcat(tmp, path+i); 
 						strcpy(path, tmp);						
 						return TRUE;

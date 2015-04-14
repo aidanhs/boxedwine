@@ -10,6 +10,7 @@
 #define WAIT_PID 1
 #define WAIT_FD 2
 #define WAIT_SLEEP 3
+#define WAIT_FLOCK 4
 
 #define MAX_POLL_DATA 128
 
@@ -17,6 +18,7 @@ struct KThread {
 	U32 id;
 	U32 sigMask;
 	U32 alternateStack;
+	U32 alternateStackSize;
 	U32 stackBeforeSignal;
 	struct CPU cpu;
 	U32 stackPageStart;

@@ -5,6 +5,7 @@
 #include "kerror.h"
 #include "kthread.h"
 #include "kscheduler.h"
+#include "log.h"
 
 S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout) {
     S32 result = 0;
@@ -39,6 +40,7 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 	}
 	if (thread->waitStartTime) {
 		if (getMilliesSinceStart() - thread->waitStartTime > timeout) {
+			thread->waitStartTime = 0;
 			return 0;
 		}
 		thread->waitType = WAIT_FD;

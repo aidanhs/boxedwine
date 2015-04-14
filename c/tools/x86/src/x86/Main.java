@@ -764,6 +764,8 @@ public class Main {
         ge("3be", "movsx8", 32);
         ge("3bf", "movsx16", 32);
 
+        ge("3c1", "xadd32", 32, 0, "XADD");
+
         decodeFunc("BSWAP", "3c8", "bswap32", "0");
         decodeFunc("BSWAP", "3c9", "bswap32", "1");
         decodeFunc("BSWAP", "3ca", "bswap32", "2");

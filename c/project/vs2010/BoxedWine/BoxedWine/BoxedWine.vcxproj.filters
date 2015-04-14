@@ -216,6 +216,9 @@
     <ClInclude Include="..\..\..\..\include\kpoll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kepoll.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -330,6 +333,9 @@
       <Filter>Source Files\kernel\dev</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\kpoll.c">
+      <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kepoll.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
   </ItemGroup>

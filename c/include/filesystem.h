@@ -26,5 +26,6 @@ void remotePathToLocal(char* path);
 // if returns true, path will contain the local link
 BOOL followLinks(char* path);
 BOOL doesPathExist(const char* path);
+BOOL kreadLink(const char* path, char* buffer);
 
 #endif

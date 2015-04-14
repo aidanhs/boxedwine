@@ -241,12 +241,12 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
 	U32 i;
 	
 	for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
-		if (memory->data[i]!=PAGE_RESERVED && memory->mmu[i]==&invalidPage) {
+		if (GET_PAGE(memory->data[i])!=PAGE_RESERVED && memory->mmu[i]==&invalidPage) {
 			U32 j;
 			BOOL success = TRUE;
 
 			for (j=1;j<pageCount;j++) {
-				if (memory->data[i+j]==PAGE_RESERVED || memory->mmu[i+j]!=&invalidPage) {
+				if (GET_PAGE(memory->data[i+j])==PAGE_RESERVED || memory->mmu[i+j]!=&invalidPage) {
 					success = FALSE;
 					break;
 				}
@@ -255,6 +255,7 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
 				*result = i;
 				return TRUE;
 			}
+			i+=j; // no reason to check all the pages again
 		}
 	}
 	return FALSE;

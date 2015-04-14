@@ -6,6 +6,7 @@
 
 #define KTYPE_FILE 0
 #define KTYPE_SOCK 1
+#define KTYPE_EPOLL 2
 
 struct KObject {
 	struct KObjectAccess* access;

@@ -2,6 +2,7 @@
 #include "kerror.h"
 #include "kprocess.h"
 #include "log.h"
+#include "kthread.h"
 
 void writeSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
 	writed(memory, address, signal->handler);
@@ -49,4 +50,22 @@ U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
     }
     runSignals(thread);
 	return 0;
+}
+
+U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss) {
+	struct Memory* memory = thread->process->memory;
+
+	if (oss!=0) {
+        writed(memory, oss, thread->alternateStack);
+		writed(memory, oss+4, 0);
+		writed(memory, oss+8, thread->alternateStackSize);
+    }
+    if (ss!=0) {
+        thread->alternateStack = readd(memory, ss);
+        thread->alternateStackSize = readd(memory, ss+8);
+        if (readd(memory, ss+4)!=0) {
+            kpanic("signalstack not fully implemented");
+        }
+    }
+    return 0;
 }

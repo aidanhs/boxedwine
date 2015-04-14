@@ -34,8 +34,6 @@ void freeThread(struct KThread* thread) {
 	processOnExitThread(thread->process);
 	thread->scheduleNext = freeThreads;	
 	freeThreads = thread;
-	process->terminated = TRUE;
-	wakeThreads(WAIT_PID);
 }
 
 void setupStack(struct KThread* thread) {

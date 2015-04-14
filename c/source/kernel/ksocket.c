@@ -25,6 +25,52 @@ struct KSockAddress {
 	U16 family;
 	char data[256];
 };
+
+struct KSocketMsgObject {
+	struct KObject* object;
+	U32 accessFlags;
+};
+
+#define MAX_NUMBER_OF_KSOCKET_MSG_OBJECTS_PER_MSG 10
+
+struct KSocketMsg {
+	struct KSocketMsgObject objects[MAX_NUMBER_OF_KSOCKET_MSG_OBJECTS_PER_MSG];
+	U32 page;
+	U32 objectCount;
+	struct KSocketMsg* next;
+};
+
+struct KSocketMsg* freeSocketMsgs;
+
+struct KSocketMsg* allocSocketMsg() {
+	if (freeSocketMsgs) {
+		struct KSocketMsg* result = freeSocketMsgs;
+		freeSocketMsgs = freeSocketMsgs->next;
+		memset(result, 0, sizeof(struct KSocketMsg));
+		return result;
+	}
+	return (struct KSocketMsg*)kalloc(sizeof(struct KSocketMsg));		
+}
+
+void freeSocketMsg(struct KSocketMsg* msg) {
+	U32 i;
+	for (i=0;i<msg->objectCount;i++) {
+		closeKObject(msg->objects[i].object);
+	}
+	freeRamPage(msg->page);
+	msg->page = 0;
+	msg->next = freeSocketMsgs;	
+	freeSocketMsgs = msg;
+}
+
+struct KSocketBuffer {
+	U32 pages[MAX_BUFFER_SIZE/PAGE_SIZE];
+	U32 readPos;
+	U32 writePos;
+	U32 allocatedPages;
+	U32 len;
+};
+
 struct KSocket {
 	U32 domain;
 	U32 type;
@@ -46,11 +92,8 @@ struct KSocket {
 	U32 pendingConnectionsCount;
 	BOOL inClosed;
 	BOOL outClosed;
-	U32 recvPage[MAX_BUFFER_SIZE/PAGE_SIZE];
-	U32 recvBufferReadPos;
-	U32 recvBufferWritePos;
-	U32 recvAllocatedPages;
-	U32 recvBufferLen;
+	struct KSocketBuffer recvBuffer;
+	struct KSocketMsg* msgs;	
 };
 
 BOOL unixsocket_isDirectory(struct Node* node) {
@@ -70,7 +113,7 @@ U64 unixsocket_length(struct Node* node) {
 }
 
 U32 unixsocket_getMode(struct Node* node) {
-	return K__S_IREAD | K__S_IWRITE;
+	return K__S_IREAD | K__S_IWRITE | K_S_IFSOCK;
 }
 
 BOOL unixsocket_canRead(struct Node* node) {
@@ -136,10 +179,14 @@ void unixsocket_onDelete(struct KObject* obj) {
 			s->pendingConnectionsCount--;
 		}
 	}
-	for (i=0;i<s->recvAllocatedPages;i++) {
-		freeRamPage(s->recvPage[i]);
+	for (i=0;i<s->recvBuffer.allocatedPages;i++) {
+		freeRamPage(s->recvBuffer.pages[i]);
 	}
-	s->recvAllocatedPages = 0;
+	s->recvBuffer.allocatedPages = 0;
+	while (s->msgs) {
+		freeSocketMsg(s->msgs);
+		s->msgs = s->msgs->next;
+	}
 	freeSocket(s);
 	wakeThreads(WAIT_FD);
 }
@@ -163,12 +210,12 @@ BOOL unixsocket_isAsync(struct KObject* obj, struct KProcess* process) {
 	return FALSE;
 }
 
-struct KFileLock* unixsocket_getLock(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
+struct KFileLock* unixsocket_getLock(struct KObject* obj, struct KFileLock* lock) {
 	kwarn("unixsocket_getLock not implemented yet");
 	return 0;
 }
 
-U32 unixsocket_setLock(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64, BOOL wait) {
+U32 unixsocket_setLock(struct KObject* obj, struct KFileLock* lock) {
 	kwarn("unixsocket_setLock not implemented yet");
 	return -1;
 }
@@ -180,7 +227,7 @@ BOOL unixsocket_isOpen(struct KObject* obj) {
 
 BOOL unixsocket_isReadReady(struct KObject* obj) {
 	struct KSocket* s = (struct KSocket*)obj->data;
-	return s->inClosed || s->recvBufferLen || s->pendingConnectionsCount;
+	return s->inClosed || s->recvBuffer.len || s->pendingConnectionsCount || s->msgs;
 }
 
 BOOL unixsocket_isWriteReady(struct KObject* obj) {
@@ -194,7 +241,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 
 	if (s->outClosed || !s->connection)
 		return -K_EPIPE;
-	if (s->connection->recvBufferLen==MAX_BUFFER_SIZE) {
+	if (s->connection->recvBuffer.len==MAX_BUFFER_SIZE) {
 		if (s->blocking) {
 			thread->waitType = WAIT_FD;
 			return -K_WAIT;
@@ -202,26 +249,26 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 		return -K_EWOULDBLOCK;
 	}
 	//printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
-	while (s->connection->recvBufferLen<MAX_BUFFER_SIZE && len) {
-		U32 page = s->connection->recvBufferWritePos / 4096;
-		U32 index = s->connection->recvBufferWritePos % 4096;
+	while (s->connection->recvBuffer.len<MAX_BUFFER_SIZE && len) {
+		U32 page = s->connection->recvBuffer.writePos / 4096;
+		U32 index = s->connection->recvBuffer.writePos % 4096;
 		U32 todo = len;
 
 		if (todo>4096-index)
 			todo = 4096-index;
-		if (page>=s->connection->recvAllocatedPages) {
-			s->connection->recvPage[page] = allocRamPage();
-			s->connection->recvAllocatedPages++;
+		if (page>=s->connection->recvBuffer.allocatedPages) {
+			s->connection->recvBuffer.pages[page] = allocRamPage();
+			s->connection->recvBuffer.allocatedPages++;
 		}
-		memcopyToNative(memory, buffer, (char*)getAddressOfRamPage(s->connection->recvPage[page])+index, todo);
+		memcopyToNative(memory, buffer, (char*)getAddressOfRamPage(s->connection->recvBuffer.pages[page])+index, todo);
 
 		buffer+=todo;
 		len-=todo;
 		count+=todo;
-		s->connection->recvBufferLen+=todo;
-		s->connection->recvBufferWritePos+=todo;
-		if (s->connection->recvBufferWritePos>=MAX_BUFFER_SIZE)
-			s->connection->recvBufferWritePos = 0;
+		s->connection->recvBuffer.len+=todo;
+		s->connection->recvBuffer.writePos+=todo;
+		if (s->connection->recvBuffer.writePos>=MAX_BUFFER_SIZE)
+			s->connection->recvBuffer.writePos = 0;
 	}
 	wakeThreads(WAIT_FD);
 	return count;
@@ -232,7 +279,7 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* 
 	U32 count = 0;
 	if (!s->inClosed && !s->connection)
 		return -K_EPIPE;
-	if (!s->recvBufferLen) {
+	if (!s->recvBuffer.len) {
 		if (s->inClosed)
 			return 0;
 		if (!s->blocking)
@@ -240,32 +287,32 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* 
 		thread->waitType = WAIT_FD;
 		return -K_WAIT;
 	}
-	while (len && s->recvBufferLen) {
-		U32 page = s->recvBufferReadPos / 4096;
-		U32 index = s->recvBufferReadPos % 4096;
+	while (len && s->recvBuffer.len) {
+		U32 page = s->recvBuffer.readPos / 4096;
+		U32 index = s->recvBuffer.readPos % 4096;
 		U32 todo = len;
 		if (todo>4096-index)
 			todo = 4096-index;
-		if (todo>s->recvBufferLen)
-			todo = s->recvBufferLen;
-		memcopyFromNative(memory, buffer, (char*)getAddressOfRamPage(s->recvPage[page])+index, todo);
+		if (todo>s->recvBuffer.len)
+			todo = s->recvBuffer.len;
+		memcopyFromNative(memory, buffer, (char*)getAddressOfRamPage(s->recvBuffer.pages[page])+index, todo);
 
 		buffer+=todo;
 		count+=todo;
 		len-=todo;
-		s->recvBufferLen-=todo;
-		s->recvBufferReadPos+=todo;
-		if (s->recvBufferReadPos>=MAX_BUFFER_SIZE)
-			s->recvBufferReadPos = 0;
-		if (s->recvBufferLen==0) {
+		s->recvBuffer.len-=todo;
+		s->recvBuffer.readPos+=todo;
+		if (s->recvBuffer.readPos>=MAX_BUFFER_SIZE)
+			s->recvBuffer.readPos = 0;
+		if (s->recvBuffer.len==0) {
 			U32 i;
 
-			for (i=1;i<s->recvAllocatedPages;i++) {
-				freeRamPage(s->recvPage[i]);
+			for (i=1;i<s->recvBuffer.allocatedPages;i++) {
+				freeRamPage(s->recvBuffer.pages[i]);
 			}
-			s->recvAllocatedPages=1;
-			s->recvBufferReadPos = 0;
-			s->recvBufferWritePos = 0;
+			s->recvBuffer.allocatedPages=1;
+			s->recvBuffer.readPos = 0;
+			s->recvBuffer.writePos = 0;
 		}
 	}
 	return count;
@@ -657,7 +704,8 @@ U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 sock
 	s2->outClosed = FALSE;
 	s1->connected = TRUE;
 	s2->connected = TRUE;
-
+	f1->accessFlags = K_O_RDWR;
+	f2->accessFlags = K_O_RDWR;
 	writed(thread->process->memory, socks, fd1);
     writed(thread->process->memory, socks+4, fd2);
 	return 0;
@@ -806,12 +854,202 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
     return 0;
 }
 
-U32 ksendmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags) {
+struct MsgHdr {
+	U32 msg_name;
+    U32 msg_namelen;
+    U32 msg_iov;
+    U32 msg_iovlen;
+    U32 msg_control;
+    U32 msg_controllen;
+    U32 msg_flags;
+};
+
+struct CMsgHdr {
+	U32 cmsg_len;
+    U32 cmsg_level;
+	U32 cmsg_type;
+};
+
+void readMsgHdr(struct Memory* memory, U32 address, struct MsgHdr* hdr) {
+	hdr->msg_name = readd(memory, address);address+=4;
+    hdr->msg_namelen = readd(memory, address);address+=4;
+    hdr->msg_iov = readd(memory, address);address+=4;
+    hdr->msg_iovlen = readd(memory, address);address+=4;
+    hdr->msg_control = readd(memory, address);address+=4;
+    hdr->msg_controllen = readd(memory, address);address+=4;
+    hdr->msg_flags = readd(memory, address);
 }
 
-U32 krecvmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags) {
+void readCMsgHdr(struct Memory* memory, U32 address, struct CMsgHdr* hdr) {
+	hdr->cmsg_len = readd(memory, address);address+=4;
+    hdr->cmsg_level = readd(memory, address);address+=4;
+    hdr->cmsg_type = readd(memory, address);
+}
+
+void writeCMsgHdr(struct Memory* memory, U32 address, U32 len, U32 level, U32 type) {
+	writed(memory, address, len);address+=4;
+    writed(memory, address, level);address+=4;
+    writed(memory, address, type);
+}
+
+#define K_SOL_SOCKET 1
+#define K_SCM_RIGHTS 1
+
+U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+	struct Memory* memory = thread->process->memory;
+	struct MsgHdr hdr;
+	struct KSocketMsg* msg;
+	struct KSocketMsg* next;
+	U32 pos = 0;
+	U8* data;
+	U32 i;	
+	U32 result = 0;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	msg = allocSocketMsg();
+	msg->page = allocRamPage();
+	readMsgHdr(memory, address, &hdr);
+
+	if (hdr.msg_control) {
+        struct CMsgHdr cmsg;			
+
+		readCMsgHdr(memory, hdr.msg_control, &cmsg);
+        if (cmsg.cmsg_level != K_SOL_SOCKET) {
+            kpanic("sendmsg control level %d not implemented", cmsg.cmsg_level);
+        } else if (cmsg.cmsg_type != K_SCM_RIGHTS) {
+            kpanic("sendmsg control type %d not implemented", cmsg.cmsg_level);
+        } else if ((cmsg.cmsg_len & 3) != 0) {
+            kpanic("sendmsg control len %d not implemented", cmsg.cmsg_len);
+        }
+        msg->objectCount = hdr.msg_controllen/16;
+		if (msg->objectCount>MAX_NUMBER_OF_KSOCKET_MSG_OBJECTS_PER_MSG) {
+			kpanic("Too many objects sent in sendmsg: %d", msg->objectCount);
+		}
+        for (i=0;i<msg->objectCount;i++) {
+            struct KFileDescriptor* f = getFileDescriptor(thread->process, readd(memory, hdr.msg_control+16*i+12));
+            if (!f) {
+                kpanic("tried to sendmsg a bad file descriptor");
+            } else {				
+				f->kobject->refCount++;
+				msg->objects[i].object = f->kobject;
+				msg->objects[i].accessFlags = f->accessFlags;
+            }
+        }				
+    }
+	data = getAddressOfRamPage(msg->page);
+	for (i=0;i<hdr.msg_iovlen;i++) {
+        U32 p = readd(memory, hdr.msg_iov+8*i);
+        U32 len = readd(memory, hdr.msg_iov+8*i+4);
+		if (pos+len>4096) {
+			kpanic("sendmsg payload was larger than 4096 bytes");
+		}
+		data[pos++] = len;
+		data[pos++] = len >> 8;
+		data[pos++] = len >> 16;
+		data[pos++] = len >> 24;
+		while (len) {
+			data[pos++] = readb(memory, p++);
+			len--;
+			result++;
+		}
+    }
+	msg->next = 0;
+	if (!s->connection->msgs) {
+		s->connection->msgs = msg;
+	} else {
+		next = s->connection->msgs;
+		while (next->next) {
+			next = next->next;
+		}
+		next->next = msg;
+	}
+	wakeThreads(WAIT_FD);
+	return result;
+}
+
+U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
+	struct KSocket* s;
+	struct Memory* memory = thread->process->memory;
+	struct MsgHdr hdr;
+	struct KSocketMsg* msg;
+	U32 result = 0;
+	U32 i;
+	S8* data;
+	U32 pos=0;
+
+	if (!fd) {
+		return -K_EBADF;
+	}
+	if (fd->kobject->type!=KTYPE_SOCK) {
+		return -K_ENOTSOCK;
+	}
+	s = (struct KSocket*)fd->kobject->data;
+	if (!s->msgs) {
+		if (!s->blocking) {
+			return K_EWOULDBLOCK;
+		}
+		// :TODO: what about a time out
+		thread->waitType = WAIT_FD;
+		return -K_WAIT;
+	}
+	msg = s->msgs;
+	readMsgHdr(memory, address, &hdr);
+	if (hdr.msg_control) {
+		for (i=0;i<hdr.msg_controllen && i<msg->objectCount;i++) {
+			struct KFileDescriptor* fd = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), msg->objects[i].object, msg->objects[i].accessFlags, 0);
+			writeCMsgHdr(memory, hdr.msg_control + i * 16, 16, K_SOL_SOCKET, K_SCM_RIGHTS);
+			writed(memory, hdr.msg_control + i * 16 + 12, fd->handle);
+			closeKObject(msg->objects[i].object);
+		}
+		writed(memory, address + 20, i*20);
+	}
+	data = (S8*)getAddressOfRamPage(msg->page);
+	for (i=0;i<hdr.msg_iovlen;i++) {
+		U32 p = readd(memory, hdr.msg_iov+8*i);
+        U32 len = readd(memory, hdr.msg_iov+8*i+4);
+		U32 dataLen = data[pos] | data[pos+1] | data[pos+2] | data[pos+3];
+		pos+=4;
+		if (len<dataLen) {
+			kpanic("unhandled socket msg logic");
+		}
+		memcopyFromNative(memory, p, data+pos, dataLen);
+		result+=dataLen;
+    }
+	msg->objectCount=0; // we closed the KObjects, this will prevent freeSocketMsg from closing them again;	
+	s->msgs = s->msgs->next;
+	freeSocketMsg(msg);
+	return result;
 }
 
 U32 syscall_pipe(struct KThread* thread, U32 address) {
 	return ksocketpair(thread, K_AF_UNIX, K_SOCK_STREAM, 0, address);
+}
+
+
+U32 syscall_pipe2(struct KThread* thread, U32 address, U32 flags) {
+	U32 result = syscall_pipe(thread, address);
+	if (result==0) {
+		struct Memory* memory = thread->process->memory;
+		if ((flags & K_O_CLOEXEC)!=0) {
+			syscall_fcntrl(thread, readd(memory, address), K_F_SETFD, K_O_CLOEXEC);
+			syscall_fcntrl(thread, readd(memory, address + 4), K_F_SETFD, K_O_CLOEXEC);
+		}
+		if ((flags & K_O_NONBLOCK)!=0) {
+			syscall_fcntrl(thread, readd(memory, address), K_F_SETFL, K_O_NONBLOCK);
+			syscall_fcntrl(thread, readd(memory, address+4), K_F_SETFL, K_O_NONBLOCK);
+		}
+		if (flags & ~(K_O_CLOEXEC|K_O_NONBLOCK)) {
+			kwarn("Unknow flags sent to pipe2: %X", flags);
+		}
+	}
+	return result;
 }

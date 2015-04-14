@@ -24,5 +24,10 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName);
 U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer);
 S64 syscall_llseek(struct KThread* thread, FD fildes, S64 offset, U32 whence);
 U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOOL is64);
+U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize);
+U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode);
+U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address);
+U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address);
+U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64 offset);
 
 #endif

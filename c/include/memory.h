@@ -49,7 +49,7 @@ void writeNativeString(struct Memory* memory, U32 address, const char* str);
 #define PAGE_READ 0x01
 #define PAGE_WRITE 0x02
 #define PAGE_EXEC 0x04
-#define PAGE_RESERVED 0xFFFFFFFF
+#define PAGE_RESERVED 0x00FFFFFF
 #define PAGE_IN_RAM 0x80000000
 #define PAGE_PERMISSION_MASK 0x7F000000
 

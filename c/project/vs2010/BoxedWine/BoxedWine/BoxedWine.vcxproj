@@ -195,6 +195,7 @@
     <ClInclude Include="..\..\..\..\include\fpu.h" />
     <ClInclude Include="..\..\..\..\include\kalloc.h" />
     <ClInclude Include="..\..\..\..\include\karray.h" />
+    <ClInclude Include="..\..\..\..\include\kepoll.h" />
     <ClInclude Include="..\..\..\..\include\kerror.h" />
     <ClInclude Include="..\..\..\..\include\kfile.h" />
     <ClInclude Include="..\..\..\..\include\kfiledescriptor.h" />
@@ -252,6 +253,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kalloc.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kepoll.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfile.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c" />

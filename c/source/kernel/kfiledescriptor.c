@@ -77,18 +77,21 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
         case K_F_GETFL:
 			return fd->accessFlags | (fd->kobject->access->isBlocking(fd->kobject)?0:K_O_NONBLOCK) | (fd->kobject->access->isAsync(fd->kobject, thread->process)?K_O_ASYNC:0);
         case K_F_SETFL:
-            fd->accessFlags = arg;
+			fd->accessFlags = (fd->accessFlags & K_O_ACCMODE) | (arg & ~K_O_ACCMODE);
 			fd->kobject->access->setBlocking(fd->kobject, (arg & K_O_NONBLOCK)==0);
 			fd->kobject->access->setAsync(fd->kobject, thread->process, arg & K_O_ASYNC);
             return 0;
         case K_F_GETLK: 
 		case K_F_GETLK64:
 			if (fd->kobject->access->supportsLocks(fd->kobject)) {
-				struct KFileLock* lock = fd->kobject->access->getLock(fd->kobject, thread->process->memory, arg, cmd==K_F_GETLK64);
-				if (!lock) {
+				struct KFileLock lock;				
+				struct KFileLock* result;
+				readFileLock(&lock, thread->process->memory, arg, cmd==K_F_GETLK64);
+				result = fd->kobject->access->getLock(fd->kobject, &lock);
+				if (!result) {
 					writew(thread->process->memory, arg, K_F_UNLCK);
 				} else {
-					writeFileLock(lock, thread->process->memory, arg, FALSE);
+					writeFileLock(result, thread->process->memory, arg, K_F_GETLK64==cmd);
 				}
 				return 0;
 			} else {
@@ -100,14 +103,21 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
 		case K_F_SETLKW64:
 			if (fd->kobject->access->supportsLocks(fd->kobject)) {
 				struct KFileLock lock;
-				readFileLock(&lock, thread->process->memory, arg, cmd==K_F_SETLK64);
+				U32 result;
+				readFileLock(&lock, thread->process->memory, arg, cmd==K_F_SETLK64 || cmd==K_F_SETLKW64);
+				lock.l_pid = thread->process->id;
 				if ((lock.l_type == K_F_WRLCK && !canWriteFD(fd)) || (lock.l_type == K_F_RDLCK && !!canReadFD(fd))) {
 					return -K_EBADF;
 				}
-				return fd->kobject->access->setLock(fd->kobject, thread->process->memory, arg, cmd==K_F_SETLK64 || cmd == K_F_SETLKW64, cmd == K_F_SETLKW || cmd == K_F_SETLKW64);
+				result = fd->kobject->access->setLock(fd->kobject, &lock);
+				if (((cmd == K_F_SETLKW) || (cmd == K_F_SETLKW64)) && result==-K_EAGAIN) {
+					thread->waitType = WAIT_FLOCK;
+					return -K_WAIT;
+				}
 			} else {
 				return -K_EBADF;
 			}
+			return 0;
         case K_F_SETSIG: {
             kwarn("fcntl F_SETSIG not implemented");
             return -1;

@@ -52,6 +52,8 @@ struct KProcess {
 	struct KSigAction sigActions[MAX_SIG_ACTIONS];
 	struct KTimer timer;
 	char commandLine[1024];
+	char exe[MAX_FILEPATH_LEN];
+	char name[MAX_FILEPATH_LEN];
 	struct NodeAccess commandLineAccess;
 	struct Node* commandLineNode;
 	struct KArray threads;
@@ -87,6 +89,9 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp);
 U32 syscall_chdir(struct KThread* thread, U32 path);
 U32 syscall_exitgroup(struct KThread* thread, U32 code);
 U32 syscall_setitimer(struct KThread* thread, U32 which, U32 newValue, U32 oldValue);
+U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit);
+U32 syscall_fchdir(struct KThread* thread, FD fd);
+U32 syscall_prctl(struct KThread* thread, U32 option);
 
 void runProcessTimer(struct KTimer* timer);
 

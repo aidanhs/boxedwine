@@ -5287,6 +5287,28 @@ BOOL decode3bf(struct DecodeData* data) {
     NEXT_OP(data);
     return TRUE;
 }
+// XADD
+BOOL decode3c1(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = xadd32r32r32;
+        data->op->r1 = G(rm);
+        data->op->r2 = E(rm);
+        LOG_OP2("XADD32", R32(data->op->r1),R32(data->op->r2));
+    } else if (data->ea16) {
+        data->op->func = xadd32r32e32_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("XADD32", R32(data->op->r1),M32(data, rm, data->op));
+    } else {
+        data->op->func = xadd32r32e32_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("XADD32", R32(data->op->r1),M32(data, rm, data->op));
+    }
+    NEXT_OP(data);
+    return TRUE;
+}
 // BSWAP
 BOOL decode3c8(struct DecodeData* data) {
     data->op->func = bswap32;

@@ -8,6 +8,7 @@ struct KPollData {
     FD fd;
     U32 events;
     U32 revents;
+	U64 data;
 };
 
 struct KThread;

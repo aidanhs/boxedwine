@@ -2880,3 +2880,38 @@ void bswap32(struct CPU* cpu, struct Op* op) {
 	CYCLES(1);
 	NEXT();
 }
+
+void xadd32r32r32(struct CPU* cpu, struct Op* op) {
+	cpu->src.u32 = cpu->reg[op->r1].u32;
+    cpu->dst.u32 = cpu->reg[op->r2].u32;
+    cpu->result.u32 = cpu->dst.u32 + cpu->src.u32;
+    cpu->inst = FLAGS_ADD32;
+	cpu->reg[op->r1].u32 = cpu->dst.u32;
+    cpu->reg[op->r2].u32 =  cpu->result.u32;
+    CYCLES(3);
+    NEXT();
+}
+
+void xadd32r32e32_16(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa16(cpu, op);
+	cpu->src.u32 = cpu->reg[op->r1].u32;
+	cpu->dst.u32 = readd(cpu->memory, eaa);
+    cpu->result.u32 = cpu->dst.u32 + cpu->src.u32;
+    cpu->inst = FLAGS_ADD32;
+	cpu->reg[op->r1].u32 = cpu->dst.u32;
+	writed(cpu->memory, eaa, cpu->result.u32);
+    CYCLES(4);
+    NEXT();
+}
+
+void xadd32r32e32_32(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa32(cpu, op);
+	cpu->src.u32 = cpu->reg[op->r1].u32;
+	cpu->dst.u32 = readd(cpu->memory, eaa);
+    cpu->result.u32 = cpu->dst.u32 + cpu->src.u32;
+    cpu->inst = FLAGS_ADD32;
+	cpu->reg[op->r1].u32 = cpu->dst.u32;
+	writed(cpu->memory, eaa, cpu->result.u32);
+    CYCLES(4);
+    NEXT();
+}

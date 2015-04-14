@@ -17,8 +17,8 @@ struct KObjectAccess {
     BOOL (*isBlocking)(struct KObject* obj);
     void (*setAsync)(struct KObject* obj, struct KProcess* process, BOOL isAsync);
     BOOL (*isAsync)(struct KObject* obj, struct KProcess* process);
-    struct KFileLock* (*getLock)(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64);
-    U32  (*setLock)(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64, BOOL wait);
+    struct KFileLock* (*getLock)(struct KObject* obj, struct KFileLock* lock);
+    U32  (*setLock)(struct KObject* obj, struct KFileLock* lock);
 	BOOL (*supportsLocks)(struct KObject* obj);
     BOOL (*isOpen)(struct KObject* obj);
     BOOL (*isReadReady)(struct KObject* obj);

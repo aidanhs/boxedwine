@@ -47,7 +47,9 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 	process->userId = UID;
 	process->effectiveUserId = UID;
 	setupCommandlineNode(process);
-	process->commandLine[0]=0;
+	strcpy(process->exe, args[0]);
+	strcpy(process->name, process->exe);
+	process->commandLine[0]=0;	
 	for (i=0;i<argc;i++) {
 		if (i>0)
 			strcat(process->commandLine, " ");
@@ -129,6 +131,8 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
 	memcpy(process->path, from->path, sizeof(process->path));
 	strcpy(process->commandLine, from->commandLine);
+	strcpy(process->exe, from->exe);
+	strcpy(process->name, from->name);
 	setupCommandlineNode(process);	
 }
 
@@ -390,6 +394,8 @@ void processOnExitThread(struct KProcess* process) {
 			}
 		}
 		cleanupProcess(process); // release RAM, sockets, etc now.  No reason to wait to do that until waitpid is called
+		process->terminated = TRUE;
+		wakeThreads(WAIT_PID);
 	}
 }
 
@@ -692,7 +698,8 @@ struct Node* findInPath(struct KProcess* process, const char* arg) {
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	struct KProcess* process = thread->process;
 	struct Memory* memory = process->memory;
-	struct Node* node = findInPath(process, getNativeString(memory, readd(memory, argv)));
+	char* first = getNativeString(memory, readd(memory, argv));
+	struct Node* node;
 	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
 	struct Node* loaderNode = 0;
@@ -705,7 +712,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	const char* preArgs[3]={0};
 	int preArgCount;
 	
-
+	if (strstr(first, "wine-preloader")) {
+		argv+=4;
+		first = getNativeString(memory, readd(memory, argv));
+	}
+	node = findInPath(process, first);
 	if (node) {
 		openNode = node->nodeType->open(process, node, K_O_RDONLY);
 	}
@@ -732,6 +743,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	}
 			
 	process->commandLine[0]=0;
+	strcpy(process->exe, getNativeString(memory, readd(memory, argv)));
+	strcpy(process->name, process->exe);
 	i=0;
 	while (TRUE) {
 		char* arg = getNativeString(memory, readd(memory, argv+i*4));
@@ -743,6 +756,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		strcat(process->commandLine, arg);
 		i++;
 	}
+	klog("exec command line: %s", process->commandLine);
 	preArgCount=0;
 	preArgs[preArgCount++] = loaderNode->path.localPath;
 	if (interpreter) {
@@ -825,4 +839,90 @@ void signalProcess(struct KProcess* process, U32 signal) {
 			runSignals(thread);
 		}
 	}
+}
+
+#define K_RLIM_INFINITY 0xFFFFFFFF
+
+U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit) {
+	struct KProcess* process;
+	struct Memory* memory = thread->process->memory;
+
+	if (pid==0) {
+		process = thread->process;
+	} else {
+		process = getProcessById(pid);
+		if (!process)
+			return -K_ESRCH;
+	}
+    switch (resource) {
+        case 3: // RLIMIT_STACK
+            if (oldlimit!=0) {
+                writeq(memory, oldlimit, MAX_STACK_SIZE);
+                writeq(memory, oldlimit + 8, MAX_STACK_SIZE);
+            }
+            if (newlimit!=0) {
+				klog("prlimit64 RLIMIT_STACK set=%d ignored", (U32)readq(memory, newlimit));
+            }
+            break;
+		case 4: // RLIMIT_CORE
+			if (oldlimit!=0) {
+                writeq(memory, oldlimit, K_RLIM_INFINITY);
+                writeq(memory, oldlimit + 8, K_RLIM_INFINITY);
+            }
+            if (newlimit!=0) {
+				klog("prlimit64 RLIMIT_CORE set=%d ignored", (U32)readq(memory, newlimit));
+            }
+            break;
+        case 7: // RLIMIT_NOFILE
+            if (oldlimit!=0) {
+                writeq(memory, oldlimit, 603590);
+                writeq(memory, oldlimit + 8, 603590);
+            }
+			if (newlimit!=0) {
+				klog("prlimit64 RLIMIT_NOFILE set=%d ignored", (U32)readq(memory, newlimit));
+            }
+            break;
+        case 9: // RLIMIT_AS
+            if (oldlimit!=0) {
+                writeq(memory, oldlimit, K_RLIM_INFINITY);
+                writeq(memory, oldlimit + 8, K_RLIM_INFINITY);
+            }
+            if (newlimit!=0) {
+				klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(memory, newlimit));
+            }
+            break;
+		default:
+			kpanic("prlimit64 resource %d not handled", resource);
+    }
+	return 0;
+}
+
+U32 syscall_fchdir(struct KThread* thread, FD fildes) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	struct OpenNode* openNode;
+
+    if (fd==0) {
+        return -K_EBADF;
+    }
+	if (fd->kobject->type!=KTYPE_FILE) {
+		return -K_EINVAL;
+	}
+	openNode = (struct OpenNode*)fd->kobject->data;
+	if (!openNode->node->nodeType->isDirectory(openNode->node)) {		
+		return -K_ENOTDIR;
+	}
+	strcpy(thread->process->currentDirectory, openNode->node->path.localPath);
+	return 0;
+}
+
+U32 syscall_prctl(struct KThread* thread, U32 option) {
+	struct CPU* cpu = &thread->cpu;
+
+	if (option == 15) { // PR_SET_NAME
+		strcpy(thread->process->name, getNativeString(thread->process->memory, ECX));
+	} else {
+		kwarn("prctl not implemented");
+	}
+	cpu->log = 1;
+	return 0;
 }

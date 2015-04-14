@@ -27,14 +27,46 @@ BOOL kfile_isAsync(struct KObject* obj, struct KProcess* process) {
 	return FALSE;
 }
 
-struct KFileLock*  kfile_getLock(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
-	kwarn("kfile_getLock not implemented yet");
+struct KFileLock* kfile_getLock(struct KObject* obj, struct KFileLock* lock) {
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	struct Node* node = openNode->node;
+	struct KFileLock* next = node->locks;
+	U64 l1 = lock->l_start;
+	U64 l2 = l1+lock->l_len;
+
+	if (lock->l_len == 0)
+		l2 = 0xFFFFFFFF;
+	while (next) {
+		U64 s1 = next->l_start;
+		U64 s2 = s1+next->l_len;
+		
+		if (next->l_len == 0)
+			s2 = 0xFFFFFFFF;
+		if ((s1>=l1 && s1<=l2) || (s2>=l1 && s2<=l2)) {
+			return next;
+		}
+		next = next->next;
+	}
 	return 0;
 }
 
-U32  kfile_setLock(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64, BOOL wait) {
-	kwarn("kfile_setLock not implemented yet");
-	return -1;
+U32 kfile_setLock(struct KObject* obj, struct KFileLock* lock) {
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	struct Node* node = openNode->node;
+	
+	// :TODO: unlock, auto remove lock if process exits
+	if (lock->l_type == K_F_UNLCK) {
+	} else {
+		struct KFileLock* f = allocFileLock();
+		f->l_len = lock->l_len;
+		f->l_pid = lock->l_pid;
+		f->l_start = lock->l_start;
+		f->l_type = lock->l_type;
+		f->l_whence = lock->l_whence;
+		f->next = node->locks;
+		node->locks = f;
+	}
+	return 0;
 }
 
 BOOL kfile_isOpen(struct KObject* obj) {

@@ -12,6 +12,8 @@
 #include "ksignal.h"
 #include "filesystem.h"
 #include "ksocket.h"
+#include "kepoll.h"
+#include "ksystem.h"
 
 #include <stdarg.h>
 
@@ -27,6 +29,7 @@ void logsyscall(const char* fmt, ...) {
 }
 
 #define LOG logsyscall
+#define SOCKET_LOG logsyscall
 #elif defined LOG_SYSCALLS
 #define LOG printf("%d/%d",thread->id, process->id); klog
 #define SOCKET_LOG printf("%d/%d",thread->id, process->id); klog
@@ -211,10 +214,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 			writed(memory, ARG1, result);
 		LOG("__NR_time tloc=%X result=%X", ARG1, result);
 		break;
-		/*
 	case __NR_chmod:
+		result = 0;
+		LOG("__NR_chmod path=%X (%s) mode=%o result=%d", ARG1, getNativeString(memory, ARG1), ARG2, result);
 		break;
-		*/
 	case __NR_lseek:
 		result = syscall_seek(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_lseek fildes=%d offset=%d whence=%d result=%d", ARG1, ARG2, ARG3, result);
@@ -239,9 +242,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_rename(thread, ARG1, ARG2);
 		LOG("__NR_rename oldName=%X(%s) newName=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);
 		break;
-		/*
 	case __NR_mkdir:
+		result = syscall_mkdir(thread, ARG1, ARG2);
+		LOG("__NR_mkdir path=%X (%s) mode=%X result=%d", ARG1, getNativeString(memory, ARG1), ARG2, result);
 		break;
+		/*
 	case __NR_rmdir:
 		break;
 		*/
@@ -252,7 +257,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_pipe:
 		result = syscall_pipe(thread, ARG1);
-		LOG("__NR_pipe fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG2), result);
+		LOG("__NR_pipe fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
 	case __NR_brk:
 		if (ARG1 > process->brkEnd) {
@@ -303,13 +308,19 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		kwarn("__NR_setsid not implemented");
 		LOG("__NR_setsid result=%d", result);
 		break;
-		/*
 	case __NR_gettimeofday:
+		result = syscall_gettimeofday(thread, ARG1, ARG2);
+		LOG("__NR_gettimeofday tv=%X tz=%X result=%d", ARG1, ARG2, result);
 		break;
+		/*
 	case __NR_symlink:
 		break;
+		*/
 	case __NR_readlink:
+		result = syscall_readlink(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_readlink path=%X (%s) buffer=%X bufSize=%d result=%d", ARG1, getNativeString(memory, ARG1), ARG1, ARG3, result);
 		break;
+		/*
 	case __NR_mmap:
 		break;
 		*/
@@ -386,7 +397,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 				SOCKET_LOG("SYS_SENDMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
 				break;
 			case 17: // SYS_RECVMSG
-				result = ksendmsg(thread, SARG2, SARG3, SARG4);
+				result = krecvmsg(thread, SARG2, SARG3, SARG4);
 				SOCKET_LOG("SYS_RECVMSG: socket=%d message=%X flags=%X result=%d", SARG2, SARG3, SARG4, result);
 				break;
 			//case 18: // SYS_ACCEPT4
@@ -431,10 +442,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_getpgid(thread, ARG1);
 		LOG("__NR_getpgid pid=%d result=%d", ARG1, result);
 		break;
-		/*
 	case __NR_fchdir:
+		result = syscall_fchdir(thread, ARG1);
+		LOG("__NR_fchdir fd=%d result=%d", ARG1, result);
 		break;
-		*/
 	case __NR__llseek: {
 		S64 r64 = syscall_llseek(thread, ARG1, ((U64)ARG2)<<32|ARG3, ARG5);
 		result = (S32)r64;
@@ -462,8 +473,18 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		*/
 	case __NR_nanosleep:
 		if (thread->waitStartTime) {
-			thread->waitStartTime = 0;
-			result = 0;
+			U32 diff = getMilliesSinceStart()-thread->waitStartTime;
+			U32 amount = readd(memory, ARG1)*1000+readd(memory, ARG1+4)/1000000;
+			if (diff >= amount) {
+				thread->waitStartTime = 0;
+				result = 0;
+			} else {
+				thread->timer.process = process;
+				thread->timer.thread = thread;
+				thread->waitType = WAIT_SLEEP;
+				addTimer(&thread->timer);
+				result = -K_WAIT;
+			}
 		} else {
 			thread->waitStartTime = getMilliesSinceStart();
 			thread->timer.millies = thread->waitStartTime+readd(memory, ARG1)*1000+readd(memory, ARG1+4)/1000000;
@@ -483,10 +504,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_poll(thread, ARG1, ARG2, ARG3);		
 		LOG("__NR_poll pfds=%X nfds=%d timeout=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_prctl:
+		result = syscall_prctl(thread, ARG1);
+		LOG("__NR_prctl options=%d result=%d", ARG1, result);
 		break;
-		*/
 	case __NR_rt_sigaction:
 		result = syscall_sigaction(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_rt_sigaction sig=%d act=%X oact=%X result=%d", ARG1, ARG2, ARG3, result);
@@ -495,18 +516,18 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_sigprocmask(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_rt_sigprocmask how=%d set=%X oset=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_pread64:
+		result = syscall_pread64(thread, ARG1, ARG2, ARG3, ARG4 | ((U64)ARG5) << 32);
+		LOG("__NR_pread64 fd=%d buf=%X len=%d offset=%d result=%d", ARG1, ARG2, ARG3, ARG4, result);
 		break;
-		*/
 	case __NR_getcwd:
 		result = syscall_getcwd(thread, ARG1, ARG2);
 		LOG("__NR_getcwd buf=%X size=%d result=%d (%s)", ARG1, ARG2, result, getNativeString(memory, ARG1));
 		break;
-		/*
 	case __NR_sigaltstack:
+		result = syscall_signalstack(thread, ARG1, ARG2);
+		LOG("__NR_sigaltstack ss=%X oss=%X result=%d", ARG1, ARG2, result);
 		break;
-		*/
 	case __NR_ugetrlimit:
 		result = syscall_ugetrlimit(thread, ARG1, ARG2);
 		LOG("__NR_ugetrlimit resource=%d rlim=%X result=%d", ARG1, ARG2, result);		
@@ -612,10 +633,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_futex(thread, ARG1, ARG2, ARG3, ARG4);
 		LOG("__NR_futex address=%X op=%d result=%d", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_sched_getaffinity:
+		kwarn("__NR_sched_getaffinity not implemented");
+		result = -1;
 		break;
-		*/
 	case __NR_set_thread_area: {
 		struct user_desc desc;
 		readMemory(memory, (U8*)&desc, ARG1, sizeof(struct user_desc));
@@ -634,14 +655,18 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_exit_group code=%d", ARG1);
 		result = syscall_exitgroup(thread, ARG1);		
 		break;
-		/*
 	case __NR_epoll_create:
+		result = syscall_epollcreate(thread, ARG1);
+		LOG("__NR_epoll_create size=%d result=%d", ARG1, result);
 		break;
 	case __NR_epoll_ctl:
+		result = syscall_epollctl(thread, ARG1, ARG2, ARG3, ARG4);
+		LOG("__NR_epoll_ctl epfd=%d op=%d fd=%d events=%X result=%d", ARG1, ARG2, ARG3, ARG4, result);
 		break;
 	case __NR_epoll_wait:
+		result = syscall_epollwait(thread, ARG1, ARG2, ARG3, ARG4);
+		LOG("__NR_epoll_wait epfd=%d events=%X maxevents=%d timeout=%d result=%d", ARG1, ARG2, ARG3, ARG4, result);
 		break;
-		*/
 	case __NR_set_tid_address:
 		thread->clear_child_tid = ARG1;
 		result = thread->id;
@@ -657,11 +682,16 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = 0;
 		LOG("__NR_clock_getres clock_id=%d res=%X result=%d", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_statfs64:
+		result = syscall_statfs64(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_fstatfs64 path=%X(%s) len=%d buf=%X result=%d", ARG1, getNativeString(memory, ARG1), ARG2, ARG3, result);
+		break;
 		break;
 	case __NR_fstatfs64:
+		result = syscall_fstatfs64(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_fstatfs64 fd=%d len=%d buf=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
+	/*
 	case __NR_tgkill:
 		break;
 	case __NR_fadvise64_64:
@@ -687,11 +717,15 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_utimensat:
 		break;
+		*/
 	case __NR_pipe2:
+		result = syscall_pipe2(thread, ARG1, ARG2);
+		LOG("__NR_pipe2 fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
 	case __NR_prlimit64:
+		result = syscall_prlimit64(thread, ARG1, ARG2, ARG3, ARG4);
+		LOG("__NR_prlimit64 pid=%d resource=%d newlimit=%X (%d) oldlimit=%X result=%d", ARG1, ARG2, ARG3, (ARG3?(U32)readq(memory, ARG3):0), ARG4, result);
 		break;
-		*/
 	default:
 		kpanic("Unknown syscall %d", EAX);
 		break;

@@ -15,5 +15,6 @@ struct KFileLock {
 
 void writeFileLock(struct KFileLock* lock, struct Memory* memory, U32 address, BOOL is64);
 void readFileLock(struct KFileLock* lock, struct Memory* memory, U32 address, BOOL is64);
-
+struct KFileLock* allocFileLock();
+void freeFileLock(struct KFileLock* lock);
 #endif
