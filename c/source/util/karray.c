@@ -54,7 +54,7 @@ BOOL getNextObjectFromArray(struct KArray* karray, U32* index, void** result) {
 }
 
 void* getObjectFromArray(struct KArray* karray, U32 index) {
-	if (index>=karray->startingIndex && index<karray->startingIndex+karray->count)
+	if (index>=karray->startingIndex && index<karray->startingIndex+karray->maxCount)
 		return karray->objects[index-karray->startingIndex];
 	return 0;
 }

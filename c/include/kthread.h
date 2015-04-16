@@ -19,7 +19,6 @@ struct KThread {
 	U32 sigMask;
 	U32 alternateStack;
 	U32 alternateStackSize;
-	U32 stackBeforeSignal;
 	struct CPU cpu;
 	U32 stackPageStart;
 	U32 stackPageCount;

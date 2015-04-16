@@ -465,6 +465,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
 	result->id = nodeId++;
 	result->nodeType = nodeType;
+	result->rdev = rdev;
 	if (localPath) {
 		result->path.localPath = (const char*)result+sizeof(struct Node);
 		strcpy((char*)result->path.localPath, localPath);
@@ -621,4 +622,29 @@ BOOL doesPathExist(const char* path) {
 		return TRUE;
 	}
 	return FALSE;
+}
+
+U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2) {
+	struct Memory* memory = thread->process->memory;
+	char* s1 = getNativeString(memory, path1);
+	char* s2 = getNativeString2(memory, path2);
+	struct Node* node;
+	struct OpenNode* openNode;
+
+	node = getNodeFromLocalPath(thread->process->currentDirectory, s2, TRUE);
+	if (node) {
+		return -K_EEXIST;
+	}
+	strcat(s2, ".link");
+	node = getNodeFromLocalPath(thread->process->currentDirectory, s2, FALSE);
+	if (!node || node->nodeType->exists(node)) {
+		return -K_EEXIST;
+	}
+	openNode = node->nodeType->open(thread->process, node, K_O_WRONLY|K_O_CREAT);
+	if (!openNode) {
+		return -K_EIO;
+	}
+	openNode->access->write(memory, openNode, path1, strlen(s1));
+	openNode->access->close(openNode);
+	return 0;
 }

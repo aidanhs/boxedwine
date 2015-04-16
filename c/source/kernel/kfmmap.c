@@ -72,7 +72,7 @@ static void ondemandfile_writed(struct Memory* memory, U32 address, U32 data, U3
 }
 
 static void ondemandfile_clear(struct Memory* memory, U32 page, U32 data) {
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(GET_PAGE(data)));
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(data & 0xFF));
 	if (fd) {
 		closeFD(fd);
 	}

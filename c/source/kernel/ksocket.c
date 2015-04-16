@@ -995,7 +995,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
 	s = (struct KSocket*)fd->kobject->data;
 	if (!s->msgs) {
 		if (!s->blocking) {
-			return K_EWOULDBLOCK;
+			return -K_EWOULDBLOCK;
 		}
 		// :TODO: what about a time out
 		thread->waitType = WAIT_FD;

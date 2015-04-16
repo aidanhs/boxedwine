@@ -23,7 +23,7 @@ struct MapedFiles {
 	U32 len;
 	BOOL inUse;
 };
-#define MAX_MAPPED_FILE 50
+#define MAX_MAPPED_FILE 256
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 5
 
@@ -92,6 +92,7 @@ U32 syscall_setitimer(struct KThread* thread, U32 which, U32 newValue, U32 oldVa
 U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit);
 U32 syscall_fchdir(struct KThread* thread, FD fd);
 U32 syscall_prctl(struct KThread* thread, U32 option);
+U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal);
 
 void runProcessTimer(struct KTimer* timer);
 

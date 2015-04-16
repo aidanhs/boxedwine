@@ -102,7 +102,8 @@ U32 tty_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len
 		buffer[len]=0;
 		fprintf(stdout, "%s", buffer);		
 		return len;
-	} else {		
+	} else {	
+		U32 result = 0;
 		while (len) {
 			U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
 			U8* ram = getPhysicalAddress(memory, address);
@@ -113,8 +114,9 @@ U32 tty_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len
 			fprintf(stdout, "%s", buffer);
 			len-=todo;
 			address+=todo;
+			result+=todo;
 		}
-		return len;
+		return result;
 	}
 }
 

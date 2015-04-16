@@ -34,9 +34,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         return -K_EINVAL;
     }
 
-	if (shared) {
-		kwarn("Shared mmap not implemented");
-	}
 	if (!(flags & K_MAP_ANONYMOUS) && fildes>=0) {
 		fd = getFileDescriptor(thread->process, fildes);
         if (fd == 0) {
@@ -89,6 +86,8 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			permissions|=PAGE_READ;
 		if (exec)
 			permissions|=PAGE_EXEC;
+		if (shared)
+			permissions|=PAGE_SHARED;
 		if (fd) {			
 			if (off==0) {
 				struct KProcess* process = thread->process;
@@ -112,7 +111,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				U32 data = 0;	
 				if (fd) {
 					int filePage = (int)(off>>PAGE_SHIFT);
-					fd->refCount+=pageCount;
+					fd->refCount++;
 					if (fildes>0xFF || filePage>0xFFFF) {
 						kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
 					}
@@ -188,4 +187,45 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 		memory->data[i+pageStart]=0;
 	}
 	return 0;
+}
+
+U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 newsize, U32 flags) {
+	if (flags > 1) {
+        kpanic("__NR_mremap not implemented: flags=%X", flags);
+    }
+    if (newsize<oldsize) {
+        syscall_unmap(thread, oldaddress+newsize, oldsize-newsize);
+        return oldaddress;
+    } else {
+		struct Memory* memory = thread->process->memory;
+		U32 result;
+		U32 prot=0;
+		U32 data = memory->data[oldaddress >> PAGE_SHIFT];
+		U32 f = K_MAP_FIXED;
+		if (IS_PAGE_READ(data)) {
+			prot|=K_PROT_READ;
+		}
+		if (IS_PAGE_WRITE(data)) {
+			prot|=K_PROT_WRITE;
+		}
+		if (IS_PAGE_EXEC(data)) {
+			prot|=K_PROT_EXEC;
+		}
+		if (IS_PAGE_SHARED(data)) {
+			f|=K_MAP_SHARED;
+		} else {
+			f|=K_MAP_PRIVATE;
+		}
+		result = syscall_mmap64(thread, oldaddress+oldsize, newsize-oldsize, prot, f, -1, 0);
+		if (result==oldaddress+oldsize) {
+			return oldaddress;
+		}
+       
+        if ((flags & 1)!=0) { // MREMAP_MAYMOVE
+            kpanic("__NR_mremap not implemented");
+            return -K_ENOMEM;
+        } else {
+            return -K_ENOMEM;
+        }
+    }
 }

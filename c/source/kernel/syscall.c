@@ -31,8 +31,8 @@ void logsyscall(const char* fmt, ...) {
 #define LOG logsyscall
 #define SOCKET_LOG logsyscall
 #elif defined LOG_SYSCALLS
-#define LOG printf("%d/%d",thread->id, process->id); klog
-#define SOCKET_LOG printf("%d/%d",thread->id, process->id); klog
+#define LOG printf("%s %d/%d",process->name, thread->id, process->id); klog
+#define SOCKET_LOG printf("%s %d/%d",process->name, thread->id, process->id); klog
 #else
 #define LOG if (0) klog
 #define SOCKET_LOG if (0) klog
@@ -245,11 +245,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_mkdir:
 		result = syscall_mkdir(thread, ARG1, ARG2);
 		LOG("__NR_mkdir path=%X (%s) mode=%X result=%d", ARG1, getNativeString(memory, ARG1), ARG2, result);
-		break;
-		/*
+		break;		
 	case __NR_rmdir:
-		break;
-		*/
+		result = syscall_rmdir(thread, ARG1);
+		LOG("__NR_rmdir path=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), result);
+		break;		
 	case __NR_dup:
 		result = syscall_dup(thread, ARG1);
 		LOG("__NR_dup fildes=%d result=%d", ARG1, result);
@@ -312,10 +312,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_gettimeofday(thread, ARG1, ARG2);
 		LOG("__NR_gettimeofday tv=%X tz=%X result=%d", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_symlink:
+		result = syscall_symlink(thread, ARG1, ARG2);
+		LOG("__NR_symlink path1=%X(%s) path2=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString2(memory, ARG2), result);
 		break;
-		*/
 	case __NR_readlink:
 		result = syscall_readlink(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_readlink path=%X (%s) buffer=%X bufSize=%d result=%d", ARG1, getNativeString(memory, ARG1), ARG1, ARG3, result);
@@ -467,10 +467,11 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		/*
 	case __NR_sched_yield:
+		result = 0;
+		cpu->blockCounter = 0xF0000000; // next thread will be run
+		LOG("__NR_sched_yield result=%d", result);
 		break;
-		*/
 	case __NR_nanosleep:
 		if (thread->waitStartTime) {
 			U32 diff = getMilliesSinceStart()-thread->waitStartTime;
@@ -496,10 +497,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		}
 		LOG("__NR_nanosleep req=%X(%d.%.09d sec) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
-		/*
 	case __NR_mremap:
+		result = syscall_mremap(thread, ARG1, ARG2, ARG3, ARG4);
+		LOG("__NR_mremap oldaddress=%x oldsize=%d newsize=%d flags=%X result=%d", ARG1, ARG2, ARG3, ARG4, result);
 		break;
-		*/
 	case __NR_poll:
 		result = syscall_poll(thread, ARG1, ARG2, ARG3);		
 		LOG("__NR_poll pfds=%X nfds=%d timeout=%X result=%d", ARG1, ARG2, ARG3, result);
@@ -686,16 +687,18 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_statfs64(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_fstatfs64 path=%X(%s) len=%d buf=%X result=%d", ARG1, getNativeString(memory, ARG1), ARG2, ARG3, result);
 		break;
-		break;
 	case __NR_fstatfs64:
 		result = syscall_fstatfs64(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_fstatfs64 fd=%d len=%d buf=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
-	/*
 	case __NR_tgkill:
+		result = syscall_tgkill(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_tgkill threadGroupId=%d threadId=%d signal=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_fadvise64_64:
+		result = 0;
 		break;
+		/*
 	case __NR_inotify_init:
 		break;
 	case __NR_inotify_add_watch:
@@ -715,9 +718,12 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		/*
 	case __NR_getcpu:
 		break;
-	case __NR_utimensat:
-		break;
 		*/
+	case __NR_utimensat:
+		result = 0;
+		kwarn("__NR_utimensat not implemented");
+		LOG("__NR_utimensat dirfd=%d path=%X(%s) times=%X flags=%X result=%d", ARG1, ARG2, getNativeString(memory, ARG2), ARG3, ARG4, result);
+		break;		
 	case __NR_pipe2:
 		result = syscall_pipe2(thread, ARG1, ARG2);
 		LOG("__NR_pipe2 fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);

@@ -4,6 +4,7 @@
 #include "node.h"
 #include "platform.h"
 #include "nodeaccess.h"
+#include "kthread.h"
 
 extern char pathSeperator;
 
@@ -27,5 +28,7 @@ void remotePathToLocal(char* path);
 BOOL followLinks(char* path);
 BOOL doesPathExist(const char* path);
 BOOL kreadLink(const char* path, char* buffer);
+
+U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2);
 
 #endif

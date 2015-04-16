@@ -4,6 +4,7 @@
 #include "kscheduler.h"
 #include "kprocess.h"
 #include "kalloc.h"
+#include "kfmmap.h"
 
 #include <string.h>
 #undef LOG_OPS
@@ -171,11 +172,27 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
 	for (i=0;i<0x100000;i++) {
 		struct Page* page = memory->mmu[i];
 		if (page == &ramPageRO || page == &ramPageWR || page == &ramPageWO) {
-			memory->mmu[i] = &ramCopyOnWritePage;
-			from->mmu[i] = &ramCopyOnWritePage;
+			if (!IS_PAGE_SHARED(memory->data[i])) {
+				memory->mmu[i] = &ramCopyOnWritePage;
+				from->mmu[i] = &ramCopyOnWritePage;
+			}
 			incrementRamRef(GET_PAGE(memory->data[i]));
 		} else if (page == &ramCopyOnWritePage) {
 			incrementRamRef(GET_PAGE(memory->data[i]));
+		} else if (IS_PAGE_SHARED(memory->data[i])) {
+			if (page == &ramOnDemandPage) {
+				writeb(from, i << PAGE_SHIFT, 0); // this will map the address to a real page of ram
+				memory->mmu[i] = from->mmu[i];
+				memory->data[i] = from->data[i];
+				i--;
+			} else if (page == &ramOnDemandFilePage) { 
+				readb(from, i << PAGE_SHIFT); // this will map the address to a real page of ram
+				memory->mmu[i] = from->mmu[i];
+				memory->data[i] = from->data[i];
+				i--;
+			} else {
+				kpanic("Unhandled shared memory clone");
+			}
 		}
 	}
 }
@@ -241,12 +258,13 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
 	U32 i;
 	
 	for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
-		if (GET_PAGE(memory->data[i])!=PAGE_RESERVED && memory->mmu[i]==&invalidPage) {
+		// don't need to look at the reserved flag, mmap can map over reserved areas
+		if (memory->mmu[i]==&invalidPage) {
 			U32 j;
 			BOOL success = TRUE;
 
 			for (j=1;j<pageCount;j++) {
-				if (GET_PAGE(memory->data[i+j])==PAGE_RESERVED || memory->mmu[i+j]!=&invalidPage) {
+				if (memory->mmu[i+j]!=&invalidPage) {
 					success = FALSE;
 					break;
 				}
@@ -324,4 +342,21 @@ char* getNativeString(struct Memory* memory, U32 address) {
 		tmpBuffer[i++] = c;
 	} while(c);
 	return tmpBuffer;
+}
+
+static char tmpBuffer2[1024];
+
+char* getNativeString2(struct Memory* memory, U32 address) {
+	char c;
+	int i=0;
+
+	if (!address) {
+		tmpBuffer2[0]=0;
+		return tmpBuffer2;
+	}
+	do {
+		c = readb(memory, address++);
+		tmpBuffer2[i++] = c;
+	} while(c);
+	return tmpBuffer2;
 }

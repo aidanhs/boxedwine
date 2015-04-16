@@ -23,6 +23,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define THREAD_ID_SHIFT 6
+
 void setupCommandlineNode(struct KProcess* process) {
 	char tmp[128];
 
@@ -36,19 +38,24 @@ void setupCommandlineNode(struct KProcess* process) {
 
 void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, const char** args) {	
 	U32 i;
+	char* name;
 
 	memset(process, 0, sizeof(struct KProcess));	
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
-	initArray(&process->threads, process->id<<5);
+	initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
 	process->groupId = 1;	
 	process->parentId = 1;
 	process->userId = UID;
 	process->effectiveUserId = UID;
 	setupCommandlineNode(process);
 	strcpy(process->exe, args[0]);
-	strcpy(process->name, process->exe);
+	name = strrchr(process->exe, '/');
+	if (name)
+		strcpy(process->name, name+1);
+	else
+		strcpy(process->name, process->exe);
 	process->commandLine[0]=0;	
 	for (i=0;i<argc;i++) {
 		if (i>0)
@@ -113,7 +120,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
-	initArray(&process->threads, process->id<<5);
+	initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
 
 	process->parentId = from->id;;
 	process->groupId = from->groupId;
@@ -711,7 +718,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	U32 i;
 	const char* preArgs[3]={0};
 	int preArgCount;
-	
+	char* name;
+
 	if (strstr(first, "wine-preloader")) {
 		argv+=4;
 		first = getNativeString(memory, readd(memory, argv));
@@ -744,7 +752,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			
 	process->commandLine[0]=0;
 	strcpy(process->exe, getNativeString(memory, readd(memory, argv)));
-	strcpy(process->name, process->exe);
+	name = strrchr(process->exe, '/');
+	if (name)
+		strcpy(process->name, name+1);
+	else
+		strcpy(process->name, process->exe);
 	i=0;
 	while (TRUE) {
 		char* arg = getNativeString(memory, readd(memory, argv+i*4));
@@ -756,7 +768,6 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		strcat(process->commandLine, arg);
 		i++;
 	}
-	klog("exec command line: %s", process->commandLine);
 	preArgCount=0;
 	preArgs[preArgCount++] = loaderNode->path.localPath;
 	if (interpreter) {
@@ -920,9 +931,22 @@ U32 syscall_prctl(struct KThread* thread, U32 option) {
 
 	if (option == 15) { // PR_SET_NAME
 		strcpy(thread->process->name, getNativeString(thread->process->memory, ECX));
+		return -1; // :TODO: why does returning 0 cause WINE to have a stack overflow
 	} else {
 		kwarn("prctl not implemented");
 	}
-	cpu->log = 1;
+	return -1;
+}
+
+U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal) {
+	struct KProcess* process = getProcessById(threadId >> THREAD_ID_SHIFT);
+	struct KThread* target;
+
+	if (!process)
+		return -K_ESRCH;
+	target = processGetThreadById(process, threadId);
+	if (!target)
+		return -K_ESRCH;
+	//runSignal(target, signal);
 	return 0;
 }

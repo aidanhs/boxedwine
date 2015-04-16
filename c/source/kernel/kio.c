@@ -482,6 +482,25 @@ U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
 	return 0;
 }
 
+U32 syscall_rmdir(struct KThread* thread, U32 path) {
+	struct Memory* memory = thread->process->memory;
+	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(memory, path), TRUE);
+	U32 result = 0;
+
+	if (!node) {
+		return -K_ENOENT;
+	}
+	if (!node->nodeType->isDirectory(node)) {
+		return -K_ENOTDIR;
+	}
+	result = rmdir(node->path.nativePath);
+	if (result == ENOTEMPTY)
+		return -K_ENOTEMPTY;
+	if (result == 0)
+		return 0;
+	return -K_EIO;
+}
+
 U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
 	struct Memory* memory = thread->process->memory;
 	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(memory, path), FALSE);

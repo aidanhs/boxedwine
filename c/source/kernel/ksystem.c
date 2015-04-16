@@ -7,7 +7,7 @@
 static struct KArray processes;
 
 void initSystem() {
-	initArray(&processes, 1000);		
+	initArray(&processes, 100);		
 }
 
 U32 addProcess(struct KProcess* process) {

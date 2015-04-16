@@ -43,12 +43,14 @@ void cloneMemory(struct Memory* memory, struct Memory* from);
 void freeMemory(struct Memory* memory);
 void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
 char* getNativeString(struct Memory* memory, U32 address);
+char* getNativeString2(struct Memory* memory, U32 address);
 void writeNativeString(struct Memory* memory, U32 address, const char* str);
 
 // values in the upper byte of data
 #define PAGE_READ 0x01
 #define PAGE_WRITE 0x02
 #define PAGE_EXEC 0x04
+#define PAGE_SHARED 0x08
 #define PAGE_RESERVED 0x00FFFFFF
 #define PAGE_IN_RAM 0x80000000
 #define PAGE_PERMISSION_MASK 0x7F000000
@@ -57,6 +59,7 @@ void writeNativeString(struct Memory* memory, U32 address, const char* str);
 #define IS_PAGE_READ(data) (data & 0x01000000)
 #define IS_PAGE_WRITE(data) (data & 0x02000000)
 #define IS_PAGE_EXEC(data) (data & 0x04000000)
+#define IS_PAGE_SHARED(data) (data & 0x08000000)
 #define GET_PAGE(data) (data & 0x00FFFFFF)
 #define IS_PAGE_IN_RAM(data) (data & PAGE_IN_RAM)
 

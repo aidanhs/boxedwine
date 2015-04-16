@@ -195,11 +195,8 @@ U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pT
 
 void runSignals(struct KThread* thread) {
     U32 todo = thread->process->pendingSignals & ~thread->sigMask;
-	if (thread->stackBeforeSignal) {
-		thread->cpu.reg[4].u32 = thread->stackBeforeSignal;
-		thread->stackBeforeSignal = 0;
-	}
-    if (todo!=0) {
+
+	if (todo!=0) {
 		U32 i;
 
         for (i=0;i<32;i++) {
@@ -217,14 +214,19 @@ void runSignal(struct KThread* thread, U32 signal) {
     if (action->handler==K_SIG_DFL) {
 
     } else if (action->handler != K_SIG_IGN) {
-        thread->stackBeforeSignal = thread->cpu.reg[4].u32;
+        U32 stackBeforeSignal = thread->cpu.reg[4].u32;
+		U32 eip = thread->cpu.eip.u32;
         if (thread->alternateStack!=0) {
             thread->cpu.reg[4].u32 = thread->alternateStack;
         }
 		push32(&thread->cpu, signal);
-		push32(&thread->cpu, thread->cpu.eip.u32);
+		push32(&thread->cpu, 0); // return address
         thread->cpu.eip.u32 = action->handler;
-		thread->cpu.log = 1;
+		while (thread->cpu.eip.u32) {
+			runCPU(&thread->cpu);
+		}
+		thread->cpu.reg[4].u32 = stackBeforeSignal;
+		thread->cpu.eip.u32 = eip;
     }
     thread->process->pendingSignals &= ~(1 << (signal - 1));
 }
