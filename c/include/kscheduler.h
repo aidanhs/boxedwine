@@ -5,7 +5,7 @@
 
 struct KTimer;
 
-extern struct KThread* lastThread;
+extern struct KThread* currentThread;
 
 void scheduleThread(struct KThread* thread);
 void unscheduleThread(struct KThread* thread);

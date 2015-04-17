@@ -113,6 +113,15 @@ U32 file_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -K_ENODEV;
 }
 
+void file_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("file_setAsync not implemented");
+}
+
+BOOL file_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL file_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -133,7 +142,7 @@ BOOL file_init(struct KProcess* process, struct OpenNode* node) {
 	return TRUE;
 }
 
-struct NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_map, file_canMap, file_ioctl, file_isWriteReady, file_isReadReady};
+struct NodeAccess fileAccess = {file_init, openfile_length, file_setLength, file_getFilePointer, file_seek, file_read, file_write, file_close, file_map, file_canMap, file_ioctl, file_setAsync, file_isAsync, file_isWriteReady, file_isReadReady};
 
 struct DirData {
 	S32 pos;
@@ -204,6 +213,15 @@ U32 dir_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -K_ENODEV;
 }
 
+void dir_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("dir_setAsync not implemented");
+}
+
+BOOL dir_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL dir_isWriteReady(struct OpenNode* node) {
 	return FALSE;
 }
@@ -239,7 +257,7 @@ struct Node* getDirNode(struct OpenNode* node, U32 index) {
 	return 0;
 }
 
-struct NodeAccess dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_map, dir_canMap, dir_ioctl, dir_isWriteReady, dir_isReadReady};
+struct NodeAccess dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_map, dir_canMap, dir_ioctl, dir_setAsync, dir_isAsync, dir_isWriteReady, dir_isReadReady};
 
 char pathTmp[MAX_FILEPATH_LEN];
 

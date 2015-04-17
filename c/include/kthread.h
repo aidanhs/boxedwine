@@ -5,6 +5,8 @@
 #include "memory.h"
 #include "kpoll.h"
 #include "ktimer.h"
+#include "kcircularlist.h"
+#include "klist.h"
 
 #define WAIT_NONE 0
 #define WAIT_PID 1
@@ -23,8 +25,9 @@ struct KThread {
 	U32 stackPageStart;
 	U32 stackPageCount;
 	struct KProcess* process;
-	struct KThread* scheduleNext;
-	struct KThread* schedulePrev;
+	struct KCNode* scheduledNode;
+	struct KListNode* waitNode;
+	struct KThread* nextFreeThread;
 	U32     waitType;
 	U32     waitSyscall;
 	U32	    waitStartTime;

@@ -3,6 +3,8 @@
 #include "nodetype.h"
 #include "filesystem.h"
 #include "kerror.h"
+#include "log.h"
+
 #include <stdlib.h>
 #include <time.h>
 
@@ -60,6 +62,15 @@ U32 urandom_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
+void urandom_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("urandom_setAsync not implemented");
+}
+
+BOOL urandom_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL urandom_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -76,4 +87,4 @@ BOOL urandom_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess urandomAccess = {urandom_init, urandom_length, urandom_setLength, urandom_getFilePointer, urandom_seek, urandom_read, urandom_write, urandom_close, urandom_map, urandom_canMap, urandom_ioctl, urandom_isWriteReady, urandom_isReadReady};
+struct NodeAccess urandomAccess = {urandom_init, urandom_length, urandom_setLength, urandom_getFilePointer, urandom_seek, urandom_read, urandom_write, urandom_close, urandom_map, urandom_canMap, urandom_ioctl, urandom_setAsync, urandom_isAsync, urandom_isWriteReady, urandom_isReadReady};

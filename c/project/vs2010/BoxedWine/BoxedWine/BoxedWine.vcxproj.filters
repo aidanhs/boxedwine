@@ -219,6 +219,15 @@
     <ClInclude Include="..\..\..\..\include\kepoll.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devinput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kcircularlist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\klist.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -337,6 +346,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\kepoll.c">
       <Filter>Source Files\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devinput.c">
+      <Filter>Source Files\kernel\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\kcircularlist.c">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\klist.c">
+      <Filter>Source Files\util</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

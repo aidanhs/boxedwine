@@ -221,6 +221,15 @@ U32 tty_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return 0;
 }
 
+void tty_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("tty_setAsync not implemented");
+}
+
+BOOL tty_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL tty_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -237,4 +246,4 @@ BOOL tty_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_isWriteReady, tty_isReadReady};
+struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_setAsync, tty_isAsync, tty_isWriteReady, tty_isReadReady};

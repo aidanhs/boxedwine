@@ -2,129 +2,133 @@
 #include "kprocess.h"
 #include "ksystem.h"
 #include "devfb.h"
+#include "kcircularlist.h"
+#include "klist.h"
 
 #include <stdio.h>
 
-struct KThread* lastThread = 0;
-struct KThread* waitingThread = 0;
-struct KTimer* timers = 0;
+//#define LOG_SCHEDULER
+
+struct KCircularList scheduledThreads;
+struct KCNode* nextThread;
+struct KList waitingThreads;
+struct KList timers;
 
 void addTimer(struct KTimer* timer) {
-	if (timers == 0) {
-		timers = timer;
-		timers->next = 0;
-		timers->prev = 0;
-	} else {
-		timers->prev = timer;
-		timer->next = timers;
-		timer->prev = 0;
-		timers = timer;
-	}
+#ifdef LOG_SCHEDULER
+	printf("add timer\n");
+	if (timer->thread)
+		printf("    %d\n", timer->thread->id);
+#endif
+	timer->node = addItemToList(&timers, timer);
 	timer->active = 1;
 }
 
 void removeTimer(struct KTimer* timer) {
-	if (timer->active) {
-		if (timer->prev)
-			timer->prev->next = timer->next;
-		if (timer->next)
-			timer->next->prev = timer->prev;
-		if (timers==timer) {
-			timers=timer->next;
-		}
-		timer->prev = 0;
-		timer->next = 0;
-		timer->active = 0;
-	}
+#ifdef LOG_SCHEDULER
+	printf("remove timer\n");
+	if (timer->thread)
+		printf("    %d\n", timer->thread->id);
+#endif
+	removeItemFromList(&timers, timer->node);
+	timer->node = 0;
+	timer->active = 0;
 }
 
 void waitThread(struct KThread* thread) {
 	unscheduleThread(thread);
-	if (waitingThread == 0) {
-		waitingThread = thread;
-		waitingThread->scheduleNext = 0;
-		waitingThread->schedulePrev = 0;
-	} else {
-		waitingThread->schedulePrev = thread;
-		thread->scheduleNext = waitingThread;
-		thread->schedulePrev = 0;
-		waitingThread = thread;
-	}
+	thread->waitNode = addItemToList(&waitingThreads, thread);
 }
 
 void wakeThreads(U32 wakeType) {
-	struct KThread* thread = waitingThread;
-	while (thread) {
-		struct KThread* next = thread->scheduleNext;
+	struct KListNode* node = waitingThreads.first;
+	while (node) {
+		struct KListNode* next = node->next;
+		struct KThread* thread = (struct KThread*)node->data;
 
 		if (thread->waitType == wakeType) {
 			wakeThread(thread);
 		}
-		thread = next;
+		node = next;
 	}
 }
 
 void wakeThread(struct KThread* thread) {
-	if (thread->schedulePrev)
-		thread->schedulePrev->scheduleNext = thread->scheduleNext;
-	if (thread->scheduleNext)
-		thread->scheduleNext->schedulePrev = thread->schedulePrev;
-	if (waitingThread==thread) {
-		waitingThread=thread->scheduleNext;
-	}
+	removeItemFromList(&waitingThreads, thread->waitNode);
+	thread->waitNode = 0;
 	thread->waitType = WAIT_NONE;
 	scheduleThread(thread);
 }
 
 void scheduleThread(struct KThread* thread) {
-	//struct KThread* t;
+	if (thread->timer.node) {
+		removeTimer(&thread->timer);
+	}	
+	thread->scheduledNode = addItemToCircularList(&scheduledThreads, thread);
+	if (scheduledThreads.count == 1) {
+		nextThread = thread->scheduledNode;
+	}
+#ifdef LOG_SCHEDULER
+	printf("schedule %d(%X)\n", thread->id, thread->scheduledNode);
+	if (scheduledThreads.node)
+	{
+		struct KCNode* head=scheduledThreads.node;
+		struct KCNode* node = head;		
 
-	if (lastThread == 0) {
-		lastThread = thread;
-		lastThread->scheduleNext = thread;
-		lastThread->schedulePrev = thread;
-	} else {
-		thread->scheduleNext = lastThread;
-		thread->schedulePrev = lastThread->schedulePrev;
-		lastThread->schedulePrev->scheduleNext = thread;
-		lastThread->schedulePrev = thread;
-		if (lastThread->scheduleNext==lastThread) {
-			lastThread->scheduleNext = thread;
+		do {
+			U32 id = ((struct KThread*)node->data)->id;
+			printf("    %d(%X)\n",id, node);
+			node = node->next;
+		} while (node!=head);
+	}
+	{
+		struct KListNode* node = timers.first;
+		printf("timers\n");
+		while (node) {
+			struct KTimer* timer = (struct KTimer*)node->data;
+			if (timer->thread) {
+				printf("    thread %d\n", timer->thread->id);
+			} else {
+				printf("    process %d\n", timer->process->id);
+			}		
+			node = node->next;
 		}
 	}
-	/*
-	printf("schedulThread %d\n", thread->id);	
-	t = lastThread;
-	do {
-		printf("  id=%d (%s) pid=%d @memory=%X\n", t->id, t->process->commandLine, t->process->id, t->process->memory);
-		t = t->scheduleNext;
-	} while (t!=lastThread);
-	*/
+#endif
 }
 
-void unscheduleThread(struct KThread* thread) {
-	//struct KThread* t;	
-
-	if (thread == lastThread) {
-		if (lastThread->scheduleNext == lastThread) {
-			//printf("unschedulThread\n");
-			lastThread = 0;
-			thread->cpu.blockCounter = 0xFFFFFF00;
-			return;
-		}
-		lastThread = thread->schedulePrev;		
+void unscheduleThread(struct KThread* thread) {	
+	removeItemFromCircularList(&scheduledThreads, thread->scheduledNode);
+	thread->scheduledNode = 0;
+	thread->cpu.blockCounter = 0xF0000000; // stop running this thread
+	if (nextThread->data == thread) {
+		nextThread = scheduledThreads.node;
 	}
-	thread->schedulePrev->scheduleNext = thread->scheduleNext;
-	thread->scheduleNext->schedulePrev = thread->schedulePrev;
-	thread->cpu.blockCounter = 0xFFFFFF00; // causes a context change
-	/*
-	printf("unschedulThread %d\n", thread->id);	
-	t = lastThread;
-	do {
-		printf("  id=%d (%s) pid=%d @memory=%X\n", t->id, t->process->commandLine, t->process->id, t->process->memory);
-		t = t->scheduleNext;
-	} while (t!=lastThread);
-	*/
+#ifdef LOG_SCHEDULER
+	printf("unschedule %d(%X)\n", thread->id, thread->scheduledNode);	
+	if (scheduledThreads.node)
+	{
+		struct KCNode* head=scheduledThreads.node;
+		struct KCNode* node = head;
+		do {
+			printf("    %d(%X)\n", ((struct KThread*)node->data)->id, node);
+			node = node->next;
+		} while (node!=head);
+	}
+	{
+		struct KListNode* node = timers.first;
+		printf("timers\n");
+		while (node) {
+			struct KTimer* timer = (struct KTimer*)node->data;
+			if (timer->thread) {
+				printf("    thread %d\n", timer->thread->id);
+			} else {
+				printf("    process %d\n", timer->process->id);
+			}	
+			node = node->next;
+		}
+	}
+#endif
 }
 
 U64 contextTime = 100000;
@@ -142,12 +146,13 @@ void runThreadSlice(struct KThread* thread) {
 }
 
 void runTimers() {
-	struct KTimer* timer = timers;
+	struct KListNode* node = timers.first;
 
-	if (timer) {
+	if (node) {		
 		U32 millies = getMilliesSinceStart();
-		while (timer) {
-			struct KTimer* nextTimer = timer->next;
+		while (node) {
+			struct KTimer* timer = (struct KTimer*)node->data;
+			struct KListNode* next = node->next;
 			if (timer->millies<=millies) {
 				if (timer->thread) {
 					removeTimer(timer);
@@ -156,17 +161,23 @@ void runTimers() {
 					runProcessTimer(timer);
 				}
 			}
-			timer = nextTimer;
+			node = next;
 		}
 	}
 }
 
+struct KThread* currentThread;
+
 BOOL runSlice() {
 	runTimers();
 	flipFB();
-	if (lastThread) {
-		lastThread = lastThread->scheduleNext;
-		runThreadSlice(lastThread);
+	if (nextThread) {		
+		currentThread = (struct KThread*)nextThread->data;
+		nextThread = nextThread->next;
+		if (nextThread->data == currentThread) {
+			int ii=0;
+		}
+		runThreadSlice(currentThread);
 		return TRUE;
 	}
 	return FALSE;

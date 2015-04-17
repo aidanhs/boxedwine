@@ -29,7 +29,6 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
         }
 		data++;
     }
-	removeTimer(&thread->timer);
     if (result>0) {		
 		thread->waitStartTime = 0;
         return result;

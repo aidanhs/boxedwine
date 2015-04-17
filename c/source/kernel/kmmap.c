@@ -186,6 +186,12 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 		memory->mmu[i+pageStart]=&invalidPage;
 		memory->data[i+pageStart]=0;
 	}
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (thread->process->mappedFiles[i].inUse && thread->process->mappedFiles[i].address == address) {
+			thread->process->mappedFiles[i].inUse = 0;
+			break;
+		}
+	}
 	return 0;
 }
 

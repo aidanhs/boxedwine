@@ -4,6 +4,7 @@
 #include "filesystem.h"
 #include "kerror.h"
 #include "ram.h"
+#include "log.h"
 
 #include <string.h>
 
@@ -50,6 +51,15 @@ U32 buffer_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
+void buffer_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("buffer_setAsync not implemented");
+}
+
+BOOL buffer_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL buffer_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -66,7 +76,7 @@ BOOL buffer_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess bufferAccess = {buffer_init, buffer_length, buffer_setLength, buffer_getFilePointer, buffer_seek, buffer_read, buffer_write, buffer_close, buffer_map, buffer_canMap, buffer_ioctl, buffer_isWriteReady, buffer_isReadReady};
+struct NodeAccess bufferAccess = {buffer_init, buffer_length, buffer_setLength, buffer_getFilePointer, buffer_seek, buffer_read, buffer_write, buffer_close, buffer_map, buffer_canMap, buffer_ioctl, buffer_setAsync, buffer_isAsync, buffer_isWriteReady, buffer_isReadReady};
 
 void makeBufferAccess(struct NodeAccess* nodeAccess) {
 	nodeAccess->init = buffer_init;

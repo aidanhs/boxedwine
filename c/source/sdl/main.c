@@ -18,6 +18,7 @@
 #include "meminfo.h"
 #include "bufferaccess.h"
 #include "devfb.h"
+#include "devinput.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -36,12 +37,14 @@ U32 getMilliesSinceStart() {
 void mainloop() {
 	U32 startTime = SDL_GetTicks();
 	while (1) {
-		SDL_Event event;
+		SDL_Event e;
 		BOOL ran = runSlice();
                                 
-		while (SDL_PollEvent(&event)) {
-			if (event.type == SDL_QUIT) {
+		while (SDL_PollEvent(&e)) {
+			if (e.type == SDL_QUIT) {
 				SDL_Quit();
+			} else if( e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP ) { 
+				onMouseMove(e.button.x, e.button.y);
 			}
 		};
 		if (!ran) {
@@ -52,14 +55,15 @@ void mainloop() {
 	};
 }
 
+U32 screenWidth = 800;
+U32 screenHeight = 600;
+
 int main(int argc, char **argv) {
 	int i;
 	const char* root = 0;
 	const char* ppenv[32];
 	int envc=0;
 	int mb=64;
-	int cx = 800;
-	int cy = 600;
 	int bpp = 32;
 	int fullscreen = 0;
 
@@ -105,7 +109,7 @@ int main(int argc, char **argv) {
 	}
 	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);
-	initFB(cx, cy, bpp, fullscreen);
+	initFB(screenWidth, screenHeight, bpp, fullscreen);
 
 	ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";
@@ -125,7 +129,8 @@ int main(int argc, char **argv) {
 	bufferAccess.data = ""; // no kernel arguments
 	addVirtualFile("/proc/cmdline", &bufferAccess, K__S_IREAD); // kernel command line
 	addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
-		
+	addVirtualFile("/dev/input/event3", &touchInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
+
 	argc = argc-i;
 	if (argc==0) {
 		argv[0]="/init.sh";
@@ -139,12 +144,14 @@ int main(int argc, char **argv) {
                 emscripten_set_main_loop(mainloop, 0, 1);
 #else
 		while (getProcessCount()>0) {
-			SDL_Event event;
+			SDL_Event e;
 			BOOL ran = runSlice();
 				
-			while (SDL_PollEvent(&event)) {
-				if (event.type == SDL_QUIT) {
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_QUIT) {
 					SDL_Quit();
+				} else if( e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP ) { 
+					onMouseMove(e.button.x, e.button.y);
 				}
 			};
 			if (!ran)

@@ -15,7 +15,7 @@ struct KThread* freeThreads;
 struct KThread* allocThread() {
 	if (freeThreads) {
 		struct KThread* result = freeThreads;
-		freeThreads = freeThreads->scheduleNext;
+		freeThreads = freeThreads->nextFreeThread;
 		memset(result, 0, sizeof(struct KThread));
 		return result;
 	}
@@ -32,7 +32,7 @@ void freeThread(struct KThread* thread) {
 	threadClearFutexes(thread);
 	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
 	processOnExitThread(thread->process);
-	thread->scheduleNext = freeThreads;	
+	thread->nextFreeThread = freeThreads;	
 	freeThreads = thread;
 }
 

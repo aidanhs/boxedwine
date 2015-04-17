@@ -11,7 +11,9 @@ void kfile_onDelete(struct KObject* obj) {
 }
 
 void kfile_setBlocking(struct KObject* obj, BOOL blocking) {
-	((struct OpenNode*)obj->data)->access->close((struct OpenNode*)obj->data);
+	if (blocking) {
+		kwarn("kfile_setBlocking not implemented");
+	}
 }
 
 BOOL kfile_isBlocking(struct KObject* obj) {
@@ -19,12 +21,13 @@ BOOL kfile_isBlocking(struct KObject* obj) {
 }
 
 void kfile_setAsync(struct KObject* obj, struct KProcess* process, BOOL isAsync) {
-	kpanic("kfile_setAsync not implemented yet");
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	openNode->access->setAsync(openNode, process, isAsync);
 }
 
 BOOL kfile_isAsync(struct KObject* obj, struct KProcess* process) {
-	kwarn("kfile_isAsync not implemented yet");
-	return FALSE;
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	return openNode->access->isAsync(openNode, process);
 }
 
 struct KFileLock* kfile_getLock(struct KObject* obj, struct KFileLock* lock) {

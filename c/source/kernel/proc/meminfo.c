@@ -4,6 +4,7 @@
 #include "filesystem.h"
 #include "kerror.h"
 #include "ram.h"
+#include "log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -56,6 +57,15 @@ U32 meminfo_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
+void meminfo_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("meminfo_setAsync not implemented");
+}
+
+BOOL meminfo_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL meminfo_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -72,4 +82,4 @@ BOOL meminfo_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess meminfoAccess = {meminfo_init, meminfo_length, meminfo_setLength, meminfo_getFilePointer, meminfo_seek, meminfo_read, meminfo_write, meminfo_close, meminfo_map, meminfo_canMap, meminfo_ioctl, meminfo_isWriteReady, meminfo_isReadReady};
+struct NodeAccess meminfoAccess = {meminfo_init, meminfo_length, meminfo_setLength, meminfo_getFilePointer, meminfo_seek, meminfo_read, meminfo_write, meminfo_close, meminfo_map, meminfo_canMap, meminfo_ioctl, meminfo_setAsync, meminfo_isAsync, meminfo_isWriteReady, meminfo_isReadReady};

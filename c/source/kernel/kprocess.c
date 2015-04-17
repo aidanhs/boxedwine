@@ -841,7 +841,7 @@ void signalProcess(struct KProcess* process, U32 signal) {
 	struct KThread* thread = 0;
 	U32 threadIndex = 0;
 
-	process->pendingSignals |= (1 << signal);
+	process->pendingSignals |= (1 << (signal-1));
 
 	// give each thread a chance to run a signal, some or all of them might have the signal masked off.  
 	// In that case when the user unmasks the signal with sigprocmask it will be caught then

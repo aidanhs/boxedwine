@@ -368,6 +368,15 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return 0;
 }
 
+void fb_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+	if (isAsync)
+		kwarn("fb_setAsync not implemented");
+}
+
+BOOL fb_isAsync(struct OpenNode* node, struct KProcess* process) {
+	return 0;
+}
+
 BOOL fb_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -397,7 +406,7 @@ BOOL fb_canMap(struct OpenNode* node) {
 	return TRUE;
 }
 
-struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_isWriteReady, fb_isReadReady};
+struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_setAsync, fb_isAsync, fb_isWriteReady, fb_isReadReady};
 
 void flipFB() {
 	if (updateAvailable) {
