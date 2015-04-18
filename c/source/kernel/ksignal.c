@@ -39,14 +39,18 @@ U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
     if (set!=0) {
         set = readd(thread->process->memory, set);
         if (how == K_SIG_BLOCK) {
+			klog("SIG_BLOCK %X", set);
             thread->sigMask|=set;
         } else if (how == K_SIG_UNBLOCK) {
+			klog("SIG_UNBLOCK %X", set);
             thread->sigMask&=~set;
         } else if (how == K_SIG_SETMASK) {
+			klog("SIG_SETMASK %X", set);
             thread->sigMask = set;
         } else {
             kpanic("sigprocmask how %d unsupported", how);
         }
+		klog("sigMask=%X", thread->sigMask);
     }
     runSignals(thread);
 	return 0;

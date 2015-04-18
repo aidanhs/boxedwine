@@ -13,6 +13,7 @@
 #define WAIT_FD 2
 #define WAIT_SLEEP 3
 #define WAIT_FLOCK 4
+#define WAIT_FUTEX 5
 
 #define MAX_POLL_DATA 128
 

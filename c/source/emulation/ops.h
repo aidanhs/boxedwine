@@ -1034,7 +1034,7 @@ void sahf(struct CPU* cpu, struct Op* op) {
 }
 
 void lahf(struct CPU* cpu, struct Op* op) {
-	cpu->inst = FLAGS_NONE;
+	fillFlags(cpu);
 	AH = cpu->flags & (SF|ZF|AF|PF|CF);
 	CYCLES(2);
 	NEXT();

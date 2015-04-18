@@ -2,6 +2,14 @@
 
 #define FMASK_TEST (CF | PF | AF | ZF | SF | OF)    
 
+//#define LOG_FPU
+
+#ifdef LOG_FPU
+#define LOG klog
+#else
+#define LOG
+#endif
+
 #ifdef PLATFORM_MSVC
 #include <float.h>
 #define isnan(x) _isnan(x)
@@ -287,32 +295,68 @@ static void FPU_FBST(struct CPU* cpu, int addr) {
 }
 
 static void FPU_FADD(struct FPU* fpu, int op1, int op2) {
+#ifdef LOG_FPU
+	double d = fpu->regs[op1].d;
+#endif
     fpu->regs[op1].d += fpu->regs[op2].d;
+#ifdef LOG_FPU
+	LOG("FPU_FADD %f + %f = %f", d, fpu->regs[op2].d, fpu->regs[op1].d);
+#endif
     //flags and such :)
 }
 
 static void FPU_FDIV(struct FPU* fpu, int st, int other) {
+#ifdef LOG_FPU
+	double d = fpu->regs[st].d;
+#endif
     fpu->regs[st].d = fpu->regs[st].d / fpu->regs[other].d;
+#ifdef LOG_FPU
+	LOG("FPU_FDIV %f / %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
+#endif
     //flags and such :)
 }
 
 static void FPU_FDIVR(struct FPU* fpu, int st, int other) {
+#ifdef LOG_FPU
+	double d = fpu->regs[st].d;
+#endif
     fpu->regs[st].d = fpu->regs[other].d / fpu->regs[st].d;
+#ifdef LOG_FPU
+	LOG("FPU_FDIVR %f / %f = %f", fpu->regs[other].d, d, fpu->regs[st].d, );
+#endif
     // flags and such :)
 }
 
 static void FPU_FMUL(struct FPU* fpu, int st, int other) {
+#ifdef LOG_FPU
+	double d = fpu->regs[st].d;
+#endif
     fpu->regs[st].d *= fpu->regs[other].d;
+#ifdef LOG_FPU
+	LOG("FPU_FMUL %f * %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
+#endif
     //flags and such :)
 }
 
 static void FPU_FSUB(struct FPU* fpu, int st, int other) {
+#ifdef LOG_FPU
+	double d = fpu->regs[st].d;
+#endif
     fpu->regs[st].d = fpu->regs[st].d - fpu->regs[other].d;
+#ifdef LOG_FPU
+	LOG("FPU_FSUB %f - %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
+#endif
     //flags and such :)
 }
 
 static void FPU_FSUBR(struct FPU* fpu, int st, int other) {
+#ifdef LOG_FPU
+	double d = fpu->regs[st].d;
+#endif
     fpu->regs[st].d = fpu->regs[other].d - fpu->regs[st].d;
+#ifdef LOG_FPU
+	LOG("FPU_FSUBR %f - %f = %f", fpu->regs[other].d, d, fpu->regs[st].d);
+#endif
     //flags and such :)
 }
 

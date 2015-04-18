@@ -439,8 +439,12 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	if (family==K_AF_UNIX) {
 		char localPath[MAX_FILEPATH_LEN];
 		char nativePath[MAX_FILEPATH_LEN];
-		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, socketAddressName(thread, address, len), localPath, nativePath);
+		const char* name = socketAddressName(thread, address, len);
+		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, name, localPath, nativePath);
 
+	//	if (!name || !name[0]) {
+	//		return -K_ENOENT;
+	//	}
 		if (node && node->nodeType->exists(node)) {
 			return -K_EADDRINUSE;
 		}
@@ -607,6 +611,8 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	}
 
 	connection->connection = resultSocket;
+	//connection->connected = 1; this will be handled when the connecting thread is unblocked
+	resultSocket->connected = 1;
 	resultSocket->connection = connection;
 	connection->inClosed = FALSE;
 	connection->outClosed = FALSE;

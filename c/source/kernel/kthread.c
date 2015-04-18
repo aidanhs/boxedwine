@@ -62,7 +62,7 @@ void initThread(struct KThread* thread, struct KProcess* process) {
 	initCPU(&thread->cpu, process->memory);
 	thread->process = process;
 	thread->id = processAddThread(process, thread);
-	thread->sigMask = -1;
+	thread->sigMask = 0;
 	setupStack(thread);
 }
 
@@ -97,7 +97,7 @@ void exitThread(struct KThread* thread, U32 status) {
 
 struct futex {
 	struct KThread* thread;
-	U32 address;
+	U8* address;
 	U32 expireTimeInMillies;
 	BOOL wake;
 };
@@ -106,7 +106,7 @@ struct futex {
 
 struct futex system_futex[MAX_FUTEXES];
 
-struct futex* getFutex(struct KThread* thread, U32 address) {
+struct futex* getFutex(struct KThread* thread, U8* address) {
 	int i=0;
 
 	for (i=0;i<MAX_FUTEXES;i++) {
@@ -116,7 +116,7 @@ struct futex* getFutex(struct KThread* thread, U32 address) {
 	return 0;
 }
 
-struct futex* allocFutex(struct KThread* thread, U32 address, U32 millies) {
+struct futex* allocFutex(struct KThread* thread, U8* address, U32 millies) {
 	int i=0;
 
 	for (i=0;i<MAX_FUTEXES;i++) {
@@ -146,11 +146,11 @@ void threadClearFutexes(struct KThread* thread) {
 	}
 }
 
-U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime) {
+U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
 	struct Memory* memory = thread->process->memory;
-
+	U8* ramAddress = getPhysicalAddress(memory, addr);
 	if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
-		struct futex* f=getFutex(thread, address);
+		struct futex* f=getFutex(thread, ramAddress);
 		U32 millies;
 
 		if (f) {
@@ -162,6 +162,13 @@ U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pT
 				freeFutex(f);
 				return -K_ETIMEDOUT;
 			}
+			thread->waitType = WAIT_FUTEX;
+			thread->timer.process = thread->process;
+			thread->timer.thread = thread;
+			thread->timer.millies = f->expireTimeInMillies;
+			if (f->expireTimeInMillies<0xF0000000)
+				thread->timer.millies+=thread->waitStartTime;
+			addTimer(&thread->timer);
 			return -K_WAIT;
 		}
         if (pTime == 0) {
@@ -171,16 +178,24 @@ U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pT
             U32 nano = readd(memory, pTime + 4);
             millies = seconds * 1000 + nano / 1000000 + getMilliesSinceStart();
         }
-        if (readd(memory, address) != value) {
+        if (readd(memory, addr) != value) {
 			return -K_EWOULDBLOCK;
         }
-		allocFutex(thread, address, millies);
+		allocFutex(thread, ramAddress, millies);
+		thread->waitStartTime = getMilliesSinceStart();			
+		thread->waitType = WAIT_FUTEX;
+		thread->timer.process = thread->process;
+		thread->timer.thread = thread;
+		thread->timer.millies = f->expireTimeInMillies;
+		if (f->expireTimeInMillies<0xF0000000)
+			thread->timer.millies+=thread->waitStartTime;
+		addTimer(&thread->timer);
         return -K_WAIT;
     } else if (op==FUTEX_WAKE_PRIVATE || op==FUTEX_WAKE) {
 		int i;
 		U32 count = 0;
 		for (i=0;i<MAX_FUTEXES && count<value;i++) {
-			if (system_futex[i].address==address && !system_futex[i].wake) {
+			if (system_futex[i].address==ramAddress && !system_futex[i].wake) {
 				system_futex[i].wake = TRUE;
 				wakeThread(system_futex[i].thread);				
 				count++;
@@ -214,8 +229,8 @@ void runSignal(struct KThread* thread, U32 signal) {
     if (action->handler==K_SIG_DFL) {
 
     } else if (action->handler != K_SIG_IGN) {
-        U32 stackBeforeSignal = thread->cpu.reg[4].u32;
-		U32 eip = thread->cpu.eip.u32;
+		struct CPU savedState;
+		memcpy(&savedState, &thread->cpu, sizeof(struct CPU));
         if (thread->alternateStack!=0) {
             thread->cpu.reg[4].u32 = thread->alternateStack;
         }
@@ -225,8 +240,7 @@ void runSignal(struct KThread* thread, U32 signal) {
 		while (thread->cpu.eip.u32) {
 			runCPU(&thread->cpu);
 		}
-		thread->cpu.reg[4].u32 = stackBeforeSignal;
-		thread->cpu.eip.u32 = eip;
+		memcpy(&thread->cpu, &savedState, sizeof(struct CPU));
     }
     thread->process->pendingSignals &= ~(1 << (signal - 1));
 }

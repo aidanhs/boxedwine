@@ -77,11 +77,13 @@ BOOL kfile_isOpen(struct KObject* obj) {
 }
 
 BOOL kfile_isReadReady(struct KObject* obj) {
-	return TRUE;
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	return openNode->access->isReadReady(openNode);
 }
 
 BOOL kfile_isWriteReady(struct KObject* obj) {
-	return TRUE;
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	return openNode->access->isWriteReady(openNode);
 }
 
 U32  kfile_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {

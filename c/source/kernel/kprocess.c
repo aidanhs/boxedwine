@@ -947,6 +947,6 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 	target = processGetThreadById(process, threadId);
 	if (!target)
 		return -K_ESRCH;
-	//runSignal(target, signal);
+	runSignal(target, signal);
 	return 0;
 }

@@ -130,6 +130,7 @@ int main(int argc, char **argv) {
 	addVirtualFile("/proc/cmdline", &bufferAccess, K__S_IREAD); // kernel command line
 	addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/input/event3", &touchInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
+	addVirtualFile("/dev/input/event4", &keyboardInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
 
 	argc = argc-i;
 	if (argc==0) {

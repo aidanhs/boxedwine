@@ -5,6 +5,8 @@
 #include "platform.h"
 
 extern struct NodeAccess touchInputAccess;
+extern struct NodeAccess keyboardInputAccess;
+extern struct NodeAccess mouseInputAccess;
 
 void onMouseMove(U32 x, U32 y);
 

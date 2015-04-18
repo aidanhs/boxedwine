@@ -407,7 +407,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_setitimer:
 		result = syscall_setitimer(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_setitimer which=%d newValue=%d oldValue=%d result=%d", ARG1, ARG2, ARG3, result);
+		LOG("__NR_setitimer which=%d newValue=%d(%d.%.06d) oldValue=%d result=%d", ARG1, ARG2, (ARG2?readd(memory, ARG2+8):0), (ARG2?readd(memory, ARG2+12):0), ARG3, result);
 		break;
 	case __NR_ipc:
         if (ARG1 == 23) { // IPCOP_shmget
