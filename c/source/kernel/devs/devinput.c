@@ -190,7 +190,7 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Op
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
             if (len<4)
-                kpanic("Bad length for EVIOCGBIT");
+                kpanic("Bad length for EVIOCGBIT: %d", len);
             writed(memory, buffer, queue->mask);
             return 4;
         }

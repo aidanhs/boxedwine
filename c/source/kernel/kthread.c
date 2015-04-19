@@ -23,7 +23,6 @@ struct KThread* allocThread() {
 }
 
 void freeThread(struct KThread* thread) {
-	struct KProcess* process = thread->process;
 	processRemoveThread(thread->process, thread);
 	if (thread->waitType!=WAIT_NONE) {
 		wakeThread(thread);

@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <direct.h>
+#include DIRS
 
 U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);

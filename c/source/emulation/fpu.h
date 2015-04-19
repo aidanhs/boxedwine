@@ -44,6 +44,17 @@ struct FPU_Float {
 #define FPU_GET_TOP(fpu) (((fpu)->sw & 0x3800) >> 11)
 #define FPU_SET_TOP(fpu, val) (fpu)->sw &= ~0x3800; (fpu)->sw |= (val & 7) << 11
 
+#ifdef LOG_FPU
+void LOG_STACK(struct FPU* fpu) {
+	U32 i;
+
+	for (i=0;i<8;i++) {
+		LOG("    %f %d %d", fpu->regs[STV(fpu, i)].d, fpu->tags[STV(fpu, i)], STV(fpu, i));
+	}
+	LOG("    %f %d %d", fpu->regs[8].d, fpu->tags[8], 8);
+}
+#endif
+
 void FPU_SetTag(struct FPU* fpu, U32 tag) {
 	int i;
     for (i = 0; i < 8; i++)
@@ -148,6 +159,9 @@ static double FPU_FLD80(U64 eind, U32 begin) {
         //Detect INF and -INF (score 3.11 when drawing a slur.)
         result.d = sign ? -HUGE_VAL : HUGE_VAL;
     }
+#ifdef LOG_FPU
+	LOG("FPU_FLD80 %f", result.d);
+#endif
     return result.d;
 
     //mant64= test.mant80/2***64    * 2 **53
@@ -176,10 +190,19 @@ static void FPU_FLD_F32(struct FPU* fpu, U32 value, int store_to) {
 	struct FPU_Float f;
 	f.i = value;
     fpu->regs[store_to].d = f.f;
+#ifdef LOG_FPU
+	LOG("FPU_FLD_F32 %f", f.f);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FLD_F64(struct FPU* fpu, U64 value, int store_to) {
     fpu->regs[store_to].l = value;
+#ifdef LOG_FPU
+	LOG("FPU_FLD_F64 %f", fpu->regs[store_to].d);
+	LOG_STACK(fpu);
+#endif
+
 }
 
 static void FPU_FLD_F80(struct FPU* fpu, U64 low, U32 high) {
@@ -188,10 +211,18 @@ static void FPU_FLD_F80(struct FPU* fpu, U64 low, U32 high) {
 
 static void FPU_FLD_I16(struct FPU* fpu, S16 value, int store_to) {
     fpu->regs[store_to].d = value;
+#ifdef LOG_FPU
+	LOG("FPU_FLD_I16 %d -> %f", value, fpu->regs[store_to].d);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FLD_I32(struct FPU* fpu, S32 value, int store_to) {
     fpu->regs[store_to].d = value;
+#ifdef LOG_FPU
+	LOG("FPU_FLD_I32 %d -> %f", value, fpu->regs[store_to].d);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FLD_I64(struct FPU* fpu, S64 value, int store_to) {
@@ -219,6 +250,10 @@ static void FPU_FBLD(struct FPU* fpu, U8 data[], int store_to) {
 	temp += ( (in&0xf) * base );
 	if(in&0x80) temp *= -1.0;
 	fpu->regs[store_to].d = temp; 
+#ifdef LOG_FPU
+	LOG("FPU_FBLD %c%c%c%c%c%c%c%c%c%c -> %f", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], data[8], data[9], fpu->regs[store_to].d);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FLD_F32_EA(struct CPU* cpu, U32 address) {
@@ -253,11 +288,21 @@ static void FPU_FST_F80(struct CPU* cpu, int addr) {
 }
 
 static void FPU_FST_I16(struct CPU* cpu, int addr) {
-	writew(cpu->memory, addr, (S16) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
+	S16 value = (S16) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d));
+	writew(cpu->memory, addr, value);
+#ifdef LOG_FPU
+	LOG("FPU_FST_I16 %f -> %d", cpu->fpu.regs[cpu->fpu.top].d, value);
+	LOG_STACK(&cpu->fpu);
+#endif
 }
 
 static void FPU_FST_I32(struct CPU* cpu, int addr) {
-	writed(cpu->memory, addr, (S32) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
+	S32 value = (S32) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d));
+	writed(cpu->memory, addr, value);
+#ifdef LOG_FPU
+	LOG("FPU_FST_I32 %f -> %d", cpu->fpu.regs[cpu->fpu.top].d, value);
+	LOG_STACK(&cpu->fpu);
+#endif
 }
 
 static void FPU_FST_I64(struct CPU* cpu, int addr) {
@@ -301,6 +346,7 @@ static void FPU_FADD(struct FPU* fpu, int op1, int op2) {
     fpu->regs[op1].d += fpu->regs[op2].d;
 #ifdef LOG_FPU
 	LOG("FPU_FADD %f + %f = %f", d, fpu->regs[op2].d, fpu->regs[op1].d);
+	LOG_STACK(fpu);
 #endif
     //flags and such :)
 }
@@ -311,7 +357,11 @@ static void FPU_FDIV(struct FPU* fpu, int st, int other) {
 #endif
     fpu->regs[st].d = fpu->regs[st].d / fpu->regs[other].d;
 #ifdef LOG_FPU
+	if (fpu->regs[other].d==0.0) {
+		LOG("*** FPU DIVIDE BY ZERO ***");
+	}
 	LOG("FPU_FDIV %f / %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
+	LOG_STACK(fpu);
 #endif
     //flags and such :)
 }
@@ -322,7 +372,11 @@ static void FPU_FDIVR(struct FPU* fpu, int st, int other) {
 #endif
     fpu->regs[st].d = fpu->regs[other].d / fpu->regs[st].d;
 #ifdef LOG_FPU
-	LOG("FPU_FDIVR %f / %f = %f", fpu->regs[other].d, d, fpu->regs[st].d, );
+	if (d==0.0) {
+		LOG("*** FPU DIVIDE BY ZERO ***");
+	}
+	LOG("FPU_FDIVR %f / %f = %f", fpu->regs[other].d, d, fpu->regs[st].d);
+	LOG_STACK(fpu);
 #endif
     // flags and such :)
 }
@@ -334,6 +388,7 @@ static void FPU_FMUL(struct FPU* fpu, int st, int other) {
     fpu->regs[st].d *= fpu->regs[other].d;
 #ifdef LOG_FPU
 	LOG("FPU_FMUL %f * %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
+	LOG_STACK(fpu);
 #endif
     //flags and such :)
 }
@@ -345,6 +400,7 @@ static void FPU_FSUB(struct FPU* fpu, int st, int other) {
     fpu->regs[st].d = fpu->regs[st].d - fpu->regs[other].d;
 #ifdef LOG_FPU
 	LOG("FPU_FSUB %f - %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
+	LOG_STACK(fpu);
 #endif
     //flags and such :)
 }
@@ -356,6 +412,7 @@ static void FPU_FSUBR(struct FPU* fpu, int st, int other) {
     fpu->regs[st].d = fpu->regs[other].d - fpu->regs[st].d;
 #ifdef LOG_FPU
 	LOG("FPU_FSUBR %f - %f = %f", fpu->regs[other].d, d, fpu->regs[st].d);
+	LOG_STACK(fpu);
 #endif
     //flags and such :)
 }
@@ -367,11 +424,20 @@ static void FPU_FXCH(struct FPU* fpu, int st, int other) {
     fpu->regs[other].d = fpu->regs[st].d;
     fpu->tags[st] = tag;
     fpu->regs[st].d = reg;
+#ifdef LOG_FPU
+	LOG("    FPU_FXCH %f <-> %f", fpu->regs[other].d, fpu->regs[st].d);
+	LOG("    after");
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FST(struct FPU* fpu, int st, int other) {
     fpu->tags[other] = fpu->tags[st];
     fpu->regs[other].d = fpu->regs[st].d;
+#ifdef LOG_FPU
+	LOG("FPU_FST %f", fpu->regs[st].d);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void setFlags(struct CPU* cpu, int newFlags) {
@@ -431,8 +497,13 @@ static void FPU_FUCOM(struct FPU* fpu, int st, int other) {
 }
 
 static void FPU_FRNDINT(struct FPU* fpu) {        
-    S64 temp = (S64) (FROUND(fpu, fpu->regs[fpu->top].d));
+	double value = fpu->regs[fpu->top].d;
+    S64 temp = (S64)FROUND(fpu, value);
     fpu->regs[fpu->top].d = (double) (temp);
+#ifdef LOG_FPU
+	LOG("FPU_FRNDINT %d -> %d", value, fpu->regs[fpu->top].d);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FPREM(struct FPU* fpu) {        
@@ -447,6 +518,13 @@ static void FPU_FPREM(struct FPU* fpu) {
 	FPU_SET_C3(fpu, (int)(ressaved & 2));
 	FPU_SET_C1(fpu, (int)(ressaved & 1));
 	FPU_SET_C2(fpu, 0); 
+#ifdef LOG_FPU
+	if (valdiv==0.0) {
+		LOG("*** FPU DIVIDE BY ZERO ***");
+	}
+	LOG("FPU_FPREM %f / %f r=%f", valtop, valdiv, fpu->regs[fpu->top].d);
+	LOG_STACK(fpu);
+#endif
 }
 
 static void FPU_FPREM1(struct FPU* fpu) {        
@@ -516,7 +594,9 @@ static void FPU_FYL2XP1(struct FPU* fpu) {
 }
 
 static void FPU_FSCALE(struct FPU* fpu) {
-    fpu->regs[fpu->top].d *= pow(2.0, (double) ((S64) (fpu->regs[STV(fpu, 1)].d)));
+	double value = fpu->regs[STV(fpu, 1)].d;
+	S64 chopped = (S64)value;
+    fpu->regs[fpu->top].d *= pow(2.0, (double)chopped);
     //2^x where x is chopped.
 }
 
@@ -948,6 +1028,11 @@ void FLD_STi(struct CPU* cpu, struct Op* op) {
 }
 
 void FXCH_STi(struct CPU* cpu, struct Op* op) {
+#ifdef LOG_FPU
+	LOG("FXCH_STi %d,%d(%d)", cpu->fpu.top, STV(&cpu->fpu, op->r1), op->r1); 
+	LOG("    before");
+	LOG_STACK(&cpu->fpu);
+#endif
     FPU_FXCH(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();

@@ -174,9 +174,6 @@ BOOL runSlice() {
 	if (nextThread) {		
 		currentThread = (struct KThread*)nextThread->data;
 		nextThread = nextThread->next;
-		if (nextThread->data == currentThread) {
-			int ii=0;
-		}
 		runThreadSlice(currentThread);
 		return TRUE;
 	}
