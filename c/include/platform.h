@@ -27,12 +27,14 @@
 #define UNISTD <io.h>
 #define UTIME <sys/utime.h>
 #define CURDIR <direct.h>
+#define MKDIR <direct.h>
 #define RMDIR <direct.h>
 #else
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
-#define CURDIRS <unistd.h>
-#define RMDIR <sys/stat.h>
+#define CURDIR <unistd.h>
+#define MKDIR <sys/stat.h>
+#define RMDIR <unistd.h>
 #define O_BINARY 0
 #endif
 
