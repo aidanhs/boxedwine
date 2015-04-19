@@ -15,8 +15,8 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include RMDIR
-#include MKDIR
+#include RMDIR_INCLUDE
+#include MKDIR_INCLUDE
 
 U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
@@ -478,7 +478,7 @@ U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
 	if (node->nodeType->exists(node)) {
 		return -K_EEXIST;
 	}
-	if (mkdir(node->path.nativePath)!=0)
+	if (MKDIR(node->path.nativePath)!=0)
 		return -K_EACCES;
 	return 0;
 }

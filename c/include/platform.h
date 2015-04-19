@@ -26,15 +26,17 @@
 #define getcwd _getcwd
 #define UNISTD <io.h>
 #define UTIME <sys/utime.h>
-#define CURDIR <direct.h>
-#define MKDIR <direct.h>
-#define RMDIR <direct.h>
+#define CURDIR_INCLUDE <direct.h>
+#define MKDIR_INCLUDE <direct.h>
+#define RMDIR_INCLUDE <direct.h>
+#define MKDIR(x) mkdir(x)
 #else
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
-#define CURDIR <unistd.h>
-#define MKDIR <sys/stat.h>
-#define RMDIR <unistd.h>
+#define CURDIR_INCLUDE <unistd.h>
+#define MKDIR_INCLUDE <sys/stat.h>
+#define RMDIR_INCLUDE <unistd.h>
+#define MKDIR(x) mkdir(x, 0777)
 #define O_BINARY 0
 #endif
 

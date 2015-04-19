@@ -24,7 +24,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include CURDIR
+#include CURDIR_INCLUDE
 
 #ifndef __TEST
 
