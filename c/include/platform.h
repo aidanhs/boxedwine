@@ -26,11 +26,13 @@
 #define getcwd _getcwd
 #define UNISTD <io.h>
 #define UTIME <sys/utime.h>
-#define DIRS <direct.h>
+#define CURDIR <direct.h>
+#define RMDIR <direct.h>
 #else
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
-#define DIRS <unistd.h>
+#define CURDIRS <unistd.h>
+#define RMDIR <sys/stat.h>
 #define O_BINARY 0
 #endif
 
