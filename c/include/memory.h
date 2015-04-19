@@ -45,6 +45,7 @@ void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
 char* getNativeString(struct Memory* memory, U32 address);
 char* getNativeString2(struct Memory* memory, U32 address);
 void writeNativeString(struct Memory* memory, U32 address, const char* str);
+U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len);
 
 // values in the upper byte of data
 #define PAGE_READ 0x01

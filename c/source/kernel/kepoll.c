@@ -157,9 +157,6 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
 	if (fd==epfd || epollFD->kobject->type != KTYPE_EPOLL) {
         return -K_EINVAL;
     }
-	if (op==2) {
-		int ii=0;
-	}
 	existing = (struct KEpoll*)epollFD->kobject->data;
 	while (existing) {
 		if (existing->fd == fd)

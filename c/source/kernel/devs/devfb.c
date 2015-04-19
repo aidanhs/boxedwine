@@ -355,9 +355,6 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		case 0x4606: { // FBIOPAN_DISPLAY
 			struct fb_var_screeninfo fb;
 			readVarInfo(thread->process->memory, IOCTL_ARG1, &fb);
-			if (fb.yoffset!=0) {
-				int ii=0;
-			}
 			break;
 		}
 		case 0x4611: // FBIOBLANK

@@ -183,8 +183,7 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Op
         case 0x4506: { // EVIOCGNAME
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-			writeNativeString(memory, buffer, queue->name);
-            return strlen(queue->name);
+			return writeNativeString2(memory, buffer, queue->name, len);
         }
         case 0x4520: { // EVIOCGBIT
             U32 len = (request & 0x1fff0000) >> 16;

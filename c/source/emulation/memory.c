@@ -327,6 +327,19 @@ void writeNativeString(struct Memory* memory, U32 address, const char* str) {
 	writeb(memory, address, 0);
 }
 
+U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len) {	
+	U32 count=0;
+
+	while (*str && count<len-1) {
+		writeb(memory, address, *str);
+		str++;
+		address++;
+		count++;
+	}
+	writeb(memory, address, 0);
+	return count;
+}
+
 static char tmpBuffer[1024];
 
 char* getNativeString(struct Memory* memory, U32 address) {
