@@ -240,6 +240,10 @@ void runSignal(struct KThread* thread, U32 signal) {
 			runCPU(&thread->cpu);
 		}
 		memcpy(&thread->cpu, &savedState, sizeof(struct CPU));
+		if (thread->waitType != WAIT_NONE) {
+			thread->ranSignal = signal;
+			wakeThread(thread);
+		}
     }
     thread->process->pendingSignals &= ~(1 << (signal - 1));
 }

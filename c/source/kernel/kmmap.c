@@ -55,7 +55,9 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return -K_EINVAL;
         }
     } else {
-        if (pageStart == 0 || pageStart+pageCount> ADDRESS_PROCESS_STACK_START)
+		if (pageStart+pageCount> ADDRESS_PROCESS_STACK_START)
+            return -K_ENOMEM;
+        if (pageStart == 0)
             pageStart = ADDRESS_PROCESS_MMAP_START;
         if (!findFirstAvailablePage(memory, pageStart, pageCount, &pageStart)) {
 			// :TODO: what erro

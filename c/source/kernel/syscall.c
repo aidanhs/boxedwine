@@ -735,7 +735,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	default:
 		kpanic("Unknown syscall %d", EAX);
 		break;
-	}
+	}	
 	if (result==-K_CONTINUE) {
 		CYCLES(1);
 	} else if (result==-K_WAIT) {
@@ -745,5 +745,6 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		EAX = result;
 		cpu->eip.u32+=op->eipCount;
 		CYCLES(1);
-	}	
+	}
+	thread->ranSignal = 0;
 }

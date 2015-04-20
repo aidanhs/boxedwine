@@ -202,7 +202,7 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Op
 void input_setAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
 	if (isAsync) {
 		if (queue->asyncProcessId && queue->asyncProcessId!=process->id) {
-			kwarn("touch_setAsync only supports one process: %d tried to attached but %d already has it", process->id, queue->asyncProcessId);
+			kpanic("touch_setAsync only supports one process: %d tried to attached but %d already has it", process->id, queue->asyncProcessId);
 		} else {
 			queue->asyncProcessId = process->id;
 		}

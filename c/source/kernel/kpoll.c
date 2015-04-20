@@ -36,12 +36,12 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 	if (timeout==0) {
 		thread->waitStartTime = 0;
 		return 0;
-	}
+	}	
 	if (thread->waitStartTime) {
 		if (getMilliesSinceStart() - thread->waitStartTime > timeout) {
 			thread->waitStartTime = 0;
 			return 0;
-		}
+		}		
 		thread->waitType = WAIT_FD;
 		thread->timer.process = thread->process;
 		thread->timer.thread = thread;
@@ -49,7 +49,7 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 			timeout+=thread->waitStartTime;
 		thread->timer.millies = timeout;
 		addTimer(&thread->timer);
-	} else {
+	} else {		
 		thread->waitStartTime = getMilliesSinceStart();
 		thread->waitType = WAIT_FD;
 
@@ -59,6 +59,13 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 			timeout+=thread->waitStartTime;
 		thread->timer.millies = timeout;
 		addTimer(&thread->timer);
+	}
+	if (thread->ranSignal) {			
+		thread->waitType = WAIT_NONE;
+		if (thread->timer.active) {
+			removeTimer(&thread->timer);
+		}
+		return -K_EINTR;
 	}
 	return -K_WAIT;
 }
