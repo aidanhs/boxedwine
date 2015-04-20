@@ -9,6 +9,8 @@ extern struct NodeAccess keyboardInputAccess;
 extern struct NodeAccess mouseInputAccess;
 
 void onMouseMove(U32 x, U32 y);
+void onMouseButtonDown(U32 button);
+void onMouseButtonUp(U32 button);
 
 #define K_EV_SYN                 0x00
 #define K_EV_KEY                 0x01

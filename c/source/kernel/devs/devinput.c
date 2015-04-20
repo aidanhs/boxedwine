@@ -620,6 +620,40 @@ void onMouseMove(U32 x, U32 y) {
 }
 */
 
+void onMouseButtonUp(U32 button) {
+	if (button == 0)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 0);
+    else if (button == 2)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 0);
+    else if (button == 1)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_RIGHT, 0);
+    else
+        return;
+    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0);
+    if (touchEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+		if (process)
+			signalProcess(process, K_SIGIO);
+    }
+}
+
+void onMouseButtonDown(U32 button) {
+	if (button == 0)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 1);
+    else if (button == 2)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 1);
+    else if (button == 1)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_RIGHT, 1);
+    else
+        return;
+    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0);
+    if (touchEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+		if (process)
+			signalProcess(process, K_SIGIO);
+    }
+}
+
 void onMouseMove(U32 x, U32 y) {
 	U32 send = 0;
 

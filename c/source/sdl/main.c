@@ -151,8 +151,24 @@ int main(int argc, char **argv) {
 			while (SDL_PollEvent(&e)) {
 				if (e.type == SDL_QUIT) {
 					SDL_Quit();
-				} else if( e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP ) { 
-					onMouseMove(e.button.x, e.button.y);
+				} else if (e.type == SDL_MOUSEMOTION) { 
+					onMouseMove(e.motion.x, e.motion.y);
+				} else if (e.type == SDL_MOUSEBUTTONDOWN) {
+					if (e.button.button==SDL_BUTTON_LEFT) {
+						onMouseButtonDown(0);
+					} else if (e.button.button == SDL_BUTTON_MIDDLE) {
+						onMouseButtonDown(2);
+					} else if (e.button.button == SDL_BUTTON_RIGHT) {
+						onMouseButtonDown(1);
+					}
+				} else if (e.type == SDL_MOUSEBUTTONUP) {
+					if (e.button.button==SDL_BUTTON_LEFT) {
+						onMouseButtonUp(0);
+					} else if (e.button.button == SDL_BUTTON_MIDDLE) {
+						onMouseButtonUp(2);
+					} else if (e.button.button == SDL_BUTTON_RIGHT) {
+						onMouseButtonUp(1);
+					}
 				}
 			};
 			if (!ran)
