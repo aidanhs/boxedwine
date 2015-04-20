@@ -1832,14 +1832,14 @@ void FFREE_STi(struct CPU* cpu, struct Op* op) {
 }
 
 void FUCOM_STi(struct CPU* cpu, struct Op* op) {
-    FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
-    FPU_FPOP(&cpu->fpu);
+    FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));    
 	CYCLES(1);
 	NEXT();
 }
 
 void FUCOM_STi_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
+	FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
