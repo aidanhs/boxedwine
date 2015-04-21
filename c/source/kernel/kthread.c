@@ -229,6 +229,12 @@ void runSignal(struct KThread* thread, U32 signal) {
 
     } else if (action->handler != K_SIG_IGN) {
 		struct CPU savedState;
+
+		if (thread->waitType != WAIT_NONE) {
+			thread->interrupted = 1;
+			wakeThread(thread);
+		}
+
 		memcpy(&savedState, &thread->cpu, sizeof(struct CPU));
         if (thread->alternateStack!=0) {
             thread->cpu.reg[4].u32 = thread->alternateStack;
@@ -236,14 +242,12 @@ void runSignal(struct KThread* thread, U32 signal) {
 		push32(&thread->cpu, signal);
 		push32(&thread->cpu, 0); // return address
         thread->cpu.eip.u32 = action->handler;
+		thread->inSignal = 1;
 		while (thread->cpu.eip.u32) {
 			runCPU(&thread->cpu);
 		}
 		memcpy(&thread->cpu, &savedState, sizeof(struct CPU));
-		if (thread->waitType != WAIT_NONE) {
-			thread->ranSignal = signal;
-			wakeThread(thread);
-		}
+		thread->inSignal = 0;
     }
     thread->process->pendingSignals &= ~(1 << (signal - 1));
 }

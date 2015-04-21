@@ -18,6 +18,7 @@ const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
 	struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
 
+	*isElf=TRUE;
 	if (len!=sizeof(buffer)) {
 		*isElf=FALSE;
 	}

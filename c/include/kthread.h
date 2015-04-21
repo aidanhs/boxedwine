@@ -29,7 +29,8 @@ struct KThread {
 	struct KCNode* scheduledNode;
 	struct KListNode* waitNode;
 	struct KThread* nextFreeThread;
-	U32     ranSignal;
+	U32     interrupted;
+	U32     inSignal;
 	U32     waitType;
 	U32     waitSyscall;
 	U32	    waitStartTime;

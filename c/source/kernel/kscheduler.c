@@ -4,6 +4,7 @@
 #include "devfb.h"
 #include "kcircularlist.h"
 #include "klist.h"
+#include "log.h"
 
 #include <stdio.h>
 
@@ -36,6 +37,9 @@ void removeTimer(struct KTimer* timer) {
 }
 
 void waitThread(struct KThread* thread) {
+	if (thread->inSignal) {
+		kpanic("tried to put a thread to sleep while in a signal");
+	}
 	unscheduleThread(thread);
 	thread->waitNode = addItemToList(&waitingThreads, thread);
 }

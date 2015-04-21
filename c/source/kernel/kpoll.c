@@ -10,7 +10,10 @@
 S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout) {
     S32 result = 0;
 	U32 i;
+	U32 interrupted = !thread->inSignal && thread->interrupted;
 
+	if (interrupted)
+		thread->interrupted = 0;
 	for (i=0;i<count;i++) {
 		struct KFileDescriptor* fd = getFileDescriptor(thread->process, data->fd);
         data->revents = 0;
@@ -41,7 +44,10 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 		if (getMilliesSinceStart() - thread->waitStartTime > timeout) {
 			thread->waitStartTime = 0;
 			return 0;
-		}		
+		}	
+		if (interrupted) {			
+			return -K_EINTR;
+		}
 		thread->waitType = WAIT_FD;
 		thread->timer.process = thread->process;
 		thread->timer.thread = thread;
@@ -50,6 +56,9 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 		thread->timer.millies = timeout;
 		addTimer(&thread->timer);
 	} else {		
+		if (interrupted) {			
+			return -K_EINTR;
+		}
 		thread->waitStartTime = getMilliesSinceStart();
 		thread->waitType = WAIT_FD;
 
@@ -59,13 +68,6 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 			timeout+=thread->waitStartTime;
 		thread->timer.millies = timeout;
 		addTimer(&thread->timer);
-	}
-	if (thread->ranSignal) {			
-		thread->waitType = WAIT_NONE;
-		if (thread->timer.active) {
-			removeTimer(&thread->timer);
-		}
-		return -K_EINTR;
-	}
+	}	
 	return -K_WAIT;
 }

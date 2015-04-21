@@ -6,6 +6,8 @@
 #include "nodeaccess.h"
 #include "kthread.h"
 
+#define FS_BLOCK_SIZE 8192
+
 extern char pathSeperator;
 
 struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing);

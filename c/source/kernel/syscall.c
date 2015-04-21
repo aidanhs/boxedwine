@@ -98,6 +98,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_rt_sigaction 174
 #define __NR_rt_sigprocmask 175
 #define __NR_pread64 180
+#define __NR_pwrite64 181
 #define __NR_getcwd 183
 #define __NR_sigaltstack 186
 #define __NR_ugetrlimit 191
@@ -521,6 +522,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_pread64(thread, ARG1, ARG2, ARG3, ARG4 | ((U64)ARG5) << 32);
 		LOG("__NR_pread64 fd=%d buf=%X len=%d offset=%d result=%d", ARG1, ARG2, ARG3, ARG4, result);
 		break;
+	case __NR_pwrite64:
+		result = syscall_pwrite64(thread, ARG1, ARG2, ARG3, ARG4 | ((U64)ARG5) << 32);
+		LOG("__NR_pwrite64 fd=%d buf=%X len=%d offset=%d result=%d", ARG1, ARG2, ARG3, ARG4, result);
+		break;
 	case __NR_getcwd:
 		result = syscall_getcwd(thread, ARG1, ARG2);
 		LOG("__NR_getcwd buf=%X size=%d result=%d (%s)", ARG1, ARG2, result, getNativeString(memory, ARG1));
@@ -745,6 +750,5 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		EAX = result;
 		cpu->eip.u32+=op->eipCount;
 		CYCLES(1);
-	}
-	thread->ranSignal = 0;
+	}	
 }

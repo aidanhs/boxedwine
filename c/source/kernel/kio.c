@@ -510,8 +510,8 @@ U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
 	}
 	// This seems to be the only fields WINE looks at
     writed(memory, address, 0xEF53); // f_type (EXT3)
-    writed(memory, address+60, 512); // f_frsize
-    writed(memory, address+4, 512); // f_bsize
+    writed(memory, address+60, FS_BLOCK_SIZE); // f_frsize
+    writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
     return 0;
 }
 
@@ -524,8 +524,8 @@ U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address) {
     }
     // This seems to be the only fields WINE looks at
     writed(memory, address, 0xEF53); // f_type (EXT3)
-    writed(memory, address+60, 512); // f_frsize
-    writed(memory, address+4, 512); // f_bsize
+    writed(memory, address+60, FS_BLOCK_SIZE); // f_frsize
+    writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
     return 0;
 }
 
@@ -544,6 +544,25 @@ U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64
 	}
 	pos = fd->kobject->access->seek(fd->kobject, offset);
 	result = fd->kobject->access->read(thread, fd->kobject, thread->process->memory, address, len);
+	fd->kobject->access->seek(fd->kobject, pos);
+	return result;
+}
+
+U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U64 offset) {
+	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
+	S64 pos;
+	U32 result;
+	struct OpenNode* openNode;
+
+	if (fd==0 || fd->kobject->type!=KTYPE_FILE) {
+        return -K_EBADF;
+    }
+	openNode = (struct OpenNode*)fd->kobject->data;
+	if (openNode->node->nodeType->isDirectory(openNode->node)) {
+		return -K_EISDIR;
+	}
+	pos = fd->kobject->access->seek(fd->kobject, offset);
+	result = fd->kobject->access->write(thread, fd->kobject, thread->process->memory, address, len);
 	fd->kobject->access->seek(fd->kobject, pos);
 	return result;
 }

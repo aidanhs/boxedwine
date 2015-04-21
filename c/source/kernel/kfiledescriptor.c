@@ -211,7 +211,7 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
         }
 
 		result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
-		if (result < 0)
+		if (result == -K_WAIT)
 			return result;
 
 		if (readfds)
@@ -221,8 +221,8 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
 		if (errorfds)
 			zeroMemory(memory, errorfds, (nfds+7)/8);
 
-		if (result == 0)
-            return 0;
+		if (result <= 0)
+            return result;
         
 		for (i=0;i<thread->pollCount;i++) {
             U32 found = 0;

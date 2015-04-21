@@ -260,7 +260,7 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 			return FALSE;
 		}
 		surface=SDL_SetVideoMode(windowCX,windowCY,windowBPP, SDL_HWSURFACE);
-
+		SDL_ShowCursor(0);
 		fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
 		fb_fix_screeninfo.type = 0; // FB_TYPE_PACKED_PIXELS
 		fb_fix_screeninfo.smem_start = ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;		

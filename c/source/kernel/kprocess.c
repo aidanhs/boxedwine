@@ -711,7 +711,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	const char* interpreter = 0;
 	struct Node* loaderNode = 0;
 	struct OpenNode* loaderOpenNode = 0;
-	BOOL isElf = TRUE;
+	BOOL isElf = FALSE;
 	struct Node* interpreterNode = 0;
 	struct KThread* processThread;
 	U32 threadIndex = 0;
@@ -720,10 +720,10 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	int preArgCount;
 	char* name;
 
-	if (strstr(first, "wine-preloader")) {
-		argv+=4;
-		first = getNativeString(memory, readd(memory, argv));
-	}
+	//if (strstr(first, "wine-preloader")) {
+	//	argv+=4;
+	//	first = getNativeString(memory, readd(memory, argv));
+	//}
 	node = findInPath(process, first);
 	if (node) {
 		openNode = node->nodeType->open(process, node, K_O_RDONLY);

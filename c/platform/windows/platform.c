@@ -3,6 +3,8 @@
 #include "node.h"
 #include "filesystem.h"
 
+ULONGLONG startTime;
+
 ULONGLONG getSystemTimeAsMicroSeconds() {
 	FILETIME tm;
 	ULONGLONG t;
@@ -10,7 +12,16 @@ ULONGLONG getSystemTimeAsMicroSeconds() {
 	GetSystemTimeAsFileTime( &tm );
 	t = ((ULONGLONG)tm.dwHighDateTime << 32) | (ULONGLONG)tm.dwLowDateTime;
 	t-=116444736000000000l;
-	return t/10;
+	t/=10;
+/*
+	if (!startTime) {
+		startTime = t;
+	} else {
+		ULONGLONG diff = t - startTime;
+		t = startTime+diff/5;
+	}
+*/
+	return t;
 }
 
 

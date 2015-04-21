@@ -577,10 +577,10 @@ BOOL keyboard_isAsync(struct OpenNode* node, struct KProcess* process) {
 
 struct NodeAccess keyboardInputAccess = {keyboard_init, input_length, input_setLength, input_getFilePointer, input_seek, keyboard_read, input_write, keyboard_close, input_map, input_canMap, keyboard_ioctl, keyboard_setAsync, keyboard_isAsync, keyboard_isWriteReady, keyboard_isReadReady};
 
-void queueEvent(struct InputEventQueue* queue, U32 type, U32 code, U32 value) {
+void queueEvent(struct InputEventQueue* queue, U32 type, U32 code, U32 value, U64 time) {
 	struct EventData* data = allocEventData();
 	if (data) {
-		data->time = getSystemTimeAsMicroSeconds();
+		data->time = time;
 		data->type = type;
 		data->code = code;
 		data->value = value;
@@ -618,20 +618,19 @@ void onMouseMove(U32 x, U32 y) {
         }
     }
 }
-*/
 
 void onMouseButtonUp(U32 button) {
 	if (button == 0)
-        queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 0);
+        queueEvent(&mouseEvents, K_EV_KEY, K_BTN_LEFT, 0);
     else if (button == 2)
-        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 0);
+        queueEvent(&mouseEvents, K_EV_KEY, K_BTN_MIDDLE, 0);
     else if (button == 1)
-        queueEvent(&touchEvents, K_EV_KEY, K_BTN_RIGHT, 0);
+        queueEvent(&mouseEvents, K_EV_KEY, K_BTN_RIGHT, 0);
     else
         return;
-    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0);
-    if (touchEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+    queueEvent(&mouseEvents, K_EV_SYN, K_SYN_REPORT, 0);
+    if (mouseEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
 		if (process)
 			signalProcess(process, K_SIGIO);
     }
@@ -639,40 +638,113 @@ void onMouseButtonUp(U32 button) {
 
 void onMouseButtonDown(U32 button) {
 	if (button == 0)
-        queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 1);
+        queueEvent(&mouseEvents, K_EV_KEY, K_BTN_LEFT, 1);
     else if (button == 2)
-        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 1);
+        queueEvent(&mouseEvents, K_EV_KEY, K_BTN_MIDDLE, 1);
     else if (button == 1)
-        queueEvent(&touchEvents, K_EV_KEY, K_BTN_RIGHT, 1);
+        queueEvent(&mouseEvents, K_EV_KEY, K_BTN_RIGHT, 1);
     else
         return;
-    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0);
+    queueEvent(&mouseEvents, K_EV_SYN, K_SYN_REPORT, 0);
+    if (mouseEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
+		if (process)
+			signalProcess(process, K_SIGIO);
+    }
+}
+*/
+
+void onMouseButtonUp(U32 button) {
+	U64 time = getSystemTimeAsMicroSeconds();
+
+	if (button == 0)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 0, time);
+    else if (button == 2)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 0, time);
+    else if (button == 1)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_RIGHT, 0, time);
+    else
+        return;
+    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
     if (touchEvents.asyncProcessId) {
 		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
 		if (process)
 			signalProcess(process, K_SIGIO);
+		wakeThreads(WAIT_FD);
+    }
+}
+
+void onMouseButtonDown(U32 button) {
+	U64 time = getSystemTimeAsMicroSeconds();
+
+	if (button == 0)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 1, time);
+    else if (button == 2)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 1, time);
+    else if (button == 1)
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_RIGHT, 1, time);
+    else
+        return;
+    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
+    if (touchEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+		if (process)
+			signalProcess(process, K_SIGIO);
+		wakeThreads(WAIT_FD);
     }
 }
 
 void onMouseMove(U32 x, U32 y) {
 	U32 send = 0;
+	U64 time = getSystemTimeAsMicroSeconds();
 
     if (x!=lastX) {
         lastX = x;
-        queueEvent(&touchEvents, K_EV_ABS, K_ABS_X, x);
+        queueEvent(&touchEvents, K_EV_ABS, K_ABS_X, x, time);
         send = 1;
     }
     if (y!=lastY) {
         lastY = y;
-        queueEvent(&touchEvents, K_EV_ABS, K_ABS_Y, y);
+        queueEvent(&touchEvents, K_EV_ABS, K_ABS_Y, y, time);
         send = 1;
     }
     if (send) {
-        queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0);
+        queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
         if (touchEvents.asyncProcessId) {
 			struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
 			if (process)
 				signalProcess(process, K_SIGIO);
         }
+		wakeThreads(WAIT_FD);
     }
+}
+
+void onKeyDown(U32 code) {
+	U64 time = getSystemTimeAsMicroSeconds();
+
+    if (code == 0)
+        return;
+    queueEvent(&keyboardEvents, K_EV_KEY, code, 1, time);
+    queueEvent(&keyboardEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
+    if (keyboardEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
+		if (process)
+			signalProcess(process, K_SIGIO);
+    }
+	wakeThreads(WAIT_FD);
+}
+
+void onKeyUp(U32 code) {
+	U64 time = getSystemTimeAsMicroSeconds();
+
+    if (code == 0)
+        return;
+    queueEvent(&keyboardEvents, K_EV_KEY, code, 0, time);
+    queueEvent(&keyboardEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
+    if (keyboardEvents.asyncProcessId) {
+		struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
+		if (process)
+			signalProcess(process, K_SIGIO);
+    }
+	wakeThreads(WAIT_FD);
 }
