@@ -104,7 +104,7 @@ void scheduleThread(struct KThread* thread) {
 void unscheduleThread(struct KThread* thread) {	
 	removeItemFromCircularList(&scheduledThreads, thread->scheduledNode);
 	thread->scheduledNode = 0;
-	thread->cpu.blockCounter = 0xF0000000; // stop running this thread
+	thread->cpu.blockCounter |= 0x80000000; // stop running this thread
 	if (nextThread->data == thread) {
 		nextThread = scheduledThreads.node;
 	}
@@ -144,9 +144,13 @@ void runThreadSlice(struct KThread* thread) {
 	cpu->blockCounter = 0;
 
 	do {
-		runCPU(cpu);
+		if (cpu->nextBlock) {
+			runBlock(cpu, cpu->nextBlock);
+		} else {
+			runCPU(cpu);
+		}
 	} while (cpu->blockCounter < contextTime);
-	cpu->timeStampCounter+=cpu->blockCounter;
+	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }
 
 void runTimers() {
@@ -172,14 +176,28 @@ void runTimers() {
 
 struct KThread* currentThread;
 
+U64 cpuTotalTime;
+U64 cpuTotalCycles;
+
 BOOL runSlice() {
 	runTimers();
 	flipFB();
 	if (nextThread) {		
+		U64 startTime = getSystemTimeAsMicroSeconds();
+		U64 diff;
+
 		currentThread = (struct KThread*)nextThread->data;
-		nextThread = nextThread->next;
+		nextThread = nextThread->next;						
 		runThreadSlice(currentThread);
+		diff = getSystemTimeAsMicroSeconds()-startTime;
+		cpuTotalTime+=diff;
+		cpuTotalCycles+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
+		currentThread->threadTime+=diff;
 		return TRUE;
 	}
 	return FALSE;
+}
+
+U32 getMHz() {
+	return (U32)(cpuTotalCycles/cpuTotalTime);
 }

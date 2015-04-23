@@ -1,12 +1,13 @@
 #include "memory.h"
 #include "log.h"
+#include "block.h"
 #include "op.h"
 
 #include <string.h>
 #include <stdlib.h>
 
 struct CodePageEntry {
-	struct Op* op;
+	struct Block* block;
 	U32 offset;
 	struct CodePageEntry* next;
 };
@@ -24,7 +25,7 @@ static U32 freePageCount;
 static U32* freePages;
 static struct CodePage* codePages;
 
-void addCode(struct Op* op, int ramPage, int offset) {
+void addCode(struct Block* block, int ramPage, int offset) {
 	struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> 5]);
 	if (!*entry) {
 		*entry = (struct CodePageEntry*)malloc(sizeof(struct CodePageEntry));
@@ -35,14 +36,14 @@ void addCode(struct Op* op, int ramPage, int offset) {
 		*entry = add;
 	}
 	(*entry)->offset = offset;
-	(*entry)->op = op;
+	(*entry)->block = block;
 }
 
-struct Op* getCode(int ramPage, int offset) {
+struct Block* getCode(int ramPage, int offset) {
 	struct CodePageEntry* entry = codePages[ramPage].entries[offset >> 5];
 	while (entry) {
 		if (entry->offset == offset)
-			return entry->op;
+			return entry->block;
 		entry = entry->next;
 	}
 	return 0;
@@ -101,7 +102,8 @@ void freeRamPage(int page) {
 		for (i=0;i<CODE_ENTRIES;i++) {
 			struct CodePageEntry* entry = entries[i];
 			while (entry) {
-				freeOp(entry->op);
+				freeBlock(entry->block);
+				freeOp(entry->block->ops);
 				entry = entry->next;
 			}
 		}

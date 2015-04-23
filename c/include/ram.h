@@ -17,8 +17,8 @@ void freeRamPage(int page);
 U8* getAddressOfRamPage(U32 page);
 int getRamRefCount(int page);
 void incrementRamRef(int page);
-void addCode(struct Op* op, int ramPage, int offset);
-struct Op* getCode(int ramPage, int offset);
+void addCode(struct Block* op, int ramPage, int offset);
+struct Block* getCode(int ramPage, int offset);
 U32 getPageCount();
 U32 getFreePageCount();
 

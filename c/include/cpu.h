@@ -26,6 +26,8 @@ struct CPU {
 	U8      oldcf;
 	U8		big;
 	struct FPU     fpu;
+	struct Block* nextBlock;
+	struct Block* currentBlock;
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
 	BOOL log;
@@ -130,8 +132,10 @@ U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
 void initCPU(struct CPU* cpu, struct Memory* memory);
 void onCreateCPU(struct CPU* cpu);
-void runBlock(struct CPU* cpu, struct Op* block);
+void runBlock(struct CPU* cpu, struct Block* block);
 void runCPU(struct CPU* cpu);
+struct Block* getBlock1(struct CPU* cpu);
+struct Block* getBlock2(struct CPU* cpu);
 
 #define FLAGS_NONE 0
 #define FLAGS_ADD8 1

@@ -4,10 +4,13 @@
 #include "cpu.h"
 #include "block.h"
 #include "kprocess.h"
+#include "block.h"
+
 #include <stdio.h>
 
-struct Op* decodeBlock(struct CPU* cpu);
+struct Block* decodeBlock(struct CPU* cpu);
 void freeOp(struct Op* op);
+void freeBlock(struct Block* op);
 
 #define G(rm) ((rm >> 3) & 7)
 #define E(rm) (rm & 7)

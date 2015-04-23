@@ -10,6 +10,7 @@
 #include "kalloc.h"
 #include "conditions.h"
 #include "setcc.h"
+#include "block.h"
 
 #define FETCH8(data) readb(data->memory, data->ip++)
 #define FETCH_S8(data) (S8)readb(data->memory, data->ip++)
@@ -43,7 +44,16 @@ struct Op* allocOp() {
 		freeOps = result->next;
 		memset(result, 0, sizeof(struct Op));
 	} else {
-		result = (struct Op*)kalloc(sizeof(struct Op));
+		U32 count = 1024*1023/sizeof(struct Op);
+		U32 i;
+
+		result = (struct Op*)kalloc(1024*1023);
+		for (i=0;i<count;i++) {
+			result->next = freeOps;
+			freeOps = result;
+			result++;
+		}
+		return allocOp();
 	}	
 	return result;
 }
@@ -53,6 +63,35 @@ void freeOp(struct Op* op) {
 		freeOp(op->next);
 	op->next = freeOps;
 	freeOps = op;
+}
+
+struct Block* freeBlocks;
+
+struct Block* allocBlock() {
+	struct Block* result;
+
+	if (freeBlocks) {
+		result = freeBlocks;
+		freeBlocks = result->block1;
+		memset(result, 0, sizeof(struct Block));
+	} else {
+		U32 count = 1024*1023/sizeof(struct Block);
+		U32 i;
+
+		result = (struct Block*)kalloc(1024*1023);
+		for (i=0;i<count;i++) {
+			result->block1 = freeBlocks;
+			freeBlocks = result;
+			result++;
+		}
+		return allocBlock();
+	}	
+	return result;
+}
+
+void freeBlock(struct Block* block) {
+	block->block1 = freeBlocks;
+	freeBlocks = block;
 }
 
 #define FINISH_OP(data) data->op->eipCount=data->ip-data->start
@@ -337,7 +376,9 @@ void decodeEa16(struct DecodeData* data, int rm) {
 	}
 }
 
- void Sib(int mode, struct DecodeData* data) {
+U32 SibE2Reg[8] = {regAX, regCX, regDX, regBX, regZero, regBP, regSI, regDI};
+
+ void Sib0(struct DecodeData* data) {
 	int sib=FETCH8(data);
 	struct Op* op = data->op;
 
@@ -353,34 +394,40 @@ void decodeEa16(struct DecodeData* data, int rm) {
 	case 4:
 		op->base=data->ss; op->e1=regSP;break;
 	case 5:
-		if (mode==0) {
-			op->base = data->ds; op->eData = FETCH32(data);break;
-		} else {
-			op->base=data->ss; op->e1=regBP;break;
-		}
+		op->base = data->ds; op->eData = FETCH32(data);break;
 	case 6:
 		op->base=data->ds; op->e1=regSI;break;
 	case 7:
 		op->base=data->ds; op->e1=regDI;break;
 	}
-	switch ((sib >> 3) & 7) {
+	op->e2 = SibE2Reg[(sib >> 3) & 7];
+	op->eSib = sib >> 6;
+} 
+
+  void Sib1(struct DecodeData* data) {
+	int sib=FETCH8(data);
+	struct Op* op = data->op;
+
+	switch (sib&7) {
 	case 0:
-		op->e2 = regAX; op->eSib = sib >> 6; break;
+		op->base=data->ds; op->e1=regAX;break;
 	case 1:
-		op->e2 = regCX; op->eSib = sib >> 6; break;
+		op->base=data->ds; op->e1=regCX;break;
 	case 2:
-		op->e2 = regDX; op->eSib = sib >> 6; break;
+		op->base=data->ds; op->e1=regDX;break;
 	case 3:
-		op->e2 = regBX; op->eSib = sib >> 6; break;
+		op->base=data->ds; op->e1=regBX;break;
 	case 4:
-		op->e2 = regZero; op->eSib = sib >> 6; break;
+		op->base=data->ss; op->e1=regSP;break;
 	case 5:
-		op->e2 = regBP; op->eSib = sib >> 6; break;
+		op->base=data->ss; op->e1=regBP;break;
 	case 6:
-		op->e2 = regSI; op->eSib = sib >> 6; break;
+		op->base=data->ds; op->e1=regSI;break;
 	case 7:
-		op->e2 = regDI; op->eSib = sib >> 6; break;
+		op->base=data->ds; op->e1=regDI;break;
 	}
+	op->e2 = SibE2Reg[(sib >> 3) & 7];
+	op->eSib = sib >> 6;
 } 
 
 void decodeEa32(struct DecodeData* data, int rm) {
@@ -395,7 +442,7 @@ void decodeEa32(struct DecodeData* data, int rm) {
 		case 0x01: op->base=data->ds; op->e1 = regCX; break;
 		case 0x02: op->base=data->ds; op->e1 = regDX; break;
 		case 0x03: op->base=data->ds; op->e1 = regBX; break;
-		case 0x04: Sib(0, data); break;
+		case 0x04: Sib0(data); break;
 		case 0x05: op->base=data->ds; op->eData = FETCH32(data); break;
 		case 0x06: op->base=data->ds; op->e1 = regSI; break;
 		case 0x07: op->base=data->ds; op->e1 = regDI; break;
@@ -406,7 +453,7 @@ void decodeEa32(struct DecodeData* data, int rm) {
 		case 0x01: op->base=data->ds; op->e1 = regCX; break;
 		case 0x02: op->base=data->ds; op->e1 = regDX; break;
 		case 0x03: op->base=data->ds; op->e1 = regBX; break;
-		case 0x04: Sib(1, data); break;
+		case 0x04: Sib1(data); break;
 		case 0x05: op->base=data->ss; op->e1 = regBP; break;
 		case 0x06: op->base=data->ds; op->e1 = regSI; break;
 		case 0x07: op->base=data->ds; op->e1 = regDI; break;
@@ -2023,14 +2070,20 @@ DECODER decoder[1024] = {
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 };
 
-struct Op* decodeBlock(struct CPU* cpu) {	
-	struct Op* result;
+struct Block* decodeBlock(struct CPU* cpu) {	
+	struct Block* result;
 	struct DecodeData data;
 	struct DecodeData* pData = &data;
-	result = data.op = allocOp();
+	result = allocBlock();
+	result->ops = data.op = allocOp();
 	data.start = data.ip = cpu->eip.u32 + cpu->segAddress[CS];
-	data.opCode = cpu->big?0x200:0;
-	data.ea16 = cpu->big?0:1;
+	if (cpu->big) {
+		data.opCode = 0x200;
+		data.ea16 = 0;
+	} else {
+		data.opCode = 0;
+		data.ea16 = 1;
+	}
 	data.ds = DS;
 	data.ss = SS;
 	data.rep = 0;

@@ -488,7 +488,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_sched_yield:
 		result = 0;
-		cpu->blockCounter = 0xF0000000; // next thread will be run
+		cpu->blockCounter |= 0x80000000; // next thread will be run
 		LOG("__NR_sched_yield result=%d", result);
 		break;
 	case __NR_nanosleep:
@@ -760,13 +760,13 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	}	
 	if (result==-K_CONTINUE) {
-		CYCLES(1);
+		CYCLES(1000);
 	} else if (result==-K_WAIT) {
 		thread->waitSyscall = EAX;		
 		waitThread(thread);		
 	} else {
 		EAX = result;
 		cpu->eip.u32+=op->eipCount;
-		CYCLES(1);
+		CYCLES(1000);
 	}	
 }

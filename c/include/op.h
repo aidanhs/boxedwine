@@ -27,5 +27,6 @@ struct Op {
 };
 
 void freeOp(struct Op* op);
+void freeBlock(struct Block* op);
 
 #endif

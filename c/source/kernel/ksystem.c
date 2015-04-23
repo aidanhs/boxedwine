@@ -1,13 +1,28 @@
 #include "ksystem.h"
 #include "karray.h"
 #include "log.h"
+#include "khashmap.h"
 
 #include <time.h>
 
 static struct KArray processes;
+static struct KHashmap mappedFileCache;
 
 void initSystem() {
 	initArray(&processes, 100);		
+	initHashmap(&mappedFileCache);
+}
+
+struct MappedFileCache* getMappedFileInCache(const char* name) {
+	return (struct MappedFileCache*)getHashmapValue(&mappedFileCache, name);
+}
+
+void putMappedFileInCache(struct MappedFileCache* file) {
+	putHashmapValue(&mappedFileCache, file->name, file);
+}
+
+void removeMappedFileInCache(struct MappedFileCache* file) {
+	removeHashmapKey(&mappedFileCache, file->name);
 }
 
 U32 addProcess(struct KProcess* process) {

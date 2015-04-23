@@ -403,145 +403,193 @@ void dimulr32e32_32(struct CPU* cpu, struct Op* op) {
 
 void jumpO(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpNO(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpB(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpNB(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpZ(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpNZ(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpBE(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getZF(cpu) || getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpNBE(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getZF(cpu) && !getCF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpS(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getSF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpNS(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getSF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpP(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getPF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);	
 	}
-	cpu->eip.u32+=op->eipCount;
 	CYCLES(1);
 }
 
 void jumpNP(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getPF(cpu)) {
 		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}	
 	CYCLES(1);
 }
 
 void jumpL(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getSF(cpu)!=getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}	
 	CYCLES(1);
 }
 
 void jumpNL(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getSF(cpu)==getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}	
 	CYCLES(1);
 }
 
 void jumpLE(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (getZF(cpu) || getSF(cpu)!=getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}	
 	CYCLES(1);
 }
 
 void jumpNLE(struct CPU* cpu, struct Op* op) {
 	DONE();
+	cpu->eip.u32+=op->eipCount;
 	if (!getZF(cpu) && getSF(cpu)==getOF(cpu)) {
 		cpu->eip.u32+=op->data1;
-	}
-	cpu->eip.u32+=op->eipCount;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}	
 	CYCLES(1);
 }
 
@@ -1145,8 +1193,12 @@ void loopnz16(struct CPU* cpu, struct Op* op) {
 	CX--;
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (CX!=0 && !getZF(cpu))
+	if (CX!=0 && !getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(7);
 }
 
@@ -1154,8 +1206,12 @@ void loopnz32(struct CPU* cpu, struct Op* op) {
 	ECX--;
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (ECX!=0 && !getZF(cpu))
+	if (ECX!=0 && !getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(7);
 }
 
@@ -1163,8 +1219,12 @@ void loopz16(struct CPU* cpu, struct Op* op) {
 	CX--;
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (CX!=0 && getZF(cpu))
+	if (CX!=0 && getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(7);
 }
 
@@ -1172,8 +1232,12 @@ void loopz32(struct CPU* cpu, struct Op* op) {
 	ECX--;
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (ECX!=0 && getZF(cpu))
+	if (ECX!=0 && getZF(cpu)) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(7);
 }
 
@@ -1181,8 +1245,12 @@ void loop16(struct CPU* cpu, struct Op* op) {
 	CX--;
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (CX!=0)
+	if (CX!=0) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(5);
 }
 
@@ -1190,24 +1258,36 @@ void loop32(struct CPU* cpu, struct Op* op) {
 	ECX--;
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (ECX!=0)
+	if (ECX!=0) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(5);
 }
 
 void jcxz16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (CX==0)
+	if (CX==0) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(5);
 }
 
 void jcxz32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32+=op->eipCount;
-	if (ECX==0)
+	if (ECX==0) {
 		cpu->eip.u32+=op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	} else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
 	CYCLES(5);
 }
 
@@ -1215,6 +1295,7 @@ void callJw(struct CPU* cpu, struct Op* op) {
 	push16(cpu, cpu->eip.u32 + op->eipCount);
 	DONE();
 	cpu->eip.u32 += op->eipCount + op->data1;
+	cpu->nextBlock = getBlock1(cpu);
 	CYCLES(1);
 }
 
@@ -1222,12 +1303,14 @@ void callJd(struct CPU* cpu, struct Op* op) {
 	push32(cpu, cpu->eip.u32 + op->eipCount);
 	DONE();
 	cpu->eip.u32 += op->eipCount + (S32)op->data1;
+	cpu->nextBlock = getBlock1(cpu);
 	CYCLES(1);
 }
 
 void jump(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 += op->eipCount + (S32)op->data1;
+	cpu->nextBlock = getBlock1(cpu);
 	CYCLES(1);
 }
 

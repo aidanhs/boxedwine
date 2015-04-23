@@ -6,6 +6,8 @@
 
 struct Block{	
 	struct Op* ops;
+	struct Block* block1;
+	struct Block* block2;
 };
 
 #endif

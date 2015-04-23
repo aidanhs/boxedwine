@@ -552,12 +552,14 @@ void exception(struct CPU* cpu, int code) {
 	kpanic("Exceptions not implements yet");
 }
 
-void runBlock(struct CPU* cpu, struct Op* block) {
-	block->func(cpu, block);
+void runBlock(struct CPU* cpu, struct Block* block) {
+	cpu->currentBlock = block;
+	cpu->nextBlock = 0;
+	block->ops->func(cpu, block->ops);
 }
 
-void runCPU(struct CPU* cpu) {
-	struct Op* block;
+struct Block* getBlock(struct CPU* cpu) {
+	struct Block* block;
 	U32 data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
 	if (IS_PAGE_IN_RAM(data)) {
 		block = getCode(GET_PAGE(data), cpu->eip.u32 & 0xFFF);
@@ -570,5 +572,21 @@ void runCPU(struct CPU* cpu) {
 		data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
 		addCode(block, GET_PAGE(data), cpu->eip.u32 & 0xFFF);
 	}
-	runBlock(cpu, block);
+	return block;
+}
+
+void runCPU(struct CPU* cpu) {	
+	runBlock(cpu, getBlock(cpu));
+}
+
+struct Block* getBlock1(struct CPU* cpu) {
+	if (!cpu->currentBlock->block1)
+		cpu->currentBlock->block1 = getBlock(cpu);
+	return cpu->currentBlock->block1; 
+}
+
+struct Block* getBlock2(struct CPU* cpu) {
+	if (!cpu->currentBlock->block2)
+		cpu->currentBlock->block2 = getBlock(cpu);
+	return cpu->currentBlock->block2;
 }

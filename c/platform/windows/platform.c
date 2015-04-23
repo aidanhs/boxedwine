@@ -13,14 +13,14 @@ ULONGLONG getSystemTimeAsMicroSeconds() {
 	t = ((ULONGLONG)tm.dwHighDateTime << 32) | (ULONGLONG)tm.dwLowDateTime;
 	t-=116444736000000000l;
 	t/=10;
-/*
+	/*
 	if (!startTime) {
 		startTime = t;
 	} else {
 		ULONGLONG diff = t - startTime;
 		t = startTime+diff/5;
 	}
-*/
+	*/
 	return t;
 }
 

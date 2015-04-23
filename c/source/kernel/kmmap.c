@@ -7,6 +7,10 @@
 #include "kfmmap.h"
 #include "nodeaccess.h"
 #include "node.h"
+#include "ksystem.h"
+#include "kalloc.h"
+
+#include <string.h>
 
 U32 madvise(struct KThread* thread, U32 addr, U32 len, U32 advice) {
 	if (advice!=K_MADV_DONTNEED)
@@ -90,7 +94,8 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			permissions|=PAGE_EXEC;
 		if (shared)
 			permissions|=PAGE_SHARED;
-		if (fd) {			
+		if (fd) {	
+			struct MappedFileCache* cache = getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath);
 			if (off==0) {
 				struct KProcess* process = thread->process;
 				int index = -1;
@@ -108,6 +113,17 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 					process->mappedFiles[index].name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
 					process->mappedFiles[index].inUse = TRUE;
 				}
+			}
+			if (!cache) {
+				cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache));
+				strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath);
+				cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
+				cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount);
+				putMappedFileInCache(cache);
+			}
+			if (!fd->systemCacheEntry) {
+				fd->systemCacheEntry = cache;
+				fd->systemCacheEntry->refCount++;
 			}
 			for (i=0;i<pageCount;i++) {
 				U32 data = 0;	

@@ -37,6 +37,7 @@ struct KThread {
 	U32     waitData1;
 	U32     waitData2;
 	U32     clear_child_tid;
+	U64     threadTime;
 	struct KPollData pollData[MAX_POLL_DATA];
 	U32 pollCount;
 	struct KTimer timer;

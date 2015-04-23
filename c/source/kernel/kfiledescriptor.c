@@ -7,6 +7,8 @@
 #include "kerror.h"
 #include "log.h"
 #include "kscheduler.h"
+#include "ksystem.h"
+#include "ram.h"
 
 #include <string.h>
 
@@ -46,6 +48,20 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle
 void closeFD(struct KFileDescriptor* fd) {
 	fd->refCount--;
 	if (!fd->refCount) {
+		if (fd->systemCacheEntry) {
+			fd->systemCacheEntry->refCount--;
+			if (!fd->systemCacheEntry->refCount) {
+				U32 i;
+				for (i=0;i<fd->systemCacheEntry->pageCount;i++) {
+					if (fd->systemCacheEntry->ramPages[i])
+						freeRamPage(fd->systemCacheEntry->ramPages[i]);
+				}
+				removeMappedFileInCache(fd->systemCacheEntry);
+				kfree(fd->systemCacheEntry->ramPages);
+				kfree(fd->systemCacheEntry);
+			}
+			fd->systemCacheEntry = 0;
+		}
 		closeKObject(fd->kobject);
 		fd->process->fds[fd->handle] = 0;
 		fd->next = freeFileDescriptors;

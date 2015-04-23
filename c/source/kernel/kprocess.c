@@ -146,6 +146,9 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 		if (from->fds[i]) {
 			process->fds[i] = allocFileDescriptor(process, i, from->fds[i]->kobject, from->fds[i]->accessFlags, from->fds[i]->descriptorFlags);
 			process->fds[i]->refCount = from->fds[i]->refCount;
+			process->fds[i]->systemCacheEntry = from->fds[i]->systemCacheEntry;
+			if (process->fds[i]->systemCacheEntry)
+				process->fds[i]->systemCacheEntry->refCount++;
 		}
 	}
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
@@ -863,7 +866,7 @@ U32 syscall_exitgroup(struct KThread* thread, U32 code) {
 	}
 	process->exitCode = code;
 	freeThread(thread);
-	thread->cpu.blockCounter = 0xFFFFFF00; // cause the current slice to end
+	thread->cpu.blockCounter |= 0x80000000; // cause the current slice to end
 	if (getProcessCount()==1) {
 		// no one left to wait on this process
 		removeProcess(process);

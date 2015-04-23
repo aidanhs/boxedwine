@@ -16,5 +16,6 @@ BOOL runSlice();
 void runThreadSlice(struct KThread* thread);
 void addTimer(struct KTimer* timer);
 void removeTimer(struct KTimer* timer);
+U32 getMHz();
 
 #endif

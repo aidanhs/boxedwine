@@ -7,7 +7,7 @@
 
 void initHashmap(struct KHashmap* hashMap) {
 	hashMap->buckets = (struct KHashmapEntry**)calloc(1, sizeof(struct KHashmapEntry*)*4096);
-	hashMap->numberOfBuckets = 256;
+	hashMap->numberOfBuckets = 4096;
 	hashMap->numberOfEntries = 0;
 }
 

@@ -28,4 +28,14 @@ BOOL getNextProcess(U32* index, struct KProcess** process);
 U32 getMilliesSinceStart();
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz);
 
+struct MappedFileCache {
+	U32* ramPages;
+	U32 pageCount;
+	U32 refCount;
+	char name[MAX_FILEPATH_LEN];
+};
+
+struct MappedFileCache* getMappedFileInCache(const char* name);
+void putMappedFileInCache(struct MappedFileCache* file);
+void removeMappedFileInCache(struct MappedFileCache* file);
 #endif

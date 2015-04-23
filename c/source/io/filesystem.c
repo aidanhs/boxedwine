@@ -61,9 +61,21 @@ S64 file_seek(struct OpenNode* node, S64 pos) {
 	return lseek(node->handle, (U32)pos, SEEK_SET);
 }
 
+char tmp[4096];
+
 U32 file_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
 		U8* ram = getPhysicalAddress(memory, address);
+		if (!ram) {
+			U32 i;
+
+			read(node->handle, tmp, len);
+			for (i=0;i<len;i++) {
+				if (tmp[i]!=ram[i]) {
+					kpanic("ouch");
+				}
+			}
+		}
 		return read(node->handle, ram, len);		
 	} else {		
 		U32 result = 0;

@@ -234,6 +234,9 @@ U32 translate(U32 key) {
     }
 }
 
+U64 cpuTime;
+U64 cpuInstructions;
+
 int main(int argc, char **argv) {
 	int i;
 	const char* root = 0;
@@ -242,6 +245,7 @@ int main(int argc, char **argv) {
 	int mb=64;
 	int bpp = 32;
 	int fullscreen = 0;
+	U32 lastTitleUpdate = 0;
 
 	printf("Starting ...\n");
 
@@ -323,7 +327,8 @@ int main(int argc, char **argv) {
 		while (getProcessCount()>0) {
 			SDL_Event e;
 			BOOL ran = runSlice();
-				
+			U32 t;
+
 			while (SDL_PollEvent(&e)) {
 				if (e.type == SDL_QUIT) {
 					SDL_Quit();
@@ -351,6 +356,13 @@ int main(int argc, char **argv) {
 					onKeyUp(translate(e.key.keysym.sym));
 				}
 			};
+			t = getMilliesSinceStart();
+			if (lastTitleUpdate+1000 < t) {
+				char tmp[256];
+				lastTitleUpdate = t;
+				sprintf(tmp, "BoxedWine %d MHz", getMHz());
+				SDL_WM_SetCaption(tmp, "BoxedWine");
+			}
 			if (!ran)
 				SDL_Delay(20);
 		}
