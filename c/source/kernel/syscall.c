@@ -78,6 +78,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_setpriority 97
 #define __NR_socketcall 102
 #define __NR_setitimer 104
+#define __NR_wait4 114
 #define __NR_ipc 117
 #define __NR_fsync 118
 #define __NR_clone 120
@@ -410,12 +411,29 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_setitimer(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_setitimer which=%d newValue=%d(%d.%.06d) oldValue=%d result=%d", ARG1, ARG2, (ARG2?readd(memory, ARG2+8):0), (ARG2?readd(memory, ARG2+12):0), ARG3, result);
 		break;
+	case __NR_wait4:
+		result=syscall_waitpid(thread, ARG1, ARG2, ARG3);
+		if (ARG4) {
+			kwarn("__NR_wait4 rusuage not implemented");
+		}
+		LOG("__NR_wait4: pid=%d status=%d options=%x rusage=%X result=%d", ARG1, ARG2, ARG3, ARG4, result);
+		break;
 	case __NR_ipc:
-        if (ARG1 == 23) { // IPCOP_shmget
-            // :TODO:
-            result = -K_EACCES;
+		// ARG5 holds the pointer to be copied
+		if (ARG1 == 21) { // IPCOP_shmat
+			result = syscall_shmat(thread, ARG2, ARG5, ARG3, ARG4);
+			LOG("__NR_ipc IPCOP_shmat shmid=%d shmaddr=%d shmflg=%X result=%d", ARG2, ARG5, ARG3, result);
+		}  else if (ARG1 == 22) { // IPCOP_shmdt
+			result = syscall_shmdt(thread, ARG5);
+			LOG("__NR_ipc IPCOP_shmdt shmaddr=%d result=%d", ARG5, result);
+		} else if (ARG1 == 23) { // IPCOP_shmget
+			//result = -1; // :TODO: this crashes hsetroot
+            result = syscall_shmget(thread, ARG2, ARG3, ARG4);
 			LOG("__NR_ipc IPCOP_shmget key=%d size=%d flags=%X result=%d", ARG2, ARG3, ARG4, result);
-        } else {
+        } else if (ARG1 == 24) { // IPCOP_shmctl 
+			result = syscall_shmctl(thread, ARG2, ARG3, ARG5);
+			LOG("__NR_ipc IPCOP_shmctl shmid=%d cmd=%d buf=%X result=%d", ARG2, ARG3, ARG5, result);
+		} else {
             kpanic("__NR_ipc op %d not implemented", ARG1);
         }
 		break;
@@ -595,7 +613,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		if (ARG1)
 			writed(memory, ARG1, process->groupId);
 		if (ARG2)
-			writed(memory, ARG2, process->groupId);
+			writed(memory, ARG2, process->effectiveGroupId);
 		if (ARG3)
 			writed(memory, ARG3, process->groupId);
 		result=0;

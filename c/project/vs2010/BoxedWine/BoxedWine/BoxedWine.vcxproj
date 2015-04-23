@@ -212,6 +212,7 @@
     <ClInclude Include="..\..\..\..\include\kpoll.h" />
     <ClInclude Include="..\..\..\..\include\kprocess.h" />
     <ClInclude Include="..\..\..\..\include\kscheduler.h" />
+    <ClInclude Include="..\..\..\..\include\kshm.h" />
     <ClInclude Include="..\..\..\..\include\ksignal.h" />
     <ClInclude Include="..\..\..\..\include\ksocket.h" />
     <ClInclude Include="..\..\..\..\include\kstat.h" />
@@ -268,6 +269,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\kpoll.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kprocess.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kscheduler.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kshm.c" />
     <ClCompile Include="..\..\..\..\source\kernel\ksignal.c" />
     <ClCompile Include="..\..\..\..\source\kernel\ksocket.c" />
     <ClCompile Include="..\..\..\..\source\kernel\ksystem.c" />

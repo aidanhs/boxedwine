@@ -52,9 +52,11 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 #define PAGE_WRITE 0x02
 #define PAGE_EXEC 0x04
 #define PAGE_SHARED 0x08
+#define PAGE_SHM 0x10
 #define PAGE_RESERVED 0x00FFFFFF
 #define PAGE_IN_RAM 0x80000000
 #define PAGE_PERMISSION_MASK 0x7F000000
+#define PAGE_PERMISSION_SHIFT 24
 
 #define GET_PAGE_PERMISSIONS(data) (data & PAGE_PERMISSION_MASK)
 #define IS_PAGE_READ(data) (data & 0x01000000)

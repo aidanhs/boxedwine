@@ -49,6 +49,7 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 	process->parentId = 1;
 	process->userId = UID;
 	process->effectiveUserId = UID;
+	process->effectiveGroupId = GID;
 	setupCommandlineNode(process);
 	strcpy(process->exe, args[0]);
 	name = strrchr(process->exe, '/');
@@ -79,10 +80,22 @@ struct KProcess* allocProcess() {
 void cleanupProcess(struct KProcess* process) {
 	U32 i;
 
+	if (process->timer.active) {
+		removeTimer(&process->timer);
+	}
 	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
 		if (process->fds[i]) {
 			process->fds[i]->refCount = 1; // make sure it is really closed
 			closeFD(process->fds[i]);
+		}
+	}
+	for (i=0;i<MAX_SHM;i++) {
+		U32 j;
+
+		for (j=0;j<MAX_SHM_ATTACH;j++) {
+			if (process->shms[i][j]) {
+				decrementShmAttach(process, i);
+			}
 		}
 	}
 	if (process->memory) {
@@ -126,6 +139,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	process->groupId = from->groupId;
 	process->userId = from->userId;
 	process->effectiveUserId = from->effectiveUserId;
+	process->effectiveGroupId = from->effectiveGroupId;
 	strcpy(process->currentDirectory, from->currentDirectory);
 	process->brkEnd = from->brkEnd;
 	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
@@ -141,6 +155,16 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	strcpy(process->exe, from->exe);
 	strcpy(process->name, from->name);
 	setupCommandlineNode(process);	
+
+	for (i=0;i<MAX_SHM;i++) {
+		U32 j;
+
+		for (j=0;j<MAX_SHM_ATTACH;j++) {
+			if (process->shms[i][j]) {
+				incrementShmAttach(process, i);
+			}
+		}
+	}
 }
 
 void writeStackString(struct CPU* cpu, const char* s) {
@@ -797,6 +821,16 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		if (process->fds[i] && (process->fds[i]->descriptorFlags & K_O_CLOEXEC)) {
 			process->fds[i]->refCount = 1; // make sure it is really closed
 			closeFD(process->fds[i]);
+		}
+	}
+	for (i=0;i<MAX_SHM;i++) {
+		U32 j;
+
+		for (j=0;j<MAX_SHM_ATTACH;j++) {
+			if (process->shms[i][j]) {
+				decrementShmAttach(process, i);
+				process->shms[i][j] = 0;
+			}
 		}
 	}
 	if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {		

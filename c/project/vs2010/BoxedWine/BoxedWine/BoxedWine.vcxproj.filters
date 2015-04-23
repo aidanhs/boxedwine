@@ -228,6 +228,9 @@
     <ClInclude Include="..\..\..\..\include\klist.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kshm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
@@ -355,6 +358,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\klist.c">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kshm.c">
+      <Filter>Source Files\kernel</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

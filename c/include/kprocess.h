@@ -8,6 +8,7 @@
 #include "kfiledescriptor.h"
 #include "nodeaccess.h"
 #include "ktimer.h"
+#include "kshm.h"
 
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_STACK_START		0xE0000
@@ -40,6 +41,7 @@ struct KProcess {
 	U32 groupId;
 	U32 userId;
 	U32 effectiveUserId;
+	U32 effectiveGroupId;
 	U32 pendingSignals;
 	U32 signaled;
 	U32 exitCode;
@@ -58,6 +60,7 @@ struct KProcess {
 	struct Node* commandLineNode;
 	struct KArray threads;
 	char path[MAX_PATHS][MAX_FILEPATH_LEN];
+	U32 shms[MAX_SHM][MAX_SHM_ATTACH];
 	struct KProcess* next;
 };
 

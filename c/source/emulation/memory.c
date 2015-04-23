@@ -215,14 +215,14 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
 			U32 ram = allocRamPage();
 
 			memory->mmu[page] = pageType;
-			memory->data[page] = ram | (permissions << 24) | PAGE_IN_RAM;
+			memory->data[page] = ram | (permissions << PAGE_PERMISSION_SHIFT) | PAGE_IN_RAM;
 			page++;
 			address+=0x1000;
 		}
 	} else {
 		for (i=0;i<pageCount;i++) {
 			memory->mmu[page] = pageType;
-			memory->data[page] = data | (permissions << 24) ;
+			memory->data[page] = data | (permissions << PAGE_PERMISSION_SHIFT) ;
 			page++;
 		}
 	}

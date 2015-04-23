@@ -7,3 +7,7 @@ void* kalloc(U32 len) {
 	memset(result, 0, len);
 	return result;
 }
+
+void kfree(void* p) {
+	free(p);
+}
