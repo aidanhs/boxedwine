@@ -5,6 +5,7 @@
 
 struct Op;
 struct CPU;
+struct Block;
 
 #define MAX_OP_STR 64
 

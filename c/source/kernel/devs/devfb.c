@@ -288,6 +288,7 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.height = 300;
 		fb_var_screeninfo.width = 400;		
 
+		printf("Rshift=%X (%X) Gshift=%X (%X) Bshift=%X (%X)", surface->format->Rshift, surface->format->Rmask, surface->format->Gshift, surface->format->Gmask, surface->format->Bshift, surface->format->Bmask);
 		fb_fix_screeninfo.smem_len = surface->pitch*windowCY;
 		fb_fix_screeninfo.line_length = surface->pitch;
 		if (SDL_MUSTLOCK(surface)) {

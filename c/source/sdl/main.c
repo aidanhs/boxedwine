@@ -245,8 +245,9 @@ int main(int argc, char **argv) {
 	int mb=64;
 	int bpp = 32;
 	int fullscreen = 0;
+#ifndef __EMSCRIPTEN__
 	U32 lastTitleUpdate = 0;
-
+#endif
 	printf("Starting ...\n");
 
 	startTime = getSystemTimeAsMicroSeconds();
