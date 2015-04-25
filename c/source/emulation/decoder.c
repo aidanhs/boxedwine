@@ -27,8 +27,8 @@ struct DecodeData {
 	int ea16;
 	U32 ip;
 	U32 start;
-	U16 opCode;
-	U16 inst;
+	U32 opCode;
+	U32 inst;
 	struct CPU* cpu;
 	struct Memory* memory;
 	struct Op* op;
@@ -2092,7 +2092,7 @@ struct Block* decodeBlock(struct CPU* cpu) {
 	data.memory = cpu->memory;
 
 	do  {
-		data.inst = (U16)FETCH8(pData)+data.opCode;
+		data.inst = FETCH8(pData)+data.opCode;
 	} while (decoder[data.inst](pData));
 	return result;	
 }

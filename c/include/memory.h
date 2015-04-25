@@ -38,6 +38,7 @@ U32 pf_readd(struct Memory* memory, U32 address, U32 data);
 void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value);
 
 struct Memory* allocMemory();
+void initMemory(struct Memory* memory);
 void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount);
 void cloneMemory(struct Memory* memory, struct Memory* from);
 void freeMemory(struct Memory* memory);
@@ -55,7 +56,7 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 #define PAGE_SHM 0x10
 #define PAGE_RESERVED 0x00FFFFFF
 #define PAGE_IN_RAM 0x80000000
-#define PAGE_PERMISSION_MASK 0x7F000000
+#define PAGE_PERMISSION_MASK 0x07000000
 #define PAGE_PERMISSION_SHIFT 24
 
 #define GET_PAGE_PERMISSIONS(data) (data & PAGE_PERMISSION_MASK)

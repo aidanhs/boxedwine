@@ -1083,7 +1083,7 @@ void shl8_reg(struct CPU* cpu, struct Op* op) {
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL8;
+    cpu->lazyFlags = FLAGS_SHL8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1097,7 +1097,7 @@ void shl8_mem16(struct CPU* cpu, struct Op* op) {
     U8 var1=readb(cpu->memory, eaa);
     U8 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL8;
+    cpu->lazyFlags = FLAGS_SHL8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1111,7 +1111,7 @@ void shl8_mem32(struct CPU* cpu, struct Op* op) {
     U8 var1=readb(cpu->memory, eaa);
     U8 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL8;
+    cpu->lazyFlags = FLAGS_SHL8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1125,7 +1125,7 @@ void shl8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL8;
+    cpu->lazyFlags = FLAGS_SHL8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1141,7 +1141,7 @@ void shl8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL8;
+    cpu->lazyFlags = FLAGS_SHL8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1157,7 +1157,7 @@ void shl8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL8;
+    cpu->lazyFlags = FLAGS_SHL8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1171,7 +1171,7 @@ void shl16_reg(struct CPU* cpu, struct Op* op) {
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL16;
+    cpu->lazyFlags = FLAGS_SHL16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1185,7 +1185,7 @@ void shl16_mem16(struct CPU* cpu, struct Op* op) {
     U16 var1=readw(cpu->memory, eaa);
     U16 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL16;
+    cpu->lazyFlags = FLAGS_SHL16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1199,7 +1199,7 @@ void shl16_mem32(struct CPU* cpu, struct Op* op) {
     U16 var1=readw(cpu->memory, eaa);
     U16 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL16;
+    cpu->lazyFlags = FLAGS_SHL16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1213,7 +1213,7 @@ void shl16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL16;
+    cpu->lazyFlags = FLAGS_SHL16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1229,7 +1229,7 @@ void shl16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL16;
+    cpu->lazyFlags = FLAGS_SHL16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1245,7 +1245,7 @@ void shl16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL16;
+    cpu->lazyFlags = FLAGS_SHL16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1259,7 +1259,7 @@ void shl32_reg(struct CPU* cpu, struct Op* op) {
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL32;
+    cpu->lazyFlags = FLAGS_SHL32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1273,7 +1273,7 @@ void shl32_mem16(struct CPU* cpu, struct Op* op) {
     U32 var1=readd(cpu->memory, eaa);
     U32 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL32;
+    cpu->lazyFlags = FLAGS_SHL32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1287,7 +1287,7 @@ void shl32_mem32(struct CPU* cpu, struct Op* op) {
     U32 var1=readd(cpu->memory, eaa);
     U32 var2 = op->data1;
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL32;
+    cpu->lazyFlags = FLAGS_SHL32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1301,7 +1301,7 @@ void shl32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL32;
+    cpu->lazyFlags = FLAGS_SHL32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1317,7 +1317,7 @@ void shl32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL32;
+    cpu->lazyFlags = FLAGS_SHL32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1333,7 +1333,7 @@ void shl32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = var1 << var2;
-    cpu->inst = FLAGS_SHL32;
+    cpu->lazyFlags = FLAGS_SHL32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1347,7 +1347,7 @@ void shr8_reg(struct CPU* cpu, struct Op* op) {
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR8;
+    cpu->lazyFlags = FLAGS_SHR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1361,7 +1361,7 @@ void shr8_mem16(struct CPU* cpu, struct Op* op) {
     U8 var1=readb(cpu->memory, eaa);
     U8 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR8;
+    cpu->lazyFlags = FLAGS_SHR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1375,7 +1375,7 @@ void shr8_mem32(struct CPU* cpu, struct Op* op) {
     U8 var1=readb(cpu->memory, eaa);
     U8 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR8;
+    cpu->lazyFlags = FLAGS_SHR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1389,7 +1389,7 @@ void shr8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR8;
+    cpu->lazyFlags = FLAGS_SHR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1405,7 +1405,7 @@ void shr8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR8;
+    cpu->lazyFlags = FLAGS_SHR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1421,7 +1421,7 @@ void shr8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR8;
+    cpu->lazyFlags = FLAGS_SHR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1435,7 +1435,7 @@ void shr16_reg(struct CPU* cpu, struct Op* op) {
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR16;
+    cpu->lazyFlags = FLAGS_SHR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1449,7 +1449,7 @@ void shr16_mem16(struct CPU* cpu, struct Op* op) {
     U16 var1=readw(cpu->memory, eaa);
     U16 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR16;
+    cpu->lazyFlags = FLAGS_SHR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1463,7 +1463,7 @@ void shr16_mem32(struct CPU* cpu, struct Op* op) {
     U16 var1=readw(cpu->memory, eaa);
     U16 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR16;
+    cpu->lazyFlags = FLAGS_SHR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1477,7 +1477,7 @@ void shr16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR16;
+    cpu->lazyFlags = FLAGS_SHR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1493,7 +1493,7 @@ void shr16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR16;
+    cpu->lazyFlags = FLAGS_SHR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1509,7 +1509,7 @@ void shr16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR16;
+    cpu->lazyFlags = FLAGS_SHR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1523,7 +1523,7 @@ void shr32_reg(struct CPU* cpu, struct Op* op) {
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR32;
+    cpu->lazyFlags = FLAGS_SHR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1537,7 +1537,7 @@ void shr32_mem16(struct CPU* cpu, struct Op* op) {
     U32 var1=readd(cpu->memory, eaa);
     U32 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR32;
+    cpu->lazyFlags = FLAGS_SHR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1551,7 +1551,7 @@ void shr32_mem32(struct CPU* cpu, struct Op* op) {
     U32 var1=readd(cpu->memory, eaa);
     U32 var2 = op->data1;
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR32;
+    cpu->lazyFlags = FLAGS_SHR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1565,7 +1565,7 @@ void shr32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR32;
+    cpu->lazyFlags = FLAGS_SHR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1581,7 +1581,7 @@ void shr32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR32;
+    cpu->lazyFlags = FLAGS_SHR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1597,7 +1597,7 @@ void shr32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = var1 >> var2;
-    cpu->inst = FLAGS_SHR32;
+    cpu->lazyFlags = FLAGS_SHR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1611,7 +1611,7 @@ void sar8_reg(struct CPU* cpu, struct Op* op) {
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
     result = (S8)var1 >> var2;
-    cpu->inst = FLAGS_SAR8;
+    cpu->lazyFlags = FLAGS_SAR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1625,7 +1625,7 @@ void sar8_mem16(struct CPU* cpu, struct Op* op) {
     U8 var1=readb(cpu->memory, eaa);
     U8 var2 = op->data1;
     result = (S8)var1 >> var2;
-    cpu->inst = FLAGS_SAR8;
+    cpu->lazyFlags = FLAGS_SAR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1639,7 +1639,7 @@ void sar8_mem32(struct CPU* cpu, struct Op* op) {
     U8 var1=readb(cpu->memory, eaa);
     U8 var2 = op->data1;
     result = (S8)var1 >> var2;
-    cpu->inst = FLAGS_SAR8;
+    cpu->lazyFlags = FLAGS_SAR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1653,7 +1653,7 @@ void sar8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = (S8)var1 >> var2;
-    cpu->inst = FLAGS_SAR8;
+    cpu->lazyFlags = FLAGS_SAR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1669,7 +1669,7 @@ void sar8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = (S8)var1 >> var2;
-    cpu->inst = FLAGS_SAR8;
+    cpu->lazyFlags = FLAGS_SAR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1685,7 +1685,7 @@ void sar8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     if (var2) {
     result = (S8)var1 >> var2;
-    cpu->inst = FLAGS_SAR8;
+    cpu->lazyFlags = FLAGS_SAR8;
     cpu->result.u8 = result;
     cpu->src.u8=var2;
     cpu->dst.u8 = var1;
@@ -1699,7 +1699,7 @@ void sar16_reg(struct CPU* cpu, struct Op* op) {
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
     result = (S16)var1 >> var2;
-    cpu->inst = FLAGS_SAR16;
+    cpu->lazyFlags = FLAGS_SAR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1713,7 +1713,7 @@ void sar16_mem16(struct CPU* cpu, struct Op* op) {
     U16 var1=readw(cpu->memory, eaa);
     U16 var2 = op->data1;
     result = (S16)var1 >> var2;
-    cpu->inst = FLAGS_SAR16;
+    cpu->lazyFlags = FLAGS_SAR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1727,7 +1727,7 @@ void sar16_mem32(struct CPU* cpu, struct Op* op) {
     U16 var1=readw(cpu->memory, eaa);
     U16 var2 = op->data1;
     result = (S16)var1 >> var2;
-    cpu->inst = FLAGS_SAR16;
+    cpu->lazyFlags = FLAGS_SAR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1741,7 +1741,7 @@ void sar16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = (S16)var1 >> var2;
-    cpu->inst = FLAGS_SAR16;
+    cpu->lazyFlags = FLAGS_SAR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1757,7 +1757,7 @@ void sar16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = (S16)var1 >> var2;
-    cpu->inst = FLAGS_SAR16;
+    cpu->lazyFlags = FLAGS_SAR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1773,7 +1773,7 @@ void sar16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     if (var2) {
     result = (S16)var1 >> var2;
-    cpu->inst = FLAGS_SAR16;
+    cpu->lazyFlags = FLAGS_SAR16;
     cpu->result.u16 = result;
     cpu->src.u16=var2;
     cpu->dst.u16 = var1;
@@ -1787,7 +1787,7 @@ void sar32_reg(struct CPU* cpu, struct Op* op) {
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
     result = (S32)var1 >> var2;
-    cpu->inst = FLAGS_SAR32;
+    cpu->lazyFlags = FLAGS_SAR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1801,7 +1801,7 @@ void sar32_mem16(struct CPU* cpu, struct Op* op) {
     U32 var1=readd(cpu->memory, eaa);
     U32 var2 = op->data1;
     result = (S32)var1 >> var2;
-    cpu->inst = FLAGS_SAR32;
+    cpu->lazyFlags = FLAGS_SAR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1815,7 +1815,7 @@ void sar32_mem32(struct CPU* cpu, struct Op* op) {
     U32 var1=readd(cpu->memory, eaa);
     U32 var2 = op->data1;
     result = (S32)var1 >> var2;
-    cpu->inst = FLAGS_SAR32;
+    cpu->lazyFlags = FLAGS_SAR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1829,7 +1829,7 @@ void sar32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = (S32)var1 >> var2;
-    cpu->inst = FLAGS_SAR32;
+    cpu->lazyFlags = FLAGS_SAR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1845,7 +1845,7 @@ void sar32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = (S32)var1 >> var2;
-    cpu->inst = FLAGS_SAR32;
+    cpu->lazyFlags = FLAGS_SAR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;
@@ -1861,7 +1861,7 @@ void sar32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     if (var2) {
     result = (S32)var1 >> var2;
-    cpu->inst = FLAGS_SAR32;
+    cpu->lazyFlags = FLAGS_SAR32;
     cpu->result.u32 = result;
     cpu->src.u32=var2;
     cpu->dst.u32 = var1;

@@ -144,13 +144,18 @@ void writeq(struct Memory* memory, U32 address, U64 value) {
 }
 
 struct Memory* allocMemory() {
-	int i=0;
 	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
+	initMemory(memory);
+	return memory;
+}
+
+void initMemory(struct Memory* memory) {
+	int i=0;
+
 	for (i=0;i<0x100000;i++) {
 		memory->mmu[i] = &invalidPage;
 	}
 	memset(memory->data, 0, sizeof(memory->data));
-	return memory;
 }
 
 void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {

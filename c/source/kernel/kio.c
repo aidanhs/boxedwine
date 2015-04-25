@@ -175,7 +175,7 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
 U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
 	struct Node* node = getNode(thread->process, fileName);
 
-    if (node==0) {
+    if (node==0 || !node->nodeType->exists(node)) {
         return -K_ENOENT;
     }
     if (flags==0)
@@ -223,7 +223,7 @@ U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
 	struct Node* node = getNode(thread->process, path);
 	U64 len;
 
-    if (node==0) {
+	if (node==0 || !node->nodeType->exists(node)) {
         return -K_ENOENT;
     }
 	len = node->nodeType->length(node);
@@ -237,15 +237,15 @@ U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
 	U64 len;
 	char tmp[MAX_FILEPATH_LEN];
 
-    if (node==0) {
+    if (node==0 || !node->nodeType->exists(node)) {
         return -K_ENOENT;
-    }
+    }	
+	if (!node->path.isLink) {
+		return syscall_stat64(thread, path, buffer);
+	}
 	strcpy(tmp, node->path.localPath);
 	strcat(tmp, ".link");
 	link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
-	if (!link) {
-		return syscall_stat64(thread, path, buffer);
-	}
 	len = link->nodeType->length(node);
 	writeStat(thread->process->memory, buffer, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
 	return 0;
@@ -385,7 +385,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 		U32 recordLen;
 
 		if (is64) {
-			recordLen = 24+strlen(entry->name);
+			recordLen = 20+strlen(entry->name);
             recordLen=(recordLen+3) / 4 * 4;
             if (recordLen+len>count) {
                 if (len==0)

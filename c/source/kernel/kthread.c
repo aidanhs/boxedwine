@@ -180,7 +180,7 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         if (readd(memory, addr) != value) {
 			return -K_EWOULDBLOCK;
         }
-		allocFutex(thread, ramAddress, millies);
+		f = allocFutex(thread, ramAddress, millies);
 		thread->waitStartTime = getMilliesSinceStart();			
 		thread->waitType = WAIT_FUTEX;
 		thread->timer.process = thread->process;

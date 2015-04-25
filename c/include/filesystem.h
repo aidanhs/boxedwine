@@ -17,7 +17,7 @@ void initFileSystem(const char* rootPath);
 struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev);
 struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess);
 void freeOpenNode(struct OpenNode* node);
-struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath);
+struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath, U32* isLink);
 
 U32 getDirCount(struct OpenNode* node);
 struct Node* getDirNode(struct OpenNode* node, U32 index);
@@ -27,7 +27,7 @@ BOOL normalizePath(char* path);
 void localPathToRemote(char* path);
 void remotePathToLocal(char* path);
 // if returns true, path will contain the local link
-BOOL followLinks(char* path);
+BOOL followLinks(char* path, U32* isLink);
 BOOL doesPathExist(const char* path);
 BOOL kreadLink(const char* path, char* buffer);
 

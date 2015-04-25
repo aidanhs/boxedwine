@@ -168,15 +168,14 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 
 	for (i=pageStart;i<pageStart+pageCount;i++) {
 		struct Page* page = memory->mmu[i];
-		if (page == &ramOnDemandPage || page==&ramOnDemandFilePage || GET_PAGE(memory->data[i])==PAGE_RESERVED) {
-			U32 data = memory->data[i];
+		U32 data = memory->data[i];
 
-			data&=~PAGE_PERMISSION_MASK;
-			data|=(permissions << 24);
-			memory->data[i] = data;
-			if (page == &invalidPage) {
-				memory->mmu[i] = &ramOnDemandPage;
-			}
+		data&=~PAGE_PERMISSION_MASK;
+		data|=(permissions << 24);
+		memory->data[i] = data;
+
+		if (page == &invalidPage) {
+			memory->mmu[i] = &ramOnDemandPage;
 		} else if (page==&ramPageRO || page==&ramPageWO || page==&ramPageWR) {
 			if (read && write) {
 				memory->mmu[i] = &ramPageWR;
@@ -186,6 +185,7 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 			} else {
 				memory->mmu[i] = &ramPageRO;
 			}
+		} else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage) {
 		} else {
 			kpanic("syscall_mprotect unknown page type");
 		}

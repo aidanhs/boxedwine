@@ -30,6 +30,7 @@
 #define MKDIR_INCLUDE <direct.h>
 #define RMDIR_INCLUDE <direct.h>
 #define MKDIR(x) mkdir(x)
+#define INLINE __inline
 #else
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
@@ -38,6 +39,7 @@
 #define RMDIR_INCLUDE <unistd.h>
 #define MKDIR(x) mkdir(x, 0777)
 #define O_BINARY 0
+#define INLINE inline
 #endif
 
 #ifndef S_ISDIR

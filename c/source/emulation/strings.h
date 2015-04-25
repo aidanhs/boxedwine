@@ -182,7 +182,7 @@ void cmpsb32_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = v1;
         cpu->src.u8 = v2;
         cpu->result.u8 = v1 - v2;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     }
     CYCLES(9+4*count);
     NEXT();
@@ -209,7 +209,7 @@ void cmpsb16_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = v1;
         cpu->src.u8 = v2;
         cpu->result.u8 = v1 - v2;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     }
     CYCLES(9+4*count);
     NEXT();
@@ -228,7 +228,7 @@ void cmpsb32(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = v1;
         cpu->src.u8 = v2;
         cpu->result.u8 = v1 - v2;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     CYCLES(5);
     NEXT();
 }
@@ -246,7 +246,7 @@ void cmpsb16(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = v1;
         cpu->src.u8 = v2;
         cpu->result.u8 = v1 - v2;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     CYCLES(5);
     NEXT();
 }
@@ -272,7 +272,7 @@ void cmpsw32_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = v1;
         cpu->src.u16 = v2;
         cpu->result.u16 = v1 - v2;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     }
     CYCLES(9+4*count);
     NEXT();
@@ -299,7 +299,7 @@ void cmpsw16_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = v1;
         cpu->src.u16 = v2;
         cpu->result.u16 = v1 - v2;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     }
     CYCLES(9+4*count);
     NEXT();
@@ -318,7 +318,7 @@ void cmpsw32(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = v1;
         cpu->src.u16 = v2;
         cpu->result.u16 = v1 - v2;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     CYCLES(5);
     NEXT();
 }
@@ -336,7 +336,7 @@ void cmpsw16(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = v1;
         cpu->src.u16 = v2;
         cpu->result.u16 = v1 - v2;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     CYCLES(5);
     NEXT();
 }
@@ -362,7 +362,7 @@ void cmpsd32_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = v1;
         cpu->src.u32 = v2;
         cpu->result.u32 = v1 - v2;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     }
     CYCLES(9+4*count);
     NEXT();
@@ -389,7 +389,7 @@ void cmpsd16_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = v1;
         cpu->src.u32 = v2;
         cpu->result.u32 = v1 - v2;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     }
     CYCLES(9+4*count);
     NEXT();
@@ -408,7 +408,7 @@ void cmpsd32(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = v1;
         cpu->src.u32 = v2;
         cpu->result.u32 = v1 - v2;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     CYCLES(5);
     NEXT();
 }
@@ -426,7 +426,7 @@ void cmpsd16(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = v1;
         cpu->src.u32 = v2;
         cpu->result.u32 = v1 - v2;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     CYCLES(5);
     NEXT();
 }
@@ -688,7 +688,7 @@ void scasb32_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = AL;
         cpu->src.u8 = v1;
         cpu->result.u8 = AL - v1;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     }
     CYCLES(8+4*count);
     NEXT();
@@ -711,7 +711,7 @@ void scasb16_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = AL;
         cpu->src.u8 = v1;
         cpu->result.u8 = AL - v1;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     }
     CYCLES(8+4*count);
     NEXT();
@@ -726,7 +726,7 @@ void scasb32(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = AL;
         cpu->src.u8 = v1;
         cpu->result.u8 = AL - v1;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     CYCLES(4);
     NEXT();
 }
@@ -740,7 +740,7 @@ void scasb16(struct CPU* cpu, struct Op* op) {
         cpu->dst.u8 = AL;
         cpu->src.u8 = v1;
         cpu->result.u8 = AL - v1;
-        cpu->inst = FLAGS_SUB8;
+        cpu->lazyFlags = FLAGS_SUB8;
     CYCLES(4);
     NEXT();
 }
@@ -762,7 +762,7 @@ void scasw32_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = AX;
         cpu->src.u16 = v1;
         cpu->result.u16 = AX - v1;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     }
     CYCLES(8+4*count);
     NEXT();
@@ -785,7 +785,7 @@ void scasw16_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = AX;
         cpu->src.u16 = v1;
         cpu->result.u16 = AX - v1;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     }
     CYCLES(8+4*count);
     NEXT();
@@ -800,7 +800,7 @@ void scasw32(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = AX;
         cpu->src.u16 = v1;
         cpu->result.u16 = AX - v1;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     CYCLES(4);
     NEXT();
 }
@@ -814,7 +814,7 @@ void scasw16(struct CPU* cpu, struct Op* op) {
         cpu->dst.u16 = AX;
         cpu->src.u16 = v1;
         cpu->result.u16 = AX - v1;
-        cpu->inst = FLAGS_SUB16;
+        cpu->lazyFlags = FLAGS_SUB16;
     CYCLES(4);
     NEXT();
 }
@@ -836,7 +836,7 @@ void scasd32_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = EAX;
         cpu->src.u32 = v1;
         cpu->result.u32 = EAX - v1;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     }
     CYCLES(8+4*count);
     NEXT();
@@ -859,7 +859,7 @@ void scasd16_r(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = EAX;
         cpu->src.u32 = v1;
         cpu->result.u32 = EAX - v1;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     }
     CYCLES(8+4*count);
     NEXT();
@@ -874,7 +874,7 @@ void scasd32(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = EAX;
         cpu->src.u32 = v1;
         cpu->result.u32 = EAX - v1;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     CYCLES(4);
     NEXT();
 }
@@ -888,7 +888,7 @@ void scasd16(struct CPU* cpu, struct Op* op) {
         cpu->dst.u32 = EAX;
         cpu->src.u32 = v1;
         cpu->result.u32 = EAX - v1;
-        cpu->inst = FLAGS_SUB32;
+        cpu->lazyFlags = FLAGS_SUB32;
     CYCLES(4);
     NEXT();
 }

@@ -71,7 +71,7 @@ void pushCode32(int value) {
 
 void newInstruction(int instruction, int flags) {
     cseip=CODE_ADDRESS;
-    cpu->inst = FLAGS_NONE;
+    cpu->lazyFlags = FLAGS_NONE;
     cpu->flags = flags;
     //cpu.blocks.clear();
     EAX=0;
@@ -94,13 +94,14 @@ void newInstructionWithRM(int instruction, int rm, int flags) {
 }
 
 void runTestCPU() {
-	struct Op* block;
+	struct Block* block;
 
     pushCode8(0x70); // jump causes the decoder to stop building the block
     pushCode8(0);
     block = decodeBlock(cpu);
 	runBlock(cpu, block);
-	freeOp(block);
+	freeOp(block->ops);
+	freeBlock(block);
 }
 
 struct Data {

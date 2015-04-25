@@ -1017,7 +1017,7 @@ public class Main {
         out("        cpu->dst.u"+bits+" = v1;");
         out("        cpu->src.u"+bits+" = v2;");
         out("        cpu->result.u"+bits+" = v1 - v2;");
-        out("        cpu->inst = FLAGS_SUB"+bits+";");
+        out("        cpu->lazyFlags = FLAGS_SUB"+bits+";");
         if (repeat) {
             out("    }");
             out("    CYCLES(9+4*count);");
@@ -1051,7 +1051,7 @@ public class Main {
         out("        cpu->dst.u"+bits+" = "+AX+";");
         out("        cpu->src.u"+bits+" = v1;");
         out("        cpu->result.u"+bits+" = "+AX+" - v1;");
-        out("        cpu->inst = FLAGS_SUB"+bits+";");
+        out("        cpu->lazyFlags = FLAGS_SUB"+bits+";");
         if (repeat) {
             out("    }");
             out("    CYCLES(8+4*count);");
@@ -1172,7 +1172,7 @@ public class Main {
         out("    cpu->oldcf=getCF(cpu);");
         out("    cpu->dst.u"+bits+"="+destLoad+";");
         out("    cpu->result.u"+bits+"=cpu->dst.u"+bits+" "+op+" 1;");
-        out("    cpu->inst = "+flagName+";");
+        out("    cpu->lazyFlags = "+flagName+";");
         out("    "+destSave1+"cpu->result.u"+bits+destSave2+";");
         out("    CYCLES("+cycles+");");
         out("    NEXT();");
@@ -1230,7 +1230,7 @@ public class Main {
         out("    cpu->dst.u"+bits+" = "+loadDest+";");
         out("    cpu->src.u"+bits+" = "+source+";");
         out("    cpu->result.u"+bits+" = cpu->dst.u"+bits+" "+op+" cpu->src.u"+bits+(cf?" "+op+" cpu->oldcf;":";"));
-        out("    cpu->inst = "+flagName+";");
+        out("    cpu->lazyFlags = "+flagName+";");
         if (result)
         out("    "+saveDest1+" cpu->result.u"+bits+saveDest2+";");
         out("    CYCLES("+cycles+");");
@@ -1250,15 +1250,15 @@ public class Main {
     static public String rcr8 = "fillFlagsNoOF(cpu);\r\n    result = (var1 >> var2) | ((cpu->flags & CF) << (8-var2)) | (var1 << (9-var2));\r\n    setCF(cpu, (var1 >> (var2 - 1)) & 1);\r\n    setOF(cpu, (result ^ (result<<1)) & 0x80);";
     static public String rcr16 = "fillFlagsNoOF(cpu);\r\n    result = (var1 >> var2) | ((cpu->flags & CF) << (16-var2)) | (var1 << (17-var2));\r\n    setCF(cpu, (var1 >> (var2 - 1)) & 1);\r\n    setOF(cpu, (result ^ (result<<1)) & 0x8000);";
     static public String rcr32 = "fillFlagsNoOF(cpu);\r\n    if (var2==1) {\r\n        result = (var1 >> var2) | ((cpu->flags & CF) << 31);\r\n    } else {\r\n        result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));\r\n    }\r\n    setCF(cpu, (var1 >> (var2 - 1)) & 1);\r\n    setOF(cpu, (result ^ (result<<1)) & 0x80000000);";
-    static public String shl8 = "result = var1 << var2;\r\n    cpu->inst = FLAGS_SHL8;\r\n    cpu->result.u8 = result;\r\n    cpu->src.u8=var2;\r\n    cpu->dst.u8 = var1;";
-    static public String shl16 = "result = var1 << var2;\r\n    cpu->inst = FLAGS_SHL16;\r\n    cpu->result.u16 = result;\r\n    cpu->src.u16=var2;\r\n    cpu->dst.u16 = var1;";
-    static public String shl32 = "result = var1 << var2;\r\n    cpu->inst = FLAGS_SHL32;\r\n    cpu->result.u32 = result;\r\n    cpu->src.u32=var2;\r\n    cpu->dst.u32 = var1;";
-    static public String shr8 = "result = var1 >> var2;\r\n    cpu->inst = FLAGS_SHR8;\r\n    cpu->result.u8 = result;\r\n    cpu->src.u8=var2;\r\n    cpu->dst.u8 = var1;";
-    static public String shr16 = "result = var1 >> var2;\r\n    cpu->inst = FLAGS_SHR16;\r\n    cpu->result.u16 = result;\r\n    cpu->src.u16=var2;\r\n    cpu->dst.u16 = var1;";
-    static public String shr32 = "result = var1 >> var2;\r\n    cpu->inst = FLAGS_SHR32;\r\n    cpu->result.u32 = result;\r\n    cpu->src.u32=var2;\r\n    cpu->dst.u32 = var1;";
-    static public String sar8 = "result = (S8)var1 >> var2;\r\n    cpu->inst = FLAGS_SAR8;\r\n    cpu->result.u8 = result;\r\n    cpu->src.u8=var2;\r\n    cpu->dst.u8 = var1;";
-    static public String sar16 = "result = (S16)var1 >> var2;\r\n    cpu->inst = FLAGS_SAR16;\r\n    cpu->result.u16 = result;\r\n    cpu->src.u16=var2;\r\n    cpu->dst.u16 = var1;";
-    static public String sar32 = "result = (S32)var1 >> var2;\r\n    cpu->inst = FLAGS_SAR32;\r\n    cpu->result.u32 = result;\r\n    cpu->src.u32=var2;\r\n    cpu->dst.u32 = var1;";
+    static public String shl8 = "result = var1 << var2;\r\n    cpu->lazyFlags = FLAGS_SHL8;\r\n    cpu->result.u8 = result;\r\n    cpu->src.u8=var2;\r\n    cpu->dst.u8 = var1;";
+    static public String shl16 = "result = var1 << var2;\r\n    cpu->lazyFlags = FLAGS_SHL16;\r\n    cpu->result.u16 = result;\r\n    cpu->src.u16=var2;\r\n    cpu->dst.u16 = var1;";
+    static public String shl32 = "result = var1 << var2;\r\n    cpu->lazyFlags = FLAGS_SHL32;\r\n    cpu->result.u32 = result;\r\n    cpu->src.u32=var2;\r\n    cpu->dst.u32 = var1;";
+    static public String shr8 = "result = var1 >> var2;\r\n    cpu->lazyFlags = FLAGS_SHR8;\r\n    cpu->result.u8 = result;\r\n    cpu->src.u8=var2;\r\n    cpu->dst.u8 = var1;";
+    static public String shr16 = "result = var1 >> var2;\r\n    cpu->lazyFlags = FLAGS_SHR16;\r\n    cpu->result.u16 = result;\r\n    cpu->src.u16=var2;\r\n    cpu->dst.u16 = var1;";
+    static public String shr32 = "result = var1 >> var2;\r\n    cpu->lazyFlags = FLAGS_SHR32;\r\n    cpu->result.u32 = result;\r\n    cpu->src.u32=var2;\r\n    cpu->dst.u32 = var1;";
+    static public String sar8 = "result = (S8)var1 >> var2;\r\n    cpu->lazyFlags = FLAGS_SAR8;\r\n    cpu->result.u8 = result;\r\n    cpu->src.u8=var2;\r\n    cpu->dst.u8 = var1;";
+    static public String sar16 = "result = (S16)var1 >> var2;\r\n    cpu->lazyFlags = FLAGS_SAR16;\r\n    cpu->result.u16 = result;\r\n    cpu->src.u16=var2;\r\n    cpu->dst.u16 = var1;";
+    static public String sar32 = "result = (S32)var1 >> var2;\r\n    cpu->lazyFlags = FLAGS_SAR32;\r\n    cpu->result.u32 = result;\r\n    cpu->src.u32=var2;\r\n    cpu->dst.u32 = var1;";
 
     static public void shift() throws IOException {
         shiftInst8("rol8", "op->data1", "1", "3", rol8, 0, 0, false);

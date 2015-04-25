@@ -26,6 +26,9 @@
 
 #include CURDIR_INCLUDE
 
+U32 screenWidth = 800;
+U32 screenHeight = 600;
+
 #ifndef __TEST
 
 char curdir[1024];
@@ -54,9 +57,6 @@ void mainloop() {
 			break;
 	};
 }
-
-U32 screenWidth = 800;
-U32 screenHeight = 600;
 
 U32 translate(U32 key) {
 	switch (key) {
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
 #ifndef __EMSCRIPTEN__
 	U32 lastTitleUpdate = 0;
 #endif
-	printf("Starting ...\n");
+	klog("Starting ...");
 
 	startTime = getSystemTimeAsMicroSeconds();
 #ifdef LOG_OPS
@@ -282,10 +282,10 @@ int main(int argc, char **argv) {
 		strcat(base, "root");
 		root=base;
 	}
-	printf("Using root directory: %s", root);
+	klog("Using root directory: %s", root);
 	initSystem();
 	if (!doesPathExist(root)) {
-		printf("root %s does not exist", root);
+		kwarn("root %s does not exist", root);
 		return 0;
 	}
 	initFileSystem(root);
@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
 	} else {
 		argv = &argv[i];
 	}
-	printf("Launching %s", argv[0]);
+	klog("Launching %s", argv[0]);
 	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv)) {
 #ifdef __EMSCRIPTEN__
                 emscripten_set_main_loop(mainloop, 0, 1);

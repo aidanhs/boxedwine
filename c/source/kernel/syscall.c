@@ -16,7 +16,7 @@
 #include "ksystem.h"
 
 #include <stdarg.h>
-
+#undef LOG_SYSCALLS
 #ifdef LOG_OPS
 void logsyscall(const char* fmt, ...) {
 	va_list args;

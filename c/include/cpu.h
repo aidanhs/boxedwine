@@ -7,6 +7,17 @@
 #include "block.h"
 #include "fpu.h"
 
+struct CPU;
+
+struct LazyFlags {
+	U32 (*getCF)(struct CPU* cpu);
+	U32 (*getOF)(struct CPU* cpu);
+	U32 (*getAF)(struct CPU* cpu);
+	U32 (*getZF)(struct CPU* cpu);
+	U32 (*getSF)(struct CPU* cpu);
+	U32 (*getPF)(struct CPU* cpu);
+};
+
 struct CPU {
 	struct Reg		reg[9]; // index 8 is 0
 	U8*		reg8[8];
@@ -21,7 +32,7 @@ struct CPU {
 	struct Reg     dst;
 	struct Reg     dst2;
 	struct Reg     result;
-	int     inst;
+	struct LazyFlags* lazyFlags;
 	int	    df;
 	U8      oldcf;
 	U8		big;
@@ -44,13 +55,6 @@ struct user_desc {
     U32  seg_not_present:1;
     U32  useable:1;
 };
-
-U32 getCF(struct CPU* cpu);
-U32 getOF(struct CPU* cpu);
-U32 getAF(struct CPU* cpu);
-U32 getZF(struct CPU* cpu);
-U32 getSF(struct CPU* cpu);
-U32 getPF(struct CPU* cpu);
 
 #define addFlag(f) cpu->flags |= (f)
 #define removeFlag(f) cpu->flags &=~ (f)
@@ -134,57 +138,69 @@ void initCPU(struct CPU* cpu, struct Memory* memory);
 void onCreateCPU(struct CPU* cpu);
 void runBlock(struct CPU* cpu, struct Block* block);
 void runCPU(struct CPU* cpu);
+#ifdef __TEST
+#define getBlock1(cpu) 0
+#define getBlock2(cpu) 0
+#else
 struct Block* getBlock1(struct CPU* cpu);
 struct Block* getBlock2(struct CPU* cpu);
+#endif
 
-#define FLAGS_NONE 0
-#define FLAGS_ADD8 1
-#define FLAGS_ADD16 2
-#define FLAGS_ADD32 3
-#define FLAGS_OR8 4
-#define FLAGS_OR16 5
-#define FLAGS_OR32 6
-#define FLAGS_ADC8 7
-#define FLAGS_ADC16 8
-#define FLAGS_ADC32 9
-#define FLAGS_SBB8 10
-#define FLAGS_SBB16 11
-#define FLAGS_SBB32 12
-#define FLAGS_AND8 13
-#define FLAGS_AND16 14
-#define FLAGS_AND32 15
-#define FLAGS_SUB8 16
-#define FLAGS_SUB16 17
-#define FLAGS_SUB32 18
-#define FLAGS_XOR8 19
-#define FLAGS_XOR16 20
-#define FLAGS_XOR32 21
-#define FLAGS_INC8 22
-#define FLAGS_INC16 23
-#define FLAGS_INC32 24
-#define FLAGS_DEC8 25
-#define FLAGS_DEC16 26
-#define FLAGS_DEC32 27
-#define FLAGS_SHL8 28
-#define FLAGS_SHL16 29
-#define FLAGS_SHL32 30
-#define FLAGS_SHR8 31
-#define FLAGS_SHR16 32
-#define FLAGS_SHR32 33
-#define FLAGS_SAR8 34
-#define FLAGS_SAR16 35
-#define FLAGS_SAR32 36
-#define FLAGS_CMP8 37
-#define FLAGS_CMP16 38
-#define FLAGS_CMP32 39
-#define FLAGS_TEST8 40
-#define FLAGS_TEST16 41
-#define FLAGS_TEST32 42
-#define FLAGS_DSHL16 43
-#define FLAGS_DSHL32 44
-#define FLAGS_DSHR16 45
-#define FLAGS_DSHR32 46
-#define FLAGS_NEG8 47
-#define FLAGS_NEG16 48
-#define FLAGS_NEG32 49
+extern struct LazyFlags* FLAGS_NONE;
+extern struct LazyFlags* FLAGS_ADD8;
+extern struct LazyFlags* FLAGS_ADD16;
+extern struct LazyFlags* FLAGS_ADD32;
+extern struct LazyFlags* FLAGS_OR8;
+extern struct LazyFlags* FLAGS_OR16;
+extern struct LazyFlags* FLAGS_OR32;
+extern struct LazyFlags* FLAGS_ADC8;
+extern struct LazyFlags* FLAGS_ADC16;
+extern struct LazyFlags* FLAGS_ADC32;
+extern struct LazyFlags* FLAGS_SBB8;
+extern struct LazyFlags* FLAGS_SBB16;
+extern struct LazyFlags* FLAGS_SBB32;
+extern struct LazyFlags* FLAGS_AND8;
+extern struct LazyFlags* FLAGS_AND16;
+extern struct LazyFlags* FLAGS_AND32;
+extern struct LazyFlags* FLAGS_SUB8;
+extern struct LazyFlags* FLAGS_SUB16;
+extern struct LazyFlags* FLAGS_SUB32;
+extern struct LazyFlags* FLAGS_XOR8;
+extern struct LazyFlags* FLAGS_XOR16;
+extern struct LazyFlags* FLAGS_XOR32;
+extern struct LazyFlags* FLAGS_INC8;
+extern struct LazyFlags* FLAGS_INC16;
+extern struct LazyFlags* FLAGS_INC32;
+extern struct LazyFlags* FLAGS_DEC8;
+extern struct LazyFlags* FLAGS_DEC16;
+extern struct LazyFlags* FLAGS_DEC32;
+extern struct LazyFlags* FLAGS_SHL8;
+extern struct LazyFlags* FLAGS_SHL16;
+extern struct LazyFlags* FLAGS_SHL32;
+extern struct LazyFlags* FLAGS_SHR8;
+extern struct LazyFlags* FLAGS_SHR16;
+extern struct LazyFlags* FLAGS_SHR32;
+extern struct LazyFlags* FLAGS_SAR8;
+extern struct LazyFlags* FLAGS_SAR16;
+extern struct LazyFlags* FLAGS_SAR32;
+extern struct LazyFlags* FLAGS_CMP8;
+extern struct LazyFlags* FLAGS_CMP16;
+extern struct LazyFlags* FLAGS_CMP32;
+extern struct LazyFlags* FLAGS_TEST8;
+extern struct LazyFlags* FLAGS_TEST16;
+extern struct LazyFlags* FLAGS_TEST32;
+extern struct LazyFlags* FLAGS_DSHL16;
+extern struct LazyFlags* FLAGS_DSHL32;
+extern struct LazyFlags* FLAGS_DSHR16;
+extern struct LazyFlags* FLAGS_DSHR32;
+extern struct LazyFlags* FLAGS_NEG8;
+extern struct LazyFlags* FLAGS_NEG16;
+extern struct LazyFlags* FLAGS_NEG32;
+
+INLINE U32 getCF(struct CPU* cpu) {return cpu->lazyFlags->getCF(cpu);}
+INLINE U32 getOF(struct CPU* cpu) {return cpu->lazyFlags->getOF(cpu);}
+INLINE U32 getAF(struct CPU* cpu) {return cpu->lazyFlags->getAF(cpu);}
+INLINE U32 getZF(struct CPU* cpu) {return cpu->lazyFlags->getZF(cpu);}
+INLINE U32 getSF(struct CPU* cpu) {return cpu->lazyFlags->getSF(cpu);}
+INLINE U32 getPF(struct CPU* cpu) {return cpu->lazyFlags->getPF(cpu);}
 #endif

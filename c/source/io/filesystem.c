@@ -14,6 +14,7 @@
 #include "kprocess.h"
 #include "kfiledescriptor.h"
 #include "ram.h"
+#include "kstring.h"
 
 #include UNISTD
 #include UTIME
@@ -357,6 +358,8 @@ BOOL file_setLastModifiedTime(struct Node* node, U32 time) {
 }
 
 U32 file_getType(struct Node* node) {
+	if (node->path.isLink) 
+		return 10; // DT_LNK
 	if (file_isDirectory(node))
 		return 4; // DT_DIR
 	return 8; // DT_REG
@@ -369,18 +372,20 @@ U32 file_getMode(struct Node* node) {
 
 	path = pathMakeWindowsHappy(path);
 	if (stat(path, &buf)==0) {
+		/*
 		if (S_ISDIR(buf.st_mode))
 			result |= K__S_IFDIR;
 		else
 			result |= K__S_IFREG;
-		if (buf.st_mode & S_IREAD)
+			*/
+		//if (buf.st_mode & S_IREAD)
 			result |= K__S_IREAD;
-		if (buf.st_mode & S_IWRITE)
+		//if (buf.st_mode & S_IWRITE)
 			result |= K__S_IWRITE;
-		if (buf.st_mode & S_IEXEC)
+		//if (buf.st_mode & S_IEXEC)
 			result |= K__S_IEXEC;
 	}
-	return result;
+	return result | (file_getType(node) << 12);
 }
 
 BOOL file_canRead(struct Node* node) {
@@ -407,7 +412,7 @@ struct Node* getNodeInCache(const char* localPath) {
 	return (struct Node*)getHashmapValue(&nodeMap, localPath);
 }
 
-struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath) {
+struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath, U32* isLink) {
 	struct Node* result;
 
 	if (path[0]=='/')
@@ -432,7 +437,7 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 	strcat(nativePath, localPath);
 	while (TRUE) {
 		localPathToRemote(nativePath+strlen(root)); // don't convert colon's in the root path			
-		if (followLinks(nativePath)) {
+		if (followLinks(nativePath, isLink)) {
 			normalizePath(nativePath);
 			memmove(nativePath+strlen(root), nativePath, strlen(nativePath)+1);
 			memcpy(nativePath, root, strlen(root));
@@ -446,7 +451,8 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing) {
 	char localPath[MAX_FILEPATH_LEN];
 	char nativePath[MAX_FILEPATH_LEN];
-	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, nativePath);
+	U32 isLink = 0;
+	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, nativePath, &isLink);
 		
 	if (result)
 		return result;		
@@ -455,7 +461,9 @@ struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path
 		return 0;
 	}
 	
-	return allocNode(localPath, nativePath, &fileNodeType, 1);	
+	result = allocNode(localPath, nativePath, &fileNodeType, 1);	
+	result->path.isLink = isLink;
+	return result;
 }
 
 struct OpenNode* freeOpenNodes;
@@ -486,6 +494,7 @@ struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 
 
 struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev) {
 	struct Node* result;
+
 	U32 localLen = 0;
 	U32 nativeLen = 0;
 	if (localPath)
@@ -608,7 +617,7 @@ BOOL kreadLink(const char* path, char* buffer) {
 	return TRUE;
 }
 
-BOOL followLinks(char* path) {
+BOOL followLinks(char* path, U32* isLink) {
 	int len;
 	int i;
 	char tmp[MAX_FILEPATH_LEN];
@@ -620,6 +629,8 @@ BOOL followLinks(char* path) {
 	if (doesPathExist(tmp)) {
 		if (kreadLink(tmp, tmp)) {
 			strcpy(path, tmp);
+			if (isLink)
+				*isLink = 1;
 			return TRUE;
 		}
 	}
