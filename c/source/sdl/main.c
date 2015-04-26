@@ -28,6 +28,7 @@
 
 U32 screenWidth = 800;
 U32 screenHeight = 600;
+U32 lastTitleUpdate = 0;
 
 #ifndef __TEST
 
@@ -39,6 +40,7 @@ U32 getMilliesSinceStart() {
 
 void mainloop() {
 	U32 startTime = SDL_GetTicks();
+    U32 t;
 	while (1) {
 		SDL_Event e;
 		BOOL ran = runSlice();
@@ -50,6 +52,12 @@ void mainloop() {
 				onMouseMove(e.button.x, e.button.y);
 			}
 		};
+        t = getMilliesSinceStart();
+        if (lastTitleUpdate+1000 < t) {
+            EM_ASM_INT({
+                document.title="BoxedWine " + $0 + " MHz";
+            }, getMHz());
+        }
 		if (!ran) {
 			break;
 		}
@@ -245,9 +253,7 @@ int main(int argc, char **argv) {
 	int mb=64;
 	int bpp = 32;
 	int fullscreen = 0;
-#ifndef __EMSCRIPTEN__
-	U32 lastTitleUpdate = 0;
-#endif
+
 	klog("Starting ...");
 
 	startTime = getSystemTimeAsMicroSeconds();
