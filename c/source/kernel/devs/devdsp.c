@@ -8,6 +8,7 @@
 #include "kscheduler.h"
 
 #include <SDL.h>
+#include <string.h>
 
 #define AFMT_QUERY               0x00000000      /* Return current fmt */
 #define AFMT_MU_LAW              0x00000001
@@ -172,7 +173,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	U32 len = (request >> 16) & 0x3FFF;
 	struct Memory* memory = thread->process->memory;
 	struct CPU* cpu = &thread->cpu;
-	BOOL read = request & 0x40000000;
+	//BOOL read = request & 0x40000000;
 	BOOL write = request & 0x80000000;
 
 	switch (request & 0xFFFF) {
