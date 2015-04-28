@@ -254,11 +254,7 @@ U32 GET_SHIFT(U32 n) {
 }
 
 BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
-	if (!fbinit) {
-		if (SDL_Init(SDL_INIT_EVERYTHING) != 0){
-			kwarn("SDL_Init Error: %s", SDL_GetError());
-			return FALSE;
-		}
+	if (!fbinit) {		
 		surface=SDL_SetVideoMode(windowCX,windowCY,windowBPP, SDL_HWSURFACE);
 		SDL_ShowCursor(0);
 		fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR

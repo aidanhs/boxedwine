@@ -185,6 +185,7 @@
     <ClInclude Include="..\..\..\..\include\bufferaccess.h" />
     <ClInclude Include="..\..\..\..\include\cpu.h" />
     <ClInclude Include="..\..\..\..\include\decoder.h" />
+    <ClInclude Include="..\..\..\..\include\devdsp.h" />
     <ClInclude Include="..\..\..\..\include\devfb.h" />
     <ClInclude Include="..\..\..\..\include\devinput.h" />
     <ClInclude Include="..\..\..\..\include\devnull.h" />
@@ -252,6 +253,7 @@
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devinput.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c" />

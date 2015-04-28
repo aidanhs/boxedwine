@@ -19,6 +19,7 @@
 #include "bufferaccess.h"
 #include "devfb.h"
 #include "devinput.h"
+#include "devdsp.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -318,6 +319,7 @@ int main(int argc, char **argv) {
 	addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/input/event3", &touchInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
 	addVirtualFile("/dev/input/event4", &keyboardInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
+	addVirtualFile("/dev/dsp", &dspAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
 
 	argc = argc-i;
 	if (argc==0) {
@@ -325,6 +327,10 @@ int main(int argc, char **argv) {
 		argc=1;
 	} else {
 		argv = &argv[i];
+	}
+	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+		kwarn("SDL_Init Error: %s", SDL_GetError());
+		return 0;
 	}
 	klog("Launching %s", argv[0]);
 	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv)) {

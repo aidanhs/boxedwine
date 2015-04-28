@@ -95,7 +95,6 @@ S64 input_seek(struct OpenNode* node, S64 pos) {
 U32 input_read(struct InputEventQueue* queue, struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	U32 result = 0;
 
-	currentThread->cpu.log = 1;
 	while (queue->firstQueuedEvent && result+16<=len) {
 		struct EventData* e = queue->firstQueuedEvent;
 
