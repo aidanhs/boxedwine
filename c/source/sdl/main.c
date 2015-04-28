@@ -38,7 +38,7 @@ char curdir[1024];
 U32 getMilliesSinceStart() {
 	return SDL_GetTicks();
 }
-
+#ifdef __EMSCRIPTEN__
 void mainloop() {
 	U32 startTime = SDL_GetTicks();
     U32 t;
@@ -66,7 +66,7 @@ void mainloop() {
 			break;
 	};
 }
-
+#endif
 U32 translate(U32 key) {
 	switch (key) {
         case SDLK_ESCAPE:
