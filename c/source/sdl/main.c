@@ -38,35 +38,6 @@ char curdir[1024];
 U32 getMilliesSinceStart() {
 	return SDL_GetTicks();
 }
-#ifdef __EMSCRIPTEN__
-void mainloop() {
-	U32 startTime = SDL_GetTicks();
-    U32 t;
-	while (1) {
-		SDL_Event e;
-		BOOL ran = runSlice();
-                                
-		while (SDL_PollEvent(&e)) {
-			if (e.type == SDL_QUIT) {
-				SDL_Quit();
-			} else if( e.type == SDL_MOUSEMOTION || e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP ) { 
-				onMouseMove(e.button.x, e.button.y);
-			}
-		};
-        t = getMilliesSinceStart();
-        if (lastTitleUpdate+1000 < t) {
-            EM_ASM_INT({
-                document.title="BoxedWine " + $0 + " MHz";
-            }, getMHz());
-        }
-		if (!ran) {
-			break;
-		}
-		if (SDL_GetTicks()-startTime>20)
-			break;
-	};
-}
-#endif
 U32 translate(U32 key) {
 	switch (key) {
         case SDLK_ESCAPE:
@@ -242,6 +213,56 @@ U32 translate(U32 key) {
             return 0;
     }
 }
+
+#ifdef __EMSCRIPTEN__
+void mainloop() {
+    U32 startTime = SDL_GetTicks();
+    U32 t;
+    while (1) {
+        SDL_Event e;
+        BOOL ran = runSlice();
+        
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                SDL_Quit();
+            }  else if (e.type == SDL_MOUSEMOTION) {
+                onMouseMove(e.motion.x, e.motion.y);
+            } else if (e.type == SDL_MOUSEBUTTONDOWN) {
+                if (e.button.button==SDL_BUTTON_LEFT) {
+                    onMouseButtonDown(0);
+                } else if (e.button.button == SDL_BUTTON_MIDDLE) {
+                    onMouseButtonDown(2);
+                } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                    onMouseButtonDown(1);
+                }
+            } else if (e.type == SDL_MOUSEBUTTONUP) {
+                if (e.button.button==SDL_BUTTON_LEFT) {
+                    onMouseButtonUp(0);
+                } else if (e.button.button == SDL_BUTTON_MIDDLE) {
+                    onMouseButtonUp(2);
+                } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                    onMouseButtonUp(1);
+                }
+            } else if (e.type == SDL_KEYDOWN) {
+                onKeyDown(translate(e.key.keysym.sym));
+            } else if (e.type == SDL_KEYUP) {
+                onKeyUp(translate(e.key.keysym.sym));
+            }
+        };
+        t = getMilliesSinceStart();
+        if (lastTitleUpdate+1000 < t) {
+            EM_ASM_INT({
+                document.title="BoxedWine " + $0 + " MHz";
+            }, getMHz());
+        }
+        if (!ran) {
+            break;
+        }
+        if (SDL_GetTicks()-startTime>20)
+        break;
+    };
+}
+#endif
 
 U64 cpuTime;
 U64 cpuInstructions;
