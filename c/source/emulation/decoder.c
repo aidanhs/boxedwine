@@ -1784,6 +1784,9 @@ BOOL decode0fe(struct DecodeData* data) {
 			DECODE_E(dec8_reg, dec8_mem16, dec8_mem32);
 			LOG_E8("DEC", rm, data);
             break;
+		case 0x07:
+			data->op->func = (OpCallback)FETCH32(data);
+			return FALSE;
         default:
             kpanic("Illegal GRP4 Call %d, ",((rm>>3) & 7));
 			break;
@@ -2090,7 +2093,7 @@ struct Block* decodeBlock(struct CPU* cpu) {
 	data.rep_zero = 0;
 	data.cpu = cpu;
 	data.memory = cpu->memory;
-
+	
 	do  {
 		data.inst = FETCH8(pData)+data.opCode;
 	} while (decoder[data.inst](pData));

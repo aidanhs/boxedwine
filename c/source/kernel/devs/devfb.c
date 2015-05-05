@@ -362,7 +362,7 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return 0;
 }
 
-void fb_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void fb_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("fb_setAsync not implemented");
 }

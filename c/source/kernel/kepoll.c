@@ -36,7 +36,7 @@ BOOL kepoll_isBlocking(struct KObject* obj) {
 	return FALSE;
 }
 
-void kepoll_setAsync(struct KObject* obj, struct KProcess* process, BOOL isAsync) {
+void kepoll_setAsync(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kpanic("kepoll_setAsync not implemented yet");
 }

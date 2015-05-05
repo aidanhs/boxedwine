@@ -18,12 +18,14 @@ struct LazyFlags {
 	U32 (*getPF)(struct CPU* cpu);
 };
 
+#define LDT_ENTRIES 32
+
 struct CPU {
 	struct Reg		reg[9]; // index 8 is 0
 	U8*		reg8[8];
 	U32		segAddress[6];
 	U32		segValue[7]; // index 6 is for 0, used in LEA instruction
-	U32		ldt[32];
+	U32		ldt[LDT_ENTRIES];
 	U32		flags;
 	struct Reg		eip;	
 	struct Memory* memory;
@@ -39,6 +41,7 @@ struct CPU {
 	struct FPU     fpu;
 	struct Block* nextBlock;
 	struct Block* currentBlock;
+	struct Block* lastBlock;
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
 	BOOL log;

@@ -126,7 +126,7 @@ U32 file_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -K_ENODEV;
 }
 
-void file_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void file_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("file_setAsync not implemented");
 }
@@ -226,7 +226,7 @@ U32 dir_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -K_ENODEV;
 }
 
-void dir_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void dir_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("dir_setAsync not implemented");
 }

@@ -41,7 +41,7 @@ U32 null_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void null_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void null_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("null_setAsync not implemented");
 }

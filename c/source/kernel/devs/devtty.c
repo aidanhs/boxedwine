@@ -221,7 +221,7 @@ U32 tty_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return 0;
 }
 
-void tty_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void tty_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("tty_setAsync not implemented");
 }

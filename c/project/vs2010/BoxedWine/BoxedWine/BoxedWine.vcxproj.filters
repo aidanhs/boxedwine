@@ -260,9 +260,6 @@
     <ClCompile Include="..\..\..\..\source\kernel\syscall.c">
       <Filter>Source Files\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\sdl\main.c">
-      <Filter>Source Files\sdl</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\log.c">
       <Filter>Source Files\util</Filter>
     </ClCompile>
@@ -367,6 +364,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c">
       <Filter>Source Files\kernel\dev</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\sdl\main.c">
+      <Filter>Source Files\sdl</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

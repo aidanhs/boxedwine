@@ -51,7 +51,7 @@ U32 buffer_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void buffer_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void buffer_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("buffer_setAsync not implemented");
 }

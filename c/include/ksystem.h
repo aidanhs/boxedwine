@@ -11,7 +11,12 @@
 #define MAX_ADDRESS_SPACE 0xFFFF0000
 #define MAX_NUMBER_OF_FILES 0xFFFF
 
+#define CALL_BACK_ADDRESS 0xFFFF0000
+#define SIG_RETURN_ADDRESS CALL_BACK_ADDRESS
+
 void initSystem();
+void initCallbacks();
+void initCallbacksInProcess(struct KProcess* process);
 
 extern U64 startTime;
 

@@ -15,7 +15,7 @@ struct KObjectAccess {
 	void (*onDelete)(struct KObject* obj);
     void (*setBlocking)(struct KObject* obj, BOOL blocking);
     BOOL (*isBlocking)(struct KObject* obj);
-    void (*setAsync)(struct KObject* obj, struct KProcess* process, BOOL isAsync);
+    void (*setAsync)(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync);
     BOOL (*isAsync)(struct KObject* obj, struct KProcess* process);
     struct KFileLock* (*getLock)(struct KObject* obj, struct KFileLock* lock);
     U32  (*setLock)(struct KObject* obj, struct KFileLock* lock);

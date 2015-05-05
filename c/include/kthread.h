@@ -20,7 +20,8 @@
 
 struct KThread {
 	U32 id;
-	U32 sigMask;
+	U32 sigMask; // :TODO: what happens when this is changed while in a signal
+	U32 inSigMask;
 	U32 alternateStack;
 	U32 alternateStackSize;
 	struct CPU cpu;
@@ -39,6 +40,7 @@ struct KThread {
 	U32     waitData2;
 	U32     clear_child_tid;
 	U64     threadTime;
+	U32     inSysCall;
 	struct KPollData pollData[MAX_POLL_DATA];
 	U32 pollCount;
 	struct KTimer timer;
@@ -50,9 +52,11 @@ void freeThread(struct KThread* thread);
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process);
 void exitThread(struct KThread* thread, U32 status);
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime);
-void runSignals(struct KThread* thread);
+U32 syscall_sigreturn(struct KThread* thread);
+BOOL runSignals(struct KThread* thread);
 void runSignal(struct KThread* thread, U32 signal);
 void threadClearFutexes(struct KThread* thread);
 void initStackPointer(struct KThread* thread);
+void onExitSignal(struct CPU* cpu, struct Op* op);
 
 #endif

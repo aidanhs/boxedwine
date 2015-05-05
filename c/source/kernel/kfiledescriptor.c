@@ -95,7 +95,7 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
         case K_F_SETFL:
 			fd->accessFlags = (fd->accessFlags & K_O_ACCMODE) | (arg & ~K_O_ACCMODE);
 			fd->kobject->access->setBlocking(fd->kobject, (arg & K_O_NONBLOCK)==0);
-			fd->kobject->access->setAsync(fd->kobject, thread->process, arg & K_O_ASYNC);
+			fd->kobject->access->setAsync(fd->kobject, thread->process, fildes, arg & K_O_ASYNC);
             return 0;
         case K_F_GETLK: 
 		case K_F_GETLK64:
@@ -148,16 +148,13 @@ U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout) {
 	U32 i;
 	struct Memory* memory = thread->process->memory;
 	S32 result;
+	U32 address = pfds;
 
-	if (!thread->waitStartTime) {
-		U32 address = pfds;
-
-		thread->pollCount = nfds;
-		for (i=0;i<nfds;i++) {
-			thread->pollData[i].fd = readd(memory, address);address+=4;
-			thread->pollData[i].events = readw(memory, address);address+=2;
-			thread->pollData[i].revents = readw(memory, address);address+=2;
-		}
+	thread->pollCount = nfds;
+	for (i=0;i<nfds;i++) {
+		thread->pollData[i].fd = readd(memory, address);address+=4;
+		thread->pollData[i].events = readw(memory, address);address+=2;
+		thread->pollData[i].revents = readw(memory, address);address+=2;
 	}
 
 	result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
@@ -178,45 +175,41 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
 		U32 i;
 		int count = 0;
 
-		if (!thread->waitStartTime) {
-			U32 i;			
+		thread->pollCount = 0;
+		for (i=0;i<nfds;) {
+			U32 readbits = 0;
+			U32 writebits = 0;
+			U32 errorbits = 0;
+			U32 b;
 
-			thread->pollCount = 0;
-			for (i=0;i<nfds;) {
-				U32 readbits = 0;
-				U32 writebits = 0;
-				U32 errorbits = 0;
-				U32 b;
-
-				if (readfds!=0) {
-					readbits = readb(memory, readfds+i/8);
-				}
-				if (writefds!=0) {
-					writebits = readb(memory, writefds + i / 8);
-				}
-				if (errorfds!=0) {
-					errorbits = readb(memory, errorfds + i / 8);
-				}
-				for (b = 0; b < 8 && i < nfds; b++, i++) {
-					U32 mask = 1 << b;
-					U32 r = readbits & mask;
-					U32 w = writebits & mask;
-					U32 e = errorbits & mask;
-					if (r || w || e) {
-						U32 events = 0;
-						if (r)
-							events |= K_POLLIN;
-						if (w)
-							events |= K_POLLHUP;
-						if (e)
-							events |= K_POLLERR;
-						if (thread->pollCount>=MAX_POLL_DATA) {
-							kpanic("%d fd limit reached in poll", MAX_POLL_DATA);
-						}
-						thread->pollData[thread->pollCount].events = events;
-						thread->pollData[thread->pollCount].fd = i;
-						thread->pollCount++;
+			if (readfds!=0) {
+				readbits = readb(memory, readfds+i/8);
+			}
+			if (writefds!=0) {
+				writebits = readb(memory, writefds + i / 8);
+			}
+			if (errorfds!=0) {
+				errorbits = readb(memory, errorfds + i / 8);
+			}
+			for (b = 0; b < 8 && i < nfds; b++, i++) {
+				U32 mask = 1 << b;
+				U32 r = readbits & mask;
+				U32 w = writebits & mask;
+				U32 e = errorbits & mask;
+				if (r || w || e) {
+					U32 events = 0;
+					if (r)
+						events |= K_POLLIN;
+					if (w)
+						events |= K_POLLHUP;
+					if (e)
+						events |= K_POLLERR;
+					if (thread->pollCount>=MAX_POLL_DATA) {
+						kpanic("%d fd limit reached in poll", MAX_POLL_DATA);
 					}
+					thread->pollData[thread->pollCount].events = events;
+					thread->pollData[thread->pollCount].fd = i;
+					thread->pollCount++;
 				}
 			}
 		}

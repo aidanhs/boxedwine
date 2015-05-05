@@ -63,6 +63,7 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 			strcat(process->commandLine, " ");
 		strcat(process->commandLine, args[i]);
 	}
+	initCallbacksInProcess(process);
 }
 
 struct KProcess* freeProcesses;
@@ -167,7 +168,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 				incrementShmAttach(process, i);
 			}
 		}
-	}
+	}	
 }
 
 void writeStackString(struct CPU* cpu, const char* s) {
@@ -218,20 +219,26 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
     push32(cpu, argc);
 }
 
-void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, const char** env) {
+void setupThreadStack(struct CPU* cpu, const char* programName, int argc, const char** args, int envc, const char** env) {
 	U32 a[128];
 	U32 e[128];
 	int i;
 
+	push32(cpu, 0);
+	push32(cpu, 0);
+	push32(cpu, 0);	
+	writeStackString(cpu, programName);
 	if (argc>128)
 		kpanic("Too many args: 128 is max");
 	if (envc>128)
 		kpanic("Too many env: 128 is max");
+	//klog("env");
 	for (i=0;i<envc;i++) {
 		writeStackString(cpu, env[i]);
 		if (strncmp(env[i], "PATH=", 5)==0) {
 			setupPath(cpu->thread->process, env[i]+5);
 		}
+		//klog("    %s", env[i]);
 		e[i]=ESP;
 	}
 	for (i=0;i<argc;i++) {
@@ -244,7 +251,7 @@ void setupThreadStack(struct CPU* cpu, int argc, const char** args, int envc, co
 
 char tmpEnv[16*1024];
 
-void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 env) {
+void setupThreadStack2(struct CPU* cpu, const char* programName, const char* preArgs[3], U32 args, U32 env) {
 	U32 a[128];
 	U32 argc=0;
 	U32 e[128];
@@ -252,13 +259,19 @@ void setupThreadStack2(struct CPU* cpu, const char* preArgs[3], U32 args, U32 en
 	U32 i;
 	U32 pos = 0;
 
+	push32(cpu, 0);	
+	push32(cpu, 0);
+	push32(cpu, 0);
+	writeStackString(cpu, programName);
 	i=0;
 	// copy env into tmp before writing back onto the stack because some of the env's might be on the stack
+	//klog("env");
 	while (TRUE) {
 		U32 p = readd(cpu->memory, env+i*4);
 		char* str = getNativeString(cpu->memory, p);
 		if (!str[0])
 			break;
+		//klog("    %s", str);
 		if (strncmp(str, "PATH=", 5)==0) {
 			setupPath(cpu->thread->process, str+5);
 		}
@@ -405,7 +418,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 				}
 				argc+=argIndex;
 
-				setupThreadStack(&thread->cpu, argc, pArgs, envc, env);
+				setupThreadStack(&thread->cpu, process->name, argc, pArgs, envc, env);
 
 				strcpy(process->currentDirectory, currentDirectory);
 
@@ -420,11 +433,11 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 void processOnExitThread(struct KProcess* process) {
 	if (!processGetThreadCount(process)) {
 		struct KProcess* parent = getProcessById(process->parentId);
-		if (parent && parent->sigActions[K_SIGCHLD].handler!=K_SIG_DFL) {
-			if (parent->sigActions[K_SIGCHLD].handler==K_SIG_IGN) {
+		if (parent && parent->sigActions[K_SIGCHLD].handlerAndSigAction!=K_SIG_DFL) {
+			if (parent->sigActions[K_SIGCHLD].handlerAndSigAction==K_SIG_IGN) {
 				freeProcess(process); 
 			} else {
-				signalProcess(parent, K_SIGCHLD);
+				signalCHLD(parent, CLD_EXITED, process->id, process->userId, process->exitCode);
 			}
 		}
 		cleanupProcess(process); // release RAM, sockets, etc now.  No reason to wait to do that until waitpid is called
@@ -626,7 +639,7 @@ void runProcessTimer(struct KTimer* timer) {
 	} else {
 		timer->millies = timer->resetMillies + getMilliesSinceStart();
 	}
-	signalProcess(timer->process, K_SIGALRM);
+	signalALRM(timer->process);
 }
 
 U32 syscall_alarm(struct KThread* thread, U32 seconds) {
@@ -760,7 +773,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		openNode->access->close(openNode);
 	}
 	if (!interpreter && !isElf) {
-		return FALSE;
+		return -K_ENOENT;
 	}
 	if (interpreter) {
 		interpreterNode = getNodeFromLocalPath(process->currentDirectory, interpreter, TRUE);		
@@ -803,7 +816,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	preArgs[preArgCount++] = node->path.localPath;
 	memset(&thread->cpu.reg, 0, sizeof(thread->cpu.reg));
 	initStackPointer(thread);	
-	setupThreadStack2(&thread->cpu, preArgs, argv+4, envp);
+	setupThreadStack2(&thread->cpu, process->name, preArgs, argv+4, envp);
 
 	// reset memory must come after we grab the args and env
 	resetMemory(memory, thread->stackPageStart, thread->stackPageCount); // keep the stack we just setup
@@ -836,6 +849,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			}
 		}
 	}
+	initCallbacksInProcess(process);
 	if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {		
 		// :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
 		kpanic("program failed to load, but memory was already reset");
@@ -874,6 +888,7 @@ U32 syscall_exitgroup(struct KThread* thread, U32 code) {
 	return -K_CONTINUE;
 }
 
+// should only be called outside of runCPU (definitely not in a syscall)
 void signalProcess(struct KProcess* process, U32 signal) {	
 	struct KThread* thread = 0;
 	U32 threadIndex = 0;
@@ -887,6 +902,34 @@ void signalProcess(struct KProcess* process, U32 signal) {
 			runSignals(thread);
 		}
 	}
+}
+
+void signalIO(struct KProcess* process, U32 code, S32 band, FD fd) {
+	memset(process->sigActions[K_SIGIO].sigInfo, 0, sizeof(process->sigActions[K_SIGIO].sigInfo));
+	process->sigActions[K_SIGIO].sigInfo[0] = K_SIGIO;
+	process->sigActions[K_SIGIO].sigInfo[2] = code;
+	process->sigActions[K_SIGIO].sigInfo[3] = band;
+	process->sigActions[K_SIGIO].sigInfo[4] = fd;
+	signalProcess(process, K_SIGIO);
+}
+
+void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode) {
+	memset(process->sigActions[K_SIGCHLD].sigInfo, 0, sizeof(process->sigActions[K_SIGCHLD].sigInfo));
+	process->sigActions[K_SIGCHLD].sigInfo[0] = K_SIGCHLD;
+	process->sigActions[K_SIGCHLD].sigInfo[2] = code;
+	process->sigActions[K_SIGCHLD].sigInfo[3] = childPid;
+	process->sigActions[K_SIGCHLD].sigInfo[4] = sendingUID;
+	process->sigActions[K_SIGCHLD].sigInfo[5] = exitCode;
+	signalProcess(process, K_SIGCHLD);
+}
+
+void signalALRM(struct KProcess* process) {
+	memset(process->sigActions[K_SIGALRM].sigInfo, 0, sizeof(process->sigActions[K_SIGALRM].sigInfo));
+	process->sigActions[K_SIGALRM].sigInfo[0] = K_SIGALRM;
+	process->sigActions[K_SIGALRM].sigInfo[2] = K_SI_USER;
+	process->sigActions[K_SIGALRM].sigInfo[3] = process->id;
+	process->sigActions[K_SIGALRM].sigInfo[4] = process->userId;
+	signalProcess(process, K_SIGALRM);
 }
 
 #define K_RLIM_INFINITY 0xFFFFFFFF
@@ -984,6 +1027,11 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 	target = processGetThreadById(process, threadId);
 	if (!target)
 		return -K_ESRCH;
+	memset(process->sigActions[K_SIGALRM].sigInfo, 0, sizeof(process->sigActions[K_SIGALRM].sigInfo));
+	process->sigActions[signal].sigInfo[0] = signal;
+	process->sigActions[signal].sigInfo[2] = K_SI_USER;
+	process->sigActions[signal].sigInfo[3] = process->id;
+	process->sigActions[signal].sigInfo[4] = process->userId;
 	runSignal(target, signal);
 	return 0;
 }

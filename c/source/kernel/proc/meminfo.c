@@ -57,7 +57,7 @@ U32 meminfo_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void meminfo_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void meminfo_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("meminfo_setAsync not implemented");
 }

@@ -201,7 +201,7 @@ BOOL unixsocket_isBlocking(struct KObject* obj) {
 	return s->blocking;
 }
 
-void unixsocket_setAsync(struct KObject* obj, struct KProcess* process, BOOL isAsync) {
+void unixsocket_setAsync(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kpanic("unixsocket_setAsync not implemented yet");
 }

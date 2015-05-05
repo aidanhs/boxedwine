@@ -17,9 +17,9 @@ struct KList timers;
 
 void addTimer(struct KTimer* timer) {
 #ifdef LOG_SCHEDULER
-	printf("add timer\n");
+	klog("add timer");
 	if (timer->thread)
-		printf("    %d\n", timer->thread->id);
+		klog("    %d", timer->thread->id);
 #endif
 	timer->node = addItemToList(&timers, timer);
 	timer->active = 1;
@@ -27,9 +27,9 @@ void addTimer(struct KTimer* timer) {
 
 void removeTimer(struct KTimer* timer) {
 #ifdef LOG_SCHEDULER
-	printf("remove timer\n");
+	klog("remove timer");
 	if (timer->thread)
-		printf("    %d\n", timer->thread->id);
+		klog("    %d", timer->thread->id);
 #endif
 	removeItemFromList(&timers, timer->node);
 	timer->node = 0;
@@ -37,15 +37,15 @@ void removeTimer(struct KTimer* timer) {
 }
 
 void waitThread(struct KThread* thread) {
-	if (thread->inSignal) {
-		kpanic("tried to put a thread to sleep while in a signal");
-	}
 	unscheduleThread(thread);
 	thread->waitNode = addItemToList(&waitingThreads, thread);
 }
 
 void wakeThreads(U32 wakeType) {
 	struct KListNode* node = waitingThreads.first;
+#ifdef LOG_SCHEDULER
+	klog("wakeThreads %d", wakeType);
+#endif
 	while (node) {
 		struct KListNode* next = node->next;
 		struct KThread* thread = (struct KThread*)node->data;
@@ -73,7 +73,7 @@ void scheduleThread(struct KThread* thread) {
 		nextThread = thread->scheduledNode;
 	}
 #ifdef LOG_SCHEDULER
-	printf("schedule %d(%X)\n", thread->id, thread->scheduledNode);
+	klog("schedule %d(%X)", thread->id, thread->scheduledNode);
 	if (scheduledThreads.node)
 	{
 		struct KCNode* head=scheduledThreads.node;
@@ -81,19 +81,19 @@ void scheduleThread(struct KThread* thread) {
 
 		do {
 			U32 id = ((struct KThread*)node->data)->id;
-			printf("    %d(%X)\n",id, node);
+			klog("    %d(%X)",id, node);
 			node = node->next;
 		} while (node!=head);
 	}
 	{
 		struct KListNode* node = timers.first;
-		printf("timers\n");
+		klog("timers");
 		while (node) {
 			struct KTimer* timer = (struct KTimer*)node->data;
 			if (timer->thread) {
-				printf("    thread %d\n", timer->thread->id);
+				klog("    thread %d", timer->thread->id);
 			} else {
-				printf("    process %d\n", timer->process->id);
+				klog("    process %d", timer->process->id);
 			}		
 			node = node->next;
 		}
@@ -109,25 +109,25 @@ void unscheduleThread(struct KThread* thread) {
 		nextThread = scheduledThreads.node;
 	}
 #ifdef LOG_SCHEDULER
-	printf("unschedule %d(%X)\n", thread->id, thread->scheduledNode);	
+	klog("unschedule %d(%X)", thread->id, thread->scheduledNode);	
 	if (scheduledThreads.node)
 	{
 		struct KCNode* head=scheduledThreads.node;
 		struct KCNode* node = head;
 		do {
-			printf("    %d(%X)\n", ((struct KThread*)node->data)->id, node);
+			klog("    %d(%X)", ((struct KThread*)node->data)->id, node);
 			node = node->next;
 		} while (node!=head);
 	}
 	{
 		struct KListNode* node = timers.first;
-		printf("timers\n");
+		klog("timers");
 		while (node) {
 			struct KTimer* timer = (struct KTimer*)node->data;
 			if (timer->thread) {
-				printf("    thread %d\n", timer->thread->id);
+				klog("    thread %d", timer->thread->id);
 			} else {
-				printf("    process %d\n", timer->process->id);
+				klog("    process %d", timer->process->id);
 			}	
 			node = node->next;
 		}
@@ -144,11 +144,11 @@ void runThreadSlice(struct KThread* thread) {
 	cpu->blockCounter = 0;
 
 	do {
-		if (cpu->nextBlock) {
-			runBlock(cpu, cpu->nextBlock);
-		} else {
+		//if (cpu->nextBlock) {
+		//	runBlock(cpu, cpu->nextBlock);
+		//} else {
 			runCPU(cpu);
-		}
+		//}
 	} while (cpu->blockCounter < contextTime);
 	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }

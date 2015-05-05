@@ -27,12 +27,14 @@ struct MapedFiles {
 #define MAX_MAPPED_FILE 256
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 5
+#define K_SIG_INFO_SIZE 10
 
 struct KSigAction {
-	U32 handler;
-    U32 sigaction;
+	U32 handlerAndSigAction;
     U32 mask;
     U32 flags;
+	U32 restorer;
+	U32 sigInfo[K_SIG_INFO_SIZE];
 };
 
 struct KProcess {
@@ -75,7 +77,10 @@ struct Node* getNode(struct KProcess* process, U32 fileName);
 const char* getModuleName(struct CPU* cpu);
 U32 getModuleEip(struct CPU* cpu);
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
-void signalProcess(struct KProcess* process, U32 signal);
+//void signalProcess(struct KProcess* process, U32 signal);
+void signalIO(struct KProcess* process, U32 code, S32 band, FD fd);
+void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode);
+void signalALRM(struct KProcess* process);
 
 // returns tid
 U32 processAddThread(struct KProcess* process, struct KThread* thread);

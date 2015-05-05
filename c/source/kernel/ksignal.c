@@ -5,17 +5,17 @@
 #include "kthread.h"
 
 void writeSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
-	writed(memory, address, signal->handler);
-    writed(memory, address+4, signal->sigaction);
-    writed(memory, address+8, signal->mask);
-    writed(memory, address+12, signal->flags);
+	writed(memory, address, signal->handlerAndSigAction);
+    writed(memory, address+4, signal->flags);
+	writed(memory, address+8, signal->restorer);
+    writed(memory, address+12, signal->mask);	
 }
 
 void readSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
-	signal->handler = readd(memory, address);
-    signal->sigaction = readd(memory, address+4);
-    signal->mask = readd(memory, address+8);
-    signal->flags = readd(memory, address+12);
+	signal->handlerAndSigAction = readd(memory, address);
+    signal->flags = readd(memory, address+4);
+	signal->restorer = readd(memory, address+8);
+    signal->mask = readd(memory, address+12);	
 }
 
 U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
@@ -48,7 +48,6 @@ U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
             kpanic("sigprocmask how %d unsupported", how);
         }
     }
-    runSignals(thread);
 	return 0;
 }
 
@@ -57,15 +56,18 @@ U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss) {
 
 	if (oss!=0) {
         writed(memory, oss, thread->alternateStack);
-		writed(memory, oss+4, 0);
+		writed(memory, oss+4, (thread->alternateStack && thread->inSignal)?K_SS_ONSTACK:K_SS_DISABLE);
 		writed(memory, oss+8, thread->alternateStackSize);
     }
     if (ss!=0) {
-        thread->alternateStack = readd(memory, ss);
-        thread->alternateStackSize = readd(memory, ss+8);
-        if (readd(memory, ss+4)!=0) {
-            kpanic("signalstack not fully implemented");
-        }
+		U32 flags = readd(memory, ss+4);
+		if (flags & K_SS_DISABLE) {
+			thread->alternateStack = 0;
+			thread->alternateStackSize = 0;
+		} else {
+			thread->alternateStack = readd(memory, ss);
+			thread->alternateStackSize = readd(memory, ss+8);
+		}
     }
     return 0;
 }

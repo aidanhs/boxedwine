@@ -21,9 +21,9 @@ BOOL kfile_isBlocking(struct KObject* obj) {
 	return FALSE;
 }
 
-void kfile_setAsync(struct KObject* obj, struct KProcess* process, BOOL isAsync) {
+void kfile_setAsync(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync) {
 	struct OpenNode* openNode = (struct OpenNode*)obj->data;
-	openNode->access->setAsync(openNode, process, isAsync);
+	openNode->access->setAsync(openNode, process, fd, isAsync);
 }
 
 BOOL kfile_isAsync(struct KObject* obj, struct KProcess* process) {

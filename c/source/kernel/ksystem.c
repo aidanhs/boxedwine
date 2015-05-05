@@ -2,16 +2,59 @@
 #include "karray.h"
 #include "log.h"
 #include "khashmap.h"
+#include "ram.h"
 
 #include <time.h>
 
 static struct KArray processes;
 static struct KHashmap mappedFileCache;
 
+static U32 callbackPage;
+static U8* callbackPageAddress;
+static int callbackPos;
+static U32 callbacks[512];
+
+#define CALLBACK_OP_SIZE 8
+
 void initSystem() {
 	initArray(&processes, 100);		
 	initHashmap(&mappedFileCache);
 }
+
+void addCallback(void (*func)(struct CPU*, struct Op*)) {
+	U32 result = callbackPos;
+	U32 funcAddress = (U32)func;
+	U8* address = callbackPageAddress+callbackPos*CALLBACK_OP_SIZE;
+	callbacks[callbackPos++] = (U32)address;
+	
+	*address=0xFE;
+	address++;
+	*address=0x38;
+	address++;
+	*address=(U8)funcAddress;
+	address++;
+	*address=(U8)(funcAddress >> 8);
+	address++;
+	*address=(U8)(funcAddress >> 16);
+	address++;
+	*address=(U8)(funcAddress >> 24);
+}
+
+void initCallbacksInProcess(struct KProcess* process) {
+	U32 page = CALL_BACK_ADDRESS >> PAGE_SHIFT;
+
+	process->memory->mmu[page] = &ramPageRO;
+	process->memory->data[page] = callbackPage | ((PAGE_READ|PAGE_EXEC) << PAGE_PERMISSION_SHIFT) | PAGE_IN_RAM;
+	incrementRamRef(callbackPage);
+}
+
+
+void initCallbacks() {
+	callbackPage = allocRamPage();
+	callbackPageAddress = getAddressOfRamPage(callbackPage);
+	addCallback(onExitSignal);
+}
+
 
 struct MappedFileCache* getMappedFileInCache(const char* name) {
 	return (struct MappedFileCache*)getHashmapValue(&mappedFileCache, name);

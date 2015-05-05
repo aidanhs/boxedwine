@@ -37,6 +37,7 @@ struct InputEventQueue {
 	struct EventData* firstQueuedEvent;
 	struct EventData* lastQueuedEvent;
 	U32 asyncProcessId;
+	U32 asyncProcessFd;
 	U16 bustype;
 	U16 vendor;
 	U16 product;
@@ -130,6 +131,7 @@ void input_close(struct InputEventQueue* queue, struct OpenNode* node) {
 	queue->firstQueuedEvent = 0;
 	queue->lastQueuedEvent = 0;
 	queue->asyncProcessId = 0;
+	queue->asyncProcessFd = 0;
 }
 
 void writeBit(struct Memory* memory, U32 address, U32 bit) {
@@ -198,16 +200,18 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Op
 	return -1;
 }
 
-void input_setAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void input_setAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync) {
 		if (queue->asyncProcessId && queue->asyncProcessId!=process->id) {
 			kpanic("touch_setAsync only supports one process: %d tried to attached but %d already has it", process->id, queue->asyncProcessId);
 		} else {
 			queue->asyncProcessId = process->id;
+			queue->asyncProcessFd = fd;
 		}
 	} else {
 		if (process->id == queue->asyncProcessId) {
 			queue->asyncProcessId = 0;
+			queue->asyncProcessFd = 0;
 		}
 	}
 }
@@ -315,8 +319,8 @@ U32 touch_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -1;
 }
 
-void touch_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
-	input_setAsync(&touchEvents, node, process, isAsync);
+void touch_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+	input_setAsync(&touchEvents, node, process, fd, isAsync);
 }
 
 BOOL touch_isAsync(struct OpenNode* node, struct KProcess* process) {
@@ -408,8 +412,8 @@ U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -1;
 }
 
-void mouse_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
-	input_setAsync(&mouseEvents, node, process, isAsync);
+void mouse_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+	input_setAsync(&mouseEvents, node, process, fd, isAsync);
 }
 
 BOOL mouse_isAsync(struct OpenNode* node, struct KProcess* process) {
@@ -566,8 +570,8 @@ U32 keyboard_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	return -1;
 }
 
-void keyboard_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
-	input_setAsync(&keyboardEvents, node, process, isAsync);
+void keyboard_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+	input_setAsync(&keyboardEvents, node, process, fd, isAsync);
 }
 
 BOOL keyboard_isAsync(struct OpenNode* node, struct KProcess* process) {
@@ -668,9 +672,9 @@ void onMouseButtonUp(U32 button) {
     if (touchEvents.asyncProcessId) {
 		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
 		if (process)
-			signalProcess(process, K_SIGIO);
-		wakeThreads(WAIT_FD);
+			signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
+	wakeThreads(WAIT_FD);
 }
 
 void onMouseButtonDown(U32 button) {
@@ -688,9 +692,9 @@ void onMouseButtonDown(U32 button) {
     if (touchEvents.asyncProcessId) {
 		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
 		if (process)
-			signalProcess(process, K_SIGIO);
-		wakeThreads(WAIT_FD);
+			signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
+	wakeThreads(WAIT_FD);
 }
 
 void onMouseMove(U32 x, U32 y) {
@@ -712,7 +716,7 @@ void onMouseMove(U32 x, U32 y) {
         if (touchEvents.asyncProcessId) {
 			struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
 			if (process)
-				signalProcess(process, K_SIGIO);
+				signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
         }
 		wakeThreads(WAIT_FD);
     }
@@ -728,7 +732,7 @@ void onKeyDown(U32 code) {
     if (keyboardEvents.asyncProcessId) {
 		struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
 		if (process)
-			signalProcess(process, K_SIGIO);
+			signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
 	wakeThreads(WAIT_FD);
 }
@@ -743,7 +747,7 @@ void onKeyUp(U32 code) {
     if (keyboardEvents.asyncProcessId) {
 		struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
 		if (process)
-			signalProcess(process, K_SIGIO);
+			signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
 	wakeThreads(WAIT_FD);
 }

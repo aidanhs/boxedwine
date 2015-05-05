@@ -16,7 +16,8 @@
 #include "ksystem.h"
 
 #include <stdarg.h>
-#undef LOG_SYSCALLS
+//#undef LOG_SYSCALLS
+//#undef LOG_OPS
 #ifdef LOG_OPS
 void logsyscall(const char* fmt, ...) {
 	va_list args;
@@ -81,6 +82,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_wait4 114
 #define __NR_ipc 117
 #define __NR_fsync 118
+#define __NR_sigreturn 119
 #define __NR_clone 120
 #define __NR_uname 122
 #define __NR_modify_ldt 123
@@ -167,6 +169,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	struct Memory* memory = cpu->memory;
 	S32 result=0;
 
+	thread->inSysCall = 1;
 	switch (EAX) {
 	case __NR_exit:
 		LOG("__NR_exit %d", ARG1);
@@ -205,6 +208,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		// can't log after the call because the memory might have been reset
 		LOG("__NR_execve path=%X(%s) argv=%X envp=%X", ARG1, getNativeString(memory, ARG1), ARG2, ARG3);
 		result = syscall_execve(thread, ARG1, ARG2, ARG3);		
+		LOG("__NR_execve commandline=%s result=%d", thread->process->commandLine, result);
 		break;
 	case __NR_chdir:
 		result = syscall_chdir(thread, ARG1);
@@ -441,6 +445,9 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_fsync:
 		break;
 		*/
+	case __NR_sigreturn:
+		result = syscall_sigreturn(thread);
+		break;
 	case __NR_clone:
 		result = syscall_clone(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
 		LOG("__NR_clone flags=%X child_stack=%X ptid=%X tls=%X ctid=%X result=%d", ARG1, ARG2, ARG3, ARG4, ARG5, result);
@@ -558,7 +565,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_mmap2:
 		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
-		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
+		//LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
 		break;
 	case __NR_ftruncate64: {
 		U64 len = ARG2 | ((U64)ARG3 << 32);
@@ -666,7 +673,18 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		readMemory(memory, (U8*)&desc, ARG1, sizeof(struct user_desc));
 		LOG("__NR_set_thread_area entry_number=%d base_addr=%X", desc.entry_number, desc.base_addr);
         if (desc.entry_number==-1) {
-            desc.entry_number=9;
+			U32 i;
+
+            for (i=1;i<LDT_ENTRIES;i++) {
+				if (thread->cpu.ldt[i]==0) {
+					desc.entry_number=i;
+					break;
+				}
+			}
+			if (desc.entry_number==-1) {
+				result = -K_ESRCH;
+				break;
+			}
 			writeMemory(memory, ARG1, (U8*)&desc, sizeof(struct user_desc));
         }
         if (desc.base_addr!=0) {
@@ -715,6 +733,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_fstatfs64 fd=%d len=%d buf=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_tgkill:
+		LOG("__NR_tgkill threadGroupId=%d threadId=%d signal=%d", ARG1, ARG2, ARG3);
 		result = syscall_tgkill(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_tgkill threadGroupId=%d threadId=%d signal=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
@@ -765,8 +784,13 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		thread->waitSyscall = EAX;		
 		waitThread(thread);		
 	} else {
+		U32 oldEAX = EAX;
 		EAX = result;
 		cpu->eip.u32+=op->eipCount;
+		if (oldEAX == __NR_rt_sigprocmask) {
+			runSignals(thread);
+		}
 		CYCLES(1000);
 	}	
+	thread->inSysCall = 0;
 }

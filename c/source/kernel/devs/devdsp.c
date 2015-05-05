@@ -265,7 +265,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void dsp_setAsync(struct OpenNode* node, struct KProcess* process, BOOL isAsync) {
+void dsp_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
 	if (isAsync)
 		kwarn("dsp_setAsync not implemented");
 }

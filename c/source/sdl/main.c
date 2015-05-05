@@ -319,6 +319,7 @@ int main(int argc, char **argv) {
 	initFileSystem(root);
 	initRAM(mb*1024*1024/PAGE_SIZE);
 	initFB(screenWidth, screenHeight, bpp, fullscreen);
+	initCallbacks();
 
 	ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";

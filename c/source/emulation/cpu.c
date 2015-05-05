@@ -453,13 +453,14 @@ void exception(struct CPU* cpu, int code) {
 }
 
 void runBlock(struct CPU* cpu, struct Block* block) {
+	cpu->lastBlock = cpu->currentBlock;
 	cpu->currentBlock = block;
 	cpu->nextBlock = 0;
 	block->ops->func(cpu, block->ops);
 }
 
 struct Block* getBlock(struct CPU* cpu) {
-	struct Block* block;
+	struct Block* block;	
 	U32 data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
 	if (IS_PAGE_IN_RAM(data)) {
 		block = getCode(GET_PAGE(data), cpu->eip.u32 & 0xFFF);
