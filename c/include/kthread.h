@@ -44,6 +44,7 @@ struct KThread {
 	struct KPollData pollData[MAX_POLL_DATA];
 	U32 pollCount;
 	struct KTimer timer;
+	struct KThread* waitingForSignalToEnd;
 };
 
 struct KThread* allocThread();

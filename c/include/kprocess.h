@@ -17,7 +17,6 @@
 #define ADDRESS_PROCESS_FRAME_BUFFER	0xF8000
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
-// only used for debugging
 struct MapedFiles {
 	const char* name;
 	U32 address;

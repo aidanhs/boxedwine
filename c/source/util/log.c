@@ -18,6 +18,7 @@ void kpanic(const char* msg, ...) {
 	if (logFile) {
 		fprintf(logFile, "\n");
 		fflush(logFile);
+		fclose(logFile);
 	}
 	i=1/j;
 }

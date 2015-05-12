@@ -23,5 +23,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot);
 U32 syscall_unmap(struct KThread* thread, U32 address, U32 len);
 U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 newsize, U32 flags);
+U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags);
 
 #endif

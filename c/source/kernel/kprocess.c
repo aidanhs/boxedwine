@@ -821,6 +821,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	// reset memory must come after we grab the args and env
 	resetMemory(memory, thread->stackPageStart, thread->stackPageCount); // keep the stack we just setup
 	memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
+	memset(process->sigActions, 0, sizeof(process->sigActions));
 	if (process->timer.millies!=0) {
 		removeTimer(&process->timer);
 		process->timer.millies = 0;
@@ -894,7 +895,6 @@ void signalProcess(struct KProcess* process, U32 signal) {
 	U32 threadIndex = 0;
 
 	process->pendingSignals |= (1 << (signal-1));
-
 	// give each thread a chance to run a signal, some or all of them might have the signal masked off.  
 	// In that case when the user unmasks the signal with sigprocmask it will be caught then
 	while (process->pendingSignals && getNextObjectFromArray(&process->threads, &threadIndex, (void**)&thread)) {
@@ -982,6 +982,15 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
 				klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(memory, newlimit));
             }
             break;
+		case 15: // RLIMIT_RTTIME
+			if (oldlimit!=0) {
+                writeq(memory, oldlimit, 200);
+                writeq(memory, oldlimit + 8, 200);
+            }
+            if (newlimit!=0) {
+				klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(memory, newlimit));
+            }
+            break;
 		default:
 			kpanic("prlimit64 resource %d not handled", resource);
     }
@@ -1027,11 +1036,32 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 	target = processGetThreadById(process, threadId);
 	if (!target)
 		return -K_ESRCH;
+	if (target==thread) {
+		kpanic("tgkill to self not implemented");
+	}
+	if (signal==0)
+		return 0;
+
 	memset(process->sigActions[K_SIGALRM].sigInfo, 0, sizeof(process->sigActions[K_SIGALRM].sigInfo));
 	process->sigActions[signal].sigInfo[0] = signal;
 	process->sigActions[signal].sigInfo[2] = K_SI_USER;
 	process->sigActions[signal].sigInfo[3] = process->id;
 	process->sigActions[signal].sigInfo[4] = process->userId;
-	runSignal(target, signal);
-	return 0;
+
+	if ((1 << (signal-1)) & ~(target->inSignal?target->inSigMask:target->sigMask)) {
+		// don't return -K_WAIT, we don't want to re-enter tgkill, instead we will return 0 once the thread wakes up
+
+		// must set CPU state before runSignal since it will be stored
+		//
+		// :TODO: if this wineserver thread is asleep then how will it respond to services requests
+		thread->cpu.reg[0].u32 = 0; 
+		thread->cpu.eip.u32+=2;
+		runSignal(target, signal);
+		target->waitingForSignalToEnd = thread;
+		waitThread(thread);			
+		return -K_CONTINUE;
+	} else {
+		process->pendingSignals |= (1 << (signal-1));
+		return 0;
+	}
 }

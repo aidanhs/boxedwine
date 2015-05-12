@@ -92,6 +92,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR__llseek 140
 #define __NR_getdents 141
 #define __NR_newselect 142
+#define __NR_msync 144
 #define __NR_writev 146
 #define __NR_sched_yield 158
 #define __NR_nanosleep 162
@@ -179,7 +180,7 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		result=syscall_read(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_read: fd=%d buf=0x%X len=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-	case __NR_write:		
+	case __NR_write:	
 		result=syscall_write(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_write: fd=%d buf=0x%X len=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
@@ -440,11 +441,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 		} else {
             kpanic("__NR_ipc op %d not implemented", ARG1);
         }
-		break;
-		/*
+		break;		
 	case __NR_fsync:
-		break;
-		*/
+		result = 0; // :TODO:
+		break;		
 	case __NR_sigreturn:
 		result = syscall_sigreturn(thread);
 		break;
@@ -488,6 +488,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_newselect:		
 		result = syscall_select(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
 		LOG("__NR_newselect nfd=%d readfds=%X writefds=%X errorfds=%X timeout=%d result=%d", ARG1, ARG2, ARG3, ARG4, ARG5, result);
+		break;
+	case __NR_msync:
+		result = syscall_msync(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_msync addr=%X length=%d flags=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_writev:		
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
@@ -740,9 +744,10 @@ void syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_fadvise64_64:
 		result = 0;
 		break;
-		/*
 	case __NR_inotify_init:
+		result = -K_ENOSYS;
 		break;
+		/*
 	case __NR_inotify_add_watch:
 		break;
 	case __NR_inotify_rm_watch:

@@ -502,16 +502,26 @@ U32 syscall_rmdir(struct KThread* thread, U32 path) {
 	return -K_EIO;
 }
 
+#define FS_SIZE 107374182400l
+#define FS_FREE_SIZE 96636764160l
+
 U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
 	struct Memory* memory = thread->process->memory;
 	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(memory, path), FALSE);
 	if (!node) {
 		return -K_ENOENT;
 	}
-	// This seems to be the only fields WINE looks at
     writed(memory, address, 0xEF53); // f_type (EXT3)
+	writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
+	writeq(memory, address+8, FS_SIZE/FS_BLOCK_SIZE); // f_blocks
+	writeq(memory, address+16, FS_SIZE/FS_FREE_SIZE); // f_bfree
+	writeq(memory, address+24, FS_SIZE/FS_FREE_SIZE); // f_bavail
+	writeq(memory, address+32, 1024*1024); // f_files
+	writeq(memory, address+40, 1024*1024); // f_ffree
+	writeq(memory, address+48, 12719298601114463092l); // f_fsid
+	writed(memory, address+56, MAX_FILEPATH_LEN); // f_namelen
     writed(memory, address+60, FS_BLOCK_SIZE); // f_frsize
-    writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
+	writed(memory, address+64, 4096); // f_flags
     return 0;
 }
 
@@ -522,10 +532,17 @@ U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address) {
 	if (!fd) {
         return -K_EBADF;
     }
-    // This seems to be the only fields WINE looks at
     writed(memory, address, 0xEF53); // f_type (EXT3)
+	writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
+	writeq(memory, address+8, FS_SIZE/FS_BLOCK_SIZE); // f_blocks
+	writeq(memory, address+16, FS_SIZE/FS_FREE_SIZE); // f_bfree
+	writeq(memory, address+24, FS_SIZE/FS_FREE_SIZE); // f_bavail
+	writeq(memory, address+32, 1024*1024); // f_files
+	writeq(memory, address+40, 1024*1024); // f_ffree
+	writeq(memory, address+48, 12719298601114463092l); // f_fsid
+	writed(memory, address+56, MAX_FILEPATH_LEN); // f_namelen
     writed(memory, address+60, FS_BLOCK_SIZE); // f_frsize
-    writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
+	writed(memory, address+64, 4096); // f_flags
     return 0;
 }
 

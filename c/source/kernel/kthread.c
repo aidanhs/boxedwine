@@ -489,6 +489,10 @@ void onExitSignal(struct CPU* cpu, struct Op* op) {
 	cpu->blockCounter = b;
 	cpu->thread->inSignal--;
 	
+	if (cpu->thread->waitingForSignalToEnd) {
+		wakeThread(cpu->thread->waitingForSignalToEnd);
+		cpu->thread->waitingForSignalToEnd = 0;
+	}
 	/*
 	if (action->flags & K_SA_RESTORER) {
 		push32(&thread->cpu, thread->cpu.eip.u32);

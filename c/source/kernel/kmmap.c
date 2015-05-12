@@ -253,3 +253,18 @@ U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 news
         }
     }
 }
+
+U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
+	struct MapedFiles* file = 0;
+	U32 i;
+
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (thread->process->mappedFiles[i].inUse && addr>=thread->process->mappedFiles[i].address && thread->process->mappedFiles[i].address+thread->process->mappedFiles[i].len<addr) {
+			file = & thread->process->mappedFiles[i];
+		}
+	}
+	if (!file)
+		return -K_ENOMEM;
+	kpanic("syscall_msync not implemented");
+	return 0;
+}
