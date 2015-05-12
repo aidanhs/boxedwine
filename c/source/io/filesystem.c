@@ -357,11 +357,11 @@ BOOL file_setLastModifiedTime(struct Node* node, U32 time) {
 	return utime(node->path.nativePath, &buf)==0;
 }
 
-U32 file_getType(struct Node* node) {
-	if (node->path.isLink) 
-		return 10; // DT_LNK
+U32 file_getType(struct Node* node) {	
 	if (file_isDirectory(node))
 		return 4; // DT_DIR
+	if (node->path.isLink) 
+		return 10; // DT_LNK
 	return 8; // DT_REG
 }
 
@@ -410,6 +410,17 @@ struct NodeType fileNodeType = {file_isDirectory, file_exists, file_rename, file
 
 struct Node* getNodeInCache(const char* localPath) {
 	return (struct Node*)getHashmapValue(&nodeMap, localPath);
+}
+
+struct Node* getParentNode(struct Node* node) {
+	char tmp[MAX_FILEPATH_LEN];
+	const char* pos = strrchr(node->path.localPath, '/');
+	if (pos) {
+		strcpy(tmp, node->path.localPath);
+		tmp[pos-node->path.localPath]=0;
+		return getNodeFromLocalPath("/", tmp, FALSE);
+	}
+	return 0;
 }
 
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath, U32* isLink) {

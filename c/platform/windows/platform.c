@@ -35,6 +35,8 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
 	strcat(path, "\\*.*");
 	hFind = FindFirstFile(path, &findData); 
     if(hFind != INVALID_HANDLE_VALUE)  { 		
+		nodes[result++]=getNodeFromLocalPath(dir->path.localPath, ".", FALSE);
+		nodes[result++]=getNodeFromLocalPath(dir->path.localPath, "..", FALSE);
 		do  { 
 			if (strcmp(findData.cFileName, ".") && strcmp(findData.cFileName, ".."))  {
 				nodes[result] = getNodeFromLocalPath(dir->path.localPath, findData.cFileName, TRUE);

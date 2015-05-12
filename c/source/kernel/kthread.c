@@ -562,7 +562,6 @@ void runSignal(struct KThread* thread, U32 signal) {
 			thread->cpu.reg[0].u32 = signal;
 			thread->cpu.reg[1].u32 = address;
 			thread->cpu.reg[2].u32 = context;	
-			thread->cpu.log = 1;
 		} else {
 			thread->cpu.reg[0].u32 = signal;
 			thread->cpu.reg[1].u32 = 0;

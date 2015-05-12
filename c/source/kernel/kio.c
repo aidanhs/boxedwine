@@ -361,6 +361,39 @@ S64 syscall_llseek(struct KThread* thread, FD fildes, S64 offset, U32 whence) {
 	return fd->kobject->access->seek(fd->kobject, pos);
 }
 
+U32 writeRecord(struct Memory* memory, U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const char* name, U32 id, U32 type) {
+	U32 recordLen;
+
+	if (is64) {
+		recordLen = 20+strlen(name);
+        recordLen=(recordLen+3) / 4 * 4;
+        if (recordLen+len>count) {
+            if (len==0)
+                return -K_EINVAL;
+            return 0;
+        }
+        writeq(memory, dirp, id);
+        writeq(memory, dirp+8, pos);
+        writew(memory, dirp+16, recordLen);
+		writeb(memory, dirp+18, type);
+		writeNativeString(memory, dirp+19, name);
+    } else {
+		recordLen = 12+strlen(name);
+        recordLen=(recordLen+3) / 4 * 4;
+        if (recordLen+len>count) {
+            if (len==0)
+                return -K_EINVAL;
+            return 0;
+        }
+        writed(memory, dirp, id);
+        writed(memory, dirp+4, pos);
+        writew(memory, dirp+8, recordLen);
+		writeNativeString(memory, dirp+10, name);
+        writeb(memory, dirp+recordLen-1, type);
+    }
+	return recordLen;
+}
+
 U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOOL is64) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
 	struct OpenNode* openNode;
@@ -380,40 +413,32 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 		return -K_ENOTDIR;
 	}
 	entries = getDirCount(openNode);
+
+	if ((U32)openNode->access->getFilePointer(openNode)==0) {
+		U32 recordLen = writeRecord(memory, dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->nodeType->getType(openNode->node));		
+		struct Node* entry;
+
+		dirp+=recordLen;
+		len+=recordLen;
+
+		entry = getParentNode(openNode->node);
+		recordLen = writeRecord(memory, dirp, len, count, 1, is64, "..", entry->id, entry->nodeType->getType(entry));		
+		dirp+=recordLen;
+		len+=recordLen;
+		openNode->access->seek(openNode, 2);
+	}
 	for (i=(U32)openNode->access->getFilePointer(openNode);i<entries;i++) {
 		struct Node* entry = getDirNode(openNode, i);
-		U32 recordLen;
-
-		if (is64) {
-			recordLen = 20+strlen(entry->name);
-            recordLen=(recordLen+3) / 4 * 4;
-            if (recordLen+len>count) {
-                if (len==0)
-                    return -K_EINVAL;
-                return len;
-            }
-            writeq(memory, dirp, entry->id);
-            writeq(memory, dirp+8, i);
-            writew(memory, dirp+16, recordLen);
-			writeb(memory, dirp+18, entry->nodeType->getType(entry));
-			writeNativeString(memory, dirp+19, entry->name);
-        } else {
-			recordLen = 12+strlen(entry->name);
-            recordLen=(recordLen+3) / 4 * 4;
-            if (recordLen+len>count) {
-                if (len==0)
-                    return -K_EINVAL;
-                return len;
-            }
-            writed(memory, dirp, entry->id);
-            writed(memory, dirp+4, i);
-            writew(memory, dirp+8, recordLen);
-			writeNativeString(memory, dirp+10, entry->name);
-            writeb(memory, dirp+recordLen-1, entry->nodeType->getType(entry));
-        }
-        dirp+=recordLen;
-        len+=recordLen;
-		openNode->access->seek(openNode, i+1);
+		U32 recordLen = writeRecord(memory, dirp, len, count, i+2, is64, entry->name, entry->id, entry->nodeType->getType(entry));		
+		if (recordLen>0) {
+			dirp+=recordLen;
+			len+=recordLen;
+			openNode->access->seek(openNode, i+1);
+		} else if (recordLen == 0) {
+			return len;
+		} else {
+			return recordLen;
+		}
 	}
 	return len;
 }

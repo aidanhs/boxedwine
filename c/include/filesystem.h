@@ -11,6 +11,7 @@
 extern char pathSeperator;
 
 struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing);
+struct Node* getParentNode(struct Node* node);
 struct Node* getNodeInCache(const char* localPath);
 void initFileSystem(const char* rootPath);
 // slots will be big enough to hold a void*
