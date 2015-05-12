@@ -617,7 +617,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         if (desc.base_addr!=0) {
             newThread->cpu.ldt[desc.entry_number] = desc.base_addr;
 			newThread->cpu.segAddress[GS] = desc.base_addr;
-			newThread->cpu.segValue[GS] = desc.entry_number;
+			newThread->cpu.segValue[GS] = desc.entry_number << 3;
         }
         newThread->clear_child_tid = ctid;
 		writed(thread->process->memory, ptid, newThread->id);
