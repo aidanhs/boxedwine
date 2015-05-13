@@ -39,9 +39,12 @@ S64 meminfo_seek(struct OpenNode* node, S64 pos) {
 
 U32 meminfo_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	U32 pos = node->idata;
+	if (pos>=meminfoLen)
+		return -1;
 	if (pos+len>meminfoLen)
 		len = meminfoLen-pos;
 	memcopyFromNative(memory, address, meminfo+pos, len);
+	node->idata+=len;
 	return len;
 }
 

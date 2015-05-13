@@ -285,8 +285,10 @@ int main(int argc, char **argv) {
 	for (i=1;i<argc;i++) {
 		if (!strcmp(argv[i], "-root") && i+1<argc) {
 			root = argv[i+1];
+			i++;
 		} else if (!strcmp(argv[i], "-m") && i+1<argc) {
 			mb = atoi(argv[i+1]);
+			i++;
 		} else {
 			i++;
 			break;

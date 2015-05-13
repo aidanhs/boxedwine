@@ -9,6 +9,7 @@
 #include "kscheduler.h"
 #include "ksystem.h"
 #include "ram.h"
+#include "ksignal.h"
 
 #include <string.h>
 
@@ -77,7 +78,9 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
     }
     switch (cmd) {
         case K_F_SETOWN:
-            kwarn("F_SETOWN not implemented: %d",fildes);
+			if (thread->id != arg) {
+				kpanic("F_SETOWN not implemented: %d",fildes);
+			}
             return 0;
         case K_F_DUPFD: {
 			FD result = getNextFileDescriptorHandle(thread->process, arg);
@@ -135,8 +138,10 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
 			}
 			return 0;
         case K_F_SETSIG: {
-            kwarn("fcntl F_SETSIG not implemented");
-            return -1;
+			if (arg != K_SIGIO) {
+				kpanic("fcntl F_SETSIG not implemented");
+			}
+            return 0;
         }
         default:
             kwarn("fcntl: unknown command: %d", cmd);

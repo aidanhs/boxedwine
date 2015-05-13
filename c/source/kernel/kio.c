@@ -539,8 +539,8 @@ U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
     writed(memory, address, 0xEF53); // f_type (EXT3)
 	writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
 	writeq(memory, address+8, FS_SIZE/FS_BLOCK_SIZE); // f_blocks
-	writeq(memory, address+16, FS_SIZE/FS_FREE_SIZE); // f_bfree
-	writeq(memory, address+24, FS_SIZE/FS_FREE_SIZE); // f_bavail
+	writeq(memory, address+16, FS_FREE_SIZE/FS_BLOCK_SIZE); // f_bfree
+	writeq(memory, address+24, FS_FREE_SIZE/FS_BLOCK_SIZE); // f_bavail
 	writeq(memory, address+32, 1024*1024); // f_files
 	writeq(memory, address+40, 1024*1024); // f_ffree
 	writeq(memory, address+48, 12719298601114463092l); // f_fsid
@@ -560,8 +560,8 @@ U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address) {
     writed(memory, address, 0xEF53); // f_type (EXT3)
 	writed(memory, address+4, FS_BLOCK_SIZE); // f_bsize
 	writeq(memory, address+8, FS_SIZE/FS_BLOCK_SIZE); // f_blocks
-	writeq(memory, address+16, FS_SIZE/FS_FREE_SIZE); // f_bfree
-	writeq(memory, address+24, FS_SIZE/FS_FREE_SIZE); // f_bavail
+	writeq(memory, address+16, FS_FREE_SIZE/FS_BLOCK_SIZE); // f_bfree
+	writeq(memory, address+24, FS_FREE_SIZE/FS_BLOCK_SIZE); // f_bavail
 	writeq(memory, address+32, 1024*1024); // f_files
 	writeq(memory, address+40, 1024*1024); // f_ffree
 	writeq(memory, address+48, 12719298601114463092l); // f_fsid

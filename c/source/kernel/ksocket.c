@@ -442,9 +442,9 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		const char* name = socketAddressName(thread, address, len);
 		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, name, localPath, nativePath, 0);
 
-	//	if (!name || !name[0]) {
-	//		return -K_ENOENT;
-	//	}
+		if (!name || !name[0]) {
+			return 0; // :TODO: why does XOrg need this
+		}
 		if (node && node->nodeType->exists(node)) {
 			return -K_EADDRINUSE;
 		}
