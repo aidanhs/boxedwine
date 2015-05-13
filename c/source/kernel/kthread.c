@@ -538,9 +538,9 @@ void runSignal(struct KThread* thread, U32 signal) {
 		thread->cpu.reg[4].u32 = context;
 
 		if (altStack) {
-            thread->cpu.reg[4].u32 = thread->alternateStack;
+			thread->cpu.reg[4].u32 = thread->alternateStack+thread->alternateStackSize;
 			altStack = 1;
-			//klog("    alternateStack %X", thread->alternateStack);
+			//klog("    alternateStack %X", thread->alternateStack+thread->alternateStackSize);
         }
 		thread->cpu.reg[4].u32 &= ~15;
 		push32(&thread->cpu, 0); // padding

@@ -35,15 +35,19 @@ U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
 U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
     if (oset!=0) {
         writed(thread->process->memory, oset, thread->sigMask);
+		//klog("syscall_sigprocmask oset=%X", thread->sigMask);
     }
     if (set!=0) {
         set = readd(thread->process->memory, set);
         if (how == K_SIG_BLOCK) {
             thread->sigMask|=set;
+			//klog("syscall_sigprocmask block %X(%X)", set, thread->sigMask);
         } else if (how == K_SIG_UNBLOCK) {
             thread->sigMask&=~set;
+			//klog("syscall_sigprocmask unblock %X(%X)", set, thread->sigMask);
         } else if (how == K_SIG_SETMASK) {
             thread->sigMask = set;
+			//klog("syscall_sigprocmask set %X(%X)", set, thread->sigMask);
         } else {
             kpanic("sigprocmask how %d unsupported", how);
         }
