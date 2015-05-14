@@ -18,7 +18,7 @@ ULONGLONG getSystemTimeAsMicroSeconds() {
 		startTime = t;
 	} else {
 		ULONGLONG diff = t - startTime;
-		t = startTime+diff/5;
+		t = startTime+diff/20;
 	}
 	*/
 	return t;

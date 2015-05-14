@@ -266,6 +266,7 @@ void mainloop() {
 
 U64 cpuTime;
 U64 cpuInstructions;
+extern U32 contextTime;
 
 int main(int argc, char **argv) {
 	int i;
@@ -397,7 +398,7 @@ int main(int argc, char **argv) {
 			if (lastTitleUpdate+1000 < t) {
 				char tmp[256];
 				lastTitleUpdate = t;
-				sprintf(tmp, "BoxedWine %d MHz", getMHz());
+				sprintf(tmp, "BoxedWine %d MHz cyclesPerContext=%d", getMHz(), contextTime);
 				SDL_WM_SetCaption(tmp, "BoxedWine");
 			}
 			if (!ran)

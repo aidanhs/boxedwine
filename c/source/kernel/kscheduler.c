@@ -135,7 +135,7 @@ void unscheduleThread(struct KThread* thread) {
 #endif
 }
 
-U64 contextTime = 100000;
+U32 contextTime = 100000;
 
 void runThreadSlice(struct KThread* thread) {
 	struct CPU* cpu;
@@ -149,7 +149,7 @@ void runThreadSlice(struct KThread* thread) {
 		} else {
 			runCPU(cpu);
 		}
-	} while (cpu->blockCounter < contextTime);
+	} while (cpu->blockCounter < contextTime);	
 	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }
 
@@ -190,6 +190,14 @@ BOOL runSlice() {
 		nextThread = nextThread->next;						
 		runThreadSlice(currentThread);
 		diff = getSystemTimeAsMicroSeconds()-startTime;
+
+		if (!(currentThread->cpu.blockCounter & 0x80000000)) {			
+			if (diff>150000) {
+				contextTime-=10000;
+			} else if (diff<10000) {
+				contextTime+=10000;
+			}
+		}
 		cpuTotalTime+=diff;
 		cpuTotalCycles+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
 		currentThread->threadTime+=diff;
