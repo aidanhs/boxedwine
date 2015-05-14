@@ -802,7 +802,7 @@ public class Main {
         out("    } else {");
         out("        *cpu->reg8[op->r1] = 0;");
         out("    }");
-        out("    CYCLES(1);");
+        out("    CYCLES(2);");
         out("    NEXT();");
         out("}");
         out("void "+name+"_mem16(struct CPU* cpu, struct Op* op) {");
@@ -811,7 +811,7 @@ public class Main {
         out("    } else {");
         out("        writeb(cpu->memory, eaa16(cpu, op), 0);");
         out("    }");
-        out("    CYCLES(1);");
+        out("    CYCLES(2);");
         out("    NEXT();");
         out("}");
         out("void "+name+"_mem32(struct CPU* cpu, struct Op* op) {");
@@ -820,7 +820,7 @@ public class Main {
         out("    } else {");
         out("        writeb(cpu->memory, eaa32(cpu, op), 0);");
         out("    }");
-        out("    CYCLES(1);");
+        out("    CYCLES(2);");
         out("    NEXT();");
         out("}");
     }

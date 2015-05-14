@@ -493,6 +493,7 @@ void onExitSignal(struct CPU* cpu, struct Op* op) {
 		wakeThread(cpu->thread->waitingForSignalToEnd);
 		cpu->thread->waitingForSignalToEnd = 0;
 	}
+	cpu->nextBlock = 0;
 	/*
 	if (action->flags & K_SA_RESTORER) {
 		push32(&thread->cpu, thread->cpu.eip.u32);
@@ -580,4 +581,5 @@ void runSignal(struct KThread* thread, U32 signal) {
 		thread->inSignal++;				
     }    
 	thread->process->pendingSignals &= ~(1 << (signal - 1));		
+	thread->cpu.nextBlock = 0;
 }

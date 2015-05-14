@@ -144,11 +144,11 @@ void runThreadSlice(struct KThread* thread) {
 	cpu->blockCounter = 0;
 
 	do {
-		//if (cpu->nextBlock) {
-		//	runBlock(cpu, cpu->nextBlock);
-		//} else {
+		if (cpu->nextBlock) {
+			runBlock(cpu, cpu->nextBlock);
+		} else {
 			runCPU(cpu);
-		//}
+		}
 	} while (cpu->blockCounter < contextTime);
 	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }
