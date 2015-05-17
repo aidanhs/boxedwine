@@ -64,7 +64,7 @@ void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
 	pf(memory, address);
 }
 
-void pf_clear(struct Memory* memory, U32 page, U32 data) {
+void pf_clear(struct Memory* memory, U32 page) {
 }
 
 struct Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_writed, pf_clear};
@@ -72,11 +72,11 @@ struct Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, p
 U8 readb(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 #ifdef LOG_OPS
-	U8 result = memory->mmu[index]->readb(memory, address, memory->data[index]);
+	U8 result = memory->mmu[index]->readb(memory, address, index);
 	fprintf(logFile, "readb %X @%X\n", result, address);
 	return result;
 #else
-	return memory->mmu[index]->readb(memory, address, memory->data[index]);
+	return memory->mmu[index]->readb(memory, address, index);
 #endif
 }
 
@@ -85,17 +85,17 @@ void writeb(struct Memory* memory, U32 address, U8 value) {
 #ifdef LOG_OPS
 	fprintf(logFile, "writeb %X @%X\n", value, address);
 #endif
-	memory->mmu[index]->writeb(memory, address, memory->data[index], value);
+	memory->mmu[index]->writeb(memory, address, index, value);
 }
 
 U16 readw(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 #ifdef LOG_OPS
-	U16 result = memory->mmu[index]->readw(memory, address, memory->data[index]);
+	U16 result = memory->mmu[index]->readw(memory, address, index);
 	fprintf(logFile, "readw %X @%X\n", result, address);
 	return result;
 #else
-	return memory->mmu[index]->readw(memory, address, memory->data[index]);
+	return memory->mmu[index]->readw(memory, address, index);
 #endif
 }
 
@@ -104,17 +104,17 @@ void writew(struct Memory* memory, U32 address, U16 value) {
 #ifdef LOG_OPS
 	fprintf(logFile, "writew %X @%X\n", value, address);
 #endif
-	memory->mmu[index]->writew(memory, address, memory->data[index], value);
+	memory->mmu[index]->writew(memory, address, index, value);
 }
 
 U32 readd(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 #ifdef LOG_OPS
-	U32 result = memory->mmu[index]->readd(memory, address, memory->data[index]);
+	U32 result = memory->mmu[index]->readd(memory, address, index);
 	fprintf(logFile, "readd %X @%X\n", result, address);
 	return result;
 #else
-	return memory->mmu[index]->readd(memory, address, memory->data[index]);
+	return memory->mmu[index]->readd(memory, address, index);
 #endif
 }
 
@@ -123,24 +123,24 @@ void writed(struct Memory* memory, U32 address, U32 value) {
 #ifdef LOG_OPS
 	fprintf(logFile, "writed %X @%X\n", value, address);
 #endif
-	memory->mmu[index]->writed(memory, address, memory->data[index], value);
+	memory->mmu[index]->writed(memory, address, index, value);
 }
 
 U64 readq(struct Memory* memory, U32 address) {
 	int index = address >> 12;
-	U64 result = memory->mmu[index]->readd(memory, address, memory->data[index]);
+	U64 result = memory->mmu[index]->readd(memory, address, index);
 	address+=4;
 	index = address >> 12;
-	result |= ((U64)memory->mmu[index]->readd(memory, address, memory->data[index]) << 32);
+	result |= ((U64)memory->mmu[index]->readd(memory, address, index) << 32);
 	return result;
 }
 
 void writeq(struct Memory* memory, U32 address, U64 value) {
 	int index = address >> 12;
-	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)value);
+	memory->mmu[index]->writed(memory, address, index, (U32)value);
 	address+=4;
 	index = address >> 12;
-	memory->mmu[index]->writed(memory, address, memory->data[index], (U32)(value >> 32));
+	memory->mmu[index]->writed(memory, address, index, (U32)(value >> 32));
 }
 
 struct Memory* allocMemory() {
@@ -163,7 +163,7 @@ void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {
 
 	for (i=0;i<0x100000;i++) {
 		if (i<exceptStart || i>=exceptStart+exceptCount) {
-			memory->mmu[i]->clear(memory, i, memory->data[i]);
+			memory->mmu[i]->clear(memory, i);
 			memory->mmu[i] = &invalidPage;
 			memory->data[i] = 0;
 		}
@@ -206,7 +206,7 @@ void freeMemory(struct Memory* memory) {
 	int i;
 
 	for (i=0;i<0x100000;i++) {
-		memory->mmu[i]->clear(memory, i, memory->data[i]);
+		memory->mmu[i]->clear(memory, i);
 	}
 	// :TODO:
 }
@@ -296,7 +296,7 @@ void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
 	U32 i;
 	
 	for (i=startingPage;i<startingPage+pageCount;i++) {
-		memory->mmu[i]->clear(memory, i, memory->data[i]);
+		memory->mmu[i]->clear(memory, i);
 		memory->mmu[i] = &invalidPage;
 		memory->data[i]=0;
 	}
@@ -304,7 +304,7 @@ void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
 
 U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 	int index = address >> 12;
-	return memory->mmu[index]->physicalAddress(memory, address, memory->data[index]);
+	return memory->mmu[index]->physicalAddress(memory, address, index);
 }
 
 void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {

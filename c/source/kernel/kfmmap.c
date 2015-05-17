@@ -11,13 +11,13 @@
 
 // :TODO: what about sync'ing the writes back to the file?
 
-static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
+static void ondemmandFile(struct Memory* memory, U32 address, U32 page) {
+	U32 data = memory->data[page];
 	FD fildes = data & 0xFF;
 	U32 ramPageIndexInCache = (data >> 8) & 0xFFFF;
 	U32 offset = ramPageIndexInCache << PAGE_SHIFT;
 	struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
 	U32 ram = 0;
-	U32 page = address >> 12;
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
 	BOOL write = IS_PAGE_WRITE(data);
 	U32 len;
@@ -60,45 +60,45 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 data) {
 	closeFD(fd);
 }
 
-static U8 ondemandfile_readb(struct Memory* memory, U32 address, U32 data) {	
-	ondemmandFile(memory, address, data);	
+static U8 ondemandfile_readb(struct Memory* memory, U32 address, U32 page) {	
+	ondemmandFile(memory, address, page);	
 	return readb(memory, address);
 }
 
-static void ondemandfile_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
-	ondemmandFile(memory, address, data);	
+static void ondemandfile_writeb(struct Memory* memory, U32 address, U32 page, U8 value) {
+	ondemmandFile(memory, address, page);	
 	writeb(memory, address, value);
 }
 
-static U16 ondemandfile_readw(struct Memory* memory, U32 address, U32 data) {
-	ondemmandFile(memory, address, data);	
+static U16 ondemandfile_readw(struct Memory* memory, U32 address, U32 page) {
+	ondemmandFile(memory, address, page);	
 	return readw(memory, address);
 }
 
-static void ondemandfile_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
-	ondemmandFile(memory, address, data);	
+static void ondemandfile_writew(struct Memory* memory, U32 address, U32 page, U16 value) {
+	ondemmandFile(memory, address, page);	
 	writew(memory, address, value);
 }
 
-static U32 ondemandfile_readd(struct Memory* memory, U32 address, U32 data) {
-	ondemmandFile(memory, address, data);	
+static U32 ondemandfile_readd(struct Memory* memory, U32 address, U32 page) {
+	ondemmandFile(memory, address, page);	
 	return readd(memory, address);
 }
 
-static void ondemandfile_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
-	ondemmandFile(memory, address, data);	
+static void ondemandfile_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
+	ondemmandFile(memory, address, page);	
 	writed(memory, address, value);
 }
 
-static void ondemandfile_clear(struct Memory* memory, U32 page, U32 data) {
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(data & 0xFF));
+static void ondemandfile_clear(struct Memory* memory, U32 page) {
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(memory->data[page] & 0xFF));
 	if (fd) {
 		closeFD(fd);
 	}
 }
 
-static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address, U32 data) {
-	ondemmandFile(memory, address, data);
+static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address, U32 page) {
+	ondemmandFile(memory, address, page);
 	return getPhysicalAddress(memory, address);
 }
 

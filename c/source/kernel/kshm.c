@@ -176,7 +176,7 @@ U32 syscall_shmdt(struct KThread* thread, U32 shmaddr) {
 	}
 	
 	for (i=0;i<shm[shmid].pageCount;i++) {
-		memory->mmu[i+page]->clear(memory, i+page, memory->data[i+page]);
+		memory->mmu[i+page]->clear(memory, i+page);
 	}
 
 	decrementShmAttach(thread->process, shmid);

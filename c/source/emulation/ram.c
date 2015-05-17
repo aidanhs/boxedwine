@@ -124,140 +124,140 @@ int getRamRefCount(int page) {
     return ramRefCount[page];
 }
 
-static U8 ram_readb(struct Memory* memory, U32 address, U32 data) {
-	return ram[(data << PAGE_SHIFT)+(address & 0xFFF)];
+static U8 ram_readb(struct Memory* memory, U32 address, U32 page) {
+	return ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)];
 }
 
-static void ram_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
-	ram[(data << PAGE_SHIFT)+(address & 0xFFF)] = value;
+static void ram_writeb(struct Memory* memory, U32 address, U32 page, U8 value) {
+	ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)] = value;
 }
 
-static U16 ram_readw(struct Memory* memory, U32 address, U32 data) {
+static U16 ram_readw(struct Memory* memory, U32 address, U32 page) {
 	if ((address & 0xFFF) < 0xFFF) {
 #ifdef UNALIGNED_MEMORY
-		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		U32 index = (memory->data[page] << PAGE_SHIFT)+(address & 0xFFF);
 		return ram[index] | (ram[index+1] << 8);
 #else
-		return *(U16*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]);
+		return *(U16*)(&ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)]);
 #endif
 	}
-	return ram[(data << PAGE_SHIFT)+(address & 0xFFF)] | (readb(memory, address+1) << 8);
+	return ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)] | (readb(memory, address+1) << 8);
 }
 
-static void ram_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
+static void ram_writew(struct Memory* memory, U32 address, U32 page, U16 value) {
 	if ((address & 0xFFF) < 0xFFF) {
 #ifdef UNALIGNED_MEMORY
-		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		U32 index = (memory->data[page] << PAGE_SHIFT)+(address & 0xFFF);
 		ram[index] = (U8)value;
 		ram[index+1] = (U8)(value >> 8);
 #else
-		*(U16*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]) = value;
+		*(U16*)(&ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)]) = value;
 #endif
 	} else {
-		ram[(data << PAGE_SHIFT)+(address & 0xFFF)] = (U8)value;
+		ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)] = (U8)value;
 		writeb(memory, address+1, value >> 8);
 	}
 }
 
-static U32 ram_readd(struct Memory* memory, U32 address, U32 data) {
+static U32 ram_readd(struct Memory* memory, U32 address, U32 page) {
 	if ((address & 0xFFF) < 0xFFD) {
 #ifdef UNALIGNED_MEMORY
-		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		U32 index = (memory->data[page] << PAGE_SHIFT)+(address & 0xFFF);
 		return ram[index] | (ram[index+1] << 8) | (ram[index+2] << 16) | (ram[index+3] << 24);
 #else
-		return *(U32*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]);
+		return *(U32*)(&ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)]);
 #endif
 	}
-	return ram[(data << PAGE_SHIFT)+(address & 0xFFF)] | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16)| (readb(memory, address+3) << 24);
+	return ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)] | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16)| (readb(memory, address+3) << 24);
 }
 
-static void ram_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
+static void ram_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
 	if ((address & 0xFFF) < 0xFFD) {
 #ifdef UNALIGNED_MEMORY
-		U32 index = (data << PAGE_SHIFT)+(address & 0xFFF);
+		U32 index = (memory->data[page] << PAGE_SHIFT)+(address & 0xFFF);
 		ram[index++] = (U8)value;
 		ram[index++] = (U8)(value >> 8);
 		ram[index++] = (U8)(value >> 16);
 		ram[index] = (U8)(value >> 24);
 #else
-		*(U32*)(&ram[(data << PAGE_SHIFT)+(address & 0xFFF)]) = value;
+		*(U32*)(&ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)]) = value;
 #endif
 	} else {
-		ram[(data << PAGE_SHIFT)+(address & 0xFFF)] = value;
+		ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)] = value;
 		writeb(memory, address+1, value >> 8);
 		writeb(memory, address+2, value >> 16);
 		writeb(memory, address+3, value >> 24);
 	}
 }
 
-static void ram_clear(struct Memory* memory, U32 page, U32 data) {
-	freeRamPage(GET_PAGE(data));
+static void ram_clear(struct Memory* memory, U32 page) {
+	freeRamPage(GET_PAGE(memory->data[page]));
 }
 
-static U32 ondemmand(struct Memory* memory, U32 address, U32 data);
+static void ondemmand(struct Memory* memory, U32 address, U32 page);
 
-static U8 ondemand_ram_readb(struct Memory* memory, U32 address, U32 data) {
-	data = ondemmand(memory, address, data);
-	return ram_readb(memory, address, data);
+static U8 ondemand_ram_readb(struct Memory* memory, U32 address, U32 page) {
+	ondemmand(memory, address, page);
+	return ram_readb(memory, address, page);
 }
 
-static void ondemand_ram_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
-	data = ondemmand(memory, address, data);
-	ram_writeb(memory, address, data, value);
+static void ondemand_ram_writeb(struct Memory* memory, U32 address, U32 page, U8 value) {
+	ondemmand(memory, address, page);
+	ram_writeb(memory, address, page, value);
 }
 
-U16 ondemand_ram_readw(struct Memory* memory, U32 address, U32 data) {
-	data = ondemmand(memory, address, data);
-	return ram_readw(memory, address, data);
+U16 ondemand_ram_readw(struct Memory* memory, U32 address, U32 page) {
+	ondemmand(memory, address, page);
+	return ram_readw(memory, address, page);
 }
 
-static void ondemand_ram_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
-	data = ondemmand(memory, address, data);
-	ram_writew(memory, address, data, value);
+static void ondemand_ram_writew(struct Memory* memory, U32 address, U32 page, U16 value) {
+	ondemmand(memory, address, page);
+	ram_writew(memory, address, page, value);
 }
 
-static U32 ondemand_ram_readd(struct Memory* memory, U32 address, U32 data) {
-	data = ondemmand(memory, address, data);
-	return ram_readd(memory, address, data);
+static U32 ondemand_ram_readd(struct Memory* memory, U32 address, U32 page) {
+	ondemmand(memory, address, page);
+	return ram_readd(memory, address, page);
 }
 
-static void ondemand_ram_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
-	data = ondemmand(memory, address, data);
-	ram_writed(memory, address, data, value);
+static void ondemand_ram_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
+	ondemmand(memory, address, page);
+	ram_writed(memory, address, page, value);
 }
 
-static void ondemand_ram_clear(struct Memory* memory, U32 address, U32 data) {
+static void ondemand_ram_clear(struct Memory* memory, U32 page) {
 }
 
-static U8* physicalAddress(struct Memory* memory, U32 address, U32 data) {
-	return &ram[(data << PAGE_SHIFT)+(address & 0xFFF)];
+static U8* physicalAddress(struct Memory* memory, U32 address, U32 page) {
+	return &ram[(memory->data[page] << PAGE_SHIFT)+(address & 0xFFF)];
 }
 
-static U8* ondemand_physicalAddress(struct Memory* memory, U32 address, U32 data) {
-	data = ondemmand(memory, address, data);
-	return physicalAddress(memory, address, data);
+static U8* ondemand_physicalAddress(struct Memory* memory, U32 address, U32 page) {
+	ondemmand(memory, address, page);
+	return physicalAddress(memory, address, page);
 }
 
-static U32 copyOnWrite(struct Memory* memory, U32 address, U32 data);
+static void copyOnWrite(struct Memory* memory, U32 address, U32 page);
 
-static void copyonwrite_ram_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
-	data = copyOnWrite(memory, address, data);
-	ram_writeb(memory, address, data, value);
+static void copyonwrite_ram_writeb(struct Memory* memory, U32 address, U32 page, U8 value) {
+	copyOnWrite(memory, address, page);
+	ram_writeb(memory, address, page, value);
 }
 
-static void copyonwrite_ram_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
-	data = copyOnWrite(memory, address, data);
-	ram_writew(memory, address, data, value);
+static void copyonwrite_ram_writew(struct Memory* memory, U32 address, U32 page, U16 value) {
+	copyOnWrite(memory, address, page);
+	ram_writew(memory, address, page, value);
 }
 
-static void copyonwrite_ram_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
-	data = copyOnWrite(memory, address, data);
-	ram_writed(memory, address, data, value);
+static void copyonwrite_ram_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
+	copyOnWrite(memory, address, page);
+	ram_writed(memory, address, page, value);
 }
 
-static U8* copyonwrite_physicalAddress(struct Memory* memory, U32 address, U32 data) {
-	data = copyOnWrite(memory, address, data);
-	return physicalAddress(memory, address, data);
+static U8* copyonwrite_physicalAddress(struct Memory* memory, U32 address, U32 page) {
+	copyOnWrite(memory, address, page);
+	return physicalAddress(memory, address, page);
 }
 
 struct Page ramPageRO = {ram_readb, pf_writeb, ram_readw, pf_writew, ram_readd, pf_writed, ram_clear, physicalAddress};
@@ -266,9 +266,9 @@ struct Page ramPageWR = {ram_readb, ram_writeb, ram_readw, ram_writew, ram_readd
 struct Page ramOnDemandPage = {ondemand_ram_readb, ondemand_ram_writeb, ondemand_ram_readw, ondemand_ram_writew, ondemand_ram_readd, ondemand_ram_writed, ondemand_ram_clear, ondemand_physicalAddress};
 struct Page ramCopyOnWritePage = {ram_readb, copyonwrite_ram_writeb, ram_readw, copyonwrite_ram_writew, ram_readd, copyonwrite_ram_writed, ram_clear, copyonwrite_physicalAddress};
 
-static U32 ondemmand(struct Memory* memory, U32 address, U32 data) {
+static void ondemmand(struct Memory* memory, U32 address, U32 page) {
 	U32 ram = allocRamPage();
-	U32 page = address >> PAGE_SHIFT;
+	U32 data = memory->data[page];
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
 	BOOL write = IS_PAGE_WRITE(data);
 
@@ -280,11 +280,10 @@ static U32 ondemmand(struct Memory* memory, U32 address, U32 data) {
 		memory->mmu[page] = &ramPageWO;
 	else
 		memory->mmu[page] = &ramPageRO;
-	return memory->data[page];
 }
 
-static U32 copyOnWrite(struct Memory* memory, U32 address, U32 data) {	
-	U32 page = address >> PAGE_SHIFT;
+static void copyOnWrite(struct Memory* memory, U32 address, U32 page) {	
+	U32 data = memory->data[page];
 	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
 	BOOL write = IS_PAGE_WRITE(data);
 
@@ -302,5 +301,4 @@ static U32 copyOnWrite(struct Memory* memory, U32 address, U32 data) {
 		memory->mmu[page] = &ramPageWO;
 	else // shouldn't happen
 		memory->mmu[page] = &ramPageRO;
-	return memory->data[page];
 }

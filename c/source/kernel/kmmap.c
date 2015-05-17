@@ -200,7 +200,7 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 	struct Memory* memory = thread->process->memory;
 
 	for (i=0;i<pageCount;i++) {
-		memory->mmu[i+pageStart]->clear(memory, i+pageStart, memory->data[i+pageStart]);
+		memory->mmu[i+pageStart]->clear(memory, i+pageStart);
 		memory->mmu[i+pageStart]=&invalidPage;
 		memory->data[i+pageStart]=0;
 	}
