@@ -4663,7 +4663,7 @@ BOOL decode1a0(struct DecodeData* data) {
 // PUSH FS
 BOOL decode3a0(struct DecodeData* data) {
     data->op->func = pushSeg32;
-    data->op->r1 = DS;
+    data->op->r1 = FS;
     LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
