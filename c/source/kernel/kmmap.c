@@ -80,7 +80,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 	for (i=0;i<pageCount;i++) {
 		// This will prevent the next anonymous mmap from using this range
 		if (memory->mmu[i+pageStart]==&invalidPage) {
-			memory->data[i+pageStart]=PAGE_RESERVED;
+			memory->flags[i+pageStart]=PAGE_RESERVED;
 		}
 	}
 	if (write || read || exec) {		
@@ -130,13 +130,13 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				if (fd) {
 					int filePage = (int)(off>>PAGE_SHIFT);
 					fd->refCount++;
-					if (fildes>0xFF || filePage>0xFFFF) {
+					if (fildes>0xFFF || filePage>0xFFFFF) {
 						kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
 					}
 					if (off & PAGE_MASK) {
 						kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
 					}
-					data=fildes | (filePage << 8);
+					data=fildes | (filePage << 12);
 					off+=4096;
 				}
 				allocPages(memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
@@ -168,22 +168,27 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 
 	for (i=pageStart;i<pageStart+pageCount;i++) {
 		struct Page* page = memory->mmu[i];
-		U32 data = memory->data[i];
+		U32 flags = memory->flags[i];
 
-		data&=~PAGE_PERMISSION_MASK;
-		data|=(permissions << 24);
-		memory->data[i] = data;
+		flags&=~PAGE_PERMISSION_MASK;
+		flags|=permissions;
+		memory->flags[i] = flags;
 
 		if (page == &invalidPage) {
 			memory->mmu[i] = &ramOnDemandPage;
 		} else if (page==&ramPageRO || page==&ramPageWO || page==&ramPageWR) {
 			if (read && write) {
 				memory->mmu[i] = &ramPageWR;
-
+				memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
+				memory->write[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
 			} else if (write) {
 				memory->mmu[i] = &ramPageWO;
+				memory->read[i] = 0;
+				memory->write[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
 			} else {
 				memory->mmu[i] = &ramPageRO;
+				memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
+				memory->write[i] = 0;
 			}
 		} else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage) {
 		} else {
@@ -202,7 +207,9 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 	for (i=0;i<pageCount;i++) {
 		memory->mmu[i+pageStart]->clear(memory, i+pageStart);
 		memory->mmu[i+pageStart]=&invalidPage;
-		memory->data[i+pageStart]=0;
+		memory->flags[i+pageStart]=0;
+		memory->read[i+pageStart]=0;
+		memory->write[i+pageStart]=0;
 	}
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (thread->process->mappedFiles[i].inUse && thread->process->mappedFiles[i].address == address) {
@@ -224,18 +231,18 @@ U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 news
 		struct Memory* memory = thread->process->memory;
 		U32 result;
 		U32 prot=0;
-		U32 data = memory->data[oldaddress >> PAGE_SHIFT];
+		U32 flags = memory->flags[oldaddress >> PAGE_SHIFT];
 		U32 f = K_MAP_FIXED;
-		if (IS_PAGE_READ(data)) {
+		if (IS_PAGE_READ(flags)) {
 			prot|=K_PROT_READ;
 		}
-		if (IS_PAGE_WRITE(data)) {
+		if (IS_PAGE_WRITE(flags)) {
 			prot|=K_PROT_WRITE;
 		}
-		if (IS_PAGE_EXEC(data)) {
+		if (IS_PAGE_EXEC(flags)) {
 			prot|=K_PROT_EXEC;
 		}
-		if (IS_PAGE_SHARED(data)) {
+		if (IS_PAGE_SHARED(flags)) {
 			f|=K_MAP_SHARED;
 		} else {
 			f|=K_MAP_PRIVATE;

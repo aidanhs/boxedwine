@@ -126,18 +126,22 @@ U32 syscall_shmat(struct KThread* thread, U32 shmid, U32 shmaddr, U32 shmflg, U3
 		return -K_EINVAL;
 	}
 	if (shmflg & SHM_RDONLY) {
-		permissions = (PAGE_SHM|PAGE_READ) << PAGE_PERMISSION_SHIFT;
+		permissions = PAGE_SHM|PAGE_READ;
 	} else {
-		permissions = (PAGE_READ|PAGE_WRITE|PAGE_SHM) << PAGE_PERMISSION_SHIFT;
+		permissions = PAGE_READ|PAGE_WRITE|PAGE_SHM;
 	}
 	for (i=0;i<shm[shmid].pageCount;i++) {
-		// This will prevent the next anonymous mmap from using this range
 		if (shmflg & SHM_RDONLY) {
 			memory->mmu[i+result]=&ramPageRO;
 		} else {
 			memory->mmu[i+result]=&ramPageWR;
 		}
-		memory->data[i+result] = permissions|shm[shmid].pages[i]|PAGE_IN_RAM;
+		memory->flags[i+result] = permissions|PAGE_IN_RAM;
+		memory->ramPage[i+result] = shm[shmid].pages[i];
+		if (!(shmflg & SHM_RDONLY)) {
+			memory->write[i+result] = TO_TLB(shm[shmid].pages[i], i+result << PAGE_SHIFT);
+		}
+		memory->read[i+result] = TO_TLB(shm[shmid].pages[i], i+result << PAGE_SHIFT);
 		incrementRamRef(shm[shmid].pages[i]);
 	}
 	incrementShmAttach(thread->process, shmid);

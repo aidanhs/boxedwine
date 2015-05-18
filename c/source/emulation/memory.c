@@ -7,7 +7,7 @@
 #include "kfmmap.h"
 
 #include <string.h>
-#undef LOG_OPS
+//#undef LOG_OPS
 void pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;
@@ -37,30 +37,30 @@ void pf(struct Memory* memory, U32 address) {
 	kpanic("pf");
 }
 
-U8 pf_readb(struct Memory* memory, U32 address, U32 data) {
+U8 pf_readb(struct Memory* memory, U32 address) {
 	pf(memory, address);
 	return 0;
 }
 
-void pf_writeb(struct Memory* memory, U32 address, U32 data, U8 value) {
+void pf_writeb(struct Memory* memory, U32 address, U8 value) {
 	pf(memory, address);
 }
 
-U16 pf_readw(struct Memory* memory, U32 address, U32 data) {
-	pf(memory, address);
-	return 0;
-}
-
-void pf_writew(struct Memory* memory, U32 address, U32 data, U16 value) {
-	pf(memory, address);
-}
-
-U32 pf_readd(struct Memory* memory, U32 address, U32 data) {
+U16 pf_readw(struct Memory* memory, U32 address) {
 	pf(memory, address);
 	return 0;
 }
 
-void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value) {
+void pf_writew(struct Memory* memory, U32 address, U16 value) {
+	pf(memory, address);
+}
+
+U32 pf_readd(struct Memory* memory, U32 address) {
+	pf(memory, address);
+	return 0;
+}
+
+void pf_writed(struct Memory* memory, U32 address, U32 value) {
 	pf(memory, address);
 }
 
@@ -72,11 +72,17 @@ struct Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, p
 U8 readb(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 #ifdef LOG_OPS
-	U8 result = memory->mmu[index]->readb(memory, address, index);
+	U8 result;
+	if (memory->read[index])
+		result = host_readb(address-memory->read[index]);
+	else
+		result = memory->mmu[index]->readb(memory, address);
 	fprintf(logFile, "readb %X @%X\n", result, address);
 	return result;
 #else
-	return memory->mmu[index]->readb(memory, address, index);
+	if (memory->read[index])
+		return host_readb(address-memory->read[index]);
+	return memory->mmu[index]->readb(memory, address);
 #endif
 }
 
@@ -85,62 +91,112 @@ void writeb(struct Memory* memory, U32 address, U8 value) {
 #ifdef LOG_OPS
 	fprintf(logFile, "writeb %X @%X\n", value, address);
 #endif
-	memory->mmu[index]->writeb(memory, address, index, value);
+	if (memory->write[index]) {
+		host_writeb(address-memory->write[index], value);
+	} else {
+		memory->mmu[index]->writeb(memory, address, value);
+	}
 }
 
 U16 readw(struct Memory* memory, U32 address) {
-	int index = address >> 12;
 #ifdef LOG_OPS
-	U16 result = memory->mmu[index]->readw(memory, address, index);
+	U16 result;
+
+	if ((address & 0xFFF) < 0xFFF) {
+		int index = address >> 12;
+		if (memory->read[index])
+			result = host_readw(address-memory->read[index]);
+		else 
+			result = memory->mmu[index]->readw(memory, address);
+	} else {
+		result = readb(memory, address) | (readb(memory, address+1) << 8);
+	}
 	fprintf(logFile, "readw %X @%X\n", result, address);
 	return result;
 #else
-	return memory->mmu[index]->readw(memory, address, index);
+	if ((address & 0xFFF) < 0xFFF) {
+		int index = address >> 12;
+		if (memory->read[index])
+			return host_readw(address-memory->read[index]);
+		return memory->mmu[index]->readw(memory, address);
+	}
+	return readb(memory, address) | (readb(memory, address+1) << 8);
 #endif
 }
 
 void writew(struct Memory* memory, U32 address, U16 value) {
-	int index = address >> 12;
 #ifdef LOG_OPS
 	fprintf(logFile, "writew %X @%X\n", value, address);
 #endif
-	memory->mmu[index]->writew(memory, address, index, value);
+	if ((address & 0xFFF) < 0xFFF) {
+		int index = address >> 12;
+		if (memory->write[index]) {
+			host_writew(address-memory->write[index], value);
+		} else {
+			memory->mmu[index]->writew(memory, address, value);
+		}
+	} else {
+		writeb(memory, address, (U8)value);
+		writeb(memory, address+1, (U8)(value >> 8));
+	}
 }
 
 U32 readd(struct Memory* memory, U32 address) {
-	int index = address >> 12;
 #ifdef LOG_OPS
-	U32 result = memory->mmu[index]->readd(memory, address, index);
+	U32 result;
+
+	if ((address & 0xFFF) < 0xFFD) {
+		int index = address >> 12;
+		if (memory->read[index])
+			result = host_readd(address-memory->read[index]);
+		else
+			result = memory->mmu[index]->readd(memory, address);
+	} else {
+		result = readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
+	}
 	fprintf(logFile, "readd %X @%X\n", result, address);
 	return result;
 #else
-	return memory->mmu[index]->readd(memory, address, index);
+	if ((address & 0xFFF) < 0xFFD) {
+		int index = address >> 12;
+		if (memory->read[index])
+			return host_readd(address-memory->read[index]);
+		return memory->mmu[index]->readd(memory, address);
+	} else {
+		return readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
+	}
 #endif
 }
 
 void writed(struct Memory* memory, U32 address, U32 value) {
-	int index = address >> 12;
 #ifdef LOG_OPS
 	fprintf(logFile, "writed %X @%X\n", value, address);
 #endif
-	memory->mmu[index]->writed(memory, address, index, value);
+	if ((address & 0xFFF) < 0xFFD) {
+		int index = address >> 12;
+		if (memory->write[index]) {
+			if (memory->mmu[index] != &ramPageWR) {
+				int ii=0;
+			}
+			host_writed(address-memory->write[index], value);
+		} else {
+			memory->mmu[index]->writed(memory, address, value);
+		}		
+	} else {
+		writeb(memory, address, value);
+		writeb(memory, address+1, value >> 8);
+		writeb(memory, address+2, value >> 16);
+		writeb(memory, address+3, value >> 24);
+	}
 }
 
 U64 readq(struct Memory* memory, U32 address) {
-	int index = address >> 12;
-	U64 result = memory->mmu[index]->readd(memory, address, index);
-	address+=4;
-	index = address >> 12;
-	result |= ((U64)memory->mmu[index]->readd(memory, address, index) << 32);
-	return result;
+	return readd(memory, address) | ((U64)readd(memory, address+4) << 32);
 }
 
 void writeq(struct Memory* memory, U32 address, U64 value) {
-	int index = address >> 12;
-	memory->mmu[index]->writed(memory, address, index, (U32)value);
-	address+=4;
-	index = address >> 12;
-	memory->mmu[index]->writed(memory, address, index, (U32)(value >> 32));
+	writed(memory, address, (U32)value);
+	writed(memory, address+4, (U32)(value >> 32));
 }
 
 struct Memory* allocMemory() {
@@ -152,10 +208,10 @@ struct Memory* allocMemory() {
 void initMemory(struct Memory* memory) {
 	int i=0;
 
+	memset(memory, 0, sizeof(struct Memory));
 	for (i=0;i<0x100000;i++) {
 		memory->mmu[i] = &invalidPage;
 	}
-	memset(memory->data, 0, sizeof(memory->data));
 }
 
 void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {
@@ -165,7 +221,10 @@ void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {
 		if (i<exceptStart || i>=exceptStart+exceptCount) {
 			memory->mmu[i]->clear(memory, i);
 			memory->mmu[i] = &invalidPage;
-			memory->data[i] = 0;
+			memory->flags[i] = 0;
+			memory->read[i] = 0;
+			memory->write[i] = 0;
+			memory->ramPage[i] = 0;
 		}
 	}
 }
@@ -177,23 +236,31 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
 	for (i=0;i<0x100000;i++) {
 		struct Page* page = memory->mmu[i];
 		if (page == &ramPageRO || page == &ramPageWR || page == &ramPageWO) {
-			if (!IS_PAGE_SHARED(memory->data[i])) {
+			if (!IS_PAGE_SHARED(memory->flags[i])) {
 				memory->mmu[i] = &ramCopyOnWritePage;
 				from->mmu[i] = &ramCopyOnWritePage;
+				memory->write[i] = 0;
+				from->write[i] = 0;
 			}
-			incrementRamRef(GET_PAGE(memory->data[i]));
+			incrementRamRef(memory->ramPage[i]);
 		} else if (page == &ramCopyOnWritePage) {
-			incrementRamRef(GET_PAGE(memory->data[i]));
-		} else if (IS_PAGE_SHARED(memory->data[i])) {
+			incrementRamRef(memory->ramPage[i]);
+		} else if (IS_PAGE_SHARED(memory->flags[i])) {
 			if (page == &ramOnDemandPage) {
 				writeb(from, i << PAGE_SHIFT, 0); // this will map the address to a real page of ram
 				memory->mmu[i] = from->mmu[i];
-				memory->data[i] = from->data[i];
+				memory->flags[i] = from->flags[i];
+				memory->ramPage[i] = from->ramPage[i];
+				memory->read[i] = from->read[i];
+				memory->write[i] = from->write[i];
 				i--;
 			} else if (page == &ramOnDemandFilePage) { 
 				readb(from, i << PAGE_SHIFT); // this will map the address to a real page of ram
 				memory->mmu[i] = from->mmu[i];
-				memory->data[i] = from->data[i];
+				memory->flags[i] = from->flags[i];
+				memory->ramPage[i] = from->ramPage[i];
+				memory->read[i] = from->read[i];
+				memory->write[i] = from->write[i];
 				i--;
 			} else {
 				kpanic("Unhandled shared memory clone");
@@ -211,7 +278,7 @@ void freeMemory(struct Memory* memory) {
 	// :TODO:
 }
 
-void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data) {
+void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 ramPage) {
 	U32 i;
 	U32 address = page << PAGE_SHIFT;
 
@@ -220,14 +287,20 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
 			U32 ram = allocRamPage();
 
 			memory->mmu[page] = pageType;
-			memory->data[page] = ram | (permissions << PAGE_PERMISSION_SHIFT) | PAGE_IN_RAM;
+			memory->flags[page] = permissions | PAGE_IN_RAM;
+			memory->ramPage[page] = ram;
+			memory->read[page] = TO_TLB(ram,  address);
+			memory->write[page] = TO_TLB(ram,  address);
 			page++;
 			address+=0x1000;
 		}
 	} else {
 		for (i=0;i<pageCount;i++) {
 			memory->mmu[page] = pageType;
-			memory->data[page] = data | (permissions << PAGE_PERMISSION_SHIFT) ;
+			memory->flags[page] = permissions;
+			memory->ramPage[page] = ramPage;
+			memory->read[page] = 0;
+			memory->write[page] = 0;
 			page++;
 		}
 	}
@@ -284,11 +357,11 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
 	return FALSE;
 }
 
-void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 status) {
+void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 flags) {
 	U32 i;
 	
 	for (i=startingPage;i<startingPage+pageCount;i++) {
-		memory->data[i]=status;
+		memory->flags[i]=flags;
 	}
 }
 
@@ -298,13 +371,15 @@ void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
 	for (i=startingPage;i<startingPage+pageCount;i++) {
 		memory->mmu[i]->clear(memory, i);
 		memory->mmu[i] = &invalidPage;
-		memory->data[i]=0;
+		memory->flags[i]=0;
+		memory->read[i]=0;
+		memory->write[i]=0;
 	}
 }
 
 U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 	int index = address >> 12;
-	return memory->mmu[index]->physicalAddress(memory, address, index);
+	return memory->mmu[index]->physicalAddress(memory, address);
 }
 
 void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {

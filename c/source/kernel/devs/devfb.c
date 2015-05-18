@@ -207,29 +207,29 @@ struct fb_var_screeninfo fb_var_screeninfo;
 struct fb_fix_screeninfo fb_fix_screeninfo;
 BOOL fbinit;
 
-static U8 fb_readb(struct Memory* memory, U32 address, U32 page) {	
+static U8 fb_readb(struct Memory* memory, U32 address) {	
 	return ((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
-static void fb_writeb(struct Memory* memory, U32 address, U32 page, U8 value) {
+static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
 	((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
-static U16 fb_readw(struct Memory* memory, U32 address, U32 page) {
+static U16 fb_readw(struct Memory* memory, U32 address) {
 	return ((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
 }
 
-static void fb_writew(struct Memory* memory, U32 address, U32 page, U16 value) {
+static void fb_writew(struct Memory* memory, U32 address, U16 value) {
 	updateAvailable=1;
 	((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
-static U32 fb_readd(struct Memory* memory, U32 address, U32 data) {
+static U32 fb_readd(struct Memory* memory, U32 address) {
 	return ((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
 }
 
-static void fb_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
+static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 	updateAvailable=1;
 	((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
@@ -237,7 +237,7 @@ static void fb_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
 static void fb_clear(struct Memory* memory, U32 page) {
 }
 
-static U8* fb_physicalAddress(struct Memory* memory, U32 address, U32 page) {
+static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
 	return &((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 

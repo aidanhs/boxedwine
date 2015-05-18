@@ -44,7 +44,9 @@ void initCallbacksInProcess(struct KProcess* process) {
 	U32 page = CALL_BACK_ADDRESS >> PAGE_SHIFT;
 
 	process->memory->mmu[page] = &ramPageRO;
-	process->memory->data[page] = callbackPage | ((PAGE_READ|PAGE_EXEC) << PAGE_PERMISSION_SHIFT) | PAGE_IN_RAM;
+	process->memory->flags[page] = PAGE_READ|PAGE_EXEC|PAGE_IN_RAM;
+	process->memory->ramPage[page] = callbackPage;
+	process->memory->read[page] = TO_TLB(callbackPage,  CALL_BACK_ADDRESS);
 	incrementRamRef(callbackPage);
 }
 

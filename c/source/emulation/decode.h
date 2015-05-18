@@ -4652,6 +4652,22 @@ BOOL decode19f(struct DecodeData* data) {
     NEXT_OP(data);
     return TRUE;
 }
+// PUSH FS
+BOOL decode1a0(struct DecodeData* data) {
+    data->op->func = pushSeg16;
+    data->op->r1 = FS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
+    NEXT_OP(data);
+    return TRUE;
+}
+// PUSH FS
+BOOL decode3a0(struct DecodeData* data) {
+    data->op->func = pushSeg32;
+    data->op->r1 = DS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
+    NEXT_OP(data);
+    return TRUE;
+}
 // POP FS
 BOOL decode1a1(struct DecodeData* data) {
     data->op->func = popSeg16;
@@ -4816,6 +4832,22 @@ BOOL decode3a5(struct DecodeData* data) {
         decodeEa32(data, rm);
         LOG_OP2("DSHLCL", M32(data, rm, data->op),R32(data->op->r1));
     }
+    NEXT_OP(data);
+    return TRUE;
+}
+// PUSH GS
+BOOL decode1a8(struct DecodeData* data) {
+    data->op->func = pushSeg16;
+    data->op->r1 = GS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
+    NEXT_OP(data);
+    return TRUE;
+}
+// PUSH GS
+BOOL decode3a8(struct DecodeData* data) {
+    data->op->func = pushSeg32;
+    data->op->r1 = GS;
+    LOG_OP1("PUSH", EABASE(data->op->r1));
     NEXT_OP(data);
     return TRUE;
 }

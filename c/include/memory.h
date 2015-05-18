@@ -12,7 +12,10 @@
 
 struct Memory {
 	struct Page* mmu[NUMBER_OF_PAGES];
-	U32 data[NUMBER_OF_PAGES]; // bottom 24 bits is the ram page, top 8 bits is the permissions
+	U8 flags[NUMBER_OF_PAGES];
+	U32 read[NUMBER_OF_PAGES];
+	U32 write[NUMBER_OF_PAGES];
+	U32 ramPage[NUMBER_OF_PAGES];
 	struct KProcess* process;
 };
 
@@ -30,12 +33,12 @@ void writeMemory(struct Memory* memory, U32 address, U8* data, int len);
 
 extern struct Page invalidPage;
 
-U8 pf_readb(struct Memory* memory, U32 address, U32 data);
-void pf_writeb(struct Memory* memory, U32 address, U32 data, U8 value);
-U16 pf_readw(struct Memory* memory, U32 address, U32 data);
-void pf_writew(struct Memory* memory, U32 address, U32 data, U16 value);
-U32 pf_readd(struct Memory* memory, U32 address, U32 data);
-void pf_writed(struct Memory* memory, U32 address, U32 data, U32 value);
+U8 pf_readb(struct Memory* memory, U32 address);
+void pf_writeb(struct Memory* memory, U32 address, U8 value);
+U16 pf_readw(struct Memory* memory, U32 address);
+void pf_writew(struct Memory* memory, U32 address, U16 value);
+U32 pf_readd(struct Memory* memory, U32 address);
+void pf_writed(struct Memory* memory, U32 address, U32 value);
 
 struct Memory* allocMemory();
 void initMemory(struct Memory* memory);
@@ -54,17 +57,15 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 #define PAGE_EXEC 0x04
 #define PAGE_SHARED 0x08
 #define PAGE_SHM 0x10
-#define PAGE_RESERVED 0x00FFFFFF
-#define PAGE_IN_RAM 0x80000000
-#define PAGE_PERMISSION_MASK 0x07000000
-#define PAGE_PERMISSION_SHIFT 24
+#define PAGE_RESERVED 0x40
+#define PAGE_IN_RAM 0x80
+#define PAGE_PERMISSION_MASK 0x07
 
-#define GET_PAGE_PERMISSIONS(data) (data & PAGE_PERMISSION_MASK)
-#define IS_PAGE_READ(data) (data & 0x01000000)
-#define IS_PAGE_WRITE(data) (data & 0x02000000)
-#define IS_PAGE_EXEC(data) (data & 0x04000000)
-#define IS_PAGE_SHARED(data) (data & 0x08000000)
-#define GET_PAGE(data) (data & 0x00FFFFFF)
+#define GET_PAGE_PERMISSIONS(flags) (flags & PAGE_PERMISSION_MASK)
+#define IS_PAGE_READ(flags) (flags & PAGE_READ)
+#define IS_PAGE_WRITE(flags) (flags & PAGE_WRITE)
+#define IS_PAGE_EXEC(flags) (flags & PAGE_EXEC)
+#define IS_PAGE_SHARED(flags) (flags & PAGE_SHARED)
 #define IS_PAGE_IN_RAM(data) (data & PAGE_IN_RAM)
 
 // data is only used if allocRAM is FALSE
@@ -78,5 +79,7 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address);
 
 void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len);
 void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len);
+
+#define TO_TLB(ramPage, address) (((address) & 0xFFFFF000)-((ramPage) << PAGE_SHIFT))
 
 #endif

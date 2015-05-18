@@ -11,15 +11,16 @@
 
 // :TODO: what about sync'ing the writes back to the file?
 
-static void ondemmandFile(struct Memory* memory, U32 address, U32 page) {
-	U32 data = memory->data[page];
-	FD fildes = data & 0xFF;
-	U32 ramPageIndexInCache = (data >> 8) & 0xFFFF;
+static void ondemmandFile(struct Memory* memory, U32 address) {
+	U32 page = address >> PAGE_SHIFT;
+	U32 flags = memory->flags[page];
+	FD fildes = memory->ramPage[page] & 0xFFF;
+	U32 ramPageIndexInCache = memory->ramPage[page] >> 12;
 	U32 offset = ramPageIndexInCache << PAGE_SHIFT;
 	struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
 	U32 ram = 0;
-	BOOL read = IS_PAGE_READ(data) | IS_PAGE_EXEC(data);
-	BOOL write = IS_PAGE_WRITE(data);
+	BOOL read = IS_PAGE_READ(flags) | IS_PAGE_EXEC(flags);
+	BOOL write = IS_PAGE_WRITE(flags);
 	U32 len;
 	U64 oldPos;
 	BOOL inCache = 0;
@@ -36,16 +37,23 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 page) {
 			incrementRamRef(ram);
 		}
 		memory->mmu[page] = & ramPageRO; // :TODO: what if an app uses mprotect to change this?
+		memory->read[page] = TO_TLB(ram,  address);		
 	} else {
 		ram = allocRamPage();
-		if (read && write)
+		if (read && write) {
 			memory->mmu[page] = &ramPageWR;
-		else if (write)
+			memory->read[page] = TO_TLB(ram,  address);
+		} else if (write) {
 			memory->mmu[page] = &ramPageWO;
-		else
+		} else {
 			memory->mmu[page] = &ramPageRO;		
+			memory->read[page] = TO_TLB(ram,  address);
+		}
 	}
-	memory->data[page] = ram | GET_PAGE_PERMISSIONS(data) | PAGE_IN_RAM;
+	memory->flags[page] = GET_PAGE_PERMISSIONS(flags) | PAGE_IN_RAM;
+	memory->ramPage[page] = ram;
+	// filling the cache needs this
+	memory->write[page] = TO_TLB(ram,  address);
 
 	if (!inCache) {
 		oldPos = fd->kobject->access->getPos(fd->kobject);
@@ -57,48 +65,50 @@ static void ondemmandFile(struct Memory* memory, U32 address, U32 page) {
 			memset(getAddressOfRamPage(ram)+len, 0, PAGE_SIZE-len);
 		}
 	}
+	if (!write)
+		memory->write[page] = 0;
 	closeFD(fd);
 }
 
-static U8 ondemandfile_readb(struct Memory* memory, U32 address, U32 page) {	
-	ondemmandFile(memory, address, page);	
+static U8 ondemandfile_readb(struct Memory* memory, U32 address) {	
+	ondemmandFile(memory, address);	
 	return readb(memory, address);
 }
 
-static void ondemandfile_writeb(struct Memory* memory, U32 address, U32 page, U8 value) {
-	ondemmandFile(memory, address, page);	
+static void ondemandfile_writeb(struct Memory* memory, U32 address, U8 value) {
+	ondemmandFile(memory, address);	
 	writeb(memory, address, value);
 }
 
-static U16 ondemandfile_readw(struct Memory* memory, U32 address, U32 page) {
-	ondemmandFile(memory, address, page);	
+static U16 ondemandfile_readw(struct Memory* memory, U32 address) {
+	ondemmandFile(memory, address);	
 	return readw(memory, address);
 }
 
-static void ondemandfile_writew(struct Memory* memory, U32 address, U32 page, U16 value) {
-	ondemmandFile(memory, address, page);	
+static void ondemandfile_writew(struct Memory* memory, U32 address, U16 value) {
+	ondemmandFile(memory, address);	
 	writew(memory, address, value);
 }
 
-static U32 ondemandfile_readd(struct Memory* memory, U32 address, U32 page) {
-	ondemmandFile(memory, address, page);	
+static U32 ondemandfile_readd(struct Memory* memory, U32 address) {
+	ondemmandFile(memory, address);	
 	return readd(memory, address);
 }
 
-static void ondemandfile_writed(struct Memory* memory, U32 address, U32 page, U32 value) {
-	ondemmandFile(memory, address, page);	
+static void ondemandfile_writed(struct Memory* memory, U32 address, U32 value) {
+	ondemmandFile(memory, address);	
 	writed(memory, address, value);
 }
 
 static void ondemandfile_clear(struct Memory* memory, U32 page) {
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(memory->data[page] & 0xFF));
+	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(memory->ramPage[page] & 0xFFF));
 	if (fd) {
 		closeFD(fd);
 	}
 }
 
-static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address, U32 page) {
-	ondemmandFile(memory, address, page);
+static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address) {
+	ondemmandFile(memory, address);
 	return getPhysicalAddress(memory, address);
 }
 

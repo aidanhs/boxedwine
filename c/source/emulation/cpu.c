@@ -461,17 +461,17 @@ void runBlock(struct CPU* cpu, struct Block* block) {
 
 struct Block* getBlock(struct CPU* cpu) {
 	struct Block* block;	
-	U32 data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
-	if (IS_PAGE_IN_RAM(data)) {
-		block = getCode(GET_PAGE(data), cpu->eip.u32 & 0xFFF);
+	U32 page = cpu->eip.u32 >> PAGE_SHIFT;
+	U32 flags = cpu->memory->flags[page];
+	if (IS_PAGE_IN_RAM(flags)) {
+		block = getCode(cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
 		if (!block) {
 			block = decodeBlock(cpu);
-			addCode(block, GET_PAGE(data), cpu->eip.u32 & 0xFFF);
+			addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
 		}
 	} else {		
 		block = decodeBlock(cpu);
-		data = cpu->memory->data[cpu->eip.u32 >> PAGE_SHIFT];
-		addCode(block, GET_PAGE(data), cpu->eip.u32 & 0xFFF);
+		addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
 	}
 	return block;
 }
