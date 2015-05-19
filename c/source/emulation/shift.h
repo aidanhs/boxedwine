@@ -1,4 +1,4 @@
-void rol8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rol8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -10,7 +10,7 @@ void rol8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void rol8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rol8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -23,7 +23,7 @@ void rol8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void rol8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rol8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -36,7 +36,7 @@ void rol8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void rol8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rol8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1;
     U8 var2 = CL & 0x1f;
@@ -52,7 +52,7 @@ void rol8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rol8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1;
@@ -69,7 +69,7 @@ void rol8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rol8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1;
@@ -86,7 +86,7 @@ void rol8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rol16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -98,7 +98,7 @@ void rol16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void rol16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rol16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -111,7 +111,7 @@ void rol16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void rol16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rol16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -124,7 +124,7 @@ void rol16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void rol16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rol16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1;
     U16 var2 = CL & 0x1f;
@@ -140,7 +140,7 @@ void rol16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rol16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1;
@@ -157,7 +157,7 @@ void rol16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rol16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1;
@@ -174,7 +174,7 @@ void rol16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rol32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -186,7 +186,7 @@ void rol32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void rol32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rol32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -199,7 +199,7 @@ void rol32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void rol32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rol32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -212,7 +212,7 @@ void rol32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void rol32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rol32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -226,7 +226,7 @@ void rol32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rol32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -241,7 +241,7 @@ void rol32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rol32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rol32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -256,7 +256,7 @@ void rol32cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL ror8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -268,7 +268,7 @@ void ror8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void ror8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL ror8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -281,7 +281,7 @@ void ror8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void ror8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL ror8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -294,7 +294,7 @@ void ror8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void ror8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL ror8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1;
     U8 var2 = CL & 0x1f;
@@ -310,7 +310,7 @@ void ror8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL ror8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1;
@@ -327,7 +327,7 @@ void ror8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL ror8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1;
@@ -344,7 +344,7 @@ void ror8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL ror16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -356,7 +356,7 @@ void ror16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void ror16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL ror16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -369,7 +369,7 @@ void ror16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void ror16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL ror16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -382,7 +382,7 @@ void ror16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void ror16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL ror16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1;
     U16 var2 = CL & 0x1f;
@@ -398,7 +398,7 @@ void ror16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL ror16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1;
@@ -415,7 +415,7 @@ void ror16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL ror16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1;
@@ -432,7 +432,7 @@ void ror16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL ror32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -444,7 +444,7 @@ void ror32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void ror32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL ror32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -457,7 +457,7 @@ void ror32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void ror32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL ror32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -470,7 +470,7 @@ void ror32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void ror32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL ror32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -484,7 +484,7 @@ void ror32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL ror32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -499,7 +499,7 @@ void ror32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void ror32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL ror32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -514,7 +514,7 @@ void ror32cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void rcl8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -526,7 +526,7 @@ void rcl8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
     NEXT();
 }
-void rcl8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -539,7 +539,7 @@ void rcl8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcl8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -552,7 +552,7 @@ void rcl8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcl8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1;
     U8 var2 = CL & 0x1f;
@@ -568,7 +568,7 @@ void rcl8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(7);
     NEXT();
 }
-void rcl8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1;
@@ -585,7 +585,7 @@ void rcl8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcl8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1;
@@ -602,7 +602,7 @@ void rcl8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcl16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -614,7 +614,7 @@ void rcl16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
     NEXT();
 }
-void rcl16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -627,7 +627,7 @@ void rcl16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcl16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -640,7 +640,7 @@ void rcl16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcl16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1;
     U16 var2 = CL & 0x1f;
@@ -656,7 +656,7 @@ void rcl16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(7);
     NEXT();
 }
-void rcl16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1;
@@ -673,7 +673,7 @@ void rcl16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcl16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1;
@@ -690,7 +690,7 @@ void rcl16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcl32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -706,7 +706,7 @@ void rcl32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
     NEXT();
 }
-void rcl32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -723,7 +723,7 @@ void rcl32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcl32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -740,7 +740,7 @@ void rcl32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcl32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -758,7 +758,7 @@ void rcl32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(7);
     NEXT();
 }
-void rcl32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -777,7 +777,7 @@ void rcl32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcl32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcl32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -796,7 +796,7 @@ void rcl32cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcr8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -808,7 +808,7 @@ void rcr8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
     NEXT();
 }
-void rcr8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -821,7 +821,7 @@ void rcr8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcr8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -834,7 +834,7 @@ void rcr8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcr8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1;
     U8 var2 = CL & 0x1f;
@@ -850,7 +850,7 @@ void rcr8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(7);
     NEXT();
 }
-void rcr8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1;
@@ -867,7 +867,7 @@ void rcr8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcr8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1;
@@ -884,7 +884,7 @@ void rcr8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcr16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -896,7 +896,7 @@ void rcr16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
     NEXT();
 }
-void rcr16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -909,7 +909,7 @@ void rcr16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcr16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -922,7 +922,7 @@ void rcr16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcr16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1;
     U16 var2 = CL & 0x1f;
@@ -938,7 +938,7 @@ void rcr16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(7);
     NEXT();
 }
-void rcr16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1;
@@ -955,7 +955,7 @@ void rcr16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcr16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1;
@@ -972,7 +972,7 @@ void rcr16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcr32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -988,7 +988,7 @@ void rcr32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
     NEXT();
 }
-void rcr32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1005,7 +1005,7 @@ void rcr32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcr32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1022,7 +1022,7 @@ void rcr32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(10);
     NEXT();
 }
-void rcr32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -1040,7 +1040,7 @@ void rcr32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(7);
     NEXT();
 }
-void rcr32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1059,7 +1059,7 @@ void rcr32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void rcr32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL rcr32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1078,7 +1078,7 @@ void rcr32cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(9);
     NEXT();
 }
-void shl8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shl8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -1091,7 +1091,7 @@ void shl8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void shl8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shl8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1105,7 +1105,7 @@ void shl8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shl8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shl8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1119,7 +1119,7 @@ void shl8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shl8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shl8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = CL & 0x1f;
@@ -1134,7 +1134,7 @@ void shl8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shl8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1150,7 +1150,7 @@ void shl8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shl8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1166,7 +1166,7 @@ void shl8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shl16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -1179,7 +1179,7 @@ void shl16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void shl16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shl16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1193,7 +1193,7 @@ void shl16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shl16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shl16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1207,7 +1207,7 @@ void shl16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shl16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shl16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = CL & 0x1f;
@@ -1222,7 +1222,7 @@ void shl16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shl16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1238,7 +1238,7 @@ void shl16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shl16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1254,7 +1254,7 @@ void shl16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shl32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -1267,7 +1267,7 @@ void shl32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void shl32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shl32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1281,7 +1281,7 @@ void shl32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shl32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shl32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1295,7 +1295,7 @@ void shl32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shl32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shl32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -1310,7 +1310,7 @@ void shl32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shl32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1326,7 +1326,7 @@ void shl32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shl32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shl32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1342,7 +1342,7 @@ void shl32cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shr8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -1355,7 +1355,7 @@ void shr8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void shr8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shr8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1369,7 +1369,7 @@ void shr8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shr8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shr8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1383,7 +1383,7 @@ void shr8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shr8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shr8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = CL & 0x1f;
@@ -1398,7 +1398,7 @@ void shr8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shr8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1414,7 +1414,7 @@ void shr8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shr8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1430,7 +1430,7 @@ void shr8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shr16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -1443,7 +1443,7 @@ void shr16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void shr16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shr16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1457,7 +1457,7 @@ void shr16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shr16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shr16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1471,7 +1471,7 @@ void shr16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shr16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shr16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = CL & 0x1f;
@@ -1486,7 +1486,7 @@ void shr16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shr16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1502,7 +1502,7 @@ void shr16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shr16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1518,7 +1518,7 @@ void shr16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shr32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -1531,7 +1531,7 @@ void shr32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void shr32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shr32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1545,7 +1545,7 @@ void shr32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shr32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shr32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1559,7 +1559,7 @@ void shr32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void shr32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL shr32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -1574,7 +1574,7 @@ void shr32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL shr32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1590,7 +1590,7 @@ void shr32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void shr32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL shr32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1606,7 +1606,7 @@ void shr32cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL sar8_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = op->data1;
@@ -1619,7 +1619,7 @@ void sar8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void sar8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL sar8_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1633,7 +1633,7 @@ void sar8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void sar8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL sar8_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1647,7 +1647,7 @@ void sar8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void sar8cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL sar8cl_reg(struct CPU* cpu, struct Op* op) {
     U8 result;
     U8 var1=*cpu->reg8[op->r1];
     U8 var2 = CL & 0x1f;
@@ -1662,7 +1662,7 @@ void sar8cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar8cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL sar8cl_mem16(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa16(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1678,7 +1678,7 @@ void sar8cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar8cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL sar8cl_mem32(struct CPU* cpu, struct Op* op) {
     U8 result;
     U32 eaa = eaa32(cpu, op);
     U8 var1=readb(cpu->memory, eaa);
@@ -1694,7 +1694,7 @@ void sar8cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL sar16_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = op->data1;
@@ -1707,7 +1707,7 @@ void sar16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void sar16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL sar16_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1721,7 +1721,7 @@ void sar16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void sar16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL sar16_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1735,7 +1735,7 @@ void sar16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void sar16cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL sar16cl_reg(struct CPU* cpu, struct Op* op) {
     U16 result;
     U16 var1=cpu->reg[op->r1].u16;
     U16 var2 = CL & 0x1f;
@@ -1750,7 +1750,7 @@ void sar16cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar16cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL sar16cl_mem16(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa16(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1766,7 +1766,7 @@ void sar16cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar16cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL sar16cl_mem32(struct CPU* cpu, struct Op* op) {
     U16 result;
     U32 eaa = eaa32(cpu, op);
     U16 var1=readw(cpu->memory, eaa);
@@ -1782,7 +1782,7 @@ void sar16cl_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL sar32_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = op->data1;
@@ -1795,7 +1795,7 @@ void sar32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void sar32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL sar32_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1809,7 +1809,7 @@ void sar32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void sar32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL sar32_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1823,7 +1823,7 @@ void sar32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void sar32cl_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL sar32cl_reg(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 var1=cpu->reg[op->r1].u32;
     U32 var2 = CL & 0x1f;
@@ -1838,7 +1838,7 @@ void sar32cl_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar32cl_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL sar32cl_mem16(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa16(cpu, op);
     U32 var1=readd(cpu->memory, eaa);
@@ -1854,7 +1854,7 @@ void sar32cl_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     NEXT();
 }
-void sar32cl_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL sar32cl_mem32(struct CPU* cpu, struct Op* op) {
     U32 result;
     U32 eaa = eaa32(cpu, op);
     U32 var1=readd(cpu->memory, eaa);

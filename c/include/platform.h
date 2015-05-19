@@ -20,6 +20,7 @@
 #define FALSE 0
 
 #ifdef PLATFORM_MSVC
+#define OPCALL __fastcall
 #define unlink _unlink
 #define ftruncate(h, l) _chsize(h, (long)l)
 #define lseek64 _lseeki64
@@ -32,6 +33,7 @@
 #define MKDIR(x) mkdir(x)
 #define INLINE __inline
 #else
+#define OPCALL
 #define UNISTD <unistd.h>
 #define UTIME <utime.h>
 #define CURDIR_INCLUDE <unistd.h>

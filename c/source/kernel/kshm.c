@@ -139,9 +139,9 @@ U32 syscall_shmat(struct KThread* thread, U32 shmid, U32 shmaddr, U32 shmflg, U3
 		memory->flags[i+result] = permissions|PAGE_IN_RAM;
 		memory->ramPage[i+result] = shm[shmid].pages[i];
 		if (!(shmflg & SHM_RDONLY)) {
-			memory->write[i+result] = TO_TLB(shm[shmid].pages[i], i+result << PAGE_SHIFT);
+			memory->write[i+result] = TO_TLB(shm[shmid].pages[i], (i+result) << PAGE_SHIFT);
 		}
-		memory->read[i+result] = TO_TLB(shm[shmid].pages[i], i+result << PAGE_SHIFT);
+		memory->read[i+result] = TO_TLB(shm[shmid].pages[i], (i+result) << PAGE_SHIFT);
 		incrementRamRef(shm[shmid].pages[i]);
 	}
 	incrementShmAttach(thread->process, shmid);

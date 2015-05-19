@@ -9,11 +9,11 @@ struct Block;
 
 #define MAX_OP_STR 64
 
-typedef void (*OpCallback)(struct CPU* cpu, struct Op* op);
+typedef void (OPCALL *OpCallback)(struct CPU* cpu, struct Op* op);
 
 // :TODO: this takes up a lot of memory, a simple inc instruction that is one byte will be decoded into 24-bytes
 struct Op {
-	void (*func)(struct CPU* cpu, struct Op* op);
+	void (OPCALL *func)(struct CPU* cpu, struct Op* op);
 	U8 r1;
 	U8 r2;
 	U8 base;

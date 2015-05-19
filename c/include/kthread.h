@@ -58,6 +58,6 @@ BOOL runSignals(struct KThread* thread);
 void runSignal(struct KThread* thread, U32 signal);
 void threadClearFutexes(struct KThread* thread);
 void initStackPointer(struct KThread* thread);
-void onExitSignal(struct CPU* cpu, struct Op* op);
+void OPCALL onExitSignal(struct CPU* cpu, struct Op* op);
 
 #endif

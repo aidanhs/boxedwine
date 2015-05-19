@@ -45,7 +45,7 @@ struct FPU_Float {
 #define FPU_SET_TOP(fpu, val) (fpu)->sw &= ~0x3800; (fpu)->sw |= (val & 7) << 11
 
 #ifdef LOG_FPU
-void LOG_STACK(struct FPU* fpu) {
+void OPCALL LOG_STACK(struct FPU* fpu) {
 	U32 i;
 
 	for (i=0;i<8;i++) {
@@ -766,42 +766,42 @@ static void FPU_FLDCW(struct CPU* cpu, int addr) {
 			fpu.top=FPU_GET_TOP() after a write;
 			*/
 
-void FADD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
 	FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
 	FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FADD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
 	FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
 	FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -809,14 +809,14 @@ void FCOM_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FCOM_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -824,112 +824,112 @@ void FCOM_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FSUB_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUB_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FDIV_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIV_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIVR_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa16(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIVR_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F32_EA(cpu, eaa32(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FADD_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FADD(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FMUL(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_STi(struct CPU* cpu, struct Op* op) {
     FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_STi_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_STi_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUB_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FSUB(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FSUBR(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FDIV_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FDIV(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIVR_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FDIVR(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(39);
 	NEXT();
 }
 
-void FLD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     U32 value = readd(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F32(&cpu->fpu, value, cpu->fpu.top);
@@ -937,7 +937,7 @@ void FLD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FLD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     U32 value = readd(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F32(&cpu->fpu, value, cpu->fpu.top);
@@ -945,81 +945,81 @@ void FLD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FST_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_F32(cpu, eaa16(cpu, op));
 	CYCLES(2);
 	NEXT();
 }
 
-void FST_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FST_F32(cpu, eaa32(cpu, op));
 	CYCLES(2);
 	NEXT();
 }
 
-void FST_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_F32(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(2);
 	NEXT();
 }
 
-void FST_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_F32(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(2);
 	NEXT();
 }
 
-void FLDENV_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDENV_16(struct CPU* cpu, struct Op* op) {
     FPU_FLDENV(cpu, eaa16(cpu, op));
 	CYCLES(32);
 	NEXT();
 }
 
-void FLDENV_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDENV_32(struct CPU* cpu, struct Op* op) {
     FPU_FLDENV(cpu, eaa32(cpu, op));
 	CYCLES(32);
 	NEXT();
 }
 
-void FLDCW_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDCW_16(struct CPU* cpu, struct Op* op) {
     FPU_FLDCW(cpu, eaa16(cpu, op));
 	CYCLES(7);
 	NEXT();
 }
 
-void FLDCW_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDCW_32(struct CPU* cpu, struct Op* op) {
     FPU_FLDCW(cpu, eaa32(cpu, op));
 	CYCLES(7);
 	NEXT();
 }
 
-void FNSTENV_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTENV_16(struct CPU* cpu, struct Op* op) {
     FPU_FSTENV(cpu, eaa32(cpu, op));
 	CYCLES(48);
 	NEXT();
 }
 
-void FNSTENV_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTENV_32(struct CPU* cpu, struct Op* op) {
     FPU_FSTENV(cpu, eaa32(cpu, op));
 	CYCLES(48);
 	NEXT();
 }
 
-void FNSTCW_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTCW_16(struct CPU* cpu, struct Op* op) {
 	writew(cpu->memory, eaa16(cpu, op), cpu->fpu.cw);
 	CYCLES(2);
 	NEXT();
 }
 
-void FNSTCW_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTCW_32(struct CPU* cpu, struct Op* op) {
 	writew(cpu->memory, eaa32(cpu, op), cpu->fpu.cw);
 	CYCLES(2);
 	NEXT();
 }
 
-void FLD_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_STi(struct CPU* cpu, struct Op* op) {
     int reg_from = STV(&cpu->fpu, op->r1);
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FST(&cpu->fpu, reg_from, cpu->fpu.top);
@@ -1027,7 +1027,7 @@ void FLD_STi(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FXCH_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FXCH_STi(struct CPU* cpu, struct Op* op) {
 #ifdef LOG_FPU
 	LOG("FXCH_STi %d,%d(%d)", cpu->fpu.top, STV(&cpu->fpu, op->r1), op->r1); 
 	LOG("    before");
@@ -1038,90 +1038,90 @@ void FXCH_STi(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FNOP(struct CPU* cpu, struct Op* op) {
+void OPCALL FNOP(struct CPU* cpu, struct Op* op) {
 	CYCLES(1);
 	NEXT();
 }
 
-void FCHS(struct CPU* cpu, struct Op* op) {
+void OPCALL FCHS(struct CPU* cpu, struct Op* op) {
 	FPU_FCHS(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FABS(struct CPU* cpu, struct Op* op) {
+void OPCALL FABS(struct CPU* cpu, struct Op* op) {
 	FPU_FABS(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FTST(struct CPU* cpu, struct Op* op) {
+void OPCALL FTST(struct CPU* cpu, struct Op* op) {
     FPU_FTST(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FXAM(struct CPU* cpu, struct Op* op) {
+void OPCALL FXAM(struct CPU* cpu, struct Op* op) {
     FPU_FXAM(&cpu->fpu);
 	CYCLES(21);
 	NEXT();
 }
 
-void FLD1(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD1(struct CPU* cpu, struct Op* op) {
     FPU_FLD1(&cpu->fpu);
 	CYCLES(2);
 	NEXT();
 }
 
-void FLDL2T(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDL2T(struct CPU* cpu, struct Op* op) {
     FPU_FLDL2T(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FLDL2E(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDL2E(struct CPU* cpu, struct Op* op) {
 	FPU_FLDL2E(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FLDPI(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDPI(struct CPU* cpu, struct Op* op) {
     FPU_FLDPI(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FLDLG2(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDLG2(struct CPU* cpu, struct Op* op) {
     FPU_FLDLG2(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FLDLN2(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDLN2(struct CPU* cpu, struct Op* op) {
     FPU_FLDLN2(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FLDZ(struct CPU* cpu, struct Op* op) {
+void OPCALL FLDZ(struct CPU* cpu, struct Op* op) {
 	FPU_FLDZ(&cpu->fpu);
 	CYCLES(2);
 	NEXT();
 }
 
-void F2XM1(struct CPU* cpu, struct Op* op) {
+void OPCALL F2XM1(struct CPU* cpu, struct Op* op) {
     FPU_F2XM1(&cpu->fpu);
 	CYCLES(13);
 	NEXT();
 }
 
-void FYL2X(struct CPU* cpu, struct Op* op) {
+void OPCALL FYL2X(struct CPU* cpu, struct Op* op) {
 	FPU_FYL2X(&cpu->fpu);
 	CYCLES(22);
 	NEXT();
 }
 
-void FPTAN(struct CPU* cpu, struct Op* op) {
+void OPCALL FPTAN(struct CPU* cpu, struct Op* op) {
 	cpu->fpu.regs[cpu->fpu.top].d = tan(cpu->fpu.regs[cpu->fpu.top].d);
     FPU_PUSH(&cpu->fpu, 1.0);
     FPU_SET_C2(&cpu->fpu, 0);
@@ -1130,7 +1130,7 @@ void FPTAN(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FPATAN(struct CPU* cpu, struct Op* op) {
+void OPCALL FPATAN(struct CPU* cpu, struct Op* op) {
 	cpu->fpu.regs[STV(&cpu->fpu,1)].d = atan2(cpu->fpu.regs[STV(&cpu->fpu, 1)].d, cpu->fpu.regs[cpu->fpu.top].d);
     FPU_FPOP(&cpu->fpu);
     //flags and such :)
@@ -1138,50 +1138,50 @@ void FPATAN(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FXTRACT(struct CPU* cpu, struct Op* op) {
+void OPCALL FXTRACT(struct CPU* cpu, struct Op* op) {
 	FPU_FXTRACT(&cpu->fpu);
 	CYCLES(13);
 	NEXT();
 }
 
-void FPREM(struct CPU* cpu, struct Op* op) {
+void OPCALL FPREM(struct CPU* cpu, struct Op* op) {
     FPU_FPREM(&cpu->fpu);
 	CYCLES(16);
 	NEXT();
 }
 
-void FPREM_nearest(struct CPU* cpu, struct Op* op) {
+void OPCALL FPREM_nearest(struct CPU* cpu, struct Op* op) {
     FPU_FPREM1(&cpu->fpu);
 	CYCLES(17);
 	NEXT();
 }
 
-void FDECSTP(struct CPU* cpu, struct Op* op) {
+void OPCALL FDECSTP(struct CPU* cpu, struct Op* op) {
     cpu->fpu.top = (cpu->fpu.top - 1) & 7;
 	CYCLES(1);
 	NEXT();
 }
 
-void FINCSTP(struct CPU* cpu, struct Op* op) {
+void OPCALL FINCSTP(struct CPU* cpu, struct Op* op) {
     cpu->fpu.top = (cpu->fpu.top + 1) & 7;
 	CYCLES(1);
 	NEXT();
 }
 
-void FYL2XP1(struct CPU* cpu, struct Op* op) {
+void OPCALL FYL2XP1(struct CPU* cpu, struct Op* op) {
 	FPU_FYL2XP1(&cpu->fpu);
 	CYCLES(22);
 	NEXT();
 }
 
-void FSQRT(struct CPU* cpu, struct Op* op) {
+void OPCALL FSQRT(struct CPU* cpu, struct Op* op) {
 	cpu->fpu.regs[cpu->fpu.top].d = sqrt(cpu->fpu.regs[cpu->fpu.top].d);
     //flags and such :)
 	CYCLES(70);
 	NEXT();
 }
 
-void FSINCOS(struct CPU* cpu, struct Op* op) {
+void OPCALL FSINCOS(struct CPU* cpu, struct Op* op) {
 	double temp = cpu->fpu.regs[cpu->fpu.top].d;
     cpu->fpu.regs[cpu->fpu.top].d = sin(temp);
     FPU_PUSH(&cpu->fpu, cos(temp));
@@ -1191,19 +1191,19 @@ void FSINCOS(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FRNDINT(struct CPU* cpu, struct Op* op) {
+void OPCALL FRNDINT(struct CPU* cpu, struct Op* op) {
 	FPU_FRNDINT(&cpu->fpu);
 	CYCLES(9);
 	NEXT();
 }
 
-void FSCALE(struct CPU* cpu, struct Op* op) {
+void OPCALL FSCALE(struct CPU* cpu, struct Op* op) {
 	FPU_FSCALE(&cpu->fpu);
 	CYCLES(20);
 	NEXT();
 }
 
-void FSIN(struct CPU* cpu, struct Op* op) {
+void OPCALL FSIN(struct CPU* cpu, struct Op* op) {
 	cpu->fpu.regs[cpu->fpu.top].d = sin(cpu->fpu.regs[cpu->fpu.top].d);
     FPU_SET_C2(&cpu->fpu, 0);	
     //flags and such :)
@@ -1211,7 +1211,7 @@ void FSIN(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FCOS(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOS(struct CPU* cpu, struct Op* op) {
 	cpu->fpu.regs[cpu->fpu.top].d = cos(cpu->fpu.regs[cpu->fpu.top].d);
     FPU_SET_C2(&cpu->fpu, 0);
     //flags and such :)
@@ -1219,62 +1219,62 @@ void FCOS(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FST_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_STi(struct CPU* cpu, struct Op* op) {
     FPU_FST(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FST_STi_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_STi_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FIADD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIADD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 	FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIADD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIADD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 	FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIMUL_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIMUL_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIMUL_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIMUL_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FICOM_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FICOM_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FICOM_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -1282,7 +1282,7 @@ void FICOM_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FICOM_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -1290,119 +1290,119 @@ void FICOM_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FISUB_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUB_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FISUB_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUB_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FISUBR_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUBR_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FISUBR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUBR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIDIV_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIV_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FIDIV_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIV_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FIDIVR_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIVR_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa16(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FIDIVR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIVR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I32_EA(cpu, eaa32(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FCMOV_ST0_STj_CF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_CF(struct CPU* cpu, struct Op* op) {
     if (getCF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_ZF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_ZF(struct CPU* cpu, struct Op* op) {
     if (getZF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_CF_OR_ZF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_CF_OR_ZF(struct CPU* cpu, struct Op* op) {
     if (getCF(cpu) || getZF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_PF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_PF(struct CPU* cpu, struct Op* op) {
     if (getPF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_NCF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_NCF(struct CPU* cpu, struct Op* op) {
     if (!getCF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_NZF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_NZF(struct CPU* cpu, struct Op* op) {
     if (!getZF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_NCF_AND_NZF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_NCF_AND_NZF(struct CPU* cpu, struct Op* op) {
     if (!getCF(cpu) && !getZF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FCMOV_ST0_STj_NPF(struct CPU* cpu, struct Op* op) {
+void OPCALL FCMOV_ST0_STj_NPF(struct CPU* cpu, struct Op* op) {
     if (!getPF(cpu))
 		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
-void FUCOMPP(struct CPU* cpu, struct Op* op) {
+void OPCALL FUCOMPP(struct CPU* cpu, struct Op* op) {
     FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, 1));
     FPU_FPOP(&cpu->fpu);
     FPU_FPOP(&cpu->fpu);
@@ -1410,7 +1410,7 @@ void FUCOMPP(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FILD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FILD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 	U32 value = readd(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
 	FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I32(&cpu->fpu, value, cpu->fpu.top);
@@ -1418,7 +1418,7 @@ void FILD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 	U32 value = readd(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
 	FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I32(&cpu->fpu, value, cpu->fpu.top);
@@ -1426,47 +1426,47 @@ void FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FISTTP32_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTTP32_16(struct CPU* cpu, struct Op* op) {
 	writed(cpu->memory, eaa16(cpu, op), (U32) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FISTTP32_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTTP32_32(struct CPU* cpu, struct Op* op) {
 	writed(cpu->memory, eaa32(cpu, op), (U32) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_I32(cpu, eaa16(cpu, op));
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_I32(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FST_I32(cpu, eaa32(cpu, op));
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_I32(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FLD_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
 	U64 low = readq(cpu->memory, address); // might generate PF, so do before we adjust the stack
 	U32 high = readw(cpu->memory, address + 8);
@@ -1476,7 +1476,7 @@ void FLD_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FLD_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
 	U64 low = readq(cpu->memory, address); // might generate PF, so do before we adjust the stack
 	U32 high = readw(cpu->memory, address + 8);
@@ -1486,40 +1486,40 @@ void FLD_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FSTP_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FSTP_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_F80(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FSTP_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FSTP_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FST_F80(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(3);
 	NEXT();
 }
 
-void FNCLEX(struct CPU* cpu, struct Op* op) {
+void OPCALL FNCLEX(struct CPU* cpu, struct Op* op) {
     FPU_FCLEX(&cpu->fpu);
 	CYCLES(9);
 	NEXT();
 }
 
-void FNINIT(struct CPU* cpu, struct Op* op) {
+void OPCALL FNINIT(struct CPU* cpu, struct Op* op) {
     FPU_FINIT(&cpu->fpu);
 	CYCLES(12);
 	NEXT();
 }
 
 // Quiet compare
-void FUCOMI_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FUCOMI_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FUCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FUCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
@@ -1527,55 +1527,55 @@ void FUCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op) {
 }
 
 // Signaling compare :TODO:
-void FCOMI_ST0_STj(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOMI_ST0_STj(struct CPU* cpu, struct Op* op) {
     FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FADD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FADD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -1583,14 +1583,14 @@ void FCOM_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FCOM_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FCOM_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOM_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -1598,141 +1598,141 @@ void FCOM_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FSUB_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUB_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FDIV_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIV_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIVR_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa16(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIVR_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_F64_EA(cpu, eaa32(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FADD_STi_ST0(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_STi_ST0(struct CPU* cpu, struct Op* op) {
     FPU_FADD(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FADD_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FADD_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FADD(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_STi_ST0(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_STi_ST0(struct CPU* cpu, struct Op* op) {
     FPU_FMUL(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FMUL_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FMUL_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FMUL(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_STi_ST0(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_STi_ST0(struct CPU* cpu, struct Op* op) {
     FPU_FSUBR(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUBR_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUBR_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FSUBR(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUB_STi_ST0(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_STi_ST0(struct CPU* cpu, struct Op* op) {
     FPU_FSUB(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(1);
 	NEXT();
 }
 
-void FSUB_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FSUB_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FSUB(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FDIVR_STi_ST0(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_STi_ST0(struct CPU* cpu, struct Op* op) {
     FPU_FDIVR(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIVR_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIVR_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FDIVR(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIV_STi_ST0(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_STi_ST0(struct CPU* cpu, struct Op* op) {
     FPU_FDIV(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(39);
 	NEXT();
 }
 
-void FDIV_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FDIV_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FDIV(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(39);
 	NEXT();
 }
 
-void FLD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     U64 value = readq(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F64(&cpu->fpu, value, cpu->fpu.top);
@@ -1740,7 +1740,7 @@ void FLD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     U64 value = readq(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F64(&cpu->fpu, value, cpu->fpu.top);
@@ -1748,138 +1748,138 @@ void FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FISTTP64_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTTP64_16(struct CPU* cpu, struct Op* op) {
 	writeq(cpu->memory, eaa16(cpu, op), (U64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FISTTP64_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTTP64_32(struct CPU* cpu, struct Op* op) {
 	writeq(cpu->memory, eaa32(cpu, op), (U64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FST_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_F64(cpu, eaa16(cpu, op));
 	NEXT();
 }
 
-void FST_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_F64(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(2);
 	NEXT();
 }
 
-void FST_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
     FPU_FST_F64(cpu, eaa32(cpu, op));
 	CYCLES(2);
 	NEXT();
 }
 
-void FST_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FST_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_F64(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(2);
 	NEXT();
 }
 
-void FRSTOR_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FRSTOR_16(struct CPU* cpu, struct Op* op) {
     FPU_FRSTOR(cpu, eaa16(cpu, op));
 	CYCLES(75);
 	NEXT();
 }
 
-void FRSTOR_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FRSTOR_32(struct CPU* cpu, struct Op* op) {
     FPU_FRSTOR(cpu, eaa32(cpu, op));
 	CYCLES(75);
 	NEXT();
 }
 
-void FNSAVE_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSAVE_16(struct CPU* cpu, struct Op* op) {
     FPU_FSAVE(cpu, eaa16(cpu, op));
 	CYCLES(127);
 	NEXT();
 }
 
-void FNSAVE_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSAVE_32(struct CPU* cpu, struct Op* op) {
     FPU_FSAVE(cpu, eaa32(cpu, op));
 	CYCLES(127);
 	NEXT();
 }
 
-void FNSTSW_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTSW_16(struct CPU* cpu, struct Op* op) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
 	writew(cpu->memory, eaa16(cpu, op), cpu->fpu.sw);
 	CYCLES(2);
 	NEXT();
 }
 
-void FNSTSW_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTSW_32(struct CPU* cpu, struct Op* op) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
 	writew(cpu->memory, eaa32(cpu, op), cpu->fpu.sw);
 	CYCLES(2);
 	NEXT();
 }
 
-void FFREE_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FFREE_STi(struct CPU* cpu, struct Op* op) {
     cpu->fpu.tags[STV(&cpu->fpu, op->r1)] = TAG_Empty;
 	CYCLES(1);
 	NEXT();
 }
 
-void FUCOM_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FUCOM_STi(struct CPU* cpu, struct Op* op) {
     FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));    
 	CYCLES(1);
 	NEXT();
 }
 
-void FUCOM_STi_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FUCOM_STi_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, op->r1));
 	FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FIADD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIADD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIADD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIADD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FADD_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIMUL_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIMUL_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIMUL_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIMUL_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FMUL_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FICOM_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FICOM_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -1887,14 +1887,14 @@ void FICOM_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FICOM_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FICOM_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FICOM_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FCOM_EA(&cpu->fpu, cpu->fpu.top);
     FPU_FPOP(&cpu->fpu);
@@ -1902,63 +1902,63 @@ void FICOM_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FISUB_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUB_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FISUB_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUB_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FSUB_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FISUBR_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUBR_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FISUBR_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISUBR_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FSUBR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(4);
 	NEXT();
 }
 
-void FIDIV_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIV_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FIDIV_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIV_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FDIV_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FIDIVR_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIVR_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa16(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FIDIVR_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIDIVR_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FLD_I16_EA(cpu, eaa32(cpu, op));
     FPU_FDIVR_EA(&cpu->fpu, cpu->fpu.top);
 	CYCLES(42);
 	NEXT();
 }
 
-void FCOMPP(struct CPU* cpu, struct Op* op) {
+void OPCALL FCOMPP(struct CPU* cpu, struct Op* op) {
     FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, 1));
     FPU_FPOP(&cpu->fpu);
     FPU_FPOP(&cpu->fpu);
@@ -1966,7 +1966,7 @@ void FCOMPP(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     S16 value = (S16)readw(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I16(&cpu->fpu, value, cpu->fpu.top);
@@ -1974,7 +1974,7 @@ void FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     S16 value = (S16)readw(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I16(&cpu->fpu, value, cpu->fpu.top);
@@ -1982,47 +1982,47 @@ void FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FISTTP16_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTTP16_16(struct CPU* cpu, struct Op* op) {
 	writew(cpu->memory, eaa16(cpu, op), (S16) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FISTTP16_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTTP16_32(struct CPU* cpu, struct Op* op) {
 	writew(cpu->memory, eaa32(cpu, op), (S16) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_I16(cpu, eaa16(cpu, op));
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_I16(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FST_I16(cpu, eaa32(cpu, op));
 	CYCLES(6);
 	NEXT();
 }
 
-void FIST_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
+void OPCALL FIST_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
     FPU_FST_I16(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
     U8 value[10];
     readMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
@@ -2031,7 +2031,7 @@ void FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
     U8 value[10];
     readMemory(cpu->memory, value, eaa32(cpu, op), 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
@@ -2040,7 +2040,7 @@ void FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FILD_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FILD_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     U64 value = readq(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I64(&cpu->fpu, value, cpu->fpu.top);
@@ -2048,7 +2048,7 @@ void FILD_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FILD_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FILD_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     U64 value = readq(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I64(&cpu->fpu, value, cpu->fpu.top);
@@ -2056,42 +2056,42 @@ void FILD_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void FBSTP_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FBSTP_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
     FPU_FBST(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(148);
 	NEXT();
 }
 
-void FBSTP_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FBSTP_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
     FPU_FBST(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(148);
 	NEXT();
 }
 
-void FISTP_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTP_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_I64(cpu, eaa16(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FISTP_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
+void OPCALL FISTP_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
     FPU_FST_I64(cpu, eaa32(cpu, op));
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
-void FFREEP_STi(struct CPU* cpu, struct Op* op) {
+void OPCALL FFREEP_STi(struct CPU* cpu, struct Op* op) {
     cpu->fpu.tags[STV(&cpu->fpu, op->r1)] = TAG_Empty;
     FPU_FPOP(&cpu->fpu);
 	CYCLES(1);
 	NEXT();
 }
 
-void FNSTSW_AX(struct CPU* cpu, struct Op* op) {
+void OPCALL FNSTSW_AX(struct CPU* cpu, struct Op* op) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
     AX = cpu->fpu.sw;
 	CYCLES(2);

@@ -12,12 +12,9 @@
 #include "setcc.h"
 #include "block.h"
 
-#define FETCH8(data) readb(data->memory, data->ip++)
-#define FETCH_S8(data) (S8)readb(data->memory, data->ip++)
-#define FETCH16(data) readw(data->memory, data->ip);data->ip+=2
-#define FETCH_S16(data) (S16)readw(data->memory, data->ip);data->ip+=2
-#define FETCH32(data) readd(data->memory, data->ip);data->ip+=4
-#define FETCH_S32(data) (S32)readd(data->memory, data->ip);data->ip+=4
+#define FETCH_S8(data) (S8)FETCH8(data)
+#define FETCH_S16(data) (S16)FETCH16(data)
+#define FETCH_S32(data) (S32)FETCH32(data)
 
 struct DecodeData {
 	int ds;
@@ -32,7 +29,61 @@ struct DecodeData {
 	struct CPU* cpu;
 	struct Memory* memory;
 	struct Op* op;
+	U8* page;
+	U32 pagePos;
 };
+
+extern U8* ram;
+
+void fillFetchPage(struct DecodeData* data) {
+	data->pagePos = data->ip & 0xFFF;
+	readb(data->memory, data->ip);
+	data->page = &ram[(data->ip & 0xFFFFF000) - data->memory->read[data->ip>>12]];
+}
+
+U8 FETCH8(struct DecodeData* data) {
+	if (data->pagePos>=PAGE_SIZE)
+		fillFetchPage(data);
+	data->ip++;
+	return data->page[data->pagePos++];
+}
+
+U16 FETCH16(struct DecodeData* data) {
+	U16 result;
+
+#ifndef UNALIGNED_MEMORY
+	if (data->pagePos>=PAGE_SIZE-1) {
+#endif
+		result = FETCH8(data);
+		result |= FETCH8(data) << 8;
+		return result;
+#ifndef UNALIGNED_MEMORY
+	}
+	data->ip+=2;
+	result = *(U16*)(&data->page[data->pagePos]);
+	data->pagePos+=2;
+	return result;
+#endif
+}
+
+U32 FETCH32(struct DecodeData* data) {
+	U32 result;
+#ifndef UNALIGNED_MEMORY
+	if (data->pagePos>=PAGE_SIZE-3) {
+#endif
+		result = FETCH8(data);
+		result |= FETCH8(data) << 8;
+		result |= FETCH8(data) << 16;
+		result |= FETCH8(data) << 24;
+		return result;
+#ifndef UNALIGNED_MEMORY
+	}
+	data->ip+=4;
+	result = *(U32*)(&data->page[data->pagePos]);
+	data->pagePos+=4;
+	return result;
+#endif
+}
 
 struct Op* freeOps;
 
@@ -95,9 +146,18 @@ void freeBlock(struct Block* block) {
 }
 
 #define FINISH_OP(data) data->op->eipCount=data->ip-data->start
-// the op was discarded, but make sure we count the eip change
 
+typedef void (*DECODER)(struct DecodeData* obj);
+
+extern DECODER decoder[1024];
+
+// the op was discarded, but make sure we count the eip change
 #define RESTART(data) if (data->cpu->big) { data->opCode = 0x200; data->ea16 = 0; } else { data->opCode = 0; data->ea16 = 1; } data->ds = DS; data->ss = SS; data->rep = 0
+
+void RESTART_OP(struct DecodeData* data) {
+	data->inst = FETCH8(data)+data->opCode;
+	decoder[data->inst](data);
+}
 
 void NEXT_OP(struct DecodeData* data) {
 	data->ds = DS;
@@ -114,6 +174,8 @@ void NEXT_OP(struct DecodeData* data) {
 		data->opCode = 0;
 		data->ea16 = 1;
 	}
+	data->inst = FETCH8(data)+data->opCode;
+	decoder[data->inst](data);
 }
 
 const char* RB(int r) {
@@ -565,13 +627,13 @@ void LOG_E32Cl(const char* name, int rm, struct DecodeData* data) {
 #include "decode.h"
 
 // 2 byte opcodes
-BOOL decode00f(struct DecodeData* data) {
+void decode00f(struct DecodeData* data) {
     data->opCode+=0x100;
-    return TRUE;
+	RESTART_OP(data);
 }
 
 // BOUND
-BOOL decode062(struct DecodeData* data) {
+void decode062(struct DecodeData* data) {
     U8 rm = FETCH8(data);
 	if (data->ea16) {
 		data->op->func = bound_16;
@@ -584,11 +646,10 @@ BOOL decode062(struct DecodeData* data) {
 	}
 	LOG_OP2("BOUND", RW(data->op->r1), M16(data, rm, data->op));
 	NEXT_OP(data);
-    return TRUE;
 }
 
 // BOUND
-BOOL decode262(struct DecodeData* data) {
+void decode262(struct DecodeData* data) {
     U8 rm = FETCH8(data);
 	if (data->ea16) {
 		data->op->func = boundd_16;
@@ -601,40 +662,38 @@ BOOL decode262(struct DecodeData* data) {
 	}
 	LOG_OP2("BOUND", RD(data->op->r1), M32(data, rm, data->op));
 	NEXT_OP(data);
-    return TRUE;
 }
 
-BOOL invalidOp(struct DecodeData* data) {
+void invalidOp(struct DecodeData* data) {
 	kpanic("Invalid instruction %x", data->inst);
-	return FALSE;
 }
 
 // Operand Size Prefix
-BOOL decode066(struct DecodeData* data) {
+void decode066(struct DecodeData* data) {
 	data->opCode = 0x200;
-	return TRUE;
+	RESTART_OP(data);
 }
 
 // Operand Size Prefix
-BOOL decode266(struct DecodeData* data) {
+void decode266(struct DecodeData* data) {
 	data->opCode = 0;
-	return TRUE;
+	RESTART_OP(data);
 }
 
 // Address Size Prefix
-BOOL decode067(struct DecodeData* data) {
+void decode067(struct DecodeData* data) {
 	data->ea16 = 0;
-	return TRUE;
+	RESTART_OP(data);
 }
 
 // Address Size Prefix
-BOOL decode267(struct DecodeData* data) {
+void decode267(struct DecodeData* data) {
 	data->ea16 = 1;
-	return TRUE;
+	RESTART_OP(data);
 }
 
 // Grpl Eb,Ib
-BOOL decode080(struct DecodeData* data) {
+void decode080(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(add8_reg, add8_mem16, add8_mem32); break;
@@ -660,11 +719,10 @@ BOOL decode080(struct DecodeData* data) {
 	}
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Grpl Ew,Iw
-BOOL decode081(struct DecodeData* data) {
+void decode081(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(add16_reg, add16_mem16, add16_mem32); break;
@@ -690,11 +748,10 @@ BOOL decode081(struct DecodeData* data) {
 	}
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Grpl Ed,Id
-BOOL decode281(struct DecodeData* data) {
+void decode281(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(add32_reg, add32_mem16, add32_mem32); break;
@@ -720,11 +777,10 @@ BOOL decode281(struct DecodeData* data) {
 	}
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Grpl Ew,Ix
-BOOL decode083(struct DecodeData* data) {
+void decode083(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(add16_reg, add16_mem16, add16_mem32); break;
@@ -751,11 +807,10 @@ BOOL decode083(struct DecodeData* data) {
 	}
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Grpl Ed,Ix
-BOOL decode283(struct DecodeData* data) {
+void decode283(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(add32_reg, add32_mem16, add32_mem32); break;
@@ -781,11 +836,10 @@ BOOL decode283(struct DecodeData* data) {
 	}
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Mov Ew,Sw
-BOOL decode08c(struct DecodeData* data) {
+void decode08c(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		data->op->func = movr16s16;
@@ -804,11 +858,10 @@ BOOL decode08c(struct DecodeData* data) {
 		LOG_OP2("MOV", M16(data, rm, data->op), EABASE(data->op->r2));
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Mov Ed,Sw
-BOOL decode28c(struct DecodeData* data) {
+void decode28c(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		data->op->func = movr32s16;
@@ -827,11 +880,10 @@ BOOL decode28c(struct DecodeData* data) {
 		LOG_OP2("MOV", M16(data, rm, data->op), EABASE(data->op->r2));
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // LEA Gw
-BOOL decode08d(struct DecodeData* data) {
+void decode08d(struct DecodeData* data) {
 	U8 rm = FETCH8(data);	
 	if (data->ea16) {
 		data->op->func =lear16_16;
@@ -845,11 +897,10 @@ BOOL decode08d(struct DecodeData* data) {
 	data->op->base = SEG_ZERO;
 	LOG_OP2("LEA", RW(data->op->r1), M16(data, rm, data->op));
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // LEA Gd
-BOOL decode28d(struct DecodeData* data) {
+void decode28d(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (data->ea16) {
 		data->op->func =lear32_16;
@@ -863,11 +914,10 @@ BOOL decode28d(struct DecodeData* data) {
 	data->op->base = SEG_ZERO;
 	LOG_OP2("LEA", RD(data->op->r1), M32(data, rm, data->op));
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // MOV Sw,Ew
-BOOL decode08e(struct DecodeData* data) {
+void decode08e(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		data->op->func = movs16r16;
@@ -886,11 +936,10 @@ BOOL decode08e(struct DecodeData* data) {
 		LOG_OP2("MOV", EABASE(data->op->r2), M16(data, rm, data->op));
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // POP Ew
-BOOL decode08f(struct DecodeData* data) {
+void decode08f(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		switch (E(rm)) {
@@ -913,11 +962,10 @@ BOOL decode08f(struct DecodeData* data) {
 		LOG_OP1("POP", M16(data, rm, data->op));
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // POP Ed
-BOOL decode28f(struct DecodeData* data) {
+void decode28f(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
 		switch (E(rm)) {
@@ -940,27 +988,24 @@ BOOL decode28f(struct DecodeData* data) {
 		LOG_OP1("POP", M32(data, rm, data->op));
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // NOP
-BOOL decode090(struct DecodeData* data) {
+void decode090(struct DecodeData* data) {
 	data->op->func = nop;
 	LOG_OP("NOP");
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // Wait
-BOOL decode09b(struct DecodeData* data) {
+void decode09b(struct DecodeData* data) {
 	data->op->func = nop;
 	LOG_OP("WAIT");
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Eb,Ib
-BOOL decode0c0(struct DecodeData* data) {
+void decode0c0(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol8_reg, rol8_mem16, rol8_mem32); break;
@@ -975,7 +1020,8 @@ BOOL decode0c0(struct DecodeData* data) {
 	data->op->data1 = FETCH8(data) & 0x1F;
 	if (data->op->data1==0) {
 		RESTART(data);	
-		return TRUE;
+		RESTART_OP(data);
+		return;
 	}
 #ifdef LOG_OPS
 	switch (G(rm)) {
@@ -997,11 +1043,10 @@ BOOL decode0c0(struct DecodeData* data) {
 		default: break;
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Ew,Ib
-BOOL decode0c1(struct DecodeData* data) {
+void decode0c1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol16_reg, rol16_mem16, rol16_mem32); break;
@@ -1016,7 +1061,8 @@ BOOL decode0c1(struct DecodeData* data) {
 	data->op->data1 = FETCH8(data) & 0x1F;
 	if (data->op->data1==0) {
 		RESTART(data);	
-		return TRUE;
+		RESTART_OP(data);
+		return;
 	}
 #ifdef LOG_OPS
 	switch (G(rm)) {
@@ -1038,11 +1084,10 @@ BOOL decode0c1(struct DecodeData* data) {
 		default: break;
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Ed,Ib
-BOOL decode2c1(struct DecodeData* data) {
+void decode2c1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol32_reg, rol32_mem32, rol32_mem32); break;
@@ -1057,7 +1102,8 @@ BOOL decode2c1(struct DecodeData* data) {
 	data->op->data1 = FETCH8(data) & 0x1F;
 	if (data->op->data1==0) {
 		RESTART(data);	
-		return TRUE;
+		RESTART_OP(data);
+		return;
 	}
 #ifdef LOG_OPS
 	switch (G(rm)) {
@@ -1072,11 +1118,10 @@ BOOL decode2c1(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // INT Ib
-BOOL decode0cd(struct DecodeData* data) {
+void decode0cd(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm==0x80) {
 		data->op->func = syscall;
@@ -1085,11 +1130,10 @@ BOOL decode0cd(struct DecodeData* data) {
 	} else {
 		kpanic("Unhandled interrupt %d", rm);
 	}
-	return FALSE;
 }
 
 // GRP2 Eb,1
-BOOL decode0d0(struct DecodeData* data) {
+void decode0d0(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol8_reg, rol8_mem16, rol8_mem32); break;
@@ -1115,11 +1159,10 @@ BOOL decode0d0(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Ew,1
-BOOL decode0d1(struct DecodeData* data) {
+void decode0d1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol16_reg, rol16_mem16, rol16_mem32); break;
@@ -1145,11 +1188,10 @@ BOOL decode0d1(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Ed,1
-BOOL decode2d1(struct DecodeData* data) {
+void decode2d1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol32_reg, rol32_mem32, rol32_mem32); break;
@@ -1175,11 +1217,10 @@ BOOL decode2d1(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Eb,CL
-BOOL decode0d2(struct DecodeData* data) {
+void decode0d2(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol8cl_reg, rol8cl_mem16, rol8cl_mem32); break;
@@ -1204,11 +1245,10 @@ BOOL decode0d2(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Ew,CL
-BOOL decode0d3(struct DecodeData* data) {
+void decode0d3(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol16cl_reg, rol16cl_mem16, rol16cl_mem32); break;
@@ -1233,11 +1273,10 @@ BOOL decode0d3(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP2 Ed,CL
-BOOL decode2d3(struct DecodeData* data) {
+void decode2d3(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	switch (G(rm)) {
 	case 0: DECODE_E(rol32cl_reg, rol32cl_mem32, rol32cl_mem32); break;
@@ -1262,11 +1301,10 @@ BOOL decode2d3(struct DecodeData* data) {
 	}	
 #endif
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // XLAT
-BOOL decode0d7(struct DecodeData* data) {
+void decode0d7(struct DecodeData* data) {
 	if (data->ea16)
 		data->op->func = xlat16;
 	else
@@ -1274,11 +1312,10 @@ BOOL decode0d7(struct DecodeData* data) {
 	data->op->base = data->ds;
 	LOG_OP("XLAT");
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 0
-BOOL decode0d8(struct DecodeData* data) {
+void decode0d8(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm);
@@ -1318,11 +1355,10 @@ BOOL decode0d8(struct DecodeData* data) {
         }
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 1
-BOOL decode0d9(struct DecodeData* data) {
+void decode0d9(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {				
 		switch ((rm >> 3) & 7) {
@@ -1410,11 +1446,10 @@ BOOL decode0d9(struct DecodeData* data) {
 		}
 	}
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 2
-BOOL decode0da(struct DecodeData* data) {
+void decode0da(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm); 
@@ -1458,11 +1493,10 @@ BOOL decode0da(struct DecodeData* data) {
         }
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 3
-BOOL decode0db(struct DecodeData* data) {
+void decode0db(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm); 
@@ -1508,11 +1542,10 @@ BOOL decode0db(struct DecodeData* data) {
         }
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 4
-BOOL decode0dc(struct DecodeData* data) {
+void decode0dc(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm); 
@@ -1552,11 +1585,10 @@ BOOL decode0dc(struct DecodeData* data) {
         }
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 5
-BOOL decode0dd(struct DecodeData* data) {
+void decode0dd(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm); 
@@ -1595,11 +1627,10 @@ BOOL decode0dd(struct DecodeData* data) {
         }
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 6
-BOOL decode0de(struct DecodeData* data) {
+void decode0de(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm); 
@@ -1646,11 +1677,10 @@ BOOL decode0de(struct DecodeData* data) {
         }
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // FPU ESC 7
-BOOL decode0df(struct DecodeData* data) {
+void decode0df(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm >= 0xc0) {
 		data->op->r1 = E(rm); 
@@ -1696,11 +1726,10 @@ BOOL decode0df(struct DecodeData* data) {
         }
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // LOOPNZ
-BOOL decode0e0(struct DecodeData* data) {
+void decode0e0(struct DecodeData* data) {
 	if (data->ea16)
 		data->op->func = loopnz16;
 	else
@@ -1708,11 +1737,10 @@ BOOL decode0e0(struct DecodeData* data) {
 	data->op->data1 = FETCH_S8(data);
 	LOG_OP1("LOOPNZ", itoa(data->op->data1, tmp, 16));
 	FINISH_OP(data);
-	return FALSE;
 }
 
 // LOOPZ
-BOOL decode0e1(struct DecodeData* data) {
+void decode0e1(struct DecodeData* data) {
 	if (data->ea16)
 		data->op->func = loopz16;
 	else
@@ -1720,11 +1748,10 @@ BOOL decode0e1(struct DecodeData* data) {
 	data->op->data1 = FETCH_S8(data);
 	LOG_OP1("LOOPZ", itoa(data->op->data1, tmp, 16));
 	FINISH_OP(data);
-	return FALSE;
 }
 
 // LOOP
-BOOL decode0e2(struct DecodeData* data) {
+void decode0e2(struct DecodeData* data) {
 	if (data->ea16)
 		data->op->func = loop16;
 	else
@@ -1732,11 +1759,10 @@ BOOL decode0e2(struct DecodeData* data) {
 	data->op->data1 = FETCH_S8(data);
 	LOG_OP1("LOOP", itoa(data->op->data1, tmp, 10));
 	FINISH_OP(data);
-	return FALSE;
 }
 
 // JCXZ
-BOOL decode0e3(struct DecodeData* data) {
+void decode0e3(struct DecodeData* data) {
 	if (data->ea16)
 		data->op->func = jcxz16;
 	else
@@ -1744,36 +1770,34 @@ BOOL decode0e3(struct DecodeData* data) {
 	data->op->data1 = FETCH_S8(data);
 	LOG_OP1("JCXZ", itoa(data->op->data1, tmp, 10));
 	FINISH_OP(data);
-	return FALSE;
 }
 
 // LOCK
-BOOL decode0f0(struct DecodeData* data) {
-	return TRUE;
+void decode0f0(struct DecodeData* data) {
+	RESTART_OP(data);
 }
 
 // REPNZ
-BOOL decode0f2(struct DecodeData* data) {
+void decode0f2(struct DecodeData* data) {
 	data->rep = 1;
 	data->rep_zero = 0;
-	return TRUE;
+	RESTART_OP(data);
 }
 
 // REPZ
-BOOL decode0f3(struct DecodeData* data) {
+void decode0f3(struct DecodeData* data) {
 	data->rep = 1;
 	data->rep_zero = 1;
-	return TRUE;
+	RESTART_OP(data);
 }
 
 // HLT
-BOOL decode0f4(struct DecodeData* data) {
+void decode0f4(struct DecodeData* data) {
 	kpanic("HLT");
-	return TRUE;
 }
 
 // GRP4 Eb
-BOOL decode0fe(struct DecodeData* data) {
+void decode0fe(struct DecodeData* data) {
 	U8 rm=FETCH8(data);
     switch ((rm>>3)&7) {
         case 0x00:										// INC Eb 
@@ -1786,17 +1810,16 @@ BOOL decode0fe(struct DecodeData* data) {
             break;
 		case 0x07:
 			data->op->func = (OpCallback)FETCH32(data);
-			return FALSE;
+			return;
         default:
             kpanic("Illegal GRP4 Call %d, ",((rm>>3) & 7));
 			break;
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP5 Ew
-BOOL decode0ff(struct DecodeData* data) {
+void decode0ff(struct DecodeData* data) {
 	U8 rm=FETCH8(data);
 	switch ((rm>>3)&7) {
         case 0x00:										// INC Ew 
@@ -1811,7 +1834,7 @@ BOOL decode0ff(struct DecodeData* data) {
 			DECODE_E(callEv16_reg, callEv16_mem16, callEv16_mem32);
 			LOG_E16("CALL", rm, data);
 			FINISH_OP(data);
-			return FALSE;
+			return;
         case 0x03:										// CALL Ep 
             kpanic("Call Ep (0xFF) not implemented");
             break;
@@ -1819,7 +1842,7 @@ BOOL decode0ff(struct DecodeData* data) {
 			DECODE_E(jmpEv16_reg, jmpEv16_mem16, jmpEv16_mem32);
 			LOG_E16("JMP", rm, data);
 			FINISH_OP(data);
-			return FALSE;
+			return;
         case 0x05:										// JMP Ep 
             kpanic("Jmp Ep (0xFF) not implemented");
             break;
@@ -1832,11 +1855,10 @@ BOOL decode0ff(struct DecodeData* data) {
             break;
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 // GRP5 Ed
-BOOL decode2ff(struct DecodeData* data) {
+void decode2ff(struct DecodeData* data) {
 	U8 rm=FETCH8(data);
 	switch ((rm>>3)&7) {
         case 0x00:											// INC Ed 
@@ -1851,7 +1873,7 @@ BOOL decode2ff(struct DecodeData* data) {
 			DECODE_E(callNear32_reg, callNear32_mem16, callNear32_mem32);
 			LOG_E32("CALL", rm, data);
 			FINISH_OP(data);
-			return FALSE;
+			return;
         case 0x03:											// CALL FAR Ed 
             kpanic("CALL FAR Ed not implemented");
             break;
@@ -1859,7 +1881,7 @@ BOOL decode2ff(struct DecodeData* data) {
 			DECODE_E(jmpNear32_reg, jmpNear32_mem16, jmpNear32_mem32);
 			LOG_E32("JMP", rm, data);
 			FINISH_OP(data);
-			return FALSE;
+			return;
         case 0x05:											// JMP FAR Ed 
             kpanic("JMP FAR Ed not implemented");
             break;
@@ -1872,13 +1894,12 @@ BOOL decode2ff(struct DecodeData* data) {
             break;
     }
 	NEXT_OP(data);
-	return TRUE;
 }
 
 #define DECODE_BT(r, m16, m32) DECODE_E(r, m16, m32); data->op->data1 = 1 << (FETCH8(data) & 31)
 
 // GRP8 Ed,Ib
-BOOL decode3ba(struct DecodeData* data) {
+void decode3ba(struct DecodeData* data) {
 	U8 rm=FETCH8(data);
 	switch ((rm>>3)&7) {
         case 0x04: // BT 
@@ -1902,10 +1923,7 @@ BOOL decode3ba(struct DecodeData* data) {
             break;
     }
 	NEXT_OP(data);
-	return TRUE;
 }
-
-typedef BOOL (*DECODER)(struct DecodeData* obj);
 
 DECODER decoder[1024] = {
 	decode000, decode001, decode002, decode003, decode004, decode005, decode006, decode007,
@@ -2093,10 +2111,9 @@ struct Block* decodeBlock(struct CPU* cpu) {
 	data.rep_zero = 0;
 	data.cpu = cpu;
 	data.memory = cpu->memory;
-	
-	do  {
-		data.inst = FETCH8(pData)+data.opCode;
-	} while (decoder[data.inst](pData));
+	fillFetchPage(pData);
+	data.inst = FETCH8(pData)+data.opCode;
+	decoder[data.inst](pData);
 	return result;	
 }
 

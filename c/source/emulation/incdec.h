@@ -1,4 +1,4 @@
-void inc8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL inc8_reg(struct CPU* cpu, struct Op* op) {
     cpu->oldcf=getCF(cpu);
     cpu->dst.u8=*cpu->reg8[op->r1];
     cpu->result.u8=cpu->dst.u8 + 1;
@@ -7,7 +7,7 @@ void inc8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void inc8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL inc8_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u8=readb(cpu->memory, eaa);
@@ -17,7 +17,7 @@ void inc8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void inc8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL inc8_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u8=readb(cpu->memory, eaa);
@@ -27,7 +27,7 @@ void inc8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void inc16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL inc16_reg(struct CPU* cpu, struct Op* op) {
     cpu->oldcf=getCF(cpu);
     cpu->dst.u16=cpu->reg[op->r1].u16;
     cpu->result.u16=cpu->dst.u16 + 1;
@@ -36,7 +36,7 @@ void inc16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void inc16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL inc16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u16=readw(cpu->memory, eaa);
@@ -46,7 +46,7 @@ void inc16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void inc16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL inc16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u16=readw(cpu->memory, eaa);
@@ -56,7 +56,7 @@ void inc16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void inc32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL inc32_reg(struct CPU* cpu, struct Op* op) {
     cpu->oldcf=getCF(cpu);
     cpu->dst.u32=cpu->reg[op->r1].u32;
     cpu->result.u32=cpu->dst.u32 + 1;
@@ -65,7 +65,7 @@ void inc32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void inc32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL inc32_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u32=readd(cpu->memory, eaa);
@@ -75,7 +75,7 @@ void inc32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void inc32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL inc32_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u32=readd(cpu->memory, eaa);
@@ -85,7 +85,7 @@ void inc32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void dec8_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL dec8_reg(struct CPU* cpu, struct Op* op) {
     cpu->oldcf=getCF(cpu);
     cpu->dst.u8=*cpu->reg8[op->r1];
     cpu->result.u8=cpu->dst.u8 - 1;
@@ -94,7 +94,7 @@ void dec8_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void dec8_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL dec8_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u8=readb(cpu->memory, eaa);
@@ -104,7 +104,7 @@ void dec8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void dec8_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL dec8_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u8=readb(cpu->memory, eaa);
@@ -114,7 +114,7 @@ void dec8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void dec16_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL dec16_reg(struct CPU* cpu, struct Op* op) {
     cpu->oldcf=getCF(cpu);
     cpu->dst.u16=cpu->reg[op->r1].u16;
     cpu->result.u16=cpu->dst.u16 - 1;
@@ -123,7 +123,7 @@ void dec16_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void dec16_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL dec16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u16=readw(cpu->memory, eaa);
@@ -133,7 +133,7 @@ void dec16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void dec16_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL dec16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u16=readw(cpu->memory, eaa);
@@ -143,7 +143,7 @@ void dec16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void dec32_reg(struct CPU* cpu, struct Op* op) {
+void OPCALL dec32_reg(struct CPU* cpu, struct Op* op) {
     cpu->oldcf=getCF(cpu);
     cpu->dst.u32=cpu->reg[op->r1].u32;
     cpu->result.u32=cpu->dst.u32 - 1;
@@ -152,7 +152,7 @@ void dec32_reg(struct CPU* cpu, struct Op* op) {
     CYCLES(1);
     NEXT();
 }
-void dec32_mem16(struct CPU* cpu, struct Op* op) {
+void OPCALL dec32_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u32=readd(cpu->memory, eaa);
@@ -162,7 +162,7 @@ void dec32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(3);
     NEXT();
 }
-void dec32_mem32(struct CPU* cpu, struct Op* op) {
+void OPCALL dec32_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->oldcf=getCF(cpu);
     cpu->dst.u32=readd(cpu->memory, eaa);

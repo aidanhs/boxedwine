@@ -467,7 +467,7 @@ U32 syscall_sigreturn(struct KThread* thread) {
 	return -K_CONTINUE;
 }
 
-void onExitSignal(struct CPU* cpu, struct Op* op) {
+void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 	U32 signal = pop32(cpu);
 	U32 address = pop32(cpu);
 	U32 context = pop32(cpu);

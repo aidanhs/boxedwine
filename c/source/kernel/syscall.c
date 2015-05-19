@@ -164,7 +164,7 @@ void logsyscall(const char* fmt, ...) {
 #define SARG5 readd(memory, ARG2+12)
 #define SARG6 readd(memory, ARG2+16)
 
-void syscall(struct CPU* cpu, struct Op* op) {
+void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	struct KThread* thread = cpu->thread;
 	struct KProcess* process = thread->process;
 	struct Memory* memory = cpu->memory;
