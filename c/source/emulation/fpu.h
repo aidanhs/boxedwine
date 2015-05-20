@@ -12,8 +12,12 @@
 
 #ifdef PLATFORM_MSVC
 #include <float.h>
+#ifndef isnan
 #define isnan(x) _isnan(x)
+#endif
+#ifndef isnan
 #define isinf(x) (!_finite(x))
+#endif
 #endif
 
 struct FPU_Float {

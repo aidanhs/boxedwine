@@ -29,7 +29,7 @@ U32 dspChannels = 1;
 U32 dspFreq = 8000;
 #define DSP_BUFFER_SIZE 1024*64
 U8 dspBuffer[DSP_BUFFER_SIZE];
-U32 dspBufferLen;
+S32 dspBufferLen;
 U32 dspBufferPos;
 
 void closeAudio() {
@@ -40,8 +40,8 @@ void closeAudio() {
 }
 
 void audioCallback(void *userdata, U8* stream, S32 len) {
-	U32 available;
-	U32 result;
+	S32 available;
+	S32 result;
 
     if ( dspBufferLen == 0 )
         return;
@@ -117,9 +117,10 @@ U32 dsp_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len)
 
 extern struct KThread* currentThread;
 
-U32 dsp_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
-	U32 available;
-	U32 result;
+U32 dsp_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 l) {
+	S32 len = (S32)l;
+	S32 available;
+	S32 result;
 	U32 startPos;
 	if (len+dspBufferLen>DSP_BUFFER_SIZE) {
 		currentThread->waitType = WAIT_DSP;

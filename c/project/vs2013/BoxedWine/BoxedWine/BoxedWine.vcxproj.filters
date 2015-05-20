@@ -1,0 +1,369 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\platform\windows\platform.c">
+      <Filter>platform\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\decoder.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\memory.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\filesystem.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\virtualfile.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\node.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devinput.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\loader\elf.c">
+      <Filter>source\kernel\loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\loader\loader.c">
+      <Filter>source\kernel\loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\proc\bufferaccess.c">
+      <Filter>source\kernel\proc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\proc\meminfo.c">
+      <Filter>source\kernel\proc</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kalloc.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kepoll.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfile.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kfmmap.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kio.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kobject.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kpoll.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kprocess.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kscheduler.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kshm.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\ksignal.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\ksocket.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\ksystem.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kthread.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\syscall.c">
+      <Filter>source\kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\sdl\main.c">
+      <Filter>source\sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\test\testCPU.c">
+      <Filter>source\test</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\karray.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\kcircularlist.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\khashmap.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\klist.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\kstring.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\log.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\ram.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\include\block.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\bufferaccess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\cpu.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\decoder.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devdsp.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devfb.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devinput.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devnull.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devurandom.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\devtty.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ea.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\filepath.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\filesystem.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\fpu.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kalloc.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\karray.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kcircularlist.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kepoll.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kerror.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfile.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfilelock.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfiledescriptor.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kfmmap.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kio.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\khashmap.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\klist.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kmmap.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kobject.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kobjectaccess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kpoll.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kprocess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kscheduler.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kshm.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ksignal.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ksocket.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kstat.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kstring.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ksystem.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\kthread.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\loader.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\log.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\meminfo.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\memory.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\node.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\nodeaccess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\nodeType.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\op.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\page.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\platform.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ram.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\reg.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\virtualfile.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\arith.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\conditions.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\decode.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\fpu.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\incdec.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\ops.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\pushpop.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\shift.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\strings.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\setcc.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h">
+      <Filter>source\kernel\loader</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="include">
+      <UniqueIdentifier>{521b3115-a375-45ae-8840-39b6929ab6cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="platform">
+      <UniqueIdentifier>{730b15ed-7cf5-4f0e-a233-13c4300d7c1b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="platform\windows">
+      <UniqueIdentifier>{810bbc45-25a0-42fa-8bde-e229106c972c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source">
+      <UniqueIdentifier>{798ce3bd-21f8-4784-890c-e52ed7aefa67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\emulation">
+      <UniqueIdentifier>{196ebad4-64c8-4055-a7ef-842c0b2dec50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\io">
+      <UniqueIdentifier>{5b3e5919-cc13-4e9d-8957-daad643caddc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\kernel">
+      <UniqueIdentifier>{f0ffff08-162d-4396-84d4-6b4765374b1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\kernel\devs">
+      <UniqueIdentifier>{1b8edd26-4dfd-4b12-a554-6de1d16bcab9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\kernel\loader">
+      <UniqueIdentifier>{e47e2dfc-2680-4e68-984f-88a33fb921d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\kernel\proc">
+      <UniqueIdentifier>{7a1ab29b-2d35-4f08-8ce5-ce49a3cd1835}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\sdl">
+      <UniqueIdentifier>{90c464bf-108e-4f85-88e5-fa61083787c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\test">
+      <UniqueIdentifier>{22aaa7cb-e4a1-49e8-9844-58102a85f567}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\util">
+      <UniqueIdentifier>{61d9f8bc-45fb-4306-81d6-fcd7fe308745}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

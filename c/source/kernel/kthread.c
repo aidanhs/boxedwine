@@ -474,7 +474,6 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 	U64 tsc = cpu->timeStampCounter;
 	U32 b = cpu->blockCounter;
 	U32 stackAddress;
-	struct CPU tmpCpu;
 
 	context = pop32(cpu);
 	cpu->thread->waitStartTime = pop32(cpu);

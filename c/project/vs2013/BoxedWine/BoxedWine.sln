@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BoxedWine", "BoxedWine\BoxedWine.vcxproj", "{AB172CEA-C4FE-4F1B-821E-2886B90344CB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug Log|Win32 = Debug Log|Win32
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+		Test|Win32 = Test|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug Log|Win32.ActiveCfg = Debug Log|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug Log|Win32.Build.0 = Debug Log|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug|Win32.Build.0 = Debug|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Release|Win32.ActiveCfg = Release|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Release|Win32.Build.0 = Release|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.ActiveCfg = Test|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.Build.0 = Test|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+EndGlobal
