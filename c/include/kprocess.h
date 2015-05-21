@@ -63,6 +63,7 @@ struct KProcess {
 	char path[MAX_PATHS][MAX_FILEPATH_LEN];
 	U32 shms[MAX_SHM][MAX_SHM_ATTACH];
 	struct KProcess* next;
+	struct KThread* waitingThread;
 };
 
 void processOnExitThread(struct KProcess* process);

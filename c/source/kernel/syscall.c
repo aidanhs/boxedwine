@@ -512,7 +512,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 			} else {
 				thread->timer.process = process;
 				thread->timer.thread = thread;
-				thread->waitType = WAIT_SLEEP;
 				addTimer(&thread->timer);
 				result = -K_WAIT;
 			}
@@ -521,7 +520,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 			thread->timer.millies = thread->waitStartTime+readd(memory, ARG1)*1000+readd(memory, ARG1+4)/1000000;
 			thread->timer.process = process;
 			thread->timer.thread = thread;
-			thread->waitType = WAIT_SLEEP;
 			addTimer(&thread->timer);
 			result = -K_WAIT;
 		}

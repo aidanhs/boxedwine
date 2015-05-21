@@ -38,6 +38,7 @@ struct NodeAccess {
 	U32  (*ioctl)(struct KThread* thread, struct OpenNode* node, U32 request);	
 	void (*setAsync)(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync);
     BOOL (*isAsync)(struct OpenNode* node, struct KProcess* process);
+	void (*waitForEvents)(struct OpenNode* node, struct KThread* thread, U32 events);
     BOOL (*isWriteReady)(struct OpenNode* node);
     BOOL (*isReadReady)(struct OpenNode* node);
 	void* data;

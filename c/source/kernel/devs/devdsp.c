@@ -31,6 +31,7 @@ U32 dspFreq = 8000;
 U8 dspBuffer[DSP_BUFFER_SIZE];
 S32 dspBufferLen;
 U32 dspBufferPos;
+struct KThread* dspWaitingToWriteThread;
 
 void closeAudio() {
 	if (isDspOpen) {
@@ -68,7 +69,8 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
 			dspBufferLen -= available;
 		}
 	}
-	wakeThreads(WAIT_DSP);
+	if (dspWaitingToWriteThread)
+		wakeThread(dspWaitingToWriteThread);
 	if (result<len) {
 		memset(stream+result, 0, len-result);
 	}
@@ -123,7 +125,11 @@ U32 dsp_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 l) 
 	S32 result;
 	U32 startPos;
 	if (len+dspBufferLen>DSP_BUFFER_SIZE) {
-		currentThread->waitType = WAIT_DSP;
+		if (dspWaitingToWriteThread) {
+			kpanic("%d tried to wait on writing to dsp but %d is already waiting", currentThread->id, dspWaitingToWriteThread);
+		}
+		dspWaitingToWriteThread = currentThread;
+		addClearOnWake(currentThread, &dspWaitingToWriteThread);
 		return -K_WAIT;
 	}
 	if (!isDspOpen)
@@ -275,6 +281,15 @@ BOOL dsp_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return 0;
 }
 
+void dsp_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	if (events & K_POLLOUT) {
+		if (dspWaitingToWriteThread)
+			kpanic("%d tried to wait on a input read, but %d is already waiting.", thread->id, dspWaitingToWriteThread->id);
+		dspWaitingToWriteThread = thread;
+		addClearOnWake(thread, &dspWaitingToWriteThread);
+	}
+}
+
 BOOL dsp_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -291,4 +306,4 @@ BOOL dsp_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess dspAccess = {dsp_init, dsp_length, dsp_setLength, dsp_getFilePointer, dsp_seek, dsp_read, dsp_write, dsp_close, dsp_map, dsp_canMap, dsp_ioctl, dsp_setAsync, dsp_isAsync, dsp_isWriteReady, dsp_isReadReady};
+struct NodeAccess dspAccess = {dsp_init, dsp_length, dsp_setLength, dsp_getFilePointer, dsp_seek, dsp_read, dsp_write, dsp_close, dsp_map, dsp_canMap, dsp_ioctl, dsp_setAsync, dsp_isAsync, dsp_waitForEvents, dsp_isWriteReady, dsp_isReadReady};

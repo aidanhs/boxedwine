@@ -25,7 +25,7 @@ struct KThread* allocThread() {
 
 void freeThread(struct KThread* thread) {
 	processRemoveThread(thread->process, thread);
-	if (thread->waitType!=WAIT_NONE) {
+	if (thread->waitNode) {
 		wakeThread(thread);
 	}	
 	unscheduleThread(thread);	
@@ -162,7 +162,6 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
 				freeFutex(f);
 				return -K_ETIMEDOUT;
 			}
-			thread->waitType = WAIT_FUTEX;
 			thread->timer.process = thread->process;
 			thread->timer.thread = thread;
 			thread->timer.millies = f->expireTimeInMillies;
@@ -183,7 +182,6 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         }
 		f = allocFutex(thread, ramAddress, millies);
 		thread->waitStartTime = getMilliesSinceStart();			
-		thread->waitType = WAIT_FUTEX;
 		thread->timer.process = thread->process;
 		thread->timer.thread = thread;
 		thread->timer.millies = f->expireTimeInMillies;
@@ -527,7 +525,7 @@ void runSignal(struct KThread* thread, U32 signal) {
 		} else if (!(action->flags & K_SA_NODEFER)) {
 			thread->inSigMask|= 1 << (signal-1);
 		}
-		if (thread->waitType != WAIT_NONE) {
+		if (thread->waitNode) {
 			if (!(action->flags & K_SA_RESTART))
 				interrupted = 1;
 			wakeThread(thread);

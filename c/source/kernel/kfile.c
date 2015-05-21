@@ -54,7 +54,7 @@ struct KFileLock* kfile_getLock(struct KObject* obj, struct KFileLock* lock) {
 	return 0;
 }
 
-U32 kfile_setLock(struct KObject* obj, struct KFileLock* lock) {
+U32 kfile_setLock(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread) {
 	struct OpenNode* openNode = (struct OpenNode*)obj->data;
 	struct Node* node = openNode->node;
 	
@@ -85,6 +85,11 @@ BOOL kfile_isReadReady(struct KObject* obj) {
 BOOL kfile_isWriteReady(struct KObject* obj) {
 	struct OpenNode* openNode = (struct OpenNode*)obj->data;
 	return openNode->access->isWriteReady(openNode);
+}
+
+void kfile_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
+	struct OpenNode* openNode = (struct OpenNode*)obj->data;
+	openNode->access->waitForEvents(openNode, thread, events);
 }
 
 U32  kfile_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
@@ -136,7 +141,7 @@ S64 kfile_length(struct KObject* obj) {
 	return openNode->access->length(openNode);
 }
 
-struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_write, kfile_read, kfile_stat, kfile_map, kfile_canMap};
+struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_waitForEvents, kfile_write, kfile_read, kfile_stat, kfile_map, kfile_canMap};
 
 struct KObject* allocKFile(struct OpenNode* node) {
 	return allocKObject(&kfileAccess, KTYPE_FILE, (void*)node);

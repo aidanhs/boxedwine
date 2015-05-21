@@ -230,6 +230,10 @@ BOOL tty_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return 0;
 }
 
+void tty_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	kpanic("tty_waitForEvents not implemented");
+}
+
 BOOL tty_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -246,4 +250,4 @@ BOOL tty_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_setAsync, tty_isAsync, tty_isWriteReady, tty_isReadReady};
+struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_setAsync, tty_isAsync, tty_waitForEvents, tty_isWriteReady, tty_isReadReady};

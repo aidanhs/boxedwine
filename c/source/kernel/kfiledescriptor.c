@@ -122,21 +122,16 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
 		case K_F_SETLKW64:
 			if (fd->kobject->access->supportsLocks(fd->kobject)) {
 				struct KFileLock lock;
-				U32 result;
+
 				readFileLock(&lock, thread->process->memory, arg, cmd==K_F_SETLK64 || cmd==K_F_SETLKW64);
 				lock.l_pid = thread->process->id;
 				if ((lock.l_type == K_F_WRLCK && !canWriteFD(fd)) || (lock.l_type == K_F_RDLCK && !!canReadFD(fd))) {
 					return -K_EBADF;
 				}
-				result = fd->kobject->access->setLock(fd->kobject, &lock);
-				if (((cmd == K_F_SETLKW) || (cmd == K_F_SETLKW64)) && result==-K_EAGAIN) {
-					thread->waitType = WAIT_FLOCK;
-					return -K_WAIT;
-				}
+				return fd->kobject->access->setLock(fd->kobject, &lock, (cmd == K_F_SETLKW) || (cmd == K_F_SETLKW64), thread);
 			} else {
 				return -K_EBADF;
 			}
-			return 0;
         case K_F_SETSIG: {
 			if (arg != K_SIGIO) {
 				kpanic("fcntl F_SETSIG not implemented");
@@ -270,7 +265,6 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
         if (timeout == 0) {
 			timeout = 0xFFFFFFFF;
 		}
-		thread->waitType = WAIT_SLEEP;
 		thread->timer.process = thread->process;
 		thread->timer.thread = thread;
 		thread->timer.millies = thread->waitStartTime+timeout;			

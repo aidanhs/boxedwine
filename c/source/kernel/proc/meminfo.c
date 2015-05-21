@@ -69,6 +69,10 @@ BOOL meminfo_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return 0;
 }
 
+void meminfo_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	kpanic("waiting on meminfo is not implemented");
+}
+
 BOOL meminfo_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -85,4 +89,4 @@ BOOL meminfo_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess meminfoAccess = {meminfo_init, meminfo_length, meminfo_setLength, meminfo_getFilePointer, meminfo_seek, meminfo_read, meminfo_write, meminfo_close, meminfo_map, meminfo_canMap, meminfo_ioctl, meminfo_setAsync, meminfo_isAsync, meminfo_isWriteReady, meminfo_isReadReady};
+struct NodeAccess meminfoAccess = {meminfo_init, meminfo_length, meminfo_setLength, meminfo_getFilePointer, meminfo_seek, meminfo_read, meminfo_write, meminfo_close, meminfo_map, meminfo_canMap, meminfo_ioctl, meminfo_setAsync, meminfo_isAsync, meminfo_waitForEvents, meminfo_isWriteReady, meminfo_isReadReady};

@@ -50,6 +50,10 @@ BOOL null_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return 0;
 }
 
+void null_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	kpanic("null_waitForEvents not implemented");
+}
+
 BOOL null_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -66,4 +70,4 @@ BOOL null_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess nullAccess = {null_init, null_length, null_setLength, null_getFilePointer, null_seek, null_read, null_write, null_close, null_map, null_canMap, null_ioctl, null_setAsync, null_isAsync, null_isWriteReady, null_isReadReady};
+struct NodeAccess nullAccess = {null_init, null_length, null_setLength, null_getFilePointer, null_seek, null_read, null_write, null_close, null_map, null_canMap, null_ioctl, null_setAsync, null_isAsync, null_waitForEvents, null_isWriteReady, null_isReadReady};

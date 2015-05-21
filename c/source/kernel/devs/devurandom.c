@@ -71,6 +71,10 @@ BOOL urandom_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return 0;
 }
 
+void urandom_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	kpanic("urandom_waitForEvents not implemented");
+}
+
 BOOL urandom_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -87,4 +91,4 @@ BOOL urandom_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess urandomAccess = {urandom_init, urandom_length, urandom_setLength, urandom_getFilePointer, urandom_seek, urandom_read, urandom_write, urandom_close, urandom_map, urandom_canMap, urandom_ioctl, urandom_setAsync, urandom_isAsync, urandom_isWriteReady, urandom_isReadReady};
+struct NodeAccess urandomAccess = {urandom_init, urandom_length, urandom_setLength, urandom_getFilePointer, urandom_seek, urandom_read, urandom_write, urandom_close, urandom_map, urandom_canMap, urandom_ioctl, urandom_setAsync, urandom_isAsync, urandom_waitForEvents, urandom_isWriteReady, urandom_isReadReady};

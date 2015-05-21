@@ -24,7 +24,8 @@ void kepoll_onDelete(struct KObject* obj) {
 	struct KEpoll* e = (struct KEpoll*)obj->data;
 
 	freeEpoll(e);
-	wakeThreads(WAIT_FD);
+	// :TODO:
+	//wakeThreads(WAIT_FD);
 }
 
 void kepoll_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -50,7 +51,7 @@ struct KFileLock* kepoll_getLock(struct KObject* obj, struct KFileLock* lock) {
 	return 0;
 }
 
-U32 kepoll_setLock(struct KObject* obj, struct KFileLock* lock) {
+U32 kepoll_setLock(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread) {
 	kwarn("kepoll_setLock not implemented yet");
 	return -1;
 }
@@ -58,6 +59,10 @@ U32 kepoll_setLock(struct KObject* obj, struct KFileLock* lock) {
 BOOL kepoll_isOpen(struct KObject* obj) {
 	kpanic("kepoll_isOpen not implemented yet");
 	return FALSE;
+}
+
+void kepoll_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
+	kpanic("kepoll_waitForEvents not implemented yet");
 }
 
 BOOL kepoll_isReadReady(struct KObject* obj) {
@@ -113,7 +118,7 @@ S64 kepoll_klength(struct KObject* obj) {
 	return -1;
 }
 
-struct KObjectAccess kepollAccess = {kepoll_ioctl, kepoll_seek, kepoll_klength, kepoll_getPos, kepoll_onDelete, kepoll_setBlocking, kepoll_isBlocking, kepoll_setAsync, kepoll_isAsync, kepoll_getLock, kepoll_setLock, kepoll_supportsLocks, kepoll_isOpen, kepoll_isReadReady, kepoll_isWriteReady, kepoll_write, kepoll_read, kepoll_stat, kepoll_map, kepoll_canMap};
+struct KObjectAccess kepollAccess = {kepoll_ioctl, kepoll_seek, kepoll_klength, kepoll_getPos, kepoll_onDelete, kepoll_setBlocking, kepoll_isBlocking, kepoll_setAsync, kepoll_isAsync, kepoll_getLock, kepoll_setLock, kepoll_supportsLocks, kepoll_isOpen, kepoll_isReadReady, kepoll_isWriteReady, kepoll_waitForEvents, kepoll_write, kepoll_read, kepoll_stat, kepoll_map, kepoll_canMap};
 
 struct KEpoll* freeEpolls;
 

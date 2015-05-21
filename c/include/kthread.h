@@ -10,11 +10,6 @@
 
 #define WAIT_NONE 0
 #define WAIT_PID 1
-#define WAIT_FD 2
-#define WAIT_SLEEP 3
-#define WAIT_FLOCK 4
-#define WAIT_FUTEX 5
-#define WAIT_DSP 6
 
 #define MAX_POLL_DATA 128
 
@@ -33,7 +28,8 @@ struct KThread {
 	struct KThread* nextFreeThread;
 	U32     interrupted;
 	U32     inSignal;
-	U32     waitType;
+	struct KThread** clearOnWake[MAX_POLL_DATA];
+	U32 clearOnWakeCount; // selects/poll can wait on more than one object
 	U32     waitSyscall;
 	U32	    waitStartTime;
 	U32     waitData1;
@@ -45,7 +41,10 @@ struct KThread {
 	U32 pollCount;
 	struct KTimer timer;
 	struct KThread* waitingForSignalToEnd;
+	U32     waitType;
 };
+
+#define addClearOnWake(thread, pTarget) thread->clearOnWake[thread->clearOnWakeCount++]=pTarget
 
 struct KThread* allocThread();
 void initThread(struct KThread* thread, struct KProcess* process);

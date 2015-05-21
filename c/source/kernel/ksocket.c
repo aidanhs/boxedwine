@@ -94,7 +94,31 @@ struct KSocket {
 	BOOL outClosed;
 	struct KSocketBuffer recvBuffer;
 	struct KSocketMsg* msgs;	
+	struct KThread* waitingOnReadThread;
+	struct KThread* waitingOnWriteThread;
+	struct KThread* waitingOnConnectThread;
 };
+
+void waitOnSocketRead(struct KSocket* s, struct KThread* thread) {
+	if (s->waitingOnReadThread)
+		kpanic("%d tried to wait on a socket read, but %d is already waiting.", thread->id, s->waitingOnReadThread->id);
+	s->waitingOnReadThread = thread;
+	addClearOnWake(thread, &s->waitingOnReadThread);
+}
+
+void waitOnSocketWrite(struct KSocket* s, struct KThread* thread) {
+	if (s->waitingOnWriteThread)
+		kpanic("%d tried to wait on a socket read, but %d is already waiting.", thread->id, s->waitingOnWriteThread->id);
+	s->waitingOnWriteThread = thread;
+	addClearOnWake(thread, &s->waitingOnWriteThread);
+}
+
+void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
+	if (s->waitingOnConnectThread)
+		kpanic("%d tried to wait on a socket read, but %d is already waiting.", thread->id, s->waitingOnConnectThread->id);
+	s->waitingOnConnectThread = thread;
+	addClearOnWake(thread, &s->waitingOnConnectThread);
+}
 
 BOOL unixsocket_isDirectory(struct Node* node) {
 	return FALSE;
@@ -163,7 +187,12 @@ void unixsocket_onDelete(struct KObject* obj) {
 		s->connection->connection = 0;
 		s->connection->inClosed = 1;
 		s->connection->outClosed = 1;
-		wakeThreads(WAIT_FD);
+		if (s->connection->waitingOnReadThread)
+			wakeThread(s->connection->waitingOnReadThread);
+		if (s->connection->waitingOnWriteThread)
+			wakeThread(s->connection->waitingOnWriteThread);
+		if (s->connection->waitingOnConnectThread)
+			wakeThread(s->connection->waitingOnConnectThread);
 	}
 	if (s->connecting) {		
 		for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
@@ -188,7 +217,12 @@ void unixsocket_onDelete(struct KObject* obj) {
 		s->msgs = s->msgs->next;
 	}
 	freeSocket(s);
-	wakeThreads(WAIT_FD);
+	if (s->waitingOnReadThread)
+		wakeThread(s->waitingOnReadThread);
+	if (s->waitingOnWriteThread)
+		wakeThread(s->waitingOnWriteThread);
+	if (s->waitingOnConnectThread)
+		wakeThread(s->waitingOnConnectThread);
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -215,7 +249,7 @@ struct KFileLock* unixsocket_getLock(struct KObject* obj, struct KFileLock* lock
 	return 0;
 }
 
-U32 unixsocket_setLock(struct KObject* obj, struct KFileLock* lock) {
+U32 unixsocket_setLock(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread) {
 	kwarn("unixsocket_setLock not implemented yet");
 	return -1;
 }
@@ -235,6 +269,19 @@ BOOL unixsocket_isWriteReady(struct KObject* obj) {
 	return s->connection!=0;
 }
 
+void unixsocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
+	struct KSocket* s = (struct KSocket*)obj->data;
+	if (events & K_POLLIN) {
+		waitOnSocketRead(s, thread);
+	}
+	if (events & K_POLLOUT) {
+		waitOnSocketWrite(s, thread);
+	}
+	if ((events & ~(K_POLLIN | K_POLLOUT)) || s->listening) {
+		waitOnSocketConnect(s, thread);
+	}
+}
+
 U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
 	struct KSocket* s = (struct KSocket*)obj->data;
 	U32 count=0;
@@ -243,7 +290,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 		return -K_EPIPE;
 	if (s->connection->recvBuffer.len==MAX_BUFFER_SIZE) {
 		if (s->blocking) {
-			thread->waitType = WAIT_FD;
+			waitOnSocketWrite(s, thread);
 			return -K_WAIT;
 		}
 		return -K_EWOULDBLOCK;
@@ -270,7 +317,8 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 		if (s->connection->recvBuffer.writePos>=MAX_BUFFER_SIZE)
 			s->connection->recvBuffer.writePos = 0;
 	}
-	wakeThreads(WAIT_FD);
+	if (s->connection->waitingOnReadThread)
+		wakeThread(s->connection->waitingOnReadThread);
 	return count;
 }
 
@@ -284,7 +332,7 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* 
 			return 0;
 		if (!s->blocking)
 			return -K_EWOULDBLOCK;
-		thread->waitType = WAIT_FD;
+		waitOnSocketRead(s, thread);
 		return -K_WAIT;
 	}
 	while (len && s->recvBuffer.len) {
@@ -352,7 +400,7 @@ S64 unixsocket_klength(struct KObject* obj) {
 	return -1;
 }
 
-struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_map, unixsocket_canMap};
+struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_waitForEvents, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_map, unixsocket_canMap};
 
 char tmpSocketName[32];
 
@@ -512,7 +560,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 			}
 			if (s->connecting) {
 				if (s->blocking) {
-					thread->waitType = WAIT_FD;
+					waitOnSocketConnect(s, thread);
 					return -K_WAIT;
 				} else {
 					return -K_EINPROGRESS;
@@ -524,7 +572,8 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 						destination->pendingConnections[i] = s;
 						destination->pendingConnectionsCount++;
 						s->connecting = destination;
-						wakeThreads(WAIT_FD);
+						if (destination->waitingOnConnectThread)
+							wakeThread(destination->waitingOnConnectThread);
 						break;
 					}
 				}
@@ -536,7 +585,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 					return -K_EINPROGRESS;
 				}
 				// :TODO: what about a time out
-				thread->waitType = WAIT_FD;
+				waitOnSocketConnect(s, thread);
 				return -K_WAIT;
 			}
 		} else {
@@ -590,7 +639,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	if (!s->pendingConnections) {
 		if (!s->blocking)
 			return -K_EWOULDBLOCK;
-		thread->waitType = WAIT_FD;
+		waitOnSocketConnect(s, thread);
 		return -K_WAIT;
 	}
 	// :TODO: should make this FIFO
@@ -619,7 +668,8 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	resultSocket->inClosed = FALSE;
 	resultSocket->outClosed = FALSE;
 	connection->connecting = 0;
-	wakeThreads(WAIT_FD);
+	if (connection->waitingOnConnectThread)
+		wakeThread(connection->waitingOnConnectThread);
 	return result;
 }
 
@@ -977,7 +1027,8 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
 		}
 		next->next = msg;
 	}
-	wakeThreads(WAIT_FD);
+	if (s->connection->waitingOnReadThread)
+		wakeThread(s->connection->waitingOnReadThread);
 	return result;
 }
 
@@ -1004,7 +1055,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
 			return -K_EWOULDBLOCK;
 		}
 		// :TODO: what about a time out
-		thread->waitType = WAIT_FD;
+		waitOnSocketRead(s, thread);		
 		return -K_WAIT;
 	}
 	msg = s->msgs;

@@ -18,11 +18,12 @@ struct KObjectAccess {
     void (*setAsync)(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync);
     BOOL (*isAsync)(struct KObject* obj, struct KProcess* process);
     struct KFileLock* (*getLock)(struct KObject* obj, struct KFileLock* lock);
-    U32  (*setLock)(struct KObject* obj, struct KFileLock* lock);
+    U32  (*setLock)(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread);
 	BOOL (*supportsLocks)(struct KObject* obj);
     BOOL (*isOpen)(struct KObject* obj);
     BOOL (*isReadReady)(struct KObject* obj);
     BOOL (*isWriteReady)(struct KObject* obj);
+	void (*waitForEvents)(struct KObject* obj, struct KThread* thread, U32 events);
     U32  (*write)(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len);
     U32  (*read)(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len);
     U32  (*stat)(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64);

@@ -60,6 +60,10 @@ BOOL buffer_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return 0;
 }
 
+void buffer_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	kpanic("buffer_waitForEvents not implemented");
+}
+
 BOOL buffer_isWriteReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
 }
@@ -76,7 +80,7 @@ BOOL buffer_canMap(struct OpenNode* node) {
 	return FALSE;
 }
 
-struct NodeAccess bufferAccess = {buffer_init, buffer_length, buffer_setLength, buffer_getFilePointer, buffer_seek, buffer_read, buffer_write, buffer_close, buffer_map, buffer_canMap, buffer_ioctl, buffer_setAsync, buffer_isAsync, buffer_isWriteReady, buffer_isReadReady};
+struct NodeAccess bufferAccess = {buffer_init, buffer_length, buffer_setLength, buffer_getFilePointer, buffer_seek, buffer_read, buffer_write, buffer_close, buffer_map, buffer_canMap, buffer_ioctl, buffer_setAsync, buffer_isAsync, buffer_waitForEvents, buffer_isWriteReady, buffer_isReadReady};
 
 void makeBufferAccess(struct NodeAccess* nodeAccess) {
 	nodeAccess->init = buffer_init;

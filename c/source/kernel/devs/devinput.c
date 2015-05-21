@@ -44,6 +44,7 @@ struct InputEventQueue {
 	U16 version;
 	const char* name;
 	U32 mask;
+	struct KThread* waitingToReadThread;
 };
 
 static struct InputEventQueue touchEvents;
@@ -93,6 +94,7 @@ S64 input_seek(struct OpenNode* node, S64 pos) {
 	return 0;
 }
 
+// :TODO: can this be blocking
 U32 input_read(struct InputEventQueue* queue, struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	U32 result = 0;
 
@@ -117,6 +119,15 @@ U32 input_read(struct InputEventQueue* queue, struct Memory* memory, struct Open
 
 U32 input_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	return len;
+}
+
+void input_waitForEvents(struct InputEventQueue* queue, struct OpenNode* node, struct KThread* thread, U32 events) {
+	if (events & K_POLLIN) {
+		if (queue->waitingToReadThread)
+			kpanic("%d tried to wait on a input read, but %d is already waiting.", thread->id, queue->waitingToReadThread->id);
+		queue->waitingToReadThread = thread;
+		addClearOnWake(thread, &queue->waitingToReadThread);
+	}
 }
 
 void input_close(struct InputEventQueue* queue, struct OpenNode* node) {
@@ -254,6 +265,10 @@ void touch_close(struct OpenNode* node) {
 	input_close(&touchEvents, node);
 }
 
+void touch_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	input_waitForEvents(&touchEvents, node, thread, events);
+}
+
 BOOL touch_isReadReady(struct OpenNode* node) {
 	return input_isReadReady(&touchEvents, node);
 }
@@ -327,7 +342,7 @@ BOOL touch_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return input_isAsync(&touchEvents, node, process);
 }
 
-struct NodeAccess touchInputAccess = {touch_init, input_length, input_setLength, input_getFilePointer, input_seek, touch_read, input_write, touch_close, input_map, input_canMap, touch_ioctl, touch_setAsync, touch_isAsync, touch_isWriteReady, touch_isReadReady};
+struct NodeAccess touchInputAccess = {touch_init, input_length, input_setLength, input_getFilePointer, input_seek, touch_read, input_write, touch_close, input_map, input_canMap, touch_ioctl, touch_setAsync, touch_isAsync, touch_waitForEvents, touch_isWriteReady, touch_isReadReady};
 
 BOOL mouse_init(struct KProcess* process, struct OpenNode* node) {
 	mouseEvents.bustype = 3;
@@ -345,6 +360,10 @@ U32 mouse_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 le
 
 void mouse_close(struct OpenNode* node) {
 	input_close(&mouseEvents, node);
+}
+
+void mouse_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	input_waitForEvents(&mouseEvents, node, thread, events);
 }
 
 BOOL mouse_isReadReady(struct OpenNode* node) {
@@ -420,7 +439,7 @@ BOOL mouse_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return input_isAsync(&mouseEvents, node, process);
 }
 
-struct NodeAccess mouseInputAccess = {mouse_init, input_length, input_setLength, input_getFilePointer, input_seek, mouse_read, input_write, mouse_close, input_map, input_canMap, mouse_ioctl, mouse_setAsync, mouse_isAsync, mouse_isWriteReady, mouse_isReadReady};
+struct NodeAccess mouseInputAccess = {mouse_init, input_length, input_setLength, input_getFilePointer, input_seek, mouse_read, input_write, mouse_close, input_map, input_canMap, mouse_ioctl, mouse_setAsync, mouse_isAsync, mouse_waitForEvents, mouse_isWriteReady, mouse_isReadReady};
 
 BOOL keyboard_init(struct KProcess* process, struct OpenNode* node) {
 	keyboardEvents.bustype = 0x11;
@@ -438,6 +457,10 @@ U32 keyboard_read(struct Memory* memory, struct OpenNode* node, U32 address, U32
 
 void keyboard_close(struct OpenNode* node) {
 	input_close(&keyboardEvents, node);
+}
+
+void keyboard_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+	input_waitForEvents(&keyboardEvents, node, thread, events);
 }
 
 BOOL keyboard_isReadReady(struct OpenNode* node) {
@@ -578,7 +601,7 @@ BOOL keyboard_isAsync(struct OpenNode* node, struct KProcess* process) {
 	return input_isAsync(&keyboardEvents, node, process);
 }
 
-struct NodeAccess keyboardInputAccess = {keyboard_init, input_length, input_setLength, input_getFilePointer, input_seek, keyboard_read, input_write, keyboard_close, input_map, input_canMap, keyboard_ioctl, keyboard_setAsync, keyboard_isAsync, keyboard_isWriteReady, keyboard_isReadReady};
+struct NodeAccess keyboardInputAccess = {keyboard_init, input_length, input_setLength, input_getFilePointer, input_seek, keyboard_read, input_write, keyboard_close, input_map, input_canMap, keyboard_ioctl, keyboard_setAsync, keyboard_isAsync, keyboard_waitForEvents, keyboard_isWriteReady, keyboard_isReadReady};
 
 void queueEvent(struct InputEventQueue* queue, U32 type, U32 code, U32 value, U64 time) {
 	struct EventData* data = allocEventData();
@@ -674,7 +697,8 @@ void onMouseButtonUp(U32 button) {
 		if (process)
 			signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
-	wakeThreads(WAIT_FD);
+	if (touchEvents.waitingToReadThread)
+		wakeThread(touchEvents.waitingToReadThread);
 }
 
 void onMouseButtonDown(U32 button) {
@@ -694,7 +718,8 @@ void onMouseButtonDown(U32 button) {
 		if (process)
 			signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
-	wakeThreads(WAIT_FD);
+	if (touchEvents.waitingToReadThread)
+		wakeThread(touchEvents.waitingToReadThread);
 }
 
 void onMouseMove(U32 x, U32 y) {
@@ -718,7 +743,8 @@ void onMouseMove(U32 x, U32 y) {
 			if (process)
 				signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
         }
-		wakeThreads(WAIT_FD);
+		if (touchEvents.waitingToReadThread)
+			wakeThread(touchEvents.waitingToReadThread);
     }
 }
 
@@ -734,7 +760,8 @@ void onKeyDown(U32 code) {
 		if (process)
 			signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
-	wakeThreads(WAIT_FD);
+	if (keyboardEvents.waitingToReadThread)
+		wakeThread(keyboardEvents.waitingToReadThread);
 }
 
 void onKeyUp(U32 code) {
@@ -749,5 +776,6 @@ void onKeyUp(U32 code) {
 		if (process)
 			signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
-	wakeThreads(WAIT_FD);
+	if (keyboardEvents.waitingToReadThread)
+		wakeThread(keyboardEvents.waitingToReadThread);
 }

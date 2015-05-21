@@ -113,14 +113,12 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
 		if (blocking) {
 			fd->kobject->access->setBlocking(fd->kobject, 1);
 			if (result == -K_EWOULDBLOCK) {
-				thread->waitType = WAIT_FD;
-				return -K_WAIT;
+				return fd->kobject->access->write(thread, fd->kobject, memory, buf, toWrite);
 			}
 			if (result > 0 && result!=toWrite) {
 				thread->waitData1 = i;
 				thread->waitData2 = result;
-				thread->waitType = WAIT_FD;
-				return -K_WAIT;
+				return fd->kobject->access->write(thread, fd->kobject, memory, buf+result, toWrite-result);
 			}			
 		}
         if (result<0) {

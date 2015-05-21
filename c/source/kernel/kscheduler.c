@@ -41,6 +41,19 @@ void waitThread(struct KThread* thread) {
 	thread->waitNode = addItemToList(&waitingThreads, thread);
 }
 
+void wakeThread(struct KThread* thread) {
+	U32 i;
+
+	removeItemFromList(&waitingThreads, thread->waitNode);
+	thread->waitNode = 0;
+	for (i=0; i<thread->clearOnWakeCount; i++) {
+		*thread->clearOnWake[i] = 0;
+		thread->clearOnWake[i] = 0;
+	}
+	thread->clearOnWakeCount = 0;
+	scheduleThread(thread);
+}
+
 void wakeThreads(U32 wakeType) {
 	struct KListNode* node = waitingThreads.first;
 #ifdef LOG_SCHEDULER
@@ -55,13 +68,6 @@ void wakeThreads(U32 wakeType) {
 		}
 		node = next;
 	}
-}
-
-void wakeThread(struct KThread* thread) {
-	removeItemFromList(&waitingThreads, thread->waitNode);
-	thread->waitNode = 0;
-	thread->waitType = WAIT_NONE;
-	scheduleThread(thread);
 }
 
 void scheduleThread(struct KThread* thread) {
