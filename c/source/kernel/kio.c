@@ -541,7 +541,7 @@ U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
 	writeq(memory, address+24, FS_FREE_SIZE/FS_BLOCK_SIZE); // f_bavail
 	writeq(memory, address+32, 1024*1024); // f_files
 	writeq(memory, address+40, 1024*1024); // f_ffree
-	writeq(memory, address+48, 12719298601114463092l); // f_fsid
+	writeq(memory, address+48, 12719298601114463092ll); // f_fsid
 	writed(memory, address+56, MAX_FILEPATH_LEN); // f_namelen
     writed(memory, address+60, FS_BLOCK_SIZE); // f_frsize
 	writed(memory, address+64, 4096); // f_flags
@@ -562,7 +562,7 @@ U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address) {
 	writeq(memory, address+24, FS_FREE_SIZE/FS_BLOCK_SIZE); // f_bavail
 	writeq(memory, address+32, 1024*1024); // f_files
 	writeq(memory, address+40, 1024*1024); // f_ffree
-	writeq(memory, address+48, 12719298601114463092l); // f_fsid
+	writeq(memory, address+48, 12719298601114463092ll); // f_fsid
 	writed(memory, address+56, MAX_FILEPATH_LEN); // f_namelen
     writed(memory, address+60, FS_BLOCK_SIZE); // f_frsize
 	writed(memory, address+64, 4096); // f_flags

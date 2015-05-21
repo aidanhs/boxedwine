@@ -22,7 +22,6 @@ void initSystem() {
 }
 
 void addCallback(void (OPCALL *func)(struct CPU*, struct Op*)) {
-	U32 result = callbackPos;
 	U32 funcAddress = (U32)func;
 	U8* address = callbackPageAddress+callbackPos*CALLBACK_OP_SIZE;
 	callbacks[callbackPos++] = (U32)address;

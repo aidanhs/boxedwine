@@ -466,8 +466,10 @@ U32 syscall_sigreturn(struct KThread* thread) {
 }
 
 void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
+#ifdef LOG_OPS
 	U32 signal = pop32(cpu);
 	U32 address = pop32(cpu);
+#endif
 	U32 context = pop32(cpu);
 	U64 tsc = cpu->timeStampCounter;
 	U32 b = cpu->blockCounter;
@@ -478,10 +480,14 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 	cpu->thread->interrupted = pop32(cpu);
 	stackAddress=cpu->reg[4].u32;
 
-	//klog("onExitSignal signal=%d info=%X context=%X stack=%X interrupted=%d", signal, address, context, cpu->reg[4].u32, cpu->thread->interrupted);
-	//klog("    before context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(cpu->memory, cpu->segAddress[4]+0x18):0);
+#ifdef LOG_OPS
+	klog("onExitSignal signal=%d info=%X context=%X stack=%X interrupted=%d", signal, address, context, cpu->reg[4].u32, cpu->thread->interrupted);
+	klog("    before context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(cpu->memory, cpu->segAddress[4]+0x18):0);
+#endif
 	readFromContext(cpu, context);
-	//klog("    after  context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(cpu->memory, cpu->segAddress[4]+0x18):0);
+#ifdef LOG_OPS
+	klog("    after  context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(cpu->memory, cpu->segAddress[4]+0x18):0);
+#endif
 	cpu->timeStampCounter = tsc;
 	cpu->blockCounter = b;
 	cpu->thread->inSignal--;
@@ -517,8 +523,10 @@ void runSignal(struct KThread* thread, U32 signal) {
 		BOOL altStack = (action->flags & K_SA_ONSTACK) != 0;
 
 		fillFlags(cpu);
-		//klog("runSignal %d", signal);
-		//klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(memory, cpu->segAddress[4]+0x18):0);
+#ifdef LOG_OPS
+		klog("runSignal %d", signal);
+		klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(memory, cpu->segAddress[4]+0x18):0);
+#endif
 		thread->inSigMask=action->mask | thread->sigMask;
 		if (action->flags & K_SA_RESETHAND) {
 			action->handlerAndSigAction=K_SIG_DFL;
@@ -538,7 +546,9 @@ void runSignal(struct KThread* thread, U32 signal) {
 		if (altStack) {
 			thread->cpu.reg[4].u32 = thread->alternateStack+thread->alternateStackSize;
 			altStack = 1;
-			//klog("    alternateStack %X", thread->alternateStack+thread->alternateStackSize);
+#ifdef LOG_OPS
+			klog("    alternateStack %X", thread->alternateStack+thread->alternateStackSize);
+#endif
         }
 		thread->cpu.reg[4].u32 &= ~15;
 		push32(&thread->cpu, 0); // padding
@@ -555,8 +565,9 @@ void runSignal(struct KThread* thread, U32 signal) {
 			push32(&thread->cpu, thread->waitStartTime);
 			push32(&thread->cpu, context);
 			push32(&thread->cpu, context);
+#ifdef LOG_OPS
 			push32(&thread->cpu, address);
-				
+#endif
 			thread->cpu.reg[0].u32 = signal;
 			thread->cpu.reg[1].u32 = address;
 			thread->cpu.reg[2].u32 = context;	
@@ -568,10 +579,14 @@ void runSignal(struct KThread* thread, U32 signal) {
 			push32(&thread->cpu, thread->waitStartTime);
 			push32(&thread->cpu, context);
 			push32(&thread->cpu, 0);
+#ifdef LOG_OPS
 			push32(&thread->cpu, 0);
+#endif
 		}
-		//klog("    context %X interrupted %d", context, interrupted);
+#ifdef LOG_OPS
+		klog("    context %X interrupted %d", context, interrupted);
 		push32(&thread->cpu, signal);
+#endif
 		push32(&thread->cpu, SIG_RETURN_ADDRESS);
 		thread->cpu.eip.u32 = action->handlerAndSigAction;
 
