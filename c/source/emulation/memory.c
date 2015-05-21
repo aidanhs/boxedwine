@@ -175,9 +175,6 @@ void writed(struct Memory* memory, U32 address, U32 value) {
 	if ((address & 0xFFF) < 0xFFD) {
 		int index = address >> 12;
 		if (memory->write[index]) {
-			if (memory->mmu[index] != &ramPageWR) {
-				int ii=0;
-			}
 			host_writed(address-memory->write[index], value);
 		} else {
 			memory->mmu[index]->writed(memory, address, value);
