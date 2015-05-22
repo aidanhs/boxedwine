@@ -21,7 +21,7 @@ SDL_Surface* surface;
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
 	windowCX = cx;
 	windowCY = cy;
-	windowBPP = bbp;
+	windowBPP = bpp;
 	windowFullScreen = fullscreen;
 }
 
