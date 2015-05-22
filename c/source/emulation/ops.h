@@ -1177,6 +1177,39 @@ void OPCALL salc(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
+void OPCALL aam(struct CPU* cpu, struct Op* op) {
+	 if (op->data1) {
+		AH = AL / op->data1;
+		AL = AL % op->data1;
+		setSF(cpu, AL & 0x80);
+		setZF(cpu, AL == 0);		
+		setPF(cpu,parity_lookup[AL]);
+		removeFlag(CF);
+		removeFlag(OF);
+		removeFlag(AF);
+		cpu->lazyFlags = FLAGS_NONE;
+	} else {
+		exception(cpu, 0);
+	} 
+	CYCLES(18);
+	NEXT();
+}
+
+void OPCALL aad(struct CPU* cpu, struct Op* op) {
+	AL = AH * op->data1 + AL;
+	AH = 0;
+	setSF(cpu, AL & 0x80);
+	setZF(cpu, AL == 0);		
+	setPF(cpu,parity_lookup[AL]);
+	removeFlag(CF);
+	removeFlag(OF);
+	removeFlag(AF);
+	cpu->lazyFlags = FLAGS_NONE;
+	CYCLES(10);
+	NEXT();
+}
+
+
 void OPCALL xlat16(struct CPU* cpu, struct Op* op) {
 	AL = readb(cpu->memory, cpu->segAddress[op->base] + (U16)(BX + AL));
 	CYCLES(4);

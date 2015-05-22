@@ -1303,6 +1303,22 @@ void decode2d3(struct DecodeData* data) {
 	NEXT_OP(data);
 }
 
+// AAM Ib
+void decode0d4(struct DecodeData* data) {
+	data->op->data1 = FETCH8(data);
+	data->op->func = aam;
+	LOG_OP("AAM");
+	NEXT_OP(data);
+}
+
+// AAD Ib
+void decode0d5(struct DecodeData* data) {
+	data->op->data1 = FETCH8(data);
+	data->op->func = aad;
+	LOG_OP("AAD");
+	NEXT_OP(data);
+}
+
 // XLAT
 void decode0d7(struct DecodeData* data) {
 	if (data->ea16)
@@ -1952,7 +1968,7 @@ DECODER decoder[1024] = {
 	decode0b8, decode0b9, decode0ba, decode0bb, decode0bc, decode0bd, decode0be, decode0bf,
 	decode0c0, decode0c1, decode0c2, decode0c3, invalidOp, invalidOp, decode0c6, decode0c7,
 	invalidOp, decode0c9, invalidOp, invalidOp, invalidOp, decode0cd, invalidOp, invalidOp,
-	decode0d0, decode0d1, decode0d2, decode0d3, invalidOp, invalidOp, decode0d6, decode0d7,
+	decode0d0, decode0d1, decode0d2, decode0d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
 	decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
 	decode0e8, decode0e9, invalidOp, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2034,7 +2050,7 @@ DECODER decoder[1024] = {
 	decode2b8, decode2b9, decode2ba, decode2bb, decode2bc, decode2bd, decode2be, decode2bf,
 	decode0c0, decode2c1, decode2c2, decode2c3, invalidOp, invalidOp, decode0c6, decode2c7,
 	invalidOp, decode2c9, invalidOp, invalidOp, invalidOp, decode0cd, invalidOp, invalidOp,
-	decode0d0, decode2d1, decode0d2, decode2d3, invalidOp, invalidOp, decode0d6, decode0d7,
+	decode0d0, decode2d1, decode0d2, decode2d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
 	decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
 	decode2e8, decode2e9, invalidOp, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,

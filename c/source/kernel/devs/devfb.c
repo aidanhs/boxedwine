@@ -21,7 +21,7 @@ SDL_Surface* surface;
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
 	windowCX = cx;
 	windowCY = cy;
-	windowBPP = bpp;
+	windowBPP = bbp;
 	windowFullScreen = fullscreen;
 }
 
@@ -45,6 +45,42 @@ struct fb_fix_screeninfo {
     U16 capabilities;       /* see FB_CAP_*                 */
     U16 reserved[2];        /* Reserved for future compatibility */
 };
+
+struct fb_cmap {
+        U32 start;                    /* First entry  */
+        U32 len;                      /* Number of entries */
+        U16 red[256];                     /* Red values   */
+        U16 green[256];
+        U16 blue[256];
+};
+
+void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
+	U32 i = readd(memory, address);
+	U32 stop = readd(memory, address+4)+i;
+	U32 red = readd(memory, address+8);
+	U32 green = readd(memory, address+12);
+	U32 blue = readd(memory, address+16);
+
+	for (;i<stop;i++) {
+		cmap->red[i] = readw(memory, red); red+=2;
+		cmap->green[i] = readw(memory, green); green+=2;
+		cmap->blue[i] = readw(memory, blue); blue+=2;
+	}
+}
+
+void readCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
+	U32 i = readd(memory, address);
+	U32 stop = readd(memory, address+4)+i;
+	U32 red = readd(memory, address+8);
+	U32 green = readd(memory, address+12);
+	U32 blue = readd(memory, address+16);
+
+	for (;i<stop;i++) {
+		writew(memory, red, cmap->red[i]); red+=2;
+		writew(memory, green, cmap->green[i]); green+=2;
+		writew(memory, blue, cmap->blue[i]); blue+=2;
+	}
+}
 
 void writeFixInfo(struct Memory* memory, U32 address, struct fb_fix_screeninfo* info) {
     memcopyFromNative(memory, address, info->id, sizeof(info->id)); address+=16;
@@ -157,6 +193,30 @@ void writeVarInfo(struct Memory* memory, U32 address, struct fb_var_screeninfo* 
     zeroMemory(memory, address, 16);
 }
 
+U32 GET_SHIFT(U32 n) {
+	U32 i;
+
+	for (i=0;i<32;i++) {
+		if (n & (1<<i))
+			return i;
+	}
+	return 0;
+}
+
+U32 COUNT_BITS(U32 n) {
+	U32 i;
+	U32 result = 0;
+
+	for (i=0;i<32;i++) {
+		if (n & (1<<i)) {
+			result++;
+		} else if (result) {
+			return result;
+		}
+	}
+	return 0;
+}
+
 void readVarInfo(struct Memory* memory, int address, struct fb_var_screeninfo* info) {
     info->xres = readd(memory, address); address+=4;
     info->yres = readd(memory, address); address+=4;
@@ -200,12 +260,58 @@ void readVarInfo(struct Memory* memory, int address, struct fb_var_screeninfo* i
     info->sync = readd(memory, address); address+=4;
     info->vmode = readd(memory, address); address+=4;
     info->rotate = readd(memory, address); address+=4;
-    info->colorspace = readd(memory, address); address+=4;
+    info->colorspace = readd(memory, address); address+=4;	
 }
 
 struct fb_var_screeninfo fb_var_screeninfo;
 struct fb_fix_screeninfo fb_fix_screeninfo;
+struct fb_cmap fb_cmap;
 BOOL fbinit;
+
+void setupScreen() {
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
+	
+	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE);
+	if (fb_var_screeninfo.bits_per_pixel==8) {
+		SDL_Color colors[256];
+		int i;
+
+		for(i=0;i<256;i++){
+          colors[i].r=(U8)fb_cmap.red[i];
+          colors[i].g=(U8)fb_cmap.green[i];
+          colors[i].b=(U8)fb_cmap.blue[i];
+        }
+		SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
+	}
+
+	SDL_ShowCursor(0);
+	fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
+	fb_fix_screeninfo.type = 0; // FB_TYPE_PACKED_PIXELS
+	fb_fix_screeninfo.smem_start = ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;		
+
+	if (surface->format->Rshift == 0 && surface->format->Gshift == 0) {
+		fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);
+		fb_var_screeninfo.green.offset = GET_SHIFT(surface->format->Gmask);
+		fb_var_screeninfo.blue.offset = GET_SHIFT(surface->format->Bmask);
+	} else {
+		fb_var_screeninfo.red.offset = surface->format->Rshift;
+		fb_var_screeninfo.green.offset = surface->format->Gshift;
+		fb_var_screeninfo.blue.offset = surface->format->Bshift;
+	}
+	fb_var_screeninfo.red.length = COUNT_BITS(surface->format->Rmask);			
+	fb_var_screeninfo.green.length = COUNT_BITS(surface->format->Gmask);		
+	fb_var_screeninfo.blue.length = COUNT_BITS(surface->format->Bmask);
+	
+
+	printf("Rshift=%X (%X) Gshift=%X (%X) Bshift=%X (%X)", surface->format->Rshift, surface->format->Rmask, surface->format->Gshift, surface->format->Gmask, surface->format->Bshift, surface->format->Bmask);
+	fb_fix_screeninfo.smem_len = 8*1024*1024;
+	fb_fix_screeninfo.line_length = surface->pitch;
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_LockSurface(surface);
+	}
+}
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
 	return ((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
@@ -238,20 +344,11 @@ static void fb_clear(struct Memory* memory, U32 page) {
 }
 
 static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
+	updateAvailable=1;
 	return &((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
-
-U32 GET_SHIFT(U32 n) {
-	U32 i;
-
-	for (i=0;i<32;i++) {
-		if (n & (1<<i))
-			return i;
-	}
-	return 0;
-}
 
 BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 	if (!fbinit) {		
@@ -343,11 +440,16 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 			break;
 		case 0x4601: // FBIOPUT_VSCREENINFO
 			readVarInfo(thread->process->memory, IOCTL_ARG1, &fb_var_screeninfo);
+			setupScreen();
 			break;
 		case 0x4602: // FBIOGET_FSCREENINFO
 			writeFixInfo(thread->process->memory, IOCTL_ARG1, &fb_fix_screeninfo);
 			break;
+		case 0x4604: // FBIOGETCMAP
+			readCMap(thread->process->memory, IOCTL_ARG1, &fb_cmap);
+			break;
 		case 0x4605: // FBIOPUTCMAP
+			writeCMap(thread->process->memory, IOCTL_ARG1, &fb_cmap);
 			break;
 		case 0x4606: { // FBIOPAN_DISPLAY
 			struct fb_var_screeninfo fb;
@@ -389,6 +491,9 @@ U32 fb_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
 	U32 i;
 
+	if (len<fb_fix_screeninfo.smem_len) {
+		pageCount=fb_fix_screeninfo.smem_len >> PAGE_SHIFT;
+	}
 	if ((flags & K_MAP_FIXED) && address!=fb_fix_screeninfo.smem_start) {
 		kpanic("Mapping /dev/fb at fixed address not supported");
 	}
