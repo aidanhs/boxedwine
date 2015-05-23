@@ -407,13 +407,18 @@ void push16(struct CPU* cpu, U16 value) {
 }
 
 void push32(struct CPU* cpu, U32 value) {
-	if (cpu->big) {
-        ESP-=4;
-		writed(cpu->memory, cpu->segAddress[SS] + ESP, value);
-    } else {
-        SP-=4;
-		writed(cpu->memory, cpu->segAddress[SS] + SP, value);
-    }
+	int index;
+
+    ESP-=4;
+	index = ESP >> 12;
+	// can't assume the RAM page is already allocated, thread stacks are on demand
+	// don't call writed since that version will check if the write will go across a page boundry
+	// this custom code here will save an iff statement
+	if (cpu->memory->write[index]) {
+		host_writed(ESP-cpu->memory->write[index], value);
+	} else {
+		cpu->memory->mmu[index]->writed(cpu->memory, ESP, value);
+	}	
 }
 
 U16 pop16(struct CPU* cpu) {
@@ -429,15 +434,11 @@ U16 pop16(struct CPU* cpu) {
 }
 
 U32 pop32(struct CPU* cpu) {
-	if (cpu->big) {
-		int result = readd(cpu->memory, cpu->segAddress[SS] + ESP);
-        ESP+=4;
-        return result;
-    } else {
-		int result = readd(cpu->memory, cpu->segAddress[SS] + SP);
-        SP+=4;
-        return result;
-    }
+	// we can assume the RAM page is already there since this read shouldn't happen unless we already wrote to it
+	int index = ESP >> 12;
+	U32 result = host_readd(ESP-cpu->memory->read[index]);
+    ESP+=4;
+    return result;
 }
 
 U32 peek32(struct CPU* cpu, U32 index) {
