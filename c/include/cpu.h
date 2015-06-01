@@ -206,4 +206,10 @@ INLINE U32 getAF(struct CPU* cpu) {return cpu->lazyFlags->getAF(cpu);}
 INLINE U32 getZF(struct CPU* cpu) {return cpu->lazyFlags->getZF(cpu);}
 INLINE U32 getSF(struct CPU* cpu) {return cpu->lazyFlags->getSF(cpu);}
 INLINE U32 getPF(struct CPU* cpu) {return cpu->lazyFlags->getPF(cpu);}
+
+typedef void (*Int99Callback)(struct CPU* cpu);
+
+extern Int99Callback* int99Callback;
+extern U32 int99CallbackSize;
+
 #endif

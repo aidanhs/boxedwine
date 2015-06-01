@@ -1122,13 +1122,17 @@ void decode2c1(struct DecodeData* data) {
 
 // INT Ib
 void decode0cd(struct DecodeData* data) {
-	U8 rm = FETCH8(data);
-	if (rm==0x80) {
+	U8 i = FETCH8(data);
+	if (i==0x80) {
 		data->op->func = syscall;
 		LOG_OP("INT 80");
 		FINISH_OP(data);		
+	} else if (i==0x99) {
+		data->op->func = int99;
+		LOG_OP("INT 80");
+		FINISH_OP(data);
 	} else {
-		kpanic("Unhandled interrupt %d", rm);
+		kpanic("Unhandled interrupt %d", i);
 	}
 }
 

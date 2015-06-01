@@ -6,6 +6,9 @@
 
 #include <string.h>
 
+Int99Callback* int99Callback;
+U32 int99CallbackSize;
+
 void onCreateCPU(struct CPU* cpu) {
 	cpu->reg8[0] = &cpu->reg[0].u8;
 	cpu->reg8[1] = &cpu->reg[1].u8;

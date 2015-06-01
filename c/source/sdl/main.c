@@ -21,6 +21,8 @@
 #include "devinput.h"
 #include "devdsp.h"
 
+void mesa_init();
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
@@ -323,6 +325,7 @@ int main(int argc, char **argv) {
 	initRAM(mb*1024*1024/PAGE_SIZE);
 	initFB(screenWidth, screenHeight, bpp, fullscreen);
 	initCallbacks();
+	mesa_init();
 
 	ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";

@@ -133,6 +133,9 @@
     <ClCompile Include="..\..\..\..\source\emulation\ram.c">
       <Filter>source\emulation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\mesa\mesagl.c">
+      <Filter>opengl\mesa</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -364,6 +367,12 @@
     </Filter>
     <Filter Include="source\util">
       <UniqueIdentifier>{61d9f8bc-45fb-4306-81d6-fcd7fe308745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="opengl">
+      <UniqueIdentifier>{e54df08a-a4a1-4839-a6e6-d58ee8102ea6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="opengl\mesa">
+      <UniqueIdentifier>{1a869f5b-ed23-450a-b30f-cb7e0fe22d40}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

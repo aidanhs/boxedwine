@@ -18,6 +18,7 @@
 #include "kstat.h"
 #include "bufferaccess.h"
 #include "ksignal.h"
+#include "ram.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -169,6 +170,11 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 			}
 		}
 	}	
+	for (i=0;i<NUMBER_OF_STRINGS;i++) {
+		process->strings[i] = from->strings[i];
+	}
+	process->stringAddress = from->stringAddress;
+	process->stringAddressIndex = from->stringAddressIndex;
 }
 
 void writeStackString(struct CPU* cpu, const char* s) {
@@ -1063,5 +1069,25 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 	} else {
 		process->pendingSignals |= (1 << (signal-1));
 		return 0;
+	}
+}
+
+U32 allocPage(struct KProcess* process) {
+	U32 page = 0;
+	if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page))
+		kpanic("Failed to allocate stack for thread");
+	allocPages(process->memory, &ramOnDemandPage, FALSE, page, 1, PAGE_READ|PAGE_WRITE, 0);
+	return page << PAGE_SHIFT;
+}
+
+void addString(struct KProcess* process, U32 index, const char* str) {
+	U32 len = strlen(str);
+	if (index<NUMBER_OF_STRINGS) {
+		if (!process->stringAddress) {
+			process->stringAddress = allocPage(process);
+		}
+		process->strings[index] = process->stringAddress+process->stringAddressIndex;
+		memcopyFromNative(process->memory, process->strings[index], str, len+1);
+		process->stringAddressIndex+=len+1;
 	}
 }

@@ -261,6 +261,9 @@ void readVarInfo(struct Memory* memory, int address, struct fb_var_screeninfo* i
     info->vmode = readd(memory, address); address+=4;
     info->rotate = readd(memory, address); address+=4;
     info->colorspace = readd(memory, address); address+=4;	
+
+	windowCX = info->xres;
+	windowCY = info->yres;
 }
 
 struct fb_var_screeninfo fb_var_screeninfo;
@@ -268,7 +271,7 @@ struct fb_fix_screeninfo fb_fix_screeninfo;
 struct fb_cmap fb_cmap;
 BOOL fbinit;
 
-void setupScreen() {
+void fbSetupScreen() {
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
@@ -440,7 +443,7 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 			break;
 		case 0x4601: // FBIOPUT_VSCREENINFO
 			readVarInfo(thread->process->memory, IOCTL_ARG1, &fb_var_screeninfo);
-			setupScreen();
+			fbSetupScreen();
 			break;
 		case 0x4602: // FBIOGET_FSCREENINFO
 			writeFixInfo(thread->process->memory, IOCTL_ARG1, &fb_fix_screeninfo);

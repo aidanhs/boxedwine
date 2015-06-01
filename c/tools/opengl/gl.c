@@ -17,11 +17,106 @@ typedef float           GLclampf;       /* single precision float in [0,1] */
 typedef double          GLdouble;       /* double precision float */
 typedef double          GLclampd;       /* double precision float in [0,1] */
 
+#define GLX_WINDOW_BIT                     0x00000001
+#define GLX_PIXMAP_BIT                     0x00000002
+#define GLX_PBUFFER_BIT                    0x00000004
+#define GLX_RGBA_BIT                       0x00000001
+#define GLX_COLOR_INDEX_BIT                0x00000002
+#define GLX_PBUFFER_CLOBBER_MASK           0x08000000
+#define GLX_FRONT_LEFT_BUFFER_BIT          0x00000001
+#define GLX_FRONT_RIGHT_BUFFER_BIT         0x00000002
+#define GLX_BACK_LEFT_BUFFER_BIT           0x00000004
+#define GLX_BACK_RIGHT_BUFFER_BIT          0x00000008
+#define GLX_AUX_BUFFERS_BIT                0x00000010
+#define GLX_DEPTH_BUFFER_BIT               0x00000020
+#define GLX_STENCIL_BUFFER_BIT             0x00000040
+#define GLX_ACCUM_BUFFER_BIT               0x00000080
+#define GLX_CONFIG_CAVEAT                  0x20
+#define GLX_X_VISUAL_TYPE                  0x22
+#define GLX_TRANSPARENT_TYPE               0x23
+#define GLX_TRANSPARENT_INDEX_VALUE        0x24
+#define GLX_TRANSPARENT_RED_VALUE          0x25
+#define GLX_TRANSPARENT_GREEN_VALUE        0x26
+#define GLX_TRANSPARENT_BLUE_VALUE         0x27
+#define GLX_TRANSPARENT_ALPHA_VALUE        0x28
+#define GLX_DONT_CARE                      0xFFFFFFFF
+#define GLX_NONE                           0x8000
+#define GLX_SLOW_CONFIG                    0x8001
+#define GLX_TRUE_COLOR                     0x8002
+#define GLX_DIRECT_COLOR                   0x8003
+#define GLX_PSEUDO_COLOR                   0x8004
+#define GLX_STATIC_COLOR                   0x8005
+#define GLX_GRAY_SCALE                     0x8006
+#define GLX_STATIC_GRAY                    0x8007
+#define GLX_TRANSPARENT_RGB                0x8008
+#define GLX_TRANSPARENT_INDEX              0x8009
+#define GLX_VISUAL_ID                      0x800B
+#define GLX_SCREEN                         0x800C
+#define GLX_NON_CONFORMANT_CONFIG          0x800D
+#define GLX_DRAWABLE_TYPE                  0x8010
+#define GLX_RENDER_TYPE                    0x8011
+#define GLX_X_RENDERABLE                   0x8012
+#define GLX_FBCONFIG_ID                    0x8013
+#define GLX_RGBA_TYPE                      0x8014
+#define GLX_COLOR_INDEX_TYPE               0x8015
+#define GLX_MAX_PBUFFER_WIDTH              0x8016
+#define GLX_MAX_PBUFFER_HEIGHT             0x8017
+#define GLX_MAX_PBUFFER_PIXELS             0x8018
+#define GLX_PRESERVED_CONTENTS             0x801B
+#define GLX_LARGEST_PBUFFER                0x801C
+#define GLX_WIDTH                          0x801D
+#define GLX_HEIGHT                         0x801E
+#define GLX_EVENT_MASK                     0x801F
+#define GLX_DAMAGED                        0x8020
+#define GLX_SAVED                          0x8021
+#define GLX_WINDOW                         0x8022
+#define GLX_PBUFFER                        0x8023
+#define GLX_PBUFFER_HEIGHT                 0x8040
+#define GLX_PBUFFER_WIDTH                  0x8041
+
+#define GLX_BUFFER_SIZE		2
+#define GLX_LEVEL		3
+#define GLX_RGBA		4
+#define GLX_DOUBLEBUFFER	5
+#define GLX_STEREO		6
+#define GLX_AUX_BUFFERS		7
+#define GLX_RED_SIZE		8
+#define GLX_GREEN_SIZE		9
+#define GLX_BLUE_SIZE		10
+#define GLX_ALPHA_SIZE		11
+#define GLX_DEPTH_SIZE		12
+#define GLX_STENCIL_SIZE	13
+#define GLX_ACCUM_RED_SIZE	14
+#define GLX_ACCUM_GREEN_SIZE	15
+#define GLX_ACCUM_BLUE_SIZE	16
+#define GLX_ACCUM_ALPHA_SIZE	17
+
+#define GLX_X_VISUAL_TYPE		0x22
+#define GLX_CONFIG_CAVEAT		0x20
+#define GLX_TRANSPARENT_TYPE		0x23
+#define GLX_TRANSPARENT_INDEX_VALUE	0x24
+#define GLX_TRANSPARENT_RED_VALUE	0x25
+#define GLX_TRANSPARENT_GREEN_VALUE	0x26
+#define GLX_TRANSPARENT_BLUE_VALUE	0x27
+#define GLX_TRANSPARENT_ALPHA_VALUE	0x28
+#define GLX_DRAWABLE_TYPE		0x8010
+#define GLX_RENDER_TYPE			0x8011
+#define GLX_X_RENDERABLE		0x8012
+#define GLX_FBCONFIG_ID			0x8013
+#define GLX_MAX_PBUFFER_WIDTH		0x8016
+#define GLX_MAX_PBUFFER_HEIGHT		0x8017
+#define GLX_MAX_PBUFFER_PIXELS		0x8018
+#define GLX_VISUAL_ID			0x800B
+
 #define GLAPI
 #define APIENTRY
 
-#define CALL(index) __asm__("push %0\n\tint $0x99\n\tandl $-4, %%esp"::"i"(index)); 
-
+#define CALL(index) __asm__("push %0\n\tint $0x99\n\taddl $4, %%esp"::"i"(index)); 
+#define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x99\n\taddl $8, %%esp"::"i"(index), "i"(arg1)); 
+#define CALL_2(index, arg1, arg2) __asm__("push %1\n\tpush %2\n\tpush %0\n\tint $0x99\n\taddl $12, %%esp"::"i"(index), "r"(arg1), "r"(arg2)); 
+#define CALL_3(index, arg1, arg2, arg3) __asm__("push %1\n\tpush %2\n\tpush %3\n\tpush %0\n\tint $0x99\n\taddl $16, %%esp"::"i"(index), "r"(arg1), "r"(arg2), "r"(arg3)); 
+#define CALL_4(index, arg1, arg2, arg3, arg4) __asm__("push %1\n\tpush %2\n\tpush %3\n\tpush %0\n\tpush %4\n\tint $0x99\n\taddl $20, %%esp"::"i"(index), "r"(arg1), "r"(arg2), "r"(arg3), "r"(arg4)); 
+#define CALL_5(index, arg1, arg2, arg3, arg4, arg5) __asm__("push %1\n\tpush %2\n\tpush %3\n\tpush %4\n\tpush %5\n\tpush %0\n\tint $0x99\n\taddl $24, %%esp"::"i"(index), "r"(arg1), "r"(arg2), "r"(arg3), "r"(arg4), "r"(arg5));
 /* Miscellaneous */
 GLAPI void APIENTRY glClearIndex( GLfloat c ) {
 	CALL(ClearIndex);
@@ -1760,6 +1855,7 @@ void glXCopyContext(Display *dpy, GLXContext src, GLXContext dst, unsigned long 
 }
 
 GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct) {
+	//printf("glXCreateContext display=%X visualInfo=%X share_list=%X direct=%d\n", (int)dpy, (int)vis, (int)share_list, (int)direct);
 	CALL(XCreateContext);
 }
 
@@ -1792,11 +1888,27 @@ Bool glXIsDirect(Display *dpy, GLXContext ctx) {
 }
 
 Bool glXMakeCurrent(Display *dpy, GLXDrawable drawable, GLXContext ctx) {
-	CALL(XMakeCurrent);
+	Window root;
+	int x=0, y=0;
+	unsigned int width=0, height=0;
+	unsigned int border_width=0;
+	unsigned int depth=0;
+	
+	if (drawable) {
+		if (!XGetGeometry(dpy, drawable, &root, &x, &y, &width, &height, &border_width, &depth)) {
+			printf("*** ERROR *** glXMakeCurrent - XGetGeometry failed");
+		}
+	}
+	printf("glxMakeCurrent drawable=%d\n", (int)drawable);
+	CALL_5(XMakeCurrent, ctx, width, height, depth, root!=0);
 }
 
 Bool glXQueryExtension(Display *dpy, int *error_base, int *event_base) {
-	return 0;
+	if (error_base)
+		*error_base=0;
+	if (event_base)
+		*event_base=0;
+	return 1;
 }
 
 Bool glXQueryVersion(Display *dpy, int *major, int *minor) {
@@ -1826,7 +1938,7 @@ void glXWaitX(void) {
  */
 const char *glXGetClientString(Display *dpy, int name) {
 	if (name == GLX_VERSION)
-		return "1.4";
+		return "1.3";
 	if (name == GLX_VENDOR)
 		return "BoxedWine GL";
 	if (name == GLX_EXTENSIONS)
@@ -1837,7 +1949,7 @@ const char *glXGetClientString(Display *dpy, int name) {
 
 const char *glXQueryServerString(Display *dpy, int screen, int name) {
 	if (name == GLX_VERSION)
-                return "1.4";
+                return "1.3";
         if (name == GLX_VENDOR)
                 return "BoxedWine GL";
         if (name == GLX_EXTENSIONS)
@@ -1857,10 +1969,164 @@ Display *glXGetCurrentDisplay(void) {
 	printf("glXGetCurrentDisplay not implemented\n");
 }
 
+struct BoxedFBConfig {
+	int id;
+	int doubleBuffered;
+};
+	
 /*
  * GLX 1.3 functions.
  */
+#define LOG printf
 GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list, int *nelements) {
+	int id = GLX_DONT_CARE;
+ 	int bufferSize = 0;
+	int level = 0;
+	int doubleBuffer = GLX_DONT_CARE;
+	int stereo = False;
+	int aux = 0;
+	int redSize = 0;
+	int greenSize = 0;
+	int blueSize = 0;
+	int alphaSize = 0;
+	int depth = 0;
+	int stencil = 0;
+	int accumRed = 0;
+	int accumGreen = 0;
+	int accumBlue = 0;
+	int accumAlpha = 0;
+	int renderType = GLX_RGBA_BIT;
+	int drawableType = GLX_WINDOW_BIT;
+	int renderable = GLX_DONT_CARE;
+	int visualType = GLX_DONT_CARE;
+
+	LOG("glXChooseFBConfig ");
+	while (attrib_list && *attrib_list) {
+		switch (*attrib_list) {
+			case GLX_FBCONFIG_ID:
+				attrib_list++;
+				id = *attrib_list;
+				LOG("GLX_FBCONFIG_ID=%d ", id);
+				break;
+			case GLX_BUFFER_SIZE:
+				attrib_list++;
+				bufferSize = *attrib_list;
+				LOG("GLX_BUFFER_SIZE=%d ", bufferSize);
+				break;
+			case GLX_LEVEL:
+				attrib_list++;
+				level = *attrib_list;
+				LOG("GLX_LEVEL=%d ", level);
+				break;
+			case GLX_DOUBLEBUFFER:
+				attrib_list++;
+				doubleBuffer = *attrib_list;
+				LOG("GLX_DOUBLEBUFFER=%d ", doubleBuffer);
+				break;
+			case GLX_STEREO:
+				attrib_list++;
+				stereo = *attrib_list;
+				LOG("GLX_STEREO=%d ", stereo);
+				break;
+			case GLX_AUX_BUFFERS:
+				attrib_list++;
+				aux = *attrib_list;
+				LOG("GLX_AUX_BUFFERS=%d ", aux);
+				break;
+			case GLX_RED_SIZE:
+				attrib_list++;
+				redSize = *attrib_list;
+				LOG("GLX_RED_SIZE=%d ", redSize);
+			case GLX_GREEN_SIZE:
+				attrib_list++;
+				greenSize = *attrib_list;
+				LOG("GLX_GREEN_SIZE=%d ", greenSize);
+				break;
+			case GLX_BLUE_SIZE:
+				attrib_list++;
+				blueSize = *attrib_list;
+				LOG("GLX_BLUE_SIZE=%d ", blueSize);
+				break;
+			case GLX_ALPHA_SIZE:
+				attrib_list++;
+				alphaSize = *attrib_list;
+				LOG("GLX_ALPHA_SIZE=%d ", alphaSize);
+				break;
+			case GLX_DEPTH_SIZE:
+				attrib_list++;
+				depth = *attrib_list;
+				LOG("GLX_DEPTH_SIZE=%d ", depth);
+				break;
+			case GLX_STENCIL_SIZE:
+				attrib_list++;
+				stencil = *attrib_list;
+				LOG("GLX_STENCIL_SIZE=%d ", stencil);
+				break;
+			case GLX_ACCUM_RED_SIZE:
+				attrib_list++;
+				accumRed = *attrib_list;
+				LOG("GLX_ACCUM_RED_SIZE=%d ", accumRed);
+				break;
+			case GLX_ACCUM_GREEN_SIZE:
+				attrib_list++;
+				accumGreen = *attrib_list;
+				LOG("GLX_ACCUM_GREEN_SIZE=%d ", accumGreen);
+				break;
+			case GLX_ACCUM_BLUE_SIZE:
+				attrib_list++;
+				accumBlue = *attrib_list;
+				LOG("GLX_ACCUM_BLUE_SIZE=%d ", accumBlue);
+				break;
+			case GLX_ACCUM_ALPHA_SIZE:
+				attrib_list++;
+				accumAlpha = *attrib_list;
+				LOG("GLX_ACCUM_ALPHA_SIZE=%d ", accumAlpha);
+				break;
+			case GLX_RENDER_TYPE:
+				attrib_list++;
+				renderType = *attrib_list;
+				LOG("GLX_RENDER_TYPE=");
+				if (renderType & GLX_RGBA_BIT)
+					LOG("GLX_RGBA_BIT ");
+				if (renderType & GLX_COLOR_INDEX_BIT)
+					LOG("GLX_COLOR_INDEX_BIT ");
+				break;
+			case GLX_DRAWABLE_TYPE:
+				attrib_list++;
+				drawableType = *attrib_list;
+				LOG("GLX_DRAWABLE_TYPE=");
+				if (drawableType & GLX_WINDOW_BIT)
+					LOG("GLX_WINDOW_BIT ");
+				if (drawableType & GLX_PIXMAP_BIT)
+					LOG("GLX_PIXMAP_BIT ");
+				if (drawableType & GLX_PBUFFER_BIT)
+					LOG("GLX_PBUFFER_BIT ");
+				break;
+			case GLX_X_RENDERABLE:
+				attrib_list++;
+				renderable = *attrib_list;
+				LOG("GLX_X_RENDERABLE=%d", renderable);
+				break;
+			case GLX_X_VISUAL_TYPE:
+				attrib_list++;
+				visualType = *attrib_list;
+				LOG("GLX_X_VISUAL_TYPE=");
+				if (visualType == GLX_TRUE_COLOR)
+					LOG("GLX_TRUE_COLOR ");
+				else if (visualType == GLX_DIRECT_COLOR)
+					LOG("GLX_DIRECT_COLOR ");
+				else if (visualType == GLX_PSEUDO_COLOR)
+					LOG("GLX_PSEUDO_COLOR ");
+				else if (visualType == GLX_STATIC_COLOR)
+					LOG("GLX_STATIC_COLOR ");
+				else if (visualType == GLX_GRAY_SCALE)
+					LOG("GLX_GRAY_SCALE ");
+				else if (visualType == GLX_STATIC_GRAY)
+					LOG("GLX_STATIC_GRAY ");
+				break;
+		}
+		attrib_list++;
+	}
 	printf("glXChooseFBConfig not implemented\n");
 	return 0;
 }

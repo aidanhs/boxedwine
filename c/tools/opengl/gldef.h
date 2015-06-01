@@ -424,9 +424,9 @@
 #define SampleCoverage 420
 #define SamplePass 421
 
-#define XCreateContext 1000
-#define XMakeCurrent 1001
-#define XDestroyContext 1002
-#define XSwapBuffer 1003
+#define XCreateContext 422
+#define XMakeCurrent 423
+#define XDestroyContext 424
+#define XSwapBuffer 425
 
 #endif

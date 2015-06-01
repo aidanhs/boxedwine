@@ -36,6 +36,13 @@ struct KSigAction {
 	U32 sigInfo[K_SIG_INFO_SIZE];
 };
 
+#define NUMBER_OF_STRINGS 5
+#define STRING_GL_VENDOR 0
+#define STRING_GL_RENDERER 1
+#define STRING_GL_VERSION 2
+#define STRING_GL_SHADING_LANGUAGE_VERSION 3
+#define STRING_GL_EXTENSIONS 4
+
 struct KProcess {
 	U32 id;
 	U32 parentId;
@@ -64,6 +71,9 @@ struct KProcess {
 	U32 shms[MAX_SHM][MAX_SHM_ATTACH];
 	struct KProcess* next;
 	struct KThread* waitingThread;
+	U32 strings[NUMBER_OF_STRINGS];
+	U32 stringAddress;
+	U32 stringAddressIndex;
 };
 
 void processOnExitThread(struct KProcess* process);
@@ -103,5 +113,6 @@ U32 syscall_prctl(struct KThread* thread, U32 option);
 U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal);
 
 void runProcessTimer(struct KTimer* timer);
+void addString(struct KProcess* process, U32 index, const char* str);
 
 #endif
