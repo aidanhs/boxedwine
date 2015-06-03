@@ -3034,6 +3034,7 @@ void OPCALL xadd32r32e32_32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL int99(struct CPU* cpu, struct Op* op) {
 	U32 index = peek32(cpu, 0);
+
 	if (index<int99CallbackSize && int99Callback[index]) {
 		int99Callback[index](cpu);
 	} else {

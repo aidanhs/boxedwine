@@ -7,7 +7,7 @@
 #include "kfmmap.h"
 
 #include <string.h>
-//#undef LOG_OPS
+#undef LOG_OPS
 void pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;
@@ -417,7 +417,7 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 	return count;
 }
 
-static char tmpBuffer[1024];
+static char tmpBuffer[4096];
 
 char* getNativeString(struct Memory* memory, U32 address) {
 	char c;

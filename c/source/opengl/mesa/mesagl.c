@@ -6,9 +6,7 @@
 #include "log.h"
 
 #include <stdio.h>
-
-extern U32 windowCX;
-extern U32 windowCY;
+#include <SDL.h>
 
 struct int2Float {
 	union {
@@ -1089,6 +1087,7 @@ void mesa_glGetError(struct CPU* cpu) {
 void mesa_glGetString(struct CPU* cpu) {
 	U32 name = ARG1;
 	U32 index = 0;
+	const char* result = glGetString(name);
 
 	if (name == GL_VENDOR) {
 		index = STRING_GL_VENDOR;
@@ -1100,20 +1099,31 @@ void mesa_glGetString(struct CPU* cpu) {
 		index = STRING_GL_SHADING_LANGUAGE_VERSION;
 	} else if (name == GL_EXTENSIONS) {
 		index = STRING_GL_EXTENSIONS;
+		result = "";
 	}
 	if (!cpu->thread->process->strings[index])
-		addString(cpu->thread->process, index, glGetString(ARG1));
-	EAX = cpu->thread->process->strings[index];
+		addString(cpu->thread->process, index, result);
+	EAX =  cpu->thread->process->strings[index];
 }
 
+void blitToFB(SDL_Surface* src, int x, int y, int w, int h);
+
 // GLAPI void APIENTRY glFinish( void ) {
-void mesa_glFinish(struct CPU* cpu) {
+void mesa_glFinish(struct CPU* cpu) {	
 	glFinish();
+	if (cpu->thread->openglSurface) {
+		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
+		blitToFB(surface, 0, 0, surface->w, surface->h);
+	}
 }
 
 // GLAPI void APIENTRY glFlush( void ) {
-void mesa_glFlush(struct CPU* cpu) {
-	glFlush();
+void mesa_glFlush(struct CPU* cpu) {	
+	glFlush();	
+	if (cpu->thread->openglSurface) {
+		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
+		blitToFB(surface, 0, 0, surface->w, surface->h);
+	}
 }
 
 // GLAPI void APIENTRY glHint( GLenum target, GLenum mode ) {
@@ -2154,12 +2164,12 @@ int mesa_glMaterialv_size(GLenum e)
 
 // GLAPI void APIENTRY glMaterialfv( GLenum face, GLenum pname, const GLfloat *params ) {
 void mesa_glMaterialfv(struct CPU* cpu) {
-	glMaterialfv(ARG1, ARG2, marshalf(cpu, ARG2, mesa_glMaterialv_size(ARG2)));
+	glMaterialfv(ARG1, ARG2, marshalf(cpu, ARG3, mesa_glMaterialv_size(ARG2)));
 }
 
 // GLAPI void APIENTRY glMaterialiv( GLenum face, GLenum pname, const GLint *params ) {
 void mesa_glMaterialiv(struct CPU* cpu) {
-	glMaterialiv(ARG1, ARG2, marshali(cpu, ARG2, mesa_glMaterialv_size(ARG2)));
+	glMaterialiv(ARG1, ARG2, marshali(cpu, ARG3, mesa_glMaterialv_size(ARG2)));
 }
 
 // GLAPI void APIENTRY glGetMaterialfv( GLenum face, GLenum pname, GLfloat *params ) {
@@ -2262,16 +2272,15 @@ GLint _mesa_sizeof_packed_type( GLenum type );
 GLint _mesa_components_in_format( GLenum format );
 GLint _mesa_bytes_per_pixel( GLenum format, GLenum type );
 
-GLvoid* marshalPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLenum format, GLenum type, GLint pixels_per_row, GLint skipRows, GLint alignment, GLint skipImages, U32 pixels) {
+GLvoid* marshalPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLint pixels_per_row, GLint skipRows, GLint alignment, GLint skipImages, U32 pixels) {
 	int bytes_per_comp;
 	int isSigned=0;
 	int bytes_per_row;
 	int len;
 	int remainder;
 
-	if (skipImages!=0) {
-		kpanic("GL_PACK_SKIP_IMAGES not implemented");
-	}
+	if (!pixels)
+		return 0;
 
 	if (!pixels_per_row)
 		pixels_per_row = width;
@@ -2333,7 +2342,7 @@ GLvoid* marshalPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLenum for
 	default:
 		kpanic("mesagl.c marshalPixels uknown type: %d", type);
 	}
-	len = bytes_per_row*(height+skipRows);
+	len = bytes_per_row*(height+skipRows)*(depth+skipImages);
 
 	if (bytes_per_comp==0) {
 		return marshalf(cpu, pixels, len/4);
@@ -2360,16 +2369,15 @@ GLvoid* marshalPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLenum for
 	return 0;
 }
 
-void marshalBackPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLenum format, GLenum type, GLint pixels_per_row, GLint skipRows, GLint alignment, GLint skipImages, U32 address, GLvoid* pixels) {
+void marshalBackPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, GLint pixels_per_row, GLint skipRows, GLint alignment, GLint skipImages, U32 address, GLvoid* pixels) {
 	int bytes_per_comp;
 	int isSigned=0;
 	int bytes_per_row;
 	int len;
 	int remainder;
 
-	if (skipImages!=0) {
-		kpanic("GL_PACK_SKIP_IMAGES not implemented");
-	}
+	if (!pixels)
+		return;
 
 	if (!pixels_per_row)
 		pixels_per_row = width;
@@ -2431,7 +2439,7 @@ void marshalBackPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLenum fo
 	default:
 		kpanic("mesagl.c marshalBackPixels uknown type: %d", type);
 	}
-	len = bytes_per_row*(height+skipRows);
+	len = bytes_per_row*(height+skipRows)*(depth+skipImages);
 
 	if (bytes_per_comp==0) {
 		marshalBackf(cpu, address, pixels, len/4);
@@ -2466,16 +2474,14 @@ void mesa_glBitmap(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
-	glBitmap(width, height, fARG3, fARG4, fARG5, fARG6, marshalPixels(cpu, width, height, GL_COLOR_INDEX, GL_BITMAP, pixels_per_row, skipRows, alignment, skipImages, ARG7));
+	glBitmap(width, height, fARG3, fARG4, fARG5, fARG6, marshalPixels(cpu, width, height, 1, GL_COLOR_INDEX, GL_BITMAP, pixels_per_row, skipRows, alignment, 0, ARG7));
 }
 
 // GLAPI void APIENTRY glReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels ) {
@@ -2488,18 +2494,16 @@ void mesa_glReadPixels(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_PACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_PACK_SKIP_IMAGES, &skipImages);
 
-	pixels = marshalPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG7);
+	pixels = marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7);
 	glReadPixels(ARG1, ARG2, width, height, format, type, pixels);
-	marshalBackPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG7, pixels);
+	marshalBackPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7, pixels);
 }
 
 // GLAPI void APIENTRY glDrawPixels( GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels ) {
@@ -2512,16 +2516,14 @@ void mesa_glDrawPixels(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_PACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_PACK_SKIP_IMAGES, &skipImages);
 
-	pixels = marshalPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5);
+	pixels = marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG5);
 	glDrawPixels(width, height, format, type, pixels);
 }
 
@@ -2695,16 +2697,14 @@ void mesa_glTexImage1D(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
-	glTexImage1D(ARG1, ARG2, ARG3, width, border, format, type, marshalPixels(cpu, width, 1, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG8));
+	glTexImage1D(ARG1, ARG2, ARG3, width, border, format, type, marshalPixels(cpu, width, 1, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG8));
 }
 
 // GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels ) {
@@ -2718,16 +2718,14 @@ void mesa_glTexImage2D(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
-	glTexImage2D(ARG1, ARG2, ARG3, width, height, border, format, type, marshalPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG9));
+	glTexImage2D(ARG1, ARG2, ARG3, width, height, border, format, type, marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG9));
 }
 
 // GLAPI void APIENTRY glGetTexImage( GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels ) {
@@ -2736,13 +2734,14 @@ void mesa_glGetTexImage(struct CPU* cpu) {
 	GLint level = ARG2;
 	GLsizei width;
 	GLsizei height;
+	GLsizei depth = 1;
 	GLenum format = ARG3;
 	GLenum type = ARG4;
 
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
+	GLint skipImages = 0;
 	GLint pixels_per_row;
 
 	GLvoid* pixels;
@@ -2751,14 +2750,16 @@ void mesa_glGetTexImage(struct CPU* cpu) {
 	glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_PACK_SKIP_IMAGES, &skipImages);
-
+	if (target == GL_TEXTURE_3D) {
+		glGetIntegerv(GL_PACK_SKIP_IMAGES, &skipImages);
+		glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH, &depth);
+	}
 	glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
 	glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
 
-	pixels = marshalPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5);
+	pixels = marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5);
 	glGetTexImage(target, level, format, type, pixels);
-	marshalBackPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5, pixels);
+	marshalBackPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5, pixels);
 }
 
 U32 getMap1Count(GLenum target) {
@@ -3190,16 +3191,14 @@ void mesa_glTexSubImage1D(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
-	glTexSubImage1D(ARG1, ARG2, ARG3, width, format, type, marshalPixels(cpu, width, 1, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG7));
+	glTexSubImage1D(ARG1, ARG2, ARG3, width, format, type, marshalPixels(cpu, width, 1, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7));
 }
 
 // GLAPI void APIENTRY glTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels ) {
@@ -3212,16 +3211,14 @@ void mesa_glTexSubImage2D(struct CPU* cpu) {
 	GLint skipPixels;
 	GLint skipRows;
 	GLint alignment;
-	GLint skipImages;
 	GLint pixels_per_row;
 
 	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
 	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
 	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
 	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
-	glTexSubImage2D(ARG1, ARG2, ARG3, ARG4, width, height, format, type, marshalPixels(cpu, width, height, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG9));
+	glTexSubImage2D(ARG1, ARG2, ARG3, ARG4, width, height, format, type, marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG9));
 }
 
 // GLAPI void APIENTRY glCopyTexImage1D( GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border ) {
@@ -3311,7 +3308,26 @@ void mesa_glDrawRangeElements(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glTexImage3D( GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels ) {
 void mesa_glTexImage3D(struct CPU* cpu) {
-	kpanic("mesa_glTexImage3D not implemented");
+	GLsizei width = ARG4;
+	GLsizei height = ARG5;
+	GLsizei depth = ARG6;
+	GLint border = ARG7;
+	GLenum format = ARG8;
+	GLenum type = ARG9;
+
+	GLint skipPixels;
+	GLint skipRows;
+	GLint alignment;
+	GLint skipImages;
+	GLint pixels_per_row;
+
+	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
+	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
+
+	glTexImage3D(ARG1, ARG2, ARG3, width, height, depth, border, format, type, marshalPixels(cpu, width, height, depth, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG10));
 }
 
 // GLAPI void APIENTRY glTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels) {
@@ -3732,13 +3748,13 @@ void mesa_glSamplePass(struct CPU* cpu) {
 
 // GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct)
 void mesa_glXCreateContext(struct CPU* cpu) {
-	U32 dpy = ARG1;
-	U32 vis = ARG2;
-	OSMesaContext share_list = (OSMesaContext)ARG3;
-	U32 direct = ARG4;
+	U32 format = peek32(cpu, 1);
+	OSMesaContext share_list = (OSMesaContext)peek32(cpu, 2);
+	U32 accum = peek32(cpu, 3);
+	U32 stencil = peek32(cpu, 4);
+	U32 depth = peek32(cpu, 5);	
 
-	EAX = (U32)OSMesaCreateContextExt( OSMESA_RGBA, 32, 0, 0, share_list );
-
+	EAX = (U32)OSMesaCreateContextExt( format, depth, stencil, accum, share_list );	
 	if (!EAX) {
 		printf("OSMesaCreateContext failed!\n");
 	}
@@ -3759,14 +3775,38 @@ void mesa_glXMakeCurrent(struct CPU* cpu) {
 	U32 height = peek32(cpu, 3);
 	U32 width = peek32(cpu, 4);
 	OSMesaContext ctx = (OSMesaContext)peek32(cpu, 5);
-	void* buffer;
-	
+
 	if (ctx) {
-		buffer = kalloc( width * height * depth * sizeof(GLubyte) );
+		if (isWindow) {
+			if (cpu->thread->openglSurface) {
+				printf("*** ERROR *** mesa_glXMakeCurrent doesn't support more than one context active at a time\n");
+			}
+			cpu->thread->openglSurface = SDL_CreateRGBSurface(0, width, height, depth, 0x0000ff, 0x00ff00, 0xff0000, 0);
+			cpu->thread->openglBuffer = ((SDL_Surface*)cpu->thread->openglSurface)->pixels;
+		} else {
+			cpu->thread->openglBuffer = kalloc( width * height * depth * sizeof(GLubyte) );
+		}
+		cpu->thread->openglContext = ctx;
 	} else {
-		buffer = 0;
+		if (cpu->thread->openglSurface) {
+			SDL_FreeSurface((SDL_Surface*)cpu->thread->openglSurface);
+		} else {
+			kfree(cpu->thread->openglBuffer);
+		}
+		cpu->thread->openglBuffer = 0;
+		cpu->thread->openglContext = 0;
+		cpu->thread->openglSurface = 0;
 	}
-	EAX = OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, width, height);
+	EAX = OSMesaMakeCurrent(ctx, cpu->thread->openglBuffer, GL_UNSIGNED_BYTE, width, height);
+	OSMesaPixelStore(OSMESA_Y_UP, 0);
+}
+
+// void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
+void mesa_glXSwapBuffers(struct CPU* cpu) {
+	if (cpu->thread->openglSurface) {
+		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
+		blitToFB(surface, 0, 0, surface->w, surface->h);
+	}
 }
 
 Int99Callback mesa_callback[426];
@@ -4201,5 +4241,6 @@ void mesa_init() {
 
 	mesa_callback[XCreateContext] = mesa_glXCreateContext;
 	mesa_callback[XMakeCurrent] = mesa_glXMakeCurrent;
-	mesa_callback[XDestroyContext] = mesa_glXDestroyContext;
+	mesa_callback[XDestroyContext] = mesa_glXDestroyContext;	
+	mesa_callback[XSwapBuffer] = mesa_glXSwapBuffers;
 }

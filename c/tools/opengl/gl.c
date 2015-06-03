@@ -1,5 +1,10 @@
 #include "gldef.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
 
 typedef unsigned int    GLenum;
 typedef unsigned char   GLboolean;
@@ -16,6 +21,13 @@ typedef float           GLfloat;        /* single precision float */
 typedef float           GLclampf;       /* single precision float in [0,1] */
 typedef double          GLdouble;       /* double precision float */
 typedef double          GLclampd;       /* double precision float in [0,1] */
+
+typedef void *GLXContext;
+typedef XID GLXContextID;
+typedef XID GLXPixmap;
+typedef XID GLXDrawable;
+typedef XID GLXPbuffer;
+typedef XID GLXWindow;
 
 #define GLX_WINDOW_BIT                     0x00000001
 #define GLX_PIXMAP_BIT                     0x00000002
@@ -117,6 +129,7 @@ typedef double          GLclampd;       /* double precision float in [0,1] */
 #define CALL_3(index, arg1, arg2, arg3) __asm__("push %1\n\tpush %2\n\tpush %3\n\tpush %0\n\tint $0x99\n\taddl $16, %%esp"::"i"(index), "r"(arg1), "r"(arg2), "r"(arg3)); 
 #define CALL_4(index, arg1, arg2, arg3, arg4) __asm__("push %1\n\tpush %2\n\tpush %3\n\tpush %0\n\tpush %4\n\tint $0x99\n\taddl $20, %%esp"::"i"(index), "r"(arg1), "r"(arg2), "r"(arg3), "r"(arg4)); 
 #define CALL_5(index, arg1, arg2, arg3, arg4, arg5) __asm__("push %1\n\tpush %2\n\tpush %3\n\tpush %4\n\tpush %5\n\tpush %0\n\tint $0x99\n\taddl $24, %%esp"::"i"(index), "r"(arg1), "r"(arg2), "r"(arg3), "r"(arg4), "r"(arg5));
+
 /* Miscellaneous */
 GLAPI void APIENTRY glClearIndex( GLfloat c ) {
 	CALL(ClearIndex);
@@ -277,6 +290,11 @@ GLAPI GLenum APIENTRY glGetError( void ) {
 GLAPI const GLubyte* APIENTRY glGetString( GLenum name ) {
 	CALL(GetString);
 }
+
+// :TODO: this only allows one context per process, when it should be per thread
+static GLXDrawable currentDrawable;
+static GLXContext currentContext;
+static Display *currentDisplay;
 
 GLAPI void APIENTRY glFinish( void ) {
 	CALL(Finish);
@@ -1822,17 +1840,112 @@ GLAPI void APIENTRY glSamplePass( GLenum pass ) {
 	CALL(SamplePass);
 }
 
-#include <X11/X.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
+typedef struct GLXFBConfigRecord {
+	int id;
+	int doubleBuffered;
+	int colorDepth;
+	int redSize;
+	int greenSize;
+	int blueSize;
+	int alphaSize;
+	int depthBuffer;
+	int stencilBuffer;
+	int level;
+	int stereo;
+	int auxBuffers;
+	int accumulationRed;
+	int accumulationGreen;
+	int accumulationBlue;
+	int accumulationAlpha;
+	int renderType;
+	int drawableType;
+	int renderable;
+	int visualType;
+} GLXFBConfigRecord;
 
-typedef void *GLXContext;
-typedef void *GLXFBConfig;
-typedef XID GLXContextID;
-typedef XID GLXPixmap;
-typedef XID GLXDrawable;
-typedef XID GLXPbuffer;
-typedef XID GLXWindow;
+// order of importance
+// 1) GLX_CONFIG_CAVEAT
+// 2) lagest color size of specified
+// 3) smallest GLX_BUFFER_SIZE
+// 4) single buffered
+// 5) smaller GLX_AUX_BUFFERS
+// 6) larger GLX_DEPTH_SIZE
+// 7) smaller GLX_STENCIL_SIZE
+// 8) largest accum if specified
+// 9) GLX_X_VISUAL_TYPE
+
+GLXFBConfigRecord glXFBConfigRecords[] = {	
+	{100, 0, 32, 8, 8, 8, 8, 32, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {101, 0, 32, 8, 8, 8, 0, 32, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{102, 0, 32, 8, 8, 8, 8, 24, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {103, 0, 32, 8, 8, 8, 0, 24, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {104, 0, 32, 8, 8, 8, 8, 24, 8, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {105, 0, 32, 8, 8, 8, 0, 24, 8, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{106, 0, 32, 8, 8, 8, 8, 16, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {107, 0, 32, 8, 8, 8, 0, 16, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{108, 0, 32, 8, 8, 8, 8, 0, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {109, 0, 32, 8, 8, 8, 0, 0, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+
+	{200, 0, 32, 8, 8, 8, 8, 32, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{201, 0, 32, 8, 8, 8, 0, 32, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{202, 0, 32, 8, 8, 8, 8, 24, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{203, 0, 32, 8, 8, 8, 0, 24, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{204, 0, 32, 8, 8, 8, 8, 24, 8, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{205, 0, 32, 8, 8, 8, 0, 24, 8, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{206, 0, 32, 8, 8, 8, 8, 16, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{207, 0, 32, 8, 8, 8, 0, 16, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},	
+	{208, 0, 32, 8, 8, 8, 8, 0, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{209, 0, 32, 8, 8, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},	
+
+	{300, 1, 32, 8, 8, 8, 8, 32, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {301, 1, 32, 8, 8, 8, 0, 32, 0, 0, 0, 4, 16, 16, 16 ,16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{302, 1, 32, 8, 8, 8, 8, 24, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {303, 1, 32, 8, 8, 8, 0, 24, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {304, 1, 32, 8, 8, 8, 8, 24, 8, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {305, 1, 32, 8, 8, 8, 0, 24, 8, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{306, 1, 32, 8, 8, 8, 8, 16, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {307, 1, 32, 8, 8, 8, 0, 16, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {308, 1, 32, 8, 8, 8, 8, 0, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {309, 1, 32, 8, 8, 8, 0, 0, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+            
+	{400, 1, 32, 8, 8, 8, 8, 32, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {401, 1, 32, 8, 8, 8, 0, 32, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},	
+	{402, 1, 32, 8, 8, 8, 8, 24, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {403, 1, 32, 8, 8, 8, 0, 24, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {404, 1, 32, 8, 8, 8, 8, 24, 8, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {405, 1, 32, 8, 8, 8, 0, 24, 8, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{406, 1, 32, 8, 8, 8, 8, 16, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {407, 1, 32, 8, 8, 8, 0, 16, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{408, 1, 32, 8, 8, 8, 8, 0, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {409, 1, 32, 8, 8, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+
+    {500, 0, 24, 8, 8, 8, 0, 32, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {501, 0, 24, 8, 8, 8, 0, 24, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {502, 0, 24, 8, 8, 8, 0, 24, 8, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {503, 0, 24, 8, 8, 8, 0, 16, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {504, 0, 24, 8, 8, 8, 0, 0, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+
+	{600, 0, 24, 8, 8, 8, 0, 32, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{601, 0, 24, 8, 8, 8, 0, 24, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{602, 0, 24, 8, 8, 8, 0, 24, 8, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+	{603, 0, 24, 8, 8, 8, 0, 16, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},	
+	{604, 0, 24, 8, 8, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},	
+
+    {700, 1, 24, 8, 8, 8, 0, 32, 0, 0, 0, 4, 16, 16, 16 ,16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {701, 1, 24, 8, 8, 8, 0, 24, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {702, 1, 24, 8, 8, 8, 0, 24, 8, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {703, 1, 24, 8, 8, 8, 0, 16, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {704, 1, 24, 8, 8, 8, 0, 0, 0, 0, 0, 4, 16, 16, 16, 16, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+            
+    {800, 1, 24, 8, 8, 8, 0, 32, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},	
+    {801, 1, 24, 8, 8, 8, 0, 24, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {802, 1, 24, 8, 8, 8, 0, 24, 8, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {803, 1, 24, 8, 8, 8, 0, 16, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+    {804, 1, 24, 8, 8, 8, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, GLX_RGBA_BIT, GLX_WINDOW_BIT|GLX_PIXMAP_BIT|GLX_PBUFFER_BIT, 1, GLX_TRUE_COLOR},
+            	            
+};
+
+typedef GLXFBConfigRecord *GLXFBConfig;
 
 #define GLX_VENDOR                        1
 #define GLX_VERSION                       2
@@ -1846,7 +1959,7 @@ XVisualInfo* glXChooseVisual(Display *dpy, int screen, int *attrib_list) {
         int i;
 
 	visualTemplate.depth = 32;
-        visualTemplate.screen = screen;
+	visualTemplate.screen = screen;
 	return XGetVisualInfo(dpy, VisualScreenMask | VisualDepthMask, &visualTemplate, &i);
 }
 
@@ -1854,9 +1967,25 @@ void glXCopyContext(Display *dpy, GLXContext src, GLXContext dst, unsigned long 
 	printf("glXCopyContext not implemented\n");
 }
 
-GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct) {
-	//printf("glXCreateContext display=%X visualInfo=%X share_list=%X direct=%d\n", (int)dpy, (int)vis, (int)share_list, (int)direct);
-	CALL(XCreateContext);
+GLXFBConfig lastConfigForVis;
+XVisualInfo* lastConfigVis;
+
+GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct) {	
+	int depth = 0;
+	int stencil = 0;
+	int accum = 0;
+	int format = 0x1908; // GL_RGBA
+
+	printf("glXCreateContext display=%X visualInfo=%X share_list=%X direct=%d\n", (int)dpy, (int)vis, (int)share_list, (int)direct);
+	if (lastConfigForVis && lastConfigVis==vis) {
+		depth = lastConfigForVis->depthBuffer;
+		stencil = lastConfigForVis->stencilBuffer;
+		accum = lastConfigForVis->accumulationRed;
+		if (lastConfigForVis->colorDepth==24) {
+			format = 0x1907; // GL_RGB
+		}
+	}
+	CALL_5(XCreateContext, depth, stencil, accum, share_list, format);
 }
 
 GLXPixmap glXCreateGLXPixmap(Display *dpy, XVisualInfo *vis, Pixmap pixmap) {
@@ -1876,11 +2005,11 @@ int glXGetConfig(Display *dpy, XVisualInfo *vis, int attrib, int *value) {
 }
 
 GLXContext glXGetCurrentContext(void) {
-	printf("glXGetCurrentContext not implemented\n");
+	return currentContext;
 }
 
 GLXDrawable glXGetCurrentDrawable(void) {
-	printf("glXGetCurrentDrawable not implemented\n");
+	return currentDrawable;
 }
 
 Bool glXIsDirect(Display *dpy, GLXContext ctx) {
@@ -1900,6 +2029,9 @@ Bool glXMakeCurrent(Display *dpy, GLXDrawable drawable, GLXContext ctx) {
 		}
 	}
 	printf("glxMakeCurrent drawable=%d\n", (int)drawable);
+	currentContext = ctx;
+	currentDrawable = drawable;
+	currentDisplay = dpy;
 	CALL_5(XMakeCurrent, ctx, width, height, depth, root!=0);
 }
 
@@ -1969,10 +2101,7 @@ Display *glXGetCurrentDisplay(void) {
 	printf("glXGetCurrentDisplay not implemented\n");
 }
 
-struct BoxedFBConfig {
-	int id;
-	int doubleBuffered;
-};
+#define MAX_NUMBER_OF_CONFIGS (sizeof(glXFBConfigRecords) / sizeof(glXFBConfigRecords[0]))
 	
 /*
  * GLX 1.3 functions.
@@ -1999,6 +2128,9 @@ GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list,
 	int drawableType = GLX_WINDOW_BIT;
 	int renderable = GLX_DONT_CARE;
 	int visualType = GLX_DONT_CARE;
+	int i;
+	int count = 0;
+	GLXFBConfig* configs = (GLXFBConfig*)malloc(MAX_NUMBER_OF_CONFIGS*sizeof(GLXFBConfig));
 
 	LOG("glXChooseFBConfig ");
 	while (attrib_list && *attrib_list) {
@@ -2126,9 +2258,65 @@ GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list,
 				break;
 		}
 		attrib_list++;
+	}	
+	for (i=0;i<sizeof(glXFBConfigRecords) / sizeof(glXFBConfigRecords[0]);i++) {
+		if (id!=GLX_DONT_CARE) {
+			if (glXFBConfigRecords[i].id==id) {
+				configs[count++] = &glXFBConfigRecords[i];
+			} else {
+				if (bufferSize) {
+					if (glXFBConfigRecords[i].colorDepth<bufferSize)
+						continue;
+				}
+				if (level!=glXFBConfigRecords[i].level)
+					continue;
+				if (doubleBuffer != GLX_DONT_CARE) {
+					if (doubleBuffer && !glXFBConfigRecords[i].doubleBuffered)
+						continue;
+					if (!doubleBuffer && glXFBConfigRecords[i].doubleBuffered)
+						continue;
+				}
+				if (stereo != glXFBConfigRecords[i].stereo)
+					continue;
+				if (glXFBConfigRecords[i].auxBuffers<aux)
+					continue;
+				if (glXFBConfigRecords[i].redSize<redSize)
+					continue;
+				if (glXFBConfigRecords[i].greenSize<greenSize)
+					continue;
+				if (glXFBConfigRecords[i].blueSize<blueSize)
+					continue;
+				if (glXFBConfigRecords[i].alphaSize<alphaSize)
+					continue;
+				// not accurate of depth is 0, in that case the smallest depth buffer should be returned first
+				if (glXFBConfigRecords[i].depthBuffer<depth)
+					continue;
+				if (glXFBConfigRecords[i].stencilBuffer<stencil)
+					continue;
+				if (glXFBConfigRecords[i].accumulationRed<accumRed)
+					continue;
+				if (glXFBConfigRecords[i].accumulationGreen<accumGreen)
+					continue;
+				if (glXFBConfigRecords[i].accumulationBlue<accumBlue)
+					continue;
+				if (glXFBConfigRecords[i].accumulationAlpha<accumAlpha)
+					continue;
+				if ((glXFBConfigRecords[i].renderType & renderType)!=renderType)
+					continue;
+				if ((glXFBConfigRecords[i].drawableType & drawableType)!=drawableType)
+					continue;
+				if (renderable != GLX_DONT_CARE) {
+					if (renderable && !glXFBConfigRecords[i].renderable)
+						continue;
+				}
+				configs[count++] = &glXFBConfigRecords[i];
+			}
+		}
 	}
-	printf("glXChooseFBConfig not implemented\n");
-	return 0;
+	if (nelements)
+		*nelements = count;
+	LOG(" returned %d items\n", count);
+	return configs;
 }
 
 GLXContext glXCreateNewContext(Display *dpy, GLXFBConfig config, int render_type, GLXContext share_list, Bool direct) {
@@ -2169,13 +2357,42 @@ GLXDrawable glXGetCurrentReadDrawable(void) {
 }
 
 int glXGetFBConfigAttrib(Display *dpy, GLXFBConfig config, int attribute, int *value) {
-	printf("glXGetFBConfigAttrib not implemented\n");
+	switch (attribute) {
+		case GLX_FBCONFIG_ID: *value = config->id; break;
+		case GLX_BUFFER_SIZE: *value = config->colorDepth; break;
+		case GLX_LEVEL: *value = config->level; break;
+		case GLX_DOUBLEBUFFER: *value = config->doubleBuffered; break;
+		case GLX_STEREO: *value = config->stereo; break;
+		case GLX_AUX_BUFFERS: *value = config->auxBuffers; break;
+		case GLX_RED_SIZE: *value = config->redSize; break;
+		case GLX_GREEN_SIZE: *value = config->greenSize; break;
+		case GLX_BLUE_SIZE: *value = config->blueSize; break;
+		case GLX_ALPHA_SIZE: *value = config->alphaSize; break;
+		case GLX_DEPTH_SIZE: *value = config->depthBuffer; break;
+		case GLX_STENCIL_SIZE: *value = config->stencilBuffer; break;
+		case GLX_ACCUM_RED_SIZE: *value = config->accumulationRed; break;
+		case GLX_ACCUM_GREEN_SIZE: *value = config->accumulationGreen; break;
+		case GLX_ACCUM_BLUE_SIZE: *value = config->accumulationBlue; break;
+		case GLX_ACCUM_ALPHA_SIZE: *value = config->accumulationAlpha; break;
+		case GLX_RENDER_TYPE: *value = config->renderType; break;
+		case GLX_DRAWABLE_TYPE: *value = config->drawableType; break;
+		case GLX_X_RENDERABLE: *value = config->renderable; break;
+		case GLX_X_VISUAL_TYPE: *value = config->visualType; break;
+		default: *value = 0; printf("unsupport attribute %d in glXGetFBConfigAttrib\n", attribute);
+	}
 	return 0;
 }
 
 GLXFBConfig *glXGetFBConfigs(Display *dpy, int screen, int *nelements) {
-	printf("glXGetFBConfigs not implemented\n");
-	return 0;
+	int i;
+	GLXFBConfig* configs = (GLXFBConfig*)malloc(MAX_NUMBER_OF_CONFIGS*sizeof(GLXFBConfig));
+
+	if (nelements)
+		*nelements = sizeof(glXFBConfigRecords) / sizeof(glXFBConfigRecords[0]);
+	for (i=0;i<sizeof(glXFBConfigRecords) / sizeof(glXFBConfigRecords[0]);i++) {
+		configs[i]=&glXFBConfigRecords[i];
+	}
+	return configs;
 }
 
 void glXGetSelectedEvent(Display *dpy, GLXDrawable draw, unsigned long *event_mask) {
@@ -2183,8 +2400,13 @@ void glXGetSelectedEvent(Display *dpy, GLXDrawable draw, unsigned long *event_ma
 }
 
 XVisualInfo *glXGetVisualFromFBConfig(Display *dpy, GLXFBConfig config) {
-	printf("glXGetVisualFromFBConfig not implemented\n");
-	return 0;
+	XVisualInfo visualTemplate;
+	int i;
+
+	visualTemplate.depth = config->colorDepth;
+	lastConfigForVis = config;
+	lastConfigVis = XGetVisualInfo(dpy, VisualDepthMask, &visualTemplate, &i);
+	return lastConfigVis;
 }
 
 Bool glXMakeContextCurrent(Display *display, GLXDrawable draw, GLXDrawable read, GLXContext ctx) {

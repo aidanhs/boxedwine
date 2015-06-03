@@ -42,6 +42,9 @@ struct KThread {
 	struct KTimer timer;
 	struct KThread* waitingForSignalToEnd;
 	U32     waitType;
+	void*	openglSurface;
+	void*	openglContext;
+	void*   openglBuffer;
 };
 
 #define addClearOnWake(thread, pTarget) thread->clearOnWake[thread->clearOnWakeCount++]=pTarget

@@ -276,7 +276,7 @@ int main(int argc, char **argv) {
 	const char* ppenv[32];
 	int envc=0;
 	int mb=64;
-	int bpp = 32;
+	int bpp = 24;
 	int fullscreen = 0;
 
 	klog("Starting ...");

@@ -142,10 +142,7 @@ U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz) {
 	struct Memory* memory = thread->process->memory;
 	U64 m = getSystemTimeAsMicroSeconds();
-
-	if (tz) {
-		kwarn("gettimeofday timezone not handled");
-	}		
+	
 	writed(memory, tv, (U32)(m/1000000l));
 	writed(memory, tv+4, (U32)(m % 1000000l));
 	return 0;

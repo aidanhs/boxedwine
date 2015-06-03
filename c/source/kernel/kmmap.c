@@ -272,6 +272,6 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
 	}
 	if (!file)
 		return -K_ENOMEM;
-	kpanic("syscall_msync not implemented");
+	//kpanic("syscall_msync not implemented");
 	return 0;
 }

@@ -321,12 +321,9 @@
     <ClCompile Include="..\..\..\..\source\kernel\proc\meminfo.c" />
     <ClCompile Include="..\..\..\..\source\kernel\syscall.c" />
     <ClCompile Include="..\..\..\..\source\opengl\mesa\mesagl.c">
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug + Log|Win32'">
-      </AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">
-      </AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug + Log|Win32'">..\..\..\..\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Test|Win32'">..\..\..\..\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">..\..\..\..\include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\..\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\sdl\main.c" />

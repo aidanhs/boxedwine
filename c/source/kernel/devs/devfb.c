@@ -15,7 +15,7 @@ U32 windowCY;
 U32 windowBPP;
 U32 windowFullScreen;
 U32 updateAvailable;
-
+void* screenPixels;
 SDL_Surface* surface;
 
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
@@ -314,6 +314,7 @@ void fbSetupScreen() {
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
 	}
+	screenPixels = surface->pixels;
 }
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
@@ -384,7 +385,6 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.height = 300;
 		fb_var_screeninfo.width = 400;		
 
-		printf("Rshift=%X (%X) Gshift=%X (%X) Bshift=%X (%X)", surface->format->Rshift, surface->format->Rmask, surface->format->Gshift, surface->format->Gmask, surface->format->Bshift, surface->format->Bmask);
 		fb_fix_screeninfo.smem_len = surface->pitch*windowCY;
 		fb_fix_screeninfo.line_length = surface->pitch;
 		if (SDL_MUSTLOCK(surface)) {
@@ -516,6 +516,7 @@ BOOL fb_canMap(struct OpenNode* node) {
 struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_setAsync, fb_isAsync, fb_waitForEvents, fb_isWriteReady, fb_isReadReady};
 
 void flipFB() {
+	/*
 	if (updateAvailable) {
 		if (SDL_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
@@ -526,5 +527,23 @@ void flipFB() {
 			SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
 		}
 		updateAvailable=0;
+	}
+	*/
+}
+
+void blitToFB(SDL_Surface* src, int x, int y, int w, int h) {
+	SDL_Rect rect;
+	rect.x = x;
+	rect.y = y;
+	rect.w = w;
+	rect.h = h;
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
+	SDL_BlitSurface(src, NULL, surface, &rect);
+	SDL_Flip(surface);
+	updateAvailable=0;
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_LockSurface(surface);
 	}
 }
