@@ -1352,56 +1352,56 @@ void OPCALL FIDIVR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL FCMOV_ST0_STj_CF(struct CPU* cpu, struct Op* op) {
     if (getCF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_ZF(struct CPU* cpu, struct Op* op) {
     if (getZF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_CF_OR_ZF(struct CPU* cpu, struct Op* op) {
     if (getCF(cpu) || getZF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_PF(struct CPU* cpu, struct Op* op) {
     if (getPF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_NCF(struct CPU* cpu, struct Op* op) {
     if (!getCF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_NZF(struct CPU* cpu, struct Op* op) {
     if (!getZF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_NCF_AND_NZF(struct CPU* cpu, struct Op* op) {
     if (!getCF(cpu) && !getZF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
 
 void OPCALL FCMOV_ST0_STj_NPF(struct CPU* cpu, struct Op* op) {
     if (!getPF(cpu))
-		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), 0);
+		FPU_FST(&cpu->fpu, STV(&cpu->fpu, op->r1), cpu->fpu.top);
 	CYCLES(2); // :TODO:
 	NEXT();
 }
