@@ -516,7 +516,6 @@ BOOL fb_canMap(struct OpenNode* node) {
 struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_setAsync, fb_isAsync, fb_waitForEvents, fb_isWriteReady, fb_isReadReady};
 
 void flipFB() {
-	/*
 	if (updateAvailable) {
 		if (SDL_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
@@ -528,7 +527,6 @@ void flipFB() {
 		}
 		updateAvailable=0;
 	}
-	*/
 }
 
 void blitToFB(SDL_Surface* src, int x, int y, int w, int h) {

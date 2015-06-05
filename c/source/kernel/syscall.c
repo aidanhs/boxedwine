@@ -456,10 +456,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_uname(thread, ARG1);
 		LOG("__NR_uname name=%.8X result=%d", ARG1, result);
 		break;
-		/*
 	case __NR_modify_ldt:
+		result = syscall_modify_ldt(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_modify_ldt func=%d ptr=%X count=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
-		*/
 	case __NR_mprotect:
 		result = syscall_mprotect(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_mprotect address=%X len=%d prot=%X", ARG1, ARG2, ARG3);

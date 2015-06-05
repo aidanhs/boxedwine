@@ -23,27 +23,16 @@ struct long2Double {
 };
 
 // index 0 is the gl call number
-// index 1 is the return address
-// index 2 is ebp
-#define ARG1 peek32(cpu, 3)
-#define ARG2 peek32(cpu, 4)
-#define ARG3 peek32(cpu, 5)
-#define ARG4 peek32(cpu, 6)
-#define ARG5 peek32(cpu, 7)
-#define ARG6 peek32(cpu, 8)
-#define ARG7 peek32(cpu, 9)
-#define ARG8 peek32(cpu, 10)
-#define ARG9 peek32(cpu, 11)
-#define ARG10 peek32(cpu, 12)
-#define ARG11 peek32(cpu, 13)
-#define ARG12 peek32(cpu, 14)
-#define ARG13 peek32(cpu, 15)
-#define ARG14 peek32(cpu, 16)
-
-#define fARG1 fARG(cpu, ARG1)
-#define fARG2 fARG(cpu, ARG2)
-#define fARG3 fARG(cpu, ARG3)
-#define fARG4 fARG(cpu, ARG4)
+#define ARG1 peek32(cpu, 1)
+#define ARG2 peek32(cpu, 2)
+#define ARG3 peek32(cpu, 3)
+#define ARG4 peek32(cpu, 4)
+#define ARG5 peek32(cpu, 5)
+#define ARG6 peek32(cpu, 6)
+#define ARG7 peek32(cpu, 7)
+#define ARG8 peek32(cpu, 8)
+#define ARG9 peek32(cpu, 9)
+#define ARG10 peek32(cpu, 10)
 
 #define fARG1 fARG(cpu, ARG1)
 #define fARG2 fARG(cpu, ARG2)
@@ -53,17 +42,14 @@ struct long2Double {
 #define fARG6 fARG(cpu, ARG6)
 #define fARG7 fARG(cpu, ARG7)
 
-#define dARG1 dARG(cpu, ARG1 | ((U64)ARG2) << 32)
-#define dARG2 dARG(cpu, ARG2 | ((U64)ARG3) << 32)
-#define dARG3 dARG(cpu, ARG3 | ((U64)ARG4) << 32)
-#define dARG4 dARG(cpu, ARG4 | ((U64)ARG5) << 32)
-#define dARG5 dARG(cpu, ARG5 | ((U64)ARG6) << 32)
-#define dARG6 dARG(cpu, ARG6 | ((U64)ARG7) << 32)
-#define dARG7 dARG(cpu, ARG7 | ((U64)ARG8) << 32)
-#define dARG8 dARG(cpu, ARG8 | ((U64)ARG9) << 32)
-#define dARG9 dARG(cpu, ARG9 | ((U64)ARG10) << 32)
-#define dARG10 dARG(cpu, ARG10 | ((U64)ARG11) << 32)
-#define dARG11 dARG(cpu, ARG11 | ((U64)ARG12) << 32)
+#define dARG1 dARG(cpu, ARG1)
+#define dARG2 dARG(cpu, ARG2)
+#define dARG3 dARG(cpu, ARG3)
+#define dARG4 dARG(cpu, ARG4)
+#define dARG5 dARG(cpu, ARG5)
+#define dARG6 dARG(cpu, ARG6)
+#define dARG7 dARG(cpu, ARG7)
+
 
 float fARG(struct CPU* cpu, U32 arg) {
 	struct int2Float i;
@@ -71,9 +57,9 @@ float fARG(struct CPU* cpu, U32 arg) {
 	return i.f;
 }
 
-double dARG(struct CPU* cpu, U64 arg) {
+double dARG(struct CPU* cpu, int address) {
 	struct long2Double i;
-	i.l = arg;
+	i.l = readq(cpu->memory, address);
 	return i.d;
 }
 
@@ -1149,7 +1135,7 @@ void mesa_glDepthMask(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glDepthRange( GLclampd near_val, GLclampd far_val ) {
 void mesa_glDepthRange(struct CPU* cpu) {
-	glDepthRange(dARG1, dARG3);
+	glDepthRange(dARG1, dARG2);
 }
 
 
@@ -1172,12 +1158,12 @@ void mesa_glMatrixMode(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glOrtho( GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble near_val, GLdouble far_val ) {
 void mesa_glOrtho(struct CPU* cpu) {
-	glOrtho(dARG1, dARG3, dARG5, dARG7, dARG9, dARG11);
+	glOrtho(dARG1, dARG2, dARG3, dARG4, dARG5, dARG6);
 }
 
 // GLAPI void APIENTRY glFrustum( GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble near_val, GLdouble far_val ) {
 void mesa_glFrustum(struct CPU* cpu) {
-	glFrustum(dARG1, dARG3, dARG5, dARG7, dARG9, dARG11);
+	glFrustum(dARG1, dARG2, dARG3, dARG4, dARG5, dARG6);
 }
 
 // GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height ) {
@@ -1222,7 +1208,7 @@ void mesa_glMultMatrixf(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glRotated( GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
 void mesa_glRotated(struct CPU* cpu) {
-	glRotated(dARG1, dARG3, dARG5, dARG7);
+	glRotated(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glRotatef( GLfloat angle, GLfloat x, GLfloat y, GLfloat z ) {
@@ -1232,7 +1218,7 @@ void mesa_glRotatef(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glScaled( GLdouble x, GLdouble y, GLdouble z ) {
 void mesa_glScaled(struct CPU* cpu) {
-	glScaled(dARG1, dARG3, dARG5);
+	glScaled(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glScalef( GLfloat x, GLfloat y, GLfloat z ) {
@@ -1242,7 +1228,7 @@ void mesa_glScalef(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glTranslated( GLdouble x, GLdouble y, GLdouble z ) {
 void mesa_glTranslated(struct CPU* cpu) {
-	glTranslated(dARG1, dARG3, dARG5);
+	glTranslated(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glTranslatef( GLfloat x, GLfloat y, GLfloat z ) {
@@ -1340,7 +1326,7 @@ void mesa_glEnd(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glVertex2d( GLdouble x, GLdouble y ) {
 void mesa_glVertex2d(struct CPU* cpu) {
-	glVertex2d(dARG1, dARG3);
+	glVertex2d(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glVertex2f( GLfloat x, GLfloat y ) {
@@ -1360,7 +1346,7 @@ void mesa_glVertex2s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glVertex3d( GLdouble x, GLdouble y, GLdouble z ) {
 void mesa_glVertex3d(struct CPU* cpu) {
-	glVertex3d(dARG1, dARG3, dARG5);
+	glVertex3d(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glVertex3f( GLfloat x, GLfloat y, GLfloat z ) {
@@ -1380,7 +1366,7 @@ void mesa_glVertex3s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glVertex4d( GLdouble x, GLdouble y, GLdouble z, GLdouble w ) {
 void mesa_glVertex4d(struct CPU* cpu) {
-	glVertex4d(dARG1, dARG3, dARG5, dARG7);
+	glVertex4d(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glVertex4f( GLfloat x, GLfloat y, GLfloat z, GLfloat w ) {
@@ -1465,7 +1451,7 @@ void mesa_glNormal3b(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glNormal3d( GLdouble nx, GLdouble ny, GLdouble nz ) {
 void mesa_glNormal3d(struct CPU* cpu) {
-	glNormal3d(dARG1, dARG3, dARG5);
+	glNormal3d(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glNormal3f( GLfloat nx, GLfloat ny, GLfloat nz ) {
@@ -1565,7 +1551,7 @@ void mesa_glColor3b(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glColor3d( GLdouble red, GLdouble green, GLdouble blue ) {
 void mesa_glColor3d(struct CPU* cpu) {
-	glColor3d(dARG1, dARG3, dARG5);
+	glColor3d(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glColor3f( GLfloat red, GLfloat green, GLfloat blue ) {
@@ -1605,7 +1591,7 @@ void mesa_glColor4b(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glColor4d( GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha ) {
 void mesa_glColor4d(struct CPU* cpu) {
-	glColor4d(dARG1, dARG3, dARG5, dARG7);
+	glColor4d(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glColor4f( GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha ) {
@@ -1740,7 +1726,7 @@ void mesa_glTexCoord1s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glTexCoord2d( GLdouble s, GLdouble t ) {
 void mesa_glTexCoord2d(struct CPU* cpu) {
-	glTexCoord2d(dARG1, dARG3);
+	glTexCoord2d(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glTexCoord2f( GLfloat s, GLfloat t ) {
@@ -1760,7 +1746,7 @@ void mesa_glTexCoord2s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glTexCoord3d( GLdouble s, GLdouble t, GLdouble r ) {
 void mesa_glTexCoord3d(struct CPU* cpu) {
-	glTexCoord3d(dARG1, dARG3, dARG5);
+	glTexCoord3d(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glTexCoord3f( GLfloat s, GLfloat t, GLfloat r ) {
@@ -1780,7 +1766,7 @@ void mesa_glTexCoord3s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glTexCoord4d( GLdouble s, GLdouble t, GLdouble r, GLdouble q ) {
 void mesa_glTexCoord4d(struct CPU* cpu) {
-	glTexCoord4d(dARG1, dARG3, dARG5, dARG7);
+	glTexCoord4d(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glTexCoord4f( GLfloat s, GLfloat t, GLfloat r, GLfloat q ) {
@@ -1880,7 +1866,7 @@ void mesa_glTexCoord4sv(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glRasterPos2d( GLdouble x, GLdouble y ) {
 void mesa_glRasterPos2d(struct CPU* cpu) {
-	glRasterPos2d(dARG1, dARG3);
+	glRasterPos2d(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glRasterPos2f( GLfloat x, GLfloat y ) {
@@ -1900,7 +1886,7 @@ void mesa_glRasterPos2s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glRasterPos3d( GLdouble x, GLdouble y, GLdouble z ) {
 void mesa_glRasterPos3d(struct CPU* cpu) {
-	glRasterPos3d(dARG1, dARG3, dARG5);
+	glRasterPos3d(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glRasterPos3f( GLfloat x, GLfloat y, GLfloat z ) {
@@ -1920,7 +1906,7 @@ void mesa_glRasterPos3s(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glRasterPos4d( GLdouble x, GLdouble y, GLdouble z, GLdouble w ) {
 void mesa_glRasterPos4d(struct CPU* cpu) {
-	glRasterPos4d(dARG1, dARG3, dARG5, dARG7);
+	glRasterPos4d(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glRasterPos4f( GLfloat x, GLfloat y, GLfloat z, GLfloat w ) {
@@ -2000,7 +1986,7 @@ void mesa_glRasterPos4sv(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glRectd( GLdouble x1, GLdouble y1, GLdouble x2, GLdouble y2 ) {
 void mesa_glRectd(struct CPU* cpu) {
-	glRectd(dARG1, dARG3, dARG5, dARG7);
+	glRectd(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glRectf( GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2 ) {
@@ -2343,7 +2329,7 @@ GLvoid* marshalPixels(struct CPU* cpu, GLsizei width, GLsizei height, GLsizei de
 		kpanic("mesagl.c marshalPixels uknown type: %d", type);
 	}
 	len = bytes_per_row*(height+skipRows)*(depth+skipImages);
-
+	printf("marshal pixels: width=%d height=%d depth=%d format=%d type=%d pixels_per_row=%d bytes_per_comp=%d len=%d\n", width, height, depth, format, type, pixels_per_row, bytes_per_comp, len);
 	if (bytes_per_comp==0) {
 		return marshalf(cpu, pixels, len/4);
 	} else if (bytes_per_comp == 1) {
@@ -2787,13 +2773,13 @@ U32 getMap1Count(GLenum target) {
 // GLAPI void APIENTRY glMap1d( GLenum target, GLdouble u1, GLdouble u2, GLint stride, GLint order, const GLdouble *points ) {
 void mesa_glMap1d(struct CPU* cpu) {
 	GLenum target = ARG1;
-	GLint stride = ARG6;
-	GLint order = ARG7;
+	GLint stride = ARG4;
+	GLint order = ARG5;
 
 	if (stride>0) {
 		kpanic("mesa_glMap1d stride not implemented");
 	}
-	glMap1d(target, dARG2, dARG4, stride, order, marshald(cpu, ARG8, getMap1Count(target)*order));
+	glMap1d(target, dARG2, dARG3, stride, order, marshald(cpu, ARG6, getMap1Count(target)*order));
 }
 
 // GLAPI void APIENTRY glMap1f( GLenum target, GLfloat u1, GLfloat u2, GLint stride, GLint order, const GLfloat *points ) {
@@ -2832,10 +2818,10 @@ U32 getMap2Count(GLenum target) {
 // GLAPI void APIENTRY glMap2d( GLenum target, GLdouble u1, GLdouble u2, GLint ustride, GLint uorder, GLdouble v1, GLdouble v2, GLint vstride, GLint vorder, const GLdouble *points ) {
 void mesa_glMap2d(struct CPU* cpu) {
 	GLenum target = ARG1;
-	GLint stride = ARG6;
-	GLint order = ARG7;	
-	GLint vstride = ARG12;
-	GLint vorder = ARG13;
+	GLint stride = ARG4;
+	GLint order = ARG5;	
+	GLint vstride = ARG8;
+	GLint vorder = ARG9;
 
 	if (stride>0) {
 		kpanic("mesa_glMap2d stride not implemented");
@@ -2843,7 +2829,7 @@ void mesa_glMap2d(struct CPU* cpu) {
 	if (vstride>0) {
 		kpanic("mesa_glMap2d vstride not implemented");
 	}
-	glMap2d(target, dARG2, dARG4, ARG6, order, dARG8, dARG10, vstride, vorder, marshald(cpu, ARG14, getMap2Count(target)*order*vorder));
+	glMap2d(target, dARG2, dARG3, stride, order, dARG6, dARG7, vstride, vorder, marshald(cpu, ARG10, getMap2Count(target)*order*vorder));
 }
 
 // GLAPI void APIENTRY glMap2f( GLenum target, GLfloat u1, GLfloat u2, GLint ustride, GLint uorder, GLfloat v1, GLfloat v2, GLint vstride, GLint vorder, const GLfloat *points ) {
@@ -3015,7 +3001,7 @@ void mesa_glEvalCoord1fv(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glEvalCoord2d( GLdouble u, GLdouble v ) {
 void mesa_glEvalCoord2d(struct CPU* cpu) {
-	glEvalCoord2d(dARG1, dARG3);
+	glEvalCoord2d(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glEvalCoord2f( GLfloat u, GLfloat v ) {
@@ -3035,7 +3021,7 @@ void mesa_glEvalCoord2fv(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glMapGrid1d( GLint un, GLdouble u1, GLdouble u2 ) {
 void mesa_glMapGrid1d(struct CPU* cpu) {
-	glMapGrid1d(ARG1, dARG2, dARG4);
+	glMapGrid1d(ARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glMapGrid1f( GLint un, GLfloat u1, GLfloat u2 ) {
@@ -3045,7 +3031,7 @@ void mesa_glMapGrid1f(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glMapGrid2d( GLint un, GLdouble u1, GLdouble u2, GLint vn, GLdouble v1, GLdouble v2 ) {
 void mesa_glMapGrid2d(struct CPU* cpu) {
-	glMapGrid2d(ARG1, dARG2, dARG4, ARG6, dARG7, dARG9);
+	glMapGrid2d(ARG1, dARG2, dARG3, ARG4, dARG5, dARG6);
 }
 
 // GLAPI void APIENTRY glMapGrid2f( GLint un, GLfloat u1, GLfloat u2, GLint vn, GLfloat v1, GLfloat v2 ) {
@@ -3748,11 +3734,11 @@ void mesa_glSamplePass(struct CPU* cpu) {
 
 // GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct)
 void mesa_glXCreateContext(struct CPU* cpu) {
-	U32 format = peek32(cpu, 1);
-	OSMesaContext share_list = (OSMesaContext)peek32(cpu, 2);
-	U32 accum = peek32(cpu, 3);
-	U32 stencil = peek32(cpu, 4);
-	U32 depth = peek32(cpu, 5);	
+	U32 format = ARG5;
+	OSMesaContext share_list = (OSMesaContext)ARG4;
+	U32 accum = ARG3;
+	U32 stencil = ARG2;
+	U32 depth = ARG1;	
 
 	EAX = (U32)OSMesaCreateContextExt( format, depth, stencil, accum, share_list );	
 	if (!EAX) {
@@ -3762,7 +3748,6 @@ void mesa_glXCreateContext(struct CPU* cpu) {
 
 // void glXDestroyContext(Display *dpy, GLXContext ctx)
 void mesa_glXDestroyContext(struct CPU* cpu) {
-	U32 dpy = ARG1;
 	OSMesaContext ctx = (OSMesaContext)ARG2;
 
 	OSMesaDestroyContext(ctx);
@@ -3770,11 +3755,11 @@ void mesa_glXDestroyContext(struct CPU* cpu) {
 
 // Bool glXMakeCurrent(Display *dpy, GLXDrawable drawable, GLXContext ctx) 
 void mesa_glXMakeCurrent(struct CPU* cpu) {
-	U32 isWindow = peek32(cpu, 1);
-	U32 depth = peek32(cpu, 2);
-	U32 height = peek32(cpu, 3);
-	U32 width = peek32(cpu, 4);
-	OSMesaContext ctx = (OSMesaContext)peek32(cpu, 5);
+	U32 isWindow = ARG5;
+	U32 depth = ARG4;
+	U32 height = ARG3;
+	U32 width = ARG2;
+	OSMesaContext ctx = (OSMesaContext)ARG1;
 
 	if (ctx) {
 		if (isWindow) {
@@ -3784,7 +3769,7 @@ void mesa_glXMakeCurrent(struct CPU* cpu) {
 			cpu->thread->openglSurface = SDL_CreateRGBSurface(0, width, height, depth, 0x0000ff, 0x00ff00, 0xff0000, 0);
 			cpu->thread->openglBuffer = ((SDL_Surface*)cpu->thread->openglSurface)->pixels;
 		} else {
-			cpu->thread->openglBuffer = kalloc( width * height * depth * sizeof(GLubyte) );
+			cpu->thread->openglBuffer = kalloc( width * height * depth/8 );
 		}
 		cpu->thread->openglContext = ctx;
 	} else {
@@ -3805,6 +3790,7 @@ void mesa_glXMakeCurrent(struct CPU* cpu) {
 void mesa_glXSwapBuffers(struct CPU* cpu) {
 	if (cpu->thread->openglSurface) {
 		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
+		glFinish();
 		blitToFB(surface, 0, 0, surface->w, surface->h);
 	}
 }
