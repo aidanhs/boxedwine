@@ -1965,38 +1965,43 @@ typedef GLXFBConfigRecord *GLXFBConfig;
 /*
  * GLX 1.0 functions.
  */
+GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list, int *nelements);
+GLXFBConfig lastConfigForVis;
+XVisualInfo* lastConfigVis;
+
 XVisualInfo* glXChooseVisual(Display *dpy, int screen, int *attrib_list) {
 	XVisualInfo visualTemplate;
-        int i;
+	int i;
 
 	visualTemplate.depth = 32;
 	visualTemplate.screen = screen;
-	return XGetVisualInfo(dpy, VisualScreenMask | VisualDepthMask, &visualTemplate, &i);
+	lastConfigVis = XGetVisualInfo(dpy, VisualScreenMask | VisualDepthMask, &visualTemplate, &i);
+	lastConfigForVis = glXChooseFBConfig(dpy, screen, attrib_list, &i)[0];
+	return lastConfigVis;
 }
 
 void glXCopyContext(Display *dpy, GLXContext src, GLXContext dst, unsigned long mask) {
 	printf("glXCopyContext not implemented\n");
 }
 
-GLXFBConfig lastConfigForVis;
-XVisualInfo* lastConfigVis;
-
 GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct) {	
 	int depth = 0;
 	int stencil = 0;
 	int accum = 0;
 	int format = 0x1908; // GL_RGBA
+	int doubleBuffered = 0;
 
 	printf("glXCreateContext display=%X visualInfo=%X share_list=%X direct=%d\n", (int)dpy, (int)vis, (int)share_list, (int)direct);
 	if (lastConfigForVis && lastConfigVis==vis) {
 		depth = lastConfigForVis->depthBuffer;
 		stencil = lastConfigForVis->stencilBuffer;
 		accum = lastConfigForVis->accumulationRed;
+		doubleBuffered = lastConfigForVis->doubleBuffered;
 		if (lastConfigForVis->colorDepth==24) {
 			format = 0x1907; // GL_RGB
 		}
 	}
-	CALL_5(XCreateContext, depth, stencil, accum, share_list, format);
+	CALL_6(XCreateContext, depth, stencil, accum, share_list, format, doubleBuffered);
 }
 
 GLXPixmap glXCreateGLXPixmap(Display *dpy, XVisualInfo *vis, Pixmap pixmap) {
@@ -2167,8 +2172,7 @@ GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list,
 				LOG("GLX_LEVEL=%d ", level);
 				break;
 			case GLX_DOUBLEBUFFER:
-				attrib_list++;
-				doubleBuffer = *attrib_list;
+				doubleBuffer = 1;
 				LOG("GLX_DOUBLEBUFFER=%d ", doubleBuffer);
 				break;
 			case GLX_STEREO:
@@ -2184,6 +2188,7 @@ GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list,
 				attrib_list++;
 				redSize = *attrib_list;
 				LOG("GLX_RED_SIZE=%d ", redSize);
+				break;
 			case GLX_GREEN_SIZE:
 				attrib_list++;
 				greenSize = *attrib_list;
@@ -2274,58 +2279,97 @@ GLXFBConfig *glXChooseFBConfig(Display *dpy, int screen, const int *attrib_list,
 		}
 		attrib_list++;
 	}	
+	printf("Testing %d configs\n", sizeof(glXFBConfigRecords) / sizeof(glXFBConfigRecords[0]));
 	for (i=0;i<sizeof(glXFBConfigRecords) / sizeof(glXFBConfigRecords[0]);i++) {
 		if (id!=GLX_DONT_CARE) {
 			if (glXFBConfigRecords[i].id==id) {
 				configs[count++] = &glXFBConfigRecords[i];
-			} else {
-				if (bufferSize) {
-					if (glXFBConfigRecords[i].colorDepth<bufferSize)
-						continue;
-				}
-				if (level!=glXFBConfigRecords[i].level)
-					continue;
-				if (doubleBuffer != GLX_DONT_CARE) {
-					if (doubleBuffer && !glXFBConfigRecords[i].doubleBuffered)
-						continue;
-					if (!doubleBuffer && glXFBConfigRecords[i].doubleBuffered)
-						continue;
-				}
-				if (stereo != glXFBConfigRecords[i].stereo)
-					continue;
-				if (glXFBConfigRecords[i].auxBuffers<aux)
-					continue;
-				if (glXFBConfigRecords[i].redSize<redSize)
-					continue;
-				if (glXFBConfigRecords[i].greenSize<greenSize)
-					continue;
-				if (glXFBConfigRecords[i].blueSize<blueSize)
-					continue;
-				if (glXFBConfigRecords[i].alphaSize<alphaSize)
-					continue;
-				// not accurate of depth is 0, in that case the smallest depth buffer should be returned first
-				if (glXFBConfigRecords[i].depthBuffer<depth)
-					continue;
-				if (glXFBConfigRecords[i].stencilBuffer<stencil)
-					continue;
-				if (glXFBConfigRecords[i].accumulationRed<accumRed)
-					continue;
-				if (glXFBConfigRecords[i].accumulationGreen<accumGreen)
-					continue;
-				if (glXFBConfigRecords[i].accumulationBlue<accumBlue)
-					continue;
-				if (glXFBConfigRecords[i].accumulationAlpha<accumAlpha)
-					continue;
-				if ((glXFBConfigRecords[i].renderType & renderType)!=renderType)
-					continue;
-				if ((glXFBConfigRecords[i].drawableType & drawableType)!=drawableType)
-					continue;
-				if (renderable != GLX_DONT_CARE) {
-					if (renderable && !glXFBConfigRecords[i].renderable)
-						continue;
-				}
-				configs[count++] = &glXFBConfigRecords[i];
 			}
+		} else {
+			if (bufferSize) {
+				if (glXFBConfigRecords[i].colorDepth<bufferSize) {
+					printf("colorDepth(%d) < bufferSize(%d)\n", glXFBConfigRecords[i].colorDepth, bufferSize);
+					continue;
+				}
+			}
+			if (level!=glXFBConfigRecords[i].level){
+				printf("level requested=%d available=%d\n", level, glXFBConfigRecords[i].level);
+				continue;
+			}
+			if (doubleBuffer != GLX_DONT_CARE) {
+				if (doubleBuffer && !glXFBConfigRecords[i].doubleBuffered) {
+					printf("doubleBuffer requested=%d available=%d\n", doubleBuffer, glXFBConfigRecords[i].doubleBuffered);
+					continue;
+				}
+				if (!doubleBuffer && glXFBConfigRecords[i].doubleBuffered) {
+					printf("doubleBuffer requested=%d available=%d\n", doubleBuffer, glXFBConfigRecords[i].doubleBuffered);
+					continue;
+				}
+			}
+			if (stereo != glXFBConfigRecords[i].stereo){
+				printf("stereo requested=%d available=%d\n", stereo, glXFBConfigRecords[i].stereo);
+				continue;
+			}
+			if (aux>0 && glXFBConfigRecords[i].auxBuffers<aux){
+				printf("aux requested=%d available=%d\n", aux, glXFBConfigRecords[i].auxBuffers);
+				continue;
+			}
+			if (redSize>0 && glXFBConfigRecords[i].redSize<redSize) {
+				printf("redSize requested=%d available=%d\n", redSize, glXFBConfigRecords[i].redSize);
+				continue;
+			}
+			if (greenSize>0 && glXFBConfigRecords[i].greenSize<greenSize) {
+				printf("greenSize requested=%d available=%d\n", greenSize, glXFBConfigRecords[i].greenSize);
+				continue;
+			}
+			if (blueSize>0 && glXFBConfigRecords[i].blueSize<blueSize) {
+				printf("blueSize requested=%d available=%d\n", blueSize, glXFBConfigRecords[i].blueSize);
+				continue;
+			}
+			if (alphaSize>0 && glXFBConfigRecords[i].alphaSize<alphaSize) {
+				printf("alphaSize requested=%d available=%d\n", alphaSize, glXFBConfigRecords[i].alphaSize);
+				continue;
+			}
+			// not accurate of depth is 0, in that case the smallest depth buffer should be returned first
+			if (depth>0 && glXFBConfigRecords[i].depthBuffer<depth) {
+				printf("depthBuffer requested=%d available=%d\n", depth, glXFBConfigRecords[i].depthBuffer);
+				continue;
+			}
+			if (stencil>0 && glXFBConfigRecords[i].stencilBuffer<stencil) {
+				printf("stencilBuffer requested=%d available=%d\n", stencil, glXFBConfigRecords[i].stencilBuffer);
+				continue;
+			}
+			if (accumRed>0 && glXFBConfigRecords[i].accumulationRed<accumRed) {
+				printf("accumRed requested=%d available=%d\n", accumRed, glXFBConfigRecords[i].accumulationRed);
+				continue;
+			}
+			if (accumGreen>0 && glXFBConfigRecords[i].accumulationGreen<accumGreen) {
+				printf("accumGreen requested=%d available=%d\n", accumGreen, glXFBConfigRecords[i].accumulationGreen);
+				continue;
+			}
+			if (accumBlue>0 && glXFBConfigRecords[i].accumulationBlue<accumBlue) {
+				printf("accumBlue requested=%d available=%d\n", accumBlue, glXFBConfigRecords[i].accumulationBlue);
+				continue;
+			}
+			if (accumAlpha>0 && glXFBConfigRecords[i].accumulationAlpha<accumAlpha) {
+				printf("accumAlpha requested=%d available=%d\n", accumAlpha, glXFBConfigRecords[i].accumulationAlpha);
+				continue;
+			}
+			if ((glXFBConfigRecords[i].renderType & renderType)!=renderType){
+				printf("renderType requested=%d available=%d\n", renderType, glXFBConfigRecords[i].renderType);
+				continue;
+			}
+			if ((glXFBConfigRecords[i].drawableType & drawableType)!=drawableType){
+				printf("drawableType requested=%d available=%d\n", drawableType, glXFBConfigRecords[i].drawableType);
+				continue;
+			}
+			if (renderable != GLX_DONT_CARE) {
+				if (renderable && !glXFBConfigRecords[i].renderable){
+					printf("renderable requested=%d available=%d\n", renderable, glXFBConfigRecords[i].renderable);
+					continue;
+				}
+			}
+			configs[count++] = &glXFBConfigRecords[i];
 		}
 	}
 	if (nelements)

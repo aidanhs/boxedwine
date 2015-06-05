@@ -136,6 +136,12 @@
     <ClCompile Include="..\..\..\..\source\opengl\mesa\mesagl.c">
       <Filter>opengl\mesa</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\glcommon.c">
+      <Filter>opengl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\sdl\sdlgl.c">
+      <Filter>opengl\sdl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -327,6 +333,9 @@
     <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h">
       <Filter>source\kernel\loader</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\opengl\glcommon.h">
+      <Filter>opengl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -373,6 +382,9 @@
     </Filter>
     <Filter Include="opengl\mesa">
       <UniqueIdentifier>{1a869f5b-ed23-450a-b30f-cb7e0fe22d40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="opengl\sdl">
+      <UniqueIdentifier>{8e8c72e1-51c4-424b-bfcf-ad07de7342b6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

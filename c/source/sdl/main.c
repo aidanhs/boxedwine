@@ -22,7 +22,8 @@
 #include "devdsp.h"
 
 void mesa_init();
-
+void gl_init();
+void sdlgl_init();
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
@@ -325,8 +326,13 @@ int main(int argc, char **argv) {
 	initRAM(mb*1024*1024/PAGE_SIZE);
 	initFB(screenWidth, screenHeight, bpp, fullscreen);
 	initCallbacks();
+	gl_init();
+#ifdef MESA
 	mesa_init();
-
+#endif
+#ifdef BOXEDWINE_SDL
+	sdlgl_init();
+#endif
 	ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";
     ppenv[envc++] = "USERNAME=username";

@@ -270,8 +270,15 @@ struct fb_var_screeninfo fb_var_screeninfo;
 struct fb_fix_screeninfo fb_fix_screeninfo;
 struct fb_cmap fb_cmap;
 BOOL fbinit;
+BOOL bOpenGL;
+
+void fbSetupScreenForOpenGL(int width, int height, int depth) {
+	surface=SDL_SetVideoMode(width,height,depth, SDL_HWSURFACE|SDL_OPENGL);
+	bOpenGL = 1;
+}
 
 void fbSetupScreen() {
+	bOpenGL = 0;
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
@@ -318,30 +325,39 @@ void fbSetupScreen() {
 }
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
-	return ((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+	if (!bOpenGL)
+		return ((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+	return 0;
 }
 
 static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
-	((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
+	if (!bOpenGL)
+		((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
 static U16 fb_readw(struct Memory* memory, U32 address) {
-	return ((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
+	if (!bOpenGL)
+		return ((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
+	return 0;
 }
 
 static void fb_writew(struct Memory* memory, U32 address, U16 value) {
 	updateAvailable=1;
-	((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
+	if (!bOpenGL)
+		((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
 static U32 fb_readd(struct Memory* memory, U32 address) {
-	return ((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
+	if (!bOpenGL)
+		return ((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
+	return 0;
 }
 
 static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 	updateAvailable=1;
-	((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
+	if (!bOpenGL)
+		((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
 static void fb_clear(struct Memory* memory, U32 page) {
@@ -516,7 +532,7 @@ BOOL fb_canMap(struct OpenNode* node) {
 struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_setAsync, fb_isAsync, fb_waitForEvents, fb_isWriteReady, fb_isReadReady};
 
 void flipFB() {
-	if (updateAvailable) {
+	if (updateAvailable && !bOpenGL) {
 		if (SDL_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
 			SDL_Flip(surface);
