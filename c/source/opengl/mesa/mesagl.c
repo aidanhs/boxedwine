@@ -92,6 +92,7 @@ void mesa_glXSwapBuffers(struct CPU* cpu) {
 }
 
 void mesa_init() {
+	ext_glTexImage3D = glTexImage3D;
 	int99Callback[Finish] = mesa_glFinish;
 	int99Callback[Flush] = mesa_glFlush;
 	int99Callback[XCreateContext] = mesa_glXCreateContext;

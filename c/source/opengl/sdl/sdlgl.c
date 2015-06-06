@@ -7,9 +7,6 @@
 #include <stdio.h>
 #include <SDL.h>
 
-typedef void (APIENTRY * glTexImage3D_func)( GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels );
-glTexImage3D_func ext_glTexImage3D;
-
 int extLoaded = 0;
 
 void loadExtensions() {

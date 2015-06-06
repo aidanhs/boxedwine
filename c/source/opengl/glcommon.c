@@ -5,6 +5,8 @@
 
 #include GLH
 
+glTexImage3D_func ext_glTexImage3D;
+
 float fARG(struct CPU* cpu, U32 arg) {
 	struct int2Float i;
 	i.i = arg;
