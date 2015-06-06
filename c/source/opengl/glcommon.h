@@ -3,7 +3,7 @@
 
 #include GLH
 
-#include "../../../tools/opengl/gldef.h"
+#include "../../tools/opengl/gldef.h"
 #include "cpu.h"
 
 struct int2Float {
