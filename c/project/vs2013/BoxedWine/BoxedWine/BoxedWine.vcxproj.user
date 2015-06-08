@@ -4,7 +4,7 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\root -m 600 -uid 0 /lib/ld-linux.so.2 /sbin/ldconfig.real</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
@@ -12,7 +12,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\root -m 600 /usr/bin/dpkg</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
@@ -20,7 +20,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\root -m 600 -uid 0 /sbin/ldconfig</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

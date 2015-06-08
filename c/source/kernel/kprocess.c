@@ -37,7 +37,7 @@ void setupCommandlineNode(struct KProcess* process) {
 	process->commandLineNode = addVirtualFile(tmp, &process->commandLineAccess, K__S_IREAD);
 }
 
-void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, const char** args) {	
+void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, const char** args, int userId) {	
 	U32 i;
 	char* name;
 
@@ -45,11 +45,11 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 	process->memory = memory;
 	memory->process = process;
 	process->id = addProcess(process);
-	initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
-	process->groupId = 1;	
+	initArray(&process->threads, process->id<<THREAD_ID_SHIFT);	
 	process->parentId = 1;
-	process->userId = UID;
-	process->effectiveUserId = UID;
+	process->userId = userId;
+	process->effectiveUserId = userId;
+	process->groupId = GID;	
 	process->effectiveGroupId = GID;
 	setupCommandlineNode(process);
 	strcpy(process->exe, args[0]);
@@ -175,6 +175,10 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	}
 	process->stringAddress = from->stringAddress;
 	process->stringAddressIndex = from->stringAddressIndex;
+	process->loaderBaseAddress = from->loaderBaseAddress;
+	process->phdr = from->phdr;
+	process->phnum = from->phnum;
+	process->entry = from->entry;
 }
 
 void writeStackString(struct CPU* cpu, const char* s) {
@@ -209,12 +213,78 @@ void setupPath(struct KProcess* process, const char* str) {
 	}
 }
 
+#define HWCAP_I386_FPU   1 << 0
+#define HWCAP_I386_VME   1 << 1
+#define HWCAP_I386_DE    1 << 2
+#define HWCAP_I386_PSE   1 << 3
+#define HWCAP_I386_TSC   1 << 4
+#define HWCAP_I386_MSR   1 << 5
+#define HWCAP_I386_PAE   1 << 6
+#define HWCAP_I386_MCE   1 << 7
+#define HWCAP_I386_CX8   1 << 8
+#define HWCAP_I386_APIC  1 << 9
+#define HWCAP_I386_SEP   1 << 11
+#define HWCAP_I386_MTRR  1 << 12
+#define HWCAP_I386_PGE   1 << 13
+#define HWCAP_I386_MCA   1 << 14
+#define HWCAP_I386_CMOV  1 << 15
+#define HWCAP_I386_FCMOV 1 << 16
+#define HWCAP_I386_MMX   1 << 23
+#define HWCAP_I386_OSFXSR 1 << 24
+#define HWCAP_I386_XMM   1 << 25
+#define HWCAP_I386_XMM2  1 << 26
+#define HWCAP_I386_AMD3D 1 << 31
+
 void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	int i;
+	struct KProcess* process = cpu->thread->process;
+	U32 randomAddress;
+
+	push32(cpu, rand());
+	push32(cpu, rand());
+	push32(cpu, rand());
+	push32(cpu, rand());
+	randomAddress = ESP;
 
 	push32(cpu, 0);	
-	push32(cpu, a[0]);
     push32(cpu, 0);	
+
+	// end of auxv
+	push32(cpu, 0);	
+    push32(cpu, 0);	
+	
+	addString(process, AUXV_PLATFORM, "i686");
+	
+	push32(cpu, randomAddress);
+	push32(cpu, 25); // AT_RANDOM
+	push32(cpu, 100);
+	push32(cpu, 17); // AT_CLKTCK
+	push32(cpu, HWCAP_I386_FPU|HWCAP_I386_VME|HWCAP_I386_TSC|HWCAP_I386_CX8|HWCAP_I386_CMOV|HWCAP_I386_FCMOV);
+	push32(cpu, 16); // AT_HWCAP
+	push32(cpu, process->strings[AUXV_PLATFORM]);
+	push32(cpu, 15); // AT_PLATFORM
+	push32(cpu, process->effectiveGroupId);
+	push32(cpu, 14); // AT_EGID
+	push32(cpu, process->groupId);
+	push32(cpu, 13); // AT_GID
+	push32(cpu, process->effectiveUserId);
+	push32(cpu, 12); // AT_EUID
+	push32(cpu, process->userId);
+	push32(cpu, 11); // AT_UID
+	push32(cpu, process->entry);
+	push32(cpu, 9); // AT_ENTRY
+	push32(cpu, process->loaderBaseAddress); 
+	push32(cpu, 7); // AT_BASE
+	push32(cpu, 4096);
+	push32(cpu, 6); // AT_PAGESZ
+	//push32(cpu, process->phnum);
+	//push32(cpu, 5); // AT_PHNUM
+	//push32(cpu, 32);
+	//push32(cpu, 4); // AT_PHENT
+	//push32(cpu, process->phdr);
+	//push32(cpu, 3); // AT_PHDR
+
+	push32(cpu, 0);	
     for (i=envc-1;i>=0;i--) {
 		push32(cpu, e[i]);
 	}
@@ -370,7 +440,7 @@ void initStdio(struct KProcess* process) {
     }
 }
 
-BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env) {
+BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId) {
 	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
 	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
@@ -385,7 +455,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	U32 i;
 	struct Node* interpreterNode = 0;
 
-	initProcess(process, memory, argc, args);
+	initProcess(process, memory, argc, args, userId);
 	initThread(thread, process);
 	initStdio(process);
 
@@ -822,16 +892,18 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	preArgs[preArgCount++] = node->path.localPath;
 	memset(&thread->cpu.reg, 0, sizeof(thread->cpu.reg));
 	initStackPointer(thread);	
+
 	setupThreadStack2(&thread->cpu, process->name, preArgs, argv+4, envp);
 
 	// reset memory must come after we grab the args and env
-	resetMemory(memory, thread->stackPageStart, thread->stackPageCount); // keep the stack we just setup
+	resetMemory(memory, thread->stackPageStart, thread->stackPageCount, process->stringAddress >> PAGE_SHIFT); // keep the stack we just setup
 	memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
 	memset(process->sigActions, 0, sizeof(process->sigActions));
 	if (process->timer.millies!=0) {
 		removeTimer(&process->timer);
 		process->timer.millies = 0;
 	}
+
 	thread->alternateStack = 0;
 	while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
 		if (processThread && processThread!=thread) {

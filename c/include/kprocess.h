@@ -36,12 +36,13 @@ struct KSigAction {
 	U32 sigInfo[K_SIG_INFO_SIZE];
 };
 
-#define NUMBER_OF_STRINGS 5
+#define NUMBER_OF_STRINGS 6
 #define STRING_GL_VENDOR 0
 #define STRING_GL_RENDERER 1
 #define STRING_GL_VERSION 2
 #define STRING_GL_SHADING_LANGUAGE_VERSION 3
 #define STRING_GL_EXTENSIONS 4
+#define AUXV_PLATFORM 5
 
 struct KProcess {
 	U32 id;
@@ -74,10 +75,14 @@ struct KProcess {
 	U32 strings[NUMBER_OF_STRINGS];
 	U32 stringAddress;
 	U32 stringAddressIndex;
+	U32 loaderBaseAddress;
+	U32 phdr;
+	U32 phnum;
+	U32 entry;
 };
 
 void processOnExitThread(struct KProcess* process);
-BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env);
+BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId);
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
 struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags);
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);

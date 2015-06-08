@@ -67,6 +67,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 	}
 
 	address = syscall_mmap64(thread, ADDRESS_PROCESS_LOADER<<PAGE_SHIFT, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS|K_MAP_FIXED, -1, 0);
+	process->loaderBaseAddress = address;
 	process->brkEnd = address+len;
 	process->mappedFiles[0].address = address;
 	process->mappedFiles[0].len = len;
@@ -86,5 +87,6 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 	}
 	
 	*eip = hdr->e_entry+address;
+	process->entry = *eip; 
 	return TRUE;
 }

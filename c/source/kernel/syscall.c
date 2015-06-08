@@ -588,16 +588,16 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_fstat64 fildes=%d buf=%X result=%d", ARG1, ARG2, result);
 		break;
 	case __NR_getuid32:
-		result = UID;
+		result = process->userId;
 		break;
 	case __NR_getgid32:
-		result = GID;
+		result = process->groupId;
 		break;
 	case __NR_geteuid32:
-		result = UID;
+		result = process->effectiveUserId;
 		break;
 	case __NR_getegid32:
-		result = GID;
+		result = process->effectiveGroupId;
 		break;
 	case __NR_fchown32:
 		result = 0;
@@ -628,10 +628,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result=0;
 		LOG("__NR_getresgid32 rgid=%X(%d) egid=%X(%d) sgid=%X(%d) result=%d", ARG1, process->groupId, ARG2, process->groupId, ARG3, process->groupId, result);
 		break;
-		/*
 	case __NR_chown32:
+		result = 0;
 		break;
-		*/
 	case __NR_setuid32:
 		process->effectiveUserId = ARG1;
 		result = 0;

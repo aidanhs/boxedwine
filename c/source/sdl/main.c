@@ -279,6 +279,7 @@ int main(int argc, char **argv) {
 	int mb=64;
 	int bpp = 24;
 	int fullscreen = 0;
+	int userId = UID;
 
 	klog("Starting ...");
 
@@ -293,8 +294,10 @@ int main(int argc, char **argv) {
 		} else if (!strcmp(argv[i], "-m") && i+1<argc) {
 			mb = atoi(argv[i+1]);
 			i++;
-		} else {
+		} else if (!strcmp(argv[i], "-uid") && i+1<argc) {
+			userId = atoi(argv[i+1]);
 			i++;
+		} else {
 			break;
 		}
 	}
@@ -339,7 +342,11 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
-	ppenv[envc++] = "PATH=/bin:/usr/bin:/usr/local/bin";
+	if (userId==0)
+		ppenv[envc++] = "PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin";
+	else
+		ppenv[envc++] = "PATH=/bin:/usr/bin:/usr/local/bin";
+	//ppenv[envc++] = "LD_SHOW_AUXV=1";
 	//ppenv[envc++] = "LD_DEBUG=all";
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 
@@ -367,7 +374,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	klog("Launching %s", argv[0]);
-	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv)) {
+	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv, userId)) {
 #ifdef __EMSCRIPTEN__
                 emscripten_set_main_loop(mainloop, 0, 1);
 #else

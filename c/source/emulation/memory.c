@@ -211,11 +211,11 @@ void initMemory(struct Memory* memory) {
 	}
 }
 
-void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount) {
+void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount, U32 exceptExtra) {
 	U32 i=0;
 
 	for (i=0;i<0x100000;i++) {
-		if (i<exceptStart || i>=exceptStart+exceptCount) {
+		if ((i<exceptStart || i>=exceptStart+exceptCount) && i!=exceptExtra) {
 			memory->mmu[i]->clear(memory, i);
 			memory->mmu[i] = &invalidPage;
 			memory->flags[i] = 0;
