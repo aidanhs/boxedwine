@@ -20,6 +20,8 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
 
 	dp = opendir(dir->path.nativePath);
 	if (dp) {
+		nodes[result++]=getNodeFromLocalPath(dir->path.localPath, ".", FALSE);
+                nodes[result++]=getNodeFromLocalPath(dir->path.localPath, "..", FALSE);
         	while(NULL != (dptr = readdir(dp))) {
 			if (strcmp(dptr->d_name, ".") && strcmp(dptr->d_name, ".."))  {
 				nodes[result] = getNodeFromLocalPath(dir->path.localPath, dptr->d_name, TRUE);
