@@ -756,7 +756,7 @@ struct Node* findInPath(struct KProcess* process, const char* arg) {
 	return node;
 }
 
-U32 readStringArray(struct Memory* memory, U32 address, char** a, int size, int* count, char* tmp, U32 tmpIndex) {
+U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size, int* count, char* tmp, U32 tmpIndex) {
 	while (TRUE) {
 		U32 p = readd(memory, address);		
 		char* str = getNativeString(memory, p);
@@ -788,11 +788,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	struct KThread* processThread;
 	U32 threadIndex = 0;
 	U32 i;
-	char* name;
-	char* args[128];
-	int argc=0;
-	char* envs[128];
-	int envc=0;
+	const char* name;
+	const char* args[128];
+	U32 argc=0;
+	const char* envs[128];
+	U32 envc=0;
 	int tmpIndex = 0;
 
 	//if (strstr(first, "wine-preloader")) {
@@ -847,11 +847,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	if (interpreter) {
 		args[argc++] = interpreter;
 	}
-	//preArgs[preArgCount++] = node->path.localPath;
-		
+			
+	args[argc++] = node->path.localPath;
 	// copy args/env out of memory before memory is reset
-	tmpIndex = readStringArray(memory, argv, args, 128, &argc, tmp64k, tmpIndex);
-	readStringArray(memory, envp, envs, 128, &envc, tmp64k, tmpIndex);
+	tmpIndex = readStringArray(memory, argv+4, args, 128, &argc, tmp64k, tmpIndex);
+	readStringArray(memory, envp, envs, 128, &envc, tmp64k, tmpIndex);		
 
 	for (i=0;i<envc;i++) {
 		if (strncmp(envs[i], "PATH=", 5)==0) {
