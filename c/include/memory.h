@@ -10,6 +10,8 @@
 #define NUMBER_OF_PAGES 0x100000
 #define ROUND_UP_TO_PAGE(x) ((x + 0xFFF) & 0xFFFFF000)
 
+extern char tmp64k[];
+
 struct Memory {
 	struct Page* mmu[NUMBER_OF_PAGES];
 	U8 flags[NUMBER_OF_PAGES];

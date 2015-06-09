@@ -8,6 +8,9 @@
 
 #include <string.h>
 #undef LOG_OPS
+
+char tmp64k[1024*64];
+
 void pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;

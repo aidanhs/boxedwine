@@ -325,68 +325,6 @@ void setupThreadStack(struct CPU* cpu, const char* programName, int argc, const 
 	pushThreadStack(cpu, argc, a, envc, e);
 }
 
-char tmpEnv[16*1024];
-
-void setupThreadStack2(struct CPU* cpu, const char* programName, const char* preArgs[3], U32 args, U32 env) {
-	U32 a[128];
-	U32 argc=0;
-	U32 e[128];
-	U32 envc=0;
-	U32 i;
-	U32 pos = 0;
-
-	push32(cpu, 0);	
-	push32(cpu, 0);
-	push32(cpu, 0);
-	writeStackString(cpu, programName);
-	i=0;
-	// copy env into tmp before writing back onto the stack because some of the env's might be on the stack
-	//klog("env");
-	while (TRUE) {
-		U32 p = readd(cpu->memory, env+i*4);
-		char* str = getNativeString(cpu->memory, p);
-		if (!str[0])
-			break;
-		//klog("    %s", str);
-		if (strncmp(str, "PATH=", 5)==0) {
-			setupPath(cpu->thread->process, str+5);
-		}
-		if (envc>=128)
-			kpanic("Too many env: 128 is max");
-		strcpy(tmpEnv+pos, str);
-		e[i]=pos;
-		pos+=strlen(str)+1;
-		i++;
-		envc++;		
-	}
-	for (i=0;i<envc;i++) {
-		char* str = tmpEnv+e[i];
-		writeStackString(cpu, str);
-		e[i]=ESP;
-	}
-	i=0;
-	for (i=0;i<3;i++) {
-		if (preArgs[i]) {
-			writeStackString(cpu, preArgs[i]);
-			a[argc]=ESP;
-			argc++;
-		}
-	}
-	i=0;
-	while (TRUE) {
-		char* str = getNativeString(cpu->memory, readd(cpu->memory, args+i*4));
-		if (!str[0])
-			break;
-		if (argc>=128)
-			kpanic("Too many args: 128 is max");
-		writeStackString(cpu, str);
-		a[argc]=ESP;
-		i++;
-		argc++;
-	}
-	pushThreadStack(cpu, argc, a, envc, e);
-}
-
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
 	int i;
 
@@ -818,6 +756,24 @@ struct Node* findInPath(struct KProcess* process, const char* arg) {
 	return node;
 }
 
+U32 readStringArray(struct Memory* memory, U32 address, char** a, int size, int* count, char* tmp, U32 tmpIndex) {
+	while (TRUE) {
+		U32 p = readd(memory, address);		
+		char* str = getNativeString(memory, p);
+		address+=4;
+
+		if (!str[0])
+			break;		
+		if (*count>=size)
+			kpanic("Too many env or arg: %d is max", size);
+		strcpy(tmp+tmpIndex, str);
+		a[*count]=tmp+tmpIndex;
+		tmpIndex+=strlen(str)+1;
+		*count=*count+1;
+	}
+	return tmpIndex;
+}
+
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	struct KProcess* process = thread->process;
 	struct Memory* memory = process->memory;
@@ -832,9 +788,12 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	struct KThread* processThread;
 	U32 threadIndex = 0;
 	U32 i;
-	const char* preArgs[3]={0};
-	int preArgCount;
 	char* name;
+	char* args[128];
+	int argc=0;
+	char* envs[128];
+	int envc=0;
+	int tmpIndex = 0;
 
 	//if (strstr(first, "wine-preloader")) {
 	//	argv+=4;
@@ -884,19 +843,29 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		strcat(process->commandLine, arg);
 		i++;
 	}
-	preArgCount=0;
-	preArgs[preArgCount++] = loaderNode->path.localPath;
+	args[argc++] = loaderNode->path.localPath;
 	if (interpreter) {
-		preArgs[preArgCount++] = interpreter;
+		args[argc++] = interpreter;
 	}
-	preArgs[preArgCount++] = node->path.localPath;
-	memset(&thread->cpu.reg, 0, sizeof(thread->cpu.reg));
-	initStackPointer(thread);	
+	//preArgs[preArgCount++] = node->path.localPath;
+		
+	// copy args/env out of memory before memory is reset
+	tmpIndex = readStringArray(memory, argv, args, 128, &argc, tmp64k, tmpIndex);
+	readStringArray(memory, envp, envs, 128, &envc, tmp64k, tmpIndex);
 
-	setupThreadStack2(&thread->cpu, process->name, preArgs, argv+4, envp);
+	for (i=0;i<envc;i++) {
+		if (strncmp(envs[i], "PATH=", 5)==0) {
+			setupPath(process, envs[i]+5);
+		}
+	}
 
 	// reset memory must come after we grab the args and env
-	resetMemory(memory, thread->stackPageStart, thread->stackPageCount, process->stringAddress >> PAGE_SHIFT); // keep the stack we just setup
+	// keep the stack so we don't have to reallocate
+	resetMemory(memory, thread->stackPageStart, thread->stackPageCount, process->stringAddress >> PAGE_SHIFT);
+	memset(&thread->cpu.reg, 0, sizeof(thread->cpu.reg));
+	initStackPointer(thread);
+	setupThreadStack(&thread->cpu, process->name, argc, args, envc, envs);
+
 	memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
 	memset(process->sigActions, 0, sizeof(process->sigActions));
 	if (process->timer.millies!=0) {
