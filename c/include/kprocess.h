@@ -36,13 +36,12 @@ struct KSigAction {
 	U32 sigInfo[K_SIG_INFO_SIZE];
 };
 
-#define NUMBER_OF_STRINGS 6
+#define NUMBER_OF_STRINGS 5
 #define STRING_GL_VENDOR 0
 #define STRING_GL_RENDERER 1
 #define STRING_GL_VERSION 2
 #define STRING_GL_SHADING_LANGUAGE_VERSION 3
 #define STRING_GL_EXTENSIONS 4
-#define AUXV_PLATFORM 5
 
 struct KProcess {
 	U32 id;

@@ -239,21 +239,24 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	int i;
 	struct KProcess* process = cpu->thread->process;
 	U32 randomAddress;
+	U32 platform;
 
 	push32(cpu, rand());
 	push32(cpu, rand());
 	push32(cpu, rand());
 	push32(cpu, rand());
 	randomAddress = ESP;
+	push32(cpu, 0);
+	push32(cpu, 0);
+	writeStackString(cpu, "i686");
+	platform = ESP;
 
 	push32(cpu, 0);	
-    push32(cpu, 0);	
-
+	push32(cpu, 0);	
+	
 	// end of auxv
 	push32(cpu, 0);	
-    push32(cpu, 0);	
-	
-	addString(process, AUXV_PLATFORM, "i686");
+    push32(cpu, 0);		
 	
 	push32(cpu, randomAddress);
 	push32(cpu, 25); // AT_RANDOM
@@ -261,7 +264,7 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	push32(cpu, 17); // AT_CLKTCK
 	push32(cpu, HWCAP_I386_FPU|HWCAP_I386_VME|HWCAP_I386_TSC|HWCAP_I386_CX8|HWCAP_I386_CMOV|HWCAP_I386_FCMOV);
 	push32(cpu, 16); // AT_HWCAP
-	push32(cpu, process->strings[AUXV_PLATFORM]);
+	push32(cpu, platform);
 	push32(cpu, 15); // AT_PLATFORM
 	push32(cpu, process->effectiveGroupId);
 	push32(cpu, 14); // AT_EGID
@@ -283,7 +286,7 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	//push32(cpu, 4); // AT_PHENT
 	//push32(cpu, process->phdr);
 	//push32(cpu, 3); // AT_PHDR
-
+	
 	push32(cpu, 0);	
     for (i=envc-1;i>=0;i--) {
 		push32(cpu, e[i]);
