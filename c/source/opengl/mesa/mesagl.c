@@ -38,7 +38,7 @@ void mesa_glXCreateContext(struct CPU* cpu) {
 	U32 stencil = ARG2;
 	U32 depth = ARG1;	
 
-	EAX = (U32)OSMesaCreateContextExt( GL_RGBA, depth, stencil, accum, share_list );	
+	EAX = (U32)OSMesaCreateContextExt( OSMESA_BGRA, depth, stencil, accum, share_list );	
 	if (!EAX) {
 		printf("OSMesaCreateContext failed!\n");
 	}
