@@ -277,6 +277,14 @@ void fbSetupScreenForOpenGL(int width, int height, int depth) {
 	bOpenGL = 1;
 }
 
+void fbSetupScreenForMesa(int width, int height, int depth) {
+	surface=SDL_SetVideoMode(width,height,depth, SDL_SWSURFACE);
+	bOpenGL = 1;
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_LockSurface(surface);
+	}
+}
+
 void fbSetupScreen() {
 	bOpenGL = 0;
 	if (SDL_MUSTLOCK(surface)) {
@@ -545,19 +553,14 @@ void flipFB() {
 	}
 }
 
-void blitToFB(SDL_Surface* src, int x, int y, int w, int h) {
-	SDL_Rect rect;
-	rect.x = x;
-	rect.y = y;
-	rect.w = w;
-	rect.h = h;
+void flipFBNoCheck() {
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
-	}
-	SDL_BlitSurface(src, NULL, surface, &rect);
-	SDL_Flip(surface);
-	updateAvailable=0;
-	if (SDL_MUSTLOCK(surface)) {
+		SDL_Flip(surface);
+		SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
 		SDL_LockSurface(surface);
+	} else {
+		SDL_Flip(surface);
+		SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
 	}
 }

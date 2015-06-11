@@ -80,7 +80,7 @@ GLint* marshali(struct CPU* cpu, U32 address, U32 count) {
 		bufferi_len = count;
 	}
 	for (i=0;i<count;i++) {
-		bufferi[i] = readd(cpu->memory, address);
+		bufferi[i] = (GLint)readd(cpu->memory, address);
 		address+=4;
 	}
 	return bufferi;
@@ -313,19 +313,19 @@ void marshalBackus(struct CPU* cpu, U32 address, GLushort* buffer, U32 count) {
 }
 
 void marshalBacks(struct CPU* cpu, U32 address, GLshort* buffer, U32 count) {
-	marshalBackus(cpu, address, (GLshort*)buffer, count);
+	marshalBackus(cpu, address, (GLushort*)buffer, count);
 }
 
 void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-	memcopyFromNative(cpu->memory, address, buffer, count);
+	memcopyFromNative(cpu->memory, address, (char*)buffer, count);
 }
 
 void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-	memcopyFromNative(cpu->memory, address, buffer, count);
+	memcopyFromNative(cpu->memory, address, (char*)buffer, count);
 }
 
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count) {
-	memcopyFromNative(cpu->memory, address, buffer, count);
+	memcopyFromNative(cpu->memory, address, (char*)buffer, count);
 }
 
 // GLAPI void APIENTRY glClearIndex( GLfloat c )
@@ -1029,7 +1029,7 @@ void glcommon_glGetError(struct CPU* cpu) {
 void glcommon_glGetString(struct CPU* cpu) {
 	U32 name = ARG1;
 	U32 index = 0;
-	const char* result = glGetString(name);
+	const char* result = (const char*)glGetString(name);
 
 	if (name == GL_VENDOR) {
 		index = STRING_GL_VENDOR;
@@ -1206,7 +1206,7 @@ void glcommon_glCallList(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glCallLists( GLsizei n, GLenum type, const GLvoid *lists ) {
 void glcommon_glCallLists(struct CPU* cpu) {
-	GLvoid* data;
+	GLvoid* data=0;
 
 	switch (ARG2) {
 		case GL_UNSIGNED_BYTE:
@@ -3139,9 +3139,9 @@ void glcommon_glPassThrough(struct CPU* cpu) {
 // GLAPI void APIENTRY glSelectBuffer( GLsizei size, GLuint *buffer ) {
 void glcommon_glSelectBuffer(struct CPU* cpu) {
 	GLsizei size = ARG1;
-	GLuint* buffer = marshali(cpu, ARG2, size);
+	GLuint* buffer = marshalui(cpu, ARG2, size);
 	glSelectBuffer(size, buffer);
-	marshalBacki(cpu, ARG3, buffer, size);
+	marshalBackui(cpu, ARG3, buffer, size);
 }
 
 // GLAPI void APIENTRY glInitNames( void ) {
@@ -3177,7 +3177,7 @@ void glcommon_glGenTextures(struct CPU* cpu) {
 // GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures) {
 void glcommon_glDeleteTextures(struct CPU* cpu) {
 	GLsizei n = ARG1;
-	glDeleteTextures(n, marshali(cpu, ARG2, n));
+	glDeleteTextures(n, marshalui(cpu, ARG2, n));
 }
 
 // GLAPI void APIENTRY glBindTexture( GLenum target, GLuint texture ) {

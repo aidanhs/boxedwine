@@ -8,35 +8,37 @@
 #include <stdio.h>
 #include <SDL.h>
 
-void blitToFB(SDL_Surface* src, int x, int y, int w, int h);
+void flipFBNoCheck();
 
 // GLAPI void APIENTRY glFinish( void ) {
 void mesa_glFinish(struct CPU* cpu) {	
 	glFinish();
-	if (cpu->thread->openglSurface) {
-		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
-		blitToFB(surface, 0, 0, surface->w, surface->h);
-	}
+	flipFBNoCheck();
+#ifdef __EMSCRIPTEN__
+        // we to return control to the browser in order for the screen to be updated
+        cpu->blockCounter |= 0x80000000;
+#endif
 }
 
 // GLAPI void APIENTRY glFlush( void ) {
 void mesa_glFlush(struct CPU* cpu) {	
 	glFlush();	
-	if (cpu->thread->openglSurface) {
-		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
-		blitToFB(surface, 0, 0, surface->w, surface->h);
-	}
+	flipFBNoCheck();
+#ifdef __EMSCRIPTEN__
+        // we to return control to the browser in order for the screen to be updated
+        cpu->blockCounter |= 0x80000000;
+#endif
 }
 
 // GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct)
 void mesa_glXCreateContext(struct CPU* cpu) {
-	U32 format = ARG5;
+	//U32 format = ARG5;
 	OSMesaContext share_list = (OSMesaContext)ARG4;
 	U32 accum = ARG3;
 	U32 stencil = ARG2;
 	U32 depth = ARG1;	
 
-	EAX = (U32)OSMesaCreateContextExt( format, depth, stencil, accum, share_list );	
+	EAX = (U32)OSMesaCreateContextExt( GL_RGBA, depth, stencil, accum, share_list );	
 	if (!EAX) {
 		printf("OSMesaCreateContext failed!\n");
 	}
@@ -49,46 +51,39 @@ void mesa_glXDestroyContext(struct CPU* cpu) {
 	OSMesaDestroyContext(ctx);
 }
 
+extern SDL_Surface* surface;
+void fbSetupScreenForMesa(int width, int height, int depth);
+void fbSetupScreen();
+
 // Bool glXMakeCurrent(Display *dpy, GLXDrawable drawable, GLXContext ctx) 
 void mesa_glXMakeCurrent(struct CPU* cpu) {
-	U32 isWindow = ARG5;
-	U32 depth = ARG4;
+	//U32 isWindow = ARG5;
+	//U32 depth = ARG4;
 	U32 height = ARG3;
 	U32 width = ARG2;
 	OSMesaContext ctx = (OSMesaContext)ARG1;
+	void* buffer = 0;
 
-	if (ctx) {
-		if (isWindow) {
-			if (cpu->thread->openglSurface) {
-				printf("*** ERROR *** mesa_glXMakeCurrent doesn't support more than one context active at a time\n");
-			}
-			cpu->thread->openglSurface = SDL_CreateRGBSurface(0, width, height, depth, 0x0000ff, 0x00ff00, 0xff0000, 0);
-			cpu->thread->openglBuffer = ((SDL_Surface*)cpu->thread->openglSurface)->pixels;
-		} else {
-			cpu->thread->openglBuffer = kalloc( width * height * depth/8 );
-		}
-		cpu->thread->openglContext = ctx;
+	if (width) {
+		fbSetupScreenForMesa(width, height, 32);
+		buffer = surface->pixels;
 	} else {
-		if (cpu->thread->openglSurface) {
-			SDL_FreeSurface((SDL_Surface*)cpu->thread->openglSurface);
-		} else {
-			kfree(cpu->thread->openglBuffer);
-		}
-		cpu->thread->openglBuffer = 0;
-		cpu->thread->openglContext = 0;
-		cpu->thread->openglSurface = 0;
+		fbSetupScreen();
 	}
-	EAX = OSMesaMakeCurrent(ctx, cpu->thread->openglBuffer, GL_UNSIGNED_BYTE, width, height);
+
+	
+	EAX = OSMesaMakeCurrent(ctx, buffer, GL_UNSIGNED_BYTE, width, height);
 	OSMesaPixelStore(OSMESA_Y_UP, 0);
 }
 
 // void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
 void mesa_glXSwapBuffers(struct CPU* cpu) {
-	if (cpu->thread->openglSurface) {
-		SDL_Surface* surface = (SDL_Surface*)cpu->thread->openglSurface;
-		glFinish();
-		blitToFB(surface, 0, 0, surface->w, surface->h);
-	}
+	glFinish();
+	flipFBNoCheck();
+#ifdef __EMSCRIPTEN__
+	// we to return control to the browser in order for the screen to be updated
+	cpu->blockCounter |= 0x80000000;
+#endif
 }
 
 void mesa_init() {
