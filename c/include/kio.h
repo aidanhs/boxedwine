@@ -31,5 +31,7 @@ U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address);
 U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64 offset);
 U32 syscall_rmdir(struct KThread* thread, U32 path);
 U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U64 offset);
+U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U32 flag);
+U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags);
 
 #endif

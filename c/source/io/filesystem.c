@@ -117,7 +117,25 @@ U32 file_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 le
 	}
 }
 
+void removeOpenNodeFromNode(struct OpenNode* node) {
+	struct OpenNode* prev = node->node->openNodes;
+	while (prev) {
+		// first one in list
+		if (prev==node) {
+			node->node->openNodes = node->nextOpen;
+			break;
+		} else if (prev->nextOpen == node) {
+			prev->nextOpen = prev->nextOpen->nextOpen;
+			break;
+		}
+	}
+	if (!prev) {
+		kpanic("Could not find open node in list of open nodes.  This is a logic error");
+	}
+}
+
 void file_close(struct OpenNode* node) {
+	removeOpenNodeFromNode(node);
 	close(node->handle);
 	freeOpenNode(node);
 }
@@ -223,6 +241,7 @@ void dir_close(struct OpenNode* node) {
 	if (data) {
 		freeDirData(data);
 	}
+	removeOpenNodeFromNode(node);
 	freeOpenNode(node);
 }
 
@@ -302,8 +321,60 @@ BOOL file_isDirectory(struct Node* node) {
 	return FALSE;
 }
 
+static char tmpPath[MAX_FILEPATH_LEN];
+static char tmpLocalPath[MAX_FILEPATH_LEN];
+static char tmpNativePath[MAX_FILEPATH_LEN];
+
 BOOL file_remove(struct Node* node) {
-	return unlink(node->path.nativePath)==0;
+	BOOL result = unlink(node->path.nativePath)==0;
+	BOOL forcedClose = FALSE;
+
+	if (!result && node->nodeType->exists(node)) {
+		struct OpenNode* openNode = node->openNodes;
+		int i;
+
+		while (openNode) {
+			openNode->cachedPosDuringDelete = openNode->access->getFilePointer(openNode);
+			close(openNode->handle);
+			openNode->handle = 0xFFFFFFFF;
+			openNode = openNode->nextOpen;
+		}
+		for (i=0;i<100000000;i++) {
+			U32 isLink;
+
+			sprintf(tmpPath, "/tmp/del%.8d.tmp", i);
+			getLocalAndNativePaths("", tmpPath, tmpLocalPath, tmpNativePath, &isLink);
+			if (!doesPathExist(tmpNativePath)) {
+				break;
+			}
+		}
+		if (rename(node->path.nativePath, tmpNativePath)!=0) {
+			kpanic("could not rename %s", node->path.nativePath);
+		}
+		openNode = node->openNodes;
+		while (openNode) {
+			int openFlags = 0;
+			int flags = openNode->flags;
+						
+			if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
+				openFlags|=O_RDONLY;
+			} else if ((flags & K_O_ACCMODE)==K_O_WRONLY) {
+				openFlags|=O_WRONLY;
+			} else {
+				openFlags|=O_RDWR;
+			}
+			if (flags & K_O_APPEND) {
+				openFlags|=O_APPEND;
+			}
+
+			openNode->handle = open(tmpNativePath, openFlags, 0666);
+			openNode->access->seek(openNode, openNode->cachedPosDuringDelete);
+			openNode = openNode->nextOpen;
+		}
+		forcedClose = TRUE;
+		result = TRUE;
+	}
+	return result;
 }
 
 U64 file_lastModified(struct Node* node) {
@@ -442,16 +513,7 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 		strcat(localPath, path);
 	}	
 
-	normalizePath(localPath);
-	result = (struct Node*)getHashmapValue(&nodeMap, localPath);
-	if (result) {
-		if (result->path.nativePath)
-			strcpy(nativePath, result->path.nativePath);
-		else {
-			nativePath[0]=0;
-		}
-		return result;
-	}
+	normalizePath(localPath);	
 	strcpy(nativePath, root);	
 	strcat(nativePath, localPath);
 	while (TRUE) {
@@ -464,6 +526,14 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 			break;
 		}
 	}
+	result = (struct Node*)getHashmapValue(&nodeMap, localPath);
+	if (result) {
+		// might have changed from link to file or visa versa
+		if (result->path.nativePath)
+			strcpy(result->path.nativePath, nativePath);
+		result->path.isLink = *isLink;
+		return result;
+	}
 	return 0;
 }
 
@@ -473,8 +543,9 @@ struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path
 	U32 isLink = 0;
 	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, nativePath, &isLink);
 		
-	if (result)
+	if (result) {		
 		return result;		
+	}
 	
 	if (existing && !doesPathExist(nativePath)) {
 		return 0;
@@ -505,8 +576,11 @@ struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 
 	result->flags = flags;
 	result->access = nodeAccess;
 	result->node = node;
-	if (nodeAccess->init(process, result))
+	if (nodeAccess->init(process, result)) {
+		result->nextOpen = node->openNodes;
+		node->openNodes = result;
 		return result;
+	}
 	freeOpenNode(result);
 	return 0;
 }
@@ -537,7 +611,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 		result->path.nativePath = 0;
 	}
 	result->name = strrchr(result->path.localPath, '/')+1;
-	putHashmapValue(&nodeMap, result->path.localPath, result);
+	putHashmapValue(&nodeMap, result->path.localPath, result);	
 	return result;
 }
 

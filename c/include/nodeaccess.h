@@ -22,6 +22,8 @@ struct OpenNode {
 	struct Node* node;
 	void* data;
 	U32 idata;
+	struct OpenNode* nextOpen;
+	U64 cachedPosDuringDelete;
 };
 
 struct NodeAccess {

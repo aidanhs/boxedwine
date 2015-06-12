@@ -109,8 +109,8 @@ U32 tty_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len
 			U8* ram = getPhysicalAddress(memory, address);
 			if (todo>len)
 				todo = len;
-			memcpy(buffer, ram, len);
-			buffer[len]=0;
+			memcpy(buffer, ram, todo);
+			buffer[todo]=0;
 			fprintf(stdout, "%s", buffer);
 			len-=todo;
 			address+=todo;

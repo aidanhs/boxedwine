@@ -23,6 +23,7 @@ struct Node {
 		void* pData2;
 		U32 data2;
 	};
+	struct OpenNode* openNodes;
 };
 
 #endif

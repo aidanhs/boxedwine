@@ -170,6 +170,91 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
 	return fd->kobject->access->stat(fd->kobject, thread->process->memory, buf, TRUE);
 }
 
+U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
+	const char* currentDirectory=0;
+	struct Node* node;	
+
+	if (dirfd==-100) { // AT_FDCWD
+		currentDirectory = thread->process->currentDirectory;
+	} else {
+		struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
+		if (!fd) {
+			return -K_EBADF;
+		} else if (fd->kobject->type!=KTYPE_FILE){
+			return -K_ENOTDIR;
+		} else {
+			struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
+			currentDirectory = openNode->node->path.localPath;
+			if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+				return -K_ENOTDIR;
+			}
+		}
+	}
+	node = getNodeFromLocalPath(currentDirectory, getNativeString(thread->process->memory, address), TRUE);
+	if (node && node->nodeType->exists(node)) {
+		if (flags & 0x200) { // unlinkat AT_REMOVEDIR
+			if (!node->nodeType->isDirectory(node)) {
+				return -K_ENOTDIR;
+			}
+			if (rmdir(node->path.nativePath) == 0)
+				return 0;
+			return -K_ENOTEMPTY;
+		} else {
+			if (!node->nodeType->remove(node)) {
+				kwarn("filed to remove file: errno=%d", errno);
+				return -K_EBUSY;
+			}
+			return 0;
+		}
+	}
+	return -K_ENOENT;
+}
+
+U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U32 flag) {
+	const char* currentDirectory=0;
+	struct Node* node;	
+
+	if (dirfd==-100) { // AT_FDCWD
+		currentDirectory = thread->process->currentDirectory;
+	} else {
+		struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
+		if (!fd) {
+			return -K_EBADF;
+		} else if (fd->kobject->type!=KTYPE_FILE){
+			return -K_ENOTDIR;
+		} else {
+			struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
+			currentDirectory = openNode->node->path.localPath;
+			if (openNode->node->nodeType->isDirectory(openNode->node)) {
+				openNode->access->close(openNode);
+				return -K_ENOTDIR;
+			}
+		}
+	}
+	node = getNodeFromLocalPath(currentDirectory, getNativeString(thread->process->memory, address), TRUE);
+	if (node && node->nodeType->exists(node)) {
+		U64 len;
+
+		if (flag == 0x100) { // AT_SYMLINK_NOFOLLOW
+			if (node->path.isLink) {
+				struct Node* link;				
+				char tmp[MAX_FILEPATH_LEN];
+
+				strcpy(tmp, node->path.localPath);
+				strcat(tmp, ".link");
+				link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
+				len = link->nodeType->length(node);
+				writeStat(thread->process->memory, buf, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
+				return 0;
+			}
+		}
+		len = node->nodeType->length(node);
+		writeStat(thread->process->memory, buf, TRUE, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
+		return 0;
+	}
+	return -K_ENOENT;
+}
+
 U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
 	struct Node* node = getNode(thread->process, fileName);
 
@@ -305,18 +390,23 @@ U32 syscall_unlink(struct KThread* thread, U32 path) {
 }
 
 U32 syscall_fchmod(struct KThread* thread, FD fd, U32 mod) {
-	kwarn("fchmod is not implemented");
+	//kwarn("fchmod is not implemented");
 	return 0;
 }
 
 U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
-	struct Node* oldNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, oldName), TRUE);
+	struct Node* oldNode;
 	struct Node* newNode;
+	char path[MAX_FILEPATH_LEN];
+	char oldPath[MAX_FILEPATH_LEN];
 
+	strcpy(oldPath, getNativeString(thread->process->memory, oldName));
+	oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, TRUE);
 	if (!oldNode) {
 		return -K_ENOENT;
 	}
-	newNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, newName), FALSE);
+	strcpy(path, getNativeString(thread->process->memory, newName));
+	newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
 	if (newNode->nodeType->exists(newNode)) {
 		if (newNode->nodeType->isDirectory(newNode)) {
 			struct OpenNode* openNode = newNode->nodeType->open(thread->process, newNode, K_O_RDONLY); 
@@ -330,6 +420,26 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 			}
 		}
 		newNode->nodeType->remove(newNode);
+	}
+	if (oldNode->path.isLink) {
+		strcat(path, ".link");
+		strcat(oldPath, ".link");
+		oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, TRUE);
+		newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
+		if (newNode->nodeType->exists(newNode)) {
+			if (newNode->nodeType->isDirectory(newNode)) {
+				struct OpenNode* openNode = newNode->nodeType->open(thread->process, newNode, K_O_RDONLY); 
+				if (openNode->access->length(openNode)) {
+					openNode->access->close(openNode);
+					return -K_ENOTEMPTY;
+				}
+				openNode->access->close(openNode);
+				if (!oldNode->nodeType->isDirectory(oldNode)) {
+					return -K_EISDIR;
+				}
+			}
+			newNode->nodeType->remove(newNode);
+		}
 	}
 	return oldNode->nodeType->rename(oldNode, newNode);
 }
@@ -518,11 +628,9 @@ U32 syscall_rmdir(struct KThread* thread, U32 path) {
 		return -K_ENOTDIR;
 	}
 	result = rmdir(node->path.nativePath);
-	if (result == ENOTEMPTY)
-		return -K_ENOTEMPTY;
 	if (result == 0)
 		return 0;
-	return -K_EIO;
+	return -K_ENOTEMPTY;
 }
 
 #define FS_SIZE 107374182400l

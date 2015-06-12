@@ -4,7 +4,7 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600 -uid 0 /usr/bin/dpkg -i /var/cache/apt/archives/libc6_2.19-18_i386.deb</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0 /usr/bin/dpkg -i  --ignore-depends=libgcc1 /var/cache/apt/archives/libc6_2.11.3-4_i386.deb</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
@@ -12,11 +12,11 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600 /usr/bin/dpkg</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0 /usr/bin/dpkg -i /var/cache/apt/archives/gcc-4.4-base_4.4.5-8_i386.deb</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0 /usr/bin/dpkg</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">

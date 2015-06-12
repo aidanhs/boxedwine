@@ -54,6 +54,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_lseek 19
 #define __NR_getpid 20
 #define __NR_alarm 27
+#define __NR_utime 30
 #define __NR_access 33
 #define __NR_kill 37
 #define __NR_rename 38
@@ -111,6 +112,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_stat64 195
 #define __NR_lstat64 196
 #define __NR_fstat64 197
+#define __NR_lchown32 198
 #define __NR_getuid32 199
 #define __NR_getgid32 200
 #define __NR_geteuid32 201
@@ -145,7 +147,10 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_inotify_add_watch 292
 #define __NR_inotify_rm_watch 293
 #define __NR_openat 295
+#define __NR_fstatat64 300
+#define __NR_unlinkat 301
 #define __NR_set_robust_list 311
+#define __NR_sync_file_range 314
 #define __NR_getcpu 318
 #define __NR_utimensat 320
 #define __NR_pipe2 331
@@ -236,6 +241,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_alarm:
 		result = syscall_alarm(thread, ARG1);
 		LOG("__NR_alarm seconds=%d result=%d", ARG1, result);
+		break;
+	case __NR_utime:
+		result = 0;
 		break;
 	case __NR_access:
 		result = syscall_access(thread, ARG1, ARG2);
@@ -587,6 +595,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_fstat64(thread, ARG1, ARG2);
 		LOG("__NR_fstat64 fildes=%d buf=%X result=%d", ARG1, ARG2, result);
 		break;
+	case __NR_lchown32:
+		result = 0;
+		break;
 	case __NR_getuid32:
 		result = process->userId;
 		break;
@@ -601,7 +612,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_fchown32:
 		result = 0;
-		kwarn("__NR_fchown32 not implemented");
+		//kwarn("__NR_fchown32 not implemented");
 		LOG("__NR_fchown32 fd=%d owner=%d group=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
 		/*
@@ -755,9 +766,20 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_openat: dirfd=%d name=%s flags=%x result=%d", ARG1, getNativeString(memory, ARG2), ARG3, result);
 		break;	
 	}
+	case __NR_fstatat64:
+		result = syscall_fstatat64(thread, ARG1, ARG2, ARG3, ARG4);
+		LOG("__NR_fstatat64: dirfd=%d path=%s buf=%X flags=%x result=%d", ARG1, getNativeString(memory, ARG2), ARG3, ARG4, result);
+		break;
+	case __NR_unlinkat:
+		result = syscall_unlinkat(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_unlinkat: dirfd=%d path=%s flags=%x result=%d", ARG1, getNativeString(memory, ARG2), ARG3, result);
+		break;
 	case __NR_set_robust_list:
 		kwarn("syscall __NR_set_robust_list not implemented");
 		result = -1;
+		break;
+	case __NR_sync_file_range:
+		result = 0;
 		break;
 		/*
 	case __NR_getcpu:

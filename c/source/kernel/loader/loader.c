@@ -26,7 +26,7 @@ const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
 		*isElf = isValidElf(hdr);
 	}
 	if (!*isElf) {
-		if (!strncmp((char*)buffer, "#!/bin/sh", 9)) {
+		if (!strncmp((char*)buffer, "#!/bin/sh", 9) || !strncmp((char*)buffer, "#! /bin/sh", 10)) {
 			return "/bin/sh";
 		}
 	}
