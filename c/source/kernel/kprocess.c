@@ -280,12 +280,12 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	push32(cpu, 7); // AT_BASE
 	push32(cpu, 4096);
 	push32(cpu, 6); // AT_PAGESZ
-	//push32(cpu, process->phnum);
-	//push32(cpu, 5); // AT_PHNUM
-	//push32(cpu, 32);
-	//push32(cpu, 4); // AT_PHENT
-	//push32(cpu, process->phdr);
-	//push32(cpu, 3); // AT_PHDR
+	push32(cpu, process->phnum);
+	push32(cpu, 5); // AT_PHNUM
+	push32(cpu, process->phentsize);
+	push32(cpu, 4); // AT_PHENT
+	push32(cpu, process->phdr);
+	push32(cpu, 3); // AT_PHDR
 	
 	push32(cpu, 0);	
     for (i=envc-1;i>=0;i--) {
@@ -383,68 +383,50 @@ void initStdio(struct KProcess* process) {
 
 BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId) {
 	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
-	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
-	struct Node* loaderNode = 0;
-	struct OpenNode* loaderOpenNode = 0;
+	const char* loader = 0;
 	BOOL isElf = TRUE;
 	const char* pArgs[128];
-	int argIndex;
+	int argIndex=0;
 	struct KProcess* process = allocProcess();
 	struct Memory* memory = allocMemory();		
 	struct KThread* thread = allocThread();
 	U32 i;
-	struct Node* interpreterNode = 0;
+	struct OpenNode* openNode = 0;
+	BOOL result = FALSE;
 
 	initProcess(process, memory, argc, args, userId);
 	initThread(thread, process);
 	initStdio(process);
 
-	if (node) {
-		openNode = node->nodeType->open(process, node, K_O_RDONLY);
-	}
-	if (openNode) {
-		interpreter = getInterpreter(openNode, &isElf);
-		openNode->access->close(openNode);
-	}
-	if (!interpreter && !isElf) {
+	if (!inspectNode(process, currentDirectory, node, &loader, &interpreter, &openNode)) {
 		return FALSE;
 	}
-	if (interpreter) {
-		interpreterNode = getNodeFromLocalPath(currentDirectory, interpreter, TRUE);		
-	}
-	if (interpreterNode || isElf) {
-		// :TODO: should probably get this from the elf file
-		loaderNode = getNodeFromLocalPath(currentDirectory, "/lib/ld-linux.so.2", TRUE);
-		if (loaderNode) {
-			loaderOpenNode = loaderNode->nodeType->open(process, loaderNode, K_O_RDONLY);
-		}
-		if (loaderOpenNode) {		
-			if (loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {
-				// :TODO: why will it crash in strchr libc if I remove this
-				//syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
+	
+	if (loadProgram(process, thread, openNode, &thread->cpu.eip.u32)) {
+		// :TODO: why will it crash in strchr libc if I remove this
+		//syscall_mmap64(thread, ADDRESS_PROCESS_LOADER << PAGE_SHIFT, 4096, K_PROT_READ | K_PROT_WRITE, K_MAP_ANONYMOUS|K_MAP_PRIVATE, -1, 0);
 		
-				pArgs[0] = loaderNode->path.localPath;
-				argIndex = 1;
-				if (interpreter) {
-					pArgs[1] = interpreter;
-					argIndex = 2;
-				}
-				for (i=0;i<argc;i++) {
-					pArgs[i+argIndex] = args[i];
-				}
-				argc+=argIndex;
-
-				setupThreadStack(&thread->cpu, process->name, argc, pArgs, envc, env);
-
-				strcpy(process->currentDirectory, currentDirectory);
-
-				scheduleThread(thread);
-				return TRUE;
-			}
+		if (loader)
+			pArgs[argIndex++] = loader;
+		if (interpreter)
+			pArgs[argIndex++] = interpreter;
+		for (i=0;i<argc;i++) {
+			pArgs[i+argIndex] = args[i];
 		}
+		argc+=argIndex;
+
+		setupThreadStack(&thread->cpu, process->name, argc, pArgs, envc, env);
+
+		strcpy(process->currentDirectory, currentDirectory);
+
+		scheduleThread(thread);
+		result = TRUE;
 	}
-	return FALSE;
+	if (openNode) {
+		openNode->access->close(openNode);
+	}
+	return result;
 }
 
 void processOnExitThread(struct KProcess* process) {
@@ -784,10 +766,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	struct Node* node;
 	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
-	struct Node* loaderNode = 0;
-	struct OpenNode* loaderOpenNode = 0;
+	const char* loader = 0;
 	BOOL isElf = FALSE;
-	struct Node* interpreterNode = 0;
 	struct KThread* processThread;
 	U32 threadIndex = 0;
 	U32 i;
@@ -798,36 +778,12 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	U32 envc=0;
 	int tmpIndex = 0;
 
-	//if (strstr(first, "wine-preloader")) {
-	//	argv+=4;
-	//	first = getNativeString(memory, readd(memory, argv));
-	//}
 	node = findInPath(process, first);
-	if (node) {
-		openNode = node->nodeType->open(process, node, K_O_RDONLY);
+
+	if (!node || !inspectNode(process, process->currentDirectory, node, &loader, &interpreter, &openNode)) {
+		return FALSE;
 	}
-	if (openNode) {
-		interpreter = getInterpreter(openNode, &isElf);
-		openNode->access->close(openNode);
-	}
-	if (!interpreter && !isElf) {
-		return -K_ENOENT;
-	}
-	if (interpreter) {
-		interpreterNode = getNodeFromLocalPath(process->currentDirectory, interpreter, TRUE);		
-	}
-	if (!interpreterNode && !isElf) {
-		return -K_ENOENT;
-	}
-	// :TODO: should probably get this from the elf file
-	loaderNode = getNodeFromLocalPath(process->currentDirectory, "/lib/ld-linux.so.2", TRUE);
-	if (loaderNode) {
-		loaderOpenNode = loaderNode->nodeType->open(process, loaderNode, K_O_RDONLY);
-	}
-	if (!loaderOpenNode) {
-		return -K_ENOENT;
-	}
-			
+				
 	process->commandLine[0]=0;
 	strcpy(process->exe, getNativeString(memory, readd(memory, argv)));
 	name = strrchr(process->exe, '/');
@@ -846,10 +802,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		strcat(process->commandLine, arg);
 		i++;
 	}
-	args[argc++] = loaderNode->path.localPath;
-	if (interpreter) {
+
+	if (loader)
+		args[argc++] = loader;
+	if (interpreter)
 		args[argc++] = interpreter;
-	}
 			
 	args[argc++] = node->path.localPath;
 	// copy args/env out of memory before memory is reset
@@ -901,10 +858,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		}
 	}
 	initCallbacksInProcess(process);
-	if (!loadProgram(process, thread, loaderOpenNode, &thread->cpu.eip.u32)) {		
+	if (!loadProgram(process, thread, openNode, &thread->cpu.eip.u32)) {		
 		// :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
 		kpanic("program failed to load, but memory was already reset");
 	}			
+	openNode->access->close(openNode);
 	return -K_CONTINUE;
 }
 

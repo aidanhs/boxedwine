@@ -77,6 +77,7 @@ struct KProcess {
 	U32 loaderBaseAddress;
 	U32 phdr;
 	U32 phnum;
+	U32 phentsize;
 	U32 entry;
 };
 

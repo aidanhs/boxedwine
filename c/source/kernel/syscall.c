@@ -281,7 +281,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 			if (len<=alreadyAllocated) {
 				process->brkEnd+=len;
 			} else {
-				if (syscall_mmap64(thread, process->brkEnd, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS|K_MAP_FIXED, -1, 0)==process->brkEnd) {
+				U32 aligned = (process->brkEnd+4095) & 0xFFFFF000;
+
+				if (syscall_mmap64(thread, aligned, len - alreadyAllocated, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS|K_MAP_FIXED, -1, 0)==aligned) {
 					process->brkEnd+=len;
 				}				
 			}

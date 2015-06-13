@@ -504,6 +504,7 @@ struct Node* getParentNode(struct Node* node) {
 
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, char* nativePath, U32* isLink) {
 	struct Node* result;
+	U32 tmp32=0;
 
 	if (path[0]=='/')
 		strcpy(localPath, path);
@@ -518,7 +519,7 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 	strcat(nativePath, localPath);
 	while (TRUE) {
 		localPathToRemote(nativePath+strlen(root)); // don't convert colon's in the root path			
-		if (followLinks(nativePath, isLink)) {
+		if (followLinks(nativePath, &tmp32)) {
 			normalizePath(nativePath);
 			memmove(nativePath+strlen(root), nativePath, strlen(nativePath)+1);
 			memcpy(nativePath, root, strlen(root));
@@ -526,12 +527,14 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 			break;
 		}
 	}
+	if (isLink)
+		*isLink = tmp32;
 	result = (struct Node*)getHashmapValue(&nodeMap, localPath);
 	if (result) {
 		// might have changed from link to file or visa versa
 		if (result->path.nativePath)
 			strcpy(result->path.nativePath, nativePath);
-		result->path.isLink = *isLink;
+		result->path.isLink = tmp32;
 		return result;
 	}
 	return 0;

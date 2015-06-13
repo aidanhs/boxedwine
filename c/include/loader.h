@@ -6,7 +6,7 @@
 #include "nodeaccess.h"
 #include "kprocess.h"
 
-const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf);
 BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNode* openNode, U32* eip);
+BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct Node* node, const char** loader, const char** interpreter, struct OpenNode** result);
 
 #endif
