@@ -148,6 +148,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 	process->mappedFiles[0].len = len;
 	process->mappedFiles[0].name = openNode->node->path.localPath;
 	process->mappedFiles[0].inUse = TRUE;
+	process->phdr = 0;
 
 	for (i=0;i<hdr->e_phnum;i++) {
 		struct Elf32_Phdr phdr;		

@@ -20,6 +20,7 @@ struct OpenNode {
 		struct OpenNode* next;
 	};
 	struct Node* node;
+	struct Node* linkedNoded;
 	void* data;
 	U32 idata;
 	struct OpenNode* nextOpen;

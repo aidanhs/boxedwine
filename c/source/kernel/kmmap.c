@@ -116,7 +116,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			}
 			if (!cache) {
 				cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache));
-				strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath);
+				safe_strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath, MAX_FILEPATH_LEN);
 				cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
 				cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount);
 				putMappedFileInCache(cache);

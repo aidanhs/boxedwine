@@ -26,13 +26,13 @@ ULONGLONG getSystemTimeAsMicroSeconds() {
 
 
 int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
-    char path[1024];
+    char path[MAX_FILEPATH_LEN];
 	WIN32_FIND_DATA findData;
 	HANDLE hFind;
 	int result=0;
 
-	strcpy(path, dir->path.nativePath);
-	strcat(path, "\\*.*");
+	safe_strcpy(path, dir->path.nativePath, MAX_FILEPATH_LEN);
+	safe_strcat(path, "\\*.*", MAX_FILEPATH_LEN);
 	hFind = FindFirstFile(path, &findData); 
     if(hFind != INVALID_HANDLE_VALUE)  { 		
 		nodes[result++]=getNodeFromLocalPath(dir->path.localPath, ".", FALSE);

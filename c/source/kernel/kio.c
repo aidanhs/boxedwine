@@ -240,8 +240,8 @@ U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U3
 				struct Node* link;				
 				char tmp[MAX_FILEPATH_LEN];
 
-				strcpy(tmp, node->path.localPath);
-				strcat(tmp, ".link");
+				safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
+				safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
 				link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
 				len = link->nodeType->length(node);
 				writeStat(thread->process->memory, buf, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
@@ -326,10 +326,10 @@ U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
 	if (!node->path.isLink) {
 		return syscall_stat64(thread, path, buffer);
 	}
-	strcpy(tmp, node->path.localPath);
-	strcat(tmp, ".link");
+	safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
+	safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
 	link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
-	len = link->nodeType->length(node);
+	len = link->nodeType->length(link);
 	writeStat(thread->process->memory, buffer, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node));
 	return 0;
 }
@@ -400,12 +400,12 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 	char path[MAX_FILEPATH_LEN];
 	char oldPath[MAX_FILEPATH_LEN];
 
-	strcpy(oldPath, getNativeString(thread->process->memory, oldName));
+	safe_strcpy(oldPath, getNativeString(thread->process->memory, oldName), MAX_FILEPATH_LEN);
 	oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, TRUE);
 	if (!oldNode) {
 		return -K_ENOENT;
 	}
-	strcpy(path, getNativeString(thread->process->memory, newName));
+	safe_strcpy(path, getNativeString(thread->process->memory, newName), MAX_FILEPATH_LEN);
 	newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
 	if (newNode->nodeType->exists(newNode)) {
 		if (newNode->nodeType->isDirectory(newNode)) {
@@ -422,8 +422,8 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 		newNode->nodeType->remove(newNode);
 	}
 	if (oldNode->path.isLink) {
-		strcat(path, ".link");
-		strcat(oldPath, ".link");
+		safe_strcat(path, ".link", MAX_FILEPATH_LEN);
+		safe_strcat(oldPath, ".link", MAX_FILEPATH_LEN);
 		oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, TRUE);
 		newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
 		if (newNode->nodeType->exists(newNode)) {
@@ -551,20 +551,18 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 	return len;
 }
 
-char tmpPath[MAX_FILEPATH_LEN];
-
 U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) {
 	struct Memory* memory = thread->process->memory;
 	const char* s = getNativeString(memory, path);
 	struct Node* node;
+	char tmpPath[MAX_FILEPATH_LEN];
 
 	// :TODO: move these to the virtual filesystem
     if (!strcmp("/proc/self/exe", s)) {
 		U32 len = strlen(thread->process->exe);
-		if (len+1>bufSize)
-			len=bufSize-1;
+		if (len>bufSize)
+			len=bufSize;
 		memcopyFromNative(memory, buffer, thread->process->exe, len);
-		writeb(memory, buffer+len, 0);
         return len;
     } else if (!strncmp("/proc/self/fd/", s, 14)) {
         int h = atoi(s+14);
@@ -579,23 +577,21 @@ U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) 
 		}
 		openNode = (struct OpenNode*)fd->kobject->data;
 		len = strlen(openNode->node->path.localPath);
-		if (len+1>(int)bufSize)
-			len=bufSize-1;
+		if (len>(int)bufSize)
+			len=bufSize;
 		memcopyFromNative(memory, buffer, openNode->node->path.localPath, len);
-		writeb(memory, buffer+len, 0);
         return len;        
     }
-	strcpy(tmpPath, s);
-	strcat(tmpPath, ".link");
+	safe_strcpy(tmpPath, s, MAX_FILEPATH_LEN);
+	safe_strcat(tmpPath, ".link", MAX_FILEPATH_LEN);
 	node = getNodeFromLocalPath(thread->process->currentDirectory, tmpPath, TRUE);
     if (!node)
         return -K_EINVAL;
-	if (kreadLink(node->path.nativePath, tmpPath)) {
+	if (kreadLink(node->path.nativePath, tmpPath, MAX_FILEPATH_LEN, FALSE)) {
 		U32 len = strlen(tmpPath);
-		if (len+1>bufSize)
-			len=bufSize-1;
+		if (len>bufSize)
+			len=bufSize;
 		memcopyFromNative(memory, buffer, tmpPath, len);
-		writeb(memory, buffer+len, 0);
         return len; 
 	}
     return -K_EINVAL;

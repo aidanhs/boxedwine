@@ -214,18 +214,16 @@ void initMemory(struct Memory* memory) {
 	}
 }
 
-void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount, U32 exceptExtra) {
+void resetMemory(struct Memory* memory) {
 	U32 i=0;
 
 	for (i=0;i<0x100000;i++) {
-		if ((i<exceptStart || i>=exceptStart+exceptCount) && i!=exceptExtra) {
-			memory->mmu[i]->clear(memory, i);
-			memory->mmu[i] = &invalidPage;
-			memory->flags[i] = 0;
-			memory->read[i] = 0;
-			memory->write[i] = 0;
-			memory->ramPage[i] = 0;
-		}
+		memory->mmu[i]->clear(memory, i);
+		memory->mmu[i] = &invalidPage;
+		memory->flags[i] = 0;
+		memory->read[i] = 0;
+		memory->write[i] = 0;
+		memory->ramPage[i] = 0;
 	}
 }
 
@@ -275,7 +273,7 @@ void freeMemory(struct Memory* memory) {
 	for (i=0;i<0x100000;i++) {
 		memory->mmu[i]->clear(memory, i);
 	}
-	// :TODO:
+	kfree(memory);
 }
 
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 ramPage) {
@@ -420,7 +418,7 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 	return count;
 }
 
-static char tmpBuffer[4096];
+static char tmpBuffer[MAX_FILEPATH_LEN];
 
 char* getNativeString(struct Memory* memory, U32 address) {
 	char c;
@@ -437,7 +435,7 @@ char* getNativeString(struct Memory* memory, U32 address) {
 	return tmpBuffer;
 }
 
-static char tmpBuffer2[1024];
+static char tmpBuffer2[MAX_FILEPATH_LEN];
 
 char* getNativeString2(struct Memory* memory, U32 address) {
 	char c;

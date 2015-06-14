@@ -44,7 +44,7 @@ void pf_writed(struct Memory* memory, U32 address, U32 value);
 
 struct Memory* allocMemory();
 void initMemory(struct Memory* memory);
-void resetMemory(struct Memory* memory, U32 exceptStart, U32 exceptCount, U32 exceptExtra);
+void resetMemory(struct Memory* memory);
 void cloneMemory(struct Memory* memory, struct Memory* from);
 void freeMemory(struct Memory* memory);
 void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);

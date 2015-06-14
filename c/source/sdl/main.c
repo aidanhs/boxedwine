@@ -316,7 +316,7 @@ int main(int argc, char **argv) {
 			base[len] = pathSeperator;
 			base[len+1] = 0;
 		}
-		strcat(base, "root");
+		safe_strcat(base, "root", sizeof(curdir));
 		root=base;
 	}
 	klog("Using root directory: %s", root);

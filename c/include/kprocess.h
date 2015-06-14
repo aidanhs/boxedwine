@@ -27,6 +27,7 @@ struct MapedFiles {
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 5
 #define K_SIG_INFO_SIZE 10
+#define MAX_COMMANDLINE_LEN 4096
 
 struct KSigAction {
 	U32 handlerAndSigAction;
@@ -61,7 +62,7 @@ struct KProcess {
 	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
 	struct KSigAction sigActions[MAX_SIG_ACTIONS];
 	struct KTimer timer;
-	char commandLine[1024];
+	char commandLine[MAX_COMMANDLINE_LEN];
 	char exe[MAX_FILEPATH_LEN];
 	char name[MAX_FILEPATH_LEN];
 	struct NodeAccess commandLineAccess;

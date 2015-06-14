@@ -488,7 +488,7 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		char localPath[MAX_FILEPATH_LEN];
 		char nativePath[MAX_FILEPATH_LEN];
 		const char* name = socketAddressName(thread, address, len);
-		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, name, localPath, nativePath, 0);
+		struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, name, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, 0);
 
 		if (!name || !name[0]) {
 			return 0; // :TODO: why does XOrg need this
@@ -546,7 +546,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 		if (s->domain==K_AF_UNIX) {
 			char localPath[MAX_FILEPATH_LEN];
 			char nativePath[MAX_FILEPATH_LEN];
-			struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, s->destAddress.data, localPath, nativePath, 0);
+			struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, s->destAddress.data, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, 0);
 			struct KSocket* destination = 0;
 
 			if (!node || !node->kobject) {

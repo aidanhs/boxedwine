@@ -52,4 +52,22 @@ struct Node;
 int listNodes(struct Node* dir, struct Node** nodes, int maxCount);
 U64 getSystemTimeAsMicroSeconds();
 
+#include <string.h>
+#include "log.h"
+
+INLINE void safe_strcpy(char* dest, const char* src, int bufferSize) {
+	int len = strlen(src);
+	if (len+1>bufferSize) {
+		kpanic("safe_strcpy failed to copy %s, buffer is %d bytes", src, bufferSize);
+	}
+	strcpy(dest, src);
+}
+
+INLINE void safe_strcat(char* dest, const char* src, int bufferSize) {
+	int len = strlen(src)+strlen(dest);
+	if (len+1>bufferSize) {
+		kpanic("safe_strcat failed to copy %s, buffer is %d bytes", src, bufferSize);
+	}
+	strcat(dest, src);
+}
 #endif

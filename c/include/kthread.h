@@ -59,4 +59,6 @@ void threadClearFutexes(struct KThread* thread);
 void initStackPointer(struct KThread* thread);
 void OPCALL onExitSignal(struct CPU* cpu, struct Op* op);
 U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count);
+void setupStack(struct KThread* thread);
+
 #endif

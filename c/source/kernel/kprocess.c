@@ -52,17 +52,17 @@ void initProcess(struct KProcess* process, struct Memory* memory, U32 argc, cons
 	process->groupId = GID;	
 	process->effectiveGroupId = GID;
 	setupCommandlineNode(process);
-	strcpy(process->exe, args[0]);
+	safe_strcpy(process->exe, args[0], MAX_FILEPATH_LEN);
 	name = strrchr(process->exe, '/');
 	if (name)
-		strcpy(process->name, name+1);
+		safe_strcpy(process->name, name+1, MAX_FILEPATH_LEN);
 	else
-		strcpy(process->name, process->exe);
+		safe_strcpy(process->name, process->exe, MAX_FILEPATH_LEN);
 	process->commandLine[0]=0;	
 	for (i=0;i<argc;i++) {
 		if (i>0)
-			strcat(process->commandLine, " ");
-		strcat(process->commandLine, args[i]);
+			safe_strcat(process->commandLine, " ", MAX_COMMANDLINE_LEN);
+		safe_strcat(process->commandLine, args[i], MAX_COMMANDLINE_LEN);
 	}
 	initCallbacksInProcess(process);
 }
@@ -142,7 +142,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	process->userId = from->userId;
 	process->effectiveUserId = from->effectiveUserId;
 	process->effectiveGroupId = from->effectiveGroupId;
-	strcpy(process->currentDirectory, from->currentDirectory);
+	safe_strcpy(process->currentDirectory, from->currentDirectory, MAX_FILEPATH_LEN);
 	process->brkEnd = from->brkEnd;
 	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
 		if (from->fds[i]) {
@@ -156,9 +156,9 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
 	memcpy(process->path, from->path, sizeof(process->path));
-	strcpy(process->commandLine, from->commandLine);
-	strcpy(process->exe, from->exe);
-	strcpy(process->name, from->name);
+	safe_strcpy(process->commandLine, from->commandLine, MAX_COMMANDLINE_LEN);
+	safe_strcpy(process->exe, from->exe, MAX_FILEPATH_LEN);
+	safe_strcpy(process->name, from->name, MAX_FILEPATH_LEN);
 	setupCommandlineNode(process);	
 
 	for (i=0;i<MAX_SHM;i++) {
@@ -418,7 +418,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 
 		setupThreadStack(&thread->cpu, process->name, argc, pArgs, envc, env);
 
-		strcpy(process->currentDirectory, currentDirectory);
+		safe_strcpy(process->currentDirectory, currentDirectory, MAX_FILEPATH_LEN);
 
 		scheduleThread(thread);
 		result = TRUE;
@@ -741,7 +741,7 @@ struct Node* findInPath(struct KProcess* process, const char* arg) {
 	return node;
 }
 
-U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size, int* count, char* tmp, U32 tmpIndex) {
+U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size, int* count, char* tmp, int tmpSize, U32 tmpIndex) {
 	while (TRUE) {
 		U32 p = readd(memory, address);		
 		char* str = getNativeString(memory, p);
@@ -751,7 +751,7 @@ U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size
 			break;		
 		if (*count>=size)
 			kpanic("Too many env or arg: %d is max", size);
-		strcpy(tmp+tmpIndex, str);
+		safe_strcpy(tmp+tmpIndex, str, tmpSize-tmpIndex);
 		a[*count]=tmp+tmpIndex;
 		tmpIndex+=strlen(str)+1;
 		*count=*count+1;
@@ -785,12 +785,12 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	}
 				
 	process->commandLine[0]=0;
-	strcpy(process->exe, getNativeString(memory, readd(memory, argv)));
+	safe_strcpy(process->exe, getNativeString(memory, readd(memory, argv)), MAX_FILEPATH_LEN);
 	name = strrchr(process->exe, '/');
 	if (name)
-		strcpy(process->name, name+1);
+		safe_strcpy(process->name, name+1, MAX_FILEPATH_LEN);
 	else
-		strcpy(process->name, process->exe);
+		safe_strcpy(process->name, process->exe, MAX_FILEPATH_LEN);
 	i=0;
 	while (TRUE) {
 		char* arg = getNativeString(memory, readd(memory, argv+i*4));
@@ -798,8 +798,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			break;
 		}
 		if (i>0)
-			strcat(process->commandLine, " ");
-		strcat(process->commandLine, arg);
+			safe_strcat(process->commandLine, " ", MAX_COMMANDLINE_LEN);
+		safe_strcat(process->commandLine, arg, MAX_COMMANDLINE_LEN);
 		i++;
 	}
 
@@ -810,8 +810,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			
 	args[argc++] = node->path.localPath;
 	// copy args/env out of memory before memory is reset
-	tmpIndex = readStringArray(memory, argv+4, args, 128, &argc, tmp64k, tmpIndex);
-	readStringArray(memory, envp, envs, 128, &envc, tmp64k, tmpIndex);		
+	tmpIndex = readStringArray(memory, argv+4, args, 128, &argc, tmp64k, 1024*64, tmpIndex);
+	readStringArray(memory, envp, envs, 128, &envc, tmp64k, 1024*64, tmpIndex);		
 
 	for (i=0;i<envc;i++) {
 		if (strncmp(envs[i], "PATH=", 5)==0) {
@@ -820,11 +820,20 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	}
 
 	// reset memory must come after we grab the args and env
-	// keep the stack so we don't have to reallocate
-	resetMemory(memory, thread->stackPageStart, thread->stackPageCount, process->stringAddress >> PAGE_SHIFT);
-	memset(&thread->cpu.reg, 0, sizeof(thread->cpu.reg));
-	initStackPointer(thread);
-	setupThreadStack(&thread->cpu, process->name, argc, args, envc, envs);
+	resetMemory(memory);
+	{
+		struct KProcess* process = thread->process;
+		U32 id = thread->id;
+		struct KCNode* scheduledNode = thread->scheduledNode;
+
+		memset(thread, 0, sizeof(struct KThread));
+		thread->process = process;
+		thread->id = id;
+		thread->scheduledNode = scheduledNode;
+		initCPU(&thread->cpu, process->memory);
+	}
+
+	setupStack(thread);	
 
 	memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
 	memset(process->sigActions, 0, sizeof(process->sigActions));
@@ -861,7 +870,9 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	if (!loadProgram(process, thread, openNode, &thread->cpu.eip.u32)) {		
 		// :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
 		kpanic("program failed to load, but memory was already reset");
-	}			
+	}	
+	// must come after loadProgram because of process->phdr
+	setupThreadStack(&thread->cpu, process->name, argc, args, envc, envs);
 	openNode->access->close(openNode);
 	return -K_CONTINUE;
 }
@@ -872,7 +883,7 @@ U32 syscall_chdir(struct KThread* thread, U32 path) {
 		return -K_ENOENT;
 	if (!node->nodeType->isDirectory(node))
 		return -K_ENOTDIR;
-	strcpy(thread->process->currentDirectory, node->path.localPath);
+	safe_strcpy(thread->process->currentDirectory, node->path.localPath, MAX_FILEPATH_LEN);
 	return 0;
 }
 
@@ -1019,7 +1030,7 @@ U32 syscall_fchdir(struct KThread* thread, FD fildes) {
 	if (!openNode->node->nodeType->isDirectory(openNode->node)) {		
 		return -K_ENOTDIR;
 	}
-	strcpy(thread->process->currentDirectory, openNode->node->path.localPath);
+	safe_strcpy(thread->process->currentDirectory, openNode->node->path.localPath, MAX_FILEPATH_LEN);
 	return 0;
 }
 
@@ -1027,7 +1038,7 @@ U32 syscall_prctl(struct KThread* thread, U32 option) {
 	struct CPU* cpu = &thread->cpu;
 
 	if (option == 15) { // PR_SET_NAME
-		strcpy(thread->process->name, getNativeString(thread->process->memory, ECX));
+		safe_strcpy(thread->process->name, getNativeString(thread->process->memory, ECX), MAX_FILEPATH_LEN);
 		return -1; // :TODO: why does returning 0 cause WINE to have a stack overflow
 	} else {
 		kwarn("prctl not implemented");
