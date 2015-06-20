@@ -47,42 +47,122 @@
         from {transform: rotate(0deg);}
         to {transform: rotate(360deg);}
     }
+    .modalDialog {
+		position: fixed;
+		font-family: Arial, Helvetica, sans-serif;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background: rgba(0,0,0,0.8);
+		z-index:99999;
+		opacity: 0;
+		-webkit-transition: opacity 400ms ease-in;
+		-moz-transition: opacity 400ms ease-in;
+		transition: opacity 400ms ease-in;
+		pointer-events: none;
+	}
+	.modalDialog:target{
+		opacity: 1;
+		pointer-events: auto;
+	}
+	.modalDialog > div {
+		width: 400px;
+		position: relative;
+		margin: 10% auto;
+		padding: 5px 20px 13px 20px;
+		border-radius: 10px;
+		background: #fff;
+	}
+	.close{
+		background: #606061;
+		color: #ffffff;
+		line-height: 25px;
+		position: absolute;
+		right: -12px;
+		text-align: center;
+		top: -10px;
+		width: 24px;
+		text-decoration: none;
+		font-height: bold;
+		-webkit-border-radius: 12px;
+		-moz-border-radius: 12px;
+		border-radius: 12px;
+		-moz-box-shadow: 1px 1px 3px #000;
+		-webkit-box-shadow: 1px 1px 3px #000;
+		box-shadow: 1px 1px 3px #000;
+	}
+	.close:hover{
+		background: #00d9ff;
+	}
     </style>
   </head>
   <body>
-        <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"><strong>emscripten</strong></center></figure>
+        <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"></center></figure>
     <div class="emscripten" id="status">Downloading...</div>
     <div class="emscripten">
       <progress value="0" max="100" id="progress" hidden=1></progress>  
     </div>
     <div class="emscripten">
-        <button id="startbtn" onclick="start()">Start</button>
-        <span id="orText">or</span>
-        <button id="uploadzipbtn" onclick="document.getElementById('zipUpload').click()">Mount Zip file</button>
-        <input style="display: none" id="zipUpload" name="upload" onclick="document.getElementById('uploadzipbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" accept="application/zip" />
-        
+        <button id="startbtn" style="display: none" onclick="start()">Start</button>
+        <button id="uploadbtn" style="display: none" onclick="document.getElementById('upload').click()" >Add File(s)</button>
+        <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple="" />        
+        <button id="downloadbtn" style="display: none" onclick="buildTree();">Get File(s)</button>
+		<a style="display: none" id="modalLink" href="#openModal">Open</a>
       <input type="checkbox" id="resize">Resize canvas
       <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer
+      <input type="checkbox" id="showConsole" onclick="toggleConsole();">Show console
       &nbsp;&nbsp;&nbsp;
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
     </div>
     <div class="emscripten_border">
         <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
     </div>
-    <textarea class="emscripten" id="output" rows="8"></textarea>
+    <div>
+    	<textarea class="emscripten" id="output" rows="8" style="display: none"></textarea>
+    </div>
+    <div id="openModal" class="modalDialog">
+		<div> <a href="#close" title="Close" class="close" onclick="done();">X</a>
+			<div>
+				<h3>Get File(s)</h3>
+				<input id="selectedItem" type="text" size="50" readonly></input>
+				<button onclick="extract();">Get</button>
+			</div>
+			<div id="tree">
+			</div>
+			<div>
+				<h3 id="loadStatus">Loading...</h3>
+			</div>
+		</div>
+	</div>
     <hr>
     <script type="text/javascript" src="jszip.min.js"></script>
     <script type='text/javascript'>
-      var statusElement = document.getElementById('status');
-      var progressElement = document.getElementById('progress');
-      var spinnerElement = document.getElementById('spinner');
+    	var index = 0;
+		var selectedItem;
+		var selectedFilename;
+		var files = []; //used for constructing tree and for retrieving files when zipping
+        var dirPrefix = "/root/user/files/";
+		var ae = document.createElement("a");
+		document.body.appendChild(ae);
+		ae.style = "display: none";
+		var url = null;
 
-        var loadStuff = function(){
+      	var statusElement = document.getElementById('status');
+      	var progressElement = document.getElementById('progress');
+      	var spinnerElement = document.getElementById('spinner');
+
+        var initialSetup = function(){
             spinnerElement.style.display = 'none';
-            Module['addRunDependency']('uploadFile');
+            Module['addRunDependency']('uploadFiles');
+            Module.FS_createFolder('/root', 'user', true, true);
+            Module.FS_createFolder('/root/user', 'files', true, true);
+            document.getElementById('startbtn').style.display = "";
+            document.getElementById('uploadbtn').style.display = "";
+            document.getElementById('downloadbtn').style.display = "";
         }
       var Module = {
-        preRun: [loadStuff],
+        preRun: [initialSetup],
         //arguments: ["-root", "-m", "512"],
         postRun: [],
         print: (function() {
@@ -159,23 +239,16 @@
           if (text) Module.printErr('[post-exception status] ' + text);
         };
       };
-        function clearButtons()
-        {
-            document.getElementById("startbtn").style.display = 'none';
-            document.getElementById("uploadzipbtn").style.display = 'none';
-            document.getElementById("orText").style.display = 'none';
-        }
         function start(){
-            clearButtons();
-            Module['removeRunDependency']('uploadFile');
+            document.getElementById('startbtn').disabled = true;
+            Module['removeRunDependency']('uploadFiles');
 
         }
         function startWithFiles(files){
-            clearButtons();
             for (var i = 0; i < files.length; i++) {
                 filereader = new FileReader();
                 filereader.file_name = files[i].name;
-                filereader.onload = function(){unzip(this.result, this.file_name)};
+                filereader.onload = function(){readFile(this.result, this.file_name)};
                 filereader.readAsArrayBuffer(files[i]);
             }
         }
@@ -185,36 +258,237 @@
         function extractFirstPartOfPath(str){
                 return str.substring(0,str.lastIndexOf("/"));
         }
-        function unzip(data, name){
-                var dirPrefix = "/root/user/upload";
-                Module.FS_createFolder('/root', 'user', true, true);
-                Module.FS_createFolder('/root/user', 'upload', true, true);
-                                
-                var zip = new JSZip(data);
-                for(var entry in zip.files)
-                {
-                    var data = zip.file(entry);
-                    if(data != null){
-                            var buf = data.asUint8Array();
-                            var parent = dirPrefix + "/" + extractFirstPartOfPath(entry) ;
-                            var filename = extractLastPartOfPath(entry);
-                            Module.FS_createDataFile(parent, filename, buf, true, true);
-                            //console.log(data.name + " is a file parent="+parent+" filename="+filename);
-                    }else{ //directory
-                            var fullPath = entry.substring(0,entry.length-1);
-                            var parent = extractFirstPartOfPath(fullPath);
-                            var dir = extractLastPartOfPath(fullPath);
-                            if(parent.length == 0){
-                                parent = dirPrefix;
-                            }else{
-                                parent = dirPrefix + "/" + parent;
-                            }
-                            Module.FS_createFolder(parent, dir, true, true);
-                            //console.log(entry + " is a dir parent="+parent+" dir="+dir);
+        function extractFilenameExtension(str){
+                return str.substring(str.lastIndexOf(".")+1,str.length);
+        }
+        function extractFilenameWithoutExtension(str){
+                return str.substring(0, str.lastIndexOf("."));
+        }
+        function readFile(data, name){
+                var fileExt = extractFilenameExtension(name);
+                if(fileExt.toLowerCase() === 'zip'){
+		    		var filenameNoExt = extractFilenameWithoutExtension(name);
+                    try{
+                        Module.FS_createFolder('/root/user/files', filenameNoExt, true, true);
+                        console.log("Directory created :" + '/root/user/files' + "/" + filenameNoExt);
+                    }catch(e){
+                        console.log("Directory already exists! :" + '/root/user/files/' + filenameNoExt);
+                    }
+	                var zipDirPrefix = dirPrefix + filenameNoExt;
+	                var zip = new JSZip(data);
+    	            for(var entry in zip.files)
+        	        {
+            	        var data = zip.file(entry);
+                	    if(data != null){
+                    	        var buf = data.asUint8Array();
+                        	    var parent = zipDirPrefix + "/" + extractFirstPartOfPath(entry) ;
+                            	var filename = extractLastPartOfPath(entry);
+                                try{
+                                    Module.FS_createDataFile(parent, filename, buf, true, true);
+                                    //console.log(data.name + " is a file parent="+parent+" filename="+filename);
+                                    console.log("File created :" + parent + filename);
+                                }catch(e){
+                                    console.log("File already exists! :" + parent + "/" + filename);
+                                }
+        	            }else{ //directory
+            	                var fullPath = entry.substring(0,entry.length-1);
+                	            var parent = extractFirstPartOfPath(fullPath);
+                    	        var dir = extractLastPartOfPath(fullPath);
+                        	    if(parent.length == 0){
+                            	    parent = zipDirPrefix;
+ 	                           }else{
+    	                            parent = zipDirPrefix + "/" + parent;
+                                }
+                                try{
+                                    Module.FS_createFolder(parent, dir, true, true);
+                                    //console.log(entry + " is a dir parent="+parent+" dir="+dir);
+                                    console.log("Directory created :" + parent + "/" + dir);
+                                }catch(e){
+                                    console.log("Directory already exists! :" + parent + dir);
+                                }
+                    	}
+                	}
+                }else{
+                   	var buf = new Uint8Array(data);
+                    try{
+                        Module.FS_createDataFile(dirPrefix, name, buf, true, true);
+                        console.log("File created :" + dirPrefix + name);
+                    }catch(e){
+                        console.log("File already exists! :" + dirPrefix + name);
                     }
                 }
-                Module['removeRunDependency']('uploadFile');
         }
+        function toggleConsole() {
+        	var el = document.getElementById('showConsole');
+        	var console = document.getElementById('output');
+        	if(el.checked){
+				console.style.display = ''; 	
+        	}else{
+				console.style.display = 'none'; 	
+        	}
+        }
+        //get files functions
+function toggleDirectory(item){
+	var itemWidget =document.getElementById(item); 
+	if(itemWidget!=null){
+		if(itemWidget.style.display=='none'){//show
+			itemWidget.style.display="";
+			document.getElementById(item+'-expand').style.display="none";
+			document.getElementById(item+'-contract').style.display="";
+		}else{//hide
+			itemWidget.style.display="none";
+			document.getElementById(item+'-expand').style.display="";
+			document.getElementById(item+'-contract').style.display="none";
+		}
+	}
+}
+function select(index, dir, filename){
+	if(selectedItem != null){
+		selectedItem.style.backgroundColor = "";
+	}
+	selectedItem = document.getElementById(index + '-data');
+	selectedItem.style.backgroundColor="#94c2c5";
+	var fullpath = dir;
+	if(filename != null){
+		fullpath = fullpath + filename;
+	}
+	document.getElementById('selectedItem').value = fullpath 
+	selectedFilename = filename
+}
+function endsWith(str, suffix){
+    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+}
+function extract(){
+	if(url != null){
+		window.URL.revokeObjectURL(url);
+	}	
+	var file = document.getElementById('selectedItem').value;
+	if(file != null && file.length > 0 && files.length > 1) {
+        if(endsWith(file,"/")){
+            file = file.substring(0,file.length - 1);
+        }
+		var isDirectory = false;
+		var outputFilename;
+		if(selectedFilename !=null){
+			outputFilename = selectedFilename;
+		}else{
+			isDirectory = true;
+			outputFilename = file.substring(file.lastIndexOf('/') + 1) + ".zip";
+		}
+		
+		var blob = getFile(file, isDirectory);
+		url = window.URL.createObjectURL(blob);
+		ae.href = url;
+		ae.download = outputFilename;
+		ae.click();
+	}
+}
+function done(){
+	if(url != null){
+		window.URL.revokeObjectURL(url);
+	}	
+}
+function leaf(entry){
+    index++;
+	var text = "<tr><td ><span id=\"" + index + "-data\" onclick=\"select(" + index + ",'" + entry.dir + "','" + entry.filename + "')\">" + entry.filename + "</span></td></tr>";
+	return text;
+}
+function branch(entries){
+	var item = entries[index];
+    index++;
+	var dir = item.dir;
+    var dirName = dir.substring(0, dir.length - 1);
+    dirName = dirName.substring(dirName.lastIndexOf("/")+1,dirName.length);
+	var text = "<tr>";
+    text = text + "<td>";
+	text = text + "<span id=\"" + index + "-expand\"><a onclick=\"toggleDirectory('" + index + "')\"><strong>+</strong></a></span>";
+    text = text + "<span id=\"" + index + "-contract\" style=\"display:none;\"><a onclick=\"toggleDirectory('" + index + "')\"><strong>-</strong></a></span>";
+    text = text + "<span id=\"" + index + "-data\" onclick=\"select(" + index + ",'" + dir + "', null)\">[" + dirName + "]</span>";
+    text = text + "<div id='" + index + "' style=\"display:none;\">";
+    text = text + "<table>";
+    while(index < entries.length){
+    	var nextItem = entries[index];
+    	if(nextItem.dir === item.dir){
+    		text = text + leaf(nextItem);
+    	}else if(nextItem.dir.length > item.dir.length){
+    		text = text + branch(entries, index);
+    	}else{
+    		break;
+    	}
+    }
+    text = text + "</table>";
+    text = text + "</div>";
+	text = text + "</td>";
+	text = text + "</tr>";
+	return text;
+}
+function buildTree()
+{
+    document.getElementById('modalLink').click();
+    var root = document.getElementById('tree');
+    //reset
+    document.getElementById('selectedItem').value = "";
+    selectedFilename = null;
+	files = [];
+    root.innerHTML = "";
+    index = 0;
+                                
+    var currentDir = dirPrefix;
+	readFiles(currentDir, files);
+
+	//now build tree
+	var contents = "<table>";
+	contents = contents + branch(files);
+	contents = contents + "</table>";
+	document.getElementById('loadStatus').style.display="none";
+
+	root.innerHTML = contents;
+	toggleDirectory('1');
+}
+                                
+function readFiles(currentDir, files)
+{
+    console.log("adding directory: " + currentDir);
+	files.push({dir : currentDir, filename : ""});
+	var entries = FS.readdir(currentDir).filter(function(param) {
+        return param !== "." && param !== "..";
+    });
+	entries.forEach(function(entry) {
+        var fileEntry = FS.lookupPath(currentDir + entry, { follow: true });
+        var contentNode = fileEntry.node.contents;
+        if (contentNode instanceof Uint8Array) {
+            console.log("adding file: " + currentDir + entry);
+            files.push({dir : currentDir, filename : entry});
+		}else{
+            readFiles(currentDir + entry + "/", files);
+		}
+	});
+}
+function startsWith(str, prefix)
+{
+    return str.slice(0, prefix.length) == prefix;
+}
+function getFile(file, isDirectory)
+{
+	if(isDirectory){//zip up directory
+		var zip = new JSZip();
+		files.forEach(function(eachFile) {
+            if(startsWith(eachFile.dir, file)){
+                if(eachFile.filename !== ""){
+                      var fileLocation = eachFile.dir + eachFile.filename;
+                      var data = FS.readFile(fileLocation, { encoding: 'binary' });
+                      zip.file(fileLocation.substring(file.length), data);
+                }else{
+                        zip.file(eachFile.dir.substring(file.length), null, {dir: true});
+                }
+            }
+		});
+		return zip.generate({type:"blob", compression:"DEFLATE"});
+	}else{
+		var data = FS.readFile(file, { encoding: 'binary' });
+		return new Blob([data], {type: "octet/stream"});		
+	} 
+}
     </script>
     {{{ SCRIPT }}}
   </body>
