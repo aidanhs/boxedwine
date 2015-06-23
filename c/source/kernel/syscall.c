@@ -203,8 +203,8 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_link:
 		result = 0;
-		kwarn("syscall link not implememented: %s -> %s", getNativeString(memory, ARG1), getNativeString(memory, ARG2));
-		LOG("__NR_link path1=%X(%s) path2=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);
+		kwarn("syscall link not implememented: %s -> %s", getNativeString(memory, ARG1), getNativeString2(memory, ARG2));
+		LOG("__NR_link path1=%X(%s) path2=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString2(memory, ARG2), result);
 		break;
 	case __NR_unlink:
 		result =syscall_unlink(thread, ARG1);

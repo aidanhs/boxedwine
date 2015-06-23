@@ -317,8 +317,9 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 		if (s->connection->recvBuffer.writePos>=MAX_BUFFER_SIZE)
 			s->connection->recvBuffer.writePos = 0;
 	}
-	if (s->connection->waitingOnReadThread)
-		wakeThread(s->connection->waitingOnReadThread);
+	if (s->connection->waitingOnReadThread) {
+		wakeThread(s->connection->waitingOnReadThread);		
+	}
 	return count;
 }
 
@@ -362,6 +363,9 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* 
 			s->recvBuffer.readPos = 0;
 			s->recvBuffer.writePos = 0;
 		}
+	}
+	if (s->connection && s->connection->waitingOnWriteThread) {
+		wakeThread(s->connection->waitingOnWriteThread);		
 	}
 	return count;
 }
