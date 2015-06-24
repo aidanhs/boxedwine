@@ -256,10 +256,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_access(thread, ARG1, ARG2);
 		LOG("__NR_access filename=%s flags=0x%X result=%d", getNativeString(memory, ARG1), ARG2, result);
 		break;
-		/*
 	case __NR_kill:
+		result = syscall_kill(thread, ARG1, ARG2);
+		LOG("__NR_kill pid=%d signal=%d result=%d", ARG1, ARG2, result);
 		break;
-		*/
 	case __NR_rename:
 		result = syscall_rename(thread, ARG1, ARG2);
 		LOG("__NR_rename oldName=%X(%s) newName=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);

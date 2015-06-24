@@ -18,6 +18,7 @@
 
 #include UNISTD
 #include UTIME
+#include MKDIR_INCLUDE
 
 static char root[MAX_FILEPATH_LEN];
 static int nodeId = 1;

@@ -28,6 +28,10 @@ void freeThread(struct KThread* thread) {
 	if (thread->waitNode) {
 		wakeThread(thread);
 	}	
+	if (thread->waitingForSignalToEnd) {
+		wakeThread(thread->waitingForSignalToEnd);
+		thread->waitingForSignalToEnd = 0;
+	}
 	unscheduleThread(thread);	
 	threadClearFutexes(thread);
 	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);

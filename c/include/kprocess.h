@@ -118,6 +118,7 @@ U32 syscall_prlimit(struct KThread* thread, U32 pid, U32 resource, U32 newlimit,
 U32 syscall_fchdir(struct KThread* thread, FD fd);
 U32 syscall_prctl(struct KThread* thread, U32 option);
 U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal);
+U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal);
 
 void runProcessTimer(struct KTimer* timer);
 void addString(struct KProcess* process, U32 index, const char* str);

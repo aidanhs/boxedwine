@@ -1109,6 +1109,32 @@ U32 syscall_prctl(struct KThread* thread, U32 option) {
 	return -1;
 }
 
+U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal) {
+	struct KProcess* process;
+
+	if (pid>0)
+		process = getProcessById(pid);
+	else {
+		kpanic("kill with pid = %d not implemented", pid);
+	}
+	if (!process)
+		return -K_ESRCH;
+	if (signal!=0) {
+		struct KThread* processThread = 0;
+		U32 threadIndex = 0;
+
+		process->pendingSignals |= (1 << (signal-1));
+		while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
+			if (processThread) {
+				if ((1 << (signal-1)) & ~(processThread->inSignal?processThread->inSigMask:processThread->sigMask)) {
+					return syscall_tgkill(thread, process->id, processThread->id, signal);
+				}
+			}
+		}
+	}
+	return 0;	
+}
+
 U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal) {
 	struct KProcess* process = getProcessById(threadId >> THREAD_ID_SHIFT);
 	struct KThread* target;
@@ -1124,7 +1150,7 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 	if (signal==0)
 		return 0;
 
-	memset(process->sigActions[K_SIGALRM].sigInfo, 0, sizeof(process->sigActions[K_SIGALRM].sigInfo));
+	memset(process->sigActions[signal].sigInfo, 0, sizeof(process->sigActions[signal].sigInfo));
 	process->sigActions[signal].sigInfo[0] = signal;
 	process->sigActions[signal].sigInfo[2] = K_SI_USER;
 	process->sigActions[signal].sigInfo[3] = process->id;
@@ -1134,8 +1160,6 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 		// don't return -K_WAIT, we don't want to re-enter tgkill, instead we will return 0 once the thread wakes up
 
 		// must set CPU state before runSignal since it will be stored
-		//
-		// :TODO: if this wineserver thread is asleep then how will it respond to services requests
 		thread->cpu.reg[0].u32 = 0; 
 		thread->cpu.eip.u32+=2;
 		runSignal(target, signal);
