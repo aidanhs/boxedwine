@@ -179,9 +179,9 @@ void OPCALL cmpsb32_r(struct CPU* cpu, struct Op* op) {
             ECX--;
             if ((v1==v2)!=rep_zero) break;
         }
-        cpu->dst.u8 = v1;
-        cpu->src.u8 = v2;
-        cpu->result.u8 = v1 - v2;
+        cpu->dst.u8 = v2;
+        cpu->src.u8 = v1;
+        cpu->result.u8 = cpu->dst.u8 - cpu->src.u8;
         cpu->lazyFlags = FLAGS_SUB8;
     }
     CYCLES(9+4*count);
@@ -206,9 +206,9 @@ void OPCALL cmpsb16_r(struct CPU* cpu, struct Op* op) {
             CX--;
             if ((v1==v2)!=rep_zero) break;
         }
-        cpu->dst.u8 = v1;
-        cpu->src.u8 = v2;
-        cpu->result.u8 = v1 - v2;
+        cpu->dst.u8 = v2;
+        cpu->src.u8 = v1;
+        cpu->result.u8 = cpu->dst.u8 - cpu->src.u8;
         cpu->lazyFlags = FLAGS_SUB8;
     }
     CYCLES(9+4*count);
@@ -225,9 +225,9 @@ void OPCALL cmpsb32(struct CPU* cpu, struct Op* op) {
             v2 = readb(memory, sBase+ESI);
             EDI+=inc;
             ESI+=inc;
-        cpu->dst.u8 = v1;
-        cpu->src.u8 = v2;
-        cpu->result.u8 = v1 - v2;
+        cpu->dst.u8 = v2;
+        cpu->src.u8 = v1;
+        cpu->result.u8 = cpu->dst.u8 - cpu->src.u8;
         cpu->lazyFlags = FLAGS_SUB8;
     CYCLES(5);
     NEXT();
@@ -243,9 +243,9 @@ void OPCALL cmpsb16(struct CPU* cpu, struct Op* op) {
             v2 = readb(memory, sBase+SI);
             DI+=inc;
             SI+=inc;
-        cpu->dst.u8 = v1;
-        cpu->src.u8 = v2;
-        cpu->result.u8 = v1 - v2;
+        cpu->dst.u8 = v2;
+        cpu->src.u8 = v1;
+        cpu->result.u8 = cpu->dst.u8 - cpu->src.u8;
         cpu->lazyFlags = FLAGS_SUB8;
     CYCLES(5);
     NEXT();
@@ -269,9 +269,9 @@ void OPCALL cmpsw32_r(struct CPU* cpu, struct Op* op) {
             ECX--;
             if ((v1==v2)!=rep_zero) break;
         }
-        cpu->dst.u16 = v1;
-        cpu->src.u16 = v2;
-        cpu->result.u16 = v1 - v2;
+        cpu->dst.u16 = v2;
+        cpu->src.u16 = v1;
+        cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
         cpu->lazyFlags = FLAGS_SUB16;
     }
     CYCLES(9+4*count);
@@ -296,9 +296,9 @@ void OPCALL cmpsw16_r(struct CPU* cpu, struct Op* op) {
             CX--;
             if ((v1==v2)!=rep_zero) break;
         }
-        cpu->dst.u16 = v1;
-        cpu->src.u16 = v2;
-        cpu->result.u16 = v1 - v2;
+        cpu->dst.u16 = v2;
+        cpu->src.u16 = v1;
+        cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
         cpu->lazyFlags = FLAGS_SUB16;
     }
     CYCLES(9+4*count);
@@ -315,9 +315,9 @@ void OPCALL cmpsw32(struct CPU* cpu, struct Op* op) {
             v2 = readw(memory, sBase+ESI);
             EDI+=inc;
             ESI+=inc;
-        cpu->dst.u16 = v1;
-        cpu->src.u16 = v2;
-        cpu->result.u16 = v1 - v2;
+        cpu->dst.u16 = v2;
+        cpu->src.u16 = v1;
+        cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
         cpu->lazyFlags = FLAGS_SUB16;
     CYCLES(5);
     NEXT();
@@ -333,9 +333,9 @@ void OPCALL cmpsw16(struct CPU* cpu, struct Op* op) {
             v2 = readw(memory, sBase+SI);
             DI+=inc;
             SI+=inc;
-        cpu->dst.u16 = v1;
-        cpu->src.u16 = v2;
-        cpu->result.u16 = v1 - v2;
+        cpu->dst.u16 = v2;
+        cpu->src.u16 = v1;
+        cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
         cpu->lazyFlags = FLAGS_SUB16;
     CYCLES(5);
     NEXT();
@@ -359,9 +359,9 @@ void OPCALL cmpsd32_r(struct CPU* cpu, struct Op* op) {
             ECX--;
             if ((v1==v2)!=rep_zero) break;
         }
-        cpu->dst.u32 = v1;
-        cpu->src.u32 = v2;
-        cpu->result.u32 = v1 - v2;
+        cpu->dst.u32 = v2;
+        cpu->src.u32 = v1;
+        cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
         cpu->lazyFlags = FLAGS_SUB32;
     }
     CYCLES(9+4*count);
@@ -386,9 +386,9 @@ void OPCALL cmpsd16_r(struct CPU* cpu, struct Op* op) {
             CX--;
             if ((v1==v2)!=rep_zero) break;
         }
-        cpu->dst.u32 = v1;
-        cpu->src.u32 = v2;
-        cpu->result.u32 = v1 - v2;
+        cpu->dst.u32 = v2;
+        cpu->src.u32 = v1;
+        cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
         cpu->lazyFlags = FLAGS_SUB32;
     }
     CYCLES(9+4*count);
@@ -405,9 +405,9 @@ void OPCALL cmpsd32(struct CPU* cpu, struct Op* op) {
             v2 = readd(memory, sBase+ESI);
             EDI+=inc;
             ESI+=inc;
-        cpu->dst.u32 = v1;
-        cpu->src.u32 = v2;
-        cpu->result.u32 = v1 - v2;
+        cpu->dst.u32 = v2;
+        cpu->src.u32 = v1;
+        cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
         cpu->lazyFlags = FLAGS_SUB32;
     CYCLES(5);
     NEXT();
@@ -423,9 +423,9 @@ void OPCALL cmpsd16(struct CPU* cpu, struct Op* op) {
             v2 = readd(memory, sBase+SI);
             DI+=inc;
             SI+=inc;
-        cpu->dst.u32 = v1;
-        cpu->src.u32 = v2;
-        cpu->result.u32 = v1 - v2;
+        cpu->dst.u32 = v2;
+        cpu->src.u32 = v1;
+        cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
         cpu->lazyFlags = FLAGS_SUB32;
     CYCLES(5);
     NEXT();

@@ -1016,6 +1016,69 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
 	return 0;
 }
 
+U32 syscall_prlimit(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit) {
+	struct KProcess* process;
+	struct Memory* memory = thread->process->memory;
+
+	if (pid==0) {
+		process = thread->process;
+	} else {
+		process = getProcessById(pid);
+		if (!process)
+			return -K_ESRCH;
+	}
+    switch (resource) {
+        case 3: // RLIMIT_STACK
+            if (oldlimit!=0) {
+                writed(memory, oldlimit, MAX_STACK_SIZE);
+                writed(memory, oldlimit + 4, MAX_STACK_SIZE);
+            }
+            if (newlimit!=0) {
+				klog("prlimit RLIMIT_STACK set=%d ignored", readd(memory, newlimit));
+            }
+            break;
+		case 4: // RLIMIT_CORE
+			if (oldlimit!=0) {
+                writed(memory, oldlimit, K_RLIM_INFINITY);
+                writed(memory, oldlimit + 4, K_RLIM_INFINITY);
+            }
+            if (newlimit!=0) {
+				klog("prlimit RLIMIT_CORE set=%d ignored", readd(memory, newlimit));
+            }
+            break;
+        case 7: // RLIMIT_NOFILE
+            if (oldlimit!=0) {
+                writed(memory, oldlimit, 603590);
+                writed(memory, oldlimit + 4, 603590);
+            }
+			if (newlimit!=0) {
+				klog("prlimit RLIMIT_NOFILE set=%d ignored", readd(memory, newlimit));
+            }
+            break;
+        case 9: // RLIMIT_AS
+            if (oldlimit!=0) {
+                writed(memory, oldlimit, K_RLIM_INFINITY);
+                writed(memory, oldlimit + 4, K_RLIM_INFINITY);
+            }
+            if (newlimit!=0) {
+				klog("prlimit RLIMIT_AS set=%d ignored", readd(memory, newlimit));
+            }
+            break;
+		case 15: // RLIMIT_RTTIME
+			if (oldlimit!=0) {
+                writed(memory, oldlimit, 200);
+                writed(memory, oldlimit + 4, 200);
+            }
+            if (newlimit!=0) {
+				klog("prlimit RLIMIT_AS set=%d ignored", readd(memory, newlimit));
+            }
+            break;
+		default:
+			kpanic("prlimit resource %d not handled", resource);
+    }
+	return 0;
+}
+
 U32 syscall_fchdir(struct KThread* thread, FD fildes) {
 	struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
 	struct OpenNode* openNode;

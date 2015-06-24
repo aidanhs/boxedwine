@@ -50,7 +50,7 @@ struct OpenNode* virtual_open(struct KProcess* process, struct Node* node, U32 f
 			return 0;
 	}
 	if (flags & K_O_CREAT) {
-		return 0;
+		//return 0;
 	}
 	if (flags & K_O_EXCL) {
 		kwarn("What about exclusive virtual files");

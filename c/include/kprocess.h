@@ -114,6 +114,7 @@ U32 syscall_chdir(struct KThread* thread, U32 path);
 U32 syscall_exitgroup(struct KThread* thread, U32 code);
 U32 syscall_setitimer(struct KThread* thread, U32 which, U32 newValue, U32 oldValue);
 U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit);
+U32 syscall_prlimit(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit);
 U32 syscall_fchdir(struct KThread* thread, FD fd);
 U32 syscall_prctl(struct KThread* thread, U32 option);
 U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal);

@@ -62,6 +62,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_rmdir 40
 #define __NR_dup 41
 #define __NR_pipe 42
+#define __NR_times 43
 #define __NR_brk 45
 #define __NR_getgid 47
 #define __NR_ioctl 54
@@ -71,6 +72,8 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_getppid 64
 #define __NR_getpgrp 65
 #define __NR_setsid 66
+#define __NR_setrlimit 75
+#define __NR_getrusage 77
 #define __NR_gettimeofday 78
 #define __NR_symlink 83
 #define __NR_readlink 85
@@ -95,6 +98,8 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_newselect 142
 #define __NR_msync 144
 #define __NR_writev 146
+#define __NR_mlock 150
+#define __NR_munlock 151
 #define __NR_sched_yield 158
 #define __NR_nanosleep 162
 #define __NR_mremap 163
@@ -128,6 +133,8 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_getdents64 220
 #define __NR_fcntl64 221
 #define __NR_gettid 224
+#define __NR_fsetxattr 228
+#define __NR_fgetxattr 231
 #define __NR_tkill 238
 #define __NR_futex 240
 #define __NR_sched_getaffinity 242
@@ -274,6 +281,14 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_pipe(thread, ARG1);
 		LOG("__NR_pipe fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
+	case __NR_times:
+		result = 0;
+		// :TODO:
+		writed(memory, ARG1, 1000);
+		writed(memory, ARG1+4, 1000);
+		writed(memory, ARG1+8, 1000);
+		writed(memory, ARG1+12, 1000);
+		break;
 	case __NR_brk:
 		if (ARG1 > process->brkEnd) {
 			U32 len = ARG1-process->brkEnd;
@@ -324,6 +339,13 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = 1; // :TODO:
 		kwarn("__NR_setsid not implemented");
 		LOG("__NR_setsid result=%d", result);
+		break;
+	case __NR_setrlimit:
+		result = syscall_prlimit(thread, process->id, ARG1, ARG2, 0);
+		LOG("__NR_setrlimit resource=%d, rlim=%X", ARG1, ARG2, result);
+		break;
+	case __NR_getrusage:
+		result = 0;
 		break;
 	case __NR_gettimeofday:
 		result = syscall_gettimeofday(thread, ARG1, ARG2);
@@ -507,6 +529,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+	case __NR_mlock:
+	case __NR_munlock:
+		result = 0; // swapping not implemented so this function does nothing
+		break;
 	case __NR_sched_yield:
 		result = 0;
 		cpu->blockCounter |= 0x80000000; // next thread will be run
@@ -669,6 +695,12 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_gettid:
 		result = thread->id;
 		LOG("__NR_gettid result=%d", result);
+		break;
+	case __NR_fsetxattr:
+		result = -K_EOPNOTSUPP;
+		break;
+	case __NR_fgetxattr:
+		result = -K_EOPNOTSUPP;
 		break;
 		/*
 	case __NR_tkill:
