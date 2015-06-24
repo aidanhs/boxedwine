@@ -41,6 +41,18 @@ void initFileSystem(const char* rootPath) {
 	if (root[len-1]==pathSeperator)
 		root[len-1] = 0;
 	initHashmap(&nodeMap);
+
+	{
+		struct Node* dir = getNodeFromLocalPath("", "/tmp/del", TRUE);
+		if (dir) {
+			struct Node* result[100];
+			int count = listNodes(dir, result, 100);
+			int i;
+			for (i=0;i<count;i++) {
+				remove(result[i]->path.nativePath);
+			}
+		}
+	}
 }
 
 S64 openfile_length(struct OpenNode* node) {
@@ -67,6 +79,9 @@ char tmp[4096];
 U32 file_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
 		U8* ram = getPhysicalAddress(memory, address);
+		U32 result;
+		S64 pos = file_getFilePointer(node);
+
 		if (!ram) {
 			U32 i;
 
@@ -77,7 +92,20 @@ U32 file_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len
 				}
 			}
 		}
-		return read(node->handle, ram, len);		
+		result = read(node->handle, ram, len);	
+		// :TODO: why does this happen
+		//
+		// installing dpkg with dpkg
+		// 1) dpkg will be mapped into memory (kfmmap on demand)
+		// 2) dpkg will remove dpkg, this triggers the logic to close the handle move the file to /tmp then re-open it
+		// 3) dpkg continues to run then hits a new part of the code that causes an on demand load
+		// 4) on windows 7 x64 this resulted in a full read of one page, but the result returned by read was less that 4096, it was 0xac8 (2760)
+		if (result<len) {
+			if (file_getFilePointer(node)==pos+len) {
+				result = len;
+			}
+		}
+		return result;
 	} else {		
 		U32 result = 0;
 		while (len) {
@@ -339,6 +367,7 @@ BOOL file_remove(struct Node* node) {
 	if (!result && node->nodeType->exists(node)) {
 		struct OpenNode* openNode = node->openNodes;
 		int i;
+		U32 isLink;
 
 		while (openNode) {
 			openNode->cachedPosDuringDelete = openNode->access->getFilePointer(openNode);
@@ -346,10 +375,14 @@ BOOL file_remove(struct Node* node) {
 			openNode->handle = 0xFFFFFFFF;
 			openNode = openNode->nextOpen;
 		}
-		for (i=0;i<100000000;i++) {
-			U32 isLink;
+		
+		getLocalAndNativePaths("", "/tmp", tmpLocalPath, MAX_FILEPATH_LEN, tmpNativePath, MAX_FILEPATH_LEN, &isLink);
+		MKDIR(tmpNativePath);
+		getLocalAndNativePaths("", "/tmp/del", tmpLocalPath, MAX_FILEPATH_LEN, tmpNativePath, MAX_FILEPATH_LEN, &isLink);
+		MKDIR(tmpNativePath);
 
-			sprintf(tmpPath, "/tmp/del%.8d.tmp", i);
+		for (i=0;i<100000000;i++) {			
+			sprintf(tmpPath, "/tmp/del/del%.8d.tmp", i);
 			getLocalAndNativePaths("", tmpPath, tmpLocalPath, MAX_FILEPATH_LEN, tmpNativePath, MAX_FILEPATH_LEN, &isLink);
 			if (!doesPathExist(tmpNativePath)) {
 				break;
@@ -610,9 +643,9 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	U32 localLen = 0;
 	U32 nativeLen = 0;
 	if (localPath)
-		localLen=strlen(localPath)+6;
+		localLen=strlen(localPath)+20;
 	if (nativePath)
-		nativeLen=strlen(nativePath)+6;
+		nativeLen=strlen(nativePath)+20;
 	result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
 	result->id = nodeId++;
 	result->nodeType = nodeType;
