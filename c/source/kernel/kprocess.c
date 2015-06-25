@@ -387,7 +387,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	const char* loader = 0;
 	BOOL isElf = TRUE;
 	const char* pArgs[128];
-	int argIndex=0;
+	int argIndex=128;
 	struct KProcess* process = allocProcess();
 	struct Memory* memory = allocMemory();		
 	struct KThread* thread = allocThread();
@@ -399,7 +399,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	initThread(thread, process);
 	initStdio(process);
 
-	if (!inspectNode(process, currentDirectory, node, &loader, &interpreter, &openNode)) {
+	if (!inspectNode(process, currentDirectory, node, &loader, &interpreter, pArgs, &argIndex, &openNode)) {
 		return FALSE;
 	}
 	
@@ -773,14 +773,14 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	U32 i;
 	const char* name;
 	const char* args[128];
-	U32 argc=0;
+	U32 argc=128;
 	const char* envs[128];
 	U32 envc=0;
 	int tmpIndex = 0;
 
 	node = findInPath(process, first);
 
-	if (!node || !inspectNode(process, process->currentDirectory, node, &loader, &interpreter, &openNode)) {
+	if (!node || !inspectNode(process, process->currentDirectory, node, &loader, &interpreter, args, &argc, &openNode)) {
 		return FALSE;
 	}
 				
@@ -797,16 +797,34 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		if (!arg[0]) {
 			break;
 		}
-		if (i>0)
+		if (process->commandLine[0])
 			safe_strcat(process->commandLine, " ", MAX_COMMANDLINE_LEN);
 		safe_strcat(process->commandLine, arg, MAX_COMMANDLINE_LEN);
 		i++;
 	}
+	if (loader) {
+		int j;
 
-	if (loader)
-		args[argc++] = loader;
-	if (interpreter)
-		args[argc++] = interpreter;
+		for (j=argc-1;j>=0;j--)
+			args[j+1]=args[j];
+		argc++;
+	}
+	if (interpreter) {
+		int j;
+
+		for (j=argc-1;j>=0;j--)
+			args[j+1]=args[j];
+		argc++;
+	}
+	if (loader) {
+		args[0] = loader;		
+	}
+	if (interpreter) {
+		if (loader)
+			args[1] = interpreter;
+		else
+			args[0] = interpreter;		
+	}
 			
 	args[argc++] = node->path.localPath;
 	// copy args/env out of memory before memory is reset

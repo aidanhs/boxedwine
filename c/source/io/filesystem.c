@@ -837,3 +837,41 @@ U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2) {
 	openNode->access->close(openNode);
 	return 0;
 }
+
+U32 syscall_link(struct KThread* thread, U32 from, U32 to) {
+	struct Node* fromNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, from), TRUE);
+	struct Node* toNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, to), FALSE);
+	struct OpenNode* fromOpenNode;
+	struct OpenNode* toOpenNode;
+	char buffer[PAGE_SIZE];
+
+	if (!fromNode || !fromNode->nodeType->exists(fromNode)) {
+		return -K_ENOENT;
+	}
+
+	if (toNode->nodeType->exists(toNode)) {
+		return -K_EEXIST;
+	}
+	if (fromNode->nodeType->isDirectory(fromNode)) {
+		return -K_EPERM;
+	}
+	fromOpenNode = fromNode->nodeType->open(thread->process, fromNode, K_O_RDONLY);
+	if (!fromOpenNode)
+		return -K_EIO;
+
+	toOpenNode = toNode->nodeType->open(thread->process, toNode, K_O_WRONLY|K_O_CREAT);
+	if (!toOpenNode) {
+		fromOpenNode->access->close(fromOpenNode);
+		return -K_EIO;
+	}
+
+	while (1) {
+		U32 r = read(fromOpenNode->handle, buffer, PAGE_SIZE);	
+		write(toOpenNode->handle, buffer, r);
+		if (r<PAGE_SIZE)
+			break;
+	}
+	toOpenNode->access->close(toOpenNode);
+	fromOpenNode->access->close(fromOpenNode);
+	return 0;
+}

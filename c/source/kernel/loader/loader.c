@@ -22,8 +22,9 @@
 #define PT_INTERP 3 
 
 static char interp[MAX_FILEPATH_LEN];
+static char shell_interp[MAX_FILEPATH_LEN];
 
-const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
+char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
 	U8 buffer[sizeof(struct Elf32_Ehdr)];
 	struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
 	U32 len = read(openNode->handle, buffer, sizeof(buffer));
@@ -36,8 +37,26 @@ const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
 		*isElf = isValidElf(hdr);
 	}
 	if (!*isElf) {
-		if (!strncmp((char*)buffer, "#!/bin/sh", 9) || !strncmp((char*)buffer, "#! /bin/sh", 10)) {
-			return "/bin/sh";
+		if (buffer[0]=='#') {
+			U32 i;
+			U32 mode = 0;
+			U32 pos = 0;
+
+			for (i=1;i<len;i++) {
+				if (mode==0) {
+					if (buffer[i]=='!')
+						mode = 1;
+				} else if (mode==1 && (buffer[i]==' ' || buffer[i]=='\t')) {
+					continue;
+				} else if (buffer[i]=='\n' || buffer[i]=='\r') {
+					break;
+				} else {
+					mode = 2;
+					shell_interp[pos++] = buffer[i];
+				}
+			}
+			shell_interp[pos++]=0;
+			return shell_interp;
 		}
 	} else {
 		U32 i;
@@ -58,7 +77,7 @@ const char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
 	return 0;
 }
 
-BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct Node* node, const char** loader, const char** interpreter, struct OpenNode** result) {
+BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct Node* node, const char** loader, const char** interpreter, const char** interpreterArgs, U32* interpreterArgsCount, struct OpenNode** result) {
 	BOOL isElf;
 	struct OpenNode* openNode = 0;
 	struct Node* interpreterNode = 0;
@@ -68,10 +87,22 @@ BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct 
 		openNode = node->nodeType->open(process, node, K_O_RDONLY);
 	}
 	if (openNode) {
+		char* arg;
+		U32 maxArgs = *interpreterArgsCount;
+
+		*interpreterArgsCount=0;
 		*interpreter = getInterpreter(openNode, &isElf);
 		if (isElf) {
 			*loader = *interpreter;
 			*interpreter = 0;
+		} else if (*interpreter) {
+			arg=(char*)*interpreter;
+			while ((arg=strchr(arg, ' '))) {
+				arg[*interpreterArgsCount]=0;
+				arg++;
+				interpreterArgs[*interpreterArgsCount]=arg;
+				*interpreterArgsCount=*interpreterArgsCount+1;
+			}
 		}
 		openNode->access->close(openNode);
 		openNode = 0;

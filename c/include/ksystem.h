@@ -32,6 +32,7 @@ BOOL getNextProcess(U32* index, struct KProcess** process);
 
 U32 getMilliesSinceStart();
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz);
+U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec);
 
 struct MappedFileCache {
 	U32* ramPages;

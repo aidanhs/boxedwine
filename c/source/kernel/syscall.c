@@ -62,7 +62,6 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_rmdir 40
 #define __NR_dup 41
 #define __NR_pipe 42
-#define __NR_times 43
 #define __NR_brk 45
 #define __NR_getgid 47
 #define __NR_ioctl 54
@@ -72,8 +71,6 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_getppid 64
 #define __NR_getpgrp 65
 #define __NR_setsid 66
-#define __NR_setrlimit 75
-#define __NR_getrusage 77
 #define __NR_gettimeofday 78
 #define __NR_symlink 83
 #define __NR_readlink 85
@@ -96,10 +93,9 @@ void logsyscall(const char* fmt, ...) {
 #define __NR__llseek 140
 #define __NR_getdents 141
 #define __NR_newselect 142
+#define __NR_flock 143
 #define __NR_msync 144
 #define __NR_writev 146
-#define __NR_mlock 150
-#define __NR_munlock 151
 #define __NR_sched_yield 158
 #define __NR_nanosleep 162
 #define __NR_mremap 163
@@ -122,6 +118,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_getgid32 200
 #define __NR_geteuid32 201
 #define __NR_getegid32 202
+#define __NR_getgroups32 205
 #define __NR_fchown32 207
 #define __NR_setresuid32 208
 #define __NR_getresuid32 209
@@ -129,12 +126,11 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_chown32 212
 #define __NR_setuid32 213
 #define __NR_setgid32 214
+#define __NR_mincore 218
 #define __NR_madvise 219
 #define __NR_getdents64 220
 #define __NR_fcntl64 221
 #define __NR_gettid 224
-#define __NR_fsetxattr 228
-#define __NR_fgetxattr 231
 #define __NR_tkill 238
 #define __NR_futex 240
 #define __NR_sched_getaffinity 242
@@ -209,9 +205,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		LOG("__NR_waitpid: pid=%d status=%d options=%x result=%d", ARG1, ARG2, ARG3, result);
 		break;
 	case __NR_link:
-		result = 0;
-		kwarn("syscall link not implememented: %s -> %s", getNativeString(memory, ARG1), getNativeString2(memory, ARG2));
-		LOG("__NR_link path1=%X(%s) path2=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString2(memory, ARG2), result);
+		result = syscall_link(thread, ARG1, ARG2);
+		//kwarn("syscall link not implememented correctly: %s -> %s", getNativeString(memory, ARG1), getNativeString(memory, ARG2));
+		LOG("__NR_link path1=%X(%s) path2=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);
 		break;
 	case __NR_unlink:
 		result =syscall_unlink(thread, ARG1);
@@ -281,14 +277,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_pipe(thread, ARG1);
 		LOG("__NR_pipe fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
-	case __NR_times:
-		result = 0;
-		// :TODO:
-		writed(memory, ARG1, 1000);
-		writed(memory, ARG1+4, 1000);
-		writed(memory, ARG1+8, 1000);
-		writed(memory, ARG1+12, 1000);
-		break;
 	case __NR_brk:
 		if (ARG1 > process->brkEnd) {
 			U32 len = ARG1-process->brkEnd;
@@ -339,13 +327,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = 1; // :TODO:
 		kwarn("__NR_setsid not implemented");
 		LOG("__NR_setsid result=%d", result);
-		break;
-	case __NR_setrlimit:
-		result = syscall_prlimit(thread, process->id, ARG1, ARG2, 0);
-		LOG("__NR_setrlimit resource=%d, rlim=%X", ARG1, ARG2, result);
-		break;
-	case __NR_getrusage:
-		result = 0;
 		break;
 	case __NR_gettimeofday:
 		result = syscall_gettimeofday(thread, ARG1, ARG2);
@@ -521,6 +502,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_select(thread, ARG1, ARG2, ARG3, ARG4, ARG5);
 		LOG("__NR_newselect nfd=%d readfds=%X writefds=%X errorfds=%X timeout=%d result=%d", ARG1, ARG2, ARG3, ARG4, ARG5, result);
 		break;
+	case __NR_flock:
+		result = 0; // :TODO:
+		break;
 	case __NR_msync:
 		result = syscall_msync(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_msync addr=%X length=%d flags=%X result=%d", ARG1, ARG2, ARG3, result);
@@ -528,10 +512,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_writev:		
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d result=%d", ARG1, ARG2, ARG3, result);
-		break;
-	case __NR_mlock:
-	case __NR_munlock:
-		result = 0; // swapping not implemented so this function does nothing
 		break;
 	case __NR_sched_yield:
 		result = 0;
@@ -638,6 +618,12 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_getegid32:
 		result = process->effectiveGroupId;
 		break;
+	case __NR_getgroups32:
+		result = 1;
+		if (ARG2!=0) {
+			writed(memory, ARG2, process->groupId);
+		}
+		break;
 	case __NR_fchown32:
 		result = 0;
 		//kwarn("__NR_fchown32 not implemented");
@@ -680,6 +666,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = 0;
 		LOG("__NR_setgid32 gid=%d result=%d", ARG1, result);
 		break;
+	case __NR_mincore:
+		result = syscall_mincore(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_mincore address=%X length=%d vec=%X result=%d", ARG1, ARG2, ARG3, result);
+		break;
 	case __NR_madvise:
 		result = 0;
 		LOG("__NR_madvise address=%X len=%d advise=%d result=%d", ARG1, ARG2, ARG3, result);
@@ -695,12 +685,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_gettid:
 		result = thread->id;
 		LOG("__NR_gettid result=%d", result);
-		break;
-	case __NR_fsetxattr:
-		result = -K_EOPNOTSUPP;
-		break;
-	case __NR_fgetxattr:
-		result = -K_EOPNOTSUPP;
 		break;
 		/*
 	case __NR_tkill:

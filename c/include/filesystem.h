@@ -33,5 +33,6 @@ BOOL doesPathExist(const char* path);
 BOOL kreadLink(const char* path, char* buffer, int bufferSize, BOOL makeAbsolute);
 
 U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2);
+U32 syscall_link(struct KThread* thread, U32 from, U32 to);
 
 #endif
