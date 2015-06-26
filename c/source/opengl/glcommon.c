@@ -1,11 +1,17 @@
+#include <GL/gl.h>
 #include "glcommon.h"
 #include "kalloc.h"
 #include "kprocess.h"
 #include "log.h"
 
-#include GLH
-
 glTexImage3D_func ext_glTexImage3D;
+
+#ifdef BOXEDWINE_ES
+#define GL_FUNC(name) es_##name
+#include "es/esopengl.h"
+#else
+#define GL_FUNC(name) name
+#endif
 
 float fARG(struct CPU* cpu, U32 arg) {
 	struct int2Float i;
@@ -330,151 +336,151 @@ void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count)
 
 // GLAPI void APIENTRY glClearIndex( GLfloat c )
 void glcommon_glClearIndex(struct CPU* cpu) {
-	glClearIndex(fARG1);
+	GL_FUNC(glClearIndex)(fARG1);
 }
 
 // GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
 void glcommon_glClearColor(struct CPU* cpu) {
-	glClearColor(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glClearColor)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glClear( GLbitfield mask )
 void glcommon_glClear(struct CPU* cpu) {
-	glClear(ARG1);
+	GL_FUNC(glClear)(ARG1);
 }
 
 // GLAPI void APIENTRY glIndexMask( GLuint mask ) {
 void glcommon_glIndexMask(struct CPU* cpu) {
-	glIndexMask(ARG1);
+	GL_FUNC(glIndexMask)(ARG1);
 }
 
 // GLAPI void APIENTRY glColorMask( GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha ) {
 void glcommon_glColorMask(struct CPU* cpu) {
-	glColorMask(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColorMask)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glAlphaFunc( GLenum func, GLclampf ref ) {
 void glcommon_glAlphaFunc(struct CPU* cpu) {
-	glAlphaFunc(ARG1, fARG2);
+	GL_FUNC(glAlphaFunc)(ARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor ) {
 void glcommon_glBlendFunc(struct CPU* cpu) {
-	glBlendFunc(ARG1, ARG2);
+	GL_FUNC(glBlendFunc)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glLogicOp( GLenum opcode ) {
 void glcommon_glLogicOp(struct CPU* cpu) {
-	glLogicOp(ARG1);
+	GL_FUNC(glLogicOp)(ARG1);
 }
 
 // GLAPI void APIENTRY glCullFace( GLenum mode ) {
 void glcommon_glCullFace(struct CPU* cpu) {
-	glCullFace(ARG1);
+	GL_FUNC(glCullFace)(ARG1);
 }
 
 // GLAPI void APIENTRY glFrontFace( GLenum mode ) {
 void glcommon_glFrontFace(struct CPU* cpu) {
-	glFrontFace(ARG1);
+	GL_FUNC(glFrontFace)(ARG1);
 }
 
 // GLAPI void APIENTRY glPointSize( GLfloat size ) {
 void glcommon_glPointSize(struct CPU* cpu) {
-	glPointSize(fARG1);
+	GL_FUNC(glPointSize)(fARG1);
 }
 
 // GLAPI void APIENTRY glLineWidth( GLfloat width ) {
 void glcommon_glLineWidth(struct CPU* cpu) {
-	glLineWidth(fARG1);
+	GL_FUNC(glLineWidth)(fARG1);
 }
 
 // GLAPI void APIENTRY glLineStipple( GLint factor, GLushort pattern ) {
 void glcommon_glLineStipple(struct CPU* cpu) {
-	glLineStipple(ARG1, ARG2);
+	GL_FUNC(glLineStipple)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glPolygonMode( GLenum face, GLenum mode ) {
 void glcommon_glPolygonMode(struct CPU* cpu) {
-	glPolygonMode(ARG1, ARG2);
+	GL_FUNC(glPolygonMode)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glPolygonOffset( GLfloat factor, GLfloat units ) {
 void glcommon_glPolygonOffset(struct CPU* cpu) {
-	glPolygonOffset(fARG1, fARG2);
+	GL_FUNC(glPolygonOffset)(fARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glPolygonStipple( const GLubyte *mask ) {
 void glcommon_glPolygonStipple(struct CPU* cpu) {
-	glPolygonStipple(marshalub(cpu, ARG1, 128));
+	GL_FUNC(glPolygonStipple)(marshalub(cpu, ARG1, 128));
 }
 
 // GLAPI void APIENTRY glGetPolygonStipple( GLubyte *mask ) {
 void glcommon_glGetPolygonStipple(struct CPU* cpu) {
 	U8 buffer[128];
-	glGetPolygonStipple(buffer);
+	GL_FUNC(glGetPolygonStipple)(buffer);
 	marshalBackub(cpu, ARG1, buffer, 128);	
 }
 
 // GLAPI void APIENTRY glEdgeFlag( GLboolean flag ) {
 void glcommon_glEdgeFlag(struct CPU* cpu) {
-	glEdgeFlag(ARG1);
+	GL_FUNC(glEdgeFlag)(ARG1);
 }
 
 // GLAPI void APIENTRY glEdgeFlagv( const GLboolean *flag ) {
 void glcommon_glEdgeFlagv(struct CPU* cpu) {
-	glEdgeFlagv(marshalbool(cpu, ARG1, 1));
+	GL_FUNC(glEdgeFlagv)(marshalbool(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glScissor( GLint x, GLint y, GLsizei width, GLsizei height) {
 void glcommon_glScissor(struct CPU* cpu) {
-	glScissor(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glScissor)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glClipPlane( GLenum plane, const GLdouble *equation ) {
 void glcommon_glClipPlane(struct CPU* cpu) {
-	glClipPlane(ARG1, marshald(cpu, ARG2, 4));
+	GL_FUNC(glClipPlane)(ARG1, marshald(cpu, ARG2, 4));
 }
 
 // GLAPI void APIENTRY glGetClipPlane( GLenum plane, GLdouble *equation ) {
 void glcommon_glGetClipPlane(struct CPU* cpu) {
 	GLdouble buffer[4];
-	glGetClipPlane(ARG1, buffer);
+	GL_FUNC(glGetClipPlane)(ARG1, buffer);
 	marshalBackd(cpu, ARG2, buffer, 4);
 }
 
 // GLAPI void APIENTRY glDrawBuffer( GLenum mode ) {
 void glcommon_glDrawBuffer(struct CPU* cpu) {
-	glDrawBuffer(ARG1);
+	GL_FUNC(glDrawBuffer)(ARG1);
 }
 
 // GLAPI void APIENTRY glReadBuffer( GLenum mode ) {
 void glcommon_glReadBuffer(struct CPU* cpu) {
-	glReadBuffer(ARG1);
+	GL_FUNC(glReadBuffer)(ARG1);
 }
 
 // GLAPI void APIENTRY glEnable( GLenum cap ) {
 void glcommon_glEnable(struct CPU* cpu) {
-	glEnable(ARG1);
+	GL_FUNC(glEnable)(ARG1);
 }
 
 // GLAPI void APIENTRY glDisable( GLenum cap ) {
 void glcommon_glDisable(struct CPU* cpu) {
-	glDisable(ARG1);
+	GL_FUNC(glDisable)(ARG1);
 }
 
 // GLAPI GLboolean APIENTRY glIsEnabled( GLenum cap ) {
 void glcommon_glIsEnabled(struct CPU* cpu) {
-	EAX = glIsEnabled(ARG1);
+	EAX = GL_FUNC(glIsEnabled)(ARG1);
 }
 
 // GLAPI void APIENTRY glEnableClientState( GLenum cap ) {  /* 1.1 */
 void glcommon_glEnableClientState(struct CPU* cpu) {
-	glEnableClientState(ARG1);
+	GL_FUNC(glEnableClientState)(ARG1);
 }
 
 // GLAPI void APIENTRY glDisableClientState( GLenum cap ) {  /* 1.1 */
 void glcommon_glDisableClientState(struct CPU* cpu) {
-	glDisableClientState(ARG1);
+	GL_FUNC(glDisableClientState)(ARG1);
 }
 
 int getSize(GLenum pname) {
@@ -961,7 +967,7 @@ void glcommon_glGetBooleanv(struct CPU* cpu) {
 	int size = getSize(pname);
 	GLboolean* params = marshalbool(cpu, ARG2, size);
 
-	glGetBooleanv(ARG1, params);
+	GL_FUNC(glGetBooleanv)(ARG1, params);
 	marshalBackbool(cpu, ARG2, params, size);
 }
 
@@ -971,7 +977,7 @@ void glcommon_glGetDoublev(struct CPU* cpu) {
 	int size = getSize(pname);
 	GLdouble* params = marshald(cpu, ARG2, size);
 
-	glGetDoublev(ARG1, params);
+	GL_FUNC(glGetDoublev)(ARG1, params);
 	marshalBackd(cpu, ARG2, params, size);
 }
 
@@ -981,7 +987,7 @@ void glcommon_glGetFloatv(struct CPU* cpu) {
 	int size = getSize(pname);
 	GLfloat* params = marshalf(cpu, ARG2, size);
 
-	glGetFloatv(ARG1, params);
+	GL_FUNC(glGetFloatv)(ARG1, params);
 	marshalBackf(cpu, ARG2, params, size);
 }
 
@@ -991,45 +997,45 @@ void glcommon_glGetIntegerv(struct CPU* cpu) {
 	int size = getSize(pname);
 	GLint* params = marshali(cpu, ARG2, size);
 
-	glGetIntegerv(ARG1, params);
+	GL_FUNC(glGetIntegerv)(ARG1, params);
 	marshalBacki(cpu, ARG2, params, size);
 }
 
 // GLAPI void APIENTRY glPushAttrib( GLbitfield mask ) {
 void glcommon_glPushAttrib(struct CPU* cpu) {
-	glPushAttrib(ARG1);
+	GL_FUNC(glPushAttrib)(ARG1);
 }
 
 // GLAPI void APIENTRY glPopAttrib( void ) {
 void glcommon_glPopAttrib(struct CPU* cpu) {
-	glPopAttrib();
+	GL_FUNC(glPopAttrib)();
 }
 
 // GLAPI void APIENTRY glPushClientAttrib( GLbitfield mask ) {  /* 1.1 */
 void glcommon_glPushClientAttrib(struct CPU* cpu) {
-	glPushClientAttrib(ARG1);
+	GL_FUNC(glPushClientAttrib)(ARG1);
 }
 
 // GLAPI void APIENTRY glPopClientAttrib( void ) {  /* 1.1 */
 void glcommon_glPopClientAttrib(struct CPU* cpu) {
-	glPopClientAttrib();
+	GL_FUNC(glPopClientAttrib)();
 }
 
 // GLAPI GLint APIENTRY glRenderMode( GLenum mode ) {
 void glcommon_glRenderMode(struct CPU* cpu) {
-	EAX = glRenderMode(ARG1);
+	EAX = GL_FUNC(glRenderMode)(ARG1);
 }
 
 // GLAPI GLenum APIENTRY glGetError( void ) {
 void glcommon_glGetError(struct CPU* cpu) {
-	EAX = glGetError();
+	EAX = GL_FUNC(glGetError)();
 }
 
 // GLAPI const GLubyte* APIENTRY glGetString( GLenum name ) {
 void glcommon_glGetString(struct CPU* cpu) {
 	U32 name = ARG1;
 	U32 index = 0;
-	const char* result = (const char*)glGetString(name);
+	const char* result = (const char*)GL_FUNC(glGetString)(name);
 
 	if (name == GL_VENDOR) {
 		index = STRING_GL_VENDOR;
@@ -1051,157 +1057,157 @@ void glcommon_glGetString(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glHint( GLenum target, GLenum mode ) {
 void glcommon_glHint(struct CPU* cpu) {
-	glHint(ARG1, ARG2);
+	GL_FUNC(glHint)(ARG1, ARG2);
 }
 
 /* Depth Buffer */
 // GLAPI void APIENTRY glClearDepth( GLclampd depth ) {
 void glcommon_glClearDepth(struct CPU* cpu) {
-	glClearDepth(dARG1);
+	GL_FUNC(glClearDepth)(dARG1);
 }
 
 // GLAPI void APIENTRY glDepthFunc( GLenum func ) {
 void glcommon_glDepthFunc(struct CPU* cpu) {
-	glDepthFunc(ARG1);
+	GL_FUNC(glDepthFunc)(ARG1);
 }
 
 // GLAPI void APIENTRY glDepthMask( GLboolean flag ) {
 void glcommon_glDepthMask(struct CPU* cpu) {
-	glDepthMask(ARG1);
+	GL_FUNC(glDepthMask)(ARG1);
 }
 
 // GLAPI void APIENTRY glDepthRange( GLclampd near_val, GLclampd far_val ) {
 void glcommon_glDepthRange(struct CPU* cpu) {
-	glDepthRange(dARG1, dARG2);
+	GL_FUNC(glDepthRange)(dARG1, dARG2);
 }
 
 
 /* Accumulation Buffer */
 // GLAPI void APIENTRY glClearAccum( GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha ) {
 void glcommon_glClearAccum(struct CPU* cpu) {
-	glClearAccum(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glClearAccum)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glAccum( GLenum op, GLfloat value ) {
 void glcommon_glAccum(struct CPU* cpu) {
-	glAccum(ARG1, fARG2);
+	GL_FUNC(glAccum)(ARG1, fARG2);
 }
 
 /* Transformation */
 // GLAPI void APIENTRY glMatrixMode( GLenum mode ) {
 void glcommon_glMatrixMode(struct CPU* cpu) {
-	glMatrixMode(ARG1);
+	GL_FUNC(glMatrixMode)(ARG1);
 }
 
 // GLAPI void APIENTRY glOrtho( GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble near_val, GLdouble far_val ) {
 void glcommon_glOrtho(struct CPU* cpu) {
-	glOrtho(dARG1, dARG2, dARG3, dARG4, dARG5, dARG6);
+	GL_FUNC(glOrtho)(dARG1, dARG2, dARG3, dARG4, dARG5, dARG6);
 }
 
 // GLAPI void APIENTRY glFrustum( GLdouble left, GLdouble right, GLdouble bottom, GLdouble top, GLdouble near_val, GLdouble far_val ) {
 void glcommon_glFrustum(struct CPU* cpu) {
-	glFrustum(dARG1, dARG2, dARG3, dARG4, dARG5, dARG6);
+	GL_FUNC(glFrustum)(dARG1, dARG2, dARG3, dARG4, dARG5, dARG6);
 }
 
 // GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height ) {
 void glcommon_glViewport(struct CPU* cpu) {
-	glViewport(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glViewport)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glPushMatrix( void ) {
 void glcommon_glPushMatrix(struct CPU* cpu) {
-	glPushMatrix();
+	GL_FUNC(glPushMatrix)();
 }
 
 // GLAPI void APIENTRY glPopMatrix( void ) {
 void glcommon_glPopMatrix(struct CPU* cpu) {
-	glPopMatrix();
+	GL_FUNC(glPopMatrix)();
 }
 
 // GLAPI void APIENTRY glLoadIdentity( void ) {
 void glcommon_glLoadIdentity(struct CPU* cpu) {
-	glLoadIdentity();
+	GL_FUNC(glLoadIdentity)();
 }
 
 // GLAPI void APIENTRY glLoadMatrixd( const GLdouble *m ) {
 void glcommon_glLoadMatrixd(struct CPU* cpu) {
-	glLoadMatrixd(marshald(cpu, ARG1, 16));
+	GL_FUNC(glLoadMatrixd)(marshald(cpu, ARG1, 16));
 }
 
 // GLAPI void APIENTRY glLoadMatrixf( const GLfloat *m ) {
 void glcommon_glLoadMatrixf(struct CPU* cpu) {
-	glLoadMatrixf(marshalf(cpu, ARG1, 16));
+	GL_FUNC(glLoadMatrixf)(marshalf(cpu, ARG1, 16));
 }
 
 // GLAPI void APIENTRY glMultMatrixd( const GLdouble *m ) {
 void glcommon_glMultMatrixd(struct CPU* cpu) {
-	glMultMatrixd(marshald(cpu, ARG1, 16));
+	GL_FUNC(glMultMatrixd)(marshald(cpu, ARG1, 16));
 }
 
 // GLAPI void APIENTRY glMultMatrixf( const GLfloat *m ) {
 void glcommon_glMultMatrixf(struct CPU* cpu) {
-	glMultMatrixf(marshalf(cpu, ARG1, 16));
+	GL_FUNC(glMultMatrixf)(marshalf(cpu, ARG1, 16));
 }
 
 // GLAPI void APIENTRY glRotated( GLdouble angle, GLdouble x, GLdouble y, GLdouble z) {
 void glcommon_glRotated(struct CPU* cpu) {
-	glRotated(dARG1, dARG2, dARG3, dARG4);
+	GL_FUNC(glRotated)(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glRotatef( GLfloat angle, GLfloat x, GLfloat y, GLfloat z ) {
 void glcommon_glRotatef(struct CPU* cpu) {
-	glRotatef(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glRotatef)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glScaled( GLdouble x, GLdouble y, GLdouble z ) {
 void glcommon_glScaled(struct CPU* cpu) {
-	glScaled(dARG1, dARG2, dARG3);
+	GL_FUNC(glScaled)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glScalef( GLfloat x, GLfloat y, GLfloat z ) {
 void glcommon_glScalef(struct CPU* cpu) {
-	glScalef(fARG1, fARG2, fARG3);
+	GL_FUNC(glScalef)(fARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glTranslated( GLdouble x, GLdouble y, GLdouble z ) {
 void glcommon_glTranslated(struct CPU* cpu) {
-	glTranslated(dARG1, dARG2, dARG3);
+	GL_FUNC(glTranslated)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glTranslatef( GLfloat x, GLfloat y, GLfloat z ) {
 void glcommon_glTranslatef(struct CPU* cpu) {
-	glTranslatef(fARG1, fARG2, fARG3);
+	GL_FUNC(glTranslatef)(fARG1, fARG2, fARG3);
 }
 
 /* Display Lists */
 // GLAPI GLboolean APIENTRY glIsList( GLuint list ) {
 void glcommon_glIsList(struct CPU* cpu) {
-	EAX = glIsList(ARG1);
+	EAX = GL_FUNC(glIsList)(ARG1);
 }
 
 // GLAPI void APIENTRY glDeleteLists( GLuint list, GLsizei range ) {
 void glcommon_glDeleteLists(struct CPU* cpu) {
-	glDeleteLists(ARG1, ARG2); 
+	GL_FUNC(glDeleteLists)(ARG1, ARG2); 
 }
 
 // GLAPI GLuint APIENTRY glGenLists( GLsizei range ) {
 void glcommon_glGenLists(struct CPU* cpu) {
-	EAX = glGenLists(ARG1);
+	EAX = GL_FUNC(glGenLists)(ARG1);
 }
 
 // GLAPI void APIENTRY glNewList( GLuint list, GLenum mode ) {
 void glcommon_glNewList(struct CPU* cpu) {
-	glNewList(ARG1, ARG2);
+	GL_FUNC(glNewList)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glEndList( void ) {
 void glcommon_glEndList(struct CPU* cpu) {
-	glEndList();
+	GL_FUNC(glEndList)();
 }
 
 // GLAPI void APIENTRY glCallList( GLuint list ) {
 void glcommon_glCallList(struct CPU* cpu) {
-	glCallList(ARG1);
+	GL_FUNC(glCallList)(ARG1);
 }
 
 // GLAPI void APIENTRY glCallLists( GLsizei n, GLenum type, const GLvoid *lists ) {
@@ -1242,739 +1248,739 @@ void glcommon_glCallLists(struct CPU* cpu) {
 		default:
 			kpanic("glcommon_glCallLists unknown type: %d", ARG2);
 	}
-	glCallLists(ARG1, ARG2, data);
+	GL_FUNC(glCallLists)(ARG1, ARG2, data);
 }
 
 // GLAPI void APIENTRY glListBase( GLuint base ) {
 void glcommon_glListBase(struct CPU* cpu) {
-	glListBase(ARG1);
+	GL_FUNC(glListBase)(ARG1);
 }
 
 /* Drawing Functions */
 // GLAPI void APIENTRY glBegin( GLenum mode ) {
 void glcommon_glBegin(struct CPU* cpu) {
-	glBegin(ARG1);
+	GL_FUNC(glBegin)(ARG1);
 }
 
 // GLAPI void APIENTRY glEnd( void ) {
 void glcommon_glEnd(struct CPU* cpu) {
-	glEnd();
+	GL_FUNC(glEnd)();
 }
 
 // GLAPI void APIENTRY glVertex2d( GLdouble x, GLdouble y ) {
 void glcommon_glVertex2d(struct CPU* cpu) {
-	glVertex2d(dARG1, dARG2);
+	GL_FUNC(glVertex2d)(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glVertex2f( GLfloat x, GLfloat y ) {
 void glcommon_glVertex2f(struct CPU* cpu) {
-	glVertex2f(fARG1, fARG2);
+	GL_FUNC(glVertex2f)(fARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glVertex2i( GLint x, GLint y ) {
 void glcommon_glVertex2i(struct CPU* cpu) {
-	glVertex2i(ARG1, ARG2);
+	GL_FUNC(glVertex2i)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glVertex2s( GLshort x, GLshort y ) {
 void glcommon_glVertex2s(struct CPU* cpu) {
-	glVertex2s(ARG1, ARG2);
+	GL_FUNC(glVertex2s)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glVertex3d( GLdouble x, GLdouble y, GLdouble z ) {
 void glcommon_glVertex3d(struct CPU* cpu) {
-	glVertex3d(dARG1, dARG2, dARG3);
+	GL_FUNC(glVertex3d)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glVertex3f( GLfloat x, GLfloat y, GLfloat z ) {
 void glcommon_glVertex3f(struct CPU* cpu) {
-	glVertex3f(fARG1, fARG2, fARG3);
+	GL_FUNC(glVertex3f)(fARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glVertex3i( GLint x, GLint y, GLint z ) {
 void glcommon_glVertex3i(struct CPU* cpu) {
-	glVertex3i(ARG1, ARG2, ARG3);
+	GL_FUNC(glVertex3i)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glVertex3s( GLshort x, GLshort y, GLshort z ) {
 void glcommon_glVertex3s(struct CPU* cpu) {
-	glVertex3s(ARG1, ARG2, ARG3);
+	GL_FUNC(glVertex3s)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glVertex4d( GLdouble x, GLdouble y, GLdouble z, GLdouble w ) {
 void glcommon_glVertex4d(struct CPU* cpu) {
-	glVertex4d(dARG1, dARG2, dARG3, dARG4);
+	GL_FUNC(glVertex4d)(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glVertex4f( GLfloat x, GLfloat y, GLfloat z, GLfloat w ) {
 void glcommon_glVertex4f(struct CPU* cpu) {
-	glVertex4f(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glVertex4f)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glVertex4i( GLint x, GLint y, GLint z, GLint w ) {
 void glcommon_glVertex4i(struct CPU* cpu) {
-	glVertex4i(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glVertex4i)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glVertex4s( GLshort x, GLshort y, GLshort z, GLshort w ) {
 void glcommon_glVertex4s(struct CPU* cpu) {
-	glVertex4s(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glVertex4s)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glVertex2dv( const GLdouble *v ) {
 void glcommon_glVertex2dv(struct CPU* cpu) {
-	glVertex2dv(marshald(cpu, ARG1, 2));
+	GL_FUNC(glVertex2dv)(marshald(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glVertex2fv( const GLfloat *v ) {
 void glcommon_glVertex2fv(struct CPU* cpu) {
-	glVertex2fv(marshalf(cpu, ARG1, 2));
+	GL_FUNC(glVertex2fv)(marshalf(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glVertex2iv( const GLint *v ) {
 void glcommon_glVertex2iv(struct CPU* cpu) {
-	glVertex2iv(marshali(cpu, ARG1, 8));
+	GL_FUNC(glVertex2iv)(marshali(cpu, ARG1, 8));
 }
 
 // GLAPI void APIENTRY glVertex2sv( const GLshort *v ) {
 void glcommon_glVertex2sv(struct CPU* cpu) {
-	glVertex2sv(marshals(cpu, ARG1, 2));
+	GL_FUNC(glVertex2sv)(marshals(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glVertex3dv( const GLdouble *v ) {
 void glcommon_glVertex3dv(struct CPU* cpu) {
-	glVertex3dv(marshald(cpu, ARG1, 3));
+	GL_FUNC(glVertex3dv)(marshald(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glVertex3fv( const GLfloat *v ) {
 void glcommon_glVertex3fv(struct CPU* cpu) {
-	glVertex3fv(marshalf(cpu, ARG1, 3));
+	GL_FUNC(glVertex3fv)(marshalf(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glVertex3iv( const GLint *v ) {
 void glcommon_glVertex3iv(struct CPU* cpu) {
-	glVertex3iv(marshali(cpu, ARG1, 3));
+	GL_FUNC(glVertex3iv)(marshali(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glVertex3sv( const GLshort *v ) {
 void glcommon_glVertex3sv(struct CPU* cpu) {
-	glVertex3sv(marshals(cpu, ARG1, 3));
+	GL_FUNC(glVertex3sv)(marshals(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glVertex4dv( const GLdouble *v ) {
 void glcommon_glVertex4dv(struct CPU* cpu) {
-	glVertex4dv(marshald(cpu, ARG1, 4));
+	GL_FUNC(glVertex4dv)(marshald(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glVertex4fv( const GLfloat *v ) {
 void glcommon_glVertex4fv(struct CPU* cpu) {
-	glVertex4fv(marshalf(cpu, ARG1, 4));
+	GL_FUNC(glVertex4fv)(marshalf(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glVertex4iv( const GLint *v ) {
 void glcommon_glVertex4iv(struct CPU* cpu) {
-	glVertex4iv(marshali(cpu, ARG1, 4));
+	GL_FUNC(glVertex4iv)(marshali(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glVertex4sv( const GLshort *v ) {
 void glcommon_glVertex4sv(struct CPU* cpu) {
-	glVertex4sv(marshals(cpu, ARG1, 4));
+	GL_FUNC(glVertex4sv)(marshals(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glNormal3b( GLbyte nx, GLbyte ny, GLbyte nz ) {
 void glcommon_glNormal3b(struct CPU* cpu) {
-	glNormal3b(ARG1, ARG2, ARG3);
+	GL_FUNC(glNormal3b)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glNormal3d( GLdouble nx, GLdouble ny, GLdouble nz ) {
 void glcommon_glNormal3d(struct CPU* cpu) {
-	glNormal3d(dARG1, dARG2, dARG3);
+	GL_FUNC(glNormal3d)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glNormal3f( GLfloat nx, GLfloat ny, GLfloat nz ) {
 void glcommon_glNormal3f(struct CPU* cpu) {
-	glNormal3f(fARG1, fARG2, fARG3);
+	GL_FUNC(glNormal3f)(fARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glNormal3i( GLint nx, GLint ny, GLint nz ) {
 void glcommon_glNormal3i(struct CPU* cpu) {
-	glNormal3i(ARG1, ARG2, ARG3);
+	GL_FUNC(glNormal3i)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glNormal3s( GLshort nx, GLshort ny, GLshort nz ) {
 void glcommon_glNormal3s(struct CPU* cpu) {
-	glNormal3s(ARG1, ARG2, ARG3);
+	GL_FUNC(glNormal3s)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glNormal3bv( const GLbyte *v ) {
 void glcommon_glNormal3bv(struct CPU* cpu) {
-	glNormal3bv(marshalb(cpu, ARG1, 3));
+	GL_FUNC(glNormal3bv)(marshalb(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glNormal3dv( const GLdouble *v ) {
 void glcommon_glNormal3dv(struct CPU* cpu) {
-	glNormal3dv(marshald(cpu, ARG1, 3));
+	GL_FUNC(glNormal3dv)(marshald(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glNormal3fv( const GLfloat *v ) {
 void glcommon_glNormal3fv(struct CPU* cpu) {
-	glNormal3fv(marshalf(cpu, ARG1, 3));
+	GL_FUNC(glNormal3fv)(marshalf(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glNormal3iv( const GLint *v ) {
 void glcommon_glNormal3iv(struct CPU* cpu) {
-	glNormal3iv(marshali(cpu, ARG1, 3));
+	GL_FUNC(glNormal3iv)(marshali(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glNormal3sv( const GLshort *v ) {
 void glcommon_glNormal3sv(struct CPU* cpu) {
-	glNormal3sv(marshals(cpu, ARG1, 3));
+	GL_FUNC(glNormal3sv)(marshals(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glIndexd( GLdouble c ) {
 void glcommon_glIndexd(struct CPU* cpu) {
-	glIndexd(dARG1);
+	GL_FUNC(glIndexd)(dARG1);
 }
 
 // GLAPI void APIENTRY glIndexf( GLfloat c ) {
 void glcommon_glIndexf(struct CPU* cpu) {
-	glIndexf(fARG1);
+	GL_FUNC(glIndexf)(fARG1);
 }
 
 // GLAPI void APIENTRY glIndexi( GLint c ) {
 void glcommon_glIndexi(struct CPU* cpu) {
-	glIndexi(ARG1);
+	GL_FUNC(glIndexi)(ARG1);
 }
 
 // GLAPI void APIENTRY glIndexs( GLshort c ) {
 void glcommon_glIndexs(struct CPU* cpu) {
-	glIndexs(ARG1);
+	GL_FUNC(glIndexs)(ARG1);
 }
 
 // GLAPI void APIENTRY glIndexub( GLubyte c ) {  /* 1.1 */
 void glcommon_glIndexub(struct CPU* cpu) {
-	glIndexub(ARG1);
+	GL_FUNC(glIndexub)(ARG1);
 }
 
 // GLAPI void APIENTRY glIndexdv( const GLdouble *c ) {
 void glcommon_glIndexdv(struct CPU* cpu) {
-	glIndexdv(marshald(cpu, ARG1, 1));
+	GL_FUNC(glIndexdv)(marshald(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glIndexfv( const GLfloat *c ) {
 void glcommon_glIndexfv(struct CPU* cpu) {
-	glIndexfv(marshalf(cpu, ARG1, 1));
+	GL_FUNC(glIndexfv)(marshalf(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glIndexiv( const GLint *c ) {
 void glcommon_glIndexiv(struct CPU* cpu) {
-	glIndexiv(marshali(cpu, ARG1, 1));
+	GL_FUNC(glIndexiv)(marshali(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glIndexsv( const GLshort *c ) {
 void glcommon_glIndexsv(struct CPU* cpu) {
-	glIndexsv(marshals(cpu, ARG1, 1));
+	GL_FUNC(glIndexsv)(marshals(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glIndexubv( const GLubyte *c ) {  /* 1.1 */
 void glcommon_glIndexubv(struct CPU* cpu) {
-	glIndexubv(marshalub(cpu, ARG1, 1));
+	GL_FUNC(glIndexubv)(marshalub(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glColor3b( GLbyte red, GLbyte green, GLbyte blue ) {
 void glcommon_glColor3b(struct CPU* cpu) {
-	glColor3b(ARG1, ARG2, ARG3);
+	GL_FUNC(glColor3b)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glColor3d( GLdouble red, GLdouble green, GLdouble blue ) {
 void glcommon_glColor3d(struct CPU* cpu) {
-	glColor3d(dARG1, dARG2, dARG3);
+	GL_FUNC(glColor3d)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glColor3f( GLfloat red, GLfloat green, GLfloat blue ) {
 void glcommon_glColor3f(struct CPU* cpu) {
-	glColor3f(fARG1, fARG2, fARG3);
+	GL_FUNC(glColor3f)(fARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glColor3i( GLint red, GLint green, GLint blue ) {
 void glcommon_glColor3i(struct CPU* cpu) {
-	glColor3i(ARG1, ARG2, ARG3);
+	GL_FUNC(glColor3i)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glColor3s( GLshort red, GLshort green, GLshort blue ) {
 void glcommon_glColor3s(struct CPU* cpu) {
-	glColor3s(ARG1, ARG2, ARG3);
+	GL_FUNC(glColor3s)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glColor3ub( GLubyte red, GLubyte green, GLubyte blue ) {
 void glcommon_glColor3ub(struct CPU* cpu) {
-	glColor3ub(ARG1, ARG2, ARG3);
+	GL_FUNC(glColor3ub)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glColor3ui( GLuint red, GLuint green, GLuint blue ) {
 void glcommon_glColor3ui(struct CPU* cpu) {
-	glColor3ui(ARG1, ARG2, ARG3);
+	GL_FUNC(glColor3ui)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glColor3us( GLushort red, GLushort green, GLushort blue ) {
 void glcommon_glColor3us(struct CPU* cpu) {
-	glColor3us(ARG1, ARG2, ARG3);
+	GL_FUNC(glColor3us)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glColor4b( GLbyte red, GLbyte green, GLbyte blue, GLbyte alpha ) {
 void glcommon_glColor4b(struct CPU* cpu) {
-	glColor4b(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColor4b)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glColor4d( GLdouble red, GLdouble green, GLdouble blue, GLdouble alpha ) {
 void glcommon_glColor4d(struct CPU* cpu) {
-	glColor4d(dARG1, dARG2, dARG3, dARG4);
+	GL_FUNC(glColor4d)(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glColor4f( GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha ) {
 void glcommon_glColor4f(struct CPU* cpu) {
-	glColor4f(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glColor4f)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glColor4i( GLint red, GLint green, GLint blue, GLint alpha ) {
 void glcommon_glColor4i(struct CPU* cpu) {
-	glColor4i(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColor4i)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glColor4s( GLshort red, GLshort green, GLshort blue, GLshort alpha ) {
 void glcommon_glColor4s(struct CPU* cpu) {
-	glColor4s(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColor4s)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glColor4ub( GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha ) {
 void glcommon_glColor4ub(struct CPU* cpu) {
-	glColor4ub(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColor4ub)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glColor4ui( GLuint red, GLuint green, GLuint blue, GLuint alpha ) {
 void glcommon_glColor4ui(struct CPU* cpu) {
-	glColor4ui(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColor4ui)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glColor4us( GLushort red, GLushort green, GLushort blue, GLushort alpha ) {
 void glcommon_glColor4us(struct CPU* cpu) {
-	glColor4us(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glColor4us)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glColor3bv( const GLbyte *v ) {
 void glcommon_glColor3bv(struct CPU* cpu) {
-	glColor3bv(marshalb(cpu, ARG1, 3));
+	GL_FUNC(glColor3bv)(marshalb(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3dv( const GLdouble *v ) {
 void glcommon_glColor3dv(struct CPU* cpu) {
-	glColor3dv(marshald(cpu, ARG1, 3));
+	GL_FUNC(glColor3dv)(marshald(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3fv( const GLfloat *v ) {
 void glcommon_glColor3fv(struct CPU* cpu) {
-	glColor3fv(marshalf(cpu, ARG1, 3));
+	GL_FUNC(glColor3fv)(marshalf(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3iv( const GLint *v ) {
 void glcommon_glColor3iv(struct CPU* cpu) {
-	glColor3iv(marshali(cpu, ARG1, 3));
+	GL_FUNC(glColor3iv)(marshali(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3sv( const GLshort *v ) {
 void glcommon_glColor3sv(struct CPU* cpu) {
-	glColor3sv(marshals(cpu, ARG1, 3));
+	GL_FUNC(glColor3sv)(marshals(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3ubv( const GLubyte *v ) {
 void glcommon_glColor3ubv(struct CPU* cpu) {
-	glColor3ubv(marshalub(cpu, ARG1, 3));
+	GL_FUNC(glColor3ubv)(marshalub(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3uiv( const GLuint *v ) {
 void glcommon_glColor3uiv(struct CPU* cpu) {
-	glColor3uiv(marshalui(cpu, ARG1, 3));
+	GL_FUNC(glColor3uiv)(marshalui(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor3usv( const GLushort *v ) {
 void glcommon_glColor3usv(struct CPU* cpu) {
-	glColor3usv(marshalus(cpu, ARG1, 3));
+	GL_FUNC(glColor3usv)(marshalus(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glColor4bv( const GLbyte *v ) {
 void glcommon_glColor4bv(struct CPU* cpu) {
-	glColor4bv(marshalb(cpu, ARG1, 4));
+	GL_FUNC(glColor4bv)(marshalb(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4dv( const GLdouble *v ) {
 void glcommon_glColor4dv(struct CPU* cpu) {
-	glColor4dv(marshald(cpu, ARG1, 4));
+	GL_FUNC(glColor4dv)(marshald(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4fv( const GLfloat *v ) {
 void glcommon_glColor4fv(struct CPU* cpu) {
-	glColor4fv(marshalf(cpu, ARG1, 4));
+	GL_FUNC(glColor4fv)(marshalf(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4iv( const GLint *v ) {
 void glcommon_glColor4iv(struct CPU* cpu) {
-	glColor4iv(marshali(cpu, ARG1, 4));
+	GL_FUNC(glColor4iv)(marshali(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4sv( const GLshort *v ) {
 void glcommon_glColor4sv(struct CPU* cpu) {
-	glColor4sv(marshals(cpu, ARG1, 4));
+	GL_FUNC(glColor4sv)(marshals(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4ubv( const GLubyte *v ) {
 void glcommon_glColor4ubv(struct CPU* cpu) {
-	glColor4ubv(marshalub(cpu, ARG1, 4));
+	GL_FUNC(glColor4ubv)(marshalub(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4uiv( const GLuint *v ) {
 void glcommon_glColor4uiv(struct CPU* cpu) {
-	glColor4uiv(marshalui(cpu, ARG1, 4));
+	GL_FUNC(glColor4uiv)(marshalui(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glColor4usv( const GLushort *v ) {
 void glcommon_glColor4usv(struct CPU* cpu) {
-	glColor4usv(marshalus(cpu, ARG1, 4));
+	GL_FUNC(glColor4usv)(marshalus(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glTexCoord1d( GLdouble s ) {
 void glcommon_glTexCoord1d(struct CPU* cpu) {
-	glTexCoord1d(dARG1);
+	GL_FUNC(glTexCoord1d)(dARG1);
 }
 
 // GLAPI void APIENTRY glTexCoord1f( GLfloat s ) {
 void glcommon_glTexCoord1f(struct CPU* cpu) {
-	glTexCoord1f(fARG1);
+	GL_FUNC(glTexCoord1f)(fARG1);
 }
 
 // GLAPI void APIENTRY glTexCoord1i( GLint s ) {
 void glcommon_glTexCoord1i(struct CPU* cpu) {
-	glTexCoord1i(ARG1);
+	GL_FUNC(glTexCoord1i)(ARG1);
 }
 
 // GLAPI void APIENTRY glTexCoord1s( GLshort s ) {
 void glcommon_glTexCoord1s(struct CPU* cpu) {
-	glTexCoord1s(ARG1);
+	GL_FUNC(glTexCoord1s)(ARG1);
 }
 
 // GLAPI void APIENTRY glTexCoord2d( GLdouble s, GLdouble t ) {
 void glcommon_glTexCoord2d(struct CPU* cpu) {
-	glTexCoord2d(dARG1, dARG2);
+	GL_FUNC(glTexCoord2d)(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glTexCoord2f( GLfloat s, GLfloat t ) {
 void glcommon_glTexCoord2f(struct CPU* cpu) {
-	glTexCoord2f(fARG1, fARG2);
+	GL_FUNC(glTexCoord2f)(fARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glTexCoord2i( GLint s, GLint t ) {
 void glcommon_glTexCoord2i(struct CPU* cpu) {
-	glTexCoord2i(ARG1, ARG2);
+	GL_FUNC(glTexCoord2i)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glTexCoord2s( GLshort s, GLshort t ) {
 void glcommon_glTexCoord2s(struct CPU* cpu) {
-	glTexCoord2s(ARG1, ARG2);
+	GL_FUNC(glTexCoord2s)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glTexCoord3d( GLdouble s, GLdouble t, GLdouble r ) {
 void glcommon_glTexCoord3d(struct CPU* cpu) {
-	glTexCoord3d(dARG1, dARG2, dARG3);
+	GL_FUNC(glTexCoord3d)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glTexCoord3f( GLfloat s, GLfloat t, GLfloat r ) {
 void glcommon_glTexCoord3f(struct CPU* cpu) {
-	glTexCoord3f(fARG1, fARG2, fARG3);
+	GL_FUNC(glTexCoord3f)(fARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glTexCoord3i( GLint s, GLint t, GLint r ) {
 void glcommon_glTexCoord3i(struct CPU* cpu) {
-	glTexCoord3i(ARG1, ARG2, ARG3);
+	GL_FUNC(glTexCoord3i)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glTexCoord3s( GLshort s, GLshort t, GLshort r ) {
 void glcommon_glTexCoord3s(struct CPU* cpu) {
-	glTexCoord3s(ARG1, ARG2, ARG3);
+	GL_FUNC(glTexCoord3s)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glTexCoord4d( GLdouble s, GLdouble t, GLdouble r, GLdouble q ) {
 void glcommon_glTexCoord4d(struct CPU* cpu) {
-	glTexCoord4d(dARG1, dARG2, dARG3, dARG4);
+	GL_FUNC(glTexCoord4d)(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glTexCoord4f( GLfloat s, GLfloat t, GLfloat r, GLfloat q ) {
 void glcommon_glTexCoord4f(struct CPU* cpu) {
-	glTexCoord4f(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glTexCoord4f)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glTexCoord4i( GLint s, GLint t, GLint r, GLint q ) {
 void glcommon_glTexCoord4i(struct CPU* cpu) {
-	glTexCoord4i(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glTexCoord4i)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glTexCoord4s( GLshort s, GLshort t, GLshort r, GLshort q ) {
 void glcommon_glTexCoord4s(struct CPU* cpu) {
-	glTexCoord4s(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glTexCoord4s)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glTexCoord1dv( const GLdouble *v ) {
 void glcommon_glTexCoord1dv(struct CPU* cpu) {
-	glTexCoord1dv(marshald(cpu, ARG1, 1));
+	GL_FUNC(glTexCoord1dv)(marshald(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glTexCoord1fv( const GLfloat *v ) {
 void glcommon_glTexCoord1fv(struct CPU* cpu) {
-	glTexCoord1fv(marshalf(cpu, ARG1, 1));
+	GL_FUNC(glTexCoord1fv)(marshalf(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glTexCoord1iv( const GLint *v ) {
 void glcommon_glTexCoord1iv(struct CPU* cpu) {
-	glTexCoord1iv(marshali(cpu, ARG1, 1));
+	GL_FUNC(glTexCoord1iv)(marshali(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glTexCoord1sv( const GLshort *v ) {
 void glcommon_glTexCoord1sv(struct CPU* cpu) {
-	glTexCoord1sv(marshals(cpu, ARG1, 1));
+	GL_FUNC(glTexCoord1sv)(marshals(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glTexCoord2dv( const GLdouble *v ) {
 void glcommon_glTexCoord2dv(struct CPU* cpu) {
-	glTexCoord2dv(marshald(cpu, ARG1, 2));
+	GL_FUNC(glTexCoord2dv)(marshald(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glTexCoord2fv( const GLfloat *v ) {
 void glcommon_glTexCoord2fv(struct CPU* cpu) {
-	glTexCoord2fv(marshalf(cpu, ARG1, 2));
+	GL_FUNC(glTexCoord2fv)(marshalf(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glTexCoord2iv( const GLint *v ) {
 void glcommon_glTexCoord2iv(struct CPU* cpu) {
-	glTexCoord2iv(marshali(cpu, ARG1, 2));
+	GL_FUNC(glTexCoord2iv)(marshali(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glTexCoord2sv( const GLshort *v ) {
 void glcommon_glTexCoord2sv(struct CPU* cpu) {
-	glTexCoord2sv(marshals(cpu, ARG1, 2));
+	GL_FUNC(glTexCoord2sv)(marshals(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glTexCoord3dv( const GLdouble *v ) {
 void glcommon_glTexCoord3dv(struct CPU* cpu) {
-	glTexCoord3dv(marshald(cpu, ARG1, 3));
+	GL_FUNC(glTexCoord3dv)(marshald(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glTexCoord3fv( const GLfloat *v ) {
 void glcommon_glTexCoord3fv(struct CPU* cpu) {
-	glTexCoord3fv(marshalf(cpu, ARG1, 3));
+	GL_FUNC(glTexCoord3fv)(marshalf(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glTexCoord3iv( const GLint *v ) {
 void glcommon_glTexCoord3iv(struct CPU* cpu) {
-	glTexCoord3iv(marshali(cpu, ARG1, 3));
+	GL_FUNC(glTexCoord3iv)(marshali(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glTexCoord3sv( const GLshort *v ) {
 void glcommon_glTexCoord3sv(struct CPU* cpu) {
-	glTexCoord3sv(marshals(cpu, ARG1, 3));
+	GL_FUNC(glTexCoord3sv)(marshals(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glTexCoord4dv( const GLdouble *v ) {
 void glcommon_glTexCoord4dv(struct CPU* cpu) {
-	glTexCoord4dv(marshald(cpu, ARG1, 4));
+	GL_FUNC(glTexCoord4dv)(marshald(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glTexCoord4fv( const GLfloat *v ) {
 void glcommon_glTexCoord4fv(struct CPU* cpu) {
-	glTexCoord4fv(marshalf(cpu, ARG1, 4));
+	GL_FUNC(glTexCoord4fv)(marshalf(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glTexCoord4iv( const GLint *v ) {
 void glcommon_glTexCoord4iv(struct CPU* cpu) {
-	glTexCoord4iv(marshali(cpu, ARG1, 4));
+	GL_FUNC(glTexCoord4iv)(marshali(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glTexCoord4sv( const GLshort *v ) {
 void glcommon_glTexCoord4sv(struct CPU* cpu) {
-	glTexCoord4sv(marshals(cpu, ARG1, 4));
+	GL_FUNC(glTexCoord4sv)(marshals(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glRasterPos2d( GLdouble x, GLdouble y ) {
 void glcommon_glRasterPos2d(struct CPU* cpu) {
-	glRasterPos2d(dARG1, dARG2);
+	GL_FUNC(glRasterPos2d)(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glRasterPos2f( GLfloat x, GLfloat y ) {
 void glcommon_glRasterPos2f(struct CPU* cpu) {
-	glRasterPos2f(fARG1, fARG2);
+	GL_FUNC(glRasterPos2f)(fARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glRasterPos2i( GLint x, GLint y ) {
 void glcommon_glRasterPos2i(struct CPU* cpu) {
-	glRasterPos2i(ARG1, ARG2);
+	GL_FUNC(glRasterPos2i)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glRasterPos2s( GLshort x, GLshort y ) {
 void glcommon_glRasterPos2s(struct CPU* cpu) {
-	glRasterPos2s(ARG1, ARG2);
+	GL_FUNC(glRasterPos2s)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glRasterPos3d( GLdouble x, GLdouble y, GLdouble z ) {
 void glcommon_glRasterPos3d(struct CPU* cpu) {
-	glRasterPos3d(dARG1, dARG2, dARG3);
+	GL_FUNC(glRasterPos3d)(dARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glRasterPos3f( GLfloat x, GLfloat y, GLfloat z ) {
 void glcommon_glRasterPos3f(struct CPU* cpu) {
-	glRasterPos3f(fARG1, fARG2, fARG3);
+	GL_FUNC(glRasterPos3f)(fARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glRasterPos3i( GLint x, GLint y, GLint z ) {
 void glcommon_glRasterPos3i(struct CPU* cpu) {
-	glRasterPos3i(ARG1, ARG2, ARG3);
+	GL_FUNC(glRasterPos3i)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glRasterPos3s( GLshort x, GLshort y, GLshort z ) {
 void glcommon_glRasterPos3s(struct CPU* cpu) {
-	glRasterPos3s(ARG1, ARG2, ARG3);
+	GL_FUNC(glRasterPos3s)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glRasterPos4d( GLdouble x, GLdouble y, GLdouble z, GLdouble w ) {
 void glcommon_glRasterPos4d(struct CPU* cpu) {
-	glRasterPos4d(dARG1, dARG2, dARG3, dARG4);
+	GL_FUNC(glRasterPos4d)(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glRasterPos4f( GLfloat x, GLfloat y, GLfloat z, GLfloat w ) {
 void glcommon_glRasterPos4f(struct CPU* cpu) {
-	glRasterPos4f(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glRasterPos4f)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glRasterPos4i( GLint x, GLint y, GLint z, GLint w ) {
 void glcommon_glRasterPos4i(struct CPU* cpu) {
-	glRasterPos4i(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glRasterPos4i)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glRasterPos4s( GLshort x, GLshort y, GLshort z, GLshort w ) {
 void glcommon_glRasterPos4s(struct CPU* cpu) {
-	glRasterPos4s(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glRasterPos4s)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glRasterPos2dv( const GLdouble *v ) {
 void glcommon_glRasterPos2dv(struct CPU* cpu) {
-	glRasterPos2dv(marshald(cpu, ARG1, 2));
+	GL_FUNC(glRasterPos2dv)(marshald(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glRasterPos2fv( const GLfloat *v ) {
 void glcommon_glRasterPos2fv(struct CPU* cpu) {
-	glRasterPos2fv(marshalf(cpu, ARG1, 2));
+	GL_FUNC(glRasterPos2fv)(marshalf(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glRasterPos2iv( const GLint *v ) {
 void glcommon_glRasterPos2iv(struct CPU* cpu) {
-	glRasterPos2iv(marshali(cpu, ARG1, 2));
+	GL_FUNC(glRasterPos2iv)(marshali(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glRasterPos2sv( const GLshort *v ) {
 void glcommon_glRasterPos2sv(struct CPU* cpu) {
-	glRasterPos2sv(marshals(cpu, ARG1, 2));
+	GL_FUNC(glRasterPos2sv)(marshals(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glRasterPos3dv( const GLdouble *v ) {
 void glcommon_glRasterPos3dv(struct CPU* cpu) {
-	glRasterPos3dv(marshald(cpu, ARG1, 3));
+	GL_FUNC(glRasterPos3dv)(marshald(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glRasterPos3fv( const GLfloat *v ) {
 void glcommon_glRasterPos3fv(struct CPU* cpu) {
-	glRasterPos3fv(marshalf(cpu, ARG1, 3));
+	GL_FUNC(glRasterPos3fv)(marshalf(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glRasterPos3iv( const GLint *v ) {
 void glcommon_glRasterPos3iv(struct CPU* cpu) {
-	glRasterPos3iv(marshali(cpu, ARG1, 3));
+	GL_FUNC(glRasterPos3iv)(marshali(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glRasterPos3sv( const GLshort *v ) {
 void glcommon_glRasterPos3sv(struct CPU* cpu) {
-	glRasterPos3sv(marshals(cpu, ARG1, 3));
+	GL_FUNC(glRasterPos3sv)(marshals(cpu, ARG1, 3));
 }
 
 // GLAPI void APIENTRY glRasterPos4dv( const GLdouble *v ) {
 void glcommon_glRasterPos4dv(struct CPU* cpu) {
-	glRasterPos4dv(marshald(cpu, ARG1, 4));
+	GL_FUNC(glRasterPos4dv)(marshald(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glRasterPos4fv( const GLfloat *v ) {
 void glcommon_glRasterPos4fv(struct CPU* cpu) {
-	glRasterPos4fv(marshalf(cpu, ARG1, 4));
+	GL_FUNC(glRasterPos4fv)(marshalf(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glRasterPos4iv( const GLint *v ) {
 void glcommon_glRasterPos4iv(struct CPU* cpu) {
-	glRasterPos4iv(marshali(cpu, ARG1, 4));
+	GL_FUNC(glRasterPos4iv)(marshali(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glRasterPos4sv( const GLshort *v ) {
 void glcommon_glRasterPos4sv(struct CPU* cpu) {
-	glRasterPos4sv(marshals(cpu, ARG1, 4));
+	GL_FUNC(glRasterPos4sv)(marshals(cpu, ARG1, 4));
 }
 
 // GLAPI void APIENTRY glRectd( GLdouble x1, GLdouble y1, GLdouble x2, GLdouble y2 ) {
 void glcommon_glRectd(struct CPU* cpu) {
-	glRectd(dARG1, dARG2, dARG3, dARG4);
+	GL_FUNC(glRectd)(dARG1, dARG2, dARG3, dARG4);
 }
 
 // GLAPI void APIENTRY glRectf( GLfloat x1, GLfloat y1, GLfloat x2, GLfloat y2 ) {
 void glcommon_glRectf(struct CPU* cpu) {
-	glRectf(fARG1, fARG2, fARG3, fARG4);
+	GL_FUNC(glRectf)(fARG1, fARG2, fARG3, fARG4);
 }
 
 // GLAPI void APIENTRY glRecti( GLint x1, GLint y1, GLint x2, GLint y2 ) {
 void glcommon_glRecti(struct CPU* cpu) {
-	glRecti(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glRecti)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glRects( GLshort x1, GLshort y1, GLshort x2, GLshort y2 ) {
 void glcommon_glRects(struct CPU* cpu) {
-	glRects(ARG1, ARG2, ARG3, ARG4);
+	GL_FUNC(glRects)(ARG1, ARG2, ARG3, ARG4);
 }
 
 // GLAPI void APIENTRY glRectdv( const GLdouble *v1, const GLdouble *v2 ) {
 void glcommon_glRectdv(struct CPU* cpu) {
-	glRectdv(marshald(cpu, ARG1, 2), marshal2d(cpu, ARG3, 2));
+	GL_FUNC(glRectdv)(marshald(cpu, ARG1, 2), marshal2d(cpu, ARG3, 2));
 }
 
 // GLAPI void APIENTRY glRectfv( const GLfloat *v1, const GLfloat *v2 ) {
 void glcommon_glRectfv(struct CPU* cpu) {
-	glRectfv(marshalf(cpu, ARG1, 2), marshal2f(cpu, ARG2, 2));
+	GL_FUNC(glRectfv)(marshalf(cpu, ARG1, 2), marshal2f(cpu, ARG2, 2));
 }
 
 // GLAPI void APIENTRY glRectiv( const GLint *v1, const GLint *v2 ) {
 void glcommon_glRectiv(struct CPU* cpu) {
-	glRectiv(marshali(cpu, ARG1, 2), marshal2i(cpu, ARG2, 2));
+	GL_FUNC(glRectiv)(marshali(cpu, ARG1, 2), marshal2i(cpu, ARG2, 2));
 }
 
 // GLAPI void APIENTRY glRectsv( const GLshort *v1, const GLshort *v2 ) {
 void glcommon_glRectsv(struct CPU* cpu) {
-	glRectsv(marshals(cpu, ARG1, 2), marshal2s(cpu, ARG2, 2));
+	GL_FUNC(glRectsv)(marshals(cpu, ARG1, 2), marshal2s(cpu, ARG2, 2));
 }
 
 /* Lighting */
 // GLAPI void APIENTRY glShadeModel( GLenum mode ) {
 void glcommon_glShadeModel(struct CPU* cpu) {
-	glShadeModel(ARG1);
+	GL_FUNC(glShadeModel)(ARG1);
 }
 
 // GLAPI void APIENTRY glLightf( GLenum light, GLenum pname, GLfloat param ) {
 void glcommon_glLightf(struct CPU* cpu) {
-	glLightf(ARG1, ARG2, fARG3);
+	GL_FUNC(glLightf)(ARG1, ARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glLighti( GLenum light, GLenum pname, GLint param ) {
 void glcommon_glLighti(struct CPU* cpu) {
-	glLighti(ARG1, ARG2, ARG3);
+	GL_FUNC(glLighti)(ARG1, ARG2, ARG3);
 }
 
 int glcommon_glLightv_size(GLenum e)
@@ -2000,36 +2006,36 @@ int glcommon_glLightv_size(GLenum e)
 
 // GLAPI void APIENTRY glLightfv( GLenum light, GLenum pname, const GLfloat *params ) {
 void glcommon_glLightfv(struct CPU* cpu) {
-	glLightfv(ARG1, ARG2, marshalf(cpu, ARG3, glcommon_glLightv_size(ARG2)));
+	GL_FUNC(glLightfv)(ARG1, ARG2, marshalf(cpu, ARG3, glcommon_glLightv_size(ARG2)));
 }
 
 // GLAPI void APIENTRY glLightiv( GLenum light, GLenum pname, const GLint *params ) {
 void glcommon_glLightiv(struct CPU* cpu) {
-	glLightiv(ARG1, ARG2, marshali(cpu, ARG3, glcommon_glLightv_size(ARG2)));
+	GL_FUNC(glLightiv)(ARG1, ARG2, marshali(cpu, ARG3, glcommon_glLightv_size(ARG2)));
 }
 
 // GLAPI void APIENTRY glGetLightfv( GLenum light, GLenum pname, GLfloat *params ) {
 void glcommon_glGetLightfv(struct CPU* cpu) {
 	GLfloat buffer[4];
-	glGetLightfv(ARG1, ARG2, buffer);
+	GL_FUNC(glGetLightfv)(ARG1, ARG2, buffer);
 	marshalBackf(cpu, ARG3, buffer, glcommon_glLightv_size(ARG2));
 }
 
 // GLAPI void APIENTRY glGetLightiv( GLenum light, GLenum pname, GLint *params ) {
 void glcommon_glGetLightiv(struct CPU* cpu) {
 	GLint buffer[4];
-	glGetLightiv(ARG1, ARG2, buffer);
+	GL_FUNC(glGetLightiv)(ARG1, ARG2, buffer);
 	marshalBacki(cpu, ARG3, buffer, glcommon_glLightv_size(ARG2));
 }
 
 // GLAPI void APIENTRY glLightModelf( GLenum pname, GLfloat param ) {
 void glcommon_glLightModelf(struct CPU* cpu) {
-	glLightModelf(ARG1, fARG2);
+	GL_FUNC(glLightModelf)(ARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glLightModeli( GLenum pname, GLint param ) {
 void glcommon_glLightModeli(struct CPU* cpu) {
-	glLightModeli(ARG1, ARG2);
+	GL_FUNC(glLightModeli)(ARG1, ARG2);
 }
 
 int glcommon_glLightModelv_size(GLenum e)
@@ -2049,22 +2055,22 @@ int glcommon_glLightModelv_size(GLenum e)
 
 // GLAPI void APIENTRY glLightModelfv( GLenum pname, const GLfloat *params ) {
 void glcommon_glLightModelfv(struct CPU* cpu) {
-	glLightModelfv(ARG1, marshalf(cpu, ARG2, glcommon_glLightModelv_size(ARG1)));
+	GL_FUNC(glLightModelfv)(ARG1, marshalf(cpu, ARG2, glcommon_glLightModelv_size(ARG1)));
 }
 
 // GLAPI void APIENTRY glLightModeliv( GLenum pname, const GLint *params ) {
 void glcommon_glLightModeliv(struct CPU* cpu) {
-	glLightModeliv(ARG1, marshali(cpu, ARG2, glcommon_glLightModelv_size(ARG1)));
+	GL_FUNC(glLightModeliv)(ARG1, marshali(cpu, ARG2, glcommon_glLightModelv_size(ARG1)));
 }
 
 // GLAPI void APIENTRY glMaterialf( GLenum face, GLenum pname, GLfloat param ) {
 void glcommon_glMaterialf(struct CPU* cpu) {
-	glMaterialf(ARG1, ARG2, fARG3);
+	GL_FUNC(glMaterialf)(ARG1, ARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glMateriali( GLenum face, GLenum pname, GLint param ) {
 void glcommon_glMateriali(struct CPU* cpu) {
-	glMateriali(ARG1, ARG2, ARG3);
+	GL_FUNC(glMateriali)(ARG1, ARG2, ARG3);
 }
 
 int glcommon_glMaterialv_size(GLenum e)
@@ -2087,72 +2093,72 @@ int glcommon_glMaterialv_size(GLenum e)
 
 // GLAPI void APIENTRY glMaterialfv( GLenum face, GLenum pname, const GLfloat *params ) {
 void glcommon_glMaterialfv(struct CPU* cpu) {
-	glMaterialfv(ARG1, ARG2, marshalf(cpu, ARG3, glcommon_glMaterialv_size(ARG2)));
+	GL_FUNC(glMaterialfv)(ARG1, ARG2, marshalf(cpu, ARG3, glcommon_glMaterialv_size(ARG2)));
 }
 
 // GLAPI void APIENTRY glMaterialiv( GLenum face, GLenum pname, const GLint *params ) {
 void glcommon_glMaterialiv(struct CPU* cpu) {
-	glMaterialiv(ARG1, ARG2, marshali(cpu, ARG3, glcommon_glMaterialv_size(ARG2)));
+	GL_FUNC(glMaterialiv)(ARG1, ARG2, marshali(cpu, ARG3, glcommon_glMaterialv_size(ARG2)));
 }
 
 // GLAPI void APIENTRY glGetMaterialfv( GLenum face, GLenum pname, GLfloat *params ) {
 void glcommon_glGetMaterialfv(struct CPU* cpu) {
 	GLfloat buffer[4];
-	glGetMaterialfv(ARG1, ARG2, buffer);
+	GL_FUNC(glGetMaterialfv)(ARG1, ARG2, buffer);
 	marshalBackf(cpu, ARG3, buffer, glcommon_glMaterialv_size(ARG2));
 }
 
 // GLAPI void APIENTRY glGetMaterialiv( GLenum face, GLenum pname, GLint *params ) {
 void glcommon_glGetMaterialiv(struct CPU* cpu) {
 	GLint buffer[4];
-	glGetMaterialiv(ARG1, ARG2, buffer);
+	GL_FUNC(glGetMaterialiv)(ARG1, ARG2, buffer);
 	marshalBacki(cpu, ARG3, buffer, glcommon_glMaterialv_size(ARG2));
 }
 
 // GLAPI void APIENTRY glColorMaterial( GLenum face, GLenum mode ) {
 void glcommon_glColorMaterial(struct CPU* cpu) {
-	glColorMaterial(ARG1, ARG2);
+	GL_FUNC(glColorMaterial)(ARG1, ARG2);
 }
 
 /* Raster functions */
 // GLAPI void APIENTRY glPixelZoom( GLfloat xfactor, GLfloat yfactor ) {
 void glcommon_glPixelZoom(struct CPU* cpu) {
-	glPixelZoom(fARG1, fARG2);
+	GL_FUNC(glPixelZoom)(fARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glPixelStoref( GLenum pname, GLfloat param ) {
 void glcommon_glPixelStoref(struct CPU* cpu) {
-	glPixelStoref(ARG1, fARG2);
+	GL_FUNC(glPixelStoref)(ARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glPixelStorei( GLenum pname, GLint param ) {
 void glcommon_glPixelStorei(struct CPU* cpu) {
-	glPixelStorei(ARG1, ARG2);
+	GL_FUNC(glPixelStorei)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glPixelTransferf( GLenum pname, GLfloat param ) {
 void glcommon_glPixelTransferf(struct CPU* cpu) {
-	glPixelTransferf(ARG1, fARG2);
+	GL_FUNC(glPixelTransferf)(ARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glPixelTransferi( GLenum pname, GLint param ) {
 void glcommon_glPixelTransferi(struct CPU* cpu) {
-	glPixelTransferi(ARG1, ARG2);
+	GL_FUNC(glPixelTransferi)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glPixelMapfv( GLenum map, GLint mapsize, const GLfloat *values ) {
 void glcommon_glPixelMapfv(struct CPU* cpu) {
-	glPixelMapfv(ARG1, ARG2, marshalf(cpu, ARG3, ARG2));
+	GL_FUNC(glPixelMapfv)(ARG1, ARG2, marshalf(cpu, ARG3, ARG2));
 }
 
 // GLAPI void APIENTRY glPixelMapuiv( GLenum map, GLint mapsize, const GLuint *values ) {
 void glcommon_glPixelMapuiv(struct CPU* cpu) {
-	glPixelMapuiv(ARG1, ARG2, marshalui(cpu, ARG3, ARG2));
+	GL_FUNC(glPixelMapuiv)(ARG1, ARG2, marshalui(cpu, ARG3, ARG2));
 }
 
 // GLAPI void APIENTRY glPixelMapusv( GLenum map, GLint mapsize, const GLushort *values ) {
 void glcommon_glPixelMapusv(struct CPU* cpu) {
-	glPixelMapusv(ARG1, ARG2, marshalus(cpu, ARG3, ARG2));
+	GL_FUNC(glPixelMapusv)(ARG1, ARG2, marshalus(cpu, ARG3, ARG2));
 }
 
 // GLAPI void APIENTRY glGetPixelMapfv( GLenum map, GLfloat *values ) {
@@ -2160,10 +2166,10 @@ void glcommon_glGetPixelMapfv(struct CPU* cpu) {
 	GLfloat buffer[1024];
 	GLint len;
 
-	glGetIntegerv(ARG1, &len);
+	GL_FUNC(glGetIntegerv)(ARG1, &len);
 	if (len>1024)
 		kpanic("glGetPixelMapfv len > 1024");
-	glGetPixelMapfv(ARG1, buffer);
+	GL_FUNC(glGetPixelMapfv)(ARG1, buffer);
 	marshalBackf(cpu, ARG2, buffer, len);
 }
 
@@ -2172,10 +2178,10 @@ void glcommon_glGetPixelMapuiv(struct CPU* cpu) {
 	GLuint buffer[1024];
 	GLint len;
 
-	glGetIntegerv(ARG1, &len);
+	GL_FUNC(glGetIntegerv)(ARG1, &len);
 	if (len>1024)
 		kpanic("glGetPixelMapuiv len > 1024");
-	glGetPixelMapuiv(ARG1, buffer);
+	GL_FUNC(glGetPixelMapuiv)(ARG1, buffer);
 	marshalBackui(cpu, ARG2, buffer, len);
 }
 
@@ -2184,10 +2190,10 @@ void glcommon_glGetPixelMapusv(struct CPU* cpu) {
 	GLushort buffer[1024];
 	GLint len;
 
-	glGetIntegerv(ARG1, &len);
+	GL_FUNC(glGetIntegerv)(ARG1, &len);
 	if (len>1024)
 		kpanic("glcommon_glGetPixelMapusv len > 1024");
-	glGetPixelMapusv(ARG1, buffer);
+	GL_FUNC(glGetPixelMapusv)(ARG1, buffer);
 	marshalBackus(cpu, ARG2, buffer, len);
 }
 
@@ -2500,12 +2506,12 @@ void glcommon_glBitmap(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
 
-	glBitmap(width, height, fARG3, fARG4, fARG5, fARG6, marshalPixels(cpu, width, height, 1, GL_COLOR_INDEX, GL_BITMAP, pixels_per_row, skipRows, alignment, 0, ARG7));
+	GL_FUNC(glBitmap)(width, height, fARG3, fARG4, fARG5, fARG6, marshalPixels(cpu, width, height, 1, GL_COLOR_INDEX, GL_BITMAP, pixels_per_row, skipRows, alignment, 0, ARG7));
 }
 
 // GLAPI void APIENTRY glReadPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels ) {
@@ -2520,13 +2526,13 @@ void glcommon_glReadPixels(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_PACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_PACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_PACK_ALIGNMENT, &alignment);
 
 	pixels = marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7);
-	glReadPixels(ARG1, ARG2, width, height, format, type, pixels);
+	GL_FUNC(glReadPixels)(ARG1, ARG2, width, height, format, type, pixels);
 	marshalBackPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7, pixels);
 }
 
@@ -2542,172 +2548,172 @@ void glcommon_glDrawPixels(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_PACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_PACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_PACK_ALIGNMENT, &alignment);
 
 	pixels = marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG5);
-	glDrawPixels(width, height, format, type, pixels);
+	GL_FUNC(glDrawPixels)(width, height, format, type, pixels);
 }
 
 // GLAPI void APIENTRY glCopyPixels( GLint x, GLint y, GLsizei width, GLsizei height, GLenum type ) {
 void glcommon_glCopyPixels(struct CPU* cpu) {
-	glCopyPixels(ARG1, ARG2, ARG3, ARG4, ARG5);
+	GL_FUNC(glCopyPixels)(ARG1, ARG2, ARG3, ARG4, ARG5);
 }
 
 /* Stenciling */
 // GLAPI void APIENTRY glStencilFunc( GLenum func, GLint ref, GLuint mask ) {
 void glcommon_glStencilFunc(struct CPU* cpu) {
-	glStencilFunc(ARG1, ARG2, ARG3);
+	GL_FUNC(glStencilFunc)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glStencilMask( GLuint mask ) {
 void glcommon_glStencilMask(struct CPU* cpu) {
-	glStencilMask(ARG1);
+	GL_FUNC(glStencilMask)(ARG1);
 }
 
 // GLAPI void APIENTRY glStencilOp( GLenum fail, GLenum zfail, GLenum zpass ) {
 void glcommon_glStencilOp(struct CPU* cpu) {
-	glStencilOp(ARG1, ARG2, ARG3);
+	GL_FUNC(glStencilOp)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glClearStencil( GLint s ) {
 void glcommon_glClearStencil(struct CPU* cpu) {
-	glClearStencil(ARG1);
+	GL_FUNC(glClearStencil)(ARG1);
 }
 
 /* Texture mapping */
 // GLAPI void APIENTRY glTexGend( GLenum coord, GLenum pname, GLdouble param ) {
 void glcommon_glTexGend(struct CPU* cpu) {
-	glTexGend(ARG1, ARG2, dARG3);
+	GL_FUNC(glTexGend)(ARG1, ARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glTexGenf( GLenum coord, GLenum pname, GLfloat param ) {
 void glcommon_glTexGenf(struct CPU* cpu) {
-	glTexGenf(ARG1, ARG2, fARG1);
+	GL_FUNC(glTexGenf)(ARG1, ARG2, fARG1);
 }
 
 // GLAPI void APIENTRY glTexGeni( GLenum coord, GLenum pname, GLint param ) {
 void glcommon_glTexGeni(struct CPU* cpu) {
-	glTexGeni(ARG1, ARG2, ARG3);
+	GL_FUNC(glTexGeni)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glTexGendv( GLenum coord, GLenum pname, const GLdouble *params ) {
 void glcommon_glTexGendv(struct CPU* cpu) {
-	glTexGendv(ARG1, ARG2, marshald(cpu, ARG3, 1));
+	GL_FUNC(glTexGendv)(ARG1, ARG2, marshald(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glTexGenfv( GLenum coord, GLenum pname, const GLfloat *params ) {
 void glcommon_glTexGenfv(struct CPU* cpu) {
-	glTexGenfv(ARG1, ARG2, marshalf(cpu, ARG3, 1));
+	GL_FUNC(glTexGenfv)(ARG1, ARG2, marshalf(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glTexGeniv( GLenum coord, GLenum pname, const GLint *params ) {
 void glcommon_glTexGeniv(struct CPU* cpu) {
-	glTexGeniv(ARG1, ARG2, marshali(cpu, ARG3, 1));
+	GL_FUNC(glTexGeniv)(ARG1, ARG2, marshali(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glGetTexGendv( GLenum coord, GLenum pname, GLdouble *params ) {
 void glcommon_glGetTexGendv(struct CPU* cpu) {
 	GLdouble buffer;
-	glGetTexGendv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexGendv)(ARG1, ARG2, &buffer);
 	marshalBackd(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glGetTexGenfv( GLenum coord, GLenum pname, GLfloat *params ) {
 void glcommon_glGetTexGenfv(struct CPU* cpu) {
 	GLfloat buffer;
-	glGetTexGenfv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexGenfv)(ARG1, ARG2, &buffer);
 	marshalBackf(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glGetTexGeniv( GLenum coord, GLenum pname, GLint *params ) {
 void glcommon_glGetTexGeniv(struct CPU* cpu) {
 	GLint buffer;
-	glGetTexGeniv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexGeniv)(ARG1, ARG2, &buffer);
 	marshalBacki(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glTexEnvf( GLenum target, GLenum pname, GLfloat param ) {
 void glcommon_glTexEnvf(struct CPU* cpu) {
-	glTexEnvf(ARG1, ARG2, fARG3);
+	GL_FUNC(glTexEnvf)(ARG1, ARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glTexEnvi( GLenum target, GLenum pname, GLint param ) {
 void glcommon_glTexEnvi(struct CPU* cpu) {
-	glTexEnvi(ARG1, ARG2, ARG3);
+	GL_FUNC(glTexEnvi)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glTexEnvfv( GLenum target, GLenum pname, const GLfloat *params ) {
 void glcommon_glTexEnvfv(struct CPU* cpu) {
-	glTexEnvfv(ARG1, ARG2, marshalf(cpu, ARG3, 1));
+	GL_FUNC(glTexEnvfv)(ARG1, ARG2, marshalf(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glTexEnviv( GLenum target, GLenum pname, const GLint *params ) {
 void glcommon_glTexEnviv(struct CPU* cpu) {
-	glTexEnviv(ARG1, ARG2, marshali(cpu, ARG3, 1));
+	GL_FUNC(glTexEnviv)(ARG1, ARG2, marshali(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glGetTexEnvfv( GLenum target, GLenum pname, GLfloat *params ) {
 void glcommon_glGetTexEnvfv(struct CPU* cpu) {
 	GLfloat buffer;
-	glGetTexEnvfv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexEnvfv)(ARG1, ARG2, &buffer);
 	marshalBackf(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glGetTexEnviv( GLenum target, GLenum pname, GLint *params ) {
 void glcommon_glGetTexEnviv(struct CPU* cpu) {
 	GLint buffer;
-	glGetTexEnviv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexEnviv)(ARG1, ARG2, &buffer);
 	marshalBacki(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glTexParameterf( GLenum target, GLenum pname, GLfloat param ) {
 void glcommon_glTexParameterf(struct CPU* cpu) {
-	glTexParameterf(ARG1, ARG2, fARG3);
+	GL_FUNC(glTexParameterf)(ARG1, ARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glTexParameteri( GLenum target, GLenum pname, GLint param ) {
 void glcommon_glTexParameteri(struct CPU* cpu) {
-	glTexParameteri(ARG1, ARG2, ARG3);
+	GL_FUNC(glTexParameteri)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glTexParameterfv( GLenum target, GLenum pname, const GLfloat *params ) {
 void glcommon_glTexParameterfv(struct CPU* cpu) {
-	glTexParameterfv(ARG1, ARG2, marshalf(cpu, ARG3, 1));
+	GL_FUNC(glTexParameterfv)(ARG1, ARG2, marshalf(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glTexParameteriv( GLenum target, GLenum pname, const GLint *params ) {
 void glcommon_glTexParameteriv(struct CPU* cpu) {
-	glTexParameteriv(ARG1, ARG2, marshali(cpu, ARG3, 1));
+	GL_FUNC(glTexParameteriv)(ARG1, ARG2, marshali(cpu, ARG3, 1));
 }
 
 // GLAPI void APIENTRY glGetTexParameterfv( GLenum target, GLenum pname, GLfloat *params) {
 void glcommon_glGetTexParameterfv(struct CPU* cpu) {
 	GLfloat buffer;
-	glGetTexParameterfv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexParameterfv)(ARG1, ARG2, &buffer);
 	marshalBackf(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glGetTexParameteriv( GLenum target, GLenum pname, GLint *params ) {
 void glcommon_glGetTexParameteriv(struct CPU* cpu) {
 	GLint buffer;
-	glGetTexParameteriv(ARG1, ARG2, &buffer);
+	GL_FUNC(glGetTexParameteriv)(ARG1, ARG2, &buffer);
 	marshalBacki(cpu, ARG3, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glGetTexLevelParameterfv( GLenum target, GLint level, GLenum pname, GLfloat *params ) {
 void glcommon_glGetTexLevelParameterfv(struct CPU* cpu) {
 	GLfloat buffer;
-	glGetTexLevelParameterfv(ARG1, ARG2, ARG3, &buffer);
+	GL_FUNC(glGetTexLevelParameterfv)(ARG1, ARG2, ARG3, &buffer);
 	marshalBackf(cpu, ARG4, &buffer, 1);
 }
 
 // GLAPI void APIENTRY glGetTexLevelParameteriv( GLenum target, GLint level, GLenum pname, GLint *params ) {
 void glcommon_glGetTexLevelParameteriv(struct CPU* cpu) {
 	GLint buffer;
-	glGetTexLevelParameteriv(ARG1, ARG2, ARG3, &buffer);
+	GL_FUNC(glGetTexLevelParameteriv)(ARG1, ARG2, ARG3, &buffer);
 	marshalBacki(cpu, ARG4, &buffer, 1);
 }
 
@@ -2723,12 +2729,12 @@ void glcommon_glTexImage1D(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
 
-	glTexImage1D(ARG1, ARG2, ARG3, width, border, format, type, marshalPixels(cpu, width, 1, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG8));
+	GL_FUNC(glTexImage1D)(ARG1, ARG2, ARG3, width, border, format, type, marshalPixels(cpu, width, 1, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG8));
 }
 
 // GLAPI void APIENTRY glTexImage2D( GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels ) {
@@ -2744,12 +2750,12 @@ void glcommon_glTexImage2D(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
 
-	glTexImage2D(ARG1, ARG2, ARG3, width, height, border, format, type, marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG9));
+	GL_FUNC(glTexImage2D)(ARG1, ARG2, ARG3, width, height, border, format, type, marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG9));
 }
 
 // GLAPI void APIENTRY glGetTexImage( GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels ) {
@@ -2770,19 +2776,19 @@ void glcommon_glGetTexImage(struct CPU* cpu) {
 
 	GLvoid* pixels;
 
-	glGetIntegerv(GL_PACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_PACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_PACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_PACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_PACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_PACK_ALIGNMENT, &alignment);
 	if (target == GL_TEXTURE_3D) {
-		glGetIntegerv(GL_PACK_SKIP_IMAGES, &skipImages);
-		glGetTexLevelParameteriv(target, level, GL_TEXTURE_DEPTH, &depth);
+		GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_IMAGES, &skipImages);
+		GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_DEPTH, &depth);
 	}
-	glGetTexLevelParameteriv(target, level, GL_TEXTURE_WIDTH, &width);
-	glGetTexLevelParameteriv(target, level, GL_TEXTURE_HEIGHT, &height);
+	GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
+	GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
 
 	pixels = marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5);
-	glGetTexImage(target, level, format, type, pixels);
+	GL_FUNC(glGetTexImage)(target, level, format, type, pixels);
 	marshalBackPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG5, pixels);
 }
 
@@ -2817,7 +2823,7 @@ void glcommon_glMap1d(struct CPU* cpu) {
 	if (stride>0) {
 		kpanic("glcommon_glMap1d stride not implemented");
 	}
-	glMap1d(target, dARG2, dARG3, stride, order, marshald(cpu, ARG6, getMap1Count(target)*order));
+	GL_FUNC(glMap1d)(target, dARG2, dARG3, stride, order, marshald(cpu, ARG6, getMap1Count(target)*order));
 }
 
 // GLAPI void APIENTRY glMap1f( GLenum target, GLfloat u1, GLfloat u2, GLint stride, GLint order, const GLfloat *points ) {
@@ -2829,7 +2835,7 @@ void glcommon_glMap1f(struct CPU* cpu) {
 	if (stride>0) {
 		kpanic("glcommon_glMap1f stride not implemented");
 	}
-	glMap1f(target, fARG2, fARG3, stride, order, marshalf(cpu, ARG6, getMap1Count(target)*order));
+	GL_FUNC(glMap1f)(target, fARG2, fARG3, stride, order, marshalf(cpu, ARG6, getMap1Count(target)*order));
 }
 
 U32 getMap2Count(GLenum target) {
@@ -2867,7 +2873,7 @@ void glcommon_glMap2d(struct CPU* cpu) {
 	if (vstride>0) {
 		kpanic("glcommon_glMap2d vstride not implemented");
 	}
-	glMap2d(target, dARG2, dARG3, stride, order, dARG6, dARG7, vstride, vorder, marshald(cpu, ARG10, getMap2Count(target)*order*vorder));
+	GL_FUNC(glMap2d)(target, dARG2, dARG3, stride, order, dARG6, dARG7, vstride, vorder, marshald(cpu, ARG10, getMap2Count(target)*order*vorder));
 }
 
 // GLAPI void APIENTRY glMap2f( GLenum target, GLfloat u1, GLfloat u2, GLint ustride, GLint uorder, GLfloat v1, GLfloat v2, GLint vstride, GLint vorder, const GLfloat *points ) {
@@ -2884,7 +2890,7 @@ void glcommon_glMap2f(struct CPU* cpu) {
 	if (vstride>0) {
 		kpanic("glcommon_glMap2d vstride not implemented");
 	}
-	glMap2f(target, fARG2, fARG3, stride, order, fARG6, fARG7, vstride, vorder, marshalf(cpu, ARG10, getMap2Count(target)*order*vorder));
+	GL_FUNC(glMap2f)(target, fARG2, fARG3, stride, order, fARG6, fARG7, vstride, vorder, marshalf(cpu, ARG10, getMap2Count(target)*order*vorder));
 }
 
 U32 isMap2(GLenum target) {
@@ -2914,25 +2920,25 @@ void glcommon_glGetMapdv(struct CPU* cpu) {
 		GLint order[2];
 		int count;
 
-		glGetMapiv(target, GL_ORDER, order);
+		GL_FUNC(glGetMapiv)(target, GL_ORDER, order);
 		if (isMap2(target)) {
 			count = order[0]*order[1];
 		} else {
 			count = order[0];
 		}
 		buffer = marshald(cpu, ARG3, count);
-		glGetMapdv(target, query, buffer);
+		GL_FUNC(glGetMapdv)(target, query, buffer);
 		marshalBackd(cpu, ARG3, buffer, count);
 		break;
 	}
 	case GL_ORDER: {
 		GLdouble buffer[2];
-		glGetMapdv(target, query, buffer);
+		GL_FUNC(glGetMapdv)(target, query, buffer);
 		marshalBackd(cpu, ARG3, buffer, isMap2(target)?2:1);
 	}
 	case GL_DOMAIN: {
 		GLdouble buffer[4];
-		glGetMapdv(target, query, buffer);
+		GL_FUNC(glGetMapdv)(target, query, buffer);
 		marshalBackd(cpu, ARG3, buffer, isMap2(target)?4:2);
 		break;
 	}
@@ -2952,25 +2958,25 @@ void glcommon_glGetMapfv(struct CPU* cpu) {
 		GLint order[2];
 		int count;
 
-		glGetMapiv(target, GL_ORDER, order);
+		GL_FUNC(glGetMapiv)(target, GL_ORDER, order);
 		if (isMap2(target)) {
 			count = order[0]*order[1];
 		} else {
 			count = order[0];
 		}
 		buffer = marshalf(cpu, ARG3, count);
-		glGetMapfv(target, query, buffer);
+		GL_FUNC(glGetMapfv)(target, query, buffer);
 		marshalBackf(cpu, ARG3, buffer, count);
 		break;
 	}
 	case GL_ORDER: {
 		GLfloat buffer[2];
-		glGetMapfv(target, query, buffer);
+		GL_FUNC(glGetMapfv)(target, query, buffer);
 		marshalBackf(cpu, ARG3, buffer, isMap2(target)?2:1);
 	}
 	case GL_DOMAIN: {
 		GLfloat buffer[4];
-		glGetMapfv(target, query, buffer);
+		GL_FUNC(glGetMapfv)(target, query, buffer);
 		marshalBackf(cpu, ARG3, buffer, isMap2(target)?4:2);
 		break;
 	}
@@ -2990,25 +2996,25 @@ void glcommon_glGetMapiv(struct CPU* cpu) {
 		GLint order[2];
 		int count;
 
-		glGetMapiv(target, GL_ORDER, order);
+		GL_FUNC(glGetMapiv)(target, GL_ORDER, order);
 		if (isMap2(target)) {
 			count = order[0]*order[1];
 		} else {
 			count = order[0];
 		}
 		buffer = marshali(cpu, ARG3, count);
-		glGetMapiv(target, query, buffer);
+		GL_FUNC(glGetMapiv)(target, query, buffer);
 		marshalBacki(cpu, ARG3, buffer, count);
 		break;
 	}
 	case GL_ORDER: {
 		GLint buffer[2];
-		glGetMapiv(target, query, buffer);
+		GL_FUNC(glGetMapiv)(target, query, buffer);
 		marshalBacki(cpu, ARG3, buffer, isMap2(target)?2:1);
 	}
 	case GL_DOMAIN: {
 		GLint buffer[4];
-		glGetMapiv(target, query, buffer);
+		GL_FUNC(glGetMapiv)(target, query, buffer);
 		marshalBacki(cpu, ARG3, buffer, isMap2(target)?4:2);
 		break;
 	}
@@ -3019,107 +3025,107 @@ void glcommon_glGetMapiv(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glEvalCoord1d( GLdouble u ) {
 void glcommon_glEvalCoord1d(struct CPU* cpu) {
-	glEvalCoord1d(dARG1);
+	GL_FUNC(glEvalCoord1d)(dARG1);
 }
 
 // GLAPI void APIENTRY glEvalCoord1f( GLfloat u ) {
 void glcommon_glEvalCoord1f(struct CPU* cpu) {
-	glEvalCoord1f(fARG1);
+	GL_FUNC(glEvalCoord1f)(fARG1);
 }
 
 // GLAPI void APIENTRY glEvalCoord1dv( const GLdouble *u ) {
 void glcommon_glEvalCoord1dv(struct CPU* cpu) {
-	glEvalCoord1dv(marshald(cpu, ARG1, 1));
+	GL_FUNC(glEvalCoord1dv)(marshald(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glEvalCoord1fv( const GLfloat *u ) {
 void glcommon_glEvalCoord1fv(struct CPU* cpu) {
-	glEvalCoord1fv(marshalf(cpu, ARG1, 1));
+	GL_FUNC(glEvalCoord1fv)(marshalf(cpu, ARG1, 1));
 }
 
 // GLAPI void APIENTRY glEvalCoord2d( GLdouble u, GLdouble v ) {
 void glcommon_glEvalCoord2d(struct CPU* cpu) {
-	glEvalCoord2d(dARG1, dARG2);
+	GL_FUNC(glEvalCoord2d)(dARG1, dARG2);
 }
 
 // GLAPI void APIENTRY glEvalCoord2f( GLfloat u, GLfloat v ) {
 void glcommon_glEvalCoord2f(struct CPU* cpu) {
-	glEvalCoord2f(fARG1, fARG2);
+	GL_FUNC(glEvalCoord2f)(fARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glEvalCoord2dv( const GLdouble *u ) {
 void glcommon_glEvalCoord2dv(struct CPU* cpu) {
-	glEvalCoord2dv(marshald(cpu, ARG1, 2));
+	GL_FUNC(glEvalCoord2dv)(marshald(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glEvalCoord2fv( const GLfloat *u ) {
 void glcommon_glEvalCoord2fv(struct CPU* cpu) {
-	glEvalCoord2fv(marshalf(cpu, ARG1, 2));
+	GL_FUNC(glEvalCoord2fv)(marshalf(cpu, ARG1, 2));
 }
 
 // GLAPI void APIENTRY glMapGrid1d( GLint un, GLdouble u1, GLdouble u2 ) {
 void glcommon_glMapGrid1d(struct CPU* cpu) {
-	glMapGrid1d(ARG1, dARG2, dARG3);
+	GL_FUNC(glMapGrid1d)(ARG1, dARG2, dARG3);
 }
 
 // GLAPI void APIENTRY glMapGrid1f( GLint un, GLfloat u1, GLfloat u2 ) {
 void glcommon_glMapGrid1f(struct CPU* cpu) {
-	glMapGrid1f(ARG1, fARG2, fARG3);
+	GL_FUNC(glMapGrid1f)(ARG1, fARG2, fARG3);
 }
 
 // GLAPI void APIENTRY glMapGrid2d( GLint un, GLdouble u1, GLdouble u2, GLint vn, GLdouble v1, GLdouble v2 ) {
 void glcommon_glMapGrid2d(struct CPU* cpu) {
-	glMapGrid2d(ARG1, dARG2, dARG3, ARG4, dARG5, dARG6);
+	GL_FUNC(glMapGrid2d)(ARG1, dARG2, dARG3, ARG4, dARG5, dARG6);
 }
 
 // GLAPI void APIENTRY glMapGrid2f( GLint un, GLfloat u1, GLfloat u2, GLint vn, GLfloat v1, GLfloat v2 ) {
 void glcommon_glMapGrid2f(struct CPU* cpu) {
-	glMapGrid2f(ARG1, fARG2, fARG3, ARG4, fARG5, fARG6);
+	GL_FUNC(glMapGrid2f)(ARG1, fARG2, fARG3, ARG4, fARG5, fARG6);
 }
 
 // GLAPI void APIENTRY glEvalPoint1( GLint i ) {
 void glcommon_glEvalPoint1(struct CPU* cpu) {
-	glEvalPoint1(ARG1);
+	GL_FUNC(glEvalPoint1)(ARG1);
 }
 
 // GLAPI void APIENTRY glEvalPoint2( GLint i, GLint j ) {
 void glcommon_glEvalPoint2(struct CPU* cpu) {
-	glEvalPoint2(ARG1, ARG2);
+	GL_FUNC(glEvalPoint2)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glEvalMesh1( GLenum mode, GLint i1, GLint i2 ) {
 void glcommon_glEvalMesh1(struct CPU* cpu) {
-	glEvalMesh1(ARG1, ARG2, ARG3);
+	GL_FUNC(glEvalMesh1)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glEvalMesh2( GLenum mode, GLint i1, GLint i2, GLint j1, GLint j2 ) {
 void glcommon_glEvalMesh2(struct CPU* cpu) {
-	glEvalMesh2(ARG1, ARG2, ARG3, ARG4, ARG5);
+	GL_FUNC(glEvalMesh2)(ARG1, ARG2, ARG3, ARG4, ARG5);
 }
 
 /* Fog */
 // GLAPI void APIENTRY glFogf( GLenum pname, GLfloat param ) {
 void glcommon_glFogf(struct CPU* cpu) {
-	glFogf(ARG1, fARG2);
+	GL_FUNC(glFogf)(ARG1, fARG2);
 }
 
 // GLAPI void APIENTRY glFogi( GLenum pname, GLint param ) {
 void glcommon_glFogi(struct CPU* cpu) {
-	glFogi(ARG1, ARG2);
+	GL_FUNC(glFogi)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glFogfv( GLenum pname, const GLfloat *params ) {
 void glcommon_glFogfv(struct CPU* cpu) {
 	GLenum pname = ARG1;
 
-	glFogfv(pname, marshalf(cpu, ARG2, (pname==GL_FOG_COLOR)?4:1));
+	GL_FUNC(glFogfv)(pname, marshalf(cpu, ARG2, (pname==GL_FOG_COLOR)?4:1));
 }
 
 // GLAPI void APIENTRY glFogiv( GLenum pname, const GLint *params ) {
 void glcommon_glFogiv(struct CPU* cpu) {
 	GLenum pname = ARG1;
 
-	glFogiv(pname, marshali(cpu, ARG2, (pname==GL_FOG_COLOR)?4:1));
+	GL_FUNC(glFogiv)(pname, marshali(cpu, ARG2, (pname==GL_FOG_COLOR)?4:1));
 }
 
 /* Selection and Feedback */
@@ -3127,41 +3133,41 @@ void glcommon_glFogiv(struct CPU* cpu) {
 void glcommon_glFeedbackBuffer(struct CPU* cpu) {
 	GLsizei size = ARG1;
 	GLfloat* buffer = marshalf(cpu, ARG3, size);
-	glFeedbackBuffer(size, ARG2, buffer);
+	GL_FUNC(glFeedbackBuffer)(size, ARG2, buffer);
 	marshalBackf(cpu, ARG3, buffer, size);
 }
 
 // GLAPI void APIENTRY glPassThrough( GLfloat token ) {
 void glcommon_glPassThrough(struct CPU* cpu) {
-	glPassThrough(fARG1);
+	GL_FUNC(glPassThrough)(fARG1);
 }
 
 // GLAPI void APIENTRY glSelectBuffer( GLsizei size, GLuint *buffer ) {
 void glcommon_glSelectBuffer(struct CPU* cpu) {
 	GLsizei size = ARG1;
 	GLuint* buffer = marshalui(cpu, ARG2, size);
-	glSelectBuffer(size, buffer);
+	GL_FUNC(glSelectBuffer)(size, buffer);
 	marshalBackui(cpu, ARG3, buffer, size);
 }
 
 // GLAPI void APIENTRY glInitNames( void ) {
 void glcommon_glInitNames(struct CPU* cpu) {
-	glInitNames();
+	GL_FUNC(glInitNames)();
 }
 
 // GLAPI void APIENTRY glLoadName( GLuint name ) {
 void glcommon_glLoadName(struct CPU* cpu) {
-	glLoadName(ARG1);
+	GL_FUNC(glLoadName)(ARG1);
 }
 
 // GLAPI void APIENTRY glPushName( GLuint name ) {
 void glcommon_glPushName(struct CPU* cpu) {
-	glPushName(ARG1);
+	GL_FUNC(glPushName)(ARG1);
 }
 
 // GLAPI void APIENTRY glPopName( void ) {
 void glcommon_glPopName(struct CPU* cpu) {
-	glPopName();
+	GL_FUNC(glPopName)();
 }
 
 /* 1.1 functions */
@@ -3170,39 +3176,39 @@ void glcommon_glPopName(struct CPU* cpu) {
 void glcommon_glGenTextures(struct CPU* cpu) {
 	GLsizei n = ARG1;
 	GLuint* textures = marshalui(cpu, ARG2, n);
-	glGenTextures(n, textures);
+	GL_FUNC(glGenTextures)(n, textures);
 	marshalBackui(cpu, ARG2, textures, n);
 }
 
 // GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures) {
 void glcommon_glDeleteTextures(struct CPU* cpu) {
 	GLsizei n = ARG1;
-	glDeleteTextures(n, marshalui(cpu, ARG2, n));
+	GL_FUNC(glDeleteTextures)(n, marshalui(cpu, ARG2, n));
 }
 
 // GLAPI void APIENTRY glBindTexture( GLenum target, GLuint texture ) {
 void glcommon_glBindTexture(struct CPU* cpu) {
-	glBindTexture(ARG1, ARG2);
+	GL_FUNC(glBindTexture)(ARG1, ARG2);
 }
 
 // GLAPI void APIENTRY glPrioritizeTextures( GLsizei n, const GLuint *textures, const GLclampf *priorities ) {
 void glcommon_glPrioritizeTextures(struct CPU* cpu) {
 	GLsizei n = ARG1;
 
-	glPrioritizeTextures(n, marshalui(cpu, ARG2, n), marshal2f(cpu, ARG3, n));
+	GL_FUNC(glPrioritizeTextures)(n, marshalui(cpu, ARG2, n), marshal2f(cpu, ARG3, n));
 }
 
 // GLAPI GLboolean APIENTRY glAreTexturesResident( GLsizei n, const GLuint *textures, GLboolean *residences ) {
 void glcommon_glAreTexturesResident(struct CPU* cpu) {
 	GLsizei n = ARG1;
 	GLboolean* residences = marshal2ub(cpu, ARG3, n);
-	glAreTexturesResident(n, marshalui(cpu, ARG2, n), residences);
+	GL_FUNC(glAreTexturesResident)(n, marshalui(cpu, ARG2, n), residences);
 	marshalBackub(cpu, ARG3, residences, n);
 }
 
 // GLAPI GLboolean APIENTRY glIsTexture( GLuint texture ) {
 void glcommon_glIsTexture(struct CPU* cpu) {
-	EAX = glIsTexture(ARG1);
+	EAX = GL_FUNC(glIsTexture)(ARG1);
 }
 
 /* texture mapping */
@@ -3217,12 +3223,12 @@ void glcommon_glTexSubImage1D(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
 
-	glTexSubImage1D(ARG1, ARG2, ARG3, width, format, type, marshalPixels(cpu, width, 1, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7));
+	GL_FUNC(glTexSubImage1D)(ARG1, ARG2, ARG3, width, format, type, marshalPixels(cpu, width, 1, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG7));
 }
 
 // GLAPI void APIENTRY glTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels ) {
@@ -3237,33 +3243,32 @@ void glcommon_glTexSubImage2D(struct CPU* cpu) {
 	GLint alignment;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
 
-	glTexSubImage2D(ARG1, ARG2, ARG3, ARG4, width, height, format, type, marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG9));
+	GL_FUNC(glTexSubImage2D)(ARG1, ARG2, ARG3, ARG4, width, height, format, type, marshalPixels(cpu, width, height, 1, format, type, pixels_per_row, skipRows, alignment, 0, ARG9));
 }
 
 // GLAPI void APIENTRY glCopyTexImage1D( GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLint border ) {
 void glcommon_glCopyTexImage1D(struct CPU* cpu) {
-	glCopyTexImage1D(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
+	GL_FUNC(glCopyTexImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
 }
 
 // GLAPI void APIENTRY glCopyTexImage2D( GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border ) {
 void glcommon_glCopyTexImage2D(struct CPU* cpu) {
-	glCopyTexImage2D(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8);
+	GL_FUNC(glCopyTexImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8);
 }
 
 // GLAPI void APIENTRY glCopyTexSubImage1D( GLenum target, GLint level, GLint xoffset, GLint x, GLint y, GLsizei width ) {
 void glcommon_glCopyTexSubImage1D(struct CPU* cpu) {
-	glCopyTexSubImage1D(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6);
+	GL_FUNC(glCopyTexSubImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6);
 }
-
 
 // GLAPI void APIENTRY glCopyTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height ) {
 void glcommon_glCopyTexSubImage2D(struct CPU* cpu) {
-	glCopyTexSubImage2D(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8);
+	GL_FUNC(glCopyTexSubImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8);
 }
 
 
@@ -3345,11 +3350,11 @@ void glcommon_glTexImage3D(struct CPU* cpu) {
 	GLint skipImages;
 	GLint pixels_per_row;
 
-	glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
-	glGetIntegerv(GL_UNPACK_SKIP_PIXELS, &skipPixels);
-	glGetIntegerv(GL_UNPACK_SKIP_ROWS, &skipRows);
-	glGetIntegerv(GL_UNPACK_ALIGNMENT, &alignment);
-	glGetIntegerv(GL_UNPACK_SKIP_IMAGES, &skipImages);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
+	GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
 	if (ext_glTexImage3D)
 		ext_glTexImage3D(ARG1, ARG2, ARG3, width, height, depth, border, format, type, marshalPixels(cpu, width, height, depth, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG10));

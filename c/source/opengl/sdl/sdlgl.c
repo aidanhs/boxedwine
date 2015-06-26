@@ -1,4 +1,5 @@
 #ifdef BOXEDWINE_SDL
+#include <gl/GL.h>
 #include "../glcommon.h"
 #include "kalloc.h"
 #include "kprocess.h"

@@ -142,6 +142,15 @@
     <ClCompile Include="..\..\..\..\source\opengl\sdl\sdlgl.c">
       <Filter>opengl\sdl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\es\esopengl.c">
+      <Filter>opengl\es</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\es\esdisplaylist.c">
+      <Filter>opengl\es</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\es\glshim.c">
+      <Filter>opengl\es</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -385,6 +394,9 @@
     </Filter>
     <Filter Include="opengl\sdl">
       <UniqueIdentifier>{8e8c72e1-51c4-424b-bfcf-ad07de7342b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="opengl\es">
+      <UniqueIdentifier>{969d527d-7365-4095-b932-0de4af94a2a3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

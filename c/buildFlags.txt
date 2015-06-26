@@ -1,0 +1,8 @@
+SDL2             This will cause SDL2 to be used instead of SDL1.  You will need to link to the correct libraries.
+UNALIGNED_MEMORY This is necessary if the host isn't little endian, necessary for emscripten
+
+To compile, you need one and only one of the follow 3 flags
+
+MESA Mesa        off screen buffer will be used to render OpenGL.
+BOXEDWINE_ES     SDL OpenGL ES code will be used.  OpenGL calls will be translated to ES.
+BOXEDWINE_SDL    SDL OpenGL context will be used

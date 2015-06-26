@@ -23,6 +23,7 @@
 
 void mesa_init();
 void gl_init();
+void esgl_init();
 void sdlgl_init();
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
@@ -41,6 +42,10 @@ char curdir[1024];
 U32 getMilliesSinceStart() {
 	return SDL_GetTicks();
 }
+#ifdef SDL2
+#define SDLK_NUMLOCK SDL_SCANCODE_NUMLOCKCLEAR
+#define SDLK_SCROLLOCK SDLK_SCROLLLOCK
+#endif
 U32 translate(U32 key) {
 	switch (key) {
         case SDLK_ESCAPE:
@@ -336,6 +341,9 @@ int main(int argc, char **argv) {
 #ifdef BOXEDWINE_SDL
 	sdlgl_init();
 #endif
+#ifdef BOXEDWINE_ES
+	esgl_init();
+#endif
 	ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";
     ppenv[envc++] = "USERNAME=username";
@@ -409,13 +417,18 @@ int main(int argc, char **argv) {
 				} else if (e.type == SDL_KEYUP) {
 					onKeyUp(translate(e.key.keysym.sym));
 				}
+#ifdef SDL2
+				else if (e.type == SDL_WINDOWEVENT) {
+					flipFBNoCheck();
+				}
+#endif
 			};
 			t = getMilliesSinceStart();
 			if (lastTitleUpdate+1000 < t) {
 				char tmp[256];
 				lastTitleUpdate = t;
 				sprintf(tmp, "BoxedWine %d MHz cyclesPerContext=%d", getMHz(), contextTime);
-				SDL_WM_SetCaption(tmp, "BoxedWine");
+				fbSetCaption(tmp, "BoxedWine");
 			}
 			if (!ran)
 				SDL_Delay(20);

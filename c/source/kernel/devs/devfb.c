@@ -9,14 +9,14 @@
 #include "nodeaccess.h"
 #include "kthread.h"
 #include "kmmap.h"
+#include "kalloc.h"
 
 U32 windowCX;
 U32 windowCY;
 U32 windowBPP;
 U32 windowFullScreen;
 U32 updateAvailable;
-void* screenPixels;
-SDL_Surface* surface;
+U8* screenPixels;
 
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
 	windowCX = cx;
@@ -272,26 +272,79 @@ struct fb_cmap fb_cmap;
 BOOL fbinit;
 BOOL bOpenGL;
 
+#ifdef SDL2
+SDL_Window *sdlWindow;
+SDL_GLContext sdlContext;
+SDL_Renderer *sdlRenderer;
+SDL_Texture* sdlTexture;
+
+void destroySDL2() {
+	if (sdlTexture) {
+		SDL_DestroyTexture(sdlTexture);
+	}
+	if (sdlRenderer) {
+		SDL_DestroyRenderer(sdlRenderer);
+		sdlRenderer = 0;
+	}
+	if (sdlContext) {
+		SDL_GL_DeleteContext(sdlContext);
+		sdlContext = 0;
+	}
+	if (sdlWindow) {
+		SDL_DestroyWindow(sdlWindow);
+		sdlWindow = 0;
+	}
+}
+#else
+SDL_Surface* surface;
+#endif
+
 void fbSetupScreenForOpenGL(int width, int height, int depth) {
+#ifdef SDL2
+	destroySDL2();
+	sdlWindow = SDL_CreateWindow("", 0, 0, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	if (!sdlWindow) {
+		kpanic("SDL_CreateWindow failed: %s", SDL_GetError());
+	}
+    sdlContext = SDL_GL_CreateContext(sdlWindow);
+	if (!sdlWindow) {
+		kpanic("SDL_GL_CreateContext failed: %s", SDL_GetError());
+	}
+#else
 	surface=SDL_SetVideoMode(width,height,depth, SDL_HWSURFACE|SDL_OPENGL);
+#endif
 	bOpenGL = 1;
 }
 
 void fbSetupScreenForMesa(int width, int height, int depth) {
+#ifdef SDL2
+	destroySDL2();
+	sdlWindow = SDL_CreateWindow("", 0, 0, width, height, SDL_WINDOW_SHOWN);
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
+	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+#else
 	surface=SDL_SetVideoMode(width,height,depth, SDL_SWSURFACE);
-	bOpenGL = 1;
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
 	}
+#endif
+	bOpenGL = 1;	
 }
 
 void fbSetupScreen() {
 	bOpenGL = 0;
-	if (SDL_MUSTLOCK(surface)) {
+#ifdef SDL2
+	destroySDL2();
+	sdlWindow = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, fb_var_screeninfo.xres, fb_var_screeninfo.yres, SDL_WINDOW_SHOWN);
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
+	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
+#else
+	if (surface && SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
 	
 	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE);
+#endif
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		SDL_Color colors[256];
 		int i;
@@ -301,7 +354,9 @@ void fbSetupScreen() {
           colors[i].g=(U8)fb_cmap.green[i];
           colors[i].b=(U8)fb_cmap.blue[i];
         }
+#ifndef SDL2
 		SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
+#endif
 	}
 
 	SDL_ShowCursor(0);
@@ -309,6 +364,17 @@ void fbSetupScreen() {
 	fb_fix_screeninfo.type = 0; // FB_TYPE_PACKED_PIXELS
 	fb_fix_screeninfo.smem_start = ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;		
 
+#ifdef SDL2
+	fb_var_screeninfo.red.offset = 16;
+	fb_var_screeninfo.green.offset = 8;
+	fb_var_screeninfo.blue.offset = 0;
+	fb_var_screeninfo.red.length = 8;			
+	fb_var_screeninfo.green.length = 8;		
+	fb_var_screeninfo.blue.length = 8;
+	fb_fix_screeninfo.line_length = 4 * fb_var_screeninfo.xres;
+	screenPixels = kalloc(fb_fix_screeninfo.line_length*fb_var_screeninfo.yres);
+	updateAvailable = 1;
+#else
 	if (surface->format->Rshift == 0 && surface->format->Gshift == 0) {
 		fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);
 		fb_var_screeninfo.green.offset = GET_SHIFT(surface->format->Gmask);
@@ -321,51 +387,53 @@ void fbSetupScreen() {
 	fb_var_screeninfo.red.length = COUNT_BITS(surface->format->Rmask);			
 	fb_var_screeninfo.green.length = COUNT_BITS(surface->format->Gmask);		
 	fb_var_screeninfo.blue.length = COUNT_BITS(surface->format->Bmask);
-	
 
 	printf("Rshift=%X (%X) Gshift=%X (%X) Bshift=%X (%X)", surface->format->Rshift, surface->format->Rmask, surface->format->Gshift, surface->format->Gmask, surface->format->Bshift, surface->format->Bmask);
-	fb_fix_screeninfo.smem_len = 8*1024*1024;
+	
 	fb_fix_screeninfo.line_length = surface->pitch;
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
 	}
 	screenPixels = surface->pixels;
+#endif
+	
+	fb_fix_screeninfo.smem_len = 8*1024*1024;
 }
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
 	if (!bOpenGL)
-		return ((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+		return screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 	return 0;
 }
 
 static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
 	if (!bOpenGL)
-		((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
+		screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
 static U16 fb_readw(struct Memory* memory, U32 address) {
 	if (!bOpenGL)
-		return ((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
+		return ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
 	return 0;
 }
 
 static void fb_writew(struct Memory* memory, U32 address, U16 value) {
 	updateAvailable=1;
 	if (!bOpenGL)
-		((U16*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
+		((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
 static U32 fb_readd(struct Memory* memory, U32 address) {
 	if (!bOpenGL)
-		return ((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
+		return ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
 	return 0;
 }
 
 static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 	updateAvailable=1;
 	if (!bOpenGL)
-		((U32*)surface->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
+		((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
 static void fb_clear(struct Memory* memory, U32 page) {
@@ -373,15 +441,14 @@ static void fb_clear(struct Memory* memory, U32 page) {
 
 static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
 	updateAvailable=1;
-	return &((U8*)surface->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+	return &screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
 
 BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 	if (!fbinit) {		
-		surface=SDL_SetVideoMode(windowCX,windowCY,windowBPP, SDL_HWSURFACE);
-		SDL_ShowCursor(0);
+
 		fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
 		fb_fix_screeninfo.type = 0; // FB_TYPE_PACKED_PIXELS
 		fb_fix_screeninfo.smem_start = ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;		
@@ -392,15 +459,6 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.yres_virtual = windowCY;
 
 		fb_var_screeninfo.bits_per_pixel = windowBPP;
-		if (surface->format->Rshift == 0 && surface->format->Gshift == 0) {
-			fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);
-			fb_var_screeninfo.green.offset = GET_SHIFT(surface->format->Gmask);
-			fb_var_screeninfo.blue.offset = GET_SHIFT(surface->format->Bmask);
-		} else {
-			fb_var_screeninfo.red.offset = surface->format->Rshift;
-			fb_var_screeninfo.green.offset = surface->format->Gshift;
-			fb_var_screeninfo.blue.offset = surface->format->Bshift;
-		}
 		fb_var_screeninfo.red.length = 8;			
 		fb_var_screeninfo.green.length = 8;		
 		fb_var_screeninfo.blue.length = 8;
@@ -409,11 +467,8 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
 		fb_var_screeninfo.height = 300;
 		fb_var_screeninfo.width = 400;		
 
-		fb_fix_screeninfo.smem_len = surface->pitch*windowCY;
-		fb_fix_screeninfo.line_length = surface->pitch;
-		if (SDL_MUSTLOCK(surface)) {
-			SDL_LockSurface(surface);
-		}
+		fb_fix_screeninfo.smem_len = 8*1024*1024;
+		fb_fix_screeninfo.line_length = fb_var_screeninfo.width*32;
 	}
 	node->idata = 0; // file pos;	
 	return TRUE;
@@ -441,7 +496,7 @@ S64 fb_seek(struct OpenNode* node, S64 pos) {
 U32 fb_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	if (node->idata+len>fb_fix_screeninfo.line_length)
 		len = fb_fix_screeninfo.line_length-node->idata;
-	memcopyFromNative(memory, address, (char *)surface->pixels+node->idata, len);
+	memcopyFromNative(memory, address, screenPixels+node->idata, len);
 	node->idata+=len;
 	return len;
 }
@@ -449,7 +504,7 @@ U32 fb_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) 
 U32 fb_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
 	if (node->idata+len>fb_fix_screeninfo.line_length)
 		len = fb_fix_screeninfo.line_length-node->idata;
-	memcopyToNative(memory, address, (char *)surface->pixels+node->idata, len);
+	memcopyToNative(memory, address, screenPixels+node->idata, len);
 	node->idata+=len;
 	return len;
 }
@@ -541,6 +596,12 @@ struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointe
 
 void flipFB() {
 	if (updateAvailable && !bOpenGL) {
+#ifdef SDL2
+		SDL_UpdateTexture(sdlTexture, NULL, screenPixels, fb_fix_screeninfo.line_length);
+		SDL_RenderClear(sdlRenderer);
+		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
+		SDL_RenderPresent(sdlRenderer);
+#else
 		if (SDL_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
 			SDL_Flip(surface);
@@ -549,11 +610,18 @@ void flipFB() {
 			SDL_Flip(surface);
 			SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
 		}
+#endif
 		updateAvailable=0;
 	}
 }
 
 void flipFBNoCheck() {
+#ifdef SDL2
+		SDL_UpdateTexture(sdlTexture, NULL, screenPixels, fb_fix_screeninfo.line_length);
+		SDL_RenderClear(sdlRenderer);
+		SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
+		SDL_RenderPresent(sdlRenderer);
+#else
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 		SDL_Flip(surface);
@@ -563,4 +631,22 @@ void flipFBNoCheck() {
 		SDL_Flip(surface);
 		SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
 	}
+#endif
+}
+
+void fbSetCaption(const char* title, const char* icon) {
+#ifdef SDL2
+	if (sdlWindow)
+		SDL_SetWindowTitle(sdlWindow, title);
+#else
+	SDL_WM_SetCaption(title, icon);
+#endif
+}
+
+void fbSwapOpenGL() {
+#ifdef SDL2
+	SDL_GL_SwapWindow(sdlWindow);
+#else
+	SDL_GL_SwapBuffers();
+#endif
 }
