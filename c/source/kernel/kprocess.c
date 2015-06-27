@@ -258,12 +258,13 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 	push32(cpu, 0);	
     push32(cpu, 0);		
 	
+
 	push32(cpu, randomAddress);
 	push32(cpu, 25); // AT_RANDOM
 	push32(cpu, 100);
 	push32(cpu, 17); // AT_CLKTCK
-	push32(cpu, HWCAP_I386_FPU|HWCAP_I386_VME|HWCAP_I386_TSC|HWCAP_I386_CX8|HWCAP_I386_CMOV|HWCAP_I386_FCMOV);
-	push32(cpu, 16); // AT_HWCAP
+	//push32(cpu, HWCAP_I386_FPU|HWCAP_I386_VME|HWCAP_I386_TSC|HWCAP_I386_CX8|HWCAP_I386_CMOV|HWCAP_I386_FCMOV);
+	//push32(cpu, 16); // AT_HWCAP
 	push32(cpu, platform);
 	push32(cpu, 15); // AT_PLATFORM
 	push32(cpu, process->effectiveGroupId);

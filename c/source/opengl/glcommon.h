@@ -78,7 +78,7 @@ void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count)
 
 
 // 1.2
-typedef void (*glTexImage3D_func)( GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels );
+typedef void (OPENGL_CALL_TYPE *glTexImage3D_func)( GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels );
 extern glTexImage3D_func ext_glTexImage3D;
 
 #endif

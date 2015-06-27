@@ -32,6 +32,7 @@
 #define RMDIR_INCLUDE <direct.h>
 #define MKDIR(x) mkdir(x)
 #define INLINE __inline
+#define OPENGL_CALL_TYPE __stdcall
 #else
 #define OPCALL
 #define UNISTD <unistd.h>
@@ -42,6 +43,7 @@
 #define MKDIR(x) mkdir(x, 0777)
 #define O_BINARY 0
 #define INLINE inline
+#define OPENGL_CALL_TYPE
 #endif
 
 #ifndef S_ISDIR
