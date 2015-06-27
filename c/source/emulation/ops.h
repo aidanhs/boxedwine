@@ -3040,6 +3040,6 @@ void OPCALL int99(struct CPU* cpu, struct Op* op) {
 	} else {
 		kpanic("Uknown int 99 call: %d", index);
 	}
-	CYCLES(1000);
+	CYCLES(5);
 	cpu->eip.u32+=op->eipCount;
 }
