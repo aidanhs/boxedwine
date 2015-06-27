@@ -18,7 +18,7 @@ void es_glClearIndex( GLfloat c ) {
 if (activeList) {								\
 	struct ListOp* op = allocListOp(activeList);\
 	op->op = list_##func;						\
-	op->a1.##arg1Type = arg1;					\
+	op->a1.arg1Type = arg1;					\
 } else {										\
 	func(arg1);									\
 }
@@ -27,8 +27,8 @@ if (activeList) {								\
 if (activeList) {								\
 	struct ListOp* op = allocListOp(activeList);\
 	 op->op = list_##func;						\
-	 op->a1.##arg1Type = arg1;					\
-	op->a2.##arg2Type = arg2;					\
+	 op->a1.arg1Type = arg1;					\
+	op->a2.arg2Type = arg2;					\
 } else {										\
 	func(arg1, arg2);							\
 }													
@@ -37,9 +37,9 @@ if (activeList) {								\
 if (activeList) {								\
 	struct ListOp* op = allocListOp(activeList);\
 	op->op = list_##func;						\
-	op->a1.##arg1Type = arg1;					\
-	op->a2.##arg2Type = arg2;					\
-	op->a3.##arg3Type = arg3;					\
+	op->a1.arg1Type = arg1;					\
+	op->a2.arg2Type = arg2;					\
+	op->a3.arg3Type = arg3;					\
 } else {										\
 	func(arg1, arg2, arg3);						\
 }	
@@ -48,10 +48,10 @@ if (activeList) {								\
 if (activeList) {								\
 	struct ListOp* op = allocListOp(activeList);\
 	op->op = list_##func;						\
-	op->a1.##arg1Type = arg1;					\
-	op->a2.##arg2Type = arg2;					\
-	op->a3.##arg3Type = arg3;					\
-	op->a4.##arg4Type = arg4;					\
+	op->a1.arg1Type = arg1;					\
+	op->a2.arg2Type = arg2;					\
+	op->a3.arg3Type = arg3;					\
+	op->a4.arg4Type = arg4;					\
 } else {										\
 	func(arg1, arg2, arg3, arg4);				\
 }	
@@ -157,6 +157,7 @@ void es_glDisable( GLenum cap ) {
 }
 
 GLboolean es_glIsEnabled( GLenum cap ) {
+	return 0;
 }
 
 void es_glEnableClientState( GLenum cap ) {
@@ -190,17 +191,20 @@ void es_glPopClientAttrib( void ) {
 }
 
 GLint es_glRenderMode( GLenum mode ) {
+	return 0;
 }
 
 GLenum es_glGetError( void ) {
+	return 0;
 }
 
 const GLubyte* es_glGetString( GLenum name ) {
 	if (name == GL_VERSION) {
-		return "1.2";
+		return (GLubyte*)"1.2";
 	} else if (name == GL_EXTENSIONS) {
-		return "";
+		return (GLubyte*)"";
 	}
+	printf("glGetString name=%d result=%s", name, glGetString(name));
 	return glGetString(name);
 }
 
@@ -284,12 +288,14 @@ void es_glTranslatef( GLfloat x, GLfloat y, GLfloat z ) {
 }
 
 GLboolean es_glIsList( GLuint list ) {
+	return 0;
 }
 
 void es_glDeleteLists( GLuint list, GLsizei range ) {
 }
 
 GLuint es_glGenLists( GLsizei range ) {
+	return 0;
 }
 
 void es_glNewList( GLuint list, GLenum mode ) {
@@ -1044,9 +1050,11 @@ void es_glPrioritizeTextures( GLsizei n, const GLuint *textures, const GLclampf 
 }
 
 GLboolean es_glAreTexturesResident( GLsizei n, const GLuint *textures, GLboolean *residences ) {
+	return 0;
 }
 
 GLboolean es_glIsTexture( GLuint texture ) {
+	return 0;
 }
 
 /* texture mapping */
@@ -1143,7 +1151,7 @@ void fbSetupScreen();
 void es_glXCreateContext(struct CPU* cpu) {
 	U32 doubleBuffered = ARG6;
 	U32 format = ARG5;
-	U32 share = ARG4;
+	//U32 share = ARG4;
 	U32 accum = ARG3;
 	U32 stencil = ARG2;
 	U32 depth = ARG1;	
@@ -1160,9 +1168,9 @@ void es_glXCreateContext(struct CPU* cpu) {
     SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, doubleBuffered?1:0 );
 	SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, format==0x1907?24:32);
 
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES); 
+	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES); 
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 2 ); 
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 0 );
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 0 );
 	EAX = 0x1000;	
 }
 
@@ -1173,7 +1181,7 @@ void es_glXDestroyContext(struct CPU* cpu) {
 
 // Bool glXMakeCurrent(Display *dpy, GLXDrawable drawable, GLXContext ctx) 
 void es_glXMakeCurrent(struct CPU* cpu) {
-	U32 isWindow = ARG5;
+	//U32 isWindow = ARG5;
 	U32 depth = ARG4;
 	U32 height = ARG3;
 	U32 width = ARG2;

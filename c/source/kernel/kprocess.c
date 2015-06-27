@@ -385,9 +385,8 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
 	const char* interpreter = 0;
 	const char* loader = 0;
-	BOOL isElf = TRUE;
 	const char* pArgs[128];
-	int argIndex=128;
+	unsigned int argIndex=128;
 	struct KProcess* process = allocProcess();
 	struct Memory* memory = allocMemory();		
 	struct KThread* thread = allocThread();
@@ -741,7 +740,7 @@ struct Node* findInPath(struct KProcess* process, const char* arg) {
 	return node;
 }
 
-U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size, int* count, char* tmp, int tmpSize, U32 tmpIndex) {
+U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size, unsigned int* count, char* tmp, int tmpSize, U32 tmpIndex) {
 	while (TRUE) {
 		U32 p = readd(memory, address);		
 		char* str = getNativeString(memory, p);
@@ -767,7 +766,6 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	struct OpenNode* openNode = 0;
 	const char* interpreter = 0;
 	const char* loader = 0;
-	BOOL isElf = FALSE;
 	struct KThread* processThread;
 	U32 threadIndex = 0;
 	U32 i;
@@ -1128,7 +1126,7 @@ U32 syscall_prctl(struct KThread* thread, U32 option) {
 }
 
 U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal) {
-	struct KProcess* process;
+	struct KProcess* process = 0;
 
 	if (pid>0)
 		process = getProcessById(pid);

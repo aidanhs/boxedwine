@@ -16,7 +16,7 @@ U32 windowCY;
 U32 windowBPP;
 U32 windowFullScreen;
 U32 updateAvailable;
-U8* screenPixels;
+char* screenPixels;
 
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
 	windowCX = cx;
@@ -441,7 +441,7 @@ static void fb_clear(struct Memory* memory, U32 page) {
 
 static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
 	updateAvailable=1;
-	return &screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+	return (U8*)&screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};

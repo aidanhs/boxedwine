@@ -261,7 +261,7 @@ typedef struct {
 } glstate_t;
 
 glstate_t state = {
-    0,
+    {0},
     .current = {
         .color = {1.0f, 1.0f, 1.0f, 1.0f},
         .normal = {0.0f, 0.0f, 1.0f},
@@ -280,7 +280,6 @@ glstate_t state = {
         .pixel = 0xFFFFFFFF,
         .valid = 1,
     },
-    .stack = {0},
     .texgen = {{
         .R = GL_EYE_LINEAR,
         .Q = GL_EYE_LINEAR,

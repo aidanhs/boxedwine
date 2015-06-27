@@ -88,7 +88,6 @@ BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct 
 	}
 	if (openNode) {
 		char* arg;
-		U32 maxArgs = *interpreterArgsCount;
 
 		*interpreterArgsCount=0;
 		*interpreter = getInterpreter(openNode, &isElf);
