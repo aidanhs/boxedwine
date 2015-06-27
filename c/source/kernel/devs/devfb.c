@@ -16,6 +16,7 @@ U32 windowCY;
 U32 windowBPP;
 U32 windowFullScreen;
 U32 updateAvailable;
+U32 paletteChanged;
 char* screenPixels;
 
 void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
@@ -53,20 +54,6 @@ struct fb_cmap {
         U16 green[256];
         U16 blue[256];
 };
-
-void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
-	U32 i = readd(memory, address);
-	U32 stop = readd(memory, address+4)+i;
-	U32 red = readd(memory, address+8);
-	U32 green = readd(memory, address+12);
-	U32 blue = readd(memory, address+16);
-
-	for (;i<stop;i++) {
-		cmap->red[i] = readw(memory, red); red+=2;
-		cmap->green[i] = readw(memory, green); green+=2;
-		cmap->blue[i] = readw(memory, blue); blue+=2;
-	}
-}
 
 void readCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
 	U32 i = readd(memory, address);
@@ -299,6 +286,21 @@ void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
+void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
+	U32 i = readd(memory, address);
+	U32 stop = readd(memory, address+4)+i;
+	U32 red = readd(memory, address+8);
+	U32 green = readd(memory, address+12);
+	U32 blue = readd(memory, address+16);
+
+	for (;i<stop;i++) {
+		cmap->red[i] = readw(memory, red); red+=2;
+		cmap->green[i] = readw(memory, green); green+=2;
+		cmap->blue[i] = readw(memory, blue); blue+=2;
+	}
+	paletteChanged = 1;	
+}
+
 void fbSetupScreenForOpenGL(int width, int height, int depth) {
 #ifdef SDL2
 	destroySDL2();
@@ -343,7 +345,7 @@ void fbSetupScreen() {
 		SDL_UnlockSurface(surface);
 	}
 	
-	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE);
+	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE|SDL_HWPALETTE);
 #endif
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		SDL_Color colors[256];
@@ -355,7 +357,7 @@ void fbSetupScreen() {
           colors[i].b=(U8)fb_cmap.blue[i];
         }
 #ifndef SDL2
-		SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
+		SDL_SetPalette(surface, SDL_PHYSPAL, colors, 0, 256);
 #endif
 	}
 
@@ -596,6 +598,20 @@ struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointe
 
 void flipFB() {
 	if (updateAvailable && !bOpenGL) {
+		if (fb_var_screeninfo.bits_per_pixel==8 && paletteChanged) {
+			SDL_Color colors[256];
+			int i;
+
+			for(i=0;i<256;i++){
+			  colors[i].r=(U8)fb_cmap.red[i];
+			  colors[i].g=(U8)fb_cmap.green[i];
+			  colors[i].b=(U8)fb_cmap.blue[i];
+			}
+			paletteChanged = 0;
+	#ifndef SDL2
+			SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
+	#endif
+		}
 #ifdef SDL2
 		SDL_UpdateTexture(sdlTexture, NULL, screenPixels, fb_fix_screeninfo.line_length);
 		SDL_RenderClear(sdlRenderer);
