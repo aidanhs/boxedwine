@@ -302,7 +302,7 @@ SDL_Surface* surface;
 void fbSetupScreenForOpenGL(int width, int height, int depth) {
 #ifdef SDL2
 	destroySDL2();
-	sdlWindow = SDL_CreateWindow("", 0, 0, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	sdlWindow = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	if (!sdlWindow) {
 		kpanic("SDL_CreateWindow failed: %s", SDL_GetError());
 	}
