@@ -334,6 +334,7 @@ void fbSetupScreenForMesa(int width, int height, int depth) {
 }
 
 void fbSetupScreen() {
+	U32 flags = SDL_HWSURFACE;
 	bOpenGL = 0;
 #ifdef SDL2
 	destroySDL2();
@@ -344,8 +345,11 @@ void fbSetupScreen() {
 	if (surface && SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
-	
-	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE|SDL_HWPALETTE);
+	printf("Switching to %dx%d@%d", fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel);
+	if (fb_var_screeninfo.bits_per_pixel==8) {
+		flags |=SDL_HWPALETTE;
+	}
+	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE);
 #endif
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		SDL_Color colors[256];
@@ -399,42 +403,42 @@ void fbSetupScreen() {
 	screenPixels = surface->pixels;
 #endif
 	
-	fb_fix_screeninfo.smem_len = 8*1024*1024;
+	fb_fix_screeninfo.smem_len = fb_fix_screeninfo.line_length*fb_var_screeninfo.yres;
 }
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
-	if (!bOpenGL)
+	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		return screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 	return 0;
 }
 
 static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
-	if (!bOpenGL)
+	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
 static U16 fb_readw(struct Memory* memory, U32 address) {
-	if (!bOpenGL)
+	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		return ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
 	return 0;
 }
 
 static void fb_writew(struct Memory* memory, U32 address, U16 value) {
 	updateAvailable=1;
-	if (!bOpenGL)
+	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
 static U32 fb_readd(struct Memory* memory, U32 address) {
-	if (!bOpenGL)
+	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		return ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
 	return 0;
 }
 
 static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 	updateAvailable=1;
-	if (!bOpenGL)
+	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
