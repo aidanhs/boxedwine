@@ -18,14 +18,30 @@ struct LazyFlags {
 	U32 (*getPF)(struct CPU* cpu);
 };
 
-#define LDT_ENTRIES 32
+#define LDT_ENTRIES 1024
+
+struct user_desc {
+    U32  entry_number;
+    U32 base_addr;
+    U32  limit;
+	union {
+		struct {
+			U32  seg_32bit:1;
+			U32  contents:2;
+			U32  read_exec_only:1;
+			U32  limit_in_pages:1;
+			U32  seg_not_present:1;
+			U32  useable:1;
+		};
+		U32 flags;
+	};
+};
 
 struct CPU {
 	struct Reg		reg[9]; // index 8 is 0
 	U8*		reg8[8];
 	U32		segAddress[6];
-	U32		segValue[7]; // index 6 is for 0, used in LEA instruction
-	U32		ldt[LDT_ENTRIES];
+	U32		segValue[7]; // index 6 is for 0, used in LEA instruction	
 	U32		flags;
 	struct Reg		eip;	
 	struct Memory* memory;
@@ -47,18 +63,6 @@ struct CPU {
 	BOOL log;
 };
 
-struct user_desc {
-    U32  entry_number;
-    U32 base_addr;
-    U32  limit;
-    U32  seg_32bit:1;
-    U32  contents:2;
-    U32  read_exec_only:1;
-    U32  limit_in_pages:1;
-    U32  seg_not_present:1;
-    U32  useable:1;
-};
-
 #define addFlag(f) cpu->flags |= (f)
 #define removeFlag(f) cpu->flags &=~ (f)
 
@@ -73,6 +77,7 @@ void fillFlagsNoCF(struct CPU* cpu);
 void fillFlagsNoZF(struct CPU* cpu);
 void fillFlags(struct CPU* cpu);
 void fillFlagsNoOF(struct CPU* cpu);
+void cpu_ret(struct CPU* cpu, U32 big, U32 eip);
 
 extern U8 parity_lookup[];
 

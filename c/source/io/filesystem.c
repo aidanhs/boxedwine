@@ -158,6 +158,7 @@ void removeOpenNodeFromNode(struct OpenNode* node) {
 			prev->nextOpen = prev->nextOpen->nextOpen;
 			break;
 		}
+		prev = prev->nextOpen;
 	}
 	if (!prev) {
 		kpanic("Could not find open node in list of open nodes.  This is a logic error");

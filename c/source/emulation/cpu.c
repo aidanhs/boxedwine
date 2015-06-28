@@ -30,6 +30,47 @@ void initCPU(struct CPU* cpu, struct Memory* memory) {
 	FPU_FINIT(&cpu->fpu);
 }
 
+struct Descriptor {
+	union {
+		struct {
+			U32 limit_0_15 :16;
+			U32 base_0_15 :16;
+			U32 base_16_23 :8;
+			U32 type :5;
+			U32 dpl :2;
+			U32 p :1;
+			U32 limit_16_19 :4;
+			U32 avl :1;
+			U32 r :1;
+			U32 big :1;
+			U32 g :1;
+			U32 base_24_31 :8; 
+		};
+		U64 fill;
+	};
+};
+
+void cpu_ret(struct CPU* cpu, U32 big, U32 eip) {
+	U32 offset;
+	U32 selector;
+	U32 address;
+	struct Descriptor desc;
+
+	if (big) {
+		offset = pop32(cpu);
+		selector = pop32(cpu);
+	} else {
+		offset = pop16(cpu);
+		selector = pop16(cpu);
+	}
+	address = selector & ~7;
+	//desc.fill = readq(cpu->memory, cpu->thread->process->ldt[selector>>3].base_addr);
+	cpu->segAddress[CS] = cpu->thread->process->ldt[selector>>3].base_addr;
+	cpu->segValue[CS] = selector;
+	cpu->eip.u32 = offset;
+	cpu->big = 0;
+}
+
 void fillFlagsNoCFOF(struct CPU* cpu) {
 	if (cpu->lazyFlags!=FLAGS_NONE) {
 		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);

@@ -80,6 +80,7 @@ struct KProcess {
 	U32 phnum;
 	U32 phentsize;
 	U32 entry;
+	struct user_desc ldt[LDT_ENTRIES];
 };
 
 void processOnExitThread(struct KProcess* process);

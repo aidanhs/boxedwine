@@ -614,7 +614,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 		initThread(newThread, thread->process);		
 
         if (desc.base_addr!=0) {
-            newThread->cpu.ldt[desc.entry_number] = desc.base_addr;
+            newThread->process->ldt[desc.entry_number] = desc;
 			newThread->cpu.segAddress[GS] = desc.base_addr;
 			newThread->cpu.segValue[GS] = desc.entry_number << 3;
         }
@@ -749,7 +749,7 @@ U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size
 
 		if (!str[0])
 			break;		
-		if (*count>=size)
+		if (*count>=(unsigned int)size)
 			kpanic("Too many env or arg: %d is max", size);
 		safe_strcpy(tmp+tmpIndex, str, tmpSize-tmpIndex);
 		a[*count]=tmp+tmpIndex;
@@ -1207,4 +1207,52 @@ void addString(struct KProcess* process, U32 index, const char* str) {
 		memcopyFromNative(process->memory, process->strings[index], str, len+1);
 		process->stringAddressIndex+=len+1;
 	}
+}
+
+/*
+struct user_desc {
+        unsigned int  entry_number;
+        unsigned int  base_addr;
+        unsigned int  limit;
+        unsigned int  seg_32bit:1;
+        unsigned int  contents:2;
+        unsigned int  read_exec_only:1;
+        unsigned int  limit_in_pages:1;
+        unsigned int  seg_not_present:1;
+        unsigned int  useable:1;
+}
+*/
+
+U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
+	struct CPU* cpu = &thread->cpu;
+
+	if (func == 1 || func == 0x11) {
+		int index = readd(thread->process->memory, ptr);
+		U32 address = readd(thread->process->memory, ptr+4);
+		U32 limit = readd(thread->process->memory, ptr+8);
+		U32 flags = readd(thread->process->memory, ptr+12);		
+
+		if (index>=0 && index<LDT_ENTRIES) {
+			struct user_desc* ldt = &thread->process->ldt[index];
+			ldt->entry_number = index;
+			ldt->limit = limit;
+			ldt->base_addr = address;
+			ldt->flags = flags;
+		} else {
+			kpanic("syscall_modify_ldt invalid index: %d", index);
+		}
+	} else if (func == 0) {
+		int index = readd(thread->process->memory, ptr);
+		if (index>=0 && index<LDT_ENTRIES) {
+			struct user_desc* ldt = &thread->process->ldt[index];
+			writed(cpu->memory, ptr+4, ldt->base_addr);
+			writed(cpu->memory, ptr+8, ldt->limit);
+			writed(cpu->memory, ptr+12, ldt->flags);
+		} else {
+			kpanic("syscall_modify_ldt invalid index: %d", index);
+		}
+	} else {
+		kpanic("syscall_modify_ldt unknown func: %d", func);
+	}
+	return 16;
 }

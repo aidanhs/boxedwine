@@ -19,14 +19,14 @@ void OPCALL pushSeg32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL popSeg16(struct CPU* cpu, struct Op* op) {
 	cpu->segValue[op->r1] = pop16(cpu);
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
+	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
 	CYCLES(3);
 	NEXT();
 }
 
 void OPCALL popSeg32(struct CPU* cpu, struct Op* op) {
 	cpu->segValue[op->r1] = pop32(cpu);
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
+	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
 	CYCLES(3);
 	NEXT();
 }
@@ -973,21 +973,21 @@ void OPCALL lear32_32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL movs16r16(struct CPU* cpu, struct Op* op) {
 	cpu->segValue[op->r2] = cpu->reg[op->r1].u16;
-	cpu->segAddress[op->r2] = cpu->ldt[cpu->segValue[op->r2] >> 3];
+	cpu->segAddress[op->r2] = cpu->thread->process->ldt[cpu->segValue[op->r2] >> 3].base_addr;
 	CYCLES(2);
 	NEXT();
 }
 
 void OPCALL movs16e16_16(struct CPU* cpu, struct Op* op) {
 	cpu->segValue[op->r1] = readb(cpu->memory, eaa16(cpu, op));
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
+	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
 	CYCLES(3);
 	NEXT();
 }
 
 void OPCALL movs16e16_32(struct CPU* cpu, struct Op* op) {
 	cpu->segValue[op->r1] = readb(cpu->memory, eaa32(cpu, op));
-	cpu->segAddress[op->r1] = cpu->ldt[cpu->segValue[op->r1] >> 3];
+	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
 	CYCLES(3);
 	NEXT();
 }
@@ -3042,4 +3042,18 @@ void OPCALL int99(struct CPU* cpu, struct Op* op) {
 	}
 	CYCLES(5);
 	cpu->eip.u32+=op->eipCount;
+}
+
+void OPCALL retf32(struct CPU* cpu, struct Op* op) {
+	fillFlags(cpu);
+	cpu->eip.u32+=op->eipCount;
+	cpu_ret(cpu, 1, cpu->eip.u32);
+	CYCLES(4);
+}
+
+void OPCALL retf16(struct CPU* cpu, struct Op* op) {
+	fillFlags(cpu);
+	cpu->eip.u32+=op->eipCount;
+	cpu_ret(cpu, 0, cpu->eip.u32);
+	CYCLES(4);
 }

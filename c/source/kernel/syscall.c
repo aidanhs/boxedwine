@@ -706,7 +706,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 			U32 i;
 
             for (i=1;i<LDT_ENTRIES;i++) {
-				if (thread->cpu.ldt[i]==0) {
+				if (thread->process->ldt[i].base_addr==0 && thread->process->ldt[i].limit==0) {
 					desc.entry_number=i;
 					break;
 				}
@@ -718,7 +718,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 			writeMemory(memory, ARG1, (U8*)&desc, sizeof(struct user_desc));
         }
         if (desc.base_addr!=0) {
-            thread->cpu.ldt[desc.entry_number] = desc.base_addr;
+            thread->process->ldt[desc.entry_number] = desc;
         }
         result=0;		
 		break;
