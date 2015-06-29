@@ -78,6 +78,7 @@ void fillFlagsNoZF(struct CPU* cpu);
 void fillFlags(struct CPU* cpu);
 void fillFlagsNoOF(struct CPU* cpu);
 void cpu_ret(struct CPU* cpu, U32 big, U32 eip);
+void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip);
 
 extern U8 parity_lookup[];
 

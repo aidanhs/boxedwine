@@ -997,6 +997,14 @@ void decode090(struct DecodeData* data) {
 	NEXT_OP(data);
 }
 
+// CALL Ap 
+void decode09a(struct DecodeData* data) {
+	data->op->func = callAp;
+	data->op->data1 = FETCH16(data);
+	data->op->eData = FETCH16(data);
+    FINISH_OP(data);
+}
+
 // Wait
 void decode09b(struct DecodeData* data) {
 	data->op->func = nop;
@@ -1977,7 +1985,7 @@ DECODER decoder[1024] = {
 	decode080, decode081, decode080, decode083, decode084, decode085, decode086, decode087,
 	decode088, decode089, decode08a, decode08b, decode08c, decode08d, decode08e, decode08f,
 	decode090, decode091, decode092, decode093, decode094, decode095, decode096, decode097,
-	decode098, decode099, invalidOp, decode09b, decode09c, decode09d, decode09e, decode09f,
+	decode098, decode099, decode09a, decode09b, decode09c, decode09d, decode09e, decode09f,
 	decode0a0, decode0a1, decode0a2, decode0a3, decode0a4, decode0a5, decode0a6, decode0a7,
 	decode0a8, decode0a9, decode0aa, decode0ab, decode0ac, decode0ad, decode0ae, decode0af,
 	decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,

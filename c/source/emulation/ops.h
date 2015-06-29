@@ -979,14 +979,14 @@ void OPCALL movs16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movs16e16_16(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = readb(cpu->memory, eaa16(cpu, op));
+	cpu->segValue[op->r1] = readw(cpu->memory, eaa16(cpu, op));
 	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
 	CYCLES(3);
 	NEXT();
 }
 
 void OPCALL movs16e16_32(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = readb(cpu->memory, eaa32(cpu, op));
+	cpu->segValue[op->r1] = readw(cpu->memory, eaa32(cpu, op));
 	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
 	CYCLES(3);
 	NEXT();
@@ -3055,5 +3055,11 @@ void OPCALL retf16(struct CPU* cpu, struct Op* op) {
 	fillFlags(cpu);
 	cpu->eip.u32+=op->eipCount;
 	cpu_ret(cpu, 0, cpu->eip.u32);
+	CYCLES(4);
+}
+
+void OPCALL callAp(struct CPU* cpu, struct Op* op) {
+	cpu->eip.u32+=op->eipCount;
+	cpu_call(cpu, 0, op->eData, op->data1, cpu->eip.u32);
 	CYCLES(4);
 }

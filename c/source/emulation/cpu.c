@@ -54,7 +54,6 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 eip) {
 	U32 offset;
 	U32 selector;
 	U32 address;
-	struct Descriptor desc;
 
 	if (big) {
 		offset = pop32(cpu);
@@ -68,7 +67,21 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 eip) {
 	cpu->segAddress[CS] = cpu->thread->process->ldt[selector>>3].base_addr;
 	cpu->segValue[CS] = selector;
 	cpu->eip.u32 = offset;
-	cpu->big = 0;
+	cpu->big = cpu->thread->process->ldt[selector>>3].seg_32bit;
+}
+
+void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
+	if (big) {
+		push32(cpu, cpu->segValue[CS]);
+		push32(cpu, oldEip);
+	} else {
+		push16(cpu, cpu->segValue[CS]);
+		push16(cpu, oldEip);
+	}
+	cpu->segAddress[CS] = cpu->thread->process->ldt[selector>>3].base_addr;
+	cpu->segValue[CS] = selector;
+	cpu->eip.u32 = offset;
+	cpu->big = cpu->thread->process->ldt[selector>>3].seg_32bit;
 }
 
 void fillFlagsNoCFOF(struct CPU* cpu) {
@@ -443,7 +456,7 @@ struct LazyFlags* FLAGS_SAR32 = &flagsSar32;
 void push16(struct CPU* cpu, U16 value) {
 	if (cpu->big) {
         ESP-=2;
-		writew(cpu->memory, cpu->segAddress[SS] + ESP, value);
+		writew(cpu->memory, ESP, value);
     } else {
         SP-=2;
 		writew(cpu->memory, cpu->segAddress[SS] + SP, value);
@@ -467,7 +480,7 @@ void push32(struct CPU* cpu, U32 value) {
 
 U16 pop16(struct CPU* cpu) {
 	if (cpu->big) {
-		int result = readw(cpu->memory, cpu->segAddress[SS] + ESP);
+		int result = readw(cpu->memory, ESP);
         ESP+=2;
         return result;
     } else {
