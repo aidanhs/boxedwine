@@ -4736,6 +4736,29 @@ void decode3b1(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
+
+ // BTR Ed,Gd
+void decode3b3(struct DecodeData* data) {
+	U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = btrr32r32;
+        data->op->r1 = E(rm);
+        data->op->r2 = G(rm);
+        LOG_OP2("BTR", R32(data->op->r1),R32(data->op->r2));
+    } else if (data->ea16) {
+        data->op->func = btr32r32_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("BTR", M32(data, rm, data->op),R32(data->op->r1));
+    } else {
+        data->op->func = btr32r32_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("BTR", M32(data, rm, data->op),R32(data->op->r1));
+    }
+    NEXT_OP(data);
+} 
+
 // MOVXZ8 Gw,Ew
 void decode1b6(struct DecodeData* data) {
     U8 rm = FETCH8(data);

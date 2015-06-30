@@ -2875,6 +2875,40 @@ void OPCALL btr_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
+void OPCALL btrr32r32(struct CPU* cpu, struct Op* op) {
+	U32 mask=1 << (cpu->reg[op->r2].u32 & 31);
+
+	fillFlagsNoCF(cpu);
+    setCF(cpu, cpu->reg[op->r1].u32 & mask);
+	cpu->reg[op->r1].u32 &= ~op->data1;
+	CYCLES(7);
+	NEXT();
+}
+
+void OPCALL btr32r32_16(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa16(cpu, op);
+	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
+	U32 value = readd(cpu->memory, address);
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & mask);
+	writed(cpu->memory, address, value & ~mask);
+	CYCLES(13);
+	NEXT();
+}
+
+void OPCALL btr32r32_32(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa32(cpu, op);
+	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
+	U32 value = readd(cpu->memory, address);
+
+	fillFlagsNoCF(cpu);
+	setCF(cpu, value & mask);
+	writed(cpu->memory, address, value & ~mask);
+	CYCLES(13);
+	NEXT();
+}
+
 void OPCALL btc_reg(struct CPU* cpu, struct Op* op) {
 	fillFlagsNoCF(cpu);
     setCF(cpu, cpu->reg[op->r1].u32 & op->data1);

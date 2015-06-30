@@ -12,11 +12,11 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ES Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeez -m 600 -uid 0 /usr/bin/dpkg -i /var/cache/apt/archives/x11-common_7.5+8+squeeze1_all.deb</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0 /init.sh</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
