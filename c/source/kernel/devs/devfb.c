@@ -284,6 +284,7 @@ void destroySDL2() {
 }
 #else
 SDL_Surface* surface;
+SDL_Surface* surfaceScreen;
 #endif
 
 void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
@@ -334,7 +335,8 @@ void fbSetupScreenForMesa(int width, int height, int depth) {
 }
 
 void fbSetupScreen() {
-	U32 flags = SDL_HWSURFACE;
+	U32 flags;
+
 	bOpenGL = 0;
 #ifdef SDL2
 	destroySDL2();
@@ -342,14 +344,18 @@ void fbSetupScreen() {
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
 	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
 #else
+	flags = SDL_HWSURFACE;
 	if (surface && SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}
-	printf("Switching to %dx%d@%d", fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel);
+	printf("Switching to %dx%d@%d pitch=%d\n", fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, fb_fix_screeninfo.line_length);
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		flags |=SDL_HWPALETTE;
 	}
+	if (surfaceScreen)
+		SDL_FreeSurface(surfaceScreen);
 	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE);
+	surfaceScreen=SDL_CreateRGBSurface(0, fb_var_screeninfo.xres_virtual,fb_var_screeninfo.yres_virtual,fb_var_screeninfo.bits_per_pixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
 #endif
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		SDL_Color colors[256];
@@ -396,50 +402,50 @@ void fbSetupScreen() {
 
 	printf("Rshift=%X (%X) Gshift=%X (%X) Bshift=%X (%X)", surface->format->Rshift, surface->format->Rmask, surface->format->Gshift, surface->format->Gmask, surface->format->Bshift, surface->format->Bmask);
 	
-	fb_fix_screeninfo.line_length = surface->pitch;
+	fb_fix_screeninfo.line_length = surfaceScreen->pitch;
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
 	}
-	screenPixels = surface->pixels;
+	screenPixels = surfaceScreen->pixels;
 #endif
 	
-	fb_fix_screeninfo.smem_len = fb_fix_screeninfo.line_length*fb_var_screeninfo.yres;
+	fb_fix_screeninfo.smem_len = fb_fix_screeninfo.line_length*fb_var_screeninfo.yres_virtual;	
 }
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		return screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+		return ((U8*)surfaceScreen->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 	return 0;
 }
 
 static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
+		((U8*)surfaceScreen->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
 static U16 fb_readw(struct Memory* memory, U32 address) {
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		return ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
+		return ((U16*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
 	return 0;
 }
 
 static void fb_writew(struct Memory* memory, U32 address, U16 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
+		((U16*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
 static U32 fb_readd(struct Memory* memory, U32 address) {
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		return ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
+		return ((U32*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
 	return 0;
 }
 
 static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
+		((U32*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
 static void fb_clear(struct Memory* memory, U32 page) {
@@ -447,7 +453,7 @@ static void fb_clear(struct Memory* memory, U32 page) {
 
 static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
 	updateAvailable=1;
-	return (U8*)&screenPixels[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+	return &((U8*)surfaceScreen->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
@@ -614,6 +620,7 @@ void flipFB() {
 			paletteChanged = 0;
 	#ifndef SDL2
 			SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
+			SDL_SetPalette(surfaceScreen, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
 	#endif
 		}
 #ifdef SDL2
@@ -625,10 +632,16 @@ void flipFB() {
 		if (SDL_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
 			SDL_Flip(surface);
+			SDL_UpdateRect(surface, 0, 0, 0, 0);
 			SDL_LockSurface(surface);
 		} else {
-			SDL_Flip(surface);
-			SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
+			SDL_Rect rect;
+			rect.h = surface->h;
+			rect.w = surface->w;
+			rect.x = 0;
+			rect.y = 0;
+			SDL_BlitSurface(surfaceScreen, NULL, surface, NULL);
+			SDL_UpdateRect(surface, 0, 0, 0, 0);
 		}
 #endif
 		updateAvailable=0;
@@ -645,11 +658,11 @@ void flipFBNoCheck() {
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 		SDL_Flip(surface);
-		SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
+		SDL_UpdateRect(surface, 0, 0, 0, 0);
 		SDL_LockSurface(surface);
 	} else {
 		SDL_Flip(surface);
-		SDL_UpdateRect(surface, 0, 0, fb_var_screeninfo.xres, fb_var_screeninfo.yres);
+		SDL_UpdateRect(surface, 0, 0, 0, 0);
 	}
 #endif
 }
