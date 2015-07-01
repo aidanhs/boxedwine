@@ -28,8 +28,6 @@
 // if this is increased kfmmap will need to change
 #define MAX_FDS_PER_PROCESS 256
 
-struct MappedFileCache;
-
 struct KFileDescriptor {
 	U32 accessFlags;
     U32 descriptorFlags;
@@ -40,7 +38,6 @@ struct KFileDescriptor {
 	};
     U32 refCount;
     struct KProcess* process;
-	struct MappedFileCache* systemCacheEntry;
 };
 
 BOOL canReadFD(struct KFileDescriptor* fd);

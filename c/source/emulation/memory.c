@@ -5,6 +5,7 @@
 #include "kprocess.h"
 #include "kalloc.h"
 #include "kfmmap.h"
+#include "node.h"
 
 #include <string.h>
 #undef LOG_OPS
@@ -34,8 +35,8 @@ void pf(struct Memory* memory, U32 address) {
 	}
 	kwarn("Mapped Files:");
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (memory->process->mappedFiles[i].inUse)
-			kwarn("    %.8X - %.8X %s", memory->process->mappedFiles[i].address, memory->process->mappedFiles[i].address+memory->process->mappedFiles[i].len, memory->process->mappedFiles[i].name);
+		if (memory->process->mappedFiles[i].refCount)
+			kwarn("    %.8X - %.8X %s", memory->process->mappedFiles[i].address, memory->process->mappedFiles[i].address+memory->process->mappedFiles[i].len, ((struct OpenNode*)memory->process->mappedFiles[i].file->data)->node->path.localPath);
 	}
 	kpanic("pf");
 }

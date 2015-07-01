@@ -79,6 +79,26 @@ struct KProcess* allocProcess() {
 	return (struct KProcess*)kalloc(sizeof(struct KProcess));		
 }
 
+void closeMemoryMapped(struct MapedFiles* mapped) {
+	mapped->refCount--;
+	if (mapped->refCount == 0) {
+		closeKObject(mapped->file);
+		mapped->file = 0;
+		mapped->systemCacheEntry->refCount--;
+		if (mapped->systemCacheEntry->refCount == 0) {
+			U32 i;
+
+			removeMappedFileInCache(mapped->systemCacheEntry);
+			for (i=0;i<mapped->systemCacheEntry->pageCount;i++) {
+				if (mapped->systemCacheEntry->ramPages[i])
+					freeRamPage(mapped->systemCacheEntry->ramPages[i]);
+			}
+			kfree(mapped->systemCacheEntry->ramPages);
+			kfree(mapped->systemCacheEntry);
+		}
+	}
+}
+
 void cleanupProcess(struct KProcess* process) {
 	U32 i;
 
@@ -103,6 +123,17 @@ void cleanupProcess(struct KProcess* process) {
 	if (process->memory) {
 		freeMemory(process->memory);
 		process->memory = 0;
+	}
+
+	// must run after free'ing memory
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (process->mappedFiles[i].refCount) {
+			closeMemoryMapped(&process->mappedFiles[i]);
+			if (process->mappedFiles[i].refCount) {
+				// :TODO: this leaks
+				// kwarn("process leaked memory from a mapped file");
+			}
+		}
 	}
 }
 
@@ -148,12 +179,15 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 		if (from->fds[i]) {
 			process->fds[i] = allocFileDescriptor(process, i, from->fds[i]->kobject, from->fds[i]->accessFlags, from->fds[i]->descriptorFlags);
 			process->fds[i]->refCount = from->fds[i]->refCount;
-			process->fds[i]->systemCacheEntry = from->fds[i]->systemCacheEntry;
-			if (process->fds[i]->systemCacheEntry)
-				process->fds[i]->systemCacheEntry->refCount++;
 		}
 	}
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
+	for (i=0;i<MAX_MAPPED_FILE;i++) {
+		if (process->mappedFiles[i].refCount) {
+			process->mappedFiles[i].file->refCount++;
+			process->mappedFiles[i].systemCacheEntry->refCount++;
+		}
+	}
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
 	memcpy(process->path, from->path, sizeof(process->path));
 	safe_strcpy(process->commandLine, from->commandLine, MAX_COMMANDLINE_LEN);
@@ -527,8 +561,8 @@ const char* getModuleName(struct CPU* cpu) {
 	U32 i;
 
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (process->mappedFiles[i].inUse && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
-			return process->mappedFiles[i].name;
+		if (process->mappedFiles[i].refCount && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+			return ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath;
 	}
 	return "Unknown";
 }
@@ -538,7 +572,7 @@ U32 getModuleEip(struct CPU* cpu) {
 	U32 i;
 
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (process->mappedFiles[i].inUse && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+		if (process->mappedFiles[i].refCount && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
 			return cpu->eip.u32-process->mappedFiles[i].address;
 	}
 	return 0;

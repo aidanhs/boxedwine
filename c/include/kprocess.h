@@ -18,11 +18,14 @@
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
 struct MapedFiles {
-	const char* name;
+	struct MappedFileCache* systemCacheEntry;
+	struct KObject* file;
+	U32 refCount;
 	U32 address;
 	U32 len;
-	BOOL inUse;
+	U64 offset;
 };
+
 #define MAX_MAPPED_FILE 256
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 5
@@ -98,6 +101,7 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
 void signalIO(struct KProcess* process, U32 code, S32 band, FD fd);
 void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode);
 void signalALRM(struct KProcess* process);
+void closeMemoryMapped(struct MapedFiles* mapped);
 
 // returns tid
 U32 processAddThread(struct KProcess* process, struct KThread* thread);

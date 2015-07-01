@@ -14,26 +14,25 @@
 static void ondemmandFile(struct Memory* memory, U32 address) {
 	U32 page = address >> PAGE_SHIFT;
 	U32 flags = memory->flags[page];
-	FD fildes = memory->ramPage[page] & 0xFFF;
+	struct MapedFiles* mapped = &memory->process->mappedFiles[memory->ramPage[page] & 0xFFF];
 	U32 ramPageIndexInCache = memory->ramPage[page] >> 12;
 	U32 offset = ramPageIndexInCache << PAGE_SHIFT;
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
 	U32 ram = 0;
 	BOOL read = IS_PAGE_READ(flags) | IS_PAGE_EXEC(flags);
 	BOOL write = IS_PAGE_WRITE(flags);
 	U32 len;
 	U64 oldPos;
-	BOOL inCache = 0;
+	BOOL inCache = 0;	
 
 	address = address & (~PAGE_MASK);
 	if (!write) {
-		ram = fd->systemCacheEntry->ramPages[ramPageIndexInCache];
+		ram = mapped->systemCacheEntry->ramPages[ramPageIndexInCache];
 		if (ram) {
 			incrementRamRef(ram);
 			inCache = 1;
 		} else {
 			ram = allocRamPage();
-			fd->systemCacheEntry->ramPages[ramPageIndexInCache] = ram;
+			mapped->systemCacheEntry->ramPages[ramPageIndexInCache] = ram;
 			incrementRamRef(ram);
 		}
 		memory->mmu[page] = & ramPageRO; // :TODO: what if an app uses mprotect to change this?
@@ -56,10 +55,10 @@ static void ondemmandFile(struct Memory* memory, U32 address) {
 	memory->write[page] = TO_TLB(ram,  address);
 
 	if (!inCache) {
-		oldPos = fd->kobject->access->getPos(fd->kobject);
-		fd->kobject->access->seek(fd->kobject, offset);
-		len = fd->kobject->access->read(0, fd->kobject, memory, address, PAGE_SIZE);
-		fd->kobject->access->seek(fd->kobject, oldPos);
+		oldPos = mapped->file->access->getPos(mapped->file);
+		mapped->file->access->seek(mapped->file, offset);
+		len = mapped->file->access->read(0, mapped->file, memory, address, PAGE_SIZE);
+		mapped->file->access->seek(mapped->file, oldPos);
 		if (len<PAGE_SIZE) {
 			// don't call zeroMemory because it might be read only
 			memset(getAddressOfRamPage(ram)+len, 0, PAGE_SIZE-len);
@@ -67,7 +66,7 @@ static void ondemmandFile(struct Memory* memory, U32 address) {
 	}
 	if (!write)
 		memory->write[page] = 0;
-	closeFD(fd);
+	closeMemoryMapped(mapped);
 }
 
 static U8 ondemandfile_readb(struct Memory* memory, U32 address) {	
@@ -101,10 +100,8 @@ static void ondemandfile_writed(struct Memory* memory, U32 address, U32 value) {
 }
 
 static void ondemandfile_clear(struct Memory* memory, U32 page) {
-	struct KFileDescriptor* fd = getFileDescriptor(memory->process, (FD)(memory->ramPage[page] & 0xFFF));
-	if (fd) {
-		closeFD(fd);
-	}
+	struct MapedFiles* mapped = &memory->process->mappedFiles[memory->ramPage[page] & 0xFFF];
+	closeMemoryMapped(mapped);
 }
 
 static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address) {

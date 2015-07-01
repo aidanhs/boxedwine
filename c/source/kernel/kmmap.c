@@ -9,6 +9,10 @@
 #include "node.h"
 #include "ksystem.h"
 #include "kalloc.h"
+#include "kio.h"
+#include "kfile.h"
+#include "nodeType.h"
+#include "filesystem.h"
 
 #include <string.h>
 
@@ -95,50 +99,52 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 		if (shared)
 			permissions|=PAGE_SHARED;
 		if (fd) {	
-			struct MappedFileCache* cache = getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath);
-			if (off==0) {
-				struct KProcess* process = thread->process;
-				int index = -1;
-				for (i=0;i<MAX_MAPPED_FILE;i++) {
-					if (!process->mappedFiles[i].inUse) {
-						index = i;
-						break;
-					}
-				}
-				if (index<0) {
-					kwarn("MAX_MAPPED_FILE is not large enough");
-				} else {
-					process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
-					process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
-					process->mappedFiles[index].name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
-					process->mappedFiles[index].inUse = TRUE;
-				}
-			}
+			struct MappedFileCache* cache;
+			struct KProcess* process = thread->process;
+			int index = -1;
+
+			cache = getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath);
 			if (!cache) {
 				cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache));
 				safe_strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath, MAX_FILEPATH_LEN);
 				cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
 				cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount);
-				putMappedFileInCache(cache);
+				putMappedFileInCache(cache);				
 			}
-			if (!fd->systemCacheEntry) {
-				fd->systemCacheEntry = cache;
-				fd->systemCacheEntry->refCount++;
+			cache->refCount++;
+
+			for (i=0;i<MAX_MAPPED_FILE;i++) {
+				if (!process->mappedFiles[i].refCount) {
+					index = i;
+					break;
+				}
 			}
+			if (index<0) {
+				kwarn("MAX_MAPPED_FILE is not large enough");
+			} else {
+				process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
+				process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
+				process->mappedFiles[index].offset = off;
+				process->mappedFiles[index].systemCacheEntry = cache;
+				process->mappedFiles[index].refCount = 1;
+				process->mappedFiles[index].file = fd->kobject;
+				process->mappedFiles[index].file->refCount++;
+			}
+
 			for (i=0;i<pageCount;i++) {
 				U32 data = 0;	
 				if (fd) {
 					int filePage = (int)(off>>PAGE_SHIFT);
-					fd->refCount++;
-					if (fildes>0xFFF || filePage>0xFFFFF) {
+					if (index>0xFFF || filePage>0xFFFFF) {
 						kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
 					}
 					if (off & PAGE_MASK) {
 						kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
 					}
-					data=fildes | (filePage << 12);
+					data=index | (filePage << 12);
 					off+=4096;
 				}
+				process->mappedFiles[index].refCount++;
 				allocPages(memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
 			}
 		} else {
@@ -212,8 +218,8 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 		memory->write[i+pageStart]=0;
 	}
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (thread->process->mappedFiles[i].inUse && thread->process->mappedFiles[i].address == address) {
-			thread->process->mappedFiles[i].inUse = 0;
+		if (thread->process->mappedFiles[i].refCount && thread->process->mappedFiles[i].address == address) {
+			thread->process->mappedFiles[i].refCount--;
 			break;
 		}
 	}
@@ -266,7 +272,7 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
 	U32 i;
 
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (thread->process->mappedFiles[i].inUse && addr>=thread->process->mappedFiles[i].address && thread->process->mappedFiles[i].address+thread->process->mappedFiles[i].len<addr) {
+		if (thread->process->mappedFiles[i].refCount && addr>=thread->process->mappedFiles[i].address && thread->process->mappedFiles[i].address+thread->process->mappedFiles[i].len<addr) {
 			file = & thread->process->mappedFiles[i];
 		}
 	}
