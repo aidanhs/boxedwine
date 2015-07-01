@@ -4,7 +4,7 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
@@ -16,7 +16,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\root -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
@@ -24,7 +24,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0 /usr/bin/gpg --ignore-time-conflict --no-options --no-default-keyring --secret-keyring /etc/apt/secring.gpg --trustdb-name /etc/apt/trustdb.gpg --quiet --batch --keyring /usr/share/keyrings/debian-archive-keyring.gpg --export</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0 </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

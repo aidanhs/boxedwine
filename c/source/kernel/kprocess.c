@@ -930,7 +930,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 
 U32 syscall_chdir(struct KThread* thread, U32 path) {
 	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), TRUE);
-	if (!node)
+	if (!node || !node->nodeType->exists(node))
 		return -K_ENOENT;
 	if (!node->nodeType->isDirectory(node))
 		return -K_ENOTDIR;

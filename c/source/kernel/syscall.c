@@ -258,7 +258,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_rename:
 		result = syscall_rename(thread, ARG1, ARG2);
-		LOG("__NR_rename oldName=%X(%s) newName=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString(memory, ARG2), result);
+		LOG("__NR_rename oldName=%X(%s) newName=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, getNativeString2(memory, ARG2), result);
 		break;
 	case __NR_mkdir:
 		result = syscall_mkdir(thread, ARG1, ARG2);

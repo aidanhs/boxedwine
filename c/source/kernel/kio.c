@@ -401,8 +401,8 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
 	char oldPath[MAX_FILEPATH_LEN];
 
 	safe_strcpy(oldPath, getNativeString(thread->process->memory, oldName), MAX_FILEPATH_LEN);
-	oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, TRUE);
-	if (!oldNode) {
+	oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, FALSE);
+	if (!oldNode || (!oldNode->nodeType->exists(oldNode) && !oldNode->path.isLink)) {
 		return -K_ENOENT;
 	}
 	safe_strcpy(path, getNativeString(thread->process->memory, newName), MAX_FILEPATH_LEN);
@@ -585,7 +585,7 @@ U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) 
 	safe_strcpy(tmpPath, s, MAX_FILEPATH_LEN);
 	safe_strcat(tmpPath, ".link", MAX_FILEPATH_LEN);
 	node = getNodeFromLocalPath(thread->process->currentDirectory, tmpPath, TRUE);
-    if (!node)
+    if (!node || !node->nodeType->exists(node))
         return -K_EINVAL;
 	if (kreadLink(node->path.nativePath, tmpPath, MAX_FILEPATH_LEN, FALSE)) {
 		U32 len = strlen(tmpPath);
@@ -617,7 +617,7 @@ U32 syscall_rmdir(struct KThread* thread, U32 path) {
 	struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(memory, path), TRUE);
 	U32 result = 0;
 
-	if (!node) {
+	if (!node || !node->nodeType->exists(node)) {
 		return -K_ENOENT;
 	}
 	if (!node->nodeType->isDirectory(node)) {
