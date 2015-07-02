@@ -11,7 +11,7 @@
 #include "kalloc.h"
 #include "kio.h"
 #include "kfile.h"
-#include "nodeType.h"
+#include "nodetype.h"
 #include "filesystem.h"
 
 #include <string.h>
