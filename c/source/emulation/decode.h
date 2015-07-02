@@ -1941,7 +1941,7 @@ void decode2af(struct DecodeData* data) {
     NEXT_OP(data);
 }
 // CMOVO
-BOOL decode140(struct DecodeData* data) {
+void decode140(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovO_16_reg;
@@ -1960,10 +1960,9 @@ BOOL decode140(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVO
-BOOL decode340(struct DecodeData* data) {
+void decode340(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovO_32_reg;
@@ -1982,10 +1981,9 @@ BOOL decode340(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNO
-BOOL decode141(struct DecodeData* data) {
+void decode141(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNO_16_reg;
@@ -2004,10 +2002,9 @@ BOOL decode141(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNO
-BOOL decode341(struct DecodeData* data) {
+void decode341(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNO_32_reg;
@@ -2026,10 +2023,9 @@ BOOL decode341(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVB
-BOOL decode142(struct DecodeData* data) {
+void decode142(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovB_16_reg;
@@ -2048,10 +2044,9 @@ BOOL decode142(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVB
-BOOL decode342(struct DecodeData* data) {
+void decode342(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovB_32_reg;
@@ -2070,10 +2065,9 @@ BOOL decode342(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNB
-BOOL decode143(struct DecodeData* data) {
+void decode143(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNB_16_reg;
@@ -2092,10 +2086,9 @@ BOOL decode143(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNB
-BOOL decode343(struct DecodeData* data) {
+void decode343(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNB_32_reg;
@@ -2114,10 +2107,9 @@ BOOL decode343(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVZ
-BOOL decode144(struct DecodeData* data) {
+void decode144(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovZ_16_reg;
@@ -2136,10 +2128,9 @@ BOOL decode144(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVZ
-BOOL decode344(struct DecodeData* data) {
+void decode344(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovZ_32_reg;
@@ -2158,10 +2149,9 @@ BOOL decode344(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNZ
-BOOL decode145(struct DecodeData* data) {
+void decode145(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNZ_16_reg;
@@ -2180,10 +2170,9 @@ BOOL decode145(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNZ
-BOOL decode345(struct DecodeData* data) {
+void decode345(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNZ_32_reg;
@@ -2202,10 +2191,9 @@ BOOL decode345(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVBE
-BOOL decode146(struct DecodeData* data) {
+void decode146(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovBE_16_reg;
@@ -2224,10 +2212,9 @@ BOOL decode146(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVBE
-BOOL decode346(struct DecodeData* data) {
+void decode346(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovBE_32_reg;
@@ -2246,10 +2233,9 @@ BOOL decode346(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNBE
-BOOL decode147(struct DecodeData* data) {
+void decode147(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNBE_16_reg;
@@ -2268,10 +2254,9 @@ BOOL decode147(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNBE
-BOOL decode347(struct DecodeData* data) {
+void decode347(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNBE_32_reg;
@@ -2290,10 +2275,9 @@ BOOL decode347(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVS
-BOOL decode148(struct DecodeData* data) {
+void decode148(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovS_16_reg;
@@ -2312,10 +2296,9 @@ BOOL decode148(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVS
-BOOL decode348(struct DecodeData* data) {
+void decode348(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovS_32_reg;
@@ -2334,10 +2317,9 @@ BOOL decode348(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNS
-BOOL decode149(struct DecodeData* data) {
+void decode149(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNS_16_reg;
@@ -2356,10 +2338,9 @@ BOOL decode149(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNS
-BOOL decode349(struct DecodeData* data) {
+void decode349(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNS_32_reg;
@@ -2378,10 +2359,9 @@ BOOL decode349(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVP
-BOOL decode14a(struct DecodeData* data) {
+void decode14a(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovP_16_reg;
@@ -2400,10 +2380,9 @@ BOOL decode14a(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVP
-BOOL decode34a(struct DecodeData* data) {
+void decode34a(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovP_32_reg;
@@ -2422,10 +2401,9 @@ BOOL decode34a(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNP
-BOOL decode14b(struct DecodeData* data) {
+void decode14b(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNP_16_reg;
@@ -2444,10 +2422,9 @@ BOOL decode14b(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNP
-BOOL decode34b(struct DecodeData* data) {
+void decode34b(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNP_32_reg;
@@ -2466,10 +2443,9 @@ BOOL decode34b(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVL
-BOOL decode14c(struct DecodeData* data) {
+void decode14c(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovL_16_reg;
@@ -2488,10 +2464,9 @@ BOOL decode14c(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVL
-BOOL decode34c(struct DecodeData* data) {
+void decode34c(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovL_32_reg;
@@ -2510,10 +2485,9 @@ BOOL decode34c(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNL
-BOOL decode14d(struct DecodeData* data) {
+void decode14d(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNL_16_reg;
@@ -2532,10 +2506,9 @@ BOOL decode14d(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNL
-BOOL decode34d(struct DecodeData* data) {
+void decode34d(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNL_32_reg;
@@ -2554,10 +2527,9 @@ BOOL decode34d(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVLE
-BOOL decode14e(struct DecodeData* data) {
+void decode14e(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovLE_16_reg;
@@ -2576,10 +2548,9 @@ BOOL decode14e(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVLE
-BOOL decode34e(struct DecodeData* data) {
+void decode34e(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovLE_32_reg;
@@ -2598,10 +2569,9 @@ BOOL decode34e(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNLE
-BOOL decode14f(struct DecodeData* data) {
+void decode14f(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNLE_16_reg;
@@ -2620,10 +2590,9 @@ BOOL decode14f(struct DecodeData* data) {
         LOG_OP2("CMOV", R16(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // CMOVNLE
-BOOL decode34f(struct DecodeData* data) {
+void decode34f(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = cmovNLE_32_reg;
@@ -2642,7 +2611,6 @@ BOOL decode34f(struct DecodeData* data) {
         LOG_OP2("CMOV", R32(data->op->r1), M32(data, rm, data->op));
     }
     NEXT_OP(data);
-    return TRUE;
 }
 // PUSH ES
 void decode006(struct DecodeData* data) {
@@ -4413,7 +4381,6 @@ void decode1a4(struct DecodeData* data) {
     data->op->data1 &= 0x1f;
     if (data->op->data1 == 0) {
         RESTART(data);
-        return;
     }
     NEXT_OP(data);
 }
@@ -4440,7 +4407,6 @@ void decode3a4(struct DecodeData* data) {
     data->op->data1 &= 0x1f;
     if (data->op->data1 == 0) {
         RESTART(data);
-        return;
     }
     NEXT_OP(data);
 }
@@ -4579,7 +4545,6 @@ void decode1ac(struct DecodeData* data) {
     data->op->data1 &= 0x1f;
     if (data->op->data1 == 0) {
         RESTART(data);
-        return;
     }
     NEXT_OP(data);
 }
@@ -4606,7 +4571,6 @@ void decode3ac(struct DecodeData* data) {
     data->op->data1 &= 0x1f;
     if (data->op->data1 == 0) {
         RESTART(data);
-        return;
     }
     NEXT_OP(data);
 }
@@ -4736,29 +4700,27 @@ void decode3b1(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
-
- // BTR Ed,Gd
+// BTR Ed,Gd
 void decode3b3(struct DecodeData* data) {
-	U8 rm = FETCH8(data);
+    U8 rm = FETCH8(data);
     if (rm>=0xC0) {
         data->op->func = btrr32r32;
         data->op->r1 = E(rm);
         data->op->r2 = G(rm);
         LOG_OP2("BTR", R32(data->op->r1),R32(data->op->r2));
     } else if (data->ea16) {
-        data->op->func = btr32r32_16;
+        data->op->func = btre32r32_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
         LOG_OP2("BTR", M32(data, rm, data->op),R32(data->op->r1));
     } else {
-        data->op->func = btr32r32_32;
+        data->op->func = btre32r32_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
         LOG_OP2("BTR", M32(data, rm, data->op),R32(data->op->r1));
     }
     NEXT_OP(data);
-} 
-
+}
 // MOVXZ8 Gw,Ew
 void decode1b6(struct DecodeData* data) {
     U8 rm = FETCH8(data);

@@ -2885,7 +2885,7 @@ void OPCALL btrr32r32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL btr32r32_16(struct CPU* cpu, struct Op* op) {
+void OPCALL btre32r32_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
 	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
 	U32 value = readd(cpu->memory, address);
@@ -2897,7 +2897,7 @@ void OPCALL btr32r32_16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL btr32r32_32(struct CPU* cpu, struct Op* op) {
+void OPCALL btre32r32_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
 	U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
 	U32 value = readd(cpu->memory, address);

@@ -204,8 +204,8 @@ public class Decoder extends Base {
         decodeFunc(fos, "1a2", "cpuid", "CPUID");
         eg(fos, "1a3", "bt", 16);
         eg(fos, "3a3", "bt", 32);
-        eg(fos, "1a4", "dshl", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return;\r\n    }");
-        eg(fos, "3a4", "dshl", 32, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return;\r\n    }");
+        eg(fos, "1a4", "dshl", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n    }");
+        eg(fos, "3a4", "dshl", 32, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n    }");
         eg(fos, "1a5", "dshlcl", 16);
         eg(fos, "3a5", "dshlcl", 32);
         decodeFunc(fos, "PUSH GS", "1a8", "pushSeg16", "GS");
@@ -214,14 +214,15 @@ public class Decoder extends Base {
         decodeFunc(fos, "POP GS", "3a9", "popSeg32", "GS");
         eg(fos, "1ab", "bts", 16);
         eg(fos, "3ab", "bts", 32);
-        eg(fos, "1ac", "dshr", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return;\r\n    }");
-        eg(fos, "3ac", "dshr", 32, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n        return;\r\n    }");
+        eg(fos, "1ac", "dshr", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n    }");
+        eg(fos, "3ac", "dshr", 32, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n    }");
         eg(fos, "1ad", "dshrcl", 16);
         eg(fos, "3ad", "dshrcl", 32);
         ge(fos, "1af", "dimul", 16);
         ge(fos, "3af", "dimul", 32);
         eg(fos, "1b1", "cmpxchg", 16);
         eg(fos, "3b1", "cmpxchg", 32);
+        eg(fos, "3b3", "btr", 32);
         ge(fos, "1b6", "movxz8", 16);
         ge(fos, "3b6", "movxz8", 32);
         ge(fos, "3b7", "movxz16", 32);

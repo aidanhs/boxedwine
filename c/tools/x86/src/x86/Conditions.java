@@ -41,7 +41,7 @@ public class Conditions extends Base {
 
     public void decodeCmov(FileOutputStream fos, String inst, String c, int bits) throws IOException {
         out(fos, "// CMOV"+c);
-        out(fos, "BOOL decode"+inst+"(struct DecodeData* data) {");
+        out(fos, "void decode"+inst+"(struct DecodeData* data) {");
         out(fos, "    U8 rm = FETCH8(data);");
         out(fos, "    if (rm>=0xC0) {");
         out(fos, "        data->op->func = cmov"+c+"_"+bits+"_reg;");
@@ -60,7 +60,6 @@ public class Conditions extends Base {
         out(fos, "        LOG_OP2(\"CMOV\", R"+bits+"(data->op->r1), M"+bits+"(data, rm, data->op));");
         out(fos, "    }");
         out(fos, "    NEXT_OP(data);");
-        out(fos, "    return TRUE;");
         out(fos, "}");
     }
 
