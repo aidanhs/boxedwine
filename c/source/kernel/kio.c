@@ -67,7 +67,7 @@ U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
 		} else {
 			struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
 			currentDirectory = openNode->node->path.localPath;
-			if (openNode->node->nodeType->isDirectory(openNode->node)) {
+			if (!openNode->node->nodeType->isDirectory(openNode->node)) {
 				result = -K_ENOTDIR;
 			}
 		}
