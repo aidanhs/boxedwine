@@ -631,9 +631,6 @@ struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path
 	U32 isLink = 0;
 	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, &isLink);
 		
-	if (!strcmp(path, ".")) {
-		int ii=0;
-	}
 	if (result) {		
 		return result;		
 	}
