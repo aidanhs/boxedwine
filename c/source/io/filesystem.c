@@ -522,9 +522,41 @@ BOOL file_exists(struct Node* node) {
 }
 
 U32 file_rename(struct Node* oldNode, struct Node* newNode) {
-	if (!rename(oldNode->path.nativePath, newNode->path.nativePath))
-		return 0;
-	return K_EIO;
+	struct OpenNode* openNode = oldNode->openNodes;
+	U32 result;
+
+	while (openNode) {
+		openNode->cachedPosDuringDelete = openNode->access->getFilePointer(openNode);
+		close(openNode->handle);
+		openNode->handle = 0xFFFFFFFF;
+		openNode = openNode->nextOpen;
+	}
+
+	result = rename(oldNode->path.nativePath, newNode->path.nativePath);
+
+	openNode = oldNode->openNodes;
+	while (openNode) {
+		int openFlags = 0;
+		int flags = openNode->flags;
+						
+		if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
+			openFlags|=O_RDONLY;
+		} else if ((flags & K_O_ACCMODE)==K_O_WRONLY) {
+			openFlags|=O_WRONLY;
+		} else {
+			openFlags|=O_RDWR;
+		}
+		if (flags & K_O_APPEND) {
+			openFlags|=O_APPEND;
+		}
+
+		openNode->handle = open(newNode->path.nativePath, openFlags, 0666);
+		openNode->access->seek(openNode, openNode->cachedPosDuringDelete);
+		openNode = openNode->nextOpen;
+	}
+	if (result!=0)
+		result = -K_EIO;
+	return result;
 }
 
 struct NodeType fileNodeType = {file_isDirectory, file_exists, file_rename, file_remove, file_lastModified, file_length, file_open, file_setLastModifiedTime, file_canRead, file_canWrite, file_getType, file_getMode};
@@ -544,6 +576,17 @@ struct Node* getParentNode(struct Node* node) {
 	return 0;
 }
 
+void trimTrailingSpaces(char* path) {
+	int i;
+	int len = strlen(path);
+	for (i=len-1;i>=0;i--) {
+		if (path[i]==' ')
+			path[i] = 0;
+		else
+			break;
+	}
+}
+
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, int localPathSize, char* nativePath, int nativePathSize, U32* isLink) {
 	struct Node* result;
 	U32 tmp32=0;
@@ -555,7 +598,7 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 		safe_strcat(localPath, "/", localPathSize);
 		safe_strcat(localPath, path, localPathSize);
 	}	
-
+	trimTrailingSpaces(localPath);
 	normalizePath(localPath);	
 	safe_strcpy(nativePath, root, nativePathSize);	
 	safe_strcat(nativePath, localPath, nativePathSize);
@@ -588,6 +631,9 @@ struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path
 	U32 isLink = 0;
 	struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, &isLink);
 		
+	if (!strcmp(path, ".")) {
+		int ii=0;
+	}
 	if (result) {		
 		return result;		
 	}
