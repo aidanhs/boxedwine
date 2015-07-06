@@ -857,19 +857,19 @@ BOOL doesPathExist(const char* path) {
 	return FALSE;
 }
 
-U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2) {
+U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path1, U32 path2) {
 	struct Memory* memory = thread->process->memory;
 	char* s1 = getNativeString(memory, path1);
 	char* s2 = getNativeString2(memory, path2);
 	struct Node* node;
 	struct OpenNode* openNode;
 
-	node = getNodeFromLocalPath(thread->process->currentDirectory, s2, TRUE);
+	node = getNodeFromLocalPath(currentDirectory, s2, TRUE);
 	if (node && node->nodeType->exists(node)) {
 		return -K_EEXIST;
 	}
 	safe_strcat(s2, ".link", MAX_FILEPATH_LEN);
-	node = getNodeFromLocalPath(thread->process->currentDirectory, s2, FALSE);
+	node = getNodeFromLocalPath(currentDirectory, s2, FALSE);
 	if (!node || node->nodeType->exists(node)) {
 		return -K_EEXIST;
 	}
@@ -918,4 +918,30 @@ U32 syscall_link(struct KThread* thread, U32 from, U32 to) {
 	toOpenNode->access->close(toOpenNode);
 	fromOpenNode->access->close(fromOpenNode);
 	return 0;
+}
+
+U32 syscall_symlinkat(struct KThread* thread, U32 oldpath, FD dirfd, U32 newpath) {
+	const char* currentDirectory;
+
+	if (dirfd==-100) { // AT_FDCWD
+		currentDirectory = thread->process->currentDirectory;
+	} else {
+		struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
+		if (!fd) {
+			return -K_EBADF;
+		} else if (fd->kobject->type!=KTYPE_FILE){
+			return -K_ENOTDIR;
+		} else {
+			struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
+			currentDirectory = openNode->node->path.localPath;
+			if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+				return -K_ENOTDIR;
+			}
+		}
+	}
+	return symlinkInDirectory(thread, currentDirectory, oldpath, newpath);
+}
+
+U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2) {
+	return symlinkInDirectory(thread, thread->process->currentDirectory, path1, path2);
 }

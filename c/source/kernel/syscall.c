@@ -152,6 +152,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_openat 295
 #define __NR_fstatat64 300
 #define __NR_unlinkat 301
+#define __NR_symlinkat 304
 #define __NR_set_robust_list 311
 #define __NR_sync_file_range 314
 #define __NR_getcpu 318
@@ -791,6 +792,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_unlinkat:
 		result = syscall_unlinkat(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_unlinkat: dirfd=%d path=%s flags=%x result=%d", ARG1, getNativeString(memory, ARG2), ARG3, result);
+		break;
+	case __NR_symlinkat:
+		result = syscall_symlinkat(thread, ARG1, ARG2, ARG3);
+		LOG("__NR_symlinkat: oldpath=%x(%s) dirfd=%d newpath=%X(%s) result=%d", ARG1, getNativeString(memory, ARG1), ARG2, ARG3, getNativeString2(memory, ARG3), result);
 		break;
 	case __NR_set_robust_list:
 		kwarn("syscall __NR_set_robust_list not implemented");
