@@ -476,6 +476,10 @@ void processOnExitThread(struct KProcess* process) {
 		cleanupProcess(process); // release RAM, sockets, etc now.  No reason to wait to do that until waitpid is called
 		process->terminated = TRUE;
 		wakeThreads(WAIT_PID);
+		if (process->wakeOnExitOrExec) {
+			wakeThread(process->wakeOnExitOrExec);
+			process->wakeOnExitOrExec = 0;
+		}
 	}
 }
 
@@ -613,7 +617,13 @@ and is now available for re-use. */
 #define K_CLONE_IO                0x80000000      /* Clone io context */
 
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid) {
-	if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID)) {
+	U32 vFork = 0;
+
+	if (flags & K_CLONE_VFORK) {
+		flags &=~K_CLONE_VFORK;
+		vFork = 1;
+	}
+	if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID) || (flags & 0xFFFFFF00)==(K_CLONE_PARENT_SETTID)) {
         struct Memory* newMemory = allocMemory();
 		struct KProcess* newProcess = allocProcess();
 		struct KThread* newThread = allocThread();
@@ -632,12 +642,22 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         if ((flags & K_CLONE_CHILD_CLEARTID)!=0) {
             newThread->clear_child_tid = ctid;
         }
+		if ((flags & K_CLONE_PARENT_SETTID)!=0) {
+			if (ptid) {
+				writed(thread->process->memory, ptid, newThread->id);
+				writed(newThread->process->memory, ptid, newThread->id);
+			}
+		}
         if (child_stack!=0)
             newThread->cpu.reg[4].u32 = child_stack;
         newThread->cpu.eip.u32 += 2;
         newThread->cpu.reg[0].u32 = 0;
 		//runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first
 		scheduleThread(newThread);
+		if (vFork) {
+			unscheduleThread(thread);
+			newProcess->wakeOnExitOrExec = thread;
+		}
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
 		struct KThread* newThread = (struct KThread*)kalloc(sizeof(struct KThread));
@@ -925,6 +945,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	// must come after loadProgram because of process->phdr
 	setupThreadStack(&thread->cpu, process->name, argc, args, envc, envs);
 	openNode->access->close(openNode);
+
+	if (process->wakeOnExitOrExec) {
+		wakeThread(process->wakeOnExitOrExec);
+		process->wakeOnExitOrExec = 0;
+	}
 	return -K_CONTINUE;
 }
 

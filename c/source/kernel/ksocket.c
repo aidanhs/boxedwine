@@ -286,6 +286,12 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 	struct KSocket* s = (struct KSocket*)obj->data;
 	U32 count=0;
 
+	if (s->type == K_SOCK_DGRAM) {
+		if (!strcmp(s->destAddress.data, "/dev/log")) {
+			printf(getNativeString(thread->process->memory, buffer));
+		}
+		return len;
+	}
 	if (s->outClosed || !s->connection)
 		return -K_EPIPE;
 	if (s->connection->recvBuffer.len==MAX_BUFFER_SIZE) {
@@ -372,7 +378,7 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, struct Memory* 
 
 U32 unixsocket_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
 	struct KSocket* s = (struct KSocket*)obj->data;	
-	writeStat(memory, address, is64, 1, (s->node?s->node->id:0), K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, (s->node?s->node->rdev:0), 0, 4096, 0, s->lastModifiedTime);
+	writeStat(memory, address, is64, 1, (s->node?s->node->id:0), K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, (s->node?s->node->rdev:0), 0, 4096, 0, s->lastModifiedTime, 1);
 	return 0;
 }
 
@@ -780,7 +786,9 @@ U32 ksend(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
 	if (fd->kobject->type!=KTYPE_SOCK) {
 		return -K_ENOTSOCK;
 	}
-	if (flags != 0) {
+	if (flags == 0x4000) {
+		//  MSG_NOSIGNAL
+	} else if (flags != 0) {
 		kpanic("send with flags=%X not implemented", flags);
 	}
 	return syscall_write(thread, socket, buffer, len);
@@ -795,8 +803,10 @@ U32 krecv(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
 	if (fd->kobject->type!=KTYPE_SOCK) {
 		return -K_ENOTSOCK;
 	}
-	if (flags != 0) {
-		kpanic("send with flags=%X not implemented", flags);
+	if (flags == 0x4000) {
+		//  MSG_NOSIGNAL
+	} else if (flags != 0) {
+		kpanic("recv with flags=%X not implemented", flags);
 	}
 	return syscall_read(thread, socket, buffer, len);
 }

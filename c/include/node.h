@@ -23,7 +23,9 @@ struct Node {
 		void* pData2;
 		U32 data2;
 	};
+	struct Node* nextHardLink;
 	struct OpenNode* openNodes;
 };
 
+INLINE U32 getHardLinkCount(struct Node* node) {if (node->nextHardLink) return 2; return 1;}
 #endif

@@ -112,6 +112,7 @@ BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct 
 	if (*interpreter) {
 		interpreterNode = getNodeFromLocalPath(currentDirectory, *interpreter, TRUE);	
 		if (!interpreterNode || !interpreterNode->nodeType->exists(interpreterNode)) {
+			printf("Interpreter not found: %s\n", *interpreter);
 			return FALSE;
 		}
 		openNode = interpreterNode->nodeType->open(process, interpreterNode, K_O_RDONLY);		

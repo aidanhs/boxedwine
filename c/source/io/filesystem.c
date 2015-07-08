@@ -688,9 +688,9 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
 	U32 localLen = 0;
 	U32 nativeLen = 0;
 	if (localPath)
-		localLen=strlen(localPath)+20;
+		localLen=strlen(localPath)+40;
 	if (nativePath)
-		nativeLen=strlen(nativePath)+20;
+		nativeLen=strlen(nativePath)+40;
 	result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
 	result->id = nodeId++;
 	result->nodeType = nodeType;
@@ -789,7 +789,7 @@ BOOL kreadLink(const char* path, char* buffer, int bufferSize, BOOL makeAbsolute
 		return FALSE;
 	}
 	h = open(path, O_RDONLY);
-	if (!h)
+	if (h<=0)
 		return FALSE;
 	if (read(h, tmp, buf.st_size)!=buf.st_size) {
 		close(h);
@@ -917,6 +917,10 @@ U32 syscall_link(struct KThread* thread, U32 from, U32 to) {
 	}
 	toOpenNode->access->close(toOpenNode);
 	fromOpenNode->access->close(fromOpenNode);
+	if (toNode->nextHardLink!=0 || fromNode->nextHardLink!=0)
+		kwarn("Hard link counting doesn't support more than 1 link");
+	toNode->nextHardLink = fromNode;
+	fromNode->nextHardLink = toNode;
 	return 0;
 }
 

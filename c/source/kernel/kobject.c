@@ -32,7 +32,7 @@ void closeKObject(struct KObject* kobject) {
 	}
 }
 
- void writeStat(struct Memory* memory, U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime) {
+ void writeStat(struct Memory* memory, U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime, U32 linkCount) {
 	 if (is64) {
 		U32 t = (U32)(mtime/1000); // ms to sec
 		U32 n = (U32)(mtime % 1000) * 1000000;
@@ -41,7 +41,7 @@ void closeKObject(struct KObject* kobject) {
 		buf+=4; // padding
 		writed(memory, buf, (U32)st_ino);buf+=4;//__st_ino
 		writed(memory, buf, st_mode);buf+=4;//st_mode
-		writed(memory, buf, 1);buf+=4;//st_nlink
+		writed(memory, buf, linkCount);buf+=4;//st_nlink
 		writed(memory, buf, UID);buf+=4;//st_uid
 		writed(memory, buf, GID);buf+=4;//st_gid
 		writeq(memory, buf, st_rdev);buf+=8;//st_rdev
@@ -61,7 +61,7 @@ void closeKObject(struct KObject* kobject) {
 		writed(memory, buf, (U32)st_dev);buf+=4;//st_dev
 		writed(memory, buf, (U32)st_ino);buf+=4;//st_ino
 		writed(memory, buf, st_mode);buf+=4;//st_mode
-		writed(memory, buf, 1);buf+=4;//st_nlink
+		writed(memory, buf, linkCount);buf+=4;//st_nlink
 		writed(memory, buf, UID);buf+=4;//st_uid
 		writed(memory, buf, GID);buf+=4;//st_gid
 		writed(memory, buf, (U32)st_rdev);buf+=4;//st_rdev

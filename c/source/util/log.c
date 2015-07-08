@@ -24,6 +24,7 @@ void kpanic(const char* msg, ...) {
 }
 
 void kwarn(const char* msg, ...) {
+#ifdef _DEBUG
 	va_list argptr;
     va_start(argptr, msg);
     vfprintf(stderr, msg, argptr);
@@ -35,6 +36,7 @@ void kwarn(const char* msg, ...) {
 	if (logFile) {
 		fprintf(logFile, "\n");
 	}
+#endif
 }
 
 void klog(const char* msg, ...) {

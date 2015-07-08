@@ -4,7 +4,7 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\squeeze -m 600 </LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
@@ -16,7 +16,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 600 -uid 0</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\squeeze -m 600 -uid 0</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">

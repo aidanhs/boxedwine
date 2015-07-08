@@ -5,11 +5,12 @@
 #include "kprocess.h"
 
 #define UID 1
-#define GID 2
+#define GID 1000
 
 #define MAX_STACK_SIZE (4*1024*1024)
 #define MAX_ADDRESS_SPACE 0xFFFF0000
 #define MAX_NUMBER_OF_FILES 0xFFF
+#define MAX_DATA_SIZE 1024*1024*1024
 
 #define CALL_BACK_ADDRESS 0xFFFF0000
 #define SIG_RETURN_ADDRESS CALL_BACK_ADDRESS

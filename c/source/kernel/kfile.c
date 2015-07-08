@@ -105,7 +105,7 @@ U32 kfile_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is6
 	struct Node* node = openNode->node;
 	U64 len = node->nodeType->length(node);
 
-	writeStat(memory, address, is64, 1, node->id, node->nodeType->getMode(node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->nodeType->lastModified(node));
+	writeStat(memory, address, is64, 1, node->id, node->nodeType->getMode(node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->nodeType->lastModified(node), getHardLinkCount(node));
 	return 0;
 }
 

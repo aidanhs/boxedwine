@@ -27,6 +27,7 @@ ULONGLONG getSystemTimeAsMicroSeconds() {
 
 int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
     char path[MAX_FILEPATH_LEN];
+	char tmp[MAX_FILEPATH_LEN];
 	WIN32_FIND_DATA findData;
 	HANDLE hFind;
 	int result=0;
@@ -39,7 +40,14 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
 		nodes[result++]=getNodeFromLocalPath(dir->path.localPath, "..", FALSE);
 		do  { 
 			if (strcmp(findData.cFileName, ".") && strcmp(findData.cFileName, ".."))  {
-				nodes[result] = getNodeFromLocalPath(dir->path.localPath, findData.cFileName, TRUE);
+				int len;
+
+				strcpy(tmp, findData.cFileName);
+				len = strlen(tmp);
+				if (!strcmp(tmp+len-5, ".link")) {
+					tmp[len-5]=0;
+				}
+				nodes[result] = getNodeFromLocalPath(dir->path.localPath, tmp, FALSE);
 				result++;
 				if (result==maxCount) {
 					kwarn("hit the maximum number of files that can be returned in a director for %s", dir->path.nativePath);

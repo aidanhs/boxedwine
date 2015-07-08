@@ -28,7 +28,7 @@ struct MapedFiles {
 
 #define MAX_MAPPED_FILE 256
 #define MAX_SIG_ACTIONS 64
-#define MAX_PATHS 5
+#define MAX_PATHS 10
 #define K_SIG_INFO_SIZE 10
 #define MAX_COMMANDLINE_LEN 4096
 
@@ -84,6 +84,7 @@ struct KProcess {
 	U32 phentsize;
 	U32 entry;
 	struct user_desc ldt[LDT_ENTRIES];
+	struct KThread* wakeOnExitOrExec;
 };
 
 void processOnExitThread(struct KProcess* process);

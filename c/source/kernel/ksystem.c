@@ -103,10 +103,26 @@ U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim) {
 	struct Memory* memory = thread->process->memory;
 
     switch (resource) {
+		case 2: // RLIMIT_DATA
+			writed(memory, rlim, MAX_DATA_SIZE);
+            writed(memory, rlim+4, MAX_DATA_SIZE);
+			break;
         case 3: // RLIMIT_STACK
             writed(memory, rlim, MAX_STACK_SIZE);
             writed(memory, rlim+4, MAX_STACK_SIZE);
             break;
+		case 4: // RLIMIT_CORE
+			writed(memory, rlim, 1024*1024*4);
+            writed(memory, rlim+4, 1024*1024*4);
+            break;
+		case 5: // RLIMIT_DATA
+			writed(memory, rlim, MAX_DATA_SIZE);
+            writed(memory, rlim+4, MAX_DATA_SIZE);
+			break;
+		case 6: // RLIMIT_MEMLOCK
+			writed(memory, rlim, 64*1024*1024);
+            writed(memory, rlim+4, 64*1024*1024);
+			break;
         case 7: // RLIMIT_NOFILE
             writed(memory, rlim, MAX_NUMBER_OF_FILES);
             writed(memory, rlim+4, MAX_NUMBER_OF_FILES);
