@@ -284,7 +284,6 @@ void destroySDL2() {
 }
 #else
 SDL_Surface* surface;
-SDL_Surface* surfaceScreen;
 #endif
 
 void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
@@ -352,10 +351,7 @@ void fbSetupScreen() {
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		flags |=SDL_HWPALETTE;
 	}
-	if (surfaceScreen)
-		SDL_FreeSurface(surfaceScreen);
-	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, SDL_HWSURFACE);
-	surfaceScreen=SDL_CreateRGBSurface(0, fb_var_screeninfo.xres_virtual,fb_var_screeninfo.yres_virtual,fb_var_screeninfo.bits_per_pixel, surface->format->Rmask, surface->format->Gmask, surface->format->Bmask, surface->format->Amask);
+	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, flags);
 #endif
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		SDL_Color colors[256];
@@ -387,26 +383,20 @@ void fbSetupScreen() {
 	screenPixels = kalloc(fb_fix_screeninfo.line_length*fb_var_screeninfo.yres);
 	updateAvailable = 1;
 #else
-	if (surface->format->Rshift == 0 && surface->format->Gshift == 0) {
-		fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);
-		fb_var_screeninfo.green.offset = GET_SHIFT(surface->format->Gmask);
-		fb_var_screeninfo.blue.offset = GET_SHIFT(surface->format->Bmask);
-	} else {
-		fb_var_screeninfo.red.offset = surface->format->Rshift;
-		fb_var_screeninfo.green.offset = surface->format->Gshift;
-		fb_var_screeninfo.blue.offset = surface->format->Bshift;
-	}
+	fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);
+	fb_var_screeninfo.green.offset = GET_SHIFT(surface->format->Gmask);
+	fb_var_screeninfo.blue.offset = GET_SHIFT(surface->format->Bmask);
 	fb_var_screeninfo.red.length = COUNT_BITS(surface->format->Rmask);			
 	fb_var_screeninfo.green.length = COUNT_BITS(surface->format->Gmask);		
 	fb_var_screeninfo.blue.length = COUNT_BITS(surface->format->Bmask);
 
-	printf("Rshift=%X (%X) Gshift=%X (%X) Bshift=%X (%X)", surface->format->Rshift, surface->format->Rmask, surface->format->Gshift, surface->format->Gmask, surface->format->Bshift, surface->format->Bmask);
+	printf("Rmask=%X(%d << %d) Gmask=%X(%d << %d) Bmask=%X(%d << %d)\n", surface->format->Rmask, fb_var_screeninfo.red.length, fb_var_screeninfo.red.offset, surface->format->Gmask, fb_var_screeninfo.green.length, fb_var_screeninfo.green.offset, surface->format->Bmask, fb_var_screeninfo.blue.length, fb_var_screeninfo.blue.offset);
 	
-	fb_fix_screeninfo.line_length = surfaceScreen->pitch;
+	fb_fix_screeninfo.line_length = surface->pitch;
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
 	}
-	screenPixels = surfaceScreen->pixels;
+	screenPixels = surface->pixels;
 #endif
 	
 	fb_fix_screeninfo.smem_len = fb_fix_screeninfo.line_length*fb_var_screeninfo.yres_virtual;	
@@ -414,38 +404,40 @@ void fbSetupScreen() {
 
 static U8 fb_readb(struct Memory* memory, U32 address) {	
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		return ((U8*)surfaceScreen->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+		return ((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 	return 0;
 }
 
 static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		((U8*)surfaceScreen->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
+		((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
+	else
+		printf("fb_writeb missed\n");
 }
 
 static U16 fb_readw(struct Memory* memory, U32 address) {
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		return ((U16*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
+		return ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
 	return 0;
 }
 
 static void fb_writew(struct Memory* memory, U32 address, U16 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		((U16*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
+		((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
 static U32 fb_readd(struct Memory* memory, U32 address) {
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		return ((U32*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
+		return ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
 	return 0;
 }
 
 static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
-		((U32*)surfaceScreen->pixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
+		((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
 static void fb_clear(struct Memory* memory, U32 page) {
@@ -453,7 +445,7 @@ static void fb_clear(struct Memory* memory, U32 page) {
 
 static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
 	updateAvailable=1;
-	return &((U8*)surfaceScreen->pixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
+	return &((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
@@ -620,7 +612,6 @@ void flipFB() {
 			paletteChanged = 0;
 	#ifndef SDL2
 			SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
-			SDL_SetPalette(surfaceScreen, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
 	#endif
 		}
 #ifdef SDL2
@@ -631,18 +622,11 @@ void flipFB() {
 #else
 		if (SDL_MUSTLOCK(surface)) {
 			SDL_UnlockSurface(surface);
-			SDL_Flip(surface);
 			SDL_UpdateRect(surface, 0, 0, 0, 0);
 			SDL_LockSurface(surface);
 		} else {
-			SDL_Rect rect;
-			rect.h = surface->h;
-			rect.w = surface->w;
-			rect.x = 0;
-			rect.y = 0;
-			SDL_BlitSurface(surfaceScreen, NULL, surface, NULL);
 			SDL_UpdateRect(surface, 0, 0, 0, 0);
-		}
+		}		
 #endif
 		updateAvailable=0;
 	}
@@ -657,13 +641,11 @@ void flipFBNoCheck() {
 #else
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
-		SDL_Flip(surface);
 		SDL_UpdateRect(surface, 0, 0, 0, 0);
 		SDL_LockSurface(surface);
 	} else {
-		SDL_Flip(surface);
 		SDL_UpdateRect(surface, 0, 0, 0, 0);
-	}
+	}	
 #endif
 }
 
