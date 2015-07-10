@@ -3097,3 +3097,6 @@ void OPCALL callAp(struct CPU* cpu, struct Op* op) {
 	cpu_call(cpu, 0, op->eData, op->data1, cpu->eip.u32);
 	CYCLES(4);
 }
+
+void OPCALL emptyOp(struct CPU* cpu, struct Op* op) {
+}

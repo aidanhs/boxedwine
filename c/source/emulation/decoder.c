@@ -31,6 +31,7 @@ struct DecodeData {
 	struct Op* op;
 	U8* page;
 	U32 pagePos;
+	int count;
 };
 
 extern U8* ram;
@@ -173,6 +174,11 @@ void NEXT_OP(struct DecodeData* data) {
 	} else {
 		data->opCode = 0;
 		data->ea16 = 1;
+	}
+	data->count++;
+	if (data->count>50) {
+		data->op->func = emptyOp;
+		return;
 	}
 	data->inst = FETCH8(data)+data->opCode;
 	decoder[data->inst](data);
@@ -2150,6 +2156,7 @@ struct Block* decodeBlock(struct CPU* cpu) {
 	data.rep = 0;
 	data.rep_zero = 0;
 	data.cpu = cpu;
+	data.count = 0;
 	data.memory = cpu->memory;
 	fillFetchPage(pData);
 	data.inst = FETCH8(pData)+data.opCode;

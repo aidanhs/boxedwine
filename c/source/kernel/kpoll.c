@@ -18,19 +18,21 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 	for (i=0;i<count;i++) {
 		struct KFileDescriptor* fd = getFileDescriptor(thread->process, data->fd);
         data->revents = 0;
-		if (!fd->kobject->access->isOpen(fd->kobject)) {
-            data->revents = K_POLLHUP;
-        } else {
-			if ((data->events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(fd->kobject)) {
-                data->revents |= K_POLLIN;
-            }
-			if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(fd->kobject)) {
-                data->revents |= K_POLLOUT;
-            }
-        }
-        if (data->revents!=0) {
-            result++;
-        }
+		if (fd) {
+			if (!fd->kobject->access->isOpen(fd->kobject)) {
+				data->revents = K_POLLHUP;
+			} else {
+				if ((data->events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(fd->kobject)) {
+					data->revents |= K_POLLIN;
+				}
+				if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(fd->kobject)) {
+					data->revents |= K_POLLOUT;
+				}
+			}
+			if (data->revents!=0) {
+				result++;
+			}
+		}
 		data++;
     }
     if (result>0) {		

@@ -278,12 +278,14 @@ static void copyOnWrite(struct Memory* memory, U32 address) {
 		}
 	}
 	
+	memory->write[page] = TO_TLB(memory->ramPage[page],  address);
+
 	if (read && write) {
-		memory->mmu[page] = &ramPageWR;
-		memory->write[page] = TO_TLB(memory->ramPage[page],  address);
+		memory->mmu[page] = &ramPageWR;		
 	} else if (write) {
 		memory->mmu[page] = &ramPageWO;
-		memory->write[page] = TO_TLB(memory->ramPage[page],  address);
-	} else // shouldn't happen
-		memory->mmu[page] = &ramPageRO;
+	} else { 
+		// for the squeeze filesystem running wine 1.0 this happens a few times, the addresses seem to be in loaded libraries.
+		memory->mmu[page] = &ramPageWR;
+	}
 }
