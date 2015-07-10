@@ -63,6 +63,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_rmdir 40
 #define __NR_dup 41
 #define __NR_pipe 42
+#define __NR_times 43
 #define __NR_brk 45
 #define __NR_getgid 47
 #define __NR_geteuid 49
@@ -75,6 +76,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_getpgrp 65
 #define __NR_setsid 66
 #define __NR_setrlimit 75
+#define __NR_getrusage 77
 #define __NR_gettimeofday 78
 #define __NR_symlink 83
 #define __NR_readlink 85
@@ -292,6 +294,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_pipe(thread, ARG1);
 		LOG("__NR_pipe fildes=%X (%d,%d) result=%d", ARG1, readd(memory, ARG1), readd(memory, ARG1+4), result);
 		break;
+	case __NR_times:
+		result = syscall_times(thread, ARG1);
+		LOG("__NR_times buf=%X result=%d", ARG1, result);
+		break;
 	case __NR_brk:
 		if (ARG1 > process->brkEnd) {
 			U32 len = ARG1-process->brkEnd;
@@ -352,6 +358,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	case __NR_setrlimit:
 		result = 0;
 		break;
+	case __NR_getrusage:
+		result = syscall_getrusuage(thread, ARG1, ARG2);
+		LOG("__NR_getrusage who=%d usuage=%X result=%d", ARG1, ARG2, result);
+		break;
 	case __NR_gettimeofday:
 		result = syscall_gettimeofday(thread, ARG1, ARG2);
 		LOG("__NR_gettimeofday tv=%X tz=%X result=%d", ARG1, ARG2, result);
@@ -366,7 +376,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_mmap:
 		result = syscall_mmap64(thread, readd(memory, ARG1), readd(memory, ARG1+4), readd(memory, ARG1+8), readd(memory, ARG1+12), readd(memory, ARG1+16), readd(memory, ARG1+20));
-		//LOG("__NR_mmap address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
+		LOG("__NR_mmap address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", readd(memory, ARG1), readd(memory, ARG1+4), readd(memory, ARG1+8), readd(memory, ARG1+12), readd(memory, ARG1+16), readd(memory, ARG1+20), result);
 		break;
 	case __NR_munmap:
 		result = syscall_unmap(thread, ARG1, ARG2);
@@ -616,7 +626,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_mmap2:
 		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
-		//LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
+		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
 		break;
 	case __NR_ftruncate64: {
 		U64 len = ARG2 | ((U64)ARG3 << 32);

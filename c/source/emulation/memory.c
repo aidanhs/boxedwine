@@ -284,7 +284,9 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
 	if (allocRAM) {
 		for (i=0;i<pageCount;i++) {
 			U32 ram = allocRamPage();
-
+			if (memory->mmu[page]!=&invalidPage) {
+				memory->mmu[page]->clear(memory, page);
+			}
 			memory->mmu[page] = pageType;
 			memory->flags[page] = permissions | PAGE_IN_RAM;
 			memory->ramPage[page] = ram;
@@ -295,6 +297,9 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
 		}
 	} else {
 		for (i=0;i<pageCount;i++) {
+			if (memory->mmu[page]!=&invalidPage) {
+				memory->mmu[page]->clear(memory, page);
+			}
 			memory->mmu[page] = pageType;
 			memory->flags[page] = permissions;
 			memory->ramPage[page] = ramPage;
@@ -331,17 +336,16 @@ void writeMemory(struct Memory* memory, U32 address, U8* data, int len) {
 	}
 }
 
-BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result) {
+BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeReMapped) {
 	U32 i;
 	
 	for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
-		// don't need to look at the reserved flag, mmap can map over reserved areas
-		if (memory->mmu[i]==&invalidPage) {
+		if (memory->mmu[i]==&invalidPage || (canBeReMapped && (memory->flags[i] & PAGE_MAPPED))) {
 			U32 j;
 			BOOL success = TRUE;
 
 			for (j=1;j<pageCount;j++) {
-				if (memory->mmu[i+j]!=&invalidPage) {
+				if (memory->mmu[i+j]!=&invalidPage && (!canBeReMapped || !(memory->flags[i+j] & PAGE_MAPPED))) {
 					success = FALSE;
 					break;
 				}

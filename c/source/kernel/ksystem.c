@@ -139,6 +139,29 @@ U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim) {
 
 U64 startTime;
 
+U32 syscall_getrusuage(struct KThread* thread, U32 who, U32 usuage) {
+	if (who==0) { // RUSAGE_SELF
+		// user time
+		writed(thread->process->memory, usuage, (U32)(thread->threadTime/1000000l));
+		writed(thread->process->memory, usuage+4, (U32)(thread->threadTime % 1000000l));
+		// system time
+		writed(thread->process->memory, usuage+8, 0);
+		writed(thread->process->memory, usuage+12, 0);
+	}
+	return 0;
+}
+
+U32 syscall_times(struct KThread* thread, U32 buf) {
+	U64 m = getSystemTimeAsMicroSeconds();
+	if (buf) {
+		writed(thread->process->memory, buf, (U32)thread->threadTime*10); // user time
+		writed(thread->process->memory, buf+4, 0); // system time
+		writed(thread->process->memory, buf+8, 0); // user time of children
+		writed(thread->process->memory, buf+12, 0); // system time of children
+	}
+	return (U32)(m-startTime)*10;
+}
+
 U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
 	struct Memory* memory = thread->process->memory;
 	U64 m = getSystemTimeAsMicroSeconds();

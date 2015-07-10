@@ -59,6 +59,7 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 #define PAGE_EXEC 0x04
 #define PAGE_SHARED 0x08
 #define PAGE_SHM 0x10
+#define PAGE_MAPPED 0x20
 #define PAGE_RESERVED 0x40
 #define PAGE_IN_RAM 0x80
 #define PAGE_PERMISSION_MASK 0x07
@@ -73,7 +74,7 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 // data is only used if allocRAM is FALSE
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data);
 
-BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result);
+BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeMapped);
 // should be called after findFirstAvailablePage, it will not verify that the pages are UNRESERVED before marking them RESERVED
 void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 status);
 

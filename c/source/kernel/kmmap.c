@@ -63,15 +63,15 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return -K_EINVAL;
         }
     } else {
-		if (pageStart+pageCount> ADDRESS_PROCESS_STACK_START)
+		if (pageStart+pageCount> ADDRESS_PROCESS_MMAP_START)
             return -K_ENOMEM;
         if (pageStart == 0)
             pageStart = ADDRESS_PROCESS_MMAP_START;
-        if (!findFirstAvailablePage(memory, pageStart, pageCount, &pageStart)) {
+        if (!findFirstAvailablePage(memory, pageStart, pageCount, &pageStart, addr!=0)) {
 			// :TODO: what erro
             return -K_EINVAL;
 		}
-        if (pageStart+pageCount> ADDRESS_PROCESS_STACK_START)
+        if (addr!=0 && pageStart+pageCount> ADDRESS_PROCESS_MMAP_START)
             return -K_ENOMEM;
 		addr = pageStart << PAGE_SHIFT;
     }
@@ -84,11 +84,11 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 	for (i=0;i<pageCount;i++) {
 		// This will prevent the next anonymous mmap from using this range
 		if (memory->mmu[i+pageStart]==&invalidPage) {
-			memory->flags[i+pageStart]=PAGE_RESERVED;
+			memory->flags[i+pageStart]=PAGE_RESERVED|PAGE_MAPPED;
 		}
 	}
 	if (write || read || exec) {		
-		U32 permissions = 0;
+		U32 permissions = PAGE_MAPPED;
 
 		if (write)
 			permissions|=PAGE_WRITE;

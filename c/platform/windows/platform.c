@@ -3,8 +3,6 @@
 #include "node.h"
 #include "filesystem.h"
 
-ULONGLONG startTime;
-
 ULONGLONG getSystemTimeAsMicroSeconds() {
 	FILETIME tm;
 	ULONGLONG t;

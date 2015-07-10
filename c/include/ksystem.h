@@ -28,12 +28,14 @@ void removeProcess(struct KProcess* process);
 U32 getProcessCount();
 U32 syscall_uname(struct KThread* thread, U32 address);
 U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim);
+U32 syscall_getrusuage(struct KThread* thread, U32 who, U32 usuage);
 U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp);
 BOOL getNextProcess(U32* index, struct KProcess** process);
 
 U32 getMilliesSinceStart();
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz);
 U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec);
+U32 syscall_times(struct KThread* thread, U32 buf);
 
 struct MappedFileCache {
 	U32* ramPages;

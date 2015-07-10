@@ -1250,7 +1250,7 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 
 U32 allocPage(struct KProcess* process) {
 	U32 page = 0;
-	if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page))
+	if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page, 0))
 		kpanic("Failed to allocate stack for thread");
 	allocPages(process->memory, &ramOnDemandPage, FALSE, page, 1, PAGE_READ|PAGE_WRITE, 0);
 	return page << PAGE_SHIFT;

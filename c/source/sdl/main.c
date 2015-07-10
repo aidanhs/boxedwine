@@ -361,6 +361,7 @@ int main(int argc, char **argv) {
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
 	addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
+	addVirtualFile("/dev/random", &urandomAccess, K__S_IREAD|K__S_IFCHR);
 	addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/proc/meminfo", &meminfoAccess, K__S_IREAD);
 	bufferAccess.data = ""; // no kernel arguments
