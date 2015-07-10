@@ -122,7 +122,7 @@ U32 syscall_shmat(struct KThread* thread, U32 shmid, U32 shmaddr, U32 shmflg, U3
 	if (!shmaddr) {
 		shmaddr = ADDRESS_PROCESS_MMAP_START << PAGE_SHIFT;
 	}
-	if (!findFirstAvailablePage(memory, shmaddr >> PAGE_SHIFT, shm[shmid].pageCount, &result, shmaddr!=0)) {
+	if (!findFirstAvailablePage(memory, shmaddr >> PAGE_SHIFT, shm[shmid].pageCount, &result, 0)) {
 		return -K_EINVAL;
 	}
 	if (shmflg & SHM_RDONLY) {
