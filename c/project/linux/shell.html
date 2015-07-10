@@ -142,7 +142,7 @@
 		var selectedItem;
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
-        var dirPrefix = "/root/user/files/";
+        var dirPrefix = setFileDirectory();
 		var ae = document.createElement("a");
 		document.body.appendChild(ae);
 		ae.style = "display: none";
@@ -152,18 +152,43 @@
       	var progressElement = document.getElementById('progress');
       	var spinnerElement = document.getElementById('spinner');
 
+        function setFileDirectory(){
+            
+            var dir =  getParameter("dir");
+            if(dir===""){
+                //dir = "/root/user/files/";
+                dir = "/root/home/username/.wine/drive_c/files/";
+            }else{
+                if(!dir.endsWith("/")){
+                    dir = dir + "/";
+                }
+            }
+            console.log("setting file directory to: "+dir);
+            return dir;
+        }
         var initialSetup = function(){
+            console.log("running initial setup");
             spinnerElement.style.display = 'none';
             Module['addRunDependency']('uploadFiles');
             Module.FS_createFolder('/root', 'user', true, true);
             Module.FS_createFolder('/root/user', 'files', true, true);
+            document.getElementById('startbtn').disabled = false;
             document.getElementById('startbtn').style.display = "";
             document.getElementById('uploadbtn').style.display = "";
             document.getElementById('downloadbtn').style.display = "";
         }
+        function getMemoryAllocation()
+        {
+            var mmemoryInMB =  getParameter("m");
+            if(mmemoryInMB===""){
+                mmemoryInMB = "64";
+            }
+            console.log("setting allocated memory (Mbytes) to: "+mmemoryInMB);
+            return mmemoryInMB;
+        }
       var Module = {
         preRun: [initialSetup],
-        //arguments: ["-root", "-m", "512"],
+        arguments: ["-m", getMemoryAllocation()],
         postRun: [],
         print: (function() {
           var element = document.getElementById('output');
@@ -268,11 +293,8 @@
                 var fileExt = extractFilenameExtension(name);
                 if(fileExt.toLowerCase() === 'zip'){
 		    		var filenameNoExt = extractFilenameWithoutExtension(name);
-                    try{
-                        Module.FS_createFolder('/root/user/files', filenameNoExt, true, true);
-                        console.log("Directory created :" + '/root/user/files' + "/" + filenameNoExt);
-                    }catch(e){
-                        console.log("Directory already exists! :" + '/root/user/files/' + filenameNoExt);
+                    if(!createFolder(dirPrefix, filenameNoExt)){//If dir exists and user says no to replace existing dir, then stop here
+                        return;
                     }
 	                var zipDirPrefix = dirPrefix + filenameNoExt;
 	                var zip = new JSZip(data);
@@ -280,53 +302,98 @@
         	        {
             	        var data = zip.file(entry);
                 	    if(data != null){
-                    	        var buf = data.asUint8Array();
-                        	    var parent = zipDirPrefix + "/" + extractFirstPartOfPath(entry) ;
-                            	var filename = extractLastPartOfPath(entry);
-                                try{
-                                    Module.FS_createDataFile(parent, filename, buf, true, true);
-                                    //console.log(data.name + " is a file parent="+parent+" filename="+filename);
-                                    console.log("File created :" + parent + filename);
-                                }catch(e){
-                                    console.log("File already exists! :" + parent + "/" + filename);
-                                }
+                            var buf = data.asUint8Array();
+                            var parent = zipDirPrefix + "/" + extractFirstPartOfPath(entry) ;
+                            var filename = extractLastPartOfPath(entry);
+                            createFile(parent, filename, buf);
         	            }else{ //directory
-            	                var fullPath = entry.substring(0,entry.length-1);
-                	            var parent = extractFirstPartOfPath(fullPath);
-                    	        var dir = extractLastPartOfPath(fullPath);
-                        	    if(parent.length == 0){
-                            	    parent = zipDirPrefix;
- 	                           }else{
-    	                            parent = zipDirPrefix + "/" + parent;
-                                }
-                                try{
-                                    Module.FS_createFolder(parent, dir, true, true);
-                                    //console.log(entry + " is a dir parent="+parent+" dir="+dir);
-                                    console.log("Directory created :" + parent + "/" + dir);
-                                }catch(e){
-                                    console.log("Directory already exists! :" + parent + dir);
-                                }
+                            var fullPath = entry.substring(0,entry.length-1);
+                            var parent = extractFirstPartOfPath(fullPath);
+                            var dir = extractLastPartOfPath(fullPath);
+                            if(parent.length == 0){
+                                parent = zipDirPrefix;
+                            }else{
+                                parent = zipDirPrefix + "/" + parent;
+                            }
+                            createFolder(parent, dir);
                     	}
                 	}
                 }else{
-                   	var buf = new Uint8Array(data);
-                    try{
-                        Module.FS_createDataFile(dirPrefix, name, buf, true, true);
-                        console.log("File created :" + dirPrefix + name);
-                    }catch(e){
-                        console.log("File already exists! :" + dirPrefix + name);
-                    }
+                    createFile(dirPrefix, name, data);
                 }
         }
-        function toggleConsole() {
-        	var el = document.getElementById('showConsole');
-        	var console = document.getElementById('output');
-        	if(el.checked){
-				console.style.display = ''; 	
-        	}else{
-				console.style.display = 'none'; 	
-        	}
+function calcBackupFilename()
+{
+    var d = new Date();
+    var str =d.toISOString();
+    str = ".backup." + str.split(":").join(".");
+    return str;
+}
+function createFolder(parent, dir)
+{
+    var created = true;
+    try{
+        Module.FS_createFolder(parent, dir, true, true);
+        //console.log(entry + " is a dir parent="+parent+" dir="+dir);
+        console.log("Directory created :" + parent + "/" +  dir);
+    }catch(ef){
+      if(ef.message === "File exists"){
+        console.log("Directory already exists! :" + parent + dir);
+        var replace = confirm("Directory already exists: " + parent + dir+" continue?");
+        if(replace){
+            try{
+                //yeah, like that would work! FS.rmdir(parent + dir);
+                FS.rename(parent + dir,parent + dir + calcBackupFilename());
+                Module.FS_createFolder(parent, dir, true, true);
+                console.log("Directory replaced: " + parent + dir);
+            }catch(eef){
+                console.log("eef="+eef);
+                created = false;
+                alert("unable to create folder: "+ parent + dir);
+            }
+        }else{
+            created = false;
         }
+      }else{
+        console.log("ef="+ef);
+      }
+    }
+    return created;
+}
+function createFile(dir, name, data)
+{
+    var buf = new Uint8Array(data);
+    try{
+        Module.FS_createDataFile(dir, name, buf, true, true);
+        console.log("File created :" + dir + "/" + name);
+    }catch(e){
+      if(e.message === "File exists"){
+        console.log("File already exists!: " + dir + name);
+        var replace = confirm("File already exists: " + dir + name+" replace?");
+        if(replace){
+            try{
+                FS.unlink(dir + name);
+                Module.FS_createDataFile(dir, name, buf, true, true);
+                console.log("File replaced: " + dir + name);
+            }catch(ee){
+                console.log("ee="+ee);
+                alert("unable to create file: "+ dir + name);
+            }
+        }
+      }else{
+        console.log("e="+e);
+      }
+    }
+}
+function toggleConsole() {
+    var el = document.getElementById('showConsole');
+    var console = document.getElementById('output');
+    if(el.checked){
+        console.style.display = '';
+    }else{
+        console.style.display = 'none';
+    }
+}
         //get files functions
 function toggleDirectory(item){
 	var itemWidget =document.getElementById(item); 
@@ -341,6 +408,26 @@ function toggleDirectory(item){
 			document.getElementById(item+'-contract').style.display="none";
 		}
 	}
+}
+function getParameter(inputKey)
+{
+    var retVal="";
+    var url = window.location.href;
+    var index = url.indexOf("?")+1;
+    if(index > 0){
+        var paramStr = url.substring(index);
+        var params = paramStr.split("&");
+        for(var x=0;x<params.length;x++){
+            var param = params[x];
+            var kv = param.split("=");
+            var key = kv[0];
+            if(key === inputKey){
+                retVal = kv[1];
+                break;
+            }
+        }
+    }
+    return retVal;
 }
 function select(index, dir, filename){
 	if(selectedItem != null){
