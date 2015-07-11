@@ -149,8 +149,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			}
 		} else {
 			allocPages(memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
-		}
-		
+		}		
     }
 	return addr;
 }
@@ -218,8 +217,10 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 		memory->write[i+pageStart]=0;
 	}
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (thread->process->mappedFiles[i].refCount && thread->process->mappedFiles[i].address == address) {
+		if (thread->process->mappedFiles[i].refCount && thread->process->mappedFiles[i].address >= address && thread->process->mappedFiles[i].address+thread->process->mappedFiles[i].len <= address + len) {
 			thread->process->mappedFiles[i].refCount--;
+			if (thread->process->mappedFiles[i].refCount==0)
+				closeKObject(thread->process->mappedFiles[i].file);
 			break;
 		}
 	}

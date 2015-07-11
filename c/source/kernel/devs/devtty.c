@@ -239,7 +239,7 @@ BOOL tty_isWriteReady(struct OpenNode* node) {
 }
 
 BOOL tty_isReadReady(struct OpenNode* node) {
-	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
+	return 0;
 }
 
 U32 tty_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {

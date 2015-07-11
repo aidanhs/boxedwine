@@ -26,7 +26,7 @@ struct MapedFiles {
 	U64 offset;
 };
 
-#define MAX_MAPPED_FILE 256
+#define MAX_MAPPED_FILE 1024
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 10
 #define K_SIG_INFO_SIZE 10
