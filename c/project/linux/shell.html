@@ -152,6 +152,7 @@
       	var progressElement = document.getElementById('progress');
       	var spinnerElement = document.getElementById('spinner');
 
+
         function setFileDirectory(){
             
             var dir =  getParameter("dir");
@@ -170,8 +171,29 @@
             console.log("running initial setup");
             spinnerElement.style.display = 'none';
             Module['addRunDependency']('uploadFiles');
-            Module.FS_createFolder('/root', 'user', true, true);
-            Module.FS_createFolder('/root/user', 'files', true, true);
+            toggleConsole();
+
+            var folders = dirPrefix.split("/");
+            var parent = "";
+            var started = false;
+            for(var k=0;k<folders.length;k++){
+                var folder = folders[k];
+                if(folder.length > 0){
+                    if(!started){
+                        started = true;
+                        parent = "/" + folder;
+                    }else{
+                        try{
+                            Module.FS_createFolder(parent, folder, true, true);
+                        }catch(ee){//directory may already exist
+                            if(ee.message !== "File exists"){
+                                throw ee;
+                            }
+                        }
+                        parent = parent + "/" + folder;
+                    }
+                }
+            }
             document.getElementById('startbtn').disabled = false;
             document.getElementById('startbtn').style.display = "";
             document.getElementById('uploadbtn').style.display = "";
@@ -386,6 +408,15 @@ function createFile(dir, name, data)
     }
 }
 function toggleConsole() {
+    var el = document.getElementById('showConsole');
+    var console = document.getElementById('output');
+    if(el.checked){
+        console.style.display = '';
+    }else{
+        console.style.display = 'none';
+    }
+}
+function toggleConsole2() {
     var el = document.getElementById('showConsole');
     var console = document.getElementById('output');
     if(el.checked){
