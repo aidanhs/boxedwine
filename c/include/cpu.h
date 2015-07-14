@@ -63,6 +63,11 @@ struct CPU {
 	BOOL log;
 };
 
+#define EXCEPTION_DIVIDE 0
+#define EXCEPTION_BOUND 5
+#define EXCEPTION_PERMISSION 13
+#define EXCEPTION_PAGE_FAULT 14
+
 #define addFlag(f) cpu->flags |= (f)
 #define removeFlag(f) cpu->flags &=~ (f)
 

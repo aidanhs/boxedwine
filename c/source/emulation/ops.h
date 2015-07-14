@@ -200,7 +200,7 @@ void OPCALL popad(struct CPU* cpu, struct Op* op) {
 void OPCALL bound_16(struct CPU* cpu, struct Op* op) {
 	U32 eaa = eaa16(cpu, op);
 	if (cpu->reg[op->r1].u16<readw(cpu->memory, eaa) || cpu->reg[op->r1].u16>readw(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
+		exception(cpu, EXCEPTION_BOUND);
 	}
 	CYCLES(8);
 	NEXT();
@@ -209,7 +209,7 @@ void OPCALL bound_16(struct CPU* cpu, struct Op* op) {
 void OPCALL bound_32(struct CPU* cpu, struct Op* op) {
 	U32 eaa = eaa32(cpu, op);
 	if (cpu->reg[op->r1].u16<readw(cpu->memory, eaa) || cpu->reg[op->r1].u16>readw(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
+		exception(cpu, EXCEPTION_BOUND);
 	}
 	CYCLES(8);
 	NEXT();
@@ -218,7 +218,7 @@ void OPCALL bound_32(struct CPU* cpu, struct Op* op) {
 void OPCALL boundd_16(struct CPU* cpu, struct Op* op) {
 	U32 eaa = eaa16(cpu, op);
 	if (cpu->reg[op->r1].u32<readd(cpu->memory, eaa) || cpu->reg[op->r1].u32>readd(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
+		exception(cpu, EXCEPTION_BOUND);
 	}
 	CYCLES(8);
 	NEXT();
@@ -227,7 +227,7 @@ void OPCALL boundd_16(struct CPU* cpu, struct Op* op) {
 void OPCALL boundd_32(struct CPU* cpu, struct Op* op) {
 	U32 eaa = eaa32(cpu, op);
 	if (cpu->reg[op->r1].u32<readd(cpu->memory, eaa) || cpu->reg[op->r1].u32>readd(cpu->memory, eaa+2)) {
-		exception(cpu, 5);
+		exception(cpu, EXCEPTION_BOUND);
 	}
 	CYCLES(8);
 	NEXT();
@@ -1189,7 +1189,7 @@ void OPCALL aam(struct CPU* cpu, struct Op* op) {
 		removeFlag(AF);
 		cpu->lazyFlags = FLAGS_NONE;
 	} else {
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	} 
 	CYCLES(18);
 	NEXT();
@@ -1462,13 +1462,13 @@ void OPCALL div8(struct CPU* cpu, U8 src) {
 	U8 rem;
 
 	if (src==0)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 
 	quo = AX / src;
 	rem = AX % src;
 
 	if (quo > 255)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	AL = (U8)quo;
 	AH = rem;
 }
@@ -1497,14 +1497,14 @@ void OPCALL idiv8(struct CPU* cpu, S8 src) {
 	S8 rem;
 
 	if (src==0)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 
 	quo = (S16)AX / src;
 	quo8 = (S8)quo;
 	rem = (S16)AX % src;
 
 	if (quo != quo8)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	AL = quo8;
 	AH = rem;
 }
@@ -1667,13 +1667,13 @@ void OPCALL div16(struct CPU* cpu, U16 src) {
 	U16 quo16;
 
 	if (src==0)	
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 
 	quo=num/src;
 	rem=(U16)(num % src);
 	quo16=(U16)quo;
 	if (quo!=(U32)quo16)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	DX=rem;
 	AX=quo16;
 }
@@ -1703,13 +1703,13 @@ void OPCALL idiv16(struct CPU* cpu, S16 src) {
 	S16 quo16s;
 
 	if (src==0)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 
 	quo=num/src;
 	rem=(S16)(num % src);
 	quo16s=(S16)quo;
 	if (quo!=(S32)quo16s) 
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	DX=rem;
 	AX=quo16s;
 }
@@ -1872,13 +1872,13 @@ void OPCALL div32(struct CPU* cpu, U32 src) {
 	U32 quo32;
 
 	if (src==0)	
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 
 	quo=num/src;
 	rem=(U32)(num % src);
 	quo32=(U32)quo;
 	if (quo!=(U64)quo32)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	EDX=rem;
 	EAX=quo32;
 }
@@ -1908,13 +1908,13 @@ void OPCALL idiv32(struct CPU* cpu, S32 src) {
 	S32 quo32s;
 
 	if (src==0)
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 
 	quo=num/src;
 	rem=(S32)(num % src);
 	quo32s=(S32)quo;
 	if (quo!=(S64)quo32s) 
-		exception(cpu, 0);
+		exception(cpu, EXCEPTION_DIVIDE);
 	EDX=rem;
 	EAX=quo32s;
 }

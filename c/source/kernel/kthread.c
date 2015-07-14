@@ -218,7 +218,7 @@ BOOL runSignals(struct KThread* thread) {
 
         for (i=0;i<32;i++) {
             if ((todo & (1 << i))!=0) {
-				runSignal(thread, i+1);
+				runSignal(thread, i+1, -1);
 				return 1;
             }
         }
@@ -403,7 +403,7 @@ struct ucontext_ia32 {
 #define INFO_SIZE 128
 #define CONTEXT_SIZE 128
 
-void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack) {	
+void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack, U32 trapNo) {	
 	struct CPU* cpu = &thread->cpu;
 	struct Memory* memory = cpu->memory;
 
@@ -428,7 +428,7 @@ void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStac
 	writed(memory, context+0x38, cpu->reg[2].u32); // EDX
 	writed(memory, context+0x3C, cpu->reg[1].u32); // ECX
 	writed(memory, context+0x40, cpu->reg[0].u32); // EAX
-	writed(memory, context+0x44, 0); // REG_TRAPNO
+	writed(memory, context+0x44, trapNo); // REG_TRAPNO
 	writed(memory, context+0x48, 0); // REG_ERR
 	writed(memory, context+0x4C, cpu->eip.u32);
 	writed(memory, context+0x50, cpu->segValue[CS]);
@@ -470,16 +470,13 @@ U32 syscall_sigreturn(struct KThread* thread) {
 }
 
 void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
-#ifdef LOG_OPS
 	U32 signal = pop32(cpu);
 	U32 address = pop32(cpu);
-#endif
-	U32 context = pop32(cpu);
+	U32 context = pop32(cpu);	
 	U64 tsc = cpu->timeStampCounter;
 	U32 b = cpu->blockCounter;
 	U32 stackAddress;
 
-	context = pop32(cpu);
 	cpu->thread->waitStartTime = pop32(cpu);
 	cpu->thread->interrupted = pop32(cpu);
 	stackAddress=cpu->reg[4].u32;
@@ -513,7 +510,7 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 }
 
 // interrupted and waitStartTime are pushed because syscall's during the signal will clobber them
-void runSignal(struct KThread* thread, U32 signal) {
+void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
 	struct KSigAction* action = &thread->process->sigActions[signal];
     if (action->handlerAndSigAction==K_SIG_DFL) {
 
@@ -544,7 +541,7 @@ void runSignal(struct KThread* thread, U32 signal) {
 		}		
 		        
 		context = thread->cpu.reg[4].u32 - CONTEXT_SIZE;
-		writeToContext(thread, stack, context, altStack);
+		writeToContext(thread, stack, context, altStack, trapNo);
 		thread->cpu.reg[4].u32 = context;
 
 		if (altStack) {
@@ -568,13 +565,11 @@ void runSignal(struct KThread* thread, U32 signal) {
 			push32(&thread->cpu, interrupted);
 			push32(&thread->cpu, thread->waitStartTime);
 			push32(&thread->cpu, context);
-			push32(&thread->cpu, context);
-#ifdef LOG_OPS
-			push32(&thread->cpu, address);
-#endif
+			push32(&thread->cpu, address);			
+			push32(&thread->cpu, signal);
 			thread->cpu.reg[0].u32 = signal;
-			thread->cpu.reg[1].u32 = address;
-			thread->cpu.reg[2].u32 = context;	
+			thread->cpu.reg[1].u32 = context;
+			thread->cpu.reg[2].u32 = address;	
 		} else {
 			thread->cpu.reg[0].u32 = signal;
 			thread->cpu.reg[1].u32 = 0;
@@ -582,14 +577,11 @@ void runSignal(struct KThread* thread, U32 signal) {
 			push32(&thread->cpu, interrupted);
 			push32(&thread->cpu, thread->waitStartTime);
 			push32(&thread->cpu, context);
-			push32(&thread->cpu, 0);
-#ifdef LOG_OPS
-			push32(&thread->cpu, 0);
-#endif
+			push32(&thread->cpu, 0);			
+			push32(&thread->cpu, signal);
 		}
 #ifdef LOG_OPS
 		klog("    context %X interrupted %d", context, interrupted);
-		push32(&thread->cpu, signal);
 #endif
 		push32(&thread->cpu, SIG_RETURN_ADDRESS);
 		thread->cpu.eip.u32 = action->handlerAndSigAction;

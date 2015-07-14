@@ -54,7 +54,7 @@ void exitThread(struct KThread* thread, U32 status);
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime);
 U32 syscall_sigreturn(struct KThread* thread);
 BOOL runSignals(struct KThread* thread);
-void runSignal(struct KThread* thread, U32 signal);
+void runSignal(struct KThread* thread, U32 signal, U32 trapNo);
 void threadClearFutexes(struct KThread* thread);
 void initStackPointer(struct KThread* thread);
 void OPCALL onExitSignal(struct CPU* cpu, struct Op* op);

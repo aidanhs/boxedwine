@@ -7,6 +7,7 @@
 #include "log.h"
 
 #include <stdio.h>
+#include <setjmp.h>
 
 //#define LOG_SCHEDULER
 
@@ -142,6 +143,7 @@ void unscheduleThread(struct KThread* thread) {
 }
 
 U32 contextTime = 100000;
+jmp_buf runBlockJump;
 
 void runThreadSlice(struct KThread* thread) {
 	struct CPU* cpu;
@@ -149,13 +151,15 @@ void runThreadSlice(struct KThread* thread) {
 	cpu = &thread->cpu;
 	cpu->blockCounter = 0;
 
-	do {
-		if (cpu->nextBlock) {
-			runBlock(cpu, cpu->nextBlock);
-		} else {
-			runCPU(cpu);
-		}
-	} while (cpu->blockCounter < contextTime);	
+	if (setjmp(runBlockJump)==0) {
+		do {
+			if (cpu->nextBlock) {
+				runBlock(cpu, cpu->nextBlock);
+			} else {
+				runCPU(cpu);
+			}
+		} while (cpu->blockCounter < contextTime);	
+	}
 	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }
 

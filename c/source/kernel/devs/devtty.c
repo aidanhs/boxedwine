@@ -231,7 +231,7 @@ BOOL tty_isAsync(struct OpenNode* node, struct KProcess* process) {
 }
 
 void tty_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
-	kpanic("tty_waitForEvents not implemented");
+	//kpanic("tty_waitForEvents not implemented");
 }
 
 BOOL tty_isWriteReady(struct OpenNode* node) {

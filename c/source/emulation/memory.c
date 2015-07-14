@@ -6,13 +6,18 @@
 #include "kalloc.h"
 #include "kfmmap.h"
 #include "node.h"
+#include "ksignal.h"
 
 #include <string.h>
+#include <setjmp.h>
+
 #undef LOG_OPS
 
 char tmp64k[1024*64];
 
-void pf(struct Memory* memory, U32 address) {
+extern jmp_buf runBlockJump;
+
+void log_pf(struct Memory* memory, U32 address) {
 	U32 start = 0;
 	U32 i;
 	struct CPU* cpu = &currentThread->cpu;
@@ -41,37 +46,93 @@ void pf(struct Memory* memory, U32 address) {
 	kpanic("pf");
 }
 
-U8 pf_readb(struct Memory* memory, U32 address) {
-	pf(memory, address);
+void seg_mapper(struct Memory* memory, U32 address) {
+	if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
+		memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
+		memory->process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
+		memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 1; // SEGV_MAPERR
+		memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
+		runSignal(currentThread, K_SIGSEGV, EXCEPTION_PAGE_FAULT);
+		printf("seg fault %X\n", address);
+		longjmp(runBlockJump, 1);		
+	} else {
+		log_pf(memory, address);
+	}
+}
+
+void seg_access(struct Memory* memory, U32 address) {
+	if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
+		memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
+		memory->process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
+		memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 2; // SEGV_ACCERR
+		memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
+		runSignal(currentThread, K_SIGSEGV, EXCEPTION_PERMISSION);
+		printf("seg fault %X\n", address);
+		longjmp(runBlockJump, 1);		
+	} else {
+		log_pf(memory, address);
+	}
+}
+
+U8 invalid_readb(struct Memory* memory, U32 address) {
+	seg_mapper(memory, address);
 	return 0;
 }
 
-void pf_writeb(struct Memory* memory, U32 address, U8 value) {
-	pf(memory, address);
+void invalid_writeb(struct Memory* memory, U32 address, U8 value) {
+	seg_mapper(memory, address);
 }
 
-U16 pf_readw(struct Memory* memory, U32 address) {
-	pf(memory, address);
+U16 invalid_readw(struct Memory* memory, U32 address) {
+	seg_mapper(memory, address);
 	return 0;
 }
 
-void pf_writew(struct Memory* memory, U32 address, U16 value) {
-	pf(memory, address);
+void invalid_writew(struct Memory* memory, U32 address, U16 value) {
+	seg_mapper(memory, address);
 }
 
-U32 pf_readd(struct Memory* memory, U32 address) {
-	pf(memory, address);
+U32 invalid_readd(struct Memory* memory, U32 address) {
+	seg_mapper(memory, address);
 	return 0;
 }
 
-void pf_writed(struct Memory* memory, U32 address, U32 value) {
-	pf(memory, address);
+void invalid_writed(struct Memory* memory, U32 address, U32 value) {
+	seg_mapper(memory, address);
+}
+
+
+U8 nopermission_readb(struct Memory* memory, U32 address) {
+	seg_access(memory, address);
+	return 0;
+}
+
+void nopermission_writeb(struct Memory* memory, U32 address, U8 value) {
+	seg_access(memory, address);
+}
+
+U16 nopermission_readw(struct Memory* memory, U32 address) {
+	seg_access(memory, address);
+	return 0;
+}
+
+void nopermission_writew(struct Memory* memory, U32 address, U16 value) {
+	seg_access(memory, address);
+}
+
+U32 nopermission_readd(struct Memory* memory, U32 address) {
+	seg_access(memory, address);
+	return 0;
+}
+
+void nopermission_writed(struct Memory* memory, U32 address, U32 value) {
+	seg_access(memory, address);
 }
 
 void pf_clear(struct Memory* memory, U32 page) {
 }
 
-struct Page invalidPage = {pf_readb, pf_writeb, pf_readw, pf_writew, pf_readd, pf_writed, pf_clear};
+struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear};
 
 U8 readb(struct Memory* memory, U32 address) {
 	int index = address >> 12;

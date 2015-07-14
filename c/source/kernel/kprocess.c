@@ -1238,7 +1238,7 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 		// must set CPU state before runSignal since it will be stored
 		thread->cpu.reg[0].u32 = 0; 
 		thread->cpu.eip.u32+=2;
-		runSignal(target, signal);
+		runSignal(target, signal, -1);
 		target->waitingForSignalToEnd = thread;
 		waitThread(thread);			
 		return -K_CONTINUE;

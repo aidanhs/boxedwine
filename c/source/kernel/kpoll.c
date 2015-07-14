@@ -72,7 +72,9 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 		data = firstData;
 		for (i=0;i<count;i++) {
 			struct KFileDescriptor* fd = getFileDescriptor(thread->process, data->fd);
-			fd->kobject->access->waitForEvents(fd->kobject, thread, data->events);
+			if (fd) {
+				fd->kobject->access->waitForEvents(fd->kobject, thread, data->events);
+			}
 			data++;
 		}
 

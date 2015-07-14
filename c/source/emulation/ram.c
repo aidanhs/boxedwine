@@ -228,8 +228,8 @@ static U8* copyonwrite_physicalAddress(struct Memory* memory, U32 address) {
 	return physicalAddress(memory, address);
 }
 
-struct Page ramPageRO = {ram_readb, pf_writeb, ram_readw, pf_writew, ram_readd, pf_writed, ram_clear, physicalAddress};
-struct Page ramPageWO = {pf_readb, ram_writeb, pf_readw, ram_writew, pf_readd, ram_writed, ram_clear, physicalAddress};
+struct Page ramPageRO = {ram_readb, nopermission_writeb, ram_readw, nopermission_writew, ram_readd, nopermission_writed, ram_clear, physicalAddress};
+struct Page ramPageWO = {nopermission_readb, ram_writeb, nopermission_readw, ram_writew, nopermission_readd, ram_writed, ram_clear, physicalAddress};
 struct Page ramPageWR = {ram_readb, ram_writeb, ram_readw, ram_writew, ram_readd, ram_writed, ram_clear, physicalAddress};
 struct Page ramOnDemandPage = {ondemand_ram_readb, ondemand_ram_writeb, ondemand_ram_readw, ondemand_ram_writew, ondemand_ram_readd, ondemand_ram_writed, ondemand_ram_clear, ondemand_physicalAddress};
 struct Page ramCopyOnWritePage = {ram_readb, copyonwrite_ram_writeb, ram_readw, copyonwrite_ram_writew, ram_readd, copyonwrite_ram_writed, ram_clear, copyonwrite_physicalAddress};

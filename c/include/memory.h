@@ -35,12 +35,12 @@ void writeMemory(struct Memory* memory, U32 address, U8* data, int len);
 
 extern struct Page invalidPage;
 
-U8 pf_readb(struct Memory* memory, U32 address);
-void pf_writeb(struct Memory* memory, U32 address, U8 value);
-U16 pf_readw(struct Memory* memory, U32 address);
-void pf_writew(struct Memory* memory, U32 address, U16 value);
-U32 pf_readd(struct Memory* memory, U32 address);
-void pf_writed(struct Memory* memory, U32 address, U32 value);
+U8 nopermission_readb(struct Memory* memory, U32 address);
+void nopermission_writeb(struct Memory* memory, U32 address, U8 value);
+U16 nopermission_readw(struct Memory* memory, U32 address);
+void nopermission_writew(struct Memory* memory, U32 address, U16 value);
+U32 nopermission_readd(struct Memory* memory, U32 address);
+void nopermission_writed(struct Memory* memory, U32 address, U32 value);
 
 struct Memory* allocMemory();
 void initMemory(struct Memory* memory);
