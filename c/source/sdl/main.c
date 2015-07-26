@@ -275,6 +275,7 @@ void mainloop() {
 U64 cpuTime;
 U64 cpuInstructions;
 extern U32 contextTime;
+extern int allocatedOpMemory;
 
 int main(int argc, char **argv) {
 	int i;
@@ -425,10 +426,10 @@ int main(int argc, char **argv) {
 #endif
 			};
 			t = getMilliesSinceStart();
-			if (lastTitleUpdate+1000 < t) {
+			if (lastTitleUpdate+5000 < t) {
 				char tmp[256];
 				lastTitleUpdate = t;
-				sprintf(tmp, "BoxedWine %d MHz cyclesPerContext=%d", getMHz(), contextTime);
+				sprintf(tmp, "BoxedWine %d MHz RAM %d/%dMB opCache %dMB", getMHz(), (getPageCount()-getFreePageCount())/256, getPageCount()/256, allocatedOpMemory/1024/1024);
 				fbSetCaption(tmp, "BoxedWine");
 			}
 			if (!ran)

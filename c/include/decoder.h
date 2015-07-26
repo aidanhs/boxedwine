@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 struct Block* decodeBlock(struct CPU* cpu);
+void decodeBlockWithBlock(struct CPU* cpu, struct Block* block);
 void freeOp(struct Op* op);
 void freeBlock(struct Block* op);
 

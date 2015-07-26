@@ -7,6 +7,10 @@ abstract public class Base {
     abstract public void decode(FileOutputStream fos) throws IOException;
     abstract public void generate();
 
+    public void decode_noflags(FileOutputStream fos) throws IOException {
+
+    }
+
     public void out(FileOutputStream fos, String line) throws IOException {
         line=line+"\r\n";
         fos.write(line.getBytes());
@@ -97,6 +101,77 @@ abstract public class Base {
         out(fos, "}");
     }
 
+    public void eg_noflags(FileOutputStream fos, String inst, String name, int bits) throws IOException {
+        String func_rr = name+"r"+bits+"r"+bits;
+        String func_er = name+"e"+bits+"r"+bits;
+
+        out(fos, "void OPCALL "+func_rr+"(struct CPU* cpu, struct Op* op);");
+        out(fos, "void OPCALL "+func_er+"_32(struct CPU* cpu, struct Op* op);");
+        out(fos, "void OPCALL "+func_er+"_16(struct CPU* cpu, struct Op* op);");
+        if (bits==8)
+            out(fos, "// "+name.toUpperCase()+" Eb,Gb");
+        else if (bits==16)
+            out(fos, "// "+name.toUpperCase()+" Ew,Gw");
+        else
+            out(fos, "// "+name.toUpperCase()+" Ed,Gd");
+        out(fos, "void decode"+inst+"_noflags(struct Op* op) {");
+        out(fos, "    if (op->func == "+func_rr+") {");
+        out(fos, "        op->func = "+func_rr+"_noflags;");
+        out(fos, "    } else if (op->func == "+func_er+"_32) {");
+        out(fos, "        op->func = "+func_er+"_32_noflags;");
+        out(fos, "    } else if (op->func == "+func_er+"_16) {");
+        out(fos, "        op->func = "+func_er+"_16_noflags;");
+        out(fos, "    } else {");
+        out(fos, "        kpanic(\"decode"+inst+"_noflags error\");");
+        out(fos, "    }");
+        out(fos, "}");
+    }
+
+    public void ge_noflags(FileOutputStream fos, String inst, String name, int bits) throws IOException {
+        String func_rr = name+"r"+bits+"r"+bits;
+        String func_re = name+"r"+bits+"e"+bits;
+
+        out(fos, "void OPCALL "+func_rr+"(struct CPU* cpu, struct Op* op);");
+        out(fos, "void OPCALL "+func_re+"_32(struct CPU* cpu, struct Op* op);");
+        out(fos, "void OPCALL "+func_re+"_16(struct CPU* cpu, struct Op* op);");
+        if (bits==8)
+            out(fos, "// "+name.toUpperCase()+" Gb,Eb");
+        else if (bits==16)
+            out(fos, "// "+name.toUpperCase()+" Gw,Ew");
+        else
+            out(fos, "// "+name.toUpperCase()+" Gd,Ed");
+        out(fos, "void decode"+inst+"_noflags(struct Op* op) {");
+        out(fos, "    if (op->func == "+func_rr+") {");
+        out(fos, "        op->func = "+func_rr+"_noflags;");
+        out(fos, "    } else if (op->func == "+func_re+"_32) {");
+        out(fos, "        op->func = "+func_re+"_32_noflags;");
+        out(fos, "    } else if (op->func == "+func_re+"_16) {");
+        out(fos, "        op->func = "+func_re+"_16_noflags;");
+        out(fos, "    } else {");
+        out(fos, "        kpanic(\"decode"+inst+"_noflags error\");");
+        out(fos, "    }");
+        out(fos, "}");
+
+    }
+
+    public void ad_noflags(FileOutputStream fos, String inst, String name, int bits) throws IOException {
+        String func = name+bits+"_reg";
+
+        out(fos, "void OPCALL "+func+"(struct CPU* cpu, struct Op* op);");
+        if (bits==8)
+            out(fos, "// "+name.toUpperCase()+" Al,Ib");
+        else if (bits==16)
+            out(fos, "// "+name.toUpperCase()+" Ax,Iw");
+        else
+            out(fos, "// "+name.toUpperCase()+" Eax,Id");
+        out(fos, "void decode"+inst+"_noflags(struct Op* op) {");
+        out(fos, "    if (op->func == "+func+") {");
+        out(fos, "        op->func = "+func+"_noflags;");
+        out(fos, "    } else {");
+        out(fos, "        kpanic(\"decode"+inst+"_noflags error\");");
+        out(fos, "    }");
+        out(fos, "}");
+    }
     public void decodeFunc(FileOutputStream fos, String comment, String base, String func, int reg) throws IOException {
         decodeFunc(fos, comment, base, func, String.valueOf(reg));
     }

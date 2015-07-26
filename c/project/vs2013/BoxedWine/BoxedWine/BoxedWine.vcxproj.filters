@@ -151,6 +151,9 @@
     <ClCompile Include="..\..\..\..\source\opengl\es\glshim.c">
       <Filter>opengl\es</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\jit.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -344,6 +347,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h">
       <Filter>opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\jit.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

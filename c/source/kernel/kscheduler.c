@@ -216,6 +216,12 @@ BOOL runSlice() {
 	return FALSE;
 }
 
+U64 lastCycleCount;
+U64 lastTime;
+
 U32 getMHz() {
-	return (U32)(cpuTotalCycles/cpuTotalTime);
+	U32 result = (U32)((cpuTotalCycles-lastCycleCount)/(cpuTotalTime-lastTime));
+    lastCycleCount = cpuTotalCycles;
+    lastTime = cpuTotalTime;
+    return result;
 }

@@ -3,6 +3,7 @@
 #include "decoder.h"
 #include "ram.h"
 #include "platform.h"
+#include "jit.h"
 
 #include <string.h>
 
@@ -83,6 +84,134 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
 	cpu->eip.u32 = offset;
 	cpu->big = cpu->thread->process->ldt[selector>>3].seg_32bit;
 }
+
+ void setFlags(struct CPU* cpu, U32 word, U32 mask) {
+	cpu->flags=(cpu->flags & ~mask)|(word & mask)|2;
+	cpu->df=1-((cpu->flags & DF) >> 9);
+} 
+
+#define GET_IOPL(cpu) ((cpu->flags & IOPL) >> 12)
+
+void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
+	struct Memory* memory = cpu->memory;
+	U32 n_cs_sel, n_flags;
+	U32 n_eip;
+	U32 tempesp;
+	U32 n_cs_rpl;
+
+	// protected mode IRET
+	if (cpu->flags & VM) {
+		if ((cpu->flags & IOPL)!=IOPL) {
+			// win3.x e
+			exception(cpu, 13);
+			return;
+		} else {
+			if (big) {
+				U32 new_eip=readd(memory, cpu->segAddress[SS] + ESP);
+				U32 new_cs=readd(memory, cpu->segAddress[SS] + ESP+4); // only first 16-bits are read
+				U32 new_flags=readd(memory, cpu->segAddress[SS] + ESP+8);
+
+				ESP += 12;
+				cpu->eip.u32 = new_eip;
+				cpu->segAddress[CS] = cpu->thread->process->ldt[new_cs>>3].base_addr;
+				cpu->segValue[CS] = new_cs;
+
+				/* IOPL can not be modified in v86 mode by IRET */
+				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
+			} else {
+				U16 new_eip=readw(memory, cpu->segAddress[SS] + ESP);
+				U16 new_cs=readw(memory, cpu->segAddress[SS] + ESP+2);
+				U16 new_flags=readw(memory, cpu->segAddress[SS] + ESP+4);
+
+				ESP+=6;
+				cpu->eip.u32=new_eip;
+				cpu->segAddress[CS] = cpu->thread->process->ldt[new_cs>>3].base_addr;
+				cpu->segValue[CS] = new_cs;
+
+				/* IOPL can not be modified in v86 mode by IRET */
+				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
+			}
+			cpu->big = 0;
+			cpu->lazyFlags = 0;
+			return;
+		}
+	}
+	/* Check if this is task IRET */
+	if (cpu->flags & NT) {
+		if (cpu->flags & VM) kpanic("Pmode IRET with VM bit set");
+		kpanic("IRET task not implemented");
+		return;
+	}
+	
+	if (big) {
+		n_eip=readd(memory, cpu->segAddress[SS] + ESP);
+		n_cs_sel=readd(memory, cpu->segAddress[SS] + ESP+4); // only read first 16-bits
+		n_flags=readd(memory, cpu->segAddress[SS] + ESP+8);
+		if ((n_flags & VM) && cpu->cpl==0) {
+			U32 n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
+
+			// commit point
+			ESP+=12;
+			cpu->eip.u32=n_eip & 0xffff;
+			
+			n_esp=pop32(cpu);
+			n_ss=pop32(cpu) & 0xffff;
+			n_es=pop32(cpu) & 0xffff;
+			n_ds=pop32(cpu) & 0xffff;
+			n_fs=pop32(cpu) & 0xffff;
+			n_gs=pop32(cpu) & 0xffff;
+			setFlags(cpu, n_flags,FMASK_ALL | VM);
+			cpu->lazyFlags = 0;
+			cpu->cpl = 3;
+
+			cpu->segAddress[SS] = cpu->thread->process->ldt[n_ss>>3].base_addr;
+			cpu->segValue[SS] = n_ss;
+			cpu->segAddress[ES] = cpu->thread->process->ldt[n_es>>3].base_addr;
+			cpu->segValue[ES] = n_es;
+			cpu->segAddress[DS] = cpu->thread->process->ldt[n_ds>>3].base_addr;
+			cpu->segValue[DS] = n_ds;
+			cpu->segAddress[FS] = cpu->thread->process->ldt[n_fs>>3].base_addr;
+			cpu->segValue[FS] = n_fs;
+			cpu->segAddress[GS] = cpu->thread->process->ldt[n_gs>>3].base_addr;
+			cpu->segValue[GS] = n_gs;
+
+			ESP=n_esp;
+			cpu->big = 0;
+			cpu->segAddress[CS] = cpu->thread->process->ldt[n_cs_sel>>3].base_addr;
+			cpu->segValue[CS] = n_cs_sel;
+			return;
+		}
+		tempesp=ESP+12;
+		if ((n_flags & VM)!=0) kpanic("IRET from pmode to v86 with CPL!=0");
+	} else {
+		n_eip=readw(memory, cpu->segAddress[SS] + ESP);
+		n_cs_sel=readw(memory, cpu->segAddress[SS] + ESP + 2);
+		n_flags=readw(memory, cpu->segAddress[SS] + ESP + 4);
+		n_flags|=(cpu->flags & 0xffff0000);
+		tempesp=ESP+6;
+		if (n_flags & VM) kpanic("VM Flag in 16-bit iret");
+	}
+	n_cs_rpl=n_cs_sel & 3;
+	
+	if (n_cs_rpl==cpu->cpl) { /* Return to same level */
+		U32 mask=cpu->cpl ? (FMASK_NORMAL | NT) : FMASK_ALL;
+		
+		// commit point
+		ESP=tempesp;
+		cpu->segAddress[CS] = cpu->thread->process->ldt[n_cs_sel>>3].base_addr;
+		cpu->segValue[CS] = n_cs_sel;
+		// :TODO: for some reason n_cs_sel is 0 when creating .wine directory for wine 1.0.1
+		//cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
+		cpu->eip.u32 = n_eip;
+
+		
+		if (GET_IOPL(cpu)<cpu->cpl) mask &= ~IF;
+		setFlags(cpu, n_flags,mask);
+		cpu->lazyFlags = 0;
+	} else { /* Return to outer level */
+		kpanic("IRET to outer level not implemented");
+	}
+} 
 
 void fillFlagsNoCFOF(struct CPU* cpu) {
 	if (cpu->lazyFlags!=FLAGS_NONE) {
@@ -514,7 +643,21 @@ void runBlock(struct CPU* cpu, struct Block* block) {
 	cpu->lastBlock = cpu->currentBlock;
 	cpu->currentBlock = block;
 	cpu->nextBlock = 0;
+	block->count++;
+	// :TODO: maybe move this if statement to be a fake op, that first op will remove itself after 500 count
+	//if (block->count==500) {
+	//	jit(block);
+	//}
+	if (!block->ops)
+		decodeBlockWithBlock(cpu, block);
 	block->ops->func(cpu, block->ops);
+	// :TODO: should experiment more with different values here
+	// Keeping code that isn't used much from being cached reduces memory, it also improves the start time since
+	// malloc won't have to be called as much
+	if (block->count<20) {
+		freeOp(block->ops);
+		block->ops = 0;
+	}
 }
 
 struct Block* getBlock(struct CPU* cpu) {

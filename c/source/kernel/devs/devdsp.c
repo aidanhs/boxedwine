@@ -26,6 +26,7 @@ BOOL isDspOpen = 0;
 U32 dspFmt = AFMT_U8;
 U32 sdlFmt = AUDIO_U8;
 U32 dspChannels = 1;
+U32 dspFragSize = 1024;
 U32 dspFreq = 8000;
 #define DSP_BUFFER_SIZE 1024*64
 U8 dspBuffer[DSP_BUFFER_SIZE];
@@ -268,6 +269,35 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		}
 		return 0;
 		}
+	case 0x5006: {// SOUND_PCM_WRITE_CHANNELS
+		U32 channels = readd(memory, IOCTL_ARG1);
+		if (channels!=dspChannels) {
+			closeAudio();
+		}
+		if (channels==1) {
+			dspChannels = 1;
+		} else if (channels == 2) {
+			dspChannels = 2;
+		} else {
+			dspChannels = 2;
+		}
+		if (write)
+			writed(memory, IOCTL_ARG1, dspChannels);
+		return 0;
+		}
+	case 0x500A: // SNDCTL_DSP_SETFRAGMENT
+		dspFragSize = 1 << (readd(memory, IOCTL_ARG1) & 0xFFFF);
+		return 0;
+	case 0x500C: // SNDCTL_DSP_GETOSPACE
+		writed(memory, IOCTL_ARG1, (DSP_BUFFER_SIZE-dspBufferLen)/dspFragSize); // fragments
+		writed(memory, IOCTL_ARG1+4, DSP_BUFFER_SIZE/dspFragSize);
+		writed(memory, IOCTL_ARG1+8, dspFragSize);
+		writed(memory, IOCTL_ARG1+12, DSP_BUFFER_SIZE-dspBufferLen);
+		return 0;
+	case 0x500F: // SNDCTL_DSP_GETCAPS
+		return 0;
+	case 0x5016: // SNDCTL_DSP_SETDUPLEX
+		return -K_EINVAL;
 	}
     return -K_ENODEV;
 }

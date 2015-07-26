@@ -17,8 +17,10 @@ public class Main {
 
         try {
             FileOutputStream fos = new FileOutputStream("decode.h");
+            FileOutputStream fos_noflags = new FileOutputStream("decode_noflags.h");
             for (Base b : ops) {
                 b.decode(fos);
+                b.decode_noflags(fos_noflags);
                 b.generate();
             }
             fos.close();

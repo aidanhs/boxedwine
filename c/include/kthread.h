@@ -41,8 +41,12 @@ struct KThread {
 	U32 pollCount;
 	struct KTimer timer;
 	struct KThread* waitingForSignalToEnd;
+	U64 waitingForSignalToEndMaskToRestore;
 	U32     waitType;
 };
+
+#define RESTORE_SIGNAL_MASK 0xF000000000000000l
+#define SIGSUSPEND_RETURN 0x0FFFFFFFFFFFFFFFl
 
 #define addClearOnWake(thread, pTarget) thread->clearOnWake[thread->clearOnWakeCount++]=pTarget
 

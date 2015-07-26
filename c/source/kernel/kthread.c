@@ -81,6 +81,7 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
 	thread->sigMask = from->sigMask;
 	thread->stackPageStart = from->stackPageStart;
 	thread->stackPageCount = from->stackPageCount;
+	thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
 	thread->id = processAddThread(process, thread);
 }
 
@@ -495,8 +496,13 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 	
 	if (cpu->thread->waitingForSignalToEnd) {
 		wakeThread(cpu->thread->waitingForSignalToEnd);
-		cpu->thread->waitingForSignalToEnd = 0;
+		cpu->thread->waitingForSignalToEnd = 0;		
 	}
+	if (cpu->thread->waitingForSignalToEndMaskToRestore & RESTORE_SIGNAL_MASK) {
+		cpu->thread->sigMask = (U32)cpu->thread->waitingForSignalToEndMaskToRestore;
+		cpu->thread->waitingForSignalToEndMaskToRestore = SIGSUSPEND_RETURN;
+	}
+
 	cpu->nextBlock = 0;
 	/*
 	if (action->flags & K_SA_RESTORER) {
@@ -568,8 +574,8 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
 			push32(&thread->cpu, address);			
 			push32(&thread->cpu, signal);
 			thread->cpu.reg[0].u32 = signal;
-			thread->cpu.reg[1].u32 = context;
-			thread->cpu.reg[2].u32 = address;	
+			thread->cpu.reg[1].u32 = address;
+			thread->cpu.reg[2].u32 = context;	
 		} else {
 			thread->cpu.reg[0].u32 = signal;
 			thread->cpu.reg[1].u32 = 0;

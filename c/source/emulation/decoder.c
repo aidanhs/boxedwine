@@ -25,7 +25,6 @@ struct DecodeData {
 	U32 ip;
 	U32 start;
 	U32 opCode;
-	U32 inst;
 	struct CPU* cpu;
 	struct Memory* memory;
 	struct Op* op;
@@ -87,6 +86,9 @@ U32 FETCH32(struct DecodeData* data) {
 }
 
 struct Op* freeOps;
+int totalOpCount;
+int freeOpCount;
+int allocatedOpMemory;
 
 struct Op* allocOp() {
 	struct Op* result;
@@ -95,6 +97,7 @@ struct Op* allocOp() {
 		result = freeOps;
 		freeOps = result->next;
 		memset(result, 0, sizeof(struct Op));
+		freeOpCount--;
 	} else {
 		U32 count = 1024*1023/sizeof(struct Op);
 		U32 i;
@@ -105,6 +108,9 @@ struct Op* allocOp() {
 			freeOps = result;
 			result++;
 		}
+		freeOpCount+=count;
+		totalOpCount+=count;
+		allocatedOpMemory+=1024*1023;
 		return allocOp();
 	}	
 	return result;
@@ -115,6 +121,7 @@ void freeOp(struct Op* op) {
 		freeOp(op->next);
 	op->next = freeOps;
 	freeOps = op;
+	freeOpCount++;
 }
 
 struct Block* freeBlocks;
@@ -156,8 +163,8 @@ extern DECODER decoder[1024];
 #define RESTART(data) if (data->cpu->big) { data->opCode = 0x200; data->ea16 = 0; } else { data->opCode = 0; data->ea16 = 1; } data->ds = DS; data->ss = SS; data->rep = 0
 
 void RESTART_OP(struct DecodeData* data) {
-	data->inst = FETCH8(data)+data->opCode;
-	decoder[data->inst](data);
+	data->op->inst = FETCH8(data)+data->opCode;
+	decoder[data->op->inst](data);
 }
 
 void NEXT_OP(struct DecodeData* data) {
@@ -180,8 +187,8 @@ void NEXT_OP(struct DecodeData* data) {
 		data->op->func = emptyOp;
 		return;
 	}
-	data->inst = FETCH8(data)+data->opCode;
-	decoder[data->inst](data);
+	data->op->inst = FETCH8(data)+data->opCode;
+	decoder[data->op->inst](data);
 }
 
 const char* RB(int r) {
@@ -671,7 +678,7 @@ void decode262(struct DecodeData* data) {
 }
 
 void invalidOp(struct DecodeData* data) {
-	kpanic("Invalid instruction %x", data->inst);
+	kpanic("Invalid instruction %x", data->op->inst);
 }
 
 // Operand Size Prefix
@@ -1160,6 +1167,12 @@ void decode0cd(struct DecodeData* data) {
 	} else {
 		kpanic("Unhandled interrupt %d", i);
 	}
+}
+
+// IRET
+void decode2cf(struct DecodeData* data) {
+	data->op->func = iret32;
+    FINISH_OP(data);
 }
 
 // GRP2 Eb,1
@@ -2079,7 +2092,7 @@ DECODER decoder[1024] = {
 	decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,
 	decode2b8, decode2b9, decode2ba, decode2bb, decode2bc, decode2bd, decode2be, decode2bf,
 	decode0c0, decode2c1, decode2c2, decode2c3, invalidOp, invalidOp, decode0c6, decode2c7,
-	invalidOp, decode2c9, invalidOp, decode2cb, invalidOp, decode0cd, invalidOp, invalidOp,
+	invalidOp, decode2c9, invalidOp, decode2cb, invalidOp, decode0cd, invalidOp, decode2cf,
 	decode0d0, decode2d1, decode0d2, decode2d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
 	decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2139,10 +2152,15 @@ DECODER decoder[1024] = {
 
 struct Block* decodeBlock(struct CPU* cpu) {	
 	struct Block* result;
+	result = allocBlock();
+	decodeBlockWithBlock(cpu, result);
+	return result;	
+}
+
+void decodeBlockWithBlock(struct CPU* cpu, struct Block* block) {	
 	struct DecodeData data;
 	struct DecodeData* pData = &data;
-	result = allocBlock();
-	result->ops = data.op = allocOp();
+	block->ops = data.op = allocOp();
 	data.start = data.ip = cpu->eip.u32 + cpu->segAddress[CS];
 	if (cpu->big) {
 		data.opCode = 0x200;
@@ -2159,8 +2177,6 @@ struct Block* decodeBlock(struct CPU* cpu) {
 	data.count = 0;
 	data.memory = cpu->memory;
 	fillFetchPage(pData);
-	data.inst = FETCH8(pData)+data.opCode;
-	decoder[data.inst](pData);
-	return result;	
+	data.op->inst = FETCH8(pData)+data.opCode;
+	decoder[data.op->inst](pData);
 }
-

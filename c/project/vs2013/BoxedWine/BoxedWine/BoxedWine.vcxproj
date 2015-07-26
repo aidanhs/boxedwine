@@ -355,6 +355,7 @@
     <ClInclude Include="..\..\..\..\include\filepath.h" />
     <ClInclude Include="..\..\..\..\include\filesystem.h" />
     <ClInclude Include="..\..\..\..\include\fpu.h" />
+    <ClInclude Include="..\..\..\..\include\jit.h" />
     <ClInclude Include="..\..\..\..\include\kalloc.h" />
     <ClInclude Include="..\..\..\..\include\karray.h" />
     <ClInclude Include="..\..\..\..\include\kcircularlist.h" />
@@ -416,6 +417,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c" />
     <ClCompile Include="..\..\..\..\source\emulation\decoder.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\jit.c" />
     <ClCompile Include="..\..\..\..\source\emulation\memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\ram.c" />
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />

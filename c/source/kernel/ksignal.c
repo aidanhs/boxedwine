@@ -3,6 +3,7 @@
 #include "kprocess.h"
 #include "log.h"
 #include "kthread.h"
+#include "kscheduler.h"
 
 void writeSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
 	writed(memory, address, signal->handlerAndSigAction);
@@ -74,4 +75,15 @@ U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss) {
 		}
     }
     return 0;
+}
+
+U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask) {
+	if (thread->waitingForSignalToEndMaskToRestore==SIGSUSPEND_RETURN) {
+		thread->waitingForSignalToEndMaskToRestore = 0;
+		return -K_EINTR;
+	}
+	thread->waitingForSignalToEndMaskToRestore = thread->sigMask | RESTORE_SIGNAL_MASK;
+	thread->sigMask = readd(thread->process->memory, mask);
+	waitThread(thread);			
+	return -K_CONTINUE;
 }

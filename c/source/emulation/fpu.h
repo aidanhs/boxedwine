@@ -444,8 +444,8 @@ static void FPU_FST(struct FPU* fpu, int st, int other) {
 #endif
 }
 
-static void setFlags(struct CPU* cpu, int newFlags) {
-    fillFlags(cpu);
+static void fpu_setFlags(struct CPU* cpu, int newFlags) {
+	cpu->lazyFlags = FLAGS_NONE;
     cpu->flags &= ~FMASK_TEST;
     cpu->flags |= (newFlags & FMASK_TEST);
 }
@@ -454,19 +454,19 @@ static void FPU_FCOMI(struct CPU* cpu, int st, int other) {
 	struct FPU* fpu = &cpu->fpu;
     if (((fpu->tags[st] != TAG_Valid) && (fpu->tags[st] != TAG_Zero)) ||
             ((fpu->tags[other] != TAG_Valid) && (fpu->tags[other] != TAG_Zero)) || isnan(fpu->regs[st].d) || isnan(fpu->regs[other].d)) {
-        setFlags(cpu, ZF | PF | CF);
+        fpu_setFlags(cpu, ZF | PF | CF);
         return;
     }
     if (fpu->regs[st].d == fpu->regs[other].d) {
-        setFlags(cpu, ZF);
+        fpu_setFlags(cpu, ZF);
         return;
     }
     if (fpu->regs[st].d < fpu->regs[other].d) {
-        setFlags(cpu, CF);
+        fpu_setFlags(cpu, CF);
         return;
     }
     // st > other
-    setFlags(cpu, 0);
+    fpu_setFlags(cpu, 0);
 }
 
 static void FPU_FCOM(struct FPU* fpu, int st, int other) {

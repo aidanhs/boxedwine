@@ -77,5 +77,6 @@
 U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact);
 U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset);
 U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss);
+U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask);
 
 #endif

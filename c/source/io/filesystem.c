@@ -236,8 +236,18 @@ struct DirData* allocDirData() {
 	return result;
 }
 
-S64 dir_length(struct OpenNode* node) {	
+struct DirData* getDirData(struct OpenNode* node) {
 	struct DirData* data = (struct DirData*)node->data;
+	if (!data) {
+		data = allocDirData();
+		data->count = listNodes(node->node, data->nodes, MAX_DIR_LISTING);
+		node->data = data;
+	}
+	return data;
+}
+
+S64 dir_length(struct OpenNode* node) {	
+	struct DirData* data = getDirData(node);
 	return data->count;
 }
 
@@ -246,12 +256,12 @@ BOOL dir_setLength(struct OpenNode* node, S64 len) {
 }
 
 S64 dir_getFilePointer(struct OpenNode* node) {
-	struct DirData* data = (struct DirData*)node->data;
+	struct DirData* data = getDirData(node);
 	return data->pos;
 }
 
 S64 dir_seek(struct OpenNode* node, S64 pos) {
-	struct DirData* data = (struct DirData*)node->data;
+	struct DirData* data = getDirData(node);
 	if (pos>=0 && pos<=data->count)
 		data->pos = (S32)pos;
 	else
@@ -310,19 +320,17 @@ BOOL dir_canMap(struct OpenNode* node) {
 }
 
 BOOL dir_init(struct KProcess* process, struct OpenNode* node) {
-	struct DirData* data = allocDirData();
-	node->data = data;
-	data->count = listNodes(node->node, data->nodes, MAX_DIR_LISTING);
+	node->data = 0;
 	return TRUE;
 }
 
 U32 getDirCount(struct OpenNode* node) {
-	struct DirData* data = (struct DirData*)node->data;
+	struct DirData* data = getDirData(node);
 	return data->count;
 }
 
 struct Node* getDirNode(struct OpenNode* node, U32 index) {
-	struct DirData* data = (struct DirData*)node->data;
+	struct DirData* data = getDirData(node);
 	if (index<data->count)
 		return data->nodes[index];
 	return 0;
@@ -487,26 +495,7 @@ U32 file_getType(struct Node* node) {
 }
 
 U32 file_getMode(struct Node* node) {
-	struct stat buf;
-	U32 result = 0;
-	const char* path = node->path.nativePath;
-
-	path = pathMakeWindowsHappy(path);
-	if (stat(path, &buf)==0) {
-		/*
-		if (S_ISDIR(buf.st_mode))
-			result |= K__S_IFDIR;
-		else
-			result |= K__S_IFREG;
-			*/
-		//if (buf.st_mode & S_IREAD)
-			result |= K__S_IREAD;
-		//if (buf.st_mode & S_IWRITE)
-			result |= K__S_IWRITE;
-		//if (buf.st_mode & S_IEXEC)
-			result |= K__S_IEXEC;
-	}
-	return result | (file_getType(node) << 12);
+	return K__S_IREAD | K__S_IWRITE | K__S_IEXEC | (file_getType(node) << 12);
 }
 
 BOOL file_canRead(struct Node* node) {
@@ -776,26 +765,19 @@ void remotePathToLocal(char* path) {
 }
 
 BOOL kreadLink(const char* path, char* buffer, int bufferSize, BOOL makeAbsolute) {
-	struct stat buf;
 	int h;
-	char tmp[MAX_FILEPATH_LEN];
+	char tmp[MAX_FILEPATH_LEN+1];
+	int readCount;
 
-	path = pathMakeWindowsHappy(path);
-	if (stat(path, &buf)!=0) {
-		return FALSE;
-	}
-	if (buf.st_size>=MAX_FILEPATH_LEN) {
-		kwarn("%s contains a link longer than the MAX_PATH: %d", path, MAX_FILEPATH_LEN);
-		return FALSE;
-	}
 	h = open(path, O_RDONLY);
 	if (h<=0)
 		return FALSE;
-	if (read(h, tmp, buf.st_size)!=buf.st_size) {
+	readCount = read(h, tmp, MAX_FILEPATH_LEN+1);
+	if (readCount<=0 || readCount>=MAX_FILEPATH_LEN) {
 		close(h);
 		return FALSE;
 	}
-	tmp[buf.st_size]=0;
+	tmp[readCount]=0;
 	if (makeAbsolute && tmp[0]!='/') {
 		int len = strrchr(path, pathSeperator)-path;
 		memcpy(buffer, path, len);
@@ -848,10 +830,8 @@ BOOL followLinks(char* path, int pathSize, U32* isLink) {
 }
 
 BOOL doesPathExist(const char* path) {
-	struct stat buf;
-
 	path = pathMakeWindowsHappy(path);
-	if (stat(path, &buf)==0) {
+	if (access(path, 0)!=-1) {
 		return TRUE;
 	}
 	return FALSE;

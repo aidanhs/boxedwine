@@ -16,6 +16,7 @@
 #include "ksystem.h"
 
 #include <stdarg.h>
+
 //#undef LOG_SYSCALLS
 //#undef LOG_OPS
 #ifdef LOG_OPS
@@ -110,6 +111,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_prctl 172
 #define __NR_rt_sigaction 174
 #define __NR_rt_sigprocmask 175
+#define __NR_rt_sigsuspend 179
 #define __NR_pread64 180
 #define __NR_pwrite64 181
 #define __NR_getcwd 183
@@ -376,7 +378,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_mmap:
 		result = syscall_mmap64(thread, readd(memory, ARG1), readd(memory, ARG1+4), readd(memory, ARG1+8), readd(memory, ARG1+12), readd(memory, ARG1+16), readd(memory, ARG1+20));
-		LOG("__NR_mmap address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", readd(memory, ARG1), readd(memory, ARG1+4), readd(memory, ARG1+8), readd(memory, ARG1+12), readd(memory, ARG1+16), readd(memory, ARG1+20), result);
+		//LOG("__NR_mmap address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", readd(memory, ARG1), readd(memory, ARG1+4), readd(memory, ARG1+8), readd(memory, ARG1+12), readd(memory, ARG1+16), readd(memory, ARG1+20), result);
 		break;
 	case __NR_munmap:
 		result = syscall_unmap(thread, ARG1, ARG2);
@@ -386,10 +388,9 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_fchmod(thread, ARG1, ARG2);
 		LOG("__NR_fchmod fd=%d mod=%X result=%d", ARG1, ARG2, result);
 		break;
-		/*
 	case __NR_setpriority:
+		result = 0;
 		break;
-		*/
 	case __NR_statfs:
 		result = syscall_statfs(thread, ARG1, ARG2);
 		LOG("__NR_fstatfs path=%X(%s) buf=%X result=%d", ARG1, getNativeString(memory, ARG1), ARG2, result);
@@ -600,6 +601,10 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		result = syscall_sigprocmask(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_rt_sigprocmask how=%d set=%X oset=%X result=%d", ARG1, ARG2, ARG3, result);
 		break;
+	case __NR_rt_sigsuspend:
+		result = syscall_rt_sigsuspend(thread, ARG1);
+		LOG("__NR_rt_sigsuspend mask=%X result=%d", ARG1, result);
+		break;
 	case __NR_pread64:
 		result = syscall_pread64(thread, ARG1, ARG2, ARG3, ARG4 | ((U64)ARG5) << 32);
 		LOG("__NR_pread64 fd=%d buf=%X len=%d offset=%d result=%d", ARG1, ARG2, ARG3, ARG4, result);
@@ -626,7 +631,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_mmap2:
 		result = syscall_mmap64(thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6*4096l);
-		LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
+		//LOG("__NR_mmap2 address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d result=%.8X", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, result);
 		break;
 	case __NR_ftruncate64: {
 		U64 len = ARG2 | ((U64)ARG3 << 32);

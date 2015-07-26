@@ -1061,22 +1061,21 @@ void OPCALL pushf32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL popf16(struct CPU* cpu, struct Op* op) {
 	cpu->lazyFlags = FLAGS_NONE;
-	cpu->flags=(cpu->flags & 0xFFFF0000) | pop16(cpu);
+	setFlags(cpu, pop16(cpu), FMASK_ALL & 0xFFFF);
 	CYCLES(4);
 	NEXT();
 }
 
 void OPCALL popf32(struct CPU* cpu, struct Op* op) {
 	cpu->lazyFlags = FLAGS_NONE;
-	cpu->flags=(cpu->flags & VM) | (pop32(cpu) & ~VM);
+	setFlags(cpu, pop32(cpu), FMASK_ALL);
 	CYCLES(4);
 	NEXT();
 }
 
 void OPCALL sahf(struct CPU* cpu, struct Op* op) {
-#define MASK (SF|ZF|AF|PF|CF)
-    cpu->flags=(cpu->flags & (0xFFFFFF00 | (~MASK))) | (AH & MASK);
-    cpu->lazyFlags = FLAGS_NONE;
+	fillFlags(cpu);
+	setFlags(cpu, AH, FMASK_ALL & 0xFF);
 	CYCLES(2);
 	NEXT();
 }
@@ -1134,7 +1133,7 @@ void OPCALL retnIw16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL retnIw32(struct CPU* cpu, struct Op* op) {
 	U32 eip = pop32(cpu);		
-	SP = SP+op->data1;
+	ESP = ESP+op->data1;
 	DONE();	
 	cpu->eip.u32 = eip;
 	CYCLES(3);
@@ -3099,4 +3098,10 @@ void OPCALL callAp(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL emptyOp(struct CPU* cpu, struct Op* op) {
+}
+
+void OPCALL iret32(struct CPU* cpu, struct Op* op) {
+	cpu->eip.u32+=op->eipCount;
+	cpu_iret(cpu, 1, cpu->eip.u32);
+	CYCLES(10);
 }

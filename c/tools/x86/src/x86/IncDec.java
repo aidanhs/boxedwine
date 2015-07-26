@@ -39,11 +39,16 @@ public class IncDec extends Base {
         decodeFunc(fos, "DEC EDI", "24f", "dec32_reg", 7);
     }
 
+    public void decode_noflags(FileOutputStream fos) throws IOException {
+        incDec(fos, "inc", "+", false);
+        incDec(fos, "dec", "-", false);
+    }
+
     public void generate() {
         try {
             FileOutputStream fos = new FileOutputStream("incdec.h");
-            incDec(fos, "inc", "+");
-            incDec(fos, "dec", "-");
+            incDec(fos, "inc", "+", true);
+            incDec(fos, "dec", "-", true);
             fos.close();
             fos = null;
         } catch (IOException e) {
@@ -51,41 +56,47 @@ public class IncDec extends Base {
         }
     }
 
-    public void incDec(FileOutputStream fos, String name, String op) throws IOException {
-        incDec8(fos, name, op);
-        incDec16(fos, name, op);
-        incDec32(fos, name, op);
+    public void incDec(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
+        incDec8(fos, name, op, flags);
+        incDec16(fos, name, op, flags);
+        incDec32(fos, name, op, flags);
     }
 
-    public void incDec8(FileOutputStream fos, String name, String op) throws IOException {
-        incDecBase(fos, name+"8_reg", "FLAGS_"+name.toUpperCase()+"8", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, "1", false, false, "8");
-        incDecBase(fos, name+"8_mem16", "FLAGS_"+name.toUpperCase()+"8", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, "3", true, false, "8");
-        incDecBase(fos, name+"8_mem32", "FLAGS_"+name.toUpperCase()+"8", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, "3", false, true, "8");
+    public void incDec8(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
+        incDecBase(fos, name+"8_reg", "FLAGS_"+name.toUpperCase()+"8", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, "1", false, false, "8", flags);
+        incDecBase(fos, name+"8_mem16", "FLAGS_"+name.toUpperCase()+"8", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, "3", true, false, "8", flags);
+        incDecBase(fos, name+"8_mem32", "FLAGS_"+name.toUpperCase()+"8", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, "3", false, true, "8", flags);
     }
 
-    public void incDec16(FileOutputStream fos, String name, String op) throws IOException {
-        incDecBase(fos, name+"16_reg", "FLAGS_"+name.toUpperCase()+"16", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, "1", false, false, "16");
-        incDecBase(fos, name+"16_mem16", "FLAGS_"+name.toUpperCase()+"16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, "3", true, false, "16");
-        incDecBase(fos, name+"16_mem32", "FLAGS_"+name.toUpperCase()+"16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, "3", false, true, "16");
+    public void incDec16(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
+        incDecBase(fos, name+"16_reg", "FLAGS_"+name.toUpperCase()+"16", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, "1", false, false, "16", flags);
+        incDecBase(fos, name+"16_mem16", "FLAGS_"+name.toUpperCase()+"16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, "3", true, false, "16", flags);
+        incDecBase(fos, name+"16_mem32", "FLAGS_"+name.toUpperCase()+"16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, "3", false, true, "16", flags);
     }
 
-    public void incDec32(FileOutputStream fos, String name, String op) throws IOException {
-        incDecBase(fos, name+"32_reg", "FLAGS_"+name.toUpperCase()+"32", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, "1", false, false, "32");
-        incDecBase(fos, name+"32_mem16", "FLAGS_"+name.toUpperCase()+"32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, "3", true, false, "32");
-        incDecBase(fos, name+"32_mem32", "FLAGS_"+name.toUpperCase()+"32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, "3", false, true, "32");
+    public void incDec32(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
+        incDecBase(fos, name+"32_reg", "FLAGS_"+name.toUpperCase()+"32", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, "1", false, false, "32", flags);
+        incDecBase(fos, name+"32_mem16", "FLAGS_"+name.toUpperCase()+"32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, "3", true, false, "32", flags);
+        incDecBase(fos, name+"32_mem32", "FLAGS_"+name.toUpperCase()+"32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, "3", false, true, "32", flags);
     }
 
-    public void incDecBase(FileOutputStream fos, String name, String flagName, String destLoad, String destSave1, String destSave2, String op, String cycles, boolean eaa16, boolean eaa32, String bits) throws IOException {
+    public void incDecBase(FileOutputStream fos, String name, String flagName, String destLoad, String destSave1, String destSave2, String op, String cycles, boolean eaa16, boolean eaa32, String bits, boolean flags) throws IOException {
+        if (!flags)
+            name+="_noflags";
         out(fos, "void OPCALL "+name+"(struct CPU* cpu, struct Op* op) {");
         if (eaa16)
             out(fos, "    U32 eaa = eaa16(cpu, op);");
         if (eaa32)
             out(fos, "    U32 eaa = eaa32(cpu, op);");
-        out(fos, "    cpu->oldcf=getCF(cpu);");
-        out(fos, "    cpu->dst.u"+bits+"="+destLoad+";");
-        out(fos, "    cpu->result.u"+bits+"=cpu->dst.u"+bits+" "+op+" 1;");
-        out(fos, "    cpu->lazyFlags = "+flagName+";");
-        out(fos, "    "+destSave1+"cpu->result.u"+bits+destSave2+";");
+        if (flags) {
+            out(fos, "    cpu->oldcf=getCF(cpu);");
+            out(fos, "    cpu->dst.u" + bits + "=" + destLoad + ";");
+            out(fos, "    cpu->result.u" + bits + "=cpu->dst.u" + bits + " " + op + " 1;");
+            out(fos, "    cpu->lazyFlags = " + flagName + ";");
+            out(fos, "    " + destSave1 + "cpu->result.u" + bits + destSave2 + ";");
+        } else {
+            out(fos, "    " + destSave1 + destLoad + op + "1" + destSave2 + ";");
+        }
         out(fos, "    CYCLES("+cycles+");");
         out(fos, "    NEXT();");
         out(fos, "}");

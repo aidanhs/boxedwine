@@ -61,6 +61,7 @@ struct CPU {
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
 	BOOL log;
+	U32 cpl;
 };
 
 #define EXCEPTION_DIVIDE 0
@@ -77,6 +78,12 @@ struct CPU {
 #define setPF(cpu, b) if (b) cpu->flags|=PF; else cpu->flags&=~PF
 #define setZF(cpu, b) if (b) cpu->flags|=ZF; else cpu->flags&=~ZF
 
+#define FMASK_TEST (CF | PF | AF | ZF | SF | OF)
+#define FMASK_NORMAL (FMASK_TEST | DF | TF | IF | ID | AC)
+#define FMASK_ALL (FMASK_NORMAL | IOPL | NT)
+
+ void setFlags(struct CPU* cpu, U32 word, U32 mask);
+
 void fillFlagsNoCFOF(struct CPU* cpu);
 void fillFlagsNoCF(struct CPU* cpu);
 void fillFlagsNoZF(struct CPU* cpu);
@@ -84,6 +91,7 @@ void fillFlags(struct CPU* cpu);
 void fillFlagsNoOF(struct CPU* cpu);
 void cpu_ret(struct CPU* cpu, U32 big, U32 eip);
 void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip);
+void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip);
 
 extern U8 parity_lookup[];
 
