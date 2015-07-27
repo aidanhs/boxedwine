@@ -6,29 +6,36 @@
 #define MAYBE 0x0400
 
 #define GRP1 0x1000
-#define GRP2 0x2000
-#define GRP3 0x3000
-#define GRP4 0x4000
-#define GRP5 0x5000
-#define GRP6 0x6000
-#define FPU2r 0x7000
-#define FPU2m 0x8000
-#define FPU3r 0x9000
-#define FPU3m 0xa000
-#define FPU7r 0xb000
-#define FPU7m 0xc000
+#define GRP2cl 0x2000
+#define GRP2 0x3000
+#define GRP3 0x4000
+#define GRP4 0x5000
+#define GRP5 0x6000
+#define GRP6 0x7000
+#define FPU2r 0x8000
+#define FPU2m 0x9000
+#define FPU3r 0xa000
+#define FPU3m 0xb000
+#define FPU7r 0xc000
+#define FPU7m 0xd000
 
 struct OpInfo {
     U16 setsFlags;
     U16 getsFlags;
 };
 
-struct OpInfo subOpInfo[1024][8] = {
+struct OpInfo subOpInfo[][8] = {
+    // index 0 is not used
+    {{0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0}, {0,0},},
+
     // Group 1 (ADD/OR/ADC/SBB/AND/SUB/XOR/CMP)
     {{CF|AF|ZF|SF|OF|PF, 0}, {CF|AF|ZF|SF|OF|PF, 0}, {CF|AF|ZF|SF|OF|PF, CF}, {CF|AF|ZF|SF|OF|PF, CF}, {CF|AF|ZF|SF|OF|PF, 0}, {CF|AF|ZF|SF|OF|PF, 0}, {CF|AF|ZF|SF|OF|PF, 0}, {CF|AF|ZF|SF|OF|PF, 0}},
 
-    // Group 2 (ROL/ROR/RCL/RCR/SHL/SHR/SAL/SAR)
+    // Group 2 cl (ROL/ROR/RCL/RCR/SHL/SHR/SAL/SAR)
     {{CF|OF|MAYBE,0}, {CF|OF|MAYBE,0}, {CF|OF|MAYBE,CF}, {CF|OF|MAYBE,CF}, {CF|AF|ZF|SF|OF|PF|MAYBE,0}, {CF|AF|ZF|SF|OF|PF|MAYBE,0}, {CF|AF|ZF|SF|OF|PF|MAYBE,0}, {CF|AF|ZF|SF|OF|PF|MAYBE,0}},
+
+    // Group 2 (ROL/ROR/RCL/RCR/SHL/SHR/SAL/SAR)
+    {{CF|OF,0}, {CF|OF,0}, {CF|OF,CF}, {CF|OF,CF}, {CF|AF|ZF|SF|OF|PF,0}, {CF|AF|ZF|SF|OF|PF,0}, {CF|AF|ZF|SF|OF|PF,0}, {CF|AF|ZF|SF|OF|PF,0}},
 
     // Group 3 (TEST/TEST/NOT/NEG/MUL/IMUL/DIV/IDIV)
     {{CF|AF|ZF|SF|OF|PF, 0}, {CF|AF|ZF|SF|OF|PF,0}, {0,0}, {CF|AF|ZF|SF|OF|PF,0}, {CF|OF,0}, {CF|OF,0}, {0,0}, {0,0}},
@@ -228,16 +235,16 @@ struct OpInfo opInfo[] = {
     {0,0},							// 0a3 MOV Ow,AX
     {0,0},							// 0a4 MOVSB
     {0,0},							// 0a5 MOVSW
-    {CF|AF|ZF|SF|OF|PF,0},			// 0a6 CMPSB
-    {CF|AF|ZF|SF|OF|PF,0},			// 0a7 CMPSW
-    {CF|AF|ZF|SF|OF|PF,0},			// 0a8 TEST AL,Ib: CF, AF, OF are always 0
-    {CF|AF|ZF|SF|OF|PF,0},			// 0a9 TEST AX,Iw: CF, AF, OF are always 0
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 0a6 CMPSB
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 0a7 CMPSW
+    {CF|AF|ZF|SF|OF|PF,0},	        // 0a8 TEST AL,Ib: CF, AF, OF are always 0
+    {CF|AF|ZF|SF|OF|PF,0},	        // 0a9 TEST AX,Iw: CF, AF, OF are always 0
     {0,0},							// 0aa STOSB
     {0,0},							// 0ab STOSW
     {0,0},							// 0ac LODSB
     {0,0},							// 0ad LODSW
-    {CF|AF|ZF|SF|OF|PF,0},			// 0ae SCASB
-    {CF|AF|ZF|SF|OF|PF,0},			// 0af SCASW
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 0ae SCASB
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 0af SCASW
     {0,0},							// 0b0 MOV AL,Ib
     {0,0},							// 0b1 MOV CL,Ib
     {0,0},							// 0b2 MOV DL,Ib
@@ -272,8 +279,8 @@ struct OpInfo opInfo[] = {
     {0,0},							// 0cf IRET
     {GRP2,GRP2},					// 0d0 GRP2 Eb,1
     {GRP2,GRP2},					// 0d1 GRP2 Ew,1
-    {GRP2,GRP2},					// 0d2 GRP2 Eb,CL
-    {GRP2,GRP2},					// 0d3 GRP2 Ew,CL
+    {GRP2cl,GRP2cl},				// 0d2 GRP2 Eb,CL
+    {GRP2cl,GRP2cl},				// 0d3 GRP2 Ew,CL
     {CF|AF|ZF|SF|OF|PF,0},			// 0d4 AAM Ib
     {CF|AF|ZF|SF|OF|PF,0},			// 0d5 AAD Ib
     {CF,0},							// 0d6 SALC
@@ -740,16 +747,16 @@ struct OpInfo opInfo[] = {
     {0,0},							// 2a3 MOV Od,EAX
     {0,0},							// 2a4 MOVSB
     {0,0},							// 2a5 MOVSD
-    {CF|AF|ZF|SF|OF|PF,0},			// 2a6 CMPSB
-    {CF|AF|ZF|SF|OF|PF,0},			// 2a7 CMPSD
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 2a6 CMPSB
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 2a7 CMPSD
     {CF|AF|ZF|SF|OF|PF,0},			// 2a8 TEST AL,Ib: CF, AF, OF are always 0
     {CF|AF|ZF|SF|OF|PF,0},			// 2a9 TEST EAX,Id: CF, AF, OF are always 0
     {0,0},							// 2aa STOSB
     {0,0},							// 2ab STOSD
     {0,0},							// 2ac LODSB
     {0,0},							// 2ad LODSD
-    {CF|AF|ZF|SF|OF|PF,0},			// 2ae SCASB
-    {CF|AF|ZF|SF|OF|PF,0},			// 2af SCASD
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 2ae SCASB
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 2af SCASD
     {0,0},							// 2b0 MOV AL,Ib
     {0,0},							// 2b1 MOV CL,Ib
     {0,0},							// 2b2 MOV DL,Ib
@@ -1088,6 +1095,82 @@ struct OpInfo opInfo[] = {
     {0,0},							// 3ff
 };
 
+void OPCALL add8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL add8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL or8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL or8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL adc8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL adc8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL sbb8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL sbb8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL and8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL and8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL sub8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL sub8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL xor8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL xor8_mem16(struct CPU* cpu, struct Op* op);
+void decode080_noflags(struct Op* op) {
+    if (op->func == add8_reg) {
+        op->func = add8_reg_noflags;
+    } else if (op->func == add8_mem32) {
+        op->func = add8_mem32_noflags;
+    } else if (op->func == add8_mem16) {
+        op->func = add8_mem16_noflags;
+    } 
+    
+    else if (op->func == or8_reg) {
+        op->func = or8_reg_noflags;
+    } else if (op->func == or8_mem32) {
+        op->func = or8_mem32_noflags;
+    } else if (op->func == or8_mem16) {
+        op->func = or8_mem16_noflags;
+    } 
+    
+    else if (op->func == adc8_reg) {
+        op->func = adc8_reg_noflags;
+    } else if (op->func == adc8_mem32) {
+        op->func = adc8_mem32_noflags;
+    } else if (op->func == adc8_mem16) {
+        op->func = adc8_mem16_noflags;
+    }
+
+    else if (op->func == sbb8_reg) {
+        op->func = sbb8_reg_noflags;
+    } else if (op->func == sbb8_mem32) {
+        op->func = sbb8_mem32_noflags;
+    } else if (op->func == sbb8_mem16) {
+        op->func = sbb8_mem16_noflags;
+    }
+
+    else if (op->func == and8_reg) {
+        op->func = and8_reg_noflags;
+    } else if (op->func == and8_mem32) {
+        op->func = and8_mem32_noflags;
+    } else if (op->func == and8_mem16) {
+        op->func = and8_mem16_noflags;
+    }
+
+    else if (op->func == sub8_reg) {
+        op->func = sub8_reg_noflags;
+    } else if (op->func == sub8_mem32) {
+        op->func = sub8_mem32_noflags;
+    } else if (op->func == sub8_mem16) {
+        op->func = sub8_mem16_noflags;
+    }
+
+    else if (op->func == xor8_reg) {
+        op->func = xor8_reg_noflags;
+    } else if (op->func == xor8_mem32) {
+        op->func = xor8_mem32_noflags;
+    } else if (op->func == xor8_mem16) {
+        op->func = xor8_mem16_noflags;
+    }
+
+    else {
+        kpanic("decode080_noflags error");
+    }
+}
+
 void OPCALL add32_mem32(struct CPU* cpu, struct Op* op);
 void OPCALL add32_mem16(struct CPU* cpu, struct Op* op);
 void OPCALL or32_mem32(struct CPU* cpu, struct Op* op);
@@ -1161,6 +1244,82 @@ void decode281_noflags(struct Op* op) {
 
     else {
         kpanic("decode281_noflags error");
+    }
+}
+
+void OPCALL add16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL add16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL or16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL or16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL adc16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL adc16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL sbb16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL sbb16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL and16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL and16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL sub16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL sub16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL xor16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL xor16_mem16(struct CPU* cpu, struct Op* op);
+void decode081_noflags(struct Op* op) {
+    if (op->func == add16_reg) {
+        op->func = add16_reg_noflags;
+    } else if (op->func == add16_mem32) {
+        op->func = add16_mem32_noflags;
+    } else if (op->func == add16_mem16) {
+        op->func = add16_mem16_noflags;
+    } 
+    
+    else if (op->func == or16_reg) {
+        op->func = or16_reg_noflags;
+    } else if (op->func == or16_mem32) {
+        op->func = or16_mem32_noflags;
+    } else if (op->func == or16_mem16) {
+        op->func = or16_mem16_noflags;
+    } 
+    
+    else if (op->func == adc16_reg) {
+        op->func = adc16_reg_noflags;
+    } else if (op->func == adc16_mem32) {
+        op->func = adc16_mem32_noflags;
+    } else if (op->func == adc16_mem16) {
+        op->func = adc16_mem16_noflags;
+    }
+
+    else if (op->func == sbb16_reg) {
+        op->func = sbb16_reg_noflags;
+    } else if (op->func == sbb16_mem32) {
+        op->func = sbb16_mem32_noflags;
+    } else if (op->func == sbb16_mem16) {
+        op->func = sbb16_mem16_noflags;
+    }
+
+    else if (op->func == and16_reg) {
+        op->func = and16_reg_noflags;
+    } else if (op->func == and16_mem32) {
+        op->func = and16_mem32_noflags;
+    } else if (op->func == and16_mem16) {
+        op->func = and16_mem16_noflags;
+    }
+
+    else if (op->func == sub16_reg) {
+        op->func = sub16_reg_noflags;
+    } else if (op->func == sub16_mem32) {
+        op->func = sub16_mem32_noflags;
+    } else if (op->func == sub16_mem16) {
+        op->func = sub16_mem16_noflags;
+    }
+
+    else if (op->func == xor16_reg) {
+        op->func = xor16_reg_noflags;
+    } else if (op->func == xor16_mem32) {
+        op->func = xor16_mem32_noflags;
+    } else if (op->func == xor16_mem16) {
+        op->func = xor16_mem16_noflags;
+    }
+
+    else {
+        kpanic("decode081_noflags error");
     }
 }
 
@@ -1496,6 +1655,172 @@ void decode2d3_noflags(struct Op* op) {
     }
 }
 
+void OPCALL rol16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL rol16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL rol16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL ror16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL ror16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL ror16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL shl16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL shl16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL shl16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL shr16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL shr16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL shr16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL sar16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL sar16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL sar16_mem32(struct CPU* cpu, struct Op* op);
+void decode0c1_noflags(struct Op* op) {
+    if (op->func == rol16_reg) {
+        op->func = rol16_reg_noflags;
+    } else if (op->func == rol16_mem32) {
+        op->func = rol16_mem32_noflags;
+    } else if (op->func == rol16_mem16) {
+        op->func = rol16_mem16_noflags;
+    } 
+    
+    else if (op->func == ror16_reg) {
+        op->func = ror16_reg_noflags;
+    } else if (op->func == ror16_mem32) {
+        op->func = ror16_mem32_noflags;
+    } else if (op->func == ror16_mem16) {
+        op->func = ror16_mem16_noflags;
+    } 
+    
+    else if (op->func == rcl16_reg) {
+        op->func = rcl16_reg_noflags;
+    } else if (op->func == rcl16_mem32) {
+        op->func = rcl16_mem32_noflags;
+    } else if (op->func == rcl16_mem16) {
+        op->func = rcl16_mem16_noflags;
+    }
+
+    else if (op->func == rcr16_reg) {
+        op->func = rcr16_reg_noflags;
+    } else if (op->func == rcr16_mem32) {
+        op->func = rcr16_mem32_noflags;
+    } else if (op->func == rcr16_mem16) {
+        op->func = rcr16_mem16_noflags;
+    }
+
+    else if (op->func == shl16_reg) {
+        op->func = shl16_reg_noflags;
+    } else if (op->func == shl16_mem32) {
+        op->func = shl16_mem32_noflags;
+    } else if (op->func == shl16_mem16) {
+        op->func = shl16_mem16_noflags;
+    }
+
+    else if (op->func == shr16_reg) {
+        op->func = shr16_reg_noflags;
+    } else if (op->func == shr16_mem32) {
+        op->func = shr16_mem32_noflags;
+    } else if (op->func == shr16_mem16) {
+        op->func = shr16_mem16_noflags;
+    }
+
+    else if (op->func == sar16_reg) {
+        op->func = sar16_reg_noflags;
+    } else if (op->func == sar16_mem32) {
+        op->func = sar16_mem32_noflags;
+    } else if (op->func == sar16_mem16) {
+        op->func = sar16_mem16_noflags;
+    }
+
+    else {
+        kpanic("decode0c1_noflags error");
+    }
+}
+
+void OPCALL rol16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL rol16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL rol16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL ror16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL ror16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL ror16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL shl16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL shl16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL shl16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL shr16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL shr16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL shr16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL sar16cl_reg(struct CPU* cpu, struct Op* op);
+void OPCALL sar16cl_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL sar16cl_mem32(struct CPU* cpu, struct Op* op);
+void decode0d3_noflags(struct Op* op) {
+    if (op->func == rol16cl_reg) {
+        op->func = rol16cl_reg_noflags;
+    } else if (op->func == rol16cl_mem32) {
+        op->func = rol16cl_mem32_noflags;
+    } else if (op->func == rol16cl_mem16) {
+        op->func = rol16cl_mem16_noflags;
+    } 
+    
+    else if (op->func == ror16cl_reg) {
+        op->func = ror16cl_reg_noflags;
+    } else if (op->func == ror16cl_mem32) {
+        op->func = ror16cl_mem32_noflags;
+    } else if (op->func == ror16cl_mem16) {
+        op->func = ror16cl_mem16_noflags;
+    } 
+    
+    else if (op->func == rcl16cl_reg) {
+        op->func = rcl16cl_reg_noflags;
+    } else if (op->func == rcl16cl_mem32) {
+        op->func = rcl16cl_mem32_noflags;
+    } else if (op->func == rcl16cl_mem16) {
+        op->func = rcl16cl_mem16_noflags;
+    }
+
+    else if (op->func == rcr16cl_reg) {
+        op->func = rcr16cl_reg_noflags;
+    } else if (op->func == rcr16cl_mem32) {
+        op->func = rcr16cl_mem32_noflags;
+    } else if (op->func == rcr16cl_mem16) {
+        op->func = rcr16cl_mem16_noflags;
+    }
+
+    else if (op->func == shl16cl_reg) {
+        op->func = shl16cl_reg_noflags;
+    } else if (op->func == shl16cl_mem32) {
+        op->func = shl16cl_mem32_noflags;
+    } else if (op->func == shl16cl_mem16) {
+        op->func = shl16cl_mem16_noflags;
+    }
+
+    else if (op->func == shr16cl_reg) {
+        op->func = shr16cl_reg_noflags;
+    } else if (op->func == shr16cl_mem32) {
+        op->func = shr16cl_mem32_noflags;
+    } else if (op->func == shr16cl_mem16) {
+        op->func = shr16cl_mem16_noflags;
+    }
+
+    else if (op->func == sar16cl_reg) {
+        op->func = sar16cl_reg_noflags;
+    } else if (op->func == sar16cl_mem32) {
+        op->func = sar16cl_mem32_noflags;
+    } else if (op->func == sar16cl_mem16) {
+        op->func = sar16cl_mem16_noflags;
+    }
+
+    else {
+        kpanic("decode0d3_noflags error");
+    }
+}
+
 void OPCALL inc32_reg(struct CPU* cpu, struct Op* op);
 void decode240_noflags(struct Op* op) {
     if (op->func == inc32_reg) {
@@ -1514,6 +1839,328 @@ void decode248_noflags(struct Op* op) {
     }
 }
 
+void OPCALL neg32_reg_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 =  0-cpu->reg[op->r1].u32;
+	CYCLES(1);
+	NEXT();
+}
+
+void OPCALL neg32_mem16_noflags(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa16(cpu, op);
+	writed(cpu->memory, eaa, 0-readd(cpu->memory, eaa));
+	CYCLES(3);
+	NEXT();
+}
+
+void OPCALL neg32_mem32_noflags(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa32(cpu, op);
+	writed(cpu->memory, eaa, 0-readd(cpu->memory, eaa));
+	CYCLES(3);
+	NEXT();
+}
+
+void OPCALL mul32_reg_noflags(struct CPU* cpu, struct Op* op) {
+	U64 result = (U64)EAX * cpu->reg[op->r1].u32;
+	EAX = (U32)result;
+	EDX = (U32)(result >> 32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL mul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
+    U64 result = (U64)EAX * readd(cpu->memory, eaa16(cpu, op));
+	EAX = (U32)result;
+	EDX = (U32)(result >> 32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL mul32_mem32_noflags(struct CPU* cpu, struct Op* op) {
+	U64 result = (U64)EAX * readd(cpu->memory, eaa32(cpu, op));
+	EAX = (U32)result;
+	EDX = (U32)(result >> 32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL imul32_reg_noflags(struct CPU* cpu, struct Op* op) {
+	S64 result = (S64)((S32)EAX) * (S32)cpu->reg[op->r1].u32;
+	EAX = (S32)result;
+	EDX = (S32)(result >> 32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL imul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
+    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa16(cpu, op));
+	EAX = (S32)result;
+	EDX = (S32)(result >> 32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL imul32_mem32_noflags(struct CPU* cpu, struct Op* op) {
+	S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa32(cpu, op));
+	EAX = (S32)result;
+	EDX = (S32)(result >> 32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL test32_reg(struct CPU* cpu, struct Op* op);
+void OPCALL test32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL test32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL neg32_reg(struct CPU* cpu, struct Op* op);
+void OPCALL neg32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL neg32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL mul32_reg(struct CPU* cpu, struct Op* op);
+void OPCALL mul32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL mul32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL imul32_reg(struct CPU* cpu, struct Op* op);
+void OPCALL imul32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL imul32_mem32(struct CPU* cpu, struct Op* op);
+void decode2f7_noflags(struct Op* op) {
+    if (op->func == test32_reg) {
+        op->func = test32_reg_noflags;
+    } else if (op->func == test32_mem32) {
+        op->func = test32_mem32_noflags;
+    } else if (op->func == test32_mem16) {
+        op->func = test32_mem16_noflags;
+    } else if (op->func == neg32_reg) {
+        op->func = neg32_reg_noflags;
+    } else if (op->func == neg32_mem16) {
+        op->func = neg32_mem16_noflags;
+    } else if (op->func == neg32_mem32) {
+        op->func = neg32_mem32_noflags;
+    } else if (op->func == mul32_reg) {
+        op->func = mul32_reg_noflags;
+    } else if (op->func == mul32_mem16) {
+        op->func = mul32_mem16_noflags;
+    } else if (op->func == mul32_mem32) {
+        op->func = mul32_mem32_noflags;
+    } else if (op->func == imul32_reg) {
+        op->func = imul32_reg_noflags;
+    } else if (op->func == imul32_mem16) {
+        op->func = imul32_mem16_noflags;
+    } else if (op->func == imul32_mem32) {
+        op->func = imul32_mem32_noflags;
+    } else {
+        kpanic("decode2f7_noflags error");
+    }
+}
+
+void OPCALL inc32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL inc32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL dec32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL dec32_mem16(struct CPU* cpu, struct Op* op);
+void decode2ff_noflags(struct Op* op) {
+    if (op->func == inc32_reg) {
+        op->func = inc32_reg_noflags;
+    } else if (op->func == inc32_mem32) {
+        op->func = inc32_mem32_noflags;
+    } else if (op->func == inc32_mem16) {
+        op->func = inc32_mem16_noflags;
+    } else if (op->func == dec32_reg) {
+        op->func = dec32_reg_noflags;
+    } else if (op->func == dec32_mem32) {
+        op->func = dec32_mem32_noflags;
+    } else if (op->func == dec32_mem16) {
+        op->func = dec32_mem16_noflags;
+    } else {
+        kpanic("decode2ff_noflags error");
+    }
+}
+
+void OPCALL dimulr32r32_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S32)(cpu->reg[op->r2].u32) * ((S32)cpu->reg[op->r1].u32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL dimulr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa16(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL dimulr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa32(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL dimulr32r32(struct CPU* cpu, struct Op* op);
+void OPCALL dimulr32e32_16(struct CPU* cpu, struct Op* op);
+void OPCALL dimulr32e32_32(struct CPU* cpu, struct Op* op);
+void decode3af_noflags(struct Op* op) {
+    if (op->func == dimulr32r32) {
+        op->func = dimulr32r32_noflags;
+    } else if (op->func == dimulr32e32_32) {
+        op->func = dimulr32e32_32_noflags;
+    } else if (op->func == dimulr32e32_16) {
+        op->func = dimulr32e32_16_noflags;
+    } else {
+        kpanic("decode3af_noflags error");
+    }
+}
+
+void OPCALL dimulcr32r32_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S32)(cpu->reg[op->r2].u32) * ((S32)op->data1);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL dimulcr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa16(cpu, op))) * ((S32)op->data1);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL dimulcr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa32(cpu, op))) * ((S32)op->data1);
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL dimulcr32r32(struct CPU* cpu, struct Op* op);
+void OPCALL dimulcr32e32_16(struct CPU* cpu, struct Op* op);
+void OPCALL dimulcr32e32_32(struct CPU* cpu, struct Op* op);
+void decode269_noflags(struct Op* op) {
+    if (op->func == dimulcr32r32) {
+        op->func = dimulcr32r32_noflags;
+    } else if (op->func == dimulcr32e32_32) {
+        op->func = dimulcr32e32_32_noflags;
+    } else if (op->func == dimulcr32e32_16) {
+        op->func = dimulcr32e32_16_noflags;
+    } else {
+        kpanic("decode269_noflags error");
+    }
+}
+
+void OPCALL cmpxchgr32r32_noflags(struct CPU* cpu, struct Op* op) {
+	if (EAX == cpu->reg[op->r1].u32) {
+        cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;
+    } else {
+        EAX = cpu->reg[op->r1].u32;
+    }
+	CYCLES(5);
+	NEXT();
+}
+
+void OPCALL cmpxchge32r32_16_noflags(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa16(cpu, op);
+	U32 dst = readd(cpu->memory, address);
+	if (EAX == dst) {
+        writed(cpu->memory, address, cpu->reg[op->r1].u32);
+    } else {
+        EAX = dst;
+    }
+	CYCLES(6);
+	NEXT();
+}
+
+void OPCALL cmpxchge32r32_32_noflags(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa32(cpu, op);
+	U32 dst = readd(cpu->memory, address);
+	if (EAX == dst) {
+        writed(cpu->memory, address, cpu->reg[op->r1].u32);
+    } else {
+        EAX = dst;
+    }
+	CYCLES(6);
+	NEXT();
+}
+
+void OPCALL cmpxchgr32r32(struct CPU* cpu, struct Op* op);
+void OPCALL cmpxchge32r32_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpxchge32r32_32(struct CPU* cpu, struct Op* op);
+void decode3b1_noflags(struct Op* op) {
+    if (op->func == cmpxchgr32r32) {
+        op->func = cmpxchgr32r32_noflags;
+    } else if (op->func == cmpxchge32r32_32) {
+        op->func = cmpxchge32r32_32_noflags;
+    } else if (op->func == cmpxchge32r32_16) {
+        op->func = cmpxchge32r32_16_noflags;
+    } else {
+        kpanic("decode269_noflags error");
+    }
+}
+
+void OPCALL dshrr32r32_noflags(struct CPU* cpu, struct Op* op) {
+	cpu->reg[op->r1].u32 = (cpu->reg[op->r1].u32 >> op->data1) | (cpu->reg[op->r2].u32 << (32-op->data1));	
+	CYCLES(4);
+	NEXT();
+}
+
+void OPCALL dshre32r32_16_noflags(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa16(cpu, op);
+	writed(cpu->memory, address, (readd(cpu->memory, address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
+	CYCLES(4);
+	NEXT();
+}
+
+void OPCALL dshre32r32_32_noflags(struct CPU* cpu, struct Op* op) {
+	U32 address = eaa32(cpu, op);
+	writed(cpu->memory, address, (readd(cpu->memory, address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
+	CYCLES(4);
+	NEXT();
+}
+
+void OPCALL dshrr32r32(struct CPU* cpu, struct Op* op);
+void OPCALL dshre32r32_16(struct CPU* cpu, struct Op* op);
+void OPCALL dshre32r32_32(struct CPU* cpu, struct Op* op);
+void decode3ac_noflags(struct Op* op) {
+    if (op->func == dshrr32r32) {
+        op->func = dshrr32r32_noflags;
+    } else if (op->func == dshre32r32_32) {
+        op->func = dshre32r32_32_noflags;
+    } else if (op->func == dshre32r32_16) {
+        op->func = dshre32r32_16_noflags;
+    } else {
+        kpanic("decode3ac_noflags error");
+    }
+}
+
+void OPCALL xadd32r32r32_noflags(struct CPU* cpu, struct Op* op) {
+    U32 tmp = cpu->reg[op->r2].u32;
+    cpu->reg[op->r2].u32 = cpu->reg[op->r1].u32+cpu->reg[op->r2].u32;
+    cpu->reg[op->r1].u32 = tmp;
+    CYCLES(3);
+    NEXT();
+}
+
+void OPCALL xadd32r32e32_16_noflags(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa16(cpu, op);
+    U32 tmp = readd(cpu->memory, eaa);
+	writed(cpu->memory, eaa, tmp + cpu->reg[op->r1].u32);
+    cpu->reg[op->r1].u32 = tmp;
+    CYCLES(4);
+    NEXT();
+}
+
+void OPCALL xadd32r32e32_32_noflags(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa32(cpu, op);
+    U32 tmp = readd(cpu->memory, eaa);
+	writed(cpu->memory, eaa, tmp + cpu->reg[op->r1].u32);
+    cpu->reg[op->r1].u32 = tmp;
+    CYCLES(4);
+    NEXT();
+}
+
+void OPCALL xadd32r32r32(struct CPU* cpu, struct Op* op);
+void OPCALL xadd32r32e32_16(struct CPU* cpu, struct Op* op);
+void OPCALL xadd32r32e32_32(struct CPU* cpu, struct Op* op);
+void decode3c1_noflags(struct Op* op) {
+    if (op->func == xadd32r32r32) {
+        op->func = xadd32r32r32_noflags;
+    } else if (op->func == xadd32r32e32_32) {
+        op->func = xadd32r32e32_32_noflags;
+    } else if (op->func == xadd32r32e32_16) {
+        op->func = xadd32r32e32_16_noflags;
+    } else {
+        kpanic("decode3c1_noflags error");
+    }
+}
 
 typedef void (*FAST_DECODER)(struct Op* op);
 
@@ -1535,6 +2182,7 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
     // 0x080
+	decode080_noflags, decode081_noflags, decode080_noflags, decode081_noflags, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1542,10 +2190,9 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
+	decode0c0_noflags, decode0c1_noflags, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	decode0c0_noflags, decode0c1_noflags, decode0d2_noflags, decode0d3_noflags, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1599,11 +2246,11 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	0, decode269_noflags, 0, decode269_noflags, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
     // 0x280
-    0, decode281_noflags, 0, decode281_noflags, 0, 0, 0, 0,
+    decode080_noflags, decode281_noflags, decode080_noflags, decode281_noflags, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1617,8 +2264,8 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, decode2f7_noflags,
+	0, 0, 0, 0, 0, 0, 0, decode2ff_noflags,
     // 0x300
     0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1642,10 +2289,10 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, decode3ac_noflags, 0, 0, decode3af_noflags,
+	0, decode3b1_noflags, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	0, decode3c1_noflags, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -1655,22 +2302,37 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-U32 needsToSetFlag(struct Op* op, U32 flag) {    
+U32 needsToSetFlag(struct Op* op, U32 flag) {  
+    U16 sFlag = opInfo[op->inst].setsFlags;
+    U16 index = sFlag >> 12;
+
+    if (index) {
+        sFlag = subOpInfo[index][op->subInst].setsFlags;
+    }
+    // if this op does even set the flag, no reason to search for it
+    if ((sFlag & flag)==0)
+        return 0;
     op = op->next;
     while (op) {
-        U16 gFlag = opInfo[op->inst].getsFlags;
-        U16 sFlag = opInfo[op->inst].setsFlags;        
-
-        if (gFlag >= 0x1000) {
-            // assume worst case scenerio until this is fixed;
-            gFlag = 0xFFF;
+        U16 gFlag = opInfo[op->inst].getsFlags;        
+        
+        index = gFlag >> 12;
+        if (index) {
+            gFlag = subOpInfo[index][op->subInst].getsFlags;
         }
         // an op needs the flag
         if (gFlag & flag) {
             return 1;
         }
+
+        sFlag = opInfo[op->inst].setsFlags;        
+        index = sFlag >> 12;
+        if (index) {
+            sFlag = subOpInfo[index][op->subInst].setsFlags;
+        }
+
         // an op sets the flag before it is used so the op being tested doesn't need to set it
-        if (sFlag & flag) {
+        if (sFlag & flag && !(sFlag & MAYBE)) {
             return 0;
         }
         op = op->next;
@@ -1681,15 +2343,18 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
 void jit(struct Block* block) {
     struct Op* op = block->ops;
 
-    return; // Turned off until I can debug this more
     while (op) {
-        // assume worst case scenerio until this is fixed, 
-        if (opInfo[op->inst].setsFlags && opInfo[op->inst].setsFlags<0x1000) {
+        U16 sFlags = opInfo[op->inst].setsFlags;
+        U16 index = sFlags >> 12;
+        if (index) {
+            sFlags = subOpInfo[index][op->subInst].setsFlags;
+        }
+        if (sFlags) {
             if (!needsToSetFlag(op, CF) && !needsToSetFlag(op, ZF) && !needsToSetFlag(op, SF) && !needsToSetFlag(op, OF) && !needsToSetFlag(op, PF) && !needsToSetFlag(op, AF)) {
                 if (fastDecoder[op->inst])
                     fastDecoder[op->inst](op);
-                //else
-                //    klog("Found op that doesn't need flags: %x", op->inst);
+                else
+                    klog("Found op that doesn't need flags: %x", op->inst);
             }
         }
         op = op->next;

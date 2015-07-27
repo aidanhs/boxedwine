@@ -2521,7 +2521,7 @@ void OPCALL dshre32r32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dshre32r32_32(struct CPU* cpu, struct Op* op) {
-	U32 address = eaa16(cpu, op);
+	U32 address = eaa32(cpu, op);
 
 	cpu->src.u32=op->data1;
 	cpu->dst.u32=readd(cpu->memory, address);

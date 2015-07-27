@@ -645,9 +645,9 @@ void runBlock(struct CPU* cpu, struct Block* block) {
 	cpu->nextBlock = 0;
 	block->count++;
 	// :TODO: maybe move this if statement to be a fake op, that first op will remove itself after 500 count
-	//if (block->count==500) {
-	//	jit(block);
-	//}
+	if (block->count==500) {
+		jit(block);
+	}
 	if (!block->ops)
 		decodeBlockWithBlock(cpu, block);
 	block->ops->func(cpu, block->ops);

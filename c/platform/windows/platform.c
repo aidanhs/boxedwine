@@ -45,6 +45,12 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
 				if (!strcmp(tmp+len-5, ".link")) {
 					tmp[len-5]=0;
 				}
+				if (!strcmp(tmp, "c(_colon_)")) {
+					strcpy(tmp, "c:");
+				}
+				if (!strcmp(tmp, "z(_colon_)")) {
+					strcpy(tmp, "z:");
+				}
 				nodes[result] = getNodeFromLocalPath(dir->path.localPath, tmp, FALSE);
 				result++;
 				if (result==maxCount) {

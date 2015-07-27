@@ -3808,6 +3808,7 @@ void decode0f5(struct DecodeData* data) {
 // GRP3 Eb(,Ib)
 void decode0f6(struct DecodeData* data) {
     U8 rm = FETCH8(data);
+    data->op->subInst = G(rm);
     switch (G(rm)) {
     case 0x00:
     case 0x01:
@@ -3845,6 +3846,7 @@ void decode0f6(struct DecodeData* data) {
 // GRP3 Ew(,Iw)
 void decode0f7(struct DecodeData* data) {
     U8 rm = FETCH8(data);
+    data->op->subInst = G(rm);
     switch (G(rm)) {
     case 0x00:
     case 0x01:
@@ -3882,6 +3884,7 @@ void decode0f7(struct DecodeData* data) {
 // GRP3 Ed(,Id)
 void decode2f7(struct DecodeData* data) {
     U8 rm = FETCH8(data);
+    data->op->subInst = G(rm);
     switch (G(rm)) {
     case 0x00:
     case 0x01:

@@ -21,8 +21,9 @@ struct Op {
 	U8 r1;
 	union { // hopefully this is right, r2 can not be used at the same time as a memory address
 		U8 r2;
-		U8 base;
+		U8 base;        
 	};
+    U8 subInst;
 	U8 e1;
 	U8 e2;	
 	U8 eSib;
