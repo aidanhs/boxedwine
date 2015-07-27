@@ -490,7 +490,7 @@ struct OpInfo opInfo[] = {
     {0,0},							// 1a2 CPUID
     {CF,0},							// 1a3 BT Ew,Gw
     {CF|AF|ZF|SF|OF|PF,0},			// 1a4 SHLD Ew,Gw,Ib: AF is alway 0
-    {CF|AF|ZF|SF|OF|PF,0},			// 1a5 SHLD Ew,Gw,CL: AF is alway 0
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 1a5 SHLD Ew,Gw,CL: AF is alway 0
     {0,0},							// 1a6
     {0,0},							// 1a7
     {0,0},							// 1a8 PUSH GS
@@ -498,7 +498,7 @@ struct OpInfo opInfo[] = {
     {0,0},							// 1aa
     {CF,0},							// 1ab BTS Ew,Gw
     {CF|AF|ZF|SF|OF|PF,0},			// 1ac SHRD Ew,Gw,Ib: AF is alway 0
-    {CF|AF|ZF|SF|OF|PF,0},			// 1ad SHRD Ew,Gw,CL: AF is alway 0
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 1ad SHRD Ew,Gw,CL: AF is alway 0
     {0,0},							// 1ae
     {CF|OF,0},						// 1af IMUL Gw,Ew: SF, ZF, PF, AF are undefined
     {CF|AF|ZF|SF|OF|PF,0},			// 1b0 cmpxchg Eb,Gb
@@ -1002,7 +1002,7 @@ struct OpInfo opInfo[] = {
     {0,0},							// 3a2 CPUID
     {CF,0},							// 3a3 BT Ed,Gd
     {CF|AF|ZF|SF|OF|PF,0},			// 3a4 SHLD Ed,Gd,Ib: AF is alway 0
-    {CF|AF|ZF|SF|OF|PF,0},			// 3a5 SHLD Ed,Gd,CL: AF is alway 0
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 3a5 SHLD Ed,Gd,CL: AF is alway 0
     {0,0},							// 3a6
     {0,0},							// 3a7
     {0,0},							// 3a8 PUSH GS
@@ -1010,7 +1010,7 @@ struct OpInfo opInfo[] = {
     {0,0},							// 3aa
     {CF,0},							// 3ab BTS Ed,Gd
     {CF|AF|ZF|SF|OF|PF,0},			// 3ac SHRD Ed,Gd,Ib: AF is alway 0
-    {CF|AF|ZF|SF|OF|PF,0},			// 3ad SHRD Ed,Gd,CL: AF is alway 0
+    {CF|AF|ZF|SF|OF|PF|MAYBE,0},	// 3ad SHRD Ed,Gd,CL: AF is alway 0
     {0,0},							// 3ae
     {CF|OF,0},						// 3af IMUL Gd,Ed: SF, ZF, PF, AF are undefined
     {CF|AF|ZF|SF|OF|PF,0},			// 3b0 cmpxchg Eb,Gb
@@ -1093,6 +1093,7 @@ struct OpInfo opInfo[] = {
     {0,0},							// 3fd
     {0,0},							// 3fe
     {0,0},							// 3ff
+    {0,0},                          // empty op
 };
 
 void OPCALL add8_mem32(struct CPU* cpu, struct Op* op);
@@ -2340,9 +2341,9 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
     return 1; // this is the last instruction in this block that sets this flag, we should keep it
 }
 
+
 void jit(struct Block* block) {
     struct Op* op = block->ops;
-
     while (op) {
         U16 sFlags = opInfo[op->inst].setsFlags;
         U16 index = sFlags >> 12;
@@ -2351,9 +2352,9 @@ void jit(struct Block* block) {
         }
         if (sFlags) {
             if (!needsToSetFlag(op, CF) && !needsToSetFlag(op, ZF) && !needsToSetFlag(op, SF) && !needsToSetFlag(op, OF) && !needsToSetFlag(op, PF) && !needsToSetFlag(op, AF)) {
-                if (fastDecoder[op->inst])
+                if (fastDecoder[op->inst]) {
                     fastDecoder[op->inst](op);
-                else
+                } else
                     klog("Found op that doesn't need flags: %x", op->inst);
             }
         }

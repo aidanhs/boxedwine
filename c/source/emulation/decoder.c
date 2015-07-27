@@ -185,6 +185,7 @@ void NEXT_OP(struct DecodeData* data) {
 	data->count++;
 	if (data->count>50) {
 		data->op->func = emptyOp;
+        data->op->inst = 1024;
 		return;
 	}
 	data->op->inst = FETCH8(data)+data->opCode;
