@@ -386,6 +386,11 @@ int main(int argc, char **argv) {
 	klog("Launching %s", argv[0]);
 	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv, userId)) {
 #ifdef __EMSCRIPTEN__
+                EM_ASM(
+                       SDL.defaults.copyOnLock = false;
+                       SDL.defaults.discardOnLock = true;
+                       //SDL.defaults.opaqueFrontBuffer = false;
+                );
                 emscripten_set_main_loop(mainloop, 0, 1);
 #else
 		while (getProcessCount()>0) {
