@@ -1950,6 +1950,30 @@ void decode2f7_noflags(struct Op* op) {
     }
 }
 
+void OPCALL inc8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL inc8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL inc8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL dec8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL dec8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL dec8_mem16(struct CPU* cpu, struct Op* op);
+void decode0fe_noflags(struct Op* op) {
+    if (op->func == inc8_reg) {
+        op->func = inc8_reg_noflags;
+    } else if (op->func == inc8_mem32) {
+        op->func = inc8_mem32_noflags;
+    } else if (op->func == inc8_mem16) {
+        op->func = inc8_mem16_noflags;
+    } else if (op->func == dec8_reg) {
+        op->func = dec8_reg_noflags;
+    } else if (op->func == dec8_mem32) {
+        op->func = dec8_mem32_noflags;
+    } else if (op->func == dec8_mem16) {
+        op->func = dec8_mem16_noflags;
+    } else {
+        kpanic("decode0fe_noflags error");
+    }
+}
+
 void OPCALL inc32_mem32(struct CPU* cpu, struct Op* op);
 void OPCALL inc32_mem16(struct CPU* cpu, struct Op* op);
 void OPCALL dec32_mem32(struct CPU* cpu, struct Op* op);
@@ -2198,7 +2222,7 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, decode0fe_noflags, 0,
     // 0x100
     0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -2266,7 +2290,7 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, decode2f7_noflags,
-	0, 0, 0, 0, 0, 0, 0, decode2ff_noflags,
+	0, 0, 0, 0, 0, 0, decode0fe_noflags, decode2ff_noflags,
     // 0x300
     0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
