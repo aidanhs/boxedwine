@@ -17,6 +17,8 @@
 
 #include <stdarg.h>
 
+extern U64 cpuTotalTime;
+
 //#undef LOG_SYSCALLS
 //#undef LOG_OPS
 #ifdef LOG_OPS
@@ -193,6 +195,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	struct KProcess* process = thread->process;
 	struct Memory* memory = cpu->memory;
 	S32 result=0;
+    U64 startTime = getSystemTimeAsMicroSeconds();
 
 	thread->inSysCall = 1;
 	switch (EAX) {
@@ -890,7 +893,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	}	
 	if (result==-K_CONTINUE) {
-		CYCLES(1000);
+		
 	} else if (result==-K_WAIT) {
 		thread->waitSyscall = EAX;		
 		waitThread(thread);		
@@ -901,7 +904,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		if (oldEAX == __NR_rt_sigprocmask) {
 			runSignals(thread);
 		}
-		CYCLES(1000);
 	}	
 	thread->inSysCall = 0;
+    cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);
 }
