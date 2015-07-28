@@ -558,7 +558,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		break;
 	case __NR_sched_yield:
 		result = 0;
-		cpu->blockCounter |= 0x80000000; // next thread will be run
+		threadDone(cpu);
 		LOG("__NR_sched_yield result=%d", result);
 		break;
 	case __NR_nanosleep:
@@ -906,5 +906,6 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 		}
 	}	
 	thread->inSysCall = 0;
-    cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);
+    cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);    
+    threadDone(cpu);
 }

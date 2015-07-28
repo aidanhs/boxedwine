@@ -1129,6 +1129,7 @@ void OPCALL retnIw16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = eip;
 	CYCLES(3);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retnIw32(struct CPU* cpu, struct Op* op) {
@@ -1137,18 +1138,21 @@ void OPCALL retnIw32(struct CPU* cpu, struct Op* op) {
 	DONE();	
 	cpu->eip.u32 = eip;
 	CYCLES(3);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retn16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = pop16(cpu);
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retn32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = pop32(cpu);
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL leave16(struct CPU* cpu, struct Op* op) {
@@ -1989,6 +1993,7 @@ void OPCALL callEv16_reg(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u16;
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL callEv16_mem16(struct CPU* cpu, struct Op* op) {
@@ -1998,6 +2003,7 @@ void OPCALL callEv16_mem16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL callEv16_mem32(struct CPU* cpu, struct Op* op) {
@@ -2007,24 +2013,28 @@ void OPCALL callEv16_mem32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpEv16_reg(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u16;
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpEv16_mem16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpEv16_mem32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL pushEv16_reg(struct CPU* cpu, struct Op* op) {
@@ -2068,6 +2078,7 @@ void OPCALL callNear32_reg(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u32;
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL callNear32_mem16(struct CPU* cpu, struct Op* op) {
@@ -2077,6 +2088,7 @@ void OPCALL callNear32_mem16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL callNear32_mem32(struct CPU* cpu, struct Op* op) {
@@ -2086,24 +2098,28 @@ void OPCALL callNear32_mem32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpNear32_reg(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = cpu->reg[op->r1].u32;
 	CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpNear32_mem16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpNear32_mem32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL rdtsc(struct CPU* cpu, struct Op* op) {
@@ -3075,6 +3091,7 @@ void OPCALL int99(struct CPU* cpu, struct Op* op) {
 	}
 	CYCLES(5);
 	cpu->eip.u32+=op->eipCount;
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retf32(struct CPU* cpu, struct Op* op) {
@@ -3082,6 +3099,7 @@ void OPCALL retf32(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32+=op->eipCount;
 	cpu_ret(cpu, 1, cpu->eip.u32);
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retf16(struct CPU* cpu, struct Op* op) {
@@ -3089,19 +3107,23 @@ void OPCALL retf16(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32+=op->eipCount;
 	cpu_ret(cpu, 0, cpu->eip.u32);
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL callAp(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32+=op->eipCount;
 	cpu_call(cpu, 0, op->eData, op->data1, cpu->eip.u32);
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL emptyOp(struct CPU* cpu, struct Op* op) {
+    cpu->nextBlock = getBlock1(cpu);
 }
 
 void OPCALL iret32(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32+=op->eipCount;
 	cpu_iret(cpu, 1, cpu->eip.u32);
 	CYCLES(10);
+    cpu->nextBlock = getBlock(cpu);
 }

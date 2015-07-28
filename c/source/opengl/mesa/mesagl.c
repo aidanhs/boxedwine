@@ -16,7 +16,7 @@ void mesa_glFinish(struct CPU* cpu) {
 	flipFBNoCheck();
 #ifdef __EMSCRIPTEN__
         // we to return control to the browser in order for the screen to be updated
-        cpu->blockCounter |= 0x80000000;
+        threadDone(cpu);
 #endif
 }
 
@@ -26,7 +26,7 @@ void mesa_glFlush(struct CPU* cpu) {
 	flipFBNoCheck();
 #ifdef __EMSCRIPTEN__
         // we to return control to the browser in order for the screen to be updated
-        cpu->blockCounter |= 0x80000000;
+        threadDone(cpu);
 #endif
 }
 
@@ -82,7 +82,7 @@ void mesa_glXSwapBuffers(struct CPU* cpu) {
 	flipFBNoCheck();
 #ifdef __EMSCRIPTEN__
 	// we to return control to the browser in order for the screen to be updated
-	cpu->blockCounter |= 0x80000000;
+	threadDone(cpu);
 #endif
 }
 

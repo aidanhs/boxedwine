@@ -1424,224 +1424,224 @@ void decode24f(struct DecodeData* data) {
 }
 // PUSH AX
 void decode050(struct DecodeData* data) {
-    data->op->func = pushAx;
+    data->op->func = pushReg16;
     data->op->r1 = 0;
     LOG_OP("PUSH AX");
     NEXT_OP(data);
 }
 // PUSH EAX
 void decode250(struct DecodeData* data) {
-    data->op->func = pushEax;
+    data->op->func = pushReg32;
     data->op->r1 = 0;
     LOG_OP("PUSH EAX");
     NEXT_OP(data);
 }
 // PUSH CX
 void decode051(struct DecodeData* data) {
-    data->op->func = pushCx;
+    data->op->func = pushReg16;
     data->op->r1 = 1;
     LOG_OP("PUSH CX");
     NEXT_OP(data);
 }
 // PUSH ECX
 void decode251(struct DecodeData* data) {
-    data->op->func = pushEcx;
+    data->op->func = pushReg32;
     data->op->r1 = 1;
     LOG_OP("PUSH ECX");
     NEXT_OP(data);
 }
 // PUSH DX
 void decode052(struct DecodeData* data) {
-    data->op->func = pushDx;
+    data->op->func = pushReg16;
     data->op->r1 = 2;
     LOG_OP("PUSH DX");
     NEXT_OP(data);
 }
 // PUSH EDX
 void decode252(struct DecodeData* data) {
-    data->op->func = pushEdx;
+    data->op->func = pushReg32;
     data->op->r1 = 2;
     LOG_OP("PUSH EDX");
     NEXT_OP(data);
 }
 // PUSH BX
 void decode053(struct DecodeData* data) {
-    data->op->func = pushBx;
+    data->op->func = pushReg16;
     data->op->r1 = 3;
     LOG_OP("PUSH BX");
     NEXT_OP(data);
 }
 // PUSH EBX
 void decode253(struct DecodeData* data) {
-    data->op->func = pushEbx;
+    data->op->func = pushReg32;
     data->op->r1 = 3;
     LOG_OP("PUSH EBX");
     NEXT_OP(data);
 }
 // PUSH SP
 void decode054(struct DecodeData* data) {
-    data->op->func = pushSp;
+    data->op->func = pushReg16;
     data->op->r1 = 4;
     LOG_OP("PUSH SP");
     NEXT_OP(data);
 }
 // PUSH ESP
 void decode254(struct DecodeData* data) {
-    data->op->func = pushEsp;
+    data->op->func = pushReg32;
     data->op->r1 = 4;
     LOG_OP("PUSH ESP");
     NEXT_OP(data);
 }
 // PUSH BP
 void decode055(struct DecodeData* data) {
-    data->op->func = pushBp;
+    data->op->func = pushReg16;
     data->op->r1 = 5;
     LOG_OP("PUSH BP");
     NEXT_OP(data);
 }
 // PUSH EBP
 void decode255(struct DecodeData* data) {
-    data->op->func = pushEbp;
+    data->op->func = pushReg32;
     data->op->r1 = 5;
     LOG_OP("PUSH EBP");
     NEXT_OP(data);
 }
 // PUSH SI
 void decode056(struct DecodeData* data) {
-    data->op->func = pushSi;
+    data->op->func = pushReg16;
     data->op->r1 = 6;
     LOG_OP("PUSH SI");
     NEXT_OP(data);
 }
 // PUSH ESI
 void decode256(struct DecodeData* data) {
-    data->op->func = pushEsi;
+    data->op->func = pushReg32;
     data->op->r1 = 6;
     LOG_OP("PUSH ESI");
     NEXT_OP(data);
 }
 // PUSH DI
 void decode057(struct DecodeData* data) {
-    data->op->func = pushDi;
+    data->op->func = pushReg16;
     data->op->r1 = 7;
     LOG_OP("PUSH DI");
     NEXT_OP(data);
 }
 // PUSH EDI
 void decode257(struct DecodeData* data) {
-    data->op->func = pushEdi;
+    data->op->func = pushReg32;
     data->op->r1 = 7;
     LOG_OP("PUSH EDI");
     NEXT_OP(data);
 }
 // PUSH AX
 void decode058(struct DecodeData* data) {
-    data->op->func = popAx;
+    data->op->func = popReg16;
     data->op->r1 = 0;
     LOG_OP("PUSH AX");
     NEXT_OP(data);
 }
 // POP EAX
 void decode258(struct DecodeData* data) {
-    data->op->func = popEax;
+    data->op->func = popReg32;
     data->op->r1 = 0;
     LOG_OP("POP EAX");
     NEXT_OP(data);
 }
 // POP CX
 void decode059(struct DecodeData* data) {
-    data->op->func = popCx;
+    data->op->func = popReg16;
     data->op->r1 = 1;
     LOG_OP("POP CX");
     NEXT_OP(data);
 }
 // POP ECX
 void decode259(struct DecodeData* data) {
-    data->op->func = popEcx;
+    data->op->func = popReg32;
     data->op->r1 = 1;
     LOG_OP("POP ECX");
     NEXT_OP(data);
 }
 // POP DX
 void decode05a(struct DecodeData* data) {
-    data->op->func = popDx;
+    data->op->func = popReg16;
     data->op->r1 = 2;
     LOG_OP("POP DX");
     NEXT_OP(data);
 }
 // POP EDX
 void decode25a(struct DecodeData* data) {
-    data->op->func = popEdx;
+    data->op->func = popReg32;
     data->op->r1 = 2;
     LOG_OP("POP EDX");
     NEXT_OP(data);
 }
 // POP BX
 void decode05b(struct DecodeData* data) {
-    data->op->func = popBx;
+    data->op->func = popReg16;
     data->op->r1 = 3;
     LOG_OP("POP BX");
     NEXT_OP(data);
 }
 // POP EBX
 void decode25b(struct DecodeData* data) {
-    data->op->func = popEbx;
+    data->op->func = popReg32;
     data->op->r1 = 3;
     LOG_OP("POP EBX");
     NEXT_OP(data);
 }
 // POP SP
 void decode05c(struct DecodeData* data) {
-    data->op->func = popSp;
+    data->op->func = popReg16;
     data->op->r1 = 4;
     LOG_OP("POP SP");
     NEXT_OP(data);
 }
 // POP ESP
 void decode25c(struct DecodeData* data) {
-    data->op->func = popEsp;
+    data->op->func = popReg32;
     data->op->r1 = 4;
     LOG_OP("POP ESP");
     NEXT_OP(data);
 }
 // POP BP
 void decode05d(struct DecodeData* data) {
-    data->op->func = popBp;
+    data->op->func = popReg16;
     data->op->r1 = 5;
     LOG_OP("POP BP");
     NEXT_OP(data);
 }
 // POP EBP
 void decode25d(struct DecodeData* data) {
-    data->op->func = popEbp;
+    data->op->func = popReg32;
     data->op->r1 = 5;
     LOG_OP("POP EBP");
     NEXT_OP(data);
 }
 // POP SI
 void decode05e(struct DecodeData* data) {
-    data->op->func = popSi;
+    data->op->func = popReg16;
     data->op->r1 = 6;
     LOG_OP("POP SI");
     NEXT_OP(data);
 }
 // POP ESI
 void decode25e(struct DecodeData* data) {
-    data->op->func = popEsi;
+    data->op->func = popReg32;
     data->op->r1 = 6;
     LOG_OP("POP ESI");
     NEXT_OP(data);
 }
 // POP DI
 void decode05f(struct DecodeData* data) {
-    data->op->func = popDi;
+    data->op->func = popReg16;
     data->op->r1 = 7;
     LOG_OP("POP DI");
     NEXT_OP(data);
 }
 // POP EDI
 void decode25f(struct DecodeData* data) {
-    data->op->func = popEdi;
+    data->op->func = popReg32;
     data->op->r1 = 7;
     LOG_OP("POP EDI");
     NEXT_OP(data);

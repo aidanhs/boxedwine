@@ -639,26 +639,20 @@ void exception(struct CPU* cpu, int code) {
 	kpanic("Exceptions not implements yet");
 }
 
-void runBlock(struct CPU* cpu, struct Block* block) {
-	cpu->lastBlock = cpu->currentBlock;
-	cpu->currentBlock = block;
-	cpu->nextBlock = 0;
-	block->count++;
-	// :TODO: maybe move this if statement to be a fake op, that first op will remove itself after 500 count
-	if (block->count==500) {
-		jit(block);
-	}
-	if (!block->ops)
-		decodeBlockWithBlock(cpu, block);
-	block->ops->func(cpu, block->ops);
-	// :TODO: should experiment more with different values here
-	// Keeping code that isn't used much from being cached reduces memory, it also improves the start time since
-	// malloc won't have to be called as much
-	if (block->count<20) {
-		freeOp(block->ops);
-		block->ops = 0;
-	}
+void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op);
+
+struct Op emptyOp = {emptyInstruction};
+struct Block emptyBlock = {&emptyOp, 10000}; // count is 10000, no reason to run JIT, etc
+
+void threadDone(struct CPU* cpu) {
+    cpu->blockCounter |= 0x80000000;
+    cpu->nextBlock = &emptyBlock;
 }
+
+void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op) {
+    cpu->nextBlock = &emptyBlock;
+}
+
 
 struct Block* getBlock(struct CPU* cpu) {
 	struct Block* block;	

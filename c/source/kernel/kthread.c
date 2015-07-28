@@ -74,6 +74,7 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
 	memset(thread, 0, sizeof(struct KThread));
 	memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
 	onCreateCPU(&thread->cpu); // sets up the 8-bit high low regs
+    thread->cpu.nextBlock = 0;
 	thread->cpu.thread = thread;
 	thread->cpu.memory = process->memory;
 	thread->cpu.blockCounter = 0;
@@ -503,7 +504,7 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 		cpu->thread->waitingForSignalToEndMaskToRestore = SIGSUSPEND_RETURN;
 	}
 
-	cpu->nextBlock = 0;
+	cpu->nextBlock = getBlock(cpu);
 	/*
 	if (action->flags & K_SA_RESTORER) {
 		push32(&thread->cpu, thread->cpu.eip.u32);
@@ -595,5 +596,5 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
 		thread->inSignal++;				
     }    
 	thread->process->pendingSignals &= ~(1 << (signal - 1));		
-	thread->cpu.nextBlock = 0;
+	threadDone(&thread->cpu);
 }

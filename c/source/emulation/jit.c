@@ -2327,6 +2327,21 @@ FAST_DECODER fastDecoder[1024] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+void OPCALL pushReg32(struct CPU* cpu, struct Op* op);
+void OPCALL push2Reg32(struct CPU* cpu, struct Op* op){
+    push32(cpu, cpu->reg[op->r1].u32);
+    push32(cpu, cpu->reg[op->r2].u32);
+    CYCLES(2);
+    NEXT();
+}
+void OPCALL popReg32(struct CPU* cpu, struct Op* op);
+void OPCALL pop2Reg32(struct CPU * cpu, struct Op * op){
+    cpu->reg[op->r1].u32 = pop32(cpu);
+    cpu->reg[op->r2].u32 = pop32(cpu);
+    CYCLES(2);
+    NEXT();
+}
+
 U32 needsToSetFlag(struct Op* op, U32 flag) {  
     U16 sFlag = opInfo[op->inst].setsFlags;
     U16 index = sFlag >> 12;
@@ -2380,6 +2395,28 @@ void jit(struct Block* block) {
                     fastDecoder[op->inst](op);
                 } else
                     klog("Found op that doesn't need flags: %x", op->inst);
+            }
+        } else if (op->func == pushReg32) {
+            if (op->next && op->next->func == pushReg32) {
+                struct Op* removedOp = op->next;
+
+                op->r2 = op->next->r1;
+                op->func = push2Reg32;    
+                op->eipCount+=op->next->eipCount;
+                op->next = op->next->next;
+                removedOp->next = 0; // don't free all of them
+                freeOp(removedOp);
+            }
+        } else if (op->func == popReg32) {
+            if (op->next && op->next->func == popReg32) {
+                struct Op* removedOp = op->next;
+
+                op->r2 = op->next->r1;
+                op->func = pop2Reg32;    
+                op->eipCount+=op->next->eipCount;
+                op->next = op->next->next;
+                removedOp->next = 0; // don't free all of them
+                freeOp(removedOp);
             }
         }
         op = op->next;

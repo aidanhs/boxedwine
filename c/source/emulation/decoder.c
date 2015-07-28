@@ -11,6 +11,7 @@
 #include "conditions.h"
 #include "setcc.h"
 #include "block.h"
+#include "jit.h"
 
 #define FETCH_S8(data) (S8)FETCH8(data)
 #define FETCH_S16(data) (S16)FETCH16(data)
@@ -961,16 +962,8 @@ void decode08e(struct DecodeData* data) {
 void decode08f(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
-		switch (E(rm)) {
-		case 0: data->op->func = popAx; LOG_OP("POP AX"); break;
-		case 1: data->op->func = popCx; LOG_OP("POP CX"); break;
-		case 2: data->op->func = popDx; LOG_OP("POP DX"); break;
-		case 3: data->op->func = popBx; LOG_OP("POP BX"); break;
-		case 4: data->op->func = popSp; LOG_OP("POP SP"); break;
-		case 5: data->op->func = popBp; LOG_OP("POP BP"); break;
-		case 6: data->op->func = popSi; LOG_OP("POP SI"); break;
-		case 7: data->op->func = popDi; LOG_OP("POP DI"); break;
-		}		
+        data->op->func = popReg16;
+        data->op->r1 = E(rm);		
 	} else if (data->ea16) {
 		data->op->func = pope16_16;
 		decodeEa16(data, rm);
@@ -987,16 +980,8 @@ void decode08f(struct DecodeData* data) {
 void decode28f(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
 	if (rm>=0xC0) {
-		switch (E(rm)) {
-		case 0: data->op->func = popEax; LOG_OP("POP EAX"); break;
-		case 1: data->op->func = popEcx; LOG_OP("POP ECX"); break;
-		case 2: data->op->func = popEdx; LOG_OP("POP EDX"); break;
-		case 3: data->op->func = popEbx; LOG_OP("POP EBX"); break;
-		case 4: data->op->func = popEsp; LOG_OP("POP ESP"); break;
-		case 5: data->op->func = popEbp; LOG_OP("POP EBP"); break;
-		case 6: data->op->func = popEsi; LOG_OP("POP ESI"); break;
-		case 7: data->op->func = popEdi; LOG_OP("POP EDI"); break;
-		}
+        data->op->func = popReg32;
+        data->op->r1 = E(rm);
 	} else if (data->ea16) {
 		data->op->func = pope32_16;
 		decodeEa16(data, rm);
@@ -2178,10 +2163,41 @@ struct Block* decodeBlock(struct CPU* cpu) {
 	return result;	
 }
 
+void OPCALL restoreOps(struct CPU* cpu, struct Op* op) {
+    op->next = 0;
+    freeOp(op);
+	decodeBlockWithBlock(cpu, cpu->currentBlock);
+    cpu->currentBlock->ops->func(cpu, cpu->currentBlock->ops);    
+}
+
+void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
+    struct Block* block = cpu->currentBlock;
+    op->next->func(cpu, op->next);
+
+    // :TODO: should experiment more with different values here
+	// Keeping code that isn't used much from being cached reduces memory, it also improves the start time since
+	// malloc won't have to be called as much
+    if (block->count<20) {
+        freeOp(block->ops->next);
+        block->ops->func = restoreOps;
+        block->ops->next = 0;
+    }
+    if (block->count==500) {        
+        block->ops = block->ops->next;
+        op->next = 0;
+        freeOp(op);
+        jit(block);
+    }
+}
+
 void decodeBlockWithBlock(struct CPU* cpu, struct Block* block) {	
 	struct DecodeData data;
 	struct DecodeData* pData = &data;
-	block->ops = data.op = allocOp();
+	block->ops = allocOp();
+    block->ops->func = firstOp;
+    data.op = allocOp();
+    block->ops->next = data.op;
+
 	data.start = data.ip = cpu->eip.u32 + cpu->segAddress[CS];
 	if (cpu->big) {
 		data.opCode = 0x200;
@@ -2197,7 +2213,7 @@ void decodeBlockWithBlock(struct CPU* cpu, struct Block* block) {
 	data.cpu = cpu;
 	data.count = 0;
 	data.memory = cpu->memory;
-	fillFetchPage(pData);
+	fillFetchPage(pData);    
 	data.op->inst = FETCH8(pData)+data.opCode;
-	decoder[data.op->inst](pData);
+	decoder[data.op->inst](pData);    
 }

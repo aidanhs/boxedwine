@@ -111,7 +111,7 @@ void scheduleThread(struct KThread* thread) {
 void unscheduleThread(struct KThread* thread) {	
 	removeItemFromCircularList(&scheduledThreads, thread->scheduledNode);
 	thread->scheduledNode = 0;
-	thread->cpu.blockCounter |= 0x80000000; // stop running this thread
+	threadDone(&thread->cpu);
 	if (nextThread->data == thread) {
 		nextThread = scheduledThreads.node;
 	}
@@ -144,6 +144,8 @@ void unscheduleThread(struct KThread* thread) {
 
 U32 contextTime = 100000;
 jmp_buf runBlockJump;
+int count;
+extern struct Block emptyBlock;
 
 void runThreadSlice(struct KThread* thread) {
 	struct CPU* cpu;
@@ -151,15 +153,23 @@ void runThreadSlice(struct KThread* thread) {
 	cpu = &thread->cpu;
 	cpu->blockCounter = 0;
 
+    if (!cpu->nextBlock || cpu->nextBlock == &emptyBlock) {
+        cpu->nextBlock = getBlock(cpu);
+    }
 	if (setjmp(runBlockJump)==0) {
 		do {
-			if (cpu->nextBlock) {
-				runBlock(cpu, cpu->nextBlock);
-			} else {
-				runCPU(cpu);
-			}
+			runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
+            runBlock(cpu, cpu->nextBlock);
 		} while (cpu->blockCounter < contextTime);	
-	}
+	} else {
+        cpu->nextBlock = 0;
+    }
 	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }
 

@@ -295,6 +295,7 @@ public class Decoder extends Base {
         out(fos, "// "+comment);
         out(fos, "void decode"+base+"(struct DecodeData* data) {");
         out(fos, "    U8 rm = FETCH8(data);");
+        out(fos, "    data->op->subInst = G(rm);");
         out(fos, "    switch (G(rm)) {");
         out(fos, "    case 0x00:");
         out(fos, "    case 0x01:");

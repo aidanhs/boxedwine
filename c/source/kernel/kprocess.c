@@ -975,8 +975,8 @@ U32 syscall_exitgroup(struct KThread* thread, U32 code) {
 		}
 	}
 	process->exitCode = code;
-	freeThread(thread);
-	thread->cpu.blockCounter |= 0x80000000; // cause the current slice to end
+    threadDone(&thread->cpu);
+	freeThread(thread);	
 	if (getProcessCount()==1) {
 		// no one left to wait on this process
 		removeProcess(process);

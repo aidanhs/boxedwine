@@ -57,12 +57,13 @@ struct CPU {
 	struct FPU     fpu;
 	struct Block* nextBlock;
 	struct Block* currentBlock;
-	struct Block* lastBlock;
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
 	BOOL log;
 	U32 cpl;
 };
+
+void threadDone(struct CPU* cpu);
 
 #define EXCEPTION_DIVIDE 0
 #define EXCEPTION_BOUND 5
@@ -158,8 +159,12 @@ U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
 void initCPU(struct CPU* cpu, struct Memory* memory);
 void onCreateCPU(struct CPU* cpu);
-void runBlock(struct CPU* cpu, struct Block* block);
-void runCPU(struct CPU* cpu);
+INLINE void runBlock(struct CPU* cpu, struct Block* block) {
+	cpu->currentBlock = block;
+	block->count++;	
+	block->ops->func(cpu, block->ops);
+}
+struct Block* getBlock(struct CPU* cpu);
 #ifdef __TEST
 #define getBlock1(cpu) 0
 #define getBlock2(cpu) 0
