@@ -220,7 +220,10 @@ U64 lastCycleCount;
 U64 lastTime;
 
 U32 getMHz() {
-	U32 result = (U32)((cpuTotalCycles-lastCycleCount)/(cpuTotalTime-lastTime));
+    U64 diff = cpuTotalTime-lastTime;
+    U32 result = 0;
+    if (diff)
+	    result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
     lastCycleCount = cpuTotalCycles;
     lastTime = cpuTotalTime;
     return result;

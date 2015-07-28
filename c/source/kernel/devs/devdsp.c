@@ -64,7 +64,8 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
 			if (available>len) {
 				available = len;
 			}
-			memcpy(stream+result, dspBuffer+dspBufferPos, available);
+            SDL_MixAudio(stream+result, dspBuffer+dspBufferPos, available, SDL_MIX_MAXVOLUME);
+			//memcpy(stream+result, dspBuffer+dspBufferPos, available);
 			result+=available;
 			dspBufferPos += available;
 			dspBufferLen -= available;
@@ -79,19 +80,21 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
 
 void openAudio() {
 	SDL_AudioSpec want;
+    SDL_AudioSpec got;
 
 	memset(&want, 0, sizeof(SDL_AudioSpec));
 	want.freq = dspFreq;
 	want.format = sdlFmt;
 	want.channels = dspChannels;
-	want.samples = 4096;
+	want.samples = 2048;
 	want.callback = audioCallback;  // you wrote this function elsewhere.
 
-	if (SDL_OpenAudio(&want, 0) < 0) {
+	if (SDL_OpenAudio(&want, &got) < 0) {
 		printf("Failed to open audio: %s\n", SDL_GetError());
 	} 
 	isDspOpen = 1;
 	SDL_PauseAudio(0);
+    printf("openAudio: freq=%d(got %d) format=%d(%d/got %d) channels=%d(got %d)\n", dspFreq, got.freq, dspFmt, sdlFmt, got.format, dspChannels, got.channels);
 }
 
 BOOL dsp_init(struct KProcess* process, struct OpenNode* node) {
@@ -189,7 +192,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		return 0;
 	case 0x5002:  // SNDCTL_DSP_SPEED 
 		if (len!=4) {
-			kpanic("SNDCTL_DSP_STEREO was expecting a len of 4");
+			kpanic("SNDCTL_DSP_SPEED was expecting a len of 4");
 		}
 		dspFreq = readd(memory, IOCTL_ARG1);
 		return 0;
