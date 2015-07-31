@@ -154,6 +154,12 @@
     <ClCompile Include="..\..\..\..\source\emulation\jit.c">
       <Filter>source\emulation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\srcgen.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\instructions.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -349,6 +355,9 @@
       <Filter>opengl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\jit.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\instructions.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

@@ -179,7 +179,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -318,7 +318,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>GLH=&lt;GL/gl.h&gt;;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);BOXEDWINE_SDL</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);BOXEDWINE_SDL</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <UndefinePreprocessorDefinitions>
@@ -399,6 +399,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\decode.h" />
     <ClInclude Include="..\..\..\..\source\emulation\fpu.h" />
     <ClInclude Include="..\..\..\..\source\emulation\incdec.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\instructions.h" />
     <ClInclude Include="..\..\..\..\source\emulation\ops.h" />
     <ClInclude Include="..\..\..\..\source\emulation\pushpop.h" />
     <ClInclude Include="..\..\..\..\source\emulation\setcc.h" />
@@ -417,9 +418,11 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c" />
     <ClCompile Include="..\..\..\..\source\emulation\decoder.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\instructions.c" />
     <ClCompile Include="..\..\..\..\source\emulation\jit.c" />
     <ClCompile Include="..\..\..\..\source\emulation\memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\ram.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />

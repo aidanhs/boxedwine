@@ -52,8 +52,8 @@ struct CPU {
 	struct Reg     result;
 	struct LazyFlags* lazyFlags;
 	int	    df;
-	U8      oldcf;
-	U8		big;
+	U32     oldcf;
+	U32		big;
 	struct FPU     fpu;
 	struct Block* nextBlock;
 	struct Block* currentBlock;

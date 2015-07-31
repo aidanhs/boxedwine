@@ -1822,6 +1822,24 @@ void decode0d3_noflags(struct Op* op) {
     }
 }
 
+void OPCALL inc16_reg(struct CPU* cpu, struct Op* op);
+void decode040_noflags(struct Op* op) {
+    if (op->func == inc16_reg) {
+        op->func = inc16_reg_noflags;
+    } else {
+        kpanic("decode040_noflags error");
+    }
+}
+
+void OPCALL dec16_reg(struct CPU* cpu, struct Op* op);
+void decode048_noflags(struct Op* op) {
+    if (op->func == dec16_reg) {
+        op->func = dec16_reg_noflags;
+    } else {
+        kpanic("decode048_noflags error");
+    }
+}
+
 void OPCALL inc32_reg(struct CPU* cpu, struct Op* op);
 void decode240_noflags(struct Op* op) {
     if (op->func == inc32_reg) {
@@ -2198,8 +2216,8 @@ FAST_DECODER fastDecoder[1024] = {
 	decode028_noflags, decode029_noflags, decode02a_noflags, decode02b_noflags, decode02c_noflags, decode02d_noflags, 0, 0,
 	decode030_noflags, decode031_noflags, decode032_noflags, decode033_noflags, decode034_noflags, decode035_noflags, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags,
+	decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -2380,9 +2398,13 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
     return 1; // this is the last instruction in this block that sets this flag, we should keep it
 }
 
+#ifdef GENERATE_SOURCE
+void generateSource(struct Block* block);
+#endif
 
 void jit(struct Block* block) {
     struct Op* op = block->ops;
+    
     while (op) {
         U16 sFlags = opInfo[op->inst].setsFlags;
         U16 index = sFlags >> 12;
@@ -2421,4 +2443,7 @@ void jit(struct Block* block) {
         }
         op = op->next;
     }
+#ifdef GENERATE_SOURCE
+    generateSource(block);
+#endif
 }
