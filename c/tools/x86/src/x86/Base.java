@@ -11,6 +11,10 @@ abstract public class Base {
 
     }
 
+    public void gensrc(FileOutputStream fos) throws IOException {
+
+    }
+
     public void out(FileOutputStream fos, String line) throws IOException {
         line=line+"\r\n";
         fos.write(line.getBytes());

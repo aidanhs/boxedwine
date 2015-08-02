@@ -18,10 +18,12 @@ public class Main {
         try {
             FileOutputStream fos = new FileOutputStream("decode.h");
             FileOutputStream fos_noflags = new FileOutputStream("decode_noflags.h");
+            FileOutputStream fos_src = new FileOutputStream("gensrc.h");
             for (Base b : ops) {
                 b.decode(fos);
                 b.decode_noflags(fos_noflags);
                 b.generate();
+                b.gensrc(fos_src);
             }
             fos.close();
         } catch (Exception e) {

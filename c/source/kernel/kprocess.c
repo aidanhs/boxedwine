@@ -560,24 +560,26 @@ struct Node* getNode(struct KProcess* process, U32 fileName) {
 	return getNodeFromLocalPath(process->currentDirectory, getNativeString(process->memory, fileName), TRUE);
 }
 
-const char* getModuleName(struct CPU* cpu) {
+const char* getModuleName(struct CPU* cpu, U32 eip) {
 	struct KProcess* process = cpu->thread->process;
 	U32 i;
 
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (process->mappedFiles[i].refCount && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
+		if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
 			return ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath;
 	}
 	return "Unknown";
 }
 
-U32 getModuleEip(struct CPU* cpu) {
+U32 getModuleEip(struct CPU* cpu, U32 eip) {
 	struct KProcess* process = cpu->thread->process;
 	U32 i;
 
+    if (eip<0xd0000000)
+        return eip;
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (process->mappedFiles[i].refCount && cpu->eip.u32>=process->mappedFiles[i].address && cpu->eip.u32<process->mappedFiles[i].address+process->mappedFiles[i].len)
-			return cpu->eip.u32-process->mappedFiles[i].address;
+		if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
+			return eip-process->mappedFiles[i].address;
 	}
 	return 0;
 }

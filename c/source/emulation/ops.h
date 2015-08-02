@@ -2,7 +2,7 @@
 #include "arith.h"
 #include "incdec.h"
 #include "pushpop.h"
-#include "strings.h"
+#include "strings_op.h"
 #include "shift.h"
 #include "instructions.h"
 
@@ -909,6 +909,7 @@ void OPCALL movs16e16_32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL pope16_16(struct CPU* cpu, struct Op* op) {
 	writew(cpu->memory, eaa16(cpu, op), pop16(cpu));
+    CYCLES(3);
 	NEXT();
 }
 

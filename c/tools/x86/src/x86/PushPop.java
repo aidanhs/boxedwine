@@ -55,6 +55,34 @@ public class PushPop extends Base {
         }
     }
 
+    public void gensrc(FileOutputStream fos) throws IOException {
+        genSegSrc(fos, "006", "206", "007", "207", "ES");
+        genSegSrc(fos, "00e", "20e", null, null, "CS");
+        genSegSrc(fos, "016", "216", "017", "217", "SS");
+        genSegSrc(fos, "01e", "21e", "01f", "21f", "DS");
+        genSegSrc(fos, "1a0", "3a0", "1a1", "3a1", "FS");
+        genSegSrc(fos, "1a8", "3a8", "1a9", "3a9", "GS");
+    }
+
+    public void genSegSrc(FileOutputStream fos, String push16, String push32, String pop16, String pop32, String seg) throws IOException {
+        out(fos, "void gen"+push16+"(struct Op* op) {");
+        out(fos, "    out(\"push16(cpu, cpu->segValue["+seg+"]);CYCLES(1);\");");
+        out(fos, "}");
+        out(fos, "void gen"+push32+"(struct Op* op) {");
+        out(fos, "    out(\"push32(cpu, cpu->segValue["+seg+"]);CYCLES(1);\");");
+        out(fos, "}");
+        if (pop16!=null) {
+            out(fos, "void gen" + pop16 + "(struct Op* op) {");
+            out(fos, "    out(\"cpu->segValue[" + seg + "] = pop16(cpu); cpu->segAddress[" + seg + "] = cpu->thread->process->ldt[cpu->segValue[" + seg + "] >> 3].base_addr;CYCLES(3);\");");
+            out(fos, "}");
+        }
+        if (pop32!=null) {
+            out(fos, "void gen" + pop32 + "(struct Op* op) {");
+            out(fos, "    out(\"cpu->segValue[" + seg + "] = pop32(cpu); cpu->segAddress[" + seg + "] = cpu->thread->process->ldt[cpu->segValue[" + seg + "] >> 3].base_addr;CYCLES(3);\");");
+            out(fos, "}");
+        }
+    }
+
     public void pushPopReg(FileOutputStream fos, String name, String bits) throws IOException {
         out(fos, "void OPCALL push"+name+"(struct CPU* cpu, struct Op* op){");
         out(fos, "    push"+bits+"(cpu, cpu->reg[op->r1].u"+bits+");");

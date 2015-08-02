@@ -160,6 +160,9 @@
     <ClCompile Include="..\..\..\..\source\emulation\instructions.c">
       <Filter>source\emulation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\strings.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -359,6 +362,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\emulation\instructions.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\strings_op.h">
+      <Filter>source\emulation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

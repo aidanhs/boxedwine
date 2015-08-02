@@ -405,6 +405,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\setcc.h" />
     <ClInclude Include="..\..\..\..\source\emulation\shift.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
   </ItemGroup>
@@ -423,6 +424,7 @@
     <ClCompile Include="..\..\..\..\source\emulation\memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\ram.c" />
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />

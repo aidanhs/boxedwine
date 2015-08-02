@@ -2399,10 +2399,10 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
 }
 
 #ifdef GENERATE_SOURCE
-void generateSource(struct Block* block);
+void generateSource(struct CPU* cpu, U32 eip, struct Block* block);
 #endif
 
-void jit(struct Block* block) {
+void jit(struct CPU* cpu, U32 eip, struct Block* block) {
     struct Op* op = block->ops;
     
     while (op) {
@@ -2444,6 +2444,6 @@ void jit(struct Block* block) {
         op = op->next;
     }
 #ifdef GENERATE_SOURCE
-    generateSource(block);
+    generateSource(cpu, eip, block);
 #endif
 }

@@ -2172,6 +2172,8 @@ void OPCALL restoreOps(struct CPU* cpu, struct Op* op) {
 
 void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     struct Block* block = cpu->currentBlock;
+    U32 eip = cpu->eip.u32;
+
     op->next->func(cpu, op->next);
 
     // :TODO: should experiment more with different values here
@@ -2186,7 +2188,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
         block->ops = block->ops->next;
         op->next = 0;
         freeOp(op);
-        jit(block);
+        jit(cpu, eip, block);
     }
 }
 

@@ -1674,270 +1674,285 @@ void decode261(struct DecodeData* data) {
 void decode0a4(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = movsb16_r;
+            data->op->func = movsb16_r_op;
         } else {
-            data->op->func = movsb16;
+            data->op->func = movsb16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = movsb32_r;
+            data->op->func = movsb32_r_op;
         } else {
-            data->op->func = movsb32;
+            data->op->func = movsb32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // MOVSW
 void decode0a5(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = movsw16_r;
+            data->op->func = movsw16_r_op;
         } else {
-            data->op->func = movsw16;
+            data->op->func = movsw16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = movsw32_r;
+            data->op->func = movsw32_r_op;
         } else {
-            data->op->func = movsw32;
+            data->op->func = movsw32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // MOVSD
 void decode2a5(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = movsd16_r;
+            data->op->func = movsd16_r_op;
         } else {
-            data->op->func = movsd16;
+            data->op->func = movsd16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = movsd32_r;
+            data->op->func = movsd32_r_op;
         } else {
-            data->op->func = movsd32;
+            data->op->func = movsd32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // CMPSB
 void decode0a6(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = cmpsb16_r;
+            data->op->func = cmpsb16_r_op;
         } else {
-            data->op->func = cmpsb16;
+            data->op->func = cmpsb16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = cmpsb32_r;
+            data->op->func = cmpsb32_r_op;
         } else {
-            data->op->func = cmpsb32;
+            data->op->func = cmpsb32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // CMPSW
 void decode0a7(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = cmpsw16_r;
+            data->op->func = cmpsw16_r_op;
         } else {
-            data->op->func = cmpsw16;
+            data->op->func = cmpsw16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = cmpsw32_r;
+            data->op->func = cmpsw32_r_op;
         } else {
-            data->op->func = cmpsw32;
+            data->op->func = cmpsw32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // CMPSD
 void decode2a7(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = cmpsd16_r;
+            data->op->func = cmpsd16_r_op;
         } else {
-            data->op->func = cmpsd16;
+            data->op->func = cmpsd16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = cmpsd32_r;
+            data->op->func = cmpsd32_r_op;
         } else {
-            data->op->func = cmpsd32;
+            data->op->func = cmpsd32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // STOSB
 void decode0aa(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = stosb16_r;
+            data->op->func = stosb16_r_op;
         } else {
-            data->op->func = stosb16;
+            data->op->func = stosb16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = stosb32_r;
+            data->op->func = stosb32_r_op;
         } else {
-            data->op->func = stosb32;
+            data->op->func = stosb32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // STOSW
 void decode0ab(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = stosw16_r;
+            data->op->func = stosw16_r_op;
         } else {
-            data->op->func = stosw16;
+            data->op->func = stosw16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = stosw32_r;
+            data->op->func = stosw32_r_op;
         } else {
-            data->op->func = stosw32;
+            data->op->func = stosw32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // STOSD
 void decode2ab(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = stosd16_r;
+            data->op->func = stosd16_r_op;
         } else {
-            data->op->func = stosd16;
+            data->op->func = stosd16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = stosd32_r;
+            data->op->func = stosd32_r_op;
         } else {
-            data->op->func = stosd32;
+            data->op->func = stosd32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // LODSB
 void decode0ac(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = lodsb16_r;
+            data->op->func = lodsb16_r_op;
         } else {
-            data->op->func = lodsb16;
+            data->op->func = lodsb16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = lodsb32_r;
+            data->op->func = lodsb32_r_op;
         } else {
-            data->op->func = lodsb32;
+            data->op->func = lodsb32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // LODSW
 void decode0ad(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = lodsw16_r;
+            data->op->func = lodsw16_r_op;
         } else {
-            data->op->func = lodsw16;
+            data->op->func = lodsw16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = lodsw32_r;
+            data->op->func = lodsw32_r_op;
         } else {
-            data->op->func = lodsw32;
+            data->op->func = lodsw32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // LODSD
 void decode2ad(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = lodsd16_r;
+            data->op->func = lodsd16_r_op;
         } else {
-            data->op->func = lodsd16;
+            data->op->func = lodsd16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = lodsd32_r;
+            data->op->func = lodsd32_r_op;
         } else {
-            data->op->func = lodsd32;
+            data->op->func = lodsd32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // SCASB
 void decode0ae(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = scasb16_r;
+            data->op->func = scasb16_r_op;
         } else {
-            data->op->func = scasb16;
+            data->op->func = scasb16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = scasb32_r;
+            data->op->func = scasb32_r_op;
         } else {
-            data->op->func = scasb32;
+            data->op->func = scasb32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // SCASW
 void decode0af(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = scasw16_r;
+            data->op->func = scasw16_r_op;
         } else {
-            data->op->func = scasw16;
+            data->op->func = scasw16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = scasw32_r;
+            data->op->func = scasw32_r_op;
         } else {
-            data->op->func = scasw32;
+            data->op->func = scasw32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // SCASD
 void decode2af(struct DecodeData* data) {
     if (data->ea16) {
         if (data->rep) {
-            data->op->func = scasd16_r;
+            data->op->func = scasd16_r_op;
         } else {
-            data->op->func = scasd16;
+            data->op->func = scasd16_op;
         }
     } else {
         if (data->rep) {
-            data->op->func = scasd32_r;
+            data->op->func = scasd32_r_op;
         } else {
-            data->op->func = scasd32;
+            data->op->func = scasd32_op;
         }
     }
     data->op->data1 = data->rep_zero;
+    data->op->base = data->ds;
     NEXT_OP(data);
 }
 // CMOVO
