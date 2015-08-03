@@ -102,3 +102,31 @@ void instruction_aas(struct CPU* cpu) {
 	AL &= 0x0F;
 	cpu->lazyFlags=FLAGS_NONE;
 }
+
+void instruction_aad(struct CPU* cpu, U32 value) {
+    AL = AH * value + AL;
+	AH = 0;
+	setSF(cpu, AL & 0x80);
+	setZF(cpu, AL == 0);		
+	setPF(cpu,parity_lookup[AL]);
+	removeFlag(CF);
+	removeFlag(OF);
+	removeFlag(AF);
+	cpu->lazyFlags = FLAGS_NONE;
+}
+
+void instruction_aam(struct CPU* cpu, U32 value) {
+    if (value) {
+		AH = AL / value;
+		AL = AL % value;
+		setSF(cpu, AL & 0x80);
+		setZF(cpu, AL == 0);		
+		setPF(cpu,parity_lookup[AL]);
+		removeFlag(CF);
+		removeFlag(OF);
+		removeFlag(AF);
+		cpu->lazyFlags = FLAGS_NONE;
+	} else {
+		exception(cpu, EXCEPTION_DIVIDE);
+	} 
+}

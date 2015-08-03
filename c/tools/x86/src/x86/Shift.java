@@ -12,109 +12,122 @@ public class Shift extends Base {
 
     public void decode_noflags(FileOutputStream fos) throws IOException {
         flags = false;
-        shiftInst8(fos, "rol8", "op->data1", "1", "3", rol8_noflags, 0, 0, false);
-        shiftInst8(fos, "rol8cl", "CL & 0x1f", "4", "4", rol8_noflags, 7, 0, true);
-        shiftInst16(fos, "rol16", "op->data1", "1", "3", rol16_noflags, 0, 0, false);
-        shiftInst16(fos, "rol16cl", "CL & 0x1f", "4", "4", rol16_noflags, 0xf, 0, true);
-        shiftInst32(fos, "rol32", "op->data1", "1", "3", rol32_noflags, 0, 0, false);
-        shiftInst32(fos, "rol32cl", "CL & 0x1f", "4", "4", rol32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "rol8", "op->data1", "1", "3", rol8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "rol8cl", "CL & 0x1f", "4", "4", rol8_noflags, 7, 0, true);
+        shiftInst16(fos, null, null, "rol16", "op->data1", "1", "3", rol16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "rol16cl", "CL & 0x1f", "4", "4", rol16_noflags, 0xf, 0, true);
+        shiftInst32(fos, null, null, "rol32", "op->data1", "1", "3", rol32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "rol32cl", "CL & 0x1f", "4", "4", rol32_noflags, 0, 0, true);
 
-        shiftInst8(fos, "ror8", "op->data1", "1", "3", ror8_noflags, 0, 0, false);
-        shiftInst8(fos, "ror8cl", "CL & 0x1f", "4", "4", ror8_noflags, 7, 0, true);
-        shiftInst16(fos, "ror16", "op->data1", "1", "3", ror16_noflags, 0, 0, false);
-        shiftInst16(fos, "ror16cl", "CL & 0x1f", "4", "4", ror16_noflags, 0xf, 0, true);
-        shiftInst32(fos, "ror32", "op->data1", "1", "3", ror32_noflags, 0, 0, false);
-        shiftInst32(fos, "ror32cl", "CL & 0x1f", "4", "4", ror32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "ror8", "op->data1", "1", "3", ror8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "ror8cl", "CL & 0x1f", "4", "4", ror8_noflags, 7, 0, true);
+        shiftInst16(fos, null, null, "ror16", "op->data1", "1", "3", ror16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "ror16cl", "CL & 0x1f", "4", "4", ror16_noflags, 0xf, 0, true);
+        shiftInst32(fos, null, null, "ror32", "op->data1", "1", "3", ror32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "ror32cl", "CL & 0x1f", "4", "4", ror32_noflags, 0, 0, true);
 
-        shiftInst8(fos, "rcl8", "op->data1", "8", "10", rcl8_noflags, 0, 0, false);
-        shiftInst8(fos, "rcl8cl", "CL & 0x1f", "7", "9", rcl8_noflags, 0, 9, true);
-        shiftInst16(fos, "rcl16", "op->data1", "8", "10", rcl16_noflags, 0, 0, false);
-        shiftInst16(fos, "rcl16cl", "CL & 0x1f", "7", "9", rcl16_noflags, 0, 17, true);
-        shiftInst32(fos, "rcl32", "op->data1", "8", "10", rcl32_noflags, 0, 0, false);
-        shiftInst32(fos, "rcl32cl", "CL & 0x1f", "7", "9", rcl32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "rcl8", "op->data1", "8", "10", rcl8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "rcl8cl", "CL & 0x1f", "7", "9", rcl8_noflags, 0, 9, true);
+        shiftInst16(fos, null, null, "rcl16", "op->data1", "8", "10", rcl16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "rcl16cl", "CL & 0x1f", "7", "9", rcl16_noflags, 0, 17, true);
+        shiftInst32(fos, null, null, "rcl32", "op->data1", "8", "10", rcl32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "rcl32cl", "CL & 0x1f", "7", "9", rcl32_noflags, 0, 0, true);
 
-        shiftInst8(fos, "rcr8", "op->data1", "8", "10", rcr8_noflags, 0, 0, false);
-        shiftInst8(fos, "rcr8cl", "CL & 0x1f", "7", "9", rcr8_noflags, 0, 9, true);
-        shiftInst16(fos, "rcr16", "op->data1", "8", "10", rcr16_noflags, 0, 0, false);
-        shiftInst16(fos, "rcr16cl", "CL & 0x1f", "7", "9", rcr16_noflags, 0, 17, true);
-        shiftInst32(fos, "rcr32", "op->data1", "8", "10", rcr32_noflags, 0, 0, false);
-        shiftInst32(fos, "rcr32cl", "CL & 0x1f", "7", "9", rcr32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "rcr8", "op->data1", "8", "10", rcr8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "rcr8cl", "CL & 0x1f", "7", "9", rcr8_noflags, 0, 9, true);
+        shiftInst16(fos, null, null, "rcr16", "op->data1", "8", "10", rcr16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "rcr16cl", "CL & 0x1f", "7", "9", rcr16_noflags, 0, 17, true);
+        shiftInst32(fos, null, null, "rcr32", "op->data1", "8", "10", rcr32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "rcr32cl", "CL & 0x1f", "7", "9", rcr32_noflags, 0, 0, true);
 
-        shiftInst8(fos, "shl8", "op->data1", "1", "3", shl8_noflags, 0, 0, false);
-        shiftInst8(fos, "shl8cl", "CL & 0x1f", "4", "4", shl8_noflags, 0, 0, true);
-        shiftInst16(fos, "shl16", "op->data1", "1", "3", shl16_noflags, 0, 0, false);
-        shiftInst16(fos, "shl16cl", "CL & 0x1f", "4", "4", shl16_noflags, 0, 0, true);
-        shiftInst32(fos, "shl32", "op->data1", "1", "3", shl32_noflags, 0, 0, false);
-        shiftInst32(fos, "shl32cl", "CL & 0x1f", "4", "4", shl32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "shl8", "op->data1", "1", "3", shl8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "shl8cl", "CL & 0x1f", "4", "4", shl8_noflags, 0, 0, true);
+        shiftInst16(fos, null, null, "shl16", "op->data1", "1", "3", shl16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "shl16cl", "CL & 0x1f", "4", "4", shl16_noflags, 0, 0, true);
+        shiftInst32(fos, null, null, "shl32", "op->data1", "1", "3", shl32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "shl32cl", "CL & 0x1f", "4", "4", shl32_noflags, 0, 0, true);
 
-        shiftInst8(fos, "shr8", "op->data1", "1", "3", shr8_noflags, 0, 0, false);
-        shiftInst8(fos, "shr8cl", "CL & 0x1f", "4", "4", shr8_noflags, 0, 0, true);
-        shiftInst16(fos, "shr16", "op->data1", "1", "3", shr16_noflags, 0, 0, false);
-        shiftInst16(fos, "shr16cl", "CL & 0x1f", "4", "4", shr16_noflags, 0, 0, true);
-        shiftInst32(fos, "shr32", "op->data1", "1", "3", shr32_noflags, 0, 0, false);
-        shiftInst32(fos, "shr32cl", "CL & 0x1f", "4", "4", shr32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "shr8", "op->data1", "1", "3", shr8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "shr8cl", "CL & 0x1f", "4", "4", shr8_noflags, 0, 0, true);
+        shiftInst16(fos, null, null, "shr16", "op->data1", "1", "3", shr16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "shr16cl", "CL & 0x1f", "4", "4", shr16_noflags, 0, 0, true);
+        shiftInst32(fos, null, null, "shr32", "op->data1", "1", "3", shr32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "shr32cl", "CL & 0x1f", "4", "4", shr32_noflags, 0, 0, true);
 
-        shiftInst8(fos, "sar8", "op->data1", "1", "3", sar8_noflags, 0, 0, false);
-        shiftInst8(fos, "sar8cl", "CL & 0x1f", "4", "4", sar8_noflags, 0, 0, true);
-        shiftInst16(fos, "sar16", "op->data1", "1", "3", sar16_noflags, 0, 0, false);
-        shiftInst16(fos, "sar16cl", "CL & 0x1f", "4", "4", sar16_noflags, 0, 0, true);
-        shiftInst32(fos, "sar32", "op->data1", "1", "3", sar32_noflags, 0, 0, false);
-        shiftInst32(fos, "sar32cl", "CL & 0x1f", "4", "4", sar32_noflags, 0, 0, true);
+        shiftInst8(fos, null, null, "sar8", "op->data1", "1", "3", sar8_noflags, 0, 0, false);
+        shiftInst8(fos, null, null, "sar8cl", "CL & 0x1f", "4", "4", sar8_noflags, 0, 0, true);
+        shiftInst16(fos, null, null, "sar16", "op->data1", "1", "3", sar16_noflags, 0, 0, false);
+        shiftInst16(fos, null, null, "sar16cl", "CL & 0x1f", "4", "4", sar16_noflags, 0, 0, true);
+        shiftInst32(fos, null, null, "sar32", "op->data1", "1", "3", sar32_noflags, 0, 0, false);
+        shiftInst32(fos, null, null, "sar32cl", "CL & 0x1f", "4", "4", sar32_noflags, 0, 0, true);
     }
     public void generate() {
         try {
-            FileOutputStream fos = new FileOutputStream("shift.h");
+            FileOutputStream fos_c = new FileOutputStream("shift.c");
+            FileOutputStream fos_h = new FileOutputStream("shift.h");
+            FileOutputStream fos_op = new FileOutputStream("shift_op.h");
+
+            out(fos_c, "#include \"cpu.h\"");
+            out(fos_c, "#include \"decoder.h\"");
+            out(fos_h, "#ifndef __SHIFT_OP_H__");
+            out(fos_h, "#define __SHIFT_OP_H__");
+            out(fos_h, "#include \"cpu.h\"");
+            out(fos_op, "#include \"shift.h\"");
+            
             flags = true;
-            shiftInst8(fos, "rol8", "op->data1", "1", "3", rol8, 0, 0, false);
-            shiftInst8(fos, "rol8cl", "CL & 0x1f", "4", "4", rol8, 7, 0, true);
-            shiftInst16(fos, "rol16", "op->data1", "1", "3", rol16, 0, 0, false);
-            shiftInst16(fos, "rol16cl", "CL & 0x1f", "4", "4", rol16, 0xf, 0, true);
-            shiftInst32(fos, "rol32", "op->data1", "1", "3", rol32, 0, 0, false);
-            shiftInst32(fos, "rol32cl", "CL & 0x1f", "4", "4", rol32, 0, 0, true);
+            shiftInst8(fos_c, fos_h, fos_op, "rol8", "op->data1", "1", "3", rol8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "rol8cl", "CL & 0x1f", "4", "4", rol8, 7, 0, true);
+            shiftInst16(fos_c, fos_h, fos_op, "rol16", "op->data1", "1", "3", rol16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "rol16cl", "CL & 0x1f", "4", "4", rol16, 0xf, 0, true);
+            shiftInst32(fos_c, fos_h, fos_op, "rol32", "op->data1", "1", "3", rol32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "rol32cl", "CL & 0x1f", "4", "4", rol32, 0, 0, true);
 
-            shiftInst8(fos, "ror8", "op->data1", "1", "3", ror8, 0, 0, false);
-            shiftInst8(fos, "ror8cl", "CL & 0x1f", "4", "4", ror8, 7, 0, true);
-            shiftInst16(fos, "ror16", "op->data1", "1", "3", ror16, 0, 0, false);
-            shiftInst16(fos, "ror16cl", "CL & 0x1f", "4", "4", ror16, 0xf, 0, true);
-            shiftInst32(fos, "ror32", "op->data1", "1", "3", ror32, 0, 0, false);
-            shiftInst32(fos, "ror32cl", "CL & 0x1f", "4", "4", ror32, 0, 0, true);
+            shiftInst8(fos_c, fos_h, fos_op, "ror8", "op->data1", "1", "3", ror8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "ror8cl", "CL & 0x1f", "4", "4", ror8, 7, 0, true);
+            shiftInst16(fos_c, fos_h, fos_op, "ror16", "op->data1", "1", "3", ror16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "ror16cl", "CL & 0x1f", "4", "4", ror16, 0xf, 0, true);
+            shiftInst32(fos_c, fos_h, fos_op, "ror32", "op->data1", "1", "3", ror32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "ror32cl", "CL & 0x1f", "4", "4", ror32, 0, 0, true);
 
-            shiftInst8(fos, "rcl8", "op->data1", "8", "10", rcl8, 0, 0, false);
-            shiftInst8(fos, "rcl8cl", "CL & 0x1f", "7", "9", rcl8, 0, 9, true);
-            shiftInst16(fos, "rcl16", "op->data1", "8", "10", rcl16, 0, 0, false);
-            shiftInst16(fos, "rcl16cl", "CL & 0x1f", "7", "9", rcl16, 0, 17, true);
-            shiftInst32(fos, "rcl32", "op->data1", "8", "10", rcl32, 0, 0, false);
-            shiftInst32(fos, "rcl32cl", "CL & 0x1f", "7", "9", rcl32, 0, 0, true);
+            shiftInst8(fos_c, fos_h, fos_op, "rcl8", "op->data1", "8", "10", rcl8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "rcl8cl", "CL & 0x1f", "7", "9", rcl8, 0, 9, true);
+            shiftInst16(fos_c, fos_h, fos_op, "rcl16", "op->data1", "8", "10", rcl16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "rcl16cl", "CL & 0x1f", "7", "9", rcl16, 0, 17, true);
+            shiftInst32(fos_c, fos_h, fos_op, "rcl32", "op->data1", "8", "10", rcl32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "rcl32cl", "CL & 0x1f", "7", "9", rcl32, 0, 0, true);
 
-            shiftInst8(fos, "rcr8", "op->data1", "8", "10", rcr8, 0, 0, false);
-            shiftInst8(fos, "rcr8cl", "CL & 0x1f", "7", "9", rcr8, 0, 9, true);
-            shiftInst16(fos, "rcr16", "op->data1", "8", "10", rcr16, 0, 0, false);
-            shiftInst16(fos, "rcr16cl", "CL & 0x1f", "7", "9", rcr16, 0, 17, true);
-            shiftInst32(fos, "rcr32", "op->data1", "8", "10", rcr32, 0, 0, false);
-            shiftInst32(fos, "rcr32cl", "CL & 0x1f", "7", "9", rcr32, 0, 0, true);
+            shiftInst8(fos_c, fos_h, fos_op, "rcr8", "op->data1", "8", "10", rcr8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "rcr8cl", "CL & 0x1f", "7", "9", rcr8, 0, 9, true);
+            shiftInst16(fos_c, fos_h, fos_op, "rcr16", "op->data1", "8", "10", rcr16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "rcr16cl", "CL & 0x1f", "7", "9", rcr16, 0, 17, true);
+            shiftInst32(fos_c, fos_h, fos_op, "rcr32", "op->data1", "8", "10", rcr32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "rcr32cl", "CL & 0x1f", "7", "9", rcr32, 0, 0, true);
 
-            shiftInst8(fos, "shl8", "op->data1", "1", "3", shl8, 0, 0, false);
-            shiftInst8(fos, "shl8cl", "CL & 0x1f", "4", "4", shl8, 0, 0, true);
-            shiftInst16(fos, "shl16", "op->data1", "1", "3", shl16, 0, 0, false);
-            shiftInst16(fos, "shl16cl", "CL & 0x1f", "4", "4", shl16, 0, 0, true);
-            shiftInst32(fos, "shl32", "op->data1", "1", "3", shl32, 0, 0, false);
-            shiftInst32(fos, "shl32cl", "CL & 0x1f", "4", "4", shl32, 0, 0, true);
+            shiftInst8(fos_c, fos_h, fos_op, "shl8", "op->data1", "1", "3", shl8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "shl8cl", "CL & 0x1f", "4", "4", shl8, 0, 0, true);
+            shiftInst16(fos_c, fos_h, fos_op, "shl16", "op->data1", "1", "3", shl16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "shl16cl", "CL & 0x1f", "4", "4", shl16, 0, 0, true);
+            shiftInst32(fos_c, fos_h, fos_op, "shl32", "op->data1", "1", "3", shl32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "shl32cl", "CL & 0x1f", "4", "4", shl32, 0, 0, true);
 
-            shiftInst8(fos, "shr8", "op->data1", "1", "3", shr8, 0, 0, false);
-            shiftInst8(fos, "shr8cl", "CL & 0x1f", "4", "4", shr8, 0, 0, true);
-            shiftInst16(fos, "shr16", "op->data1", "1", "3", shr16, 0, 0, false);
-            shiftInst16(fos, "shr16cl", "CL & 0x1f", "4", "4", shr16, 0, 0, true);
-            shiftInst32(fos, "shr32", "op->data1", "1", "3", shr32, 0, 0, false);
-            shiftInst32(fos, "shr32cl", "CL & 0x1f", "4", "4", shr32, 0, 0, true);
+            shiftInst8(fos_c, fos_h, fos_op, "shr8", "op->data1", "1", "3", shr8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "shr8cl", "CL & 0x1f", "4", "4", shr8, 0, 0, true);
+            shiftInst16(fos_c, fos_h, fos_op, "shr16", "op->data1", "1", "3", shr16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "shr16cl", "CL & 0x1f", "4", "4", shr16, 0, 0, true);
+            shiftInst32(fos_c, fos_h, fos_op, "shr32", "op->data1", "1", "3", shr32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "shr32cl", "CL & 0x1f", "4", "4", shr32, 0, 0, true);
 
-            shiftInst8(fos, "sar8", "op->data1", "1", "3", sar8, 0, 0, false);
-            shiftInst8(fos, "sar8cl", "CL & 0x1f", "4", "4", sar8, 0, 0, true);
-            shiftInst16(fos, "sar16", "op->data1", "1", "3", sar16, 0, 0, false);
-            shiftInst16(fos, "sar16cl", "CL & 0x1f", "4", "4", sar16, 0, 0, true);
-            shiftInst32(fos, "sar32", "op->data1", "1", "3", sar32, 0, 0, false);
-            shiftInst32(fos, "sar32cl", "CL & 0x1f", "4", "4", sar32, 0, 0, true);
-            fos.close();
-            fos = null;
+            shiftInst8(fos_c, fos_h, fos_op, "sar8", "op->data1", "1", "3", sar8, 0, 0, false);
+            shiftInst8(fos_c, fos_h, fos_op, "sar8cl", "CL & 0x1f", "4", "4", sar8, 0, 0, true);
+            shiftInst16(fos_c, fos_h, fos_op, "sar16", "op->data1", "1", "3", sar16, 0, 0, false);
+            shiftInst16(fos_c, fos_h, fos_op, "sar16cl", "CL & 0x1f", "4", "4", sar16, 0, 0, true);
+            shiftInst32(fos_c, fos_h, fos_op, "sar32", "op->data1", "1", "3", sar32, 0, 0, false);
+            shiftInst32(fos_c, fos_h, fos_op, "sar32cl", "CL & 0x1f", "4", "4", sar32, 0, 0, true);
+            fos_c.close();
+            fos_c = null;
+            out(fos_h, "#endif");
+            fos_h.close();
+            fos_op.close();
         } catch (IOException e) {
 
         }
@@ -148,12 +161,12 @@ public class Shift extends Base {
     static public String ror8_noflags = "result = (var1 >> var2) | (var1 << (8 - var2));";
     static public String ror16_noflags = "result = (var1 >> var2) | (var1 << (16 - var2));";
     static public String ror32_noflags = "result = (var1 >> var2) | (var1 << (32 - var2));";
-    static public String rcl8_noflags = "result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (9-var2));";
-    static public String rcl16_noflags = "result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (17-var2));";
-    static public String rcl32_noflags = "if (var2==1) {\r\n        result = (var1 << var2) | (cpu->flags & CF);\r\n    } else {\r\n        result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));\r\n    }";
-    static public String rcr8_noflags = "result = (var1 >> var2) | ((cpu->flags & CF) << (8-var2)) | (var1 << (9-var2));";
-    static public String rcr16_noflags = "result = (var1 >> var2) | ((cpu->flags & CF) << (16-var2)) | (var1 << (17-var2));";
-    static public String rcr32_noflags = "if (var2==1) {\r\n        result = (var1 >> var2) | ((cpu->flags & CF) << 31);\r\n    } else {\r\n        result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));\r\n    }";
+    static public String rcl8_noflags = "result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (9-var2));";
+    static public String rcl16_noflags = "result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (17-var2));";
+    static public String rcl32_noflags = "if (var2==1) {\r\n        result = (var1 << var2) | getCF(cpu);\r\n    } else {\r\n        result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));\r\n    }";
+    static public String rcr8_noflags = "result = (var1 >> var2) | (getCF(cpu) << (8-var2)) | (var1 << (9-var2));";
+    static public String rcr16_noflags = "result = (var1 >> var2) | (getCF(cpu) << (16-var2)) | (var1 << (17-var2));";
+    static public String rcr32_noflags = "if (var2==1) {\r\n        result = (var1 >> var2) | (getCF(cpu) << 31);\r\n    } else {\r\n        result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));\r\n    }";
     static public String shl8_noflags = "result = var1 << var2;";
     static public String shl16_noflags = "result = var1 << var2;";
     static public String shl32_noflags = "result = var1 << var2;";
@@ -164,35 +177,63 @@ public class Shift extends Base {
     static public String sar16_noflags = "result = (S16)var1 >> var2;";
     static public String sar32_noflags = "result = (S32)var1 >> var2;";
 
-    public void shiftInst8(FileOutputStream fos, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
-        shiftBase(fos, name+"_reg", false, false, "8", source, "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", rcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, name+"_mem16", true, false, "8", source, "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, name+"_mem32", false, true, "8", source, "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+    public void shiftInst8(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
+        shiftBase(fos, fos_h, fos_op, name+"_reg", false, false, "8", source, "*cpu->reg8[reg]", "*cpu->reg8[reg] = ", "", rcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "8", source, "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "8", source, "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
     }
 
-    public void shiftInst16(FileOutputStream fos, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
-        shiftBase(fos, name+"_reg", false, false, "16", source, "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", rcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, name+"_mem16", true, false, "16", source, "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, name+"_mem32", false, true, "16", source, "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+    public void shiftInst16(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
+        shiftBase(fos, fos_h, fos_op, name+"_reg", false, false, "16", source, "cpu->reg[reg].u16", "cpu->reg[reg].u16 = ", "", rcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "16", source, "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "16", source, "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
     }
 
-    public void shiftInst32(FileOutputStream fos, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
-        shiftBase(fos, name+"_reg", false, false, "32", source, "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", rcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, name+"_mem16", true, false, "32", source, "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, name+"_mem32", false, true, "32", source, "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+    public void shiftInst32(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
+        shiftBase(fos, fos_h, fos_op, name+"_reg", false, false, "32", source, "cpu->reg[reg].u32", "cpu->reg[reg].u32 = ", "", rcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "32", source, "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "32", source, "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
     }
 
-    public void shiftBase(FileOutputStream fos, String name, boolean eaa16, boolean eaa32, String bits, String shiftSource, String source, String destSave1, String destSave2, String cycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
+    public void shiftBase(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, boolean eaa16, boolean eaa32, String bits, String shiftSource, String source, String destSave1, String destSave2, String cycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
         if (!flags)
             name+="_noflags";
-        out(fos, "void OPCALL "+name+"(struct CPU* cpu, struct Op* op) {");
+        if (fos_h!=null) {
+            if (eaa16 || eaa32)
+                out(fos_h, "void " + name + "(struct CPU* cpu, U32 eaa, U32 value);");
+            else
+                out(fos_h, "void " + name + "(struct CPU* cpu, U32 reg, U32 value);");
+        }
+        if (fos_op!=null) {
+            out(fos_op, "void OPCALL " + name + "_op(struct CPU* cpu, struct Op* op) {");
+            if (eaa16)
+                out(fos_op, "    " + name + "(cpu, eaa16(cpu, op), " + shiftSource + ");");
+            else if (eaa32)
+                out(fos_op, "    " + name + "(cpu, eaa32(cpu, op), " + shiftSource + ");");
+            else
+                out(fos_op, "    " + name + "(cpu, op->r1, " + shiftSource + ");");
+            out(fos_op, "    NEXT();");
+            out(fos_op, "}");
+        }
+
+        if (!flags) {
+            out(fos, "void OPCALL " + name + "(struct CPU* cpu, struct Op* op) {");
+            out(fos, "    U"+bits+" var2 = "+shiftSource+";");
+            if (eaa16)
+                out(fos, "    U32 eaa=eaa16(cpu, op);");
+            else if (eaa32)
+                out(fos, "    U32 eaa=eaa32(cpu, op);");
+            else
+                out(fos, "    U32 reg=op->r1;");
+        } else {
+            if (eaa16 || eaa32)
+                out(fos, "void " + name + "(struct CPU* cpu, U32 eaa, U32 var2) {");
+            else
+                out(fos, "void " + name + "(struct CPU* cpu, U32 reg, U32 var2) {");
+        }
         out(fos, "    U"+bits+" result;");
-        if (eaa16)
-            out(fos, "    U32 eaa = eaa16(cpu, op);");
-        if (eaa32)
-            out(fos, "    U32 eaa = eaa32(cpu, op);");
         out(fos, "    U"+bits+" var1"+((mask==0 && mod==0)?"="+source:"")+";");
-        out(fos, "    U"+bits+" var2 = "+shiftSource+";");
+
         if (checkForZero) {
             out(fos, "    if (var2) {");
         }
@@ -210,7 +251,8 @@ public class Shift extends Base {
             out(fos, "    }");
         }
         out(fos, "    CYCLES("+cycles+");");
-        out(fos, "    NEXT();");
+        if (!flags)
+            out(fos, "    NEXT();");
         out(fos, "}");
     }
 }

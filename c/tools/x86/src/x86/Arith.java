@@ -50,7 +50,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithRR_noflags(const char* op, const char* bits, const char* r1, const char* r2, U32 useCF, const char* cycles) {\n" +
@@ -69,7 +69,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithER(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
@@ -109,7 +109,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithER_noflags(const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {\n" +
@@ -131,7 +131,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithRE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
@@ -170,7 +170,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithRE_noflags(const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {\n" +
@@ -192,7 +192,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithR(const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
@@ -232,7 +232,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithR_noflags(const char* op, const char* bits, const char* r1, unsigned int value, U32 useCF, const char* cycles) {\n" +
@@ -254,7 +254,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
@@ -297,7 +297,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}\n" +
                 "\n" +
                 "void genArithE_noflags(const char* op, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useCF, const char* cycles) {\n" +
@@ -322,7 +322,7 @@ public class Arith extends Base {
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
-                "    out(\");\\n\");\n" +
+                "    out(\");\");\n" +
                 "}";
         out(fos, helpers);
 

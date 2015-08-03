@@ -3,7 +3,7 @@
 #include "incdec.h"
 #include "pushpop.h"
 #include "strings_op.h"
-#include "shift.h"
+#include "shift_op.h"
 #include "instructions.h"
 
 void OPCALL pushSeg16(struct CPU* cpu, struct Op* op) {
@@ -1085,7 +1085,7 @@ void OPCALL leave32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL syscall(struct CPU* cpu, struct Op* op);
+void OPCALL syscall_op(struct CPU* cpu, struct Op* op);
 
 void OPCALL salc(struct CPU* cpu, struct Op* op) {
 	if (getCF(cpu))
@@ -1097,33 +1097,13 @@ void OPCALL salc(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL aam(struct CPU* cpu, struct Op* op) {
-	 if (op->data1) {
-		AH = AL / op->data1;
-		AL = AL % op->data1;
-		setSF(cpu, AL & 0x80);
-		setZF(cpu, AL == 0);		
-		setPF(cpu,parity_lookup[AL]);
-		removeFlag(CF);
-		removeFlag(OF);
-		removeFlag(AF);
-		cpu->lazyFlags = FLAGS_NONE;
-	} else {
-		exception(cpu, EXCEPTION_DIVIDE);
-	} 
+	 instruction_aam(cpu, op->data1);
 	CYCLES(18);
 	NEXT();
 }
 
 void OPCALL aad(struct CPU* cpu, struct Op* op) {
-	AL = AH * op->data1 + AL;
-	AH = 0;
-	setSF(cpu, AL & 0x80);
-	setZF(cpu, AL == 0);		
-	setPF(cpu,parity_lookup[AL]);
-	removeFlag(CF);
-	removeFlag(OF);
-	removeFlag(AF);
-	cpu->lazyFlags = FLAGS_NONE;
+	instruction_aad(cpu, op->data1);
 	CYCLES(10);
 	NEXT();
 }
@@ -3005,7 +2985,6 @@ void OPCALL int99(struct CPU* cpu, struct Op* op) {
 	} else {
 		kpanic("Uknown int 99 call: %d", index);
 	}
-	CYCLES(5);
 	cpu->eip.u32+=op->eipCount;
     cpu->nextBlock = getBlock(cpu);
 }

@@ -190,7 +190,7 @@ void logsyscall(const char* fmt, ...) {
 #define SARG5 readd(memory, ARG2+12)
 #define SARG6 readd(memory, ARG2+16)
 
-void OPCALL syscall(struct CPU* cpu, struct Op* op) {
+void syscall(struct CPU* cpu, U32 eipCount) {
 	struct KThread* thread = cpu->thread;
 	struct KProcess* process = thread->process;
 	struct Memory* memory = cpu->memory;
@@ -900,7 +900,7 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	} else {
 		U32 oldEAX = EAX;
 		EAX = result;
-		cpu->eip.u32+=op->eipCount;
+		cpu->eip.u32+=eipCount;
 		if (oldEAX == __NR_rt_sigprocmask) {
 			runSignals(thread);
 		}
@@ -908,4 +908,8 @@ void OPCALL syscall(struct CPU* cpu, struct Op* op) {
 	thread->inSysCall = 0;
     cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);    
     threadDone(cpu);
+}
+
+void OPCALL syscall_op(struct CPU* cpu, struct Op* op) {
+    syscall(cpu, op->eipCount);
 }

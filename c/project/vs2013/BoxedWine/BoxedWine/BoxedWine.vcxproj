@@ -404,6 +404,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\pushpop.h" />
     <ClInclude Include="..\..\..\..\source\emulation\setcc.h" />
     <ClInclude Include="..\..\..\..\source\emulation\shift.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\shift_op.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
@@ -423,6 +424,7 @@
     <ClCompile Include="..\..\..\..\source\emulation\jit.c" />
     <ClCompile Include="..\..\..\..\source\emulation\memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\ram.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\shift.c" />
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />

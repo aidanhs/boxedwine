@@ -32,7 +32,7 @@ void genArithRR(const char* op, const char* flags, const char* bits, const char*
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithRR_noflags(const char* op, const char* bits, const char* r1, const char* r2, U32 useCF, const char* cycles) {
@@ -51,7 +51,7 @@ void genArithRR_noflags(const char* op, const char* bits, const char* r1, const 
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithER(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {
@@ -91,7 +91,7 @@ void genArithER(const char* op, const char* flags, const char* bits, const char*
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithER_noflags(const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {
@@ -113,7 +113,7 @@ void genArithER_noflags(const char* op, const char* bits, const char* address, c
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithRE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {
@@ -152,7 +152,7 @@ void genArithRE(const char* op, const char* flags, const char* bits, const char*
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithRE_noflags(const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {
@@ -174,7 +174,7 @@ void genArithRE_noflags(const char* op, const char* bits, const char* address, c
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithR(const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {
@@ -214,7 +214,7 @@ void genArithR(const char* op, const char* flags, const char* bits, const char* 
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithR_noflags(const char* op, const char* bits, const char* r1, unsigned int value, U32 useCF, const char* cycles) {
@@ -236,7 +236,7 @@ void genArithR_noflags(const char* op, const char* bits, const char* r1, unsigne
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {
@@ -279,7 +279,7 @@ void genArithE(const char* op, const char* flags, const char* bits, const char* 
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 
 void genArithE_noflags(const char* op, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useCF, const char* cycles) {
@@ -304,7 +304,7 @@ void genArithE_noflags(const char* op, const char* bits, const char* address, co
     }
     out(";CYCLES(");
     out(cycles);
-    out(");\n");
+    out(");");
 }
 void OPCALL addr8r8(struct CPU* cpu, struct Op* op);
 void OPCALL addr8r8_noflags(struct CPU* cpu, struct Op* op);

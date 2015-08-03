@@ -1021,14 +1021,14 @@ void decode0c0(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol8_reg, rol8_mem16, rol8_mem32); break;
-	case 1: DECODE_E(ror8_reg, ror8_mem16, ror8_mem32); break;
-	case 2: DECODE_E(rcl8_reg, rcl8_mem16, rcl8_mem32); break;
-	case 3: DECODE_E(rcr8_reg, rcr8_mem16, rcr8_mem32); break;
+	case 0: DECODE_E(rol8_reg_op, rol8_mem16_op, rol8_mem32_op); break;
+	case 1: DECODE_E(ror8_reg_op, ror8_mem16_op, ror8_mem32_op); break;
+	case 2: DECODE_E(rcl8_reg_op, rcl8_mem16_op, rcl8_mem32_op); break;
+	case 3: DECODE_E(rcr8_reg_op, rcr8_mem16_op, rcr8_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl8_reg, shl8_mem16, shl8_mem32); break;
-	case 5: DECODE_E(shr8_reg, shr8_mem16, shr8_mem32); break;
-	case 7: DECODE_E(sar8_reg, sar8_mem16, sar8_mem32); break;
+	case 4: DECODE_E(shl8_reg_op, shl8_mem16_op, shl8_mem32_op); break;
+	case 5: DECODE_E(shr8_reg_op, shr8_mem16_op, shr8_mem32_op); break;
+	case 7: DECODE_E(sar8_reg_op, sar8_mem16_op, sar8_mem32_op); break;
 	}			
 	data->op->data1 = FETCH8(data) & 0x1F;
 	if (data->op->data1==0) {
@@ -1063,14 +1063,14 @@ void decode0c1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol16_reg, rol16_mem16, rol16_mem32); break;
-	case 1: DECODE_E(ror16_reg, ror16_mem16, ror16_mem32); break;
-	case 2: DECODE_E(rcl16_reg, rcl16_mem16, rcl16_mem32); break;
-	case 3: DECODE_E(rcr16_reg, rcr16_mem16, rcr16_mem32); break;
+	case 0: DECODE_E(rol16_reg_op, rol16_mem16_op, rol16_mem32_op); break;
+	case 1: DECODE_E(ror16_reg_op, ror16_mem16_op, ror16_mem32_op); break;
+	case 2: DECODE_E(rcl16_reg_op, rcl16_mem16_op, rcl16_mem32_op); break;
+	case 3: DECODE_E(rcr16_reg_op, rcr16_mem16_op, rcr16_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl16_reg, shl16_mem16, shl16_mem32); break;
-	case 5: DECODE_E(shr16_reg, shr16_mem16, shr16_mem32); break;
-	case 7: DECODE_E(sar16_reg, sar16_mem16, sar16_mem32); break;
+	case 4: DECODE_E(shl16_reg_op, shl16_mem16_op, shl16_mem32_op); break;
+	case 5: DECODE_E(shr16_reg_op, shr16_mem16_op, shr16_mem32_op); break;
+	case 7: DECODE_E(sar16_reg_op, sar16_mem16_op, sar16_mem32_op); break;
 	}			
 	data->op->data1 = FETCH8(data) & 0x1F;
 	if (data->op->data1==0) {
@@ -1105,14 +1105,14 @@ void decode2c1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol32_reg, rol32_mem32, rol32_mem32); break;
-	case 1: DECODE_E(ror32_reg, ror32_mem32, ror32_mem32); break;
-	case 2: DECODE_E(rcl32_reg, rcl32_mem32, rcl32_mem32); break;
-	case 3: DECODE_E(rcr32_reg, rcr32_mem32, rcr32_mem32); break;
+	case 0: DECODE_E(rol32_reg_op, rol32_mem32_op, rol32_mem32_op); break;
+	case 1: DECODE_E(ror32_reg_op, ror32_mem32_op, ror32_mem32_op); break;
+	case 2: DECODE_E(rcl32_reg_op, rcl32_mem32_op, rcl32_mem32_op); break;
+	case 3: DECODE_E(rcr32_reg_op, rcr32_mem32_op, rcr32_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl32_reg, shl32_mem32, shl32_mem32); break;
-	case 5: DECODE_E(shr32_reg, shr32_mem32, shr32_mem32); break;
-	case 7: DECODE_E(sar32_reg, sar32_mem32, sar32_mem32); break;
+	case 4: DECODE_E(shl32_reg_op, shl32_mem32_op, shl32_mem32_op); break;
+	case 5: DECODE_E(shr32_reg_op, shr32_mem32_op, shr32_mem32_op); break;
+	case 7: DECODE_E(sar32_reg_op, sar32_mem32_op, sar32_mem32_op); break;
 	}			
 	data->op->data1 = FETCH8(data) & 0x1F;
 	if (data->op->data1==0) {
@@ -1151,7 +1151,7 @@ void decode0cb(struct DecodeData* data) {
 void decode0cd(struct DecodeData* data) {
 	U8 i = FETCH8(data);
 	if (i==0x80) {
-		data->op->func = syscall;
+		data->op->func = syscall_op;
 		LOG_OP("INT 80");
 		FINISH_OP(data);		
 	} else if (i==0x99) {
@@ -1174,14 +1174,14 @@ void decode0d0(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol8_reg, rol8_mem16, rol8_mem32); break;
-	case 1: DECODE_E(ror8_reg, ror8_mem16, ror8_mem32); break;
-	case 2: DECODE_E(rcl8_reg, rcl8_mem16, rcl8_mem32); break;
-	case 3: DECODE_E(rcr8_reg, rcr8_mem16, rcr8_mem32); break;
+	case 0: DECODE_E(rol8_reg_op, rol8_mem16_op, rol8_mem32_op); break;
+	case 1: DECODE_E(ror8_reg_op, ror8_mem16_op, ror8_mem32_op); break;
+	case 2: DECODE_E(rcl8_reg_op, rcl8_mem16_op, rcl8_mem32_op); break;
+	case 3: DECODE_E(rcr8_reg_op, rcr8_mem16_op, rcr8_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl8_reg, shl8_mem16, shl8_mem32); break;
-	case 5: DECODE_E(shr8_reg, shr8_mem16, shr8_mem32); break;
-	case 7: DECODE_E(sar8_reg, sar8_mem16, sar8_mem32); break;
+	case 4: DECODE_E(shl8_reg_op, shl8_mem16_op, shl8_mem32_op); break;
+	case 5: DECODE_E(shr8_reg_op, shr8_mem16_op, shr8_mem32_op); break;
+	case 7: DECODE_E(sar8_reg_op, sar8_mem16_op, sar8_mem32_op); break;
 	}			
 	data->op->data1 = 1;
 #ifdef LOG_OPS
@@ -1204,14 +1204,14 @@ void decode0d1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol16_reg, rol16_mem16, rol16_mem32); break;
-	case 1: DECODE_E(ror16_reg, ror16_mem16, ror16_mem32); break;
-	case 2: DECODE_E(rcl16_reg, rcl16_mem16, rcl16_mem32); break;
-	case 3: DECODE_E(rcr16_reg, rcr16_mem16, rcr16_mem32); break;
+	case 0: DECODE_E(rol16_reg_op, rol16_mem16_op, rol16_mem32_op); break;
+	case 1: DECODE_E(ror16_reg_op, ror16_mem16_op, ror16_mem32_op); break;
+	case 2: DECODE_E(rcl16_reg_op, rcl16_mem16_op, rcl16_mem32_op); break;
+	case 3: DECODE_E(rcr16_reg_op, rcr16_mem16_op, rcr16_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl16_reg, shl16_mem16, shl16_mem32); break;
-	case 5: DECODE_E(shr16_reg, shr16_mem16, shr16_mem32); break;
-	case 7: DECODE_E(sar16_reg, sar16_mem16, sar16_mem32); break;
+	case 4: DECODE_E(shl16_reg_op, shl16_mem16_op, shl16_mem32_op); break;
+	case 5: DECODE_E(shr16_reg_op, shr16_mem16_op, shr16_mem32_op); break;
+	case 7: DECODE_E(sar16_reg_op, sar16_mem16_op, sar16_mem32_op); break;
 	}			
 	data->op->data1 = 1;
 #ifdef LOG_OPS
@@ -1234,14 +1234,14 @@ void decode2d1(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol32_reg, rol32_mem32, rol32_mem32); break;
-	case 1: DECODE_E(ror32_reg, ror32_mem32, ror32_mem32); break;
-	case 2: DECODE_E(rcl32_reg, rcl32_mem32, rcl32_mem32); break;
-	case 3: DECODE_E(rcr32_reg, rcr32_mem32, rcr32_mem32); break;
+	case 0: DECODE_E(rol32_reg_op, rol32_mem32_op, rol32_mem32_op); break;
+	case 1: DECODE_E(ror32_reg_op, ror32_mem32_op, ror32_mem32_op); break;
+	case 2: DECODE_E(rcl32_reg_op, rcl32_mem32_op, rcl32_mem32_op); break;
+	case 3: DECODE_E(rcr32_reg_op, rcr32_mem32_op, rcr32_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl32_reg, shl32_mem32, shl32_mem32); break;
-	case 5: DECODE_E(shr32_reg, shr32_mem32, shr32_mem32); break;
-	case 7: DECODE_E(sar32_reg, sar32_mem32, sar32_mem32); break;
+	case 4: DECODE_E(shl32_reg_op, shl32_mem32_op, shl32_mem32_op); break;
+	case 5: DECODE_E(shr32_reg_op, shr32_mem32_op, shr32_mem32_op); break;
+	case 7: DECODE_E(sar32_reg_op, sar32_mem32_op, sar32_mem32_op); break;
 	}			
 	data->op->data1 = 1;
 #ifdef LOG_OPS
@@ -1264,14 +1264,14 @@ void decode0d2(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol8cl_reg, rol8cl_mem16, rol8cl_mem32); break;
-	case 1: DECODE_E(ror8cl_reg, ror8cl_mem16, ror8cl_mem32); break;
-	case 2: DECODE_E(rcl8cl_reg, rcl8cl_mem16, rcl8cl_mem32); break;
-	case 3: DECODE_E(rcr8cl_reg, rcr8cl_mem16, rcr8cl_mem32); break;
+	case 0: DECODE_E(rol8cl_reg_op, rol8cl_mem16_op, rol8cl_mem32_op); break;
+	case 1: DECODE_E(ror8cl_reg_op, ror8cl_mem16_op, ror8cl_mem32_op); break;
+	case 2: DECODE_E(rcl8cl_reg_op, rcl8cl_mem16_op, rcl8cl_mem32_op); break;
+	case 3: DECODE_E(rcr8cl_reg_op, rcr8cl_mem16_op, rcr8cl_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl8cl_reg, shl8cl_mem16, shl8cl_mem32); break;
-	case 5: DECODE_E(shr8cl_reg, shr8cl_mem16, shr8cl_mem32); break;
-	case 7: DECODE_E(sar8cl_reg, sar8cl_mem16, sar8cl_mem32); break;
+	case 4: DECODE_E(shl8cl_reg_op, shl8cl_mem16_op, shl8cl_mem32_op); break;
+	case 5: DECODE_E(shr8cl_reg_op, shr8cl_mem16_op, shr8cl_mem32_op); break;
+	case 7: DECODE_E(sar8cl_reg_op, sar8cl_mem16_op, sar8cl_mem32_op); break;
 	}	
 #ifdef LOG_OPS
 	switch (G(rm)) {
@@ -1293,14 +1293,14 @@ void decode0d3(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol16cl_reg, rol16cl_mem16, rol16cl_mem32); break;
-	case 1: DECODE_E(ror16cl_reg, ror16cl_mem16, ror16cl_mem32); break;
-	case 2: DECODE_E(rcl16cl_reg, rcl16cl_mem16, rcl16cl_mem32); break;
-	case 3: DECODE_E(rcr16cl_reg, rcr16cl_mem16, rcr16cl_mem32); break;
+	case 0: DECODE_E(rol16cl_reg_op, rol16cl_mem16_op, rol16cl_mem32_op); break;
+	case 1: DECODE_E(ror16cl_reg_op, ror16cl_mem16_op, ror16cl_mem32_op); break;
+	case 2: DECODE_E(rcl16cl_reg_op, rcl16cl_mem16_op, rcl16cl_mem32_op); break;
+	case 3: DECODE_E(rcr16cl_reg_op, rcr16cl_mem16_op, rcr16cl_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl16cl_reg, shl16cl_mem16, shl16cl_mem32); break;
-	case 5: DECODE_E(shr16cl_reg, shr16cl_mem16, shr16cl_mem32); break;
-	case 7: DECODE_E(sar16cl_reg, sar16cl_mem16, sar16cl_mem32); break;
+	case 4: DECODE_E(shl16cl_reg_op, shl16cl_mem16_op, shl16cl_mem32_op); break;
+	case 5: DECODE_E(shr16cl_reg_op, shr16cl_mem16_op, shr16cl_mem32_op); break;
+	case 7: DECODE_E(sar16cl_reg_op, sar16cl_mem16_op, sar16cl_mem32_op); break;
 	}			
 #ifdef LOG_OPS
 	switch (G(rm)) {
@@ -1322,14 +1322,14 @@ void decode2d3(struct DecodeData* data) {
 	U8 rm = FETCH8(data);
     data->op->subInst = G(rm);
 	switch (G(rm)) {
-	case 0: DECODE_E(rol32cl_reg, rol32cl_mem32, rol32cl_mem32); break;
-	case 1: DECODE_E(ror32cl_reg, ror32cl_mem32, ror32cl_mem32); break;
-	case 2: DECODE_E(rcl32cl_reg, rcl32cl_mem32, rcl32cl_mem32); break;
-	case 3: DECODE_E(rcr32cl_reg, rcr32cl_mem32, rcr32cl_mem32); break;
+	case 0: DECODE_E(rol32cl_reg_op, rol32cl_mem32_op, rol32cl_mem32_op); break;
+	case 1: DECODE_E(ror32cl_reg_op, ror32cl_mem32_op, ror32cl_mem32_op); break;
+	case 2: DECODE_E(rcl32cl_reg_op, rcl32cl_mem32_op, rcl32cl_mem32_op); break;
+	case 3: DECODE_E(rcr32cl_reg_op, rcr32cl_mem32_op, rcr32cl_mem32_op); break;
 	case 6:
-	case 4: DECODE_E(shl32cl_reg, shl32cl_mem32, shl32cl_mem32); break;
-	case 5: DECODE_E(shr32cl_reg, shr32cl_mem32, shr32cl_mem32); break;
-	case 7: DECODE_E(sar32cl_reg, sar32cl_mem32, sar32cl_mem32); break;
+	case 4: DECODE_E(shl32cl_reg_op, shl32cl_mem32_op, shl32cl_mem32_op); break;
+	case 5: DECODE_E(shr32cl_reg_op, shr32cl_mem32_op, shr32cl_mem32_op); break;
+	case 7: DECODE_E(sar32cl_reg_op, sar32cl_mem32_op, sar32cl_mem32_op); break;
 	}			
 #ifdef LOG_OPS
 	switch (G(rm)) {

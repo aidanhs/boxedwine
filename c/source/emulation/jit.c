@@ -1324,81 +1324,81 @@ void decode081_noflags(struct Op* op) {
     }
 }
 
-void OPCALL rol8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rol8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rol8_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL ror8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL ror8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL ror8_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcl8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcl8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcl8_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcr8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcr8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcr8_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shl8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shl8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shl8_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shr8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shr8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shr8_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL sar8_reg(struct CPU* cpu, struct Op* op);
-void OPCALL sar8_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL sar8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rol8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol8_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror8_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl8_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr8_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl8_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr8_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar8_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar8_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar8_mem32_op(struct CPU* cpu, struct Op* op);
 void decode0c0_noflags(struct Op* op) {
-    if (op->func == rol8_reg) {
+    if (op->func == rol8_reg_op) {
         op->func = rol8_reg_noflags;
-    } else if (op->func == rol8_mem32) {
+    } else if (op->func == rol8_mem32_op) {
         op->func = rol8_mem32_noflags;
-    } else if (op->func == rol8_mem16) {
+    } else if (op->func == rol8_mem16_op) {
         op->func = rol8_mem16_noflags;
     } 
     
-    else if (op->func == ror8_reg) {
+    else if (op->func == ror8_reg_op) {
         op->func = ror8_reg_noflags;
-    } else if (op->func == ror8_mem32) {
+    } else if (op->func == ror8_mem32_op) {
         op->func = ror8_mem32_noflags;
-    } else if (op->func == ror8_mem16) {
+    } else if (op->func == ror8_mem16_op) {
         op->func = ror8_mem16_noflags;
     } 
     
-    else if (op->func == rcl8_reg) {
+    else if (op->func == rcl8_reg_op) {
         op->func = rcl8_reg_noflags;
-    } else if (op->func == rcl8_mem32) {
+    } else if (op->func == rcl8_mem32_op) {
         op->func = rcl8_mem32_noflags;
-    } else if (op->func == rcl8_mem16) {
+    } else if (op->func == rcl8_mem16_op) {
         op->func = rcl8_mem16_noflags;
     }
 
-    else if (op->func == rcr8_reg) {
+    else if (op->func == rcr8_reg_op) {
         op->func = rcr8_reg_noflags;
-    } else if (op->func == rcr8_mem32) {
+    } else if (op->func == rcr8_mem32_op) {
         op->func = rcr8_mem32_noflags;
-    } else if (op->func == rcr8_mem16) {
+    } else if (op->func == rcr8_mem16_op) {
         op->func = rcr8_mem16_noflags;
     }
 
-    else if (op->func == shl8_reg) {
+    else if (op->func == shl8_reg_op) {
         op->func = shl8_reg_noflags;
-    } else if (op->func == shl8_mem32) {
+    } else if (op->func == shl8_mem32_op) {
         op->func = shl8_mem32_noflags;
-    } else if (op->func == shl8_mem16) {
+    } else if (op->func == shl8_mem16_op) {
         op->func = shl8_mem16_noflags;
     }
 
-    else if (op->func == shr8_reg) {
+    else if (op->func == shr8_reg_op) {
         op->func = shr8_reg_noflags;
-    } else if (op->func == shr8_mem32) {
+    } else if (op->func == shr8_mem32_op) {
         op->func = shr8_mem32_noflags;
-    } else if (op->func == shr8_mem16) {
+    } else if (op->func == shr8_mem16_op) {
         op->func = shr8_mem16_noflags;
     }
 
-    else if (op->func == sar8_reg) {
+    else if (op->func == sar8_reg_op) {
         op->func = sar8_reg_noflags;
-    } else if (op->func == sar8_mem32) {
+    } else if (op->func == sar8_mem32_op) {
         op->func = sar8_mem32_noflags;
-    } else if (op->func == sar8_mem16) {
+    } else if (op->func == sar8_mem16_op) {
         op->func = sar8_mem16_noflags;
     }
 
@@ -1407,81 +1407,81 @@ void decode0c0_noflags(struct Op* op) {
     }
 }
 
-void OPCALL rol8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rol8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rol8cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL ror8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL ror8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL ror8cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcl8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcl8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcl8cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcr8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcr8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcr8cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shl8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shl8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shl8cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shr8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shr8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shr8cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL sar8cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL sar8cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL sar8cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rol8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol8cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror8cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl8cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr8cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl8cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr8cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar8cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar8cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar8cl_mem32_op(struct CPU* cpu, struct Op* op);
 void decode0d2_noflags(struct Op* op) {
-    if (op->func == rol8cl_reg) {
+    if (op->func == rol8cl_reg_op) {
         op->func = rol8cl_reg_noflags;
-    } else if (op->func == rol8cl_mem32) {
+    } else if (op->func == rol8cl_mem32_op) {
         op->func = rol8cl_mem32_noflags;
-    } else if (op->func == rol8cl_mem16) {
+    } else if (op->func == rol8cl_mem16_op) {
         op->func = rol8cl_mem16_noflags;
     } 
     
-    else if (op->func == ror8cl_reg) {
+    else if (op->func == ror8cl_reg_op) {
         op->func = ror8cl_reg_noflags;
-    } else if (op->func == ror8cl_mem32) {
+    } else if (op->func == ror8cl_mem32_op) {
         op->func = ror8cl_mem32_noflags;
-    } else if (op->func == ror8cl_mem16) {
+    } else if (op->func == ror8cl_mem16_op) {
         op->func = ror8cl_mem16_noflags;
     } 
     
-    else if (op->func == rcl8cl_reg) {
+    else if (op->func == rcl8cl_reg_op) {
         op->func = rcl8cl_reg_noflags;
-    } else if (op->func == rcl8cl_mem32) {
+    } else if (op->func == rcl8cl_mem32_op) {
         op->func = rcl8cl_mem32_noflags;
-    } else if (op->func == rcl8cl_mem16) {
+    } else if (op->func == rcl8cl_mem16_op) {
         op->func = rcl8cl_mem16_noflags;
     }
 
-    else if (op->func == rcr8cl_reg) {
+    else if (op->func == rcr8cl_reg_op) {
         op->func = rcr8cl_reg_noflags;
-    } else if (op->func == rcr8cl_mem32) {
+    } else if (op->func == rcr8cl_mem32_op) {
         op->func = rcr8cl_mem32_noflags;
-    } else if (op->func == rcr8cl_mem16) {
+    } else if (op->func == rcr8cl_mem16_op) {
         op->func = rcr8cl_mem16_noflags;
     }
 
-    else if (op->func == shl8cl_reg) {
+    else if (op->func == shl8cl_reg_op) {
         op->func = shl8cl_reg_noflags;
-    } else if (op->func == shl8cl_mem32) {
+    } else if (op->func == shl8cl_mem32_op) {
         op->func = shl8cl_mem32_noflags;
-    } else if (op->func == shl8cl_mem16) {
+    } else if (op->func == shl8cl_mem16_op) {
         op->func = shl8cl_mem16_noflags;
     }
 
-    else if (op->func == shr8cl_reg) {
+    else if (op->func == shr8cl_reg_op) {
         op->func = shr8cl_reg_noflags;
-    } else if (op->func == shr8cl_mem32) {
+    } else if (op->func == shr8cl_mem32_op) {
         op->func = shr8cl_mem32_noflags;
-    } else if (op->func == shr8cl_mem16) {
+    } else if (op->func == shr8cl_mem16_op) {
         op->func = shr8cl_mem16_noflags;
     }
 
-    else if (op->func == sar8cl_reg) {
+    else if (op->func == sar8cl_reg_op) {
         op->func = sar8cl_reg_noflags;
-    } else if (op->func == sar8cl_mem32) {
+    } else if (op->func == sar8cl_mem32_op) {
         op->func = sar8cl_mem32_noflags;
-    } else if (op->func == sar8cl_mem16) {
+    } else if (op->func == sar8cl_mem16_op) {
         op->func = sar8cl_mem16_noflags;
     }
 
@@ -1490,81 +1490,81 @@ void decode0d2_noflags(struct Op* op) {
     }
 }
 
-void OPCALL rol32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rol32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rol32_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL ror32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL ror32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL ror32_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcl32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcl32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcl32_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcr32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcr32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcr32_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shl32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shl32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shl32_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shr32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shr32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shr32_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL sar32_reg(struct CPU* cpu, struct Op* op);
-void OPCALL sar32_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL sar32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rol32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol32_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror32_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl32_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr32_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl32_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr32_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar32_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar32_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar32_mem32_op(struct CPU* cpu, struct Op* op);
 void decode2c1_noflags(struct Op* op) {
-    if (op->func == rol32_reg) {
+    if (op->func == rol32_reg_op) {
         op->func = rol32_reg_noflags;
-    } else if (op->func == rol32_mem32) {
+    } else if (op->func == rol32_mem32_op) {
         op->func = rol32_mem32_noflags;
-    } else if (op->func == rol32_mem16) {
+    } else if (op->func == rol32_mem16_op) {
         op->func = rol32_mem16_noflags;
     } 
     
-    else if (op->func == ror32_reg) {
+    else if (op->func == ror32_reg_op) {
         op->func = ror32_reg_noflags;
-    } else if (op->func == ror32_mem32) {
+    } else if (op->func == ror32_mem32_op) {
         op->func = ror32_mem32_noflags;
-    } else if (op->func == ror32_mem16) {
+    } else if (op->func == ror32_mem16_op) {
         op->func = ror32_mem16_noflags;
     } 
     
-    else if (op->func == rcl32_reg) {
+    else if (op->func == rcl32_reg_op) {
         op->func = rcl32_reg_noflags;
-    } else if (op->func == rcl32_mem32) {
+    } else if (op->func == rcl32_mem32_op) {
         op->func = rcl32_mem32_noflags;
-    } else if (op->func == rcl32_mem16) {
+    } else if (op->func == rcl32_mem16_op) {
         op->func = rcl32_mem16_noflags;
     }
 
-    else if (op->func == rcr32_reg) {
+    else if (op->func == rcr32_reg_op) {
         op->func = rcr32_reg_noflags;
-    } else if (op->func == rcr32_mem32) {
+    } else if (op->func == rcr32_mem32_op) {
         op->func = rcr32_mem32_noflags;
-    } else if (op->func == rcr32_mem16) {
+    } else if (op->func == rcr32_mem16_op) {
         op->func = rcr32_mem16_noflags;
     }
 
-    else if (op->func == shl32_reg) {
+    else if (op->func == shl32_reg_op) {
         op->func = shl32_reg_noflags;
-    } else if (op->func == shl32_mem32) {
+    } else if (op->func == shl32_mem32_op) {
         op->func = shl32_mem32_noflags;
-    } else if (op->func == shl32_mem16) {
+    } else if (op->func == shl32_mem16_op) {
         op->func = shl32_mem16_noflags;
     }
 
-    else if (op->func == shr32_reg) {
+    else if (op->func == shr32_reg_op) {
         op->func = shr32_reg_noflags;
-    } else if (op->func == shr32_mem32) {
+    } else if (op->func == shr32_mem32_op) {
         op->func = shr32_mem32_noflags;
-    } else if (op->func == shr32_mem16) {
+    } else if (op->func == shr32_mem16_op) {
         op->func = shr32_mem16_noflags;
     }
 
-    else if (op->func == sar32_reg) {
+    else if (op->func == sar32_reg_op) {
         op->func = sar32_reg_noflags;
-    } else if (op->func == sar32_mem32) {
+    } else if (op->func == sar32_mem32_op) {
         op->func = sar32_mem32_noflags;
-    } else if (op->func == sar32_mem16) {
+    } else if (op->func == sar32_mem16_op) {
         op->func = sar32_mem16_noflags;
     }
 
@@ -1573,81 +1573,81 @@ void decode2c1_noflags(struct Op* op) {
     }
 }
 
-void OPCALL rol32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rol32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rol32cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL ror32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL ror32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL ror32cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcl32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcl32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcl32cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcr32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcr32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcr32cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shl32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shl32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shl32cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shr32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shr32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shr32cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL sar32cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL sar32cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL sar32cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rol32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol32cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror32cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl32cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr32cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl32cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr32cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar32cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar32cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar32cl_mem32_op(struct CPU* cpu, struct Op* op);
 void decode2d3_noflags(struct Op* op) {
-    if (op->func == rol32cl_reg) {
+    if (op->func == rol32cl_reg_op) {
         op->func = rol32cl_reg_noflags;
-    } else if (op->func == rol32cl_mem32) {
+    } else if (op->func == rol32cl_mem32_op) {
         op->func = rol32cl_mem32_noflags;
-    } else if (op->func == rol32cl_mem16) {
+    } else if (op->func == rol32cl_mem16_op) {
         op->func = rol32cl_mem16_noflags;
     } 
     
-    else if (op->func == ror32cl_reg) {
+    else if (op->func == ror32cl_reg_op) {
         op->func = ror32cl_reg_noflags;
-    } else if (op->func == ror32cl_mem32) {
+    } else if (op->func == ror32cl_mem32_op) {
         op->func = ror32cl_mem32_noflags;
-    } else if (op->func == ror32cl_mem16) {
+    } else if (op->func == ror32cl_mem16_op) {
         op->func = ror32cl_mem16_noflags;
     } 
     
-    else if (op->func == rcl32cl_reg) {
+    else if (op->func == rcl32cl_reg_op) {
         op->func = rcl32cl_reg_noflags;
-    } else if (op->func == rcl32cl_mem32) {
+    } else if (op->func == rcl32cl_mem32_op) {
         op->func = rcl32cl_mem32_noflags;
-    } else if (op->func == rcl32cl_mem16) {
+    } else if (op->func == rcl32cl_mem16_op) {
         op->func = rcl32cl_mem16_noflags;
     }
 
-    else if (op->func == rcr32cl_reg) {
+    else if (op->func == rcr32cl_reg_op) {
         op->func = rcr32cl_reg_noflags;
-    } else if (op->func == rcr32cl_mem32) {
+    } else if (op->func == rcr32cl_mem32_op) {
         op->func = rcr32cl_mem32_noflags;
-    } else if (op->func == rcr32cl_mem16) {
+    } else if (op->func == rcr32cl_mem16_op) {
         op->func = rcr32cl_mem16_noflags;
     }
 
-    else if (op->func == shl32cl_reg) {
+    else if (op->func == shl32cl_reg_op) {
         op->func = shl32cl_reg_noflags;
-    } else if (op->func == shl32cl_mem32) {
+    } else if (op->func == shl32cl_mem32_op) {
         op->func = shl32cl_mem32_noflags;
-    } else if (op->func == shl32cl_mem16) {
+    } else if (op->func == shl32cl_mem16_op) {
         op->func = shl32cl_mem16_noflags;
     }
 
-    else if (op->func == shr32cl_reg) {
+    else if (op->func == shr32cl_reg_op) {
         op->func = shr32cl_reg_noflags;
-    } else if (op->func == shr32cl_mem32) {
+    } else if (op->func == shr32cl_mem32_op) {
         op->func = shr32cl_mem32_noflags;
-    } else if (op->func == shr32cl_mem16) {
+    } else if (op->func == shr32cl_mem16_op) {
         op->func = shr32cl_mem16_noflags;
     }
 
-    else if (op->func == sar32cl_reg) {
+    else if (op->func == sar32cl_reg_op) {
         op->func = sar32cl_reg_noflags;
-    } else if (op->func == sar32cl_mem32) {
+    } else if (op->func == sar32cl_mem32_op) {
         op->func = sar32cl_mem32_noflags;
-    } else if (op->func == sar32cl_mem16) {
+    } else if (op->func == sar32cl_mem16_op) {
         op->func = sar32cl_mem16_noflags;
     }
 
@@ -1656,81 +1656,81 @@ void decode2d3_noflags(struct Op* op) {
     }
 }
 
-void OPCALL rol16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rol16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rol16_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL ror16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL ror16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL ror16_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcl16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcl16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcl16_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcr16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcr16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcr16_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shl16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shl16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shl16_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shr16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shr16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shr16_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL sar16_reg(struct CPU* cpu, struct Op* op);
-void OPCALL sar16_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL sar16_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rol16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol16_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror16_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl16_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr16_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar16_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar16_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar16_mem32_op(struct CPU* cpu, struct Op* op);
 void decode0c1_noflags(struct Op* op) {
-    if (op->func == rol16_reg) {
+    if (op->func == rol16_reg_op) {
         op->func = rol16_reg_noflags;
-    } else if (op->func == rol16_mem32) {
+    } else if (op->func == rol16_mem32_op) {
         op->func = rol16_mem32_noflags;
-    } else if (op->func == rol16_mem16) {
+    } else if (op->func == rol16_mem16_op) {
         op->func = rol16_mem16_noflags;
     } 
     
-    else if (op->func == ror16_reg) {
+    else if (op->func == ror16_reg_op) {
         op->func = ror16_reg_noflags;
-    } else if (op->func == ror16_mem32) {
+    } else if (op->func == ror16_mem32_op) {
         op->func = ror16_mem32_noflags;
-    } else if (op->func == ror16_mem16) {
+    } else if (op->func == ror16_mem16_op) {
         op->func = ror16_mem16_noflags;
     } 
     
-    else if (op->func == rcl16_reg) {
+    else if (op->func == rcl16_reg_op) {
         op->func = rcl16_reg_noflags;
-    } else if (op->func == rcl16_mem32) {
+    } else if (op->func == rcl16_mem32_op) {
         op->func = rcl16_mem32_noflags;
-    } else if (op->func == rcl16_mem16) {
+    } else if (op->func == rcl16_mem16_op) {
         op->func = rcl16_mem16_noflags;
     }
 
-    else if (op->func == rcr16_reg) {
+    else if (op->func == rcr16_reg_op) {
         op->func = rcr16_reg_noflags;
-    } else if (op->func == rcr16_mem32) {
+    } else if (op->func == rcr16_mem32_op) {
         op->func = rcr16_mem32_noflags;
-    } else if (op->func == rcr16_mem16) {
+    } else if (op->func == rcr16_mem16_op) {
         op->func = rcr16_mem16_noflags;
     }
 
-    else if (op->func == shl16_reg) {
+    else if (op->func == shl16_reg_op) {
         op->func = shl16_reg_noflags;
-    } else if (op->func == shl16_mem32) {
+    } else if (op->func == shl16_mem32_op) {
         op->func = shl16_mem32_noflags;
-    } else if (op->func == shl16_mem16) {
+    } else if (op->func == shl16_mem16_op) {
         op->func = shl16_mem16_noflags;
     }
 
-    else if (op->func == shr16_reg) {
+    else if (op->func == shr16_reg_op) {
         op->func = shr16_reg_noflags;
-    } else if (op->func == shr16_mem32) {
+    } else if (op->func == shr16_mem32_op) {
         op->func = shr16_mem32_noflags;
-    } else if (op->func == shr16_mem16) {
+    } else if (op->func == shr16_mem16_op) {
         op->func = shr16_mem16_noflags;
     }
 
-    else if (op->func == sar16_reg) {
+    else if (op->func == sar16_reg_op) {
         op->func = sar16_reg_noflags;
-    } else if (op->func == sar16_mem32) {
+    } else if (op->func == sar16_mem32_op) {
         op->func = sar16_mem32_noflags;
-    } else if (op->func == sar16_mem16) {
+    } else if (op->func == sar16_mem16_op) {
         op->func = sar16_mem16_noflags;
     }
 
@@ -1739,81 +1739,81 @@ void decode0c1_noflags(struct Op* op) {
     }
 }
 
-void OPCALL rol16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rol16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rol16cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL ror16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL ror16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL ror16cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcl16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcl16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcl16cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL rcr16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL rcr16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL rcr16cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shl16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shl16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shl16cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL shr16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL shr16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL shr16cl_mem32(struct CPU* cpu, struct Op* op);
-void OPCALL sar16cl_reg(struct CPU* cpu, struct Op* op);
-void OPCALL sar16cl_mem16(struct CPU* cpu, struct Op* op);
-void OPCALL sar16cl_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL rol16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rol16cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL ror16cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcl16cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL rcr16cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shl16cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL shr16cl_mem32_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar16cl_reg_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar16cl_mem16_op(struct CPU* cpu, struct Op* op);
+void OPCALL sar16cl_mem32_op(struct CPU* cpu, struct Op* op);
 void decode0d3_noflags(struct Op* op) {
-    if (op->func == rol16cl_reg) {
+    if (op->func == rol16cl_reg_op) {
         op->func = rol16cl_reg_noflags;
-    } else if (op->func == rol16cl_mem32) {
+    } else if (op->func == rol16cl_mem32_op) {
         op->func = rol16cl_mem32_noflags;
-    } else if (op->func == rol16cl_mem16) {
+    } else if (op->func == rol16cl_mem16_op) {
         op->func = rol16cl_mem16_noflags;
     } 
     
-    else if (op->func == ror16cl_reg) {
+    else if (op->func == ror16cl_reg_op) {
         op->func = ror16cl_reg_noflags;
-    } else if (op->func == ror16cl_mem32) {
+    } else if (op->func == ror16cl_mem32_op) {
         op->func = ror16cl_mem32_noflags;
-    } else if (op->func == ror16cl_mem16) {
+    } else if (op->func == ror16cl_mem16_op) {
         op->func = ror16cl_mem16_noflags;
     } 
     
-    else if (op->func == rcl16cl_reg) {
+    else if (op->func == rcl16cl_reg_op) {
         op->func = rcl16cl_reg_noflags;
-    } else if (op->func == rcl16cl_mem32) {
+    } else if (op->func == rcl16cl_mem32_op) {
         op->func = rcl16cl_mem32_noflags;
-    } else if (op->func == rcl16cl_mem16) {
+    } else if (op->func == rcl16cl_mem16_op) {
         op->func = rcl16cl_mem16_noflags;
     }
 
-    else if (op->func == rcr16cl_reg) {
+    else if (op->func == rcr16cl_reg_op) {
         op->func = rcr16cl_reg_noflags;
-    } else if (op->func == rcr16cl_mem32) {
+    } else if (op->func == rcr16cl_mem32_op) {
         op->func = rcr16cl_mem32_noflags;
-    } else if (op->func == rcr16cl_mem16) {
+    } else if (op->func == rcr16cl_mem16_op) {
         op->func = rcr16cl_mem16_noflags;
     }
 
-    else if (op->func == shl16cl_reg) {
+    else if (op->func == shl16cl_reg_op) {
         op->func = shl16cl_reg_noflags;
-    } else if (op->func == shl16cl_mem32) {
+    } else if (op->func == shl16cl_mem32_op) {
         op->func = shl16cl_mem32_noflags;
-    } else if (op->func == shl16cl_mem16) {
+    } else if (op->func == shl16cl_mem16_op) {
         op->func = shl16cl_mem16_noflags;
     }
 
-    else if (op->func == shr16cl_reg) {
+    else if (op->func == shr16cl_reg_op) {
         op->func = shr16cl_reg_noflags;
-    } else if (op->func == shr16cl_mem32) {
+    } else if (op->func == shr16cl_mem32_op) {
         op->func = shr16cl_mem32_noflags;
-    } else if (op->func == shr16cl_mem16) {
+    } else if (op->func == shr16cl_mem16_op) {
         op->func = shr16cl_mem16_noflags;
     }
 
-    else if (op->func == sar16cl_reg) {
+    else if (op->func == sar16cl_reg_op) {
         op->func = sar16cl_reg_noflags;
-    } else if (op->func == sar16cl_mem32) {
+    } else if (op->func == sar16cl_mem32_op) {
         op->func = sar16cl_mem32_noflags;
-    } else if (op->func == sar16cl_mem16) {
+    } else if (op->func == sar16cl_mem16_op) {
         op->func = sar16cl_mem16_noflags;
     }
 
