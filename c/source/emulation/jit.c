@@ -2451,8 +2451,8 @@ void jit(struct CPU* cpu, U32 eip, struct Block* block) {
         op = op->next;
     }
 #ifdef GENERATE_SOURCE
-   // if (gensrc)
-   //     generateSource(cpu, eip, block);
+    if (gensrc)
+        generateSource(cpu, eip, block);
 #endif
 
 #ifdef AOT

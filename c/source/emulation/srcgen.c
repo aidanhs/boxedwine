@@ -1725,15 +1725,15 @@ void gen2af(struct Op* op) {
 
 
 void gen0a8(struct Op* op) {
-    genArithR("&", "FLAGS_TEST8", "8", "0", op->data1, 0, 0, "1");
+    genArithR("&", "FLAGS_TEST8", "8", r8(0), op->data1, 0, 0, "1");
 }
 
 void gen0a9(struct Op* op) {
-    genArithR("&", "FLAGS_TEST16", "16", "0", op->data1, 0, 0, "1");
+    genArithR("&", "FLAGS_TEST16", "16", r16(0), op->data1, 0, 0, "1");
 }
 
 void gen2a9(struct Op* op) {
-    genArithR("&", "FLAGS_TEST32", "32", "0", op->data1, 0, 0, "1");
+    genArithR("&", "FLAGS_TEST32", "32", r16(0), op->data1, 0, 0, "1");
 }
 
 void gen0b0(struct Op* op) {
@@ -4071,6 +4071,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(U32);
         OUT_DEFINE(S32);
         OUT_DEFINE(U64);
+        OUT_DEFINE(S64);
         OUT_DEFINE(BOOL);
         OUT_DEFINE(OPCALL);
         OUT_DEFINE(ES);
@@ -4164,6 +4165,14 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("#define getZF(x) cpu->lazyFlags->getZF(cpu)\n");
         out("#define getSF(x) cpu->lazyFlags->getSF(cpu)\n");
         out("#define getPF(x) cpu->lazyFlags->getPF(cpu)\n");
+        out("#define addFlag(f) cpu->flags |= (f)\n");
+        out("#define removeFlag(f) cpu->flags &=~ (f)\n");
+        out("#define CF		0x00000001\n");
+        out("#define PF		0x00000004\n");
+        out("#define AF		0x00000010\n");
+        out("#define ZF		0x00000040\n");
+        out("#define SF		0x00000080\n");
+        out("#define OF		0x00000800\n");
 
         out("struct Reg {union {U32 u32;union {union {U16 u16;struct {U8 u8;U8 h8;};};U16 h16;};};};\n");
         out("struct FPU_Reg {union {double d;U64 l;};};\n");
@@ -4183,6 +4192,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("void push32(struct CPU* cpu, U32 value);\n");
         out("U16 pop16(struct CPU* cpu);\n");
         out("U32 pop32(struct CPU* cpu);\n");
+        out("void fillFlagsNoCFOF(struct CPU* cpu);\n");
 
         out("void rol8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
         out("void rol8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
