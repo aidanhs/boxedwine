@@ -276,6 +276,11 @@ U64 cpuTime;
 U64 cpuInstructions;
 extern U32 contextTime;
 extern int allocatedOpMemory;
+U32 gensrc;
+
+#ifdef GENERATE_SOURCE
+void writeSource();
+#endif
 
 int main(int argc, char **argv) {
 	int i;
@@ -303,6 +308,8 @@ int main(int argc, char **argv) {
 		} else if (!strcmp(argv[i], "-uid") && i+1<argc) {
 			userId = atoi(argv[i+1]);
 			i++;
+		} else if (!strcmp(argv[i], "-gensrc")) {
+			gensrc = 1;
 		} else {
 			break;
 		}
@@ -400,7 +407,11 @@ int main(int argc, char **argv) {
 
 			while (SDL_PollEvent(&e)) {
 				if (e.type == SDL_QUIT) {
+#ifdef GENERATE_SOURCE
+                    writeSource();
+#endif
 					SDL_Quit();
+                    return 0;
 				} else if (e.type == SDL_MOUSEMOTION) { 
 					onMouseMove(e.motion.x, e.motion.y);
 				} else if (e.type == SDL_MOUSEBUTTONDOWN) {

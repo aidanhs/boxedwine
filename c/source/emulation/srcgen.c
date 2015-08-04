@@ -2,14 +2,30 @@
 #include "op.h"
 #include "block.h"
 #include "cpu.h"
+#include "kalloc.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-FILE* fpGenSrc;
+char* sourceBuffer;
+U32 sourceBufferLen;
+U32 sourceBufferPos;
+
+void outfp(FILE* fp, const char* str) {
+    fwrite(str, strlen(str), 1, fp);
+}
 
 void out(const char* str) {
-    fwrite(str, strlen(str), 1, fpGenSrc);
+    U32 len = strlen(str);
+    if (sourceBufferPos+len>sourceBufferLen) {
+        char* tmp = kalloc(sourceBufferLen*2);
+        strcpy(tmp, sourceBuffer);
+        kfree(sourceBuffer);
+        sourceBuffer = tmp;
+        sourceBufferLen*=2;
+    }
+    strcpy(sourceBuffer+sourceBufferPos, str);
+    sourceBufferPos+=len;
 }
 
 const char* r8(int r) {
@@ -98,22 +114,34 @@ const char* getEaa32(struct Op* op) {
     if (op->base<6) {
         strcat(eaaStr, "cpu->segAddress[");
         strcat(eaaStr, getBase(op->base));
-        strcat(eaaStr, "] + ");
+        strcat(eaaStr, "]");
     }
-    strcat(eaaStr, r32(op->e1));
-    if (op->e2<8 && op->eSib) {
+    if (op->e1<8) {
+        if (eaaStr[0])
+            strcat(eaaStr, " + ");
+        strcat(eaaStr, r32(op->e1));
+    }    
+    if (op->e2<8) {
         char tmp[32];
 
-        strcat(eaaStr, " + (");
+        if (eaaStr[0])
+            strcat(eaaStr, " + ");
+        if (op->eSib)
+            strcat(eaaStr, "(");
         strcat(eaaStr, r32(op->e2));
-        strcat(eaaStr, " << ");
-        itoa(op->eSib, tmp, 10);
-        strcat(eaaStr, tmp);
-        strcat(eaaStr, ")");
+        if (op->eSib) {
+            strcat(eaaStr, " << ");
+            itoa(op->eSib, tmp, 10);
+            strcat(eaaStr, tmp);
+            strcat(eaaStr, ")");
+        }
     }
     if (op->eData) {
         char tmp[32];
-        strcat(eaaStr, " + 0x");
+
+        if (eaaStr[0])
+            strcat(eaaStr, " + ");
+        strcat(eaaStr, "0x");
         itoa(op->eData, tmp, 16);
         strcat(eaaStr, tmp);
     }
@@ -231,6 +259,7 @@ void gen068(struct Op* op) {
 
     out("push16(cpu, 0x");
     itoa(op->data1, tmp, 16);
+    out(tmp);
     out(");CYCLES(1);");
 }
 
@@ -239,6 +268,7 @@ void gen268(struct Op* op) {
 
     out("push32(cpu, 0x");
     itoa(op->data1, tmp, 16);
+    out(tmp);
     out(");CYCLES(1);");
 }
 
@@ -532,11 +562,11 @@ void gen080(struct Op* op) {
     }
 
     else if (op->func==cmp8_reg) {
-        genArithR("-", "FLAGS_CMP8", "8", r8(op->r1), op->data1, 1, 0, "1");
+        genArithR("-", "FLAGS_CMP8", "8", r8(op->r1), op->data1, 0, 0, "1");
     } else if (op->func==cmp8_mem16) {
-        genArithE("-", "FLAGS_CMP8", "8", getEaa16(op), "b", op->data1, 1, 0, "2");
+        genArithE("-", "FLAGS_CMP8", "8", getEaa16(op), "b", op->data1, 0, 0, "2");
     } else if (op->func==cmp8_mem32) {
-        genArithE("-", "FLAGS_CMP8", "8", getEaa32(op), "b", op->data1, 1, 0, "2");
+        genArithE("-", "FLAGS_CMP8", "8", getEaa32(op), "b", op->data1, 0, 0, "2");
     } else {
         kpanic("gen080");
     }
@@ -672,11 +702,11 @@ void gen081(struct Op* op) {
     }
 
     else if (op->func==cmp16_reg) {
-        genArithR("-", "FLAGS_CMP16", "16", r16(op->r1), op->data1, 1, 0, "1");
+        genArithR("-", "FLAGS_CMP16", "16", r16(op->r1), op->data1, 0, 0, "1");
     } else if (op->func==cmp16_mem16) {
-        genArithE("-", "FLAGS_CMP16", "16", getEaa16(op), "w", op->data1, 1, 0, "2");
+        genArithE("-", "FLAGS_CMP16", "16", getEaa16(op), "w", op->data1, 0, 0, "2");
     } else if (op->func==cmp16_mem32) {
-        genArithE("-", "FLAGS_CMP16", "16", getEaa32(op), "w", op->data1, 1, 0, "2");
+        genArithE("-", "FLAGS_CMP16", "16", getEaa32(op), "w", op->data1, 0, 0, "2");
     } else {
         kpanic("gen081");
     }
@@ -812,11 +842,11 @@ void gen281(struct Op* op) {
     }
 
     else if (op->func==cmp32_reg) {
-        genArithR("-", "FLAGS_CMP32", "32", r32(op->r1), op->data1, 1, 0, "1");
+        genArithR("-", "FLAGS_CMP32", "32", r32(op->r1), op->data1, 0, 0, "1");
     } else if (op->func==cmp32_mem16) {
-        genArithE("-", "FLAGS_CMP32", "32", getEaa16(op), "d", op->data1, 1, 0, "2");
+        genArithE("-", "FLAGS_CMP32", "32", getEaa16(op), "d", op->data1, 0, 0, "2");
     } else if (op->func==cmp32_mem32) {
-        genArithE("-", "FLAGS_CMP32", "32", getEaa32(op), "d", op->data1, 1, 0, "2");
+        genArithE("-", "FLAGS_CMP32", "32", getEaa32(op), "d", op->data1, 0, 0, "2");
     } else {
         kpanic("gen0320");
     }
@@ -970,9 +1000,8 @@ void gen088(struct Op* op) {
         out(" = ");
         out(r8(op->r2));
         out("; CYCLES(1);");
-    } else {        
-        out(r8(op->r1));
-        out(" = readb(cpu->memory, ");
+    } else {                
+        out("writeb(cpu->memory, ");
         if (op->func == move8r8_16) {
             out(getEaa16(op));
         } else if (op->func == move8r8_32) {
@@ -980,6 +1009,8 @@ void gen088(struct Op* op) {
         } else {
             kpanic("gen088");
         }
+        out(", ");
+        out(r8(op->r1));
         out(");CYCLES(1);");
     }
 }
@@ -994,8 +1025,7 @@ void gen089(struct Op* op) {
         out(r16(op->r2));
         out("; CYCLES(1);");
     } else {        
-        out(r16(op->r1));
-        out(" = readw(cpu->memory, ");
+        out("writew(cpu->memory, ");
         if (op->func == move16r16_16) {
             out(getEaa16(op));
         } else if (op->func == move16r16_32) {
@@ -1003,6 +1033,8 @@ void gen089(struct Op* op) {
         } else {
             kpanic("gen089");
         }
+        out(", ");
+        out(r16(op->r1));
         out(");CYCLES(1);");
     }
 }
@@ -1017,8 +1049,7 @@ void gen289(struct Op* op) {
         out(r32(op->r2));
         out("; CYCLES(1);");
     } else {        
-        out(r32(op->r1));
-        out(" = readd(cpu->memory, ");
+        out("writed(cpu->memory, ");
         if (op->func == move32r32_16) {
             out(getEaa16(op));
         } else if (op->func == move32r32_32) {
@@ -1026,6 +1057,8 @@ void gen289(struct Op* op) {
         } else {
             kpanic("gen289");
         }
+        out(", ");
+        out(r32(op->r1));
         out(");CYCLES(1);");
     }
 }
@@ -1039,7 +1072,8 @@ void gen08a(struct Op* op) {
         out(r8(op->r2));
         out("; CYCLES(1);");
     } else {                
-        out("writeb(cpu->memory, ");
+        out(r8(op->r1));
+        out(" = readb(cpu->memory, ");
         if (op->func == movr8e8_16) {
             out(getEaa16(op));
         } else if (op->func == movr8e8_32) {
@@ -1047,8 +1081,6 @@ void gen08a(struct Op* op) {
         } else {
             kpanic("gen08a");
         }
-        out(", ");
-        out(r8(op->r1));
         out(");CYCLES(1);");
     }
 }
@@ -1062,7 +1094,8 @@ void gen08b(struct Op* op) {
         out(r16(op->r2));
         out("; CYCLES(1);");
     } else {                
-        out("writew(cpu->memory, ");
+        out(r16(op->r1));
+        out(" = readw(cpu->memory, ");
         if (op->func == movr16e16_16) {
             out(getEaa16(op));
         } else if (op->func == movr16e16_32) {
@@ -1070,8 +1103,6 @@ void gen08b(struct Op* op) {
         } else {
             kpanic("gen08b");
         }
-        out(", ");
-        out(r16(op->r1));
         out(");CYCLES(1);");
     }
 }
@@ -1085,7 +1116,8 @@ void gen28b(struct Op* op) {
         out(r32(op->r2));
         out("; CYCLES(1);");
     } else {                
-        out("writed(cpu->memory, ");
+        out(r32(op->r1));
+        out(" = readd(cpu->memory, ");
         if (op->func == movr32e32_16) {
             out(getEaa16(op));
         } else if (op->func == movr32e32_32) {
@@ -1093,8 +1125,6 @@ void gen28b(struct Op* op) {
         } else {
             kpanic("gen28b");
         }
-        out(", ");
-        out(r32(op->r1));
         out(");CYCLES(1);");
     }
 }
@@ -3831,7 +3861,7 @@ SRC_GEN srcgen[] = {
 	gen250, gen250, gen250, gen250, gen250, gen250, gen250, gen250,
 	gen258, gen258, gen258, gen258, gen258, gen258, gen258, gen258,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	gen068, gen269, gen268, gen269, 0, 0, 0, 0,
+	gen268, gen269, gen268, gen269, 0, 0, 0, 0,
 	gen070, gen071, gen072, gen073, gen074, gen075, gen076, gen077,
 	gen078, gen079, gen07a, gen07b, gen07c, gen07d, gen07e, gen07f,
     // 280
@@ -3891,40 +3921,473 @@ SRC_GEN srcgen[] = {
 static int generatedBlocks;
 
 #include "kprocess.h"
+#include "crc.h"
+
+#define STR(x) #x
+#define OUT_DEFINE(v) out("#define ");out(#v);out(" ");out(STR(v));out("\n")
+
+struct CompiledBlocks {
+    U32 crc;
+    char func[16];
+    char* bytes;
+    U32 byteLen;
+};
+
+struct CompiledBlocks compiledBlocks[32*1024];
+U32 compiledBlockCount;
+
+void addBlock(char* func, U32 crc, char* bytes, U32 byteLen) {
+    int i = compiledBlockCount;  
+  
+    while (i>0 && crc<compiledBlocks[i-1].crc) {
+        compiledBlocks[i] = compiledBlocks[i-1];
+        i--;
+    }
+    compiledBlocks[i].crc = crc;
+    compiledBlocks[i].bytes = bytes;
+    compiledBlocks[i].byteLen = byteLen;
+    strcpy(compiledBlocks[i].func, func);
+    compiledBlockCount++;
+}
+
+BOOL doesBlockExist(U32 crc, char* bytes, U32 byteLen) {
+    U32 i;
+
+    for (i=0;i<compiledBlockCount;i++) {
+        if (compiledBlocks[i].crc==crc) {
+            while (compiledBlocks[i].crc==crc) {
+                if (compiledBlocks[i].byteLen == byteLen && !memcmp(bytes, compiledBlocks[i].bytes, byteLen)) {
+                    return 1;
+                }
+                i++;
+            }
+            break;
+        }
+        if (compiledBlocks[i].crc>crc)
+            break;
+    }
+    return 0;
+}
+
+void writeSource() {
+    FILE* fp = fopen("gen.c", "w");  
+    U32 i,j;
+    char tmp[1024];
+
+    fwrite(sourceBuffer, sourceBufferPos, 1, fp);
+
+    for (i=0;i<compiledBlockCount;i++) {
+        outfp(fp, "const unsigned char data");
+        itoa(i, tmp, 10);
+        outfp(fp, tmp);
+        outfp(fp, "[] = {");
+        for (j=0;j<compiledBlocks[i].byteLen;j++) {
+            if (j>0)
+                outfp(fp, ", ");
+            sprintf(tmp, "0x%.02X", ((U32)compiledBlocks[i].bytes[j]) & 0xFF);
+            outfp(fp, tmp);
+        }
+        outfp(fp, "};\n");
+    }
+
+
+    outfp(fp, "typedef void (OPCALL *OpCallback)(struct CPU* cpu, struct Op* op);");
+    outfp(fp, "struct CompiledCode {U32 crc; OpCallback func; const unsigned char* bytes; unsigned int byteLen;};\n");
+    outfp(fp, "static struct CompiledCode compiledCode[] = {\n");
+        
+    for (i=0;i<compiledBlockCount;i++) {
+        outfp(fp, "{0x");
+        itoa(compiledBlocks[i].crc, tmp, 16);
+        outfp(fp, tmp);
+        outfp(fp, ", ");
+        outfp(fp, compiledBlocks[i].func);
+        outfp(fp, ", data");
+        itoa(i, tmp, 10);
+        outfp(fp, tmp);
+        outfp(fp, ", ");
+        itoa(compiledBlocks[i].byteLen, tmp, 10);
+        outfp(fp, tmp);
+        outfp(fp, "},\n");
+    }
+    outfp(fp, "};\n");        
+
+    outfp(fp, "// :TODO: compiledCode is sorted, use a binary search\n");
+    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen) {\n");
+    outfp(fp, "    int i;\n");
+    outfp(fp, "    int count = sizeof(compiledCode) / sizeof(struct CompiledCode);\n");
+    outfp(fp, "    for (i=0;i<count;i++) {\n");
+    outfp(fp, "        if (compiledCode[i].crc==crc) {\n");
+    outfp(fp, "            while (compiledCode[i].crc==crc) {\n");
+    outfp(fp, "                if (compiledCode[i].byteLen == byteLen && !memcmp(bytes, compiledCode[i].bytes, byteLen)) {\n");
+    outfp(fp, "                    return compiledCode[i].func;\n");
+    outfp(fp, "                }\n");
+    outfp(fp, "                i++;\n");
+    outfp(fp, "            }\n");
+    outfp(fp, "            break;\n");
+    outfp(fp, "        }\n");
+    outfp(fp, "    }\n");
+    outfp(fp, "    return 0;\n");
+    outfp(fp, "}\n");
+
+    fflush(fp);
+    fclose(fp);
+}
 
 void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     struct Op* op = block->ops;
-    char tmp[256];
+    char name[256];
+    char tmp[1024];
+    unsigned char ops[1024];
+    int opPos = 0;
+    U32 ip = eip;
+    int i;
+    U32 crc;
 
     // if the block has only one op then don't compile it
     if (!block->ops->next) {
         return;
     }
-    if (!fpGenSrc) {
-        fpGenSrc = fopen("gen.c", "w");
-        out("static U32 eaa\n");
-        out("static U8 tmp8\n");
-        out("static U16 tmp16\n");
-        out("static U32 tmp32\n");
-        out("static U64 tmp64\n\n");
+    while (op) {
+        if (!srcgen[op->inst]) {
+            klog("missing instruction for recompiler: %X", op->inst);
+            return;
+        }
+        for (i=0;i<op->eipCount;i++)
+            ops[opPos++] = readb(cpu->memory, ip++);
+        op = op->next;
     }
-    sprintf(tmp, "// 0x%.8x %s at 0x%.8x\n", cpu->eip.u32, getModuleName(cpu, eip), getModuleEip(cpu, eip));
+    crc = crc32b(ops, opPos);
+
+    if (doesBlockExist(crc, ops, opPos))
+        return;
+
+    op = block->ops;
+    if (!sourceBuffer) {
+        sourceBufferLen = 1024*1024*10;
+        sourceBuffer = kalloc(sourceBufferLen)       ;
+        sourceBufferPos = 0;
+        OUT_DEFINE(U8);
+        OUT_DEFINE(U16);
+        OUT_DEFINE(U32);
+        OUT_DEFINE(S32);
+        OUT_DEFINE(U64);
+        OUT_DEFINE(BOOL);
+        OUT_DEFINE(OPCALL);
+        OUT_DEFINE(ES);
+        OUT_DEFINE(CS);
+        OUT_DEFINE(SS);
+        OUT_DEFINE(DS);
+        OUT_DEFINE(FS);
+        OUT_DEFINE(GS);
+        OUT_DEFINE(SEG_ZERO);
+        OUT_DEFINE(AL);
+        OUT_DEFINE(AH);
+        OUT_DEFINE(CL);
+        OUT_DEFINE(CH);
+        OUT_DEFINE(DL);
+        OUT_DEFINE(DH);
+        OUT_DEFINE(BL);
+        OUT_DEFINE(BH);
+        OUT_DEFINE(AX);
+        OUT_DEFINE(CX);
+        OUT_DEFINE(DX);
+        OUT_DEFINE(BX);
+        OUT_DEFINE(SP);
+        OUT_DEFINE(BP);
+        OUT_DEFINE(SI);
+        OUT_DEFINE(DI);
+        OUT_DEFINE(EAX);
+        OUT_DEFINE(ECX);
+        OUT_DEFINE(EDX);
+        OUT_DEFINE(EBX);
+        OUT_DEFINE(ESP);
+        OUT_DEFINE(EBP);
+        OUT_DEFINE(ESI);
+        OUT_DEFINE(EDI);
+        
+        out("#define CYCLES(x) cpu->blockCounter += x\n");
+
+        out("extern struct LazyFlags* FLAGS_NONE;\n");
+        out("extern struct LazyFlags* FLAGS_ADD8;\n");
+        out("extern struct LazyFlags* FLAGS_ADD16;\n");
+        out("extern struct LazyFlags* FLAGS_ADD32;\n");
+        out("extern struct LazyFlags* FLAGS_OR8;\n");
+        out("extern struct LazyFlags* FLAGS_OR16;\n");
+        out("extern struct LazyFlags* FLAGS_OR32;\n");
+        out("extern struct LazyFlags* FLAGS_ADC8;\n");
+        out("extern struct LazyFlags* FLAGS_ADC16;\n");
+        out("extern struct LazyFlags* FLAGS_ADC32;\n");
+        out("extern struct LazyFlags* FLAGS_SBB8;\n");
+        out("extern struct LazyFlags* FLAGS_SBB16;\n");
+        out("extern struct LazyFlags* FLAGS_SBB32;\n");
+        out("extern struct LazyFlags* FLAGS_AND8;\n");
+        out("extern struct LazyFlags* FLAGS_AND16;\n");
+        out("extern struct LazyFlags* FLAGS_AND32;\n");
+        out("extern struct LazyFlags* FLAGS_SUB8;\n");
+        out("extern struct LazyFlags* FLAGS_SUB16;\n");
+        out("extern struct LazyFlags* FLAGS_SUB32;\n");
+        out("extern struct LazyFlags* FLAGS_XOR8;\n");
+        out("extern struct LazyFlags* FLAGS_XOR16;\n");
+        out("extern struct LazyFlags* FLAGS_XOR32;\n");
+        out("extern struct LazyFlags* FLAGS_INC8;\n");
+        out("extern struct LazyFlags* FLAGS_INC16;\n");
+        out("extern struct LazyFlags* FLAGS_INC32;\n");
+        out("extern struct LazyFlags* FLAGS_DEC8;\n");
+        out("extern struct LazyFlags* FLAGS_DEC16;\n");
+        out("extern struct LazyFlags* FLAGS_DEC32;\n");
+        out("extern struct LazyFlags* FLAGS_SHL8;\n");
+        out("extern struct LazyFlags* FLAGS_SHL16;\n");
+        out("extern struct LazyFlags* FLAGS_SHL32;\n");
+        out("extern struct LazyFlags* FLAGS_SHR8;\n");
+        out("extern struct LazyFlags* FLAGS_SHR16;\n");
+        out("extern struct LazyFlags* FLAGS_SHR32;\n");
+        out("extern struct LazyFlags* FLAGS_SAR8;\n");
+        out("extern struct LazyFlags* FLAGS_SAR16;\n");
+        out("extern struct LazyFlags* FLAGS_SAR32;\n");
+        out("extern struct LazyFlags* FLAGS_CMP8;\n");
+        out("extern struct LazyFlags* FLAGS_CMP16;\n");
+        out("extern struct LazyFlags* FLAGS_CMP32;\n");
+        out("extern struct LazyFlags* FLAGS_TEST8;\n");
+        out("extern struct LazyFlags* FLAGS_TEST16;\n");
+        out("extern struct LazyFlags* FLAGS_TEST32;\n");
+        out("extern struct LazyFlags* FLAGS_DSHL16;\n");
+        out("extern struct LazyFlags* FLAGS_DSHL32;\n");
+        out("extern struct LazyFlags* FLAGS_DSHR16;\n");
+        out("extern struct LazyFlags* FLAGS_DSHR32;\n");
+        out("extern struct LazyFlags* FLAGS_NEG8;\n");
+        out("extern struct LazyFlags* FLAGS_NEG16;\n");
+        out("extern struct LazyFlags* FLAGS_NEG32;\n");        
+
+        out("#define getCF(x) cpu->lazyFlags->getCF(cpu)\n");
+        out("#define getOF(x) cpu->lazyFlags->getOF(cpu)\n");
+        out("#define getAF(x) cpu->lazyFlags->getAF(cpu)\n");
+        out("#define getZF(x) cpu->lazyFlags->getZF(cpu)\n");
+        out("#define getSF(x) cpu->lazyFlags->getSF(cpu)\n");
+        out("#define getPF(x) cpu->lazyFlags->getPF(cpu)\n");
+
+        out("struct Reg {union {U32 u32;union {union {U16 u16;struct {U8 u8;U8 h8;};};U16 h16;};};};\n");
+        out("struct FPU_Reg {union {double d;U64 l;};};\n");
+        out("struct FPU {struct FPU_Reg regs[9];U32 tags[9];U32 cw;U32 cw_mask_all;U32 sw;U32 top;U32 round;};\n");
+        out("struct CPU {struct Reg reg[9];U8* reg8[8]; U32 segAddress[6];U32 segValue[7];U32 flags;struct Reg eip;struct Memory* memory;struct KThread* thread;struct Reg src;struct Reg dst;struct Reg dst2;struct Reg result;struct LazyFlags* lazyFlags;int df;U32 oldcf;U32 big;struct FPU fpu;struct Block* nextBlock;struct Block* currentBlock;U64 timeStampCounter;U32 blockCounter;BOOL log;U32 cpl;};\n");
+        out("struct LazyFlags {U32 (*getCF)(struct CPU* cpu);U32 (*getOF)(struct CPU* cpu);U32 (*getAF)(struct CPU* cpu);U32 (*getZF)(struct CPU* cpu);U32 (*getSF)(struct CPU* cpu);U32 (*getPF)(struct CPU* cpu);};\n");
+        out("U8 readb(struct Memory* memory, U32 address);\n");
+        out("void writeb(struct Memory* memory, U32 address, U8 value);\n");
+        out("U16 readw(struct Memory* memory, U32 address);\n");
+        out("void writew(struct Memory* memory, U32 address, U16 value);\n");
+        out("U32 readd(struct Memory* memory, U32 address);\n");
+        out("void writed(struct Memory* memory, U32 address, U32 value);\n");
+        out("struct Block* getBlock(struct CPU* cpu);\n");
+        out("struct Block* getBlock1(struct CPU* cpu);\n");
+        out("struct Block* getBlock2(struct CPU* cpu);\n");
+        out("void push16(struct CPU* cpu, U16 value);\n");
+        out("void push32(struct CPU* cpu, U32 value);\n");
+        out("U16 pop16(struct CPU* cpu);\n");
+        out("U32 pop32(struct CPU* cpu);\n");
+
+        out("void rol8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rol8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rol8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rol16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rol16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rol32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rol32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rol32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void ror8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void ror8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void ror16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void ror16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void ror32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void ror32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void ror32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcl8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcl8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcl16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcl16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcl32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcl32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcl32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcr8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcr8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcr16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcr16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcr32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void rcr32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void rcr32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shl8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shl8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shl16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shl16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shl32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shl32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shl32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shr8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shr8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shr16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shr16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shr32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void shr32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void shr32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void sar8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar8_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar8cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void sar8cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar8cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar16_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void sar16_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar16_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar16cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void sar16cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar16cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar32_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void sar32_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar32_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar32cl_reg(struct CPU* cpu, U32 reg, U32 value);\n");
+        out("void sar32cl_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
+        out("void sar32cl_mem32(struct CPU* cpu, U32 eaa, U32 value);\n");
+
+        out("void movsb32_r(struct CPU* cpu, U32 base);\n");
+        out("void movsb16_r(struct CPU* cpu, U32 base);\n");
+        out("void movsb32(struct CPU* cpu, U32 base);\n");
+        out("void movsb16(struct CPU* cpu, U32 base);\n");
+        out("void movsw32_r(struct CPU* cpu, U32 base);\n");
+        out("void movsw16_r(struct CPU* cpu, U32 base);\n");
+        out("void movsw32(struct CPU* cpu, U32 base);\n");
+        out("void movsw16(struct CPU* cpu, U32 base);\n");
+        out("void movsd32_r(struct CPU* cpu, U32 base);\n");
+        out("void movsd16_r(struct CPU* cpu, U32 base);\n");
+        out("void movsd32(struct CPU* cpu, U32 base);\n");
+        out("void movsd16(struct CPU* cpu, U32 base);\n");
+        out("void cmpsb32_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsb16_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsb32(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsb16(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsw32_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsw16_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsw32(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsw16(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsd32_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsd16_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsd32(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void cmpsd16(struct CPU* cpu, U32 rep_zero, U32 base);\n");
+        out("void stosb32_r(struct CPU* cpu);\n");
+        out("void stosb16_r(struct CPU* cpu);\n");
+        out("void stosb32(struct CPU* cpu);\n");
+        out("void stosb16(struct CPU* cpu);\n");
+        out("void stosw32_r(struct CPU* cpu);\n");
+        out("void stosw16_r(struct CPU* cpu);\n");
+        out("void stosw32(struct CPU* cpu);\n");
+        out("void stosw16(struct CPU* cpu);\n");
+        out("void stosd32_r(struct CPU* cpu);\n");
+        out("void stosd16_r(struct CPU* cpu);\n");
+        out("void stosd32(struct CPU* cpu);\n");
+        out("void stosd16(struct CPU* cpu);\n");
+        out("void lodsb32_r(struct CPU* cpu, U32 base);\n");
+        out("void lodsb16_r(struct CPU* cpu, U32 base);\n");
+        out("void lodsb32(struct CPU* cpu, U32 base);\n");
+        out("void lodsb16(struct CPU* cpu, U32 base);\n");
+        out("void lodsw32_r(struct CPU* cpu, U32 base);\n");
+        out("void lodsw16_r(struct CPU* cpu, U32 base);\n");
+        out("void lodsw32(struct CPU* cpu, U32 base);\n");
+        out("void lodsw16(struct CPU* cpu, U32 base);\n");
+        out("void lodsd32_r(struct CPU* cpu, U32 base);\n");
+        out("void lodsd16_r(struct CPU* cpu, U32 base);\n");
+        out("void lodsd32(struct CPU* cpu, U32 base);\n");
+        out("void lodsd16(struct CPU* cpu, U32 base);\n");
+        out("void scasb32_r(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasb16_r(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasb32(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasb16(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasw32_r(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasw16_r(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasw32(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasw16(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasd32_r(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasd16_r(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasd32(struct CPU* cpu, U32 rep_zero);\n");
+        out("void scasd16(struct CPU* cpu, U32 rep_zero);\n");
+
+
+        out("static U32 eaa;\n");
+        out("static U8 tmp8;\n");
+        out("static U16 tmp16;\n");
+        out("static U32 tmp32;\n");
+        out("static U64 tmp64;\n\n");
+    }
+    sprintf(tmp, "// 0x%.8x CRC=%.08X %s at 0x%.8x\n", eip, crc, getModuleName(cpu, eip), getModuleEip(cpu, eip));
     out(tmp);
-    sprintf(tmp, "generated%X", generatedBlocks++);
+    sprintf(name, "generated%X", compiledBlockCount);
     out("void OPCALL ");
-    out(tmp);
+    out(name);
     out("(struct CPU* cpu, struct Op* op) {\n");    
     while (op) {
-        if (srcgen[op->inst]) {
-            out("    ");
-            srcgen[op->inst](op);
-        } else {
-            char tmp[16];
-            itoa(op->inst, tmp, 16);
-            out("    // missing instruction: ");
-            out(tmp);
-            out("\n");
-        }
+        out("    ");
+        srcgen[op->inst](op);
         // the last op is responsible for handling the eip adjustment
         if (op->next) {
             out(" cpu->eip.u32+=");
@@ -3936,7 +4399,12 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         }
         op = op->next;
     }
-    out("}\n\n");
-    fflush(fpGenSrc);
+    out("}\n\n");    
+
+    {
+        char* bytes = (char*)kalloc(opPos);
+        memcpy(bytes, ops, opPos);
+        addBlock(name, crc, bytes, opPos);
+    }
 }
 #endif

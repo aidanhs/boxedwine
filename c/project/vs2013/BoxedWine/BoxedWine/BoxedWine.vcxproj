@@ -179,7 +179,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AOT;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -318,7 +318,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);BOXEDWINE_SDL</PreprocessorDefinitions>
+      <PreprocessorDefinitions>AOT;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);BOXEDWINE_SDL</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <UndefinePreprocessorDefinitions>
@@ -344,6 +344,7 @@
     <ClInclude Include="..\..\..\..\include\block.h" />
     <ClInclude Include="..\..\..\..\include\bufferaccess.h" />
     <ClInclude Include="..\..\..\..\include\cpu.h" />
+    <ClInclude Include="..\..\..\..\include\crc.h" />
     <ClInclude Include="..\..\..\..\include\decoder.h" />
     <ClInclude Include="..\..\..\..\include\devdsp.h" />
     <ClInclude Include="..\..\..\..\include\devfb.h" />
@@ -472,12 +473,14 @@
     <ClCompile Include="..\..\..\..\source\opengl\sdl\sdlgl.c" />
     <ClCompile Include="..\..\..\..\source\sdl\main.c" />
     <ClCompile Include="..\..\..\..\source\test\testCPU.c" />
+    <ClCompile Include="..\..\..\..\source\util\crc.c" />
     <ClCompile Include="..\..\..\..\source\util\karray.c" />
     <ClCompile Include="..\..\..\..\source\util\kcircularlist.c" />
     <ClCompile Include="..\..\..\..\source\util\khashmap.c" />
     <ClCompile Include="..\..\..\..\source\util\klist.c" />
     <ClCompile Include="..\..\..\..\source\util\kstring.c" />
     <ClCompile Include="..\..\..\..\source\util\log.c" />
+    <ClCompile Include="gen.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

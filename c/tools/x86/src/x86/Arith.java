@@ -129,7 +129,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
+                "    out(\");CYCLES(\");\n" +
                 "    out(cycles);\n" +
                 "    out(\");\");\n" +
                 "}\n" +
@@ -320,7 +320,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
+                "    out(\");CYCLES(\");\n" +
                 "    out(cycles);\n" +
                 "    out(\");\");\n" +
                 "}";
@@ -404,7 +404,7 @@ public class Arith extends Base {
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_16_noflags) {");
         out(fos, "        genArithER_noflags(\""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_32) {");
-        out(fos, "        genArithER(\"+\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        genArithER(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_32_noflags) {");
         out(fos, "        genArithER_noflags(\""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    }");
@@ -428,7 +428,7 @@ public class Arith extends Base {
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_16_noflags) {");
         out(fos, "        genArithRE_noflags(\""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_32) {");
-        out(fos, "        genArithRE(\"+\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        genArithRE(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_32_noflags) {");
         out(fos, "        genArithRE_noflags(\""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    }");

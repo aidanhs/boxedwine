@@ -111,7 +111,7 @@ void genArithER_noflags(const char* op, const char* bits, const char* address, c
         out(" ");
         out("cpu->oldcf");
     }
-    out(";CYCLES(");
+    out(");CYCLES(");
     out(cycles);
     out(");");
 }
@@ -302,7 +302,7 @@ void genArithE_noflags(const char* op, const char* bits, const char* address, co
         out(" ");
         out("cpu->oldcf");
     }
-    out(";CYCLES(");
+    out(");CYCLES(");
     out(cycles);
     out(");");
 }
@@ -475,7 +475,7 @@ void gen008(struct Op* op) {
     } else if (op->func==ore8r8_16_noflags) {
         genArithER_noflags("|", "8", getEaa16(op), "b", r8(op->r1), 0,"3");
     } else if (op->func==ore8r8_32) {
-        genArithER("+", "FLAGS_OR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"3");
+        genArithER("|", "FLAGS_OR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"3");
     } else if (op->func==ore8r8_32_noflags) {
         genArithER_noflags("|", "8", getEaa32(op), "b", r8(op->r1), 0,"3");
     }
@@ -496,7 +496,7 @@ void gen009(struct Op* op) {
     } else if (op->func==ore16r16_16_noflags) {
         genArithER_noflags("|", "16", getEaa16(op), "w", r16(op->r1), 0,"3");
     } else if (op->func==ore16r16_32) {
-        genArithER("+", "FLAGS_OR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"3");
+        genArithER("|", "FLAGS_OR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"3");
     } else if (op->func==ore16r16_32_noflags) {
         genArithER_noflags("|", "16", getEaa32(op), "w", r16(op->r1), 0,"3");
     }
@@ -517,7 +517,7 @@ void gen209(struct Op* op) {
     } else if (op->func==ore32r32_16_noflags) {
         genArithER_noflags("|", "32", getEaa16(op), "d", r32(op->r1), 0,"3");
     } else if (op->func==ore32r32_32) {
-        genArithER("+", "FLAGS_OR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"3");
+        genArithER("|", "FLAGS_OR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"3");
     } else if (op->func==ore32r32_32_noflags) {
         genArithER_noflags("|", "32", getEaa32(op), "d", r32(op->r1), 0,"3");
     }
@@ -538,7 +538,7 @@ void gen00a(struct Op* op) {
     } else if (op->func==orr8e8_16_noflags) {
         genArithRE_noflags("|", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==orr8e8_32) {
-        genArithRE("+", "FLAGS_OR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
+        genArithRE("|", "FLAGS_OR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
     } else if (op->func==orr8e8_32_noflags) {
         genArithRE_noflags("|", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -559,7 +559,7 @@ void gen00b(struct Op* op) {
     } else if (op->func==orr16e16_16_noflags) {
         genArithRE_noflags("|", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==orr16e16_32) {
-        genArithRE("+", "FLAGS_OR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
+        genArithRE("|", "FLAGS_OR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
     } else if (op->func==orr16e16_32_noflags) {
         genArithRE_noflags("|", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -580,7 +580,7 @@ void gen20b(struct Op* op) {
     } else if (op->func==orr32e32_16_noflags) {
         genArithRE_noflags("|", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==orr32e32_32) {
-        genArithRE("+", "FLAGS_OR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
+        genArithRE("|", "FLAGS_OR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
     } else if (op->func==orr32e32_32_noflags) {
         genArithRE_noflags("|", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
@@ -781,7 +781,7 @@ void gen018(struct Op* op) {
     } else if (op->func==sbbe8r8_16_noflags) {
         genArithER_noflags("-", "8", getEaa16(op), "b", r8(op->r1), 1,"3");
     } else if (op->func==sbbe8r8_32) {
-        genArithER("+", "FLAGS_SBB8", "8", getEaa32(op), "b", r8(op->r1), 1, 1,"3");
+        genArithER("-", "FLAGS_SBB8", "8", getEaa32(op), "b", r8(op->r1), 1, 1,"3");
     } else if (op->func==sbbe8r8_32_noflags) {
         genArithER_noflags("-", "8", getEaa32(op), "b", r8(op->r1), 1,"3");
     }
@@ -802,7 +802,7 @@ void gen019(struct Op* op) {
     } else if (op->func==sbbe16r16_16_noflags) {
         genArithER_noflags("-", "16", getEaa16(op), "w", r16(op->r1), 1,"3");
     } else if (op->func==sbbe16r16_32) {
-        genArithER("+", "FLAGS_SBB16", "16", getEaa32(op), "w", r16(op->r1), 1, 1,"3");
+        genArithER("-", "FLAGS_SBB16", "16", getEaa32(op), "w", r16(op->r1), 1, 1,"3");
     } else if (op->func==sbbe16r16_32_noflags) {
         genArithER_noflags("-", "16", getEaa32(op), "w", r16(op->r1), 1,"3");
     }
@@ -823,7 +823,7 @@ void gen219(struct Op* op) {
     } else if (op->func==sbbe32r32_16_noflags) {
         genArithER_noflags("-", "32", getEaa16(op), "d", r32(op->r1), 1,"3");
     } else if (op->func==sbbe32r32_32) {
-        genArithER("+", "FLAGS_SBB32", "32", getEaa32(op), "d", r32(op->r1), 1, 1,"3");
+        genArithER("-", "FLAGS_SBB32", "32", getEaa32(op), "d", r32(op->r1), 1, 1,"3");
     } else if (op->func==sbbe32r32_32_noflags) {
         genArithER_noflags("-", "32", getEaa32(op), "d", r32(op->r1), 1,"3");
     }
@@ -844,7 +844,7 @@ void gen01a(struct Op* op) {
     } else if (op->func==sbbr8e8_16_noflags) {
         genArithRE_noflags("-", "8", getEaa16(op), "b", r8(op->r1), 1,"2");
     } else if (op->func==sbbr8e8_32) {
-        genArithRE("+", "FLAGS_SBB8", "8", getEaa32(op), "b", r8(op->r1), 1, 1,"2");
+        genArithRE("-", "FLAGS_SBB8", "8", getEaa32(op), "b", r8(op->r1), 1, 1,"2");
     } else if (op->func==sbbr8e8_32_noflags) {
         genArithRE_noflags("-", "8", getEaa32(op), "b", r8(op->r1), 1,"2");
     }
@@ -865,7 +865,7 @@ void gen01b(struct Op* op) {
     } else if (op->func==sbbr16e16_16_noflags) {
         genArithRE_noflags("-", "16", getEaa16(op), "w", r16(op->r1), 1,"2");
     } else if (op->func==sbbr16e16_32) {
-        genArithRE("+", "FLAGS_SBB16", "16", getEaa32(op), "w", r16(op->r1), 1, 1,"2");
+        genArithRE("-", "FLAGS_SBB16", "16", getEaa32(op), "w", r16(op->r1), 1, 1,"2");
     } else if (op->func==sbbr16e16_32_noflags) {
         genArithRE_noflags("-", "16", getEaa32(op), "w", r16(op->r1), 1,"2");
     }
@@ -886,7 +886,7 @@ void gen21b(struct Op* op) {
     } else if (op->func==sbbr32e32_16_noflags) {
         genArithRE_noflags("-", "32", getEaa16(op), "d", r32(op->r1), 1,"2");
     } else if (op->func==sbbr32e32_32) {
-        genArithRE("+", "FLAGS_SBB32", "32", getEaa32(op), "d", r32(op->r1), 1, 1,"2");
+        genArithRE("-", "FLAGS_SBB32", "32", getEaa32(op), "d", r32(op->r1), 1, 1,"2");
     } else if (op->func==sbbr32e32_32_noflags) {
         genArithRE_noflags("-", "32", getEaa32(op), "d", r32(op->r1), 1,"2");
     }
@@ -934,7 +934,7 @@ void gen020(struct Op* op) {
     } else if (op->func==ande8r8_16_noflags) {
         genArithER_noflags("&", "8", getEaa16(op), "b", r8(op->r1), 0,"3");
     } else if (op->func==ande8r8_32) {
-        genArithER("+", "FLAGS_AND8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"3");
+        genArithER("&", "FLAGS_AND8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"3");
     } else if (op->func==ande8r8_32_noflags) {
         genArithER_noflags("&", "8", getEaa32(op), "b", r8(op->r1), 0,"3");
     }
@@ -955,7 +955,7 @@ void gen021(struct Op* op) {
     } else if (op->func==ande16r16_16_noflags) {
         genArithER_noflags("&", "16", getEaa16(op), "w", r16(op->r1), 0,"3");
     } else if (op->func==ande16r16_32) {
-        genArithER("+", "FLAGS_AND16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"3");
+        genArithER("&", "FLAGS_AND16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"3");
     } else if (op->func==ande16r16_32_noflags) {
         genArithER_noflags("&", "16", getEaa32(op), "w", r16(op->r1), 0,"3");
     }
@@ -976,7 +976,7 @@ void gen221(struct Op* op) {
     } else if (op->func==ande32r32_16_noflags) {
         genArithER_noflags("&", "32", getEaa16(op), "d", r32(op->r1), 0,"3");
     } else if (op->func==ande32r32_32) {
-        genArithER("+", "FLAGS_AND32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"3");
+        genArithER("&", "FLAGS_AND32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"3");
     } else if (op->func==ande32r32_32_noflags) {
         genArithER_noflags("&", "32", getEaa32(op), "d", r32(op->r1), 0,"3");
     }
@@ -997,7 +997,7 @@ void gen022(struct Op* op) {
     } else if (op->func==andr8e8_16_noflags) {
         genArithRE_noflags("&", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==andr8e8_32) {
-        genArithRE("+", "FLAGS_AND8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
+        genArithRE("&", "FLAGS_AND8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
     } else if (op->func==andr8e8_32_noflags) {
         genArithRE_noflags("&", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -1018,7 +1018,7 @@ void gen023(struct Op* op) {
     } else if (op->func==andr16e16_16_noflags) {
         genArithRE_noflags("&", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==andr16e16_32) {
-        genArithRE("+", "FLAGS_AND16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
+        genArithRE("&", "FLAGS_AND16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
     } else if (op->func==andr16e16_32_noflags) {
         genArithRE_noflags("&", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -1039,7 +1039,7 @@ void gen223(struct Op* op) {
     } else if (op->func==andr32e32_16_noflags) {
         genArithRE_noflags("&", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==andr32e32_32) {
-        genArithRE("+", "FLAGS_AND32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
+        genArithRE("&", "FLAGS_AND32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
     } else if (op->func==andr32e32_32_noflags) {
         genArithRE_noflags("&", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
@@ -1087,7 +1087,7 @@ void gen028(struct Op* op) {
     } else if (op->func==sube8r8_16_noflags) {
         genArithER_noflags("-", "8", getEaa16(op), "b", r8(op->r1), 0,"3");
     } else if (op->func==sube8r8_32) {
-        genArithER("+", "FLAGS_SUB8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"3");
+        genArithER("-", "FLAGS_SUB8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"3");
     } else if (op->func==sube8r8_32_noflags) {
         genArithER_noflags("-", "8", getEaa32(op), "b", r8(op->r1), 0,"3");
     }
@@ -1108,7 +1108,7 @@ void gen029(struct Op* op) {
     } else if (op->func==sube16r16_16_noflags) {
         genArithER_noflags("-", "16", getEaa16(op), "w", r16(op->r1), 0,"3");
     } else if (op->func==sube16r16_32) {
-        genArithER("+", "FLAGS_SUB16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"3");
+        genArithER("-", "FLAGS_SUB16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"3");
     } else if (op->func==sube16r16_32_noflags) {
         genArithER_noflags("-", "16", getEaa32(op), "w", r16(op->r1), 0,"3");
     }
@@ -1129,7 +1129,7 @@ void gen229(struct Op* op) {
     } else if (op->func==sube32r32_16_noflags) {
         genArithER_noflags("-", "32", getEaa16(op), "d", r32(op->r1), 0,"3");
     } else if (op->func==sube32r32_32) {
-        genArithER("+", "FLAGS_SUB32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"3");
+        genArithER("-", "FLAGS_SUB32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"3");
     } else if (op->func==sube32r32_32_noflags) {
         genArithER_noflags("-", "32", getEaa32(op), "d", r32(op->r1), 0,"3");
     }
@@ -1150,7 +1150,7 @@ void gen02a(struct Op* op) {
     } else if (op->func==subr8e8_16_noflags) {
         genArithRE_noflags("-", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==subr8e8_32) {
-        genArithRE("+", "FLAGS_SUB8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
+        genArithRE("-", "FLAGS_SUB8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
     } else if (op->func==subr8e8_32_noflags) {
         genArithRE_noflags("-", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -1171,7 +1171,7 @@ void gen02b(struct Op* op) {
     } else if (op->func==subr16e16_16_noflags) {
         genArithRE_noflags("-", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==subr16e16_32) {
-        genArithRE("+", "FLAGS_SUB16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
+        genArithRE("-", "FLAGS_SUB16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
     } else if (op->func==subr16e16_32_noflags) {
         genArithRE_noflags("-", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -1192,7 +1192,7 @@ void gen22b(struct Op* op) {
     } else if (op->func==subr32e32_16_noflags) {
         genArithRE_noflags("-", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==subr32e32_32) {
-        genArithRE("+", "FLAGS_SUB32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
+        genArithRE("-", "FLAGS_SUB32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
     } else if (op->func==subr32e32_32_noflags) {
         genArithRE_noflags("-", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
@@ -1240,7 +1240,7 @@ void gen030(struct Op* op) {
     } else if (op->func==xore8r8_16_noflags) {
         genArithER_noflags("^", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==xore8r8_32) {
-        genArithER("+", "FLAGS_XOR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
+        genArithER("^", "FLAGS_XOR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
     } else if (op->func==xore8r8_32_noflags) {
         genArithER_noflags("^", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -1261,7 +1261,7 @@ void gen031(struct Op* op) {
     } else if (op->func==xore16r16_16_noflags) {
         genArithER_noflags("^", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==xore16r16_32) {
-        genArithER("+", "FLAGS_XOR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
+        genArithER("^", "FLAGS_XOR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
     } else if (op->func==xore16r16_32_noflags) {
         genArithER_noflags("^", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -1282,7 +1282,7 @@ void gen231(struct Op* op) {
     } else if (op->func==xore32r32_16_noflags) {
         genArithER_noflags("^", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==xore32r32_32) {
-        genArithER("+", "FLAGS_XOR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
+        genArithER("^", "FLAGS_XOR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
     } else if (op->func==xore32r32_32_noflags) {
         genArithER_noflags("^", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
@@ -1303,7 +1303,7 @@ void gen032(struct Op* op) {
     } else if (op->func==xorr8e8_16_noflags) {
         genArithRE_noflags("^", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==xorr8e8_32) {
-        genArithRE("+", "FLAGS_XOR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
+        genArithRE("^", "FLAGS_XOR8", "8", getEaa32(op), "b", r8(op->r1), 1, 0,"2");
     } else if (op->func==xorr8e8_32_noflags) {
         genArithRE_noflags("^", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -1324,7 +1324,7 @@ void gen033(struct Op* op) {
     } else if (op->func==xorr16e16_16_noflags) {
         genArithRE_noflags("^", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==xorr16e16_32) {
-        genArithRE("+", "FLAGS_XOR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
+        genArithRE("^", "FLAGS_XOR16", "16", getEaa32(op), "w", r16(op->r1), 1, 0,"2");
     } else if (op->func==xorr16e16_32_noflags) {
         genArithRE_noflags("^", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -1345,7 +1345,7 @@ void gen233(struct Op* op) {
     } else if (op->func==xorr32e32_16_noflags) {
         genArithRE_noflags("^", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==xorr32e32_32) {
-        genArithRE("+", "FLAGS_XOR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
+        genArithRE("^", "FLAGS_XOR32", "32", getEaa32(op), "d", r32(op->r1), 1, 0,"2");
     } else if (op->func==xorr32e32_32_noflags) {
         genArithRE_noflags("^", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
@@ -1393,7 +1393,7 @@ void gen038(struct Op* op) {
     } else if (op->func==cmpe8r8_16_noflags) {
         genArithER_noflags("-", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==cmpe8r8_32) {
-        genArithER("+", "FLAGS_CMP8", "8", getEaa32(op), "b", r8(op->r1), 0, 0,"2");
+        genArithER("-", "FLAGS_CMP8", "8", getEaa32(op), "b", r8(op->r1), 0, 0,"2");
     } else if (op->func==cmpe8r8_32_noflags) {
         genArithER_noflags("-", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -1414,7 +1414,7 @@ void gen039(struct Op* op) {
     } else if (op->func==cmpe16r16_16_noflags) {
         genArithER_noflags("-", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==cmpe16r16_32) {
-        genArithER("+", "FLAGS_CMP16", "16", getEaa32(op), "w", r16(op->r1), 0, 0,"2");
+        genArithER("-", "FLAGS_CMP16", "16", getEaa32(op), "w", r16(op->r1), 0, 0,"2");
     } else if (op->func==cmpe16r16_32_noflags) {
         genArithER_noflags("-", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -1435,7 +1435,7 @@ void gen239(struct Op* op) {
     } else if (op->func==cmpe32r32_16_noflags) {
         genArithER_noflags("-", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==cmpe32r32_32) {
-        genArithER("+", "FLAGS_CMP32", "32", getEaa32(op), "d", r32(op->r1), 0, 0,"2");
+        genArithER("-", "FLAGS_CMP32", "32", getEaa32(op), "d", r32(op->r1), 0, 0,"2");
     } else if (op->func==cmpe32r32_32_noflags) {
         genArithER_noflags("-", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
@@ -1456,7 +1456,7 @@ void gen03a(struct Op* op) {
     } else if (op->func==cmpr8e8_16_noflags) {
         genArithRE_noflags("-", "8", getEaa16(op), "b", r8(op->r1), 0,"2");
     } else if (op->func==cmpr8e8_32) {
-        genArithRE("+", "FLAGS_CMP8", "8", getEaa32(op), "b", r8(op->r1), 0, 0,"2");
+        genArithRE("-", "FLAGS_CMP8", "8", getEaa32(op), "b", r8(op->r1), 0, 0,"2");
     } else if (op->func==cmpr8e8_32_noflags) {
         genArithRE_noflags("-", "8", getEaa32(op), "b", r8(op->r1), 0,"2");
     }
@@ -1477,7 +1477,7 @@ void gen03b(struct Op* op) {
     } else if (op->func==cmpr16e16_16_noflags) {
         genArithRE_noflags("-", "16", getEaa16(op), "w", r16(op->r1), 0,"2");
     } else if (op->func==cmpr16e16_32) {
-        genArithRE("+", "FLAGS_CMP16", "16", getEaa32(op), "w", r16(op->r1), 0, 0,"2");
+        genArithRE("-", "FLAGS_CMP16", "16", getEaa32(op), "w", r16(op->r1), 0, 0,"2");
     } else if (op->func==cmpr16e16_32_noflags) {
         genArithRE_noflags("-", "16", getEaa32(op), "w", r16(op->r1), 0,"2");
     }
@@ -1498,7 +1498,7 @@ void gen23b(struct Op* op) {
     } else if (op->func==cmpr32e32_16_noflags) {
         genArithRE_noflags("-", "32", getEaa16(op), "d", r32(op->r1), 0,"2");
     } else if (op->func==cmpr32e32_32) {
-        genArithRE("+", "FLAGS_CMP32", "32", getEaa32(op), "d", r32(op->r1), 0, 0,"2");
+        genArithRE("-", "FLAGS_CMP32", "32", getEaa32(op), "d", r32(op->r1), 0, 0,"2");
     } else if (op->func==cmpr32e32_32_noflags) {
         genArithRE_noflags("-", "32", getEaa32(op), "d", r32(op->r1), 0,"2");
     }
