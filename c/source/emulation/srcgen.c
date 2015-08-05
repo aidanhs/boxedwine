@@ -178,23 +178,27 @@ void gen040(struct Op* op) {
         out(" = ");
         out(r16(op->r1));
         out(" + 1;CYCLES(1);");
+    } else {
+        kpanic("gen040");
     }
 }
 
 void OPCALL dec16_reg(struct CPU* cpu, struct Op* op);
 void OPCALL dec16_reg_noflags(struct CPU* cpu, struct Op* op);
 void gen048(struct Op* op) {
-    if (op->func==inc16_reg) {
+    if (op->func==dec16_reg) {
         out("cpu->oldcf=getCF(cpu); cpu->dst.u16 = ");
         out(r16(op->r1));
         out("; cpu->result.u16=cpu->dst.u16 - 1; cpu->lazyFlags = FLAGS_DEC16; ");
         out(r16(op->r1));
         out(" = cpu->result.u16;CYCLES(1);");
-    } else if (op->func==inc16_reg_noflags) {
+    } else if (op->func==dec16_reg_noflags) {
         out(r16(op->r1));
         out(" = ");
         out(r16(op->r1));
         out(" - 1;CYCLES(1);");
+    } else {
+        kpanic("gen048");
     }
 }
 
@@ -212,24 +216,29 @@ void gen240(struct Op* op) {
         out(" = ");
         out(r32(op->r1));
         out(" + 1;CYCLES(1);");
+    } else {
+        kpanic("gen240");
     }
 }
 
 void OPCALL dec32_reg(struct CPU* cpu, struct Op* op);
 void OPCALL dec32_reg_noflags(struct CPU* cpu, struct Op* op);
 void gen248(struct Op* op) {
-    if (op->func==inc32_reg) {
+    if (op->func==dec32_reg) {
         out("cpu->oldcf=getCF(cpu); cpu->dst.u32 = ");
         out(r32(op->r1));
         out("; cpu->result.u32=cpu->dst.u32 - 1; cpu->lazyFlags = FLAGS_DEC32; ");
         out(r32(op->r1));
         out(" = cpu->result.u32;CYCLES(1);");
-    } else if (op->func==inc32_reg_noflags) {
+    } else if (op->func==dec32_reg_noflags) {
         out(r32(op->r1));
         out(" = ");
         out(r32(op->r1));
         out(" - 1;CYCLES(1);");
+    } else {
+        kpanic("gen248");
     }
+
 }
 
 void gen050(struct Op* op) {
@@ -1733,7 +1742,7 @@ void gen0a9(struct Op* op) {
 }
 
 void gen2a9(struct Op* op) {
-    genArithR("&", "FLAGS_TEST32", "32", r16(0), op->data1, 0, 0, "1");
+    genArithR("&", "FLAGS_TEST32", "32", r32(0), op->data1, 0, 0, "1");
 }
 
 void gen0b0(struct Op* op) {

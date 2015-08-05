@@ -17,6 +17,8 @@ public class Arith extends Base {
 
     public void gensrc(FileOutputStream fos) throws IOException {
         String helpers = "void genArithRR(const char* op, const char* flags, const char* bits, const char* r1, const char* r2, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "    if (useCF)\n" +
+                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
                 "    out(\"cpu->dst.u\");\n" +
                 "    out(bits);\n" +
                 "    out(\" = \");\n" +
@@ -38,7 +40,6 @@ public class Arith extends Base {
                 "        out(op);\n" +
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
-                "        out(\"; cpu->oldcf = getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\"; cpu->lazyFlags = \");\n" +
                 "    out(flags);\n" +
@@ -65,7 +66,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(\"getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -73,6 +74,8 @@ public class Arith extends Base {
                 "}\n" +
                 "\n" +
                 "void genArithER(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "    if (useCF)\n" +
+                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
                 "    out(\"eaa = \");\n" +
                 "    out(address);\n" +
                 "    out(\"; cpu->dst.u\");\n" +
@@ -96,7 +99,6 @@ public class Arith extends Base {
                 "        out(op);\n" +
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
-                "        out(\"; cpu->oldcf = getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\"; cpu->lazyFlags = \");\n" +
                 "    out(flags);\n" +
@@ -127,7 +129,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(\"getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\");CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -135,6 +137,8 @@ public class Arith extends Base {
                 "}\n" +
                 "\n" +
                 "void genArithRE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "    if (useCF)\n" +
+                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
                 "    out(\"cpu->dst.u\");\n" +
                 "    out(bits);\n" +
                 "    out(\" = \");\n" +
@@ -158,7 +162,6 @@ public class Arith extends Base {
                 "        out(op);\n" +
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
-                "        out(\"; cpu->oldcf = getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\"; cpu->lazyFlags = \");\n" +
                 "    out(flags);\n" +
@@ -188,7 +191,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(\"getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -198,6 +201,8 @@ public class Arith extends Base {
                 "void genArithR(const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
+                "    if (useCF)\n" +
+                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
                 "    out(\"cpu->dst.u\");\n" +
                 "    out(bits);\n" +
                 "    out(\" = \");\n" +
@@ -220,7 +225,6 @@ public class Arith extends Base {
                 "        out(op);\n" +
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
-                "        out(\"; cpu->oldcf = getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\"; cpu->lazyFlags = \");\n" +
                 "    out(flags);\n" +
@@ -250,7 +254,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(\"getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -260,6 +264,8 @@ public class Arith extends Base {
                 "void genArithE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
+                "    if (useCF)\n" +
+                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
                 "    out(\"eaa = \");\n" +
                 "    out(address);\n" +
                 "    out(\"; cpu->dst.u\");\n" +
@@ -284,7 +290,6 @@ public class Arith extends Base {
                 "        out(op);\n" +
                 "        out(\" \");\n" +
                 "        out(\"cpu->oldcf\");\n" +
-                "        out(\"; cpu->oldcf = getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\"; cpu->lazyFlags = \");\n" +
                 "    out(flags);\n" +
@@ -318,7 +323,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(\"getCF(cpu)\");\n" +
                 "    }\n" +
                 "    out(\");CYCLES(\");\n" +
                 "    out(cycles);\n" +

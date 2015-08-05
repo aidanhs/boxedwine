@@ -1,4 +1,6 @@
 void genArithRR(const char* op, const char* flags, const char* bits, const char* r1, const char* r2, U32 useResult, U32 useCF, const char* cycles) {
+    if (useCF)
+        out("cpu->oldcf = getCF(cpu);");
     out("cpu->dst.u");
     out(bits);
     out(" = ");
@@ -20,7 +22,6 @@ void genArithRR(const char* op, const char* flags, const char* bits, const char*
         out(op);
         out(" ");
         out("cpu->oldcf");
-        out("; cpu->oldcf = getCF(cpu)");
     }
     out("; cpu->lazyFlags = ");
     out(flags);
@@ -47,7 +48,7 @@ void genArithRR_noflags(const char* op, const char* bits, const char* r1, const 
         out(" ");
         out(op);
         out(" ");
-        out("cpu->oldcf");
+        out("getCF(cpu)");
     }
     out(";CYCLES(");
     out(cycles);
@@ -55,6 +56,8 @@ void genArithRR_noflags(const char* op, const char* bits, const char* r1, const 
 }
 
 void genArithER(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {
+    if (useCF)
+        out("cpu->oldcf = getCF(cpu);");
     out("eaa = ");
     out(address);
     out("; cpu->dst.u");
@@ -78,7 +81,6 @@ void genArithER(const char* op, const char* flags, const char* bits, const char*
         out(op);
         out(" ");
         out("cpu->oldcf");
-        out("; cpu->oldcf = getCF(cpu)");
     }
     out("; cpu->lazyFlags = ");
     out(flags);
@@ -109,7 +111,7 @@ void genArithER_noflags(const char* op, const char* bits, const char* address, c
         out(" ");
         out(op);
         out(" ");
-        out("cpu->oldcf");
+        out("getCF(cpu)");
     }
     out(");CYCLES(");
     out(cycles);
@@ -117,6 +119,8 @@ void genArithER_noflags(const char* op, const char* bits, const char* address, c
 }
 
 void genArithRE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {
+    if (useCF)
+        out("cpu->oldcf = getCF(cpu);");
     out("cpu->dst.u");
     out(bits);
     out(" = ");
@@ -140,7 +144,6 @@ void genArithRE(const char* op, const char* flags, const char* bits, const char*
         out(op);
         out(" ");
         out("cpu->oldcf");
-        out("; cpu->oldcf = getCF(cpu)");
     }
     out("; cpu->lazyFlags = ");
     out(flags);
@@ -170,7 +173,7 @@ void genArithRE_noflags(const char* op, const char* bits, const char* address, c
         out(" ");
         out(op);
         out(" ");
-        out("cpu->oldcf");
+        out("getCF(cpu)");
     }
     out(";CYCLES(");
     out(cycles);
@@ -180,6 +183,8 @@ void genArithRE_noflags(const char* op, const char* bits, const char* address, c
 void genArithR(const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {
     char tmp[16];
 
+    if (useCF)
+        out("cpu->oldcf = getCF(cpu);");
     out("cpu->dst.u");
     out(bits);
     out(" = ");
@@ -202,7 +207,6 @@ void genArithR(const char* op, const char* flags, const char* bits, const char* 
         out(op);
         out(" ");
         out("cpu->oldcf");
-        out("; cpu->oldcf = getCF(cpu)");
     }
     out("; cpu->lazyFlags = ");
     out(flags);
@@ -232,7 +236,7 @@ void genArithR_noflags(const char* op, const char* bits, const char* r1, unsigne
         out(" ");
         out(op);
         out(" ");
-        out("cpu->oldcf");
+        out("getCF(cpu)");
     }
     out(";CYCLES(");
     out(cycles);
@@ -242,6 +246,8 @@ void genArithR_noflags(const char* op, const char* bits, const char* r1, unsigne
 void genArithE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {
     char tmp[16];
 
+    if (useCF)
+        out("cpu->oldcf = getCF(cpu);");
     out("eaa = ");
     out(address);
     out("; cpu->dst.u");
@@ -266,7 +272,6 @@ void genArithE(const char* op, const char* flags, const char* bits, const char* 
         out(op);
         out(" ");
         out("cpu->oldcf");
-        out("; cpu->oldcf = getCF(cpu)");
     }
     out("; cpu->lazyFlags = ");
     out(flags);
@@ -300,7 +305,7 @@ void genArithE_noflags(const char* op, const char* bits, const char* address, co
         out(" ");
         out(op);
         out(" ");
-        out("cpu->oldcf");
+        out("getCF(cpu)");
     }
     out(");CYCLES(");
     out(cycles);

@@ -2471,7 +2471,7 @@ void jit(struct CPU* cpu, U32 eip, struct Block* block) {
             op = op->next;
         }
         crc = crc32b(ops, opPos);
-        func = getCompiledFunction(crc, ops, opPos);        
+        func = getCompiledFunction(crc, ops, opPos);
         if (func) {
             block->ops->func = func;
             freeOp(block->ops->next);
