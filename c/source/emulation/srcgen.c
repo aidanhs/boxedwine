@@ -3497,7 +3497,7 @@ void gen2d3(struct Op* op) {
         out(r32(op->r1));
         out(" = (");
         out(r32(op->r1));
-        out(" << (CL & 0x1F) | (");
+        out(" << (CL & 0x1F)) | (");
         out(r32(op->r1));
         out(" >> (32 - (CL & 31))); CYCLES(1);");
     } else if (op->func == rol32cl_mem16_noflags) {
@@ -3785,6 +3785,949 @@ void gen0d7(struct Op* op) {
         kpanic("gen0d7");
     }
 }
+
+void OPCALL FADD_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FADD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FADD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void gen0d8(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+    if (op->func == FADD_ST0_STj) {
+        out("cpu->fpu.regs[cpu->fpu.top].d += cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d; CYCLES(1);");
+    } else if (op->func == FMUL_ST0_STj) {
+        out("cpu->fpu.regs[cpu->fpu.top].d *= cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d; CYCLES(1);");
+    } else if (op->func == FCOM_STi) {
+        out("FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out("));CYCLES(1);");
+    } else if (op->func == FCOM_STi_Pop) {
+        out("FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out("));FPU_FPOP(cpu);CYCLES(1);");
+    } else if (op->func == FSUB_ST0_STj) {
+        out("cpu->fpu.regs[cpu->fpu.top].d -= cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d; CYCLES(1);");
+    } else if (op->func == FSUBR_ST0_STj) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(1);");
+    } else if (op->func == FDIV_ST0_STj) {
+        out("cpu->fpu.regs[cpu->fpu.top].d /= cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d; CYCLES(39);");
+    } else if (op->func == FDIVR_ST0_STj) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FADD_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d += f2i.f; CYCLES(1);");
+    } else if (op->func == FMUL_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d *= f2i.f; CYCLES(1);");
+    } else if (op->func == FCOM_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[8].d = f2i.f; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(1);");
+    } else if (op->func == FCOM_SINGLE_REAL_32_Pop) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[8].d = f2i.f; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FSUB_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d -= f2i.f; CYCLES(1);");
+    } else if (op->func == FSUBR_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = f2i.f - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FDIV_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d /= f2i.f; CYCLES(1);");
+    } else if (op->func == FDIVR_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = f2i.f / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FADD_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d += f2i.f; CYCLES(1);");
+    } else if (op->func == FMUL_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d *= f2i.f; CYCLES(1);");
+    } else if (op->func == FCOM_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[8].d = f2i.f; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(1);");
+    } else if (op->func == FCOM_SINGLE_REAL_16_Pop) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[8].d = f2i.f; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FSUB_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d -= f2i.f; CYCLES(1);");
+    } else if (op->func == FSUBR_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = f2i.f - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FDIV_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d /= f2i.f; CYCLES(1);");
+    } else if (op->func == FDIVR_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = f2i.f / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else {
+        kpanic("gen0d8");
+    }
+}
+
+void OPCALL FLD_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FXCH_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FNOP(struct CPU* cpu, struct Op* op);
+void OPCALL FST_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FCHS(struct CPU* cpu, struct Op* op);
+void OPCALL FABS(struct CPU* cpu, struct Op* op);
+void OPCALL FTST(struct CPU* cpu, struct Op* op);
+void OPCALL FXAM(struct CPU* cpu, struct Op* op);
+void OPCALL FLD1(struct CPU* cpu, struct Op* op);
+void OPCALL FLDL2T(struct CPU* cpu, struct Op* op);
+void OPCALL FLDL2E(struct CPU* cpu, struct Op* op);
+void OPCALL FLDPI(struct CPU* cpu, struct Op* op);
+void OPCALL FLDLG2(struct CPU* cpu, struct Op* op);
+void OPCALL FLDLN2(struct CPU* cpu, struct Op* op);
+void OPCALL FLDZ(struct CPU* cpu, struct Op* op);
+void OPCALL F2XM1(struct CPU* cpu, struct Op* op);
+void OPCALL FYL2X(struct CPU* cpu, struct Op* op);
+void OPCALL FPTAN(struct CPU* cpu, struct Op* op);
+void OPCALL FPATAN(struct CPU* cpu, struct Op* op);
+void OPCALL FXTRACT(struct CPU* cpu, struct Op* op);
+void OPCALL FPREM_nearest(struct CPU* cpu, struct Op* op);
+void OPCALL FDECSTP(struct CPU* cpu, struct Op* op);
+void OPCALL FINCSTP(struct CPU* cpu, struct Op* op);
+void OPCALL FPREM(struct CPU* cpu, struct Op* op);
+void OPCALL FYL2XP1(struct CPU* cpu, struct Op* op);
+void OPCALL FSQRT(struct CPU* cpu, struct Op* op);
+void OPCALL FSINCOS(struct CPU* cpu, struct Op* op);
+void OPCALL FRNDINT(struct CPU* cpu, struct Op* op);
+void OPCALL FSCALE(struct CPU* cpu, struct Op* op);
+void OPCALL FSIN(struct CPU* cpu, struct Op* op);
+void OPCALL FCOS(struct CPU* cpu, struct Op* op);
+void OPCALL FLD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FST_SINGLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FST_SINGLE_REAL_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FLDENV_16(struct CPU* cpu, struct Op* op);
+void OPCALL FLDCW_16(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTENV_16(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTCW_16(struct CPU* cpu, struct Op* op);
+void OPCALL FLD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FST_SINGLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FST_SINGLE_REAL_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FLDENV_32(struct CPU* cpu, struct Op* op);
+void OPCALL FLDCW_32(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTENV_32(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTCW_32(struct CPU* cpu, struct Op* op);
+void gen0d9(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FLD_STi) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.top = (cpu->fpu.top - 1) & 7; cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d; CYCLES(1);");
+    } else if (op->func == FXCH_STi) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); tmp32_2 = cpu->fpu.tags[tmp32]; tmpd = cpu->fpu.regs[tmp32].d; cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d; cpu->fpu.tags[cpu->fpu.top] = tmp32_2; cpu->fpu.regs[cpu->fpu.top].d = tmpd; CYCLES(1);");
+    } else if (op->func == FNOP) {
+        out("CYCLES(1);");
+    } else if (op->func == FST_STi_Pop) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d;FPU_FPOP(cpu);CYCLES(1);");
+    } else if (op->func == FCHS) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = -1.0 * (cpu->fpu.regs[cpu->fpu.top].d);CYCLES(1);");
+    } else if (op->func == FABS) {
+        // don't inline because of calling convention of fabs
+        out("FPU_FABS(&cpu->fpu);CYCLES(1);");
+    } else if (op->func == FTST) {
+        out("cpu->fpu.regs[8].d = 0.0;FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8);CYCLES(1);");
+    } else if (op->func == FXAM) {
+        out("FPU_FXAM(&cpu->fpu); CYCLES(21);");
+    } else if (op->func == FLD1) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = 1.0; CYCLES(2);");
+    } else if (op->func == FLDL2T) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = 3.3219280948873623; CYCLES(3);");
+    } else if (op->func == FLDL2E) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = 1.4426950408889634; CYCLES(3);");
+    } else if (op->func == FLDPI) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = 3.14159265358979323846; CYCLES(3);");
+    } else if (op->func == FLDLG2) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = 0.3010299956639812; CYCLES(3);");
+    } else if (op->func == FLDLN2) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = 0.69314718055994531; CYCLES(3);");
+    } else if (op->func == FLDZ) {
+        out("cpu->fpu.top = (cpu->fpu.top - 1) & 7; cpu->fpu.regs[cpu->fpu.top].d = 0.0; cpu->fpu.tags[cpu->fpu.top] = TAG_Zero; CYCLES(2);");
+    } else if (op->func == F2XM1) {
+        out("FPU_F2XM1(&cpu->fpu); CYCLES(13);");
+    } else if (op->func == FYL2X) {
+        out("FPU_FYL2X(&cpu->fpu); CYCLES(22);");
+    } else if (op->func == FPTAN) {
+        out("FPU_FPTAN(&cpu->fpu); CYCLES(17);");
+    } else if (op->func == FPATAN) {
+        out("FPU_FPATAN(&cpu->fpu); CYCLES(17);");
+    } else if (op->func == FXTRACT) {
+        out("FPU_FXTRACT(&cpu->fpu); CYCLES(13);");
+    } else if (op->func == FPREM_nearest) {
+        out("FPU_FPREM1(&cpu->fpu); CYCLES(17);");
+    } else if (op->func == FDECSTP) {
+        out("cpu->fpu.top = (cpu->fpu.top - 1) & 7; CYCLES(1);");
+    } else if (op->func == FINCSTP) {
+        out("cpu->fpu.top = (cpu->fpu.top + 1) & 7; CYCLES(1);");
+    } else if (op->func == FPREM) {
+        out("FPU_FPREM(&cpu->fpu); CYCLES(16);");
+    } else if (op->func == FYL2XP1) {
+        out("FPU_FYL2XP1(&cpu->fpu);CYCLES(22);");
+    } else if (op->func == FSQRT) {
+        out("FPU_FSQRT(&cpu->fpu);CYCLES(70);");
+    } else if (op->func == FSINCOS) {
+        out("FPU_FSINCOS(&cpu->fpu); CYCLES(17);");
+    } else if (op->func == FRNDINT) {
+        out("FPU_FRNDINT(&cpu->fpu); CYCLES(9);");
+    } else if (op->func == FSCALE) {
+        out("FPU_FSCALE(&cpu->fpu); CYCLES(20);");
+    } else if (op->func == FSIN) {
+        out("FPU_FSIN(&cpu->fpu); CYCLES(16);");
+    } else if (op->func == FCOS) {
+        out("FPU_FCOS(&cpu->fpu); CYCLES(16);");
+    } else if (op->func == FLD_SINGLE_REAL_16) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = f2i.f; CYCLES(1);");	    
+    } else if (op->func == FST_SINGLE_REAL_16) {
+        out("f2i.f = (float)cpu->fpu.regs[cpu->fpu.top].d; writed(cpu->memory, ");
+        out(getEaa16(op));
+        out(", f2i.i); CYCLES(2);");
+    } else if (op->func == FST_SINGLE_REAL_16_Pop) {
+        out("f2i.f = (float)cpu->fpu.regs[cpu->fpu.top].d; writed(cpu->memory, ");
+        out(getEaa16(op));
+        out(", f2i.i); FPU_FPOP(cpu); CYCLES(2);");
+    } else if (op->func == FLDENV_16) {
+        out("FPU_FLDENV(cpu, "); 
+        out(getEaa16(op));
+        out("); CYCLES(32);");
+    } else if (op->func == FLDCW_16) {
+        out("FPU_SetCW(&cpu->fpu, readw(cpu->memory, ");
+        out(getEaa16(op));
+        out(")); CYCLES(7);");
+    } else if (op->func == FNSTENV_16) {
+        out("FPU_FSTENV(cpu, ");
+        out(getEaa16(op));
+        out("); CYCLES(48);");
+    } else if (op->func == FNSTCW_16) {
+        out("writew(cpu->memory, ");
+        out(getEaa16(op));
+        out(", cpu->fpu.cw);CYCLES(2);");
+    } else if (op->func == FLD_SINGLE_REAL_32) {
+        out("f2i.i = readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = f2i.f; CYCLES(1);");	    
+    } else if (op->func == FST_SINGLE_REAL_32) {
+        out("f2i.f = (float)cpu->fpu.regs[cpu->fpu.top].d; writed(cpu->memory, ");
+        out(getEaa32(op));
+        out(", f2i.i); CYCLES(2);");
+    } else if (op->func == FST_SINGLE_REAL_32_Pop) {
+        out("f2i.f = (float)cpu->fpu.regs[cpu->fpu.top].d; writed(cpu->memory, ");
+        out(getEaa32(op));
+        out(", f2i.i); FPU_FPOP(cpu); CYCLES(2);");
+    } else if (op->func == FLDENV_32) {
+        out("FPU_FLDENV(cpu, "); 
+        out(getEaa32(op));
+        out("); CYCLES(32);");
+    } else if (op->func == FLDCW_32) {
+        out("FPU_SetCW(&cpu->fpu, readw(cpu->memory, ");
+        out(getEaa32(op));
+        out(")); CYCLES(7);");
+    } else if (op->func == FNSTENV_32) {
+        out("FPU_FSTENV(cpu, ");
+        out(getEaa32(op));
+        out("); CYCLES(48);");
+    } else if (op->func == FNSTCW_32) {
+        out("writew(cpu->memory, ");
+        out(getEaa32(op));
+        out(", cpu->fpu.cw);CYCLES(2);");
+    } else {
+        kpanic("gen0d9");
+    }
+}
+
+void OPCALL FCMOV_ST0_STj_CF(struct CPU* cpu, struct Op* op);
+void OPCALL FCMOV_ST0_STj_ZF(struct CPU* cpu, struct Op* op);
+void OPCALL FCMOV_ST0_STj_CF_OR_ZF(struct CPU* cpu, struct Op* op);
+void OPCALL FCMOV_ST0_STj_PF(struct CPU* cpu, struct Op* op);
+void OPCALL FUCOMPP(struct CPU* cpu, struct Op* op);
+void OPCALL FIADD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIMUL_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FISUB_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FISUBR_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIV_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIVR_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIADD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIMUL_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FISUB_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FISUBR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIV_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIVR_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void gen0da(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FCMOV_ST0_STj_CF) {
+        out("if (getCF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FCMOV_ST0_STj_ZF) {
+        out("if (getZF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FCMOV_ST0_STj_CF_OR_ZF) {
+        out("if (getCF(cpu) || getZF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FCMOV_ST0_STj_PF) {
+        out("if (getPF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FUCOMPP) {
+        out("FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, 1)); FPU_FPOP(cpu); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FIADD_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[cpu->fpu.top].d += (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FIMUL_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[cpu->fpu.top].d *= (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FICOM_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[8].d = (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(4);");
+    } else if (op->func == FICOM_DWORD_INTEGER_16_Pop) {
+        out("cpu->fpu.regs[8].d = (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(4);");
+    } else if (op->func == FISUB_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[cpu->fpu.top].d -= (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FISUBR_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(") - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(4);");
+    } else if (op->func == FIDIV_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[cpu->fpu.top].d /= (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); CYCLES(42);");
+    } else if (op->func == FIDIVR_DWORD_INTEGER_16) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out(") / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(42);");
+    } else if (op->func == FIADD_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d += (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FIMUL_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d *= (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FICOM_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[8].d = (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(4);");
+    } else if (op->func == FICOM_DWORD_INTEGER_32_Pop) {
+        out("cpu->fpu.regs[8].d = (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(4);");
+    } else if (op->func == FISUB_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d -= (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FISUBR_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(") - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(4);");
+    } else if (op->func == FIDIV_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d /= (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(42);");
+    } else if (op->func == FIDIVR_DWORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out(") / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(42);");
+    } else {
+        kpanic("gen0da");
+    }
+}
+
+void OPCALL FCMOV_ST0_STj_NCF(struct CPU* cpu, struct Op* op);
+void OPCALL FCMOV_ST0_STj_NZF(struct CPU* cpu, struct Op* op);
+void OPCALL FCMOV_ST0_STj_NCF_AND_NZF(struct CPU* cpu, struct Op* op);
+void OPCALL FCMOV_ST0_STj_NPF(struct CPU* cpu, struct Op* op);
+void OPCALL FNCLEX(struct CPU* cpu, struct Op* op);
+void OPCALL FNINIT(struct CPU* cpu, struct Op* op);
+void OPCALL FUCOMI_ST0_STj(struct CPU* cpu, struct Op* op);
+void OPCALL FCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FILD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FISTTP32_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_DWORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FLD_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FSTP_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FISTTP32_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FLD_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FSTP_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op);
+void gen0db(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FCMOV_ST0_STj_NCF) {
+        out("if (!getCF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FCMOV_ST0_STj_NZF) {
+        out("if (!getZF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FCMOV_ST0_STj_NCF_AND_NZF) {
+        out("if (!getCF(cpu) && !getZF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FCMOV_ST0_STj_NPF) {
+        out("if (!getPF(cpu)) {tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[cpu->fpu.top] = cpu->fpu.tags[tmp32]; cpu->fpu.regs[cpu->fpu.top].d = cpu->fpu.regs[tmp32].d;} CYCLES(2);");
+    } else if (op->func == FNCLEX) {
+        out("cpu->fpu.sw &= 0x7f00; CYCLES(9);");
+    } else if (op->func == FNINIT) {
+        out("FPU_FINIT(&cpu->fpu); CYCLES(12);");
+    } else if (op->func == FUCOMI_ST0_STj) {
+        out("FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); CYCLES(1);");
+    } else if (op->func == FCOMI_ST0_STj_Pop) {
+        out("FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FILD_DWORD_INTEGER_16) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = (S32)readd(cpu->memory, ");
+        out(getEaa16(op));
+        out("); CYCLES(1);");
+    } else if (op->func == FISTTP32_16) {
+        out("writed(cpu->memory, ");
+        out(getEaa16(op));
+        out(", (S32)cpu->fpu.regs[cpu->fpu.top].d); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FIST_DWORD_INTEGER_16) {
+        out("FPU_FST_I32(cpu, ");
+        out(getEaa16(op));
+        out("); CYCLES(6);");
+    } else if (op->func == FIST_DWORD_INTEGER_16_Pop) {
+        out("FPU_FST_I32(cpu, ");
+        out(getEaa16(op));
+        out("); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FLD_EXTENDED_REAL_16) {
+        out("eaa = ");
+        out(getEaa16(op));
+        out("; FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = FPU_FLD80(readq(cpu->memory, eaa), readw(cpu->memory, eaa + 8)); CYCLES(3);");
+    } else if (op->func == FSTP_EXTENDED_REAL_16) {
+        out("FPU_ST80(cpu, ");
+        out(getEaa16(op));
+        out(", cpu->ftp.top); FPU_FPOP(cpu); CYCLES(3);");
+    } else if (op->func == FILD_DWORD_INTEGER_32) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = (S32)readd(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(1);");
+    } else if (op->func == FISTTP32_32) {
+        out("writed(cpu->memory, ");
+        out(getEaa32(op));
+        out(", (S32)cpu->fpu.regs[cpu->fpu.top].d); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FIST_DWORD_INTEGER_32) {
+        out("FPU_FST_I32(cpu, ");
+        out(getEaa32(op));
+        out("); CYCLES(6);");
+    } else if (op->func == FIST_DWORD_INTEGER_32_Pop) {
+        out("FPU_FST_I32(cpu, ");
+        out(getEaa32(op));
+        out("); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FLD_EXTENDED_REAL_32) {
+        out("eaa = ");
+        out(getEaa32(op));
+        out("; FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = FPU_FLD80(readq(cpu->memory, eaa), readw(cpu->memory, eaa + 8)); CYCLES(3);");
+    } else if (op->func == FSTP_EXTENDED_REAL_32) {
+        out("FPU_ST80(cpu, ");
+        out(getEaa32(op));
+        out(", cpu->ftp.top); FPU_FPOP(cpu); CYCLES(3);");
+    } else {
+        kpanic("gen0db");
+    }
+}
+
+void OPCALL FADD_STi_ST0(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_STi_ST0(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_STi_ST0(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_STi_ST0(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_STi_ST0(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_STi_ST0(struct CPU* cpu, struct Op* op);
+void OPCALL FADD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FADD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void gen0dc(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FADD_STi_ST0) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d += cpu->fpu.regs[cpu->fpu.top].d; CYCLES(1);");
+    } else if (op->func == FMUL_STi_ST0) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d *= cpu->fpu.regs[cpu->fpu.top].d; CYCLES(1);");
+    } else if (op->func == FCOM_STi) {
+        out("FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out("));CYCLES(1);");
+    } else if (op->func == FCOM_STi_Pop) {
+        out("FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out("));FPU_FPOP(cpu);CYCLES(1);");
+    } else if (op->func == FSUBR_STi_ST0) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d - cpu->fpu.regs[tmp32].d; CYCLES(1);");
+    } else if (op->func == FSUB_STi_ST0) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d -= cpu->fpu.regs[cpu->fpu.top].d; CYCLES(1);");
+    } else if (op->func == FDIVR_STi_ST0) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d / cpu->fpu.regs[tmp32].d; CYCLES(39);");
+    } else if (op->func == FDIV_STi_ST0) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d /= cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FADD_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d += d2l.d; CYCLES(1);");
+    } else if (op->func == FMUL_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d *= d2l.d; CYCLES(1);");
+    } else if (op->func == FCOM_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[8].d = d2l.d; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(1);");
+    } else if (op->func == FCOM_DOUBLE_REAL_16_Pop) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[8].d = d2l.d; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FSUB_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d -= d2l.d; CYCLES(1);");
+    } else if (op->func == FSUBR_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = d2l.d - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FDIV_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d /= d2l.d; CYCLES(1);");
+    } else if (op->func == FDIVR_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = d2l.d / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    }else {
+        kpanic("gen0dc");
+    }
+}
+
+void OPCALL FFREE_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FXCH_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FST_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FST_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FUCOM_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FUCOM_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FLD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FISTTP64_16(struct CPU* cpu, struct Op* op);
+void OPCALL FST_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op);
+void OPCALL FST_DOUBLE_REAL_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FRSTOR_16(struct CPU* cpu, struct Op* op);
+void OPCALL FNSAVE_16(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTSW_16(struct CPU* cpu, struct Op* op);
+void OPCALL FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FISTTP64_32(struct CPU* cpu, struct Op* op);
+void OPCALL FST_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op);
+void OPCALL FST_DOUBLE_REAL_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FRSTOR_32(struct CPU* cpu, struct Op* op);
+void OPCALL FNSAVE_32(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTSW_32(struct CPU* cpu, struct Op* op);
+void gen0dd(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FFREE_STi) {
+        out("cpu->fpu.tags[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")] = TAG_Empty; CYCLES(1);");
+    } else if (op->func == FXCH_STi) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); tmp32_2 = cpu->fpu.tags[tmp32]; tmpd = cpu->fpu.regs[tmp32].d; cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d; cpu->fpu.tags[cpu->fpu.top] = tmp32_2; cpu->fpu.regs[cpu->fpu.top].d = tmpd; CYCLES(1);");
+    } else if (op->func == FST_STi) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d;CYCLES(1);");
+    } else if (op->func == FST_STi_Pop) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d;FPU_FPOP(cpu);CYCLES(1);");
+    } else if (op->func == FUCOM_STi) {
+        out("FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FUCOM_STi_Pop) {
+        out("FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); FPU_FPOP(cpu); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FLD_DOUBLE_REAL_16) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa16(op));
+        out("); FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = d2l.d; CYCLES(1);");	    
+    } else if (op->func == FISTTP64_16) {
+        out("writeq(cpu->memory, ");
+        out(getEaa16(op));
+        out(", (S64)cpu->fpu.regs[cpu->fpu.top].d); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FST_DOUBLE_REAL_16) {
+        out("writeq(cpu->memory, ");
+        out(getEaa16(op));
+        out(", cpu->fpu.regs[cpu->fpu.top].l); CYCLES(2);");
+    } else if (op->func == FST_DOUBLE_REAL_16_Pop) {
+        out("writeq(cpu->memory, ");
+        out(getEaa16(op));
+        out(", cpu->fpu.regs[cpu->fpu.top].l); FPU_FPOP(cpu); CYCLES(2);");
+    } else if (op->func == FRSTOR_16) {
+        out("FPU_FRSTOR(cpu, ");
+        out(getEaa16(op));
+        out("); CYCLES(75);");
+    } else if (op->func == FNSAVE_16) {
+        out("FPU_FSAVE(cpu, ");
+        out(getEaa16(op));
+        out("); CYCLES(127);");
+    } else if (op->func == FNSTSW_16) {
+        out("FPU_SET_TOP(&cpu->fpu, cpu->fpu.top); writew(cpu->memory, ");
+        out(getEaa16(op));
+        out(", cpu->fpu.sw); CYCLES(2);");
+    } else if (op->func == FLD_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out("); FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = d2l.d; CYCLES(1);");	    
+    } else if (op->func == FISTTP64_32) {
+        out("writeq(cpu->memory, ");
+        out(getEaa32(op));
+        out(", (S64)cpu->fpu.regs[cpu->fpu.top].d); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FST_DOUBLE_REAL_32) {
+        out("writeq(cpu->memory, ");
+        out(getEaa32(op));
+        out(", cpu->fpu.regs[cpu->fpu.top].l); CYCLES(2);");
+    } else if (op->func == FST_DOUBLE_REAL_32_Pop) {
+        out("writeq(cpu->memory, ");
+        out(getEaa32(op));
+        out(", cpu->fpu.regs[cpu->fpu.top].l); FPU_FPOP(cpu); CYCLES(2);");
+    } else if (op->func == FRSTOR_32) {
+        out("FPU_FRSTOR(cpu, ");
+        out(getEaa32(op));
+        out("); CYCLES(75);");
+    } else if (op->func == FNSAVE_32) {
+        out("FPU_FSAVE(cpu, ");
+        out(getEaa32(op));
+        out("); CYCLES(127);");
+    } else if (op->func == FNSTSW_32) {
+        out("FPU_SET_TOP(&cpu->fpu, cpu->fpu.top); writew(cpu->memory, ");
+        out(getEaa32(op));
+        out(", cpu->fpu.sw); CYCLES(2);");
+    } else {
+        kpanic("gen0dd");
+    }
+}
+
+void OPCALL FADD_STi_ST0_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FMUL_STi_ST0_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FCOM_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FCOMPP(struct CPU* cpu, struct Op* op);
+void OPCALL FSUBR_STi_ST0_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FSUB_STi_ST0_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FDIVR_STi_ST0_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FDIV_STi_ST0_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FIADD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIMUL_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FISUB_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FISUBR_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIV_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIVR_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIADD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIMUL_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FICOM_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FISUB_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FISUBR_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIV_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIDIVR_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void gen0de(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FADD_STi_ST0_Pop) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d += cpu->fpu.regs[cpu->fpu.top].d; FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FMUL_STi_ST0_Pop) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d *= cpu->fpu.regs[cpu->fpu.top].d; FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FCOM_STi_Pop) {
+        out("FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FCOMPP) {
+        out("FPU_FCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, 1));FPU_FPOP(cpu);FPU_FPOP(cpu);CYCLES(1);");
+    } else if (op->func == FSUBR_STi_ST0_Pop) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d - cpu->fpu.regs[tmp32].d; FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FSUB_STi_ST0_Pop) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d -= cpu->fpu.regs[cpu->fpu.top].d; FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FDIVR_STi_ST0_Pop) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d / cpu->fpu.regs[tmp32].d; FPU_FPOP(cpu); CYCLES(39);");
+    } else if (op->func == FDIV_STi_ST0_Pop) {
+        out("cpu->fpu.regs[STV(&cpu->fpu, ");
+        out(tmp);
+        out(")].d /= cpu->fpu.regs[cpu->fpu.top].d; FPU_FPOP(cpu); CYCLES(39);");
+    } else if (op->func == FIADD_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d += (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FIMUL_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d *= (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FICOM_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[8].d = (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(4);");
+    } else if (op->func == FICOM_WORD_INTEGER_32_Pop) {
+        out("cpu->fpu.regs[8].d = (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(4);");
+    } else if (op->func == FISUB_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d -= (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(4);");
+    } else if (op->func == FISUBR_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out(") - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(4);");
+    } else if (op->func == FIDIV_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d /= (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(42);");
+    } else if (op->func == FIDIVR_WORD_INTEGER_32) {
+        out("cpu->fpu.regs[cpu->fpu.top].d = (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out(") / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(42);");
+    }  else {
+        kpanic("gen0de");
+    }
+}
+
+void OPCALL FFREEP_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FXCH_STi(struct CPU* cpu, struct Op* op);
+void OPCALL FST_STi_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FNSTSW_AX(struct CPU* cpu, struct Op* op);
+void OPCALL FUCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FCOMI_ST0_STj_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FISTTP16_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_WORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op);
+void OPCALL FILD_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FBSTP_PACKED_BCD_32(struct CPU* cpu, struct Op* op);
+void OPCALL FISTP_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op);
+void OPCALL FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FISTTP16_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_WORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FIST_WORD_INTEGER_16_Pop(struct CPU* cpu, struct Op* op);
+void OPCALL FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op);
+void OPCALL FILD_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void OPCALL FBSTP_PACKED_BCD_16(struct CPU* cpu, struct Op* op);
+void OPCALL FISTP_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op);
+void gen0df(struct Op* op) {
+    char tmp[16];
+    itoa(op->r1, tmp, 10);
+
+    if (op->func == FFREEP_STi) {
+        out("cpu->fpu.tags[STV(&cpu->fpu, ");
+        out(tmp);
+        out("] = TAG_Empty; FPU_FPOP(&cpu->fpu); CYCLES(1);");
+    } else if (op->func == FXCH_STi) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); tmp32_2 = cpu->fpu.tags[tmp32]; tmpd = cpu->fpu.regs[tmp32].d; cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d; cpu->fpu.tags[cpu->fpu.top] = tmp32_2; cpu->fpu.regs[cpu->fpu.top].d = tmpd; CYCLES(1);");
+    } else if (op->func == FNSTSW_AX) {
+        out("FPU_SET_TOP(&cpu->fpu, cpu->fpu.top); AX = cpu->fpu.sw; CYCLES(2);");
+    } else if (op->func == FST_STi_Pop) {
+        out("tmp32 = STV(&cpu->fpu, ");
+        out(tmp);
+        out("); cpu->fpu.tags[tmp32] = cpu->fpu.tags[cpu->fpu.top]; cpu->fpu.regs[tmp32].d = cpu->fpu.regs[cpu->fpu.top].d;FPU_FPOP(cpu);CYCLES(1);");
+    } else if (op->func == FUCOMI_ST0_STj_Pop) {
+        out("FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); FPU_FPOP(&cpu->fpu); CYCLES(1);");
+    } else if (op->func == FCOMI_ST0_STj_Pop) {
+        out("FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, ");
+        out(tmp);
+        out(")); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FILD_WORD_INTEGER_16) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = (S16)readw(cpu->memory, ");
+        out(getEaa16(op));
+        out("); CYCLES(1);");
+    } else if (op->func == FISTTP16_16) {
+        out("writew(cpu->memory, ");
+        out(getEaa16(op));
+        out(", (S16)cpu->fpu.regs[cpu->fpu.top].d); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FIST_WORD_INTEGER_16) {
+        out("FPU_FST_I16(cpu, ");
+        out(getEaa16(op));
+        out("); CYCLES(6);");
+    } else if (op->func == FIST_WORD_INTEGER_16_Pop) {
+        out("FPU_FST_I16(cpu, ");
+        out(getEaa16(op));
+        out("); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FBLD_PACKED_BCD_16) {
+        out("FBLD_PACKED_BCD(cpu, ");
+        out(getEaa16(op));
+        out("); CYCLES(48);");
+    } else if (op->func == FILD_QWORD_INTEGER_16) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = (double)((S64)readq(cpu->memory, ");
+        out(getEaa16(op));
+        out(")); CYCLES(1);");
+    } else if (op->func == FBSTP_PACKED_BCD_16) {
+        out("FPU_FBST(cpu, ");
+        out(getEaa16(op));
+        out("); FPU_FPOP(&cpu->fpu); CYCLES(148);");
+    } else if (op->func == FISTP_QWORD_INTEGER_16) {
+        out("FPU_FST_I64(cpu, ");
+        out(getEaa16(op));
+        out("); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FILD_WORD_INTEGER_32) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = (S16)readw(cpu->memory, ");
+        out(getEaa32(op));
+        out("); CYCLES(1);");
+    } else if (op->func == FISTTP16_32) {
+        out("writew(cpu->memory, ");
+        out(getEaa32(op));
+        out(", (S16)cpu->fpu.regs[cpu->fpu.top].d); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FIST_WORD_INTEGER_32) {
+        out("FPU_FST_I16(cpu, ");
+        out(getEaa32(op));
+        out("); CYCLES(6);");
+    } else if (op->func == FIST_WORD_INTEGER_32_Pop) {
+        out("FPU_FST_I16(cpu, ");
+        out(getEaa32(op));
+        out("); FPU_FPOP(cpu); CYCLES(6);");
+    } else if (op->func == FBLD_PACKED_BCD_32) {
+        out("FBLD_PACKED_BCD(cpu, ");
+        out(getEaa32(op));
+        out("); CYCLES(48);");
+    } else if (op->func == FILD_QWORD_INTEGER_32) {
+        out("FPU_PREP_PUSH(cpu); cpu->fpu.regs[cpu->fpu.top].d = (double)((S64)readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(")); CYCLES(1);");
+    } else if (op->func == FBSTP_PACKED_BCD_32) {
+        out("FPU_FBST(cpu, ");
+        out(getEaa32(op));
+        out("); FPU_FPOP(&cpu->fpu); CYCLES(148);");
+    } else if (op->func == FISTP_QWORD_INTEGER_32) {
+        out("FPU_FST_I64(cpu, ");
+        out(getEaa32(op));
+        out("); FPU_FPOP(cpu); CYCLES(6);");
+    } else {
+        kpanic("gen0df");
+    }
+}
+
 typedef void (*SRC_GEN)(struct Op* op);
 
 SRC_GEN srcgen[] = {
@@ -3817,7 +4760,7 @@ SRC_GEN srcgen[] = {
 	gen0c0, gen0c1, gen0c2, gen0c3, 0, 0, gen0c6, gen0c7,
 	0, gen0c9, 0, gen0cb, 0, gen0cd, 0, 0,
 	gen0c0, gen0c1, gen0d2, gen0d3, gen0d4, gen0d5, gen0d6, gen0d7,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	gen0d8, gen0d9, gen0da, gen0db, gen0dc, gen0dd, gen0de, gen0df,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -3885,7 +4828,7 @@ SRC_GEN srcgen[] = {
 	gen0c0, gen2c1, gen2c2, gen2c3, 0, 0, gen0c6, gen2c7,
 	0, gen2c9, 0, 0, 0, 0, 0, 0,
 	gen0c0, gen2c1, gen0d2, gen2d3, gen0d4, gen0d5, gen0d6, gen0d7,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	gen0d8, gen0d9, gen0da, gen0db, gen0dc, gen0dd, gen0de, gen0df,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -4114,8 +5057,9 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(EBP);
         OUT_DEFINE(ESI);
         OUT_DEFINE(EDI);
-        
-        out("#define CYCLES(x) cpu->blockCounter += x\n");
+        OUT_DEFINE(FMASK_ALL);
+
+        out("#define CYCLES(x) cpu->blockCounter += x; cpu->blockInstructionCount++\n");
 
         out("extern struct LazyFlags* FLAGS_NONE;\n");
         out("extern struct LazyFlags* FLAGS_ADD8;\n");
@@ -4186,7 +5130,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("struct Reg {union {U32 u32;union {union {U16 u16;struct {U8 u8;U8 h8;};};U16 h16;};};};\n");
         out("struct FPU_Reg {union {double d;U64 l;};};\n");
         out("struct FPU {struct FPU_Reg regs[9];U32 tags[9];U32 cw;U32 cw_mask_all;U32 sw;U32 top;U32 round;};\n");
-        out("struct CPU {struct Reg reg[9];U8* reg8[8]; U32 segAddress[6];U32 segValue[7];U32 flags;struct Reg eip;struct Memory* memory;struct KThread* thread;struct Reg src;struct Reg dst;struct Reg dst2;struct Reg result;struct LazyFlags* lazyFlags;int df;U32 oldcf;U32 big;struct FPU fpu;struct Block* nextBlock;struct Block* currentBlock;U64 timeStampCounter;U32 blockCounter;BOOL log;U32 cpl;};\n");
+        out("struct CPU {struct Reg reg[9];U8* reg8[8]; U32 segAddress[6];U32 segValue[7];U32 flags;struct Reg eip;struct Memory* memory;struct KThread* thread;struct Reg src;struct Reg dst;struct Reg dst2;struct Reg result;struct LazyFlags* lazyFlags;int df;U32 oldcf;U32 big;struct FPU fpu;struct Block* nextBlock;struct Block* currentBlock;U64 timeStampCounter;U32 blockCounter;U32 blockInstructionCount;BOOL log;U32 cpl;};\n");
         out("struct LazyFlags {U32 (*getCF)(struct CPU* cpu);U32 (*getOF)(struct CPU* cpu);U32 (*getAF)(struct CPU* cpu);U32 (*getZF)(struct CPU* cpu);U32 (*getSF)(struct CPU* cpu);U32 (*getPF)(struct CPU* cpu);};\n");
         out("U8 readb(struct Memory* memory, U32 address);\n");
         out("void writeb(struct Memory* memory, U32 address, U8 value);\n");
@@ -4194,6 +5138,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("void writew(struct Memory* memory, U32 address, U16 value);\n");
         out("U32 readd(struct Memory* memory, U32 address);\n");
         out("void writed(struct Memory* memory, U32 address, U32 value);\n");
+        out("U64 readq(struct Memory* memory, U32 address);\n");
+        out("void writeq(struct Memory* memory, U32 address, U64 value);\n");
         out("struct Block* getBlock(struct CPU* cpu);\n");
         out("struct Block* getBlock1(struct CPU* cpu);\n");
         out("struct Block* getBlock2(struct CPU* cpu);\n");
@@ -4202,6 +5148,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("U16 pop16(struct CPU* cpu);\n");
         out("U32 pop32(struct CPU* cpu);\n");
         out("void fillFlagsNoCFOF(struct CPU* cpu);\n");
+        out("void fillFlags(struct CPU* cpu);\n");
+        out("void setFlags(struct CPU* cpu, U32 word, U32 mask);\n");
 
         out("void rol8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
         out("void rol8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
@@ -4390,13 +5338,59 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("void scasd16_r(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasd32(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasd16(struct CPU* cpu, U32 rep_zero);\n");
+        out("void FPU_FCOM(struct FPU* fpu, int st, int other);\n");
+        out("void FPU_FUCOM(struct FPU* fpu, int st, int other);\n");
+        out("void FPU_FABS(struct FPU* fpu);\n");
+        out("void FPU_FXAM(struct FPU* fpu);\n");
+        out("void FPU_F2XM1(struct FPU* fpu);\n");
+        out("void FPU_FYL2X(struct FPU* fpu);\n");
+        out("void FPU_FPTAN(struct FPU* fpu);\n");
+        out("void FPU_FPATAN(struct FPU* fpu);\n");
+        out("void FPU_FXTRACT(struct FPU* fpu);\n");
+        out("void FPU_FPREM1(struct FPU* fpu);\n");
+        out("void FPU_FPREM(struct FPU* fpu);\n");
+        out("void FPU_FYL2XP1(struct FPU* fpu);\n");
+        out("void FPU_FSQRT(struct FPU* fpu);\n");
+        out("void FPU_FSINCOS(struct FPU* fpu);\n");
+        out("void FPU_FRNDINT(struct FPU* fpu);\n");
+        out("void FPU_FSCALE(struct FPU* fpu);\n");
+        out("void FPU_FSIN(struct FPU* fpu);\n");
+        out("void FPU_FCOS(struct FPU* fpu);\n");
+        out("void FPU_FLDENV(struct CPU* cpu, int addr);\n");
+        out("void FPU_SetCW(struct FPU* fpu, U16 word);\n");
+        out("void FPU_FSTENV(struct CPU* cpu, int addr);\n");        
+        out("void FPU_FINIT(struct FPU* fpu);\n");
+        out("void FPU_FCOMI(struct CPU* cpu, int st, int other);\n");
+        out("void FPU_FST_I32(struct CPU* cpu, int addr);\n");
+        out("double FPU_FLD80(U64 eind, U32 begin);\n");
+        out("void FPU_ST80(struct CPU* cpu, int addr, int reg);\n");
+        out("void FPU_FRSTOR(struct CPU* cpu, int addr);\n");
+        out("void FPU_FSAVE(struct CPU* cpu, int addr);\n");
+        out("void FPU_FST_I16(struct CPU* cpu, int addr);\n");
+        out("void FBLD_PACKED_BCD(struct CPU* cpu, U32 address);\n");
+        out("void FPU_FBST(struct CPU* cpu, int addr);\n");
+        out("void FPU_FST_I64(struct CPU* cpu, int addr);\n");
 
+        out("#define TAG_Valid 0\n");
+        out("#define TAG_Zero 1\n");
+        out("#define TAG_Empty 3\n");
+        out("#define FPU_FPOP(cpu) cpu->fpu.tags[cpu->fpu.top] = TAG_Empty; cpu->fpu.top = ((cpu->fpu.top + 1) & 7)\n");
+        out("#define STV(fpu, i) (((fpu)->top + (i)) & 7)\n");
+        out("#define FPU_PREP_PUSH(cpu) cpu->fpu.top = (cpu->fpu.top - 1) & 7; cpu->fpu.tags[cpu->fpu.top] = TAG_Valid\n");
+        out("#define FPU_SET_TOP(fpu, val) (fpu)->sw &= ~0x3800; (fpu)->sw |= (val & 7) << 11\n");
 
         out("static U32 eaa;\n");
         out("static U8 tmp8;\n");
         out("static U16 tmp16;\n");
         out("static U32 tmp32;\n");
+        out("static U32 tmp32_2;\n");
         out("static U64 tmp64;\n\n");
+        out("static double tmpd;\n\n");
+
+        out("struct F2I {union {float f;U32 i;};};\n");
+        out("struct F2I f2i;");
+        out("struct D2L {union {double d;U64 l;};};\n");
+        out("struct D2L d2l;");
     }
     sprintf(tmp, "// 0x%.8x CRC=%.08X %s at 0x%.8x\n", eip, crc, getModuleName(cpu, eip), getModuleEip(cpu, eip));
     out(tmp);

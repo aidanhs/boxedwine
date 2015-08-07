@@ -113,7 +113,7 @@ void push(struct FPU* fpu, double value) {
     fpu->regs[fpu->top].d = value;
 }
 
-static void FPU_FPOP(struct FPU* fpu) {
+void FPU_FPOP(struct FPU* fpu) {
     fpu->tags[fpu->top] = TAG_Empty;
     //maybe set zero in it as well
     fpu->top = ((fpu->top + 1) & 7);
@@ -139,7 +139,7 @@ double FROUND(struct FPU* fpu, double in) {
 #define BIAS80 16383
 #define BIAS64 1023
 
-static double FPU_FLD80(U64 eind, U32 begin) {
+double FPU_FLD80(U64 eind, U32 begin) {
     S64 exp64 = (((begin & 0x7fff) - BIAS80));
     S64 blah = ((exp64 > 0) ? exp64 : -exp64) & 0x3ff;
     S64 exp64final = ((exp64 > 0) ? blah : -blah) + BIAS64;
@@ -171,7 +171,7 @@ static double FPU_FLD80(U64 eind, U32 begin) {
     //mant64= test.mant80/2***64    * 2 **53
 }
 
-static void FPU_ST80(struct CPU* cpu, int addr, int reg) {
+void FPU_ST80(struct CPU* cpu, int addr, int reg) {
     S64 value = ((struct FPU_Reg*)&cpu->fpu.regs[reg])->l;
     U16 sign80 = (value & (0x8000000000000000l)) != 0 ? 1 : 0;
     S64 exp80 = value & (0x7ff0000000000000l);
@@ -209,7 +209,7 @@ static void FPU_FLD_F64(struct FPU* fpu, U64 value, int store_to) {
 
 }
 
-static void FPU_FLD_F80(struct FPU* fpu, U64 low, U32 high) {
+void FPU_FLD_F80(struct FPU* fpu, U64 low, U32 high) {
     fpu->regs[fpu->top].d = FPU_FLD80(low, high);
 }
 
@@ -291,7 +291,7 @@ static void FPU_FST_F80(struct CPU* cpu, int addr) {
 	FPU_ST80(cpu, addr, cpu->fpu.top);
 }
 
-static void FPU_FST_I16(struct CPU* cpu, int addr) {
+void FPU_FST_I16(struct CPU* cpu, int addr) {
 	S16 value = (S16) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d));
 	writew(cpu->memory, addr, value);
 #ifdef LOG_FPU
@@ -300,7 +300,7 @@ static void FPU_FST_I16(struct CPU* cpu, int addr) {
 #endif
 }
 
-static void FPU_FST_I32(struct CPU* cpu, int addr) {
+void FPU_FST_I32(struct CPU* cpu, int addr) {
 	S32 value = (S32) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d));
 	writed(cpu->memory, addr, value);
 #ifdef LOG_FPU
@@ -309,11 +309,11 @@ static void FPU_FST_I32(struct CPU* cpu, int addr) {
 #endif
 }
 
-static void FPU_FST_I64(struct CPU* cpu, int addr) {
+void FPU_FST_I64(struct CPU* cpu, int addr) {
 	writeq(cpu->memory, addr, (S64) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
 }
 
-static void FPU_FBST(struct CPU* cpu, int addr) {
+void FPU_FBST(struct CPU* cpu, int addr) {
 	struct FPU_Reg val = cpu->fpu.regs[cpu->fpu.top];
 	U8 sign = 0;
 	double temp;
@@ -450,7 +450,7 @@ static void fpu_setFlags(struct CPU* cpu, int newFlags) {
     cpu->flags |= (newFlags & FMASK_TEST);
 }
 
-static void FPU_FCOMI(struct CPU* cpu, int st, int other) {
+void FPU_FCOMI(struct CPU* cpu, int st, int other) {
 	struct FPU* fpu = &cpu->fpu;
     if (((fpu->tags[st] != TAG_Valid) && (fpu->tags[st] != TAG_Zero)) ||
             ((fpu->tags[other] != TAG_Valid) && (fpu->tags[other] != TAG_Zero)) || isnan(fpu->regs[st].d) || isnan(fpu->regs[other].d)) {
@@ -469,7 +469,7 @@ static void FPU_FCOMI(struct CPU* cpu, int st, int other) {
     fpu_setFlags(cpu, 0);
 }
 
-static void FPU_FCOM(struct FPU* fpu, int st, int other) {
+void FPU_FCOM(struct FPU* fpu, int st, int other) {
     if (((fpu->tags[st] != TAG_Valid) && (fpu->tags[st] != TAG_Zero)) ||
             ((fpu->tags[other] != TAG_Valid) && (fpu->tags[other] != TAG_Zero)) || isnan(fpu->regs[st].d) || isnan(fpu->regs[other].d)) {
         FPU_SET_C3(fpu, 1);
@@ -495,12 +495,12 @@ static void FPU_FCOM(struct FPU* fpu, int st, int other) {
     FPU_SET_C0(fpu, 0);
 }
 
-static void FPU_FUCOM(struct FPU* fpu, int st, int other) {
+void FPU_FUCOM(struct FPU* fpu, int st, int other) {
     //does atm the same as fcom
     FPU_FCOM(fpu, st, other);
 }
 
-static void FPU_FRNDINT(struct FPU* fpu) {        
+void FPU_FRNDINT(struct FPU* fpu) {        
 	double value = fpu->regs[fpu->top].d;
     S64 temp = (S64)FROUND(fpu, value);
     fpu->regs[fpu->top].d = (double) (temp);
@@ -510,7 +510,7 @@ static void FPU_FRNDINT(struct FPU* fpu) {
 #endif
 }
 
-static void FPU_FPREM(struct FPU* fpu) {        
+void FPU_FPREM(struct FPU* fpu) {        
     double valtop = fpu->regs[fpu->top].d;
 	double valdiv = fpu->regs[STV(fpu, 1)].d;
 	S64 ressaved = (S64)( (valtop/valdiv) );
@@ -531,7 +531,7 @@ static void FPU_FPREM(struct FPU* fpu) {
 #endif
 }
 
-static void FPU_FPREM1(struct FPU* fpu) {        
+void FPU_FPREM1(struct FPU* fpu) {        
     double valtop = fpu->regs[fpu->top].d;
 	double valdiv = fpu->regs[STV(fpu, 1)].d;
 	double quot = valtop/valdiv;
@@ -547,7 +547,7 @@ static void FPU_FPREM1(struct FPU* fpu) {
 	FPU_SET_C2(fpu, 0); 
 }
 
-static void FPU_FXAM(struct FPU* fpu) {
+void FPU_FXAM(struct FPU* fpu) {
     S64 bits = fpu->regs[fpu->top].l;
     if ((bits & 0x8000000000000000l) != 0)    //sign
     {
@@ -583,25 +583,62 @@ static void FPU_FXAM(struct FPU* fpu) {
 }
 
 
-static void FPU_F2XM1(struct FPU* fpu) {
+void FPU_F2XM1(struct FPU* fpu) {
     fpu->regs[fpu->top].d = pow(2.0, fpu->regs[fpu->top].d) - 1;
 }
 
-static void FPU_FYL2X(struct FPU* fpu) {
+void FPU_FYL2X(struct FPU* fpu) {
 	fpu->regs[STV(fpu, 1)].d *= log(fpu->regs[fpu->top].d) / log(2.0);
     FPU_FPOP(fpu);
 }
 
-static void FPU_FYL2XP1(struct FPU* fpu) {
+void FPU_FPTAN(struct FPU* fpu) {
+    fpu->regs[fpu->top].d = tan(fpu->regs[fpu->top].d);
+    FPU_PUSH(fpu, 1.0);
+    FPU_SET_C2(fpu, 0);
+    //flags and such :)
+}
+
+void FPU_FPATAN(struct FPU* fpu) {
+    fpu->regs[STV(fpu,1)].d = atan2(fpu->regs[STV(fpu, 1)].d, fpu->regs[fpu->top].d);
+    FPU_FPOP(fpu);
+    //flags and such :)
+}
+
+void FPU_FYL2XP1(struct FPU* fpu) {
     fpu->regs[STV(fpu, 1)].d *= log(fpu->regs[fpu->top].d + 1.0) / log(2.0);
     FPU_FPOP(fpu);
 }
 
-static void FPU_FSCALE(struct FPU* fpu) {
+void FPU_FSQRT(struct FPU* fpu) {
+    fpu->regs[fpu->top].d = sqrt(fpu->regs[fpu->top].d);
+    //flags and such :)
+}
+
+void FPU_FSINCOS(struct FPU* fpu) {
+	double temp = fpu->regs[fpu->top].d;
+    fpu->regs[fpu->top].d = sin(temp);
+    FPU_PUSH(fpu, cos(temp));
+    FPU_SET_C2(fpu, 0);
+    //flags and such :)
+}
+
+void FPU_FSCALE(struct FPU* fpu) {
 	double value = fpu->regs[STV(fpu, 1)].d;
 	S64 chopped = (S64)value;
     fpu->regs[fpu->top].d *= pow(2.0, (double)chopped);
     //2^x where x is chopped.
+}
+
+void FPU_FSIN(struct FPU* fpu) {
+    fpu->regs[fpu->top].d = sin(fpu->regs[fpu->top].d);
+    FPU_SET_C2(fpu, 0);
+}
+
+void FPU_FCOS(struct FPU* fpu) {
+    fpu->regs[fpu->top].d = cos(fpu->regs[fpu->top].d);
+    FPU_SET_C2(fpu, 0);
+    //flags and such :)
 }
 
 static int FPU_GetTag(struct FPU* fpu) {        
@@ -613,7 +650,7 @@ static int FPU_GetTag(struct FPU* fpu) {
     return tag;
 }
 
-static void FPU_FSTENV(struct CPU* cpu, int addr) {
+void FPU_FSTENV(struct CPU* cpu, int addr) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
     if (!cpu->big) {
 		writew(cpu->memory, addr + 0, cpu->fpu.cw);
@@ -626,7 +663,7 @@ static void FPU_FSTENV(struct CPU* cpu, int addr) {
     }
 }
 
-static void FPU_FLDENV(struct CPU* cpu, int addr) {
+void FPU_FLDENV(struct CPU* cpu, int addr) {
     U32 tag;
     U32 cw;
         
@@ -644,7 +681,7 @@ static void FPU_FLDENV(struct CPU* cpu, int addr) {
     cpu->fpu.top = FPU_GET_TOP(&cpu->fpu);
 }
 
-static void FPU_FSAVE(struct CPU* cpu, int addr) {
+void FPU_FSAVE(struct CPU* cpu, int addr) {
 	int start = (cpu->big ? 28 : 14);
 	int i;
 
@@ -657,7 +694,7 @@ static void FPU_FSAVE(struct CPU* cpu, int addr) {
 	FPU_FINIT(&cpu->fpu);
 }
 
-static void FPU_FRSTOR(struct CPU* cpu, int addr) {
+void FPU_FRSTOR(struct CPU* cpu, int addr) {
 	int start = (cpu->big ? 28 : 14);
 	int i;
 
@@ -669,7 +706,7 @@ static void FPU_FRSTOR(struct CPU* cpu, int addr) {
     }
 }
 
-static void FPU_FXTRACT(struct FPU* fpu) {
+void FPU_FXTRACT(struct FPU* fpu) {
     // function stores real bias in st and
     // pushes the significant number onto the stack
     // if double ever uses a different base please correct this function
@@ -686,7 +723,7 @@ static void FPU_FCHS(struct FPU* fpu) {
     fpu->regs[fpu->top].d = -1.0 * (fpu->regs[fpu->top].d);
 }
 
-static void FPU_FABS(struct FPU* fpu) {
+void FPU_FABS(struct FPU* fpu) {
     fpu->regs[fpu->top].d = fabs(fpu->regs[fpu->top].d);
 }
 
@@ -1126,18 +1163,13 @@ void OPCALL FYL2X(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FPTAN(struct CPU* cpu, struct Op* op) {
-	cpu->fpu.regs[cpu->fpu.top].d = tan(cpu->fpu.regs[cpu->fpu.top].d);
-    FPU_PUSH(&cpu->fpu, 1.0);
-    FPU_SET_C2(&cpu->fpu, 0);
-    //flags and such :)
+	FPU_FPTAN(&cpu->fpu);    
 	CYCLES(17);
 	NEXT();
 }
 
 void OPCALL FPATAN(struct CPU* cpu, struct Op* op) {
-	cpu->fpu.regs[STV(&cpu->fpu,1)].d = atan2(cpu->fpu.regs[STV(&cpu->fpu, 1)].d, cpu->fpu.regs[cpu->fpu.top].d);
-    FPU_FPOP(&cpu->fpu);
-    //flags and such :)
+	FPU_FPATAN(&cpu->fpu);
 	CYCLES(17);
 	NEXT();
 }
@@ -1179,18 +1211,13 @@ void OPCALL FYL2XP1(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FSQRT(struct CPU* cpu, struct Op* op) {
-	cpu->fpu.regs[cpu->fpu.top].d = sqrt(cpu->fpu.regs[cpu->fpu.top].d);
-    //flags and such :)
+	FPU_FSQRT(&cpu->fpu);
 	CYCLES(70);
 	NEXT();
 }
 
 void OPCALL FSINCOS(struct CPU* cpu, struct Op* op) {
-	double temp = cpu->fpu.regs[cpu->fpu.top].d;
-    cpu->fpu.regs[cpu->fpu.top].d = sin(temp);
-    FPU_PUSH(&cpu->fpu, cos(temp));
-    FPU_SET_C2(&cpu->fpu, 0);
-    //flags and such :)
+	FPU_FSINCOS(&cpu->fpu);
 	CYCLES(17);
 	NEXT();
 }
@@ -1208,18 +1235,14 @@ void OPCALL FSCALE(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FSIN(struct CPU* cpu, struct Op* op) {
-	cpu->fpu.regs[cpu->fpu.top].d = sin(cpu->fpu.regs[cpu->fpu.top].d);
-    FPU_SET_C2(&cpu->fpu, 0);	
-    //flags and such :)
+	FPU_FSIN(&cpu->fpu);
 	CYCLES(16);
 	NEXT();
 }
 
 void OPCALL FCOS(struct CPU* cpu, struct Op* op) {
-	cpu->fpu.regs[cpu->fpu.top].d = cos(cpu->fpu.regs[cpu->fpu.top].d);
-    FPU_SET_C2(&cpu->fpu, 0);
-    //flags and such :)
-	CYCLES(80);
+	FPU_FCOS(&cpu->fpu);
+	CYCLES(16);
 	NEXT();
 }
 
@@ -1431,14 +1454,14 @@ void OPCALL FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FISTTP32_16(struct CPU* cpu, struct Op* op) {
-	writed(cpu->memory, eaa16(cpu, op), (U32) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+	writed(cpu->memory, eaa16(cpu, op), (S32)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
 void OPCALL FISTTP32_32(struct CPU* cpu, struct Op* op) {
-	writed(cpu->memory, eaa32(cpu, op), (U32) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+	writed(cpu->memory, eaa32(cpu, op), (S32)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
@@ -1753,14 +1776,14 @@ void OPCALL FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FISTTP64_16(struct CPU* cpu, struct Op* op) {
-	writeq(cpu->memory, eaa16(cpu, op), (U64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+	writeq(cpu->memory, eaa16(cpu, op), (S64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
 }
 
 void OPCALL FISTTP64_32(struct CPU* cpu, struct Op* op) {
-	writeq(cpu->memory, eaa32(cpu, op), (U64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+	writeq(cpu->memory, eaa32(cpu, op), (S64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
 	CYCLES(6);
 	NEXT();
@@ -1768,6 +1791,7 @@ void OPCALL FISTTP64_32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL FST_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
     FPU_FST_F64(cpu, eaa16(cpu, op));
+    CYCLES(2);
 	NEXT();
 }
 
@@ -2026,20 +2050,21 @@ void OPCALL FIST_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
+void FBLD_PACKED_BCD(struct CPU* cpu, U32 address) {
     U8 value[10];
-    readMemory(cpu->memory, value, eaa16(cpu, op), 10); // might generate PF, so do before we adjust the stack
+    readMemory(cpu->memory, value, address, 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FBLD(&cpu->fpu, value, cpu->fpu.top);
+}
+
+void OPCALL FBLD_PACKED_BCD_16(struct CPU* cpu, struct Op* op) {
+    FBLD_PACKED_BCD(cpu, eaa16(cpu, op));
 	CYCLES(48);
 	NEXT();
 }
 
 void OPCALL FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
-    U8 value[10];
-    readMemory(cpu->memory, value, eaa32(cpu, op), 10); // might generate PF, so do before we adjust the stack
-    FPU_PREP_PUSH(&cpu->fpu);
-    FPU_FBLD(&cpu->fpu, value, cpu->fpu.top);
+    FBLD_PACKED_BCD(cpu, eaa32(cpu, op));
 	CYCLES(48);
 	NEXT();
 }

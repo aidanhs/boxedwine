@@ -59,6 +59,7 @@ struct CPU {
 	struct Block* currentBlock;
 	U64		timeStampCounter;
 	U32     blockCounter; // number of clocks since the start of the block	
+    U32     blockInstructionCount;
 	BOOL log;
 	U32 cpl;
 };

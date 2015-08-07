@@ -152,6 +152,7 @@ void runThreadSlice(struct KThread* thread) {
 
 	cpu = &thread->cpu;
 	cpu->blockCounter = 0;
+    cpu->blockInstructionCount = 0;
 
     if (!cpu->nextBlock || cpu->nextBlock == &emptyBlock) {
         cpu->nextBlock = getBlock(cpu);
@@ -198,6 +199,7 @@ struct KThread* currentThread;
 
 U64 cpuTotalTime;
 U64 cpuTotalCycles;
+U64 cpuTotalInstructionCount;
 
 BOOL runSlice() {
 	runTimers();
@@ -220,6 +222,7 @@ BOOL runSlice() {
 		}
 		cpuTotalTime+=diff;
 		cpuTotalCycles+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
+        cpuTotalInstructionCount+=currentThread->cpu.blockInstructionCount;
 		currentThread->threadTime+=diff;
 		return TRUE;
 	}
@@ -236,5 +239,18 @@ U32 getMHz() {
 	    result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
     lastCycleCount = cpuTotalCycles;
     lastTime = cpuTotalTime;
+    return result;
+}
+
+U64 lastIPScount;
+U64 lastIPSTime;
+
+U32 getMIPS() {
+    U64 diff = cpuTotalTime-lastIPSTime;
+    U32 result = 0;
+    if (diff)
+	    result = (U32)((cpuTotalInstructionCount-lastIPScount)/diff);
+    lastIPScount = cpuTotalInstructionCount;
+    lastIPSTime = cpuTotalTime;
     return result;
 }

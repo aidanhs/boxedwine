@@ -445,7 +445,7 @@ int main(int argc, char **argv) {
 			if (lastTitleUpdate+5000 < t) {
 				char tmp[256];
 				lastTitleUpdate = t;
-				sprintf(tmp, "BoxedWine %d MHz RAM %d/%dMB opCache %dMB", getMHz(), (getPageCount()-getFreePageCount())/256, getPageCount()/256, allocatedOpMemory/1024/1024);
+				sprintf(tmp, "BoxedWine %d MIPS (%d MHz) RAM %d/%dMB opCache %dMB", getMIPS(), getMHz(), (getPageCount()-getFreePageCount())/256, getPageCount()/256, allocatedOpMemory/1024/1024);
 				fbSetCaption(tmp, "BoxedWine");
 			}
 			if (!ran)

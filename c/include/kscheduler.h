@@ -17,5 +17,6 @@ void runThreadSlice(struct KThread* thread);
 void addTimer(struct KTimer* timer);
 void removeTimer(struct KTimer* timer);
 U32 getMHz();
+U32 getMIPS();
 
 #endif

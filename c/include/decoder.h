@@ -37,7 +37,7 @@ void freeBlock(struct Block* op);
 
 #define FINISH_OP(data) data->op->eipCount=data->ip-data->start
 
-#define CYCLES(x) cpu->blockCounter += x
+#define CYCLES(x) cpu->blockCounter += x;cpu->blockInstructionCount++
 #define eaa16(cpu, op) cpu->segAddress[op->base] + (U16)(cpu->reg[op->e1].u16 + (S16)cpu->reg[op->e2].u16 + op->eData)
 #define eaa32(cpu, op) cpu->segAddress[op->base] + cpu->reg[op->e1].u32 + (cpu->reg[op->e2].u32 << + op->eSib) + op->eData
 
