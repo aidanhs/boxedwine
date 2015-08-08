@@ -259,6 +259,7 @@ void mainloop() {
         };
         t = getMilliesSinceStart();
         if (lastTitleUpdate+1000 < t) {
+            lastTitleUpdate = t;
             EM_ASM_INT({
                 document.title="BoxedWine " + $0 + " MHz";
             }, getMHz());

@@ -641,8 +641,8 @@ void exception(struct CPU* cpu, int code) {
 
 void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op);
 
-struct Op emptyOp = {emptyInstruction};
-struct Block emptyBlock = {&emptyOp, 10000}; // count is 10000, no reason to run JIT, etc
+struct Op emptyOperation = {emptyInstruction};
+struct Block emptyBlock = {&emptyOperation, 10000}; // count is 10000, no reason to run JIT, etc
 
 void threadDone(struct CPU* cpu) {
     cpu->blockCounter |= 0x80000000;

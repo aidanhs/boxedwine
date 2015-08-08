@@ -341,7 +341,7 @@
                     	}
                 	}
                 }else{
-                    createFile(dirPrefix, name, data);
+                    createFile(dirPrefix, name, Uint8Array(data));
                 }
         }
 function calcBackupFilename()
@@ -382,9 +382,8 @@ function createFolder(parent, dir)
     }
     return created;
 }
-function createFile(dir, name, data)
+function createFile(dir, name, buf)
 {
-    var buf = new Uint8Array(data);
     try{
         Module.FS_createDataFile(dir, name, buf, true, true);
         console.log("File created :" + dir + "/" + name);

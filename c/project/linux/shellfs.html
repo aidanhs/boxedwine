@@ -143,7 +143,10 @@
 		var selectedItem;
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
-        var dirPrefix = setFileDirectory();
+        //hack for some reason i can only load/save files to the windows directory!
+        var dirPrefix = "/root/home/username/.wine/drive_c/windows/";
+        var dirPrefix2 = "/root/home/username/.wine/drive_c/files/";
+        console.log("setting file directory to: "+dirPrefix);
         var useLocalStorage = setLocalStorageOption();
 		var ae = document.createElement("a");
 		document.body.appendChild(ae);
@@ -153,10 +156,22 @@
       	var progressElement = document.getElementById('progress');
       	var spinnerElement = document.getElementById('spinner');
 
+//recursive copy based on code in emularity github project
+var flag_r = { isReadable: function() { return true; },
+    isWriteable: function() { return false; },
+    isTruncating: function() { return false; },
+    isAppendable: function() { return false; },
+    isSynchronous: function() { return false; },
+    isExclusive: function() { return false; },
+    pathExistsAction: function() { return 0; },
+    pathNotExistsAction: function() { return 1; }
+};
+    
         function setGlobalArrayBuffer(arrayBuffer){
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
-            var data = new Buffer(arrayBuffer);
-            var lsfs = new BrowserFS.FileSystem.ZipFS(data);
+            var BFS = new BrowserFS.EmscriptenFS();
+            var mfs = new BrowserFS.FileSystem.MountableFileSystem();            
+            
             var writableStorage;
             if(useLocalStorage){
                 //make sure it is available
@@ -170,65 +185,107 @@
             }else{
                 writableStorage = new BrowserFS.FileSystem.InMemory();
             }
+            FS.createFolder(FS.root, 'root', true, true);
+            mfs.mount('/home', writableStorage);
+            FS.createFolder('root', 'home', true, true);
             
-            var newFs = new BrowserFS.FileSystem.OverlayFS(writableStorage, lsfs);
-            BrowserFS.initialize(newFs);  
-            newFs.initialize(function(){
-                var BFS = new BrowserFS.EmscriptenFS();
-                FS.createFolder(FS.root, 'root', true, true);
-                FS.mount(BFS, {root: '/root'}, '/root');
-                             
-                var folders = dirPrefix.split("/");
-                var parent = "";
-                var started = false;
-                for(var k=0;k<folders.length;k++){
-                    var folder = folders[k];
-                    if(folder.length > 0){
-                        if(!started){
-                             started = true;
-                             parent = "/" + folder;
-                        }else{
-                             try{
-                                Module.FS_createFolder(parent, folder, true, true);
-                             }catch(ee){//directory may already exist
-                                if(ee.message !== "File exists"){
-                                    throw ee;
-                                }
-                             }
-                             parent = parent + "/" + folder;
+            var subdirs = ['bin','boot,','dev','etc','lib','media','mnt','opt','proc','root','sbin','selinux','srv','sys','tmp','usr','var'];
+            for(var j=0;j<subdirs.length;j++){
+                var subdir = subdirs[j];
+                mfs.mount('/' + subdir, new BrowserFS.FileSystem.InMemory());
+                FS.createFolder('root', subdir, true, true);
+            }
+            BrowserFS.initialize(mfs);  
+            FS.mount(BFS, {root: '/'}, '/root');
+
+            var initCompleteFS = false;
+
+            var data = new Buffer(arrayBuffer);
+            //I use ZipFS merely to unzip (faster than jszip)
+            var zipfs = new BrowserFS.FileSystem.ZipFS(data);
+            recursiveCopy(zipfs, '/');
+            zipfs = null;
+            var folders = dirPrefix2.split("/");
+            var parent = "";
+            var started = false;
+            for(var k=0;k<folders.length;k++){
+                var folder = folders[k];
+                if(folder.length > 0){
+                    if(!started){
+                        started = true;
+                        parent = "/" + folder;
+                    }else{
+                        try{
+                            Module.FS_createFolder(parent, folder, true, true);
+                        }catch(ee){//directory may already exist
+                            if(ee.message !== "File exists"){
+                                throw ee;
+                            }
                         }
+                        parent = parent + "/" + folder;
                     }
                 }
-                Module["removeRunDependency"]("datafile_boxedwine.data");             
-            });            
+            }
+            Module["removeRunDependency"]("datafile_boxedwine.data");             
         }
-    
+    function recursiveCopy(fs, filename) {
+        var path = BrowserFS.BFSRequire('path');
+        copyDirectory(filename);
+        function copyDirectory(filename) {
+            createFolderFromZip(filename);
+            fs.readdirSync(filename).forEach(function(item) {
+                var file = path.resolve(filename, item);
+                if (fs.statSync(file).isDirectory()) {
+                    copyDirectory(file);
+                } else {
+                    copyFile(file);
+                }
+            });
+        }
+        function copyFile(filename) {
+            var contents = fs.readFileSync(filename, null, flag_r);
+            createFileFromZip(filename, contents.data.buff.buffer);
+        }
+    }
+    function createFileFromZip(filename, contents)
+    {
+        var parent =  extractFirstPartOfPath(filename) ;
+        var filename = extractLastPartOfPath(filename);
+        var buf = new Uint8Array(contents);
+        try{
+            Module.FS_createDataFile(parent, filename, buf, true, true);
+        }catch(ef){
+            if(ef.message != "File exists"){
+                console.log("file creation error:" + ef.message + " for: " + parent + "/" + filename);
+            }
+        }
+    }
+    function createFolderFromZip(fullPath)
+    {
+        var parent = extractFirstPartOfPath(fullPath);
+        var dir = extractLastPartOfPath(fullPath);
+        if(parent.length > 0 && parent != "root"){
+            try{
+                FS.createFolder("/" + parent, dir, true, true);
+            }catch(ef){
+                if(ef.message != "File exists"){
+                    console.log("Directory creation error:" + ef.message+" for: " + parent + "/" +  dir);
+                }
+            }
+        }
+    }
         function setLocalStorageOption(){
-            var usingLS = false;
+            var usingLS = true;
             var localStore =  getParameter("localStorage").toUpperCase();
-            //default is off because all browsers are crap
-            if(localStore==="TRUE" || localStore==="on" || localStore==="Y"|| localStore==="YES"){
+            if(localStore==="TRUE" || localStore==="ON" || localStore==="Y"|| localStore==="YES"){
                 usingLS = true;
+            }else if(localStore==="FALSE" || localStore==="OFF" || localStore==="N"|| localStore==="NO"){
+                usingLS = false;
             }
             console.log("Use Local Storage:"+usingLS);
             return usingLS;
         }
     
-        function setFileDirectory(){
-            
-            var dir =  getParameter("dir");
-            if(dir===""){
-                //dir = "/root/";
-                //dir = "/root/user/files/";
-                dir = "/root/home/username/.wine/drive_c/files/";
-            }else{
-                if(!dir.endsWith("/")){
-                    dir = dir + "/";
-                }
-            }
-            console.log("setting file directory to: "+dir);
-            return dir;
-        }
         var initialSetup = function(){
             console.log("running initial setup");
             spinnerElement.style.display = 'none';
@@ -253,7 +310,7 @@
       var Module = {
         logReadFiles : false, //enable if you want to prune with Reduce utility
         preRun: [initialSetup],
-        arguments: ["-m", getMemoryAllocation()],
+        arguments: ["-root", "/root", "-m", getMemoryAllocation()],
         postRun: [],
         print: (function() {
           var element = document.getElementById('output');
@@ -384,7 +441,7 @@
                     	}
                 	}
                 }else{
-                    createFile(dirPrefix, name, data);
+                    createFile(dirPrefix, name, new Uint8Array(data));
                 }
         }
 function calcBackupFilename()
@@ -425,9 +482,8 @@ function createFolder(parent, dir)
     }
     return created;
 }
-function createFile(dir, name, data)
+function createFile(dir, name, buf)
 {
-    var buf = new Uint8Array(data);
     try{
         Module.FS_createDataFile(dir, name, buf, true, true);
         console.log("File created :" + dir + "/" + name);
