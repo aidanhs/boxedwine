@@ -1322,11 +1322,9 @@ void OPCALL imul8_reg(struct CPU* cpu, struct Op* op) {
 	AX = (S16)((S8)AL) * (S8)(*cpu->reg8[op->r1]);
     fillFlagsNoCFOF(cpu);
     if ((S16)AX<-128 || (S16)AX>127) {
-        addFlag(CF);
-		addFlag(OF);
+        cpu->flags|=CF|OF;
     } else {
-		removeFlag(CF);
-		removeFlag(OF);
+		cpu->flags&=~(CF|OF);
     }
 	CYCLES(11);
 	NEXT();
@@ -1356,7 +1354,7 @@ void OPCALL imul8_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL div8(struct CPU* cpu, U8 src) {
+void div8(struct CPU* cpu, U8 src) {
 	U16 quo;
 	U8 rem;
 
@@ -1390,7 +1388,7 @@ void OPCALL div8_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL idiv8(struct CPU* cpu, S8 src) {
+void idiv8(struct CPU* cpu, S8 src) {
 	S16 quo;
 	S8 quo8;
 	S8 rem;

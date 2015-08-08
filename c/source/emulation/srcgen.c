@@ -4402,7 +4402,39 @@ void gen0dc(struct Op* op) {
         out("d2l.l = readq(cpu->memory, ");
         out(getEaa16(op));
         out(");cpu->fpu.regs[cpu->fpu.top].d = d2l.d / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
-    }else {
+    } else if (op->func == FADD_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d += d2l.d; CYCLES(1);");
+    } else if (op->func == FMUL_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d *= d2l.d; CYCLES(1);");
+    } else if (op->func == FCOM_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[8].d = d2l.d; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); CYCLES(1);");
+    } else if (op->func == FCOM_DOUBLE_REAL_32_Pop) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[8].d = d2l.d; FPU_FCOM(&cpu->fpu, cpu->fpu.top, 8); FPU_FPOP(cpu); CYCLES(1);");
+    } else if (op->func == FSUB_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d -= d2l.d; CYCLES(1);");
+    } else if (op->func == FSUBR_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = d2l.d - cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else if (op->func == FDIV_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d /= d2l.d; CYCLES(1);");
+    } else if (op->func == FDIVR_DOUBLE_REAL_32) {
+        out("d2l.l = readq(cpu->memory, ");
+        out(getEaa32(op));
+        out(");cpu->fpu.regs[cpu->fpu.top].d = d2l.d / cpu->fpu.regs[cpu->fpu.top].d; CYCLES(39);");
+    } else {
         kpanic("gen0dc");
     }
 }
@@ -4450,11 +4482,11 @@ void gen0dd(struct Op* op) {
     } else if (op->func == FUCOM_STi) {
         out("FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
         out(tmp);
-        out(")); FPU_FPOP(cpu); CYCLES(1);");
+        out(")); CYCLES(1);");
     } else if (op->func == FUCOM_STi_Pop) {
         out("FPU_FUCOM(&cpu->fpu, cpu->fpu.top, STV(&cpu->fpu, ");
         out(tmp);
-        out(")); FPU_FPOP(cpu); FPU_FPOP(cpu); CYCLES(1);");
+        out(")); FPU_FPOP(cpu); CYCLES(1);");
     } else if (op->func == FLD_DOUBLE_REAL_16) {
         out("d2l.l = readq(cpu->memory, ");
         out(getEaa16(op));
@@ -4728,6 +4760,251 @@ void gen0df(struct Op* op) {
     }
 }
 
+void OPCALL loopnz16(struct CPU* cpu, struct Op* op);
+void OPCALL loopnz32(struct CPU* cpu, struct Op* op);
+void gen0e0(struct Op* op) {
+    char tmp[16];
+
+    if (op->func == loopnz16) {
+        out("CX--; if (CX!=0 && !getZF(cpu)) {cpu->eip.u32+=");
+    } else if (op->func == loopnz32) {
+        out("ECX--; if (ECX!=0 && !getZF(cpu)) {cpu->eip.u32+=");
+    } else {
+        kpanic("gen0e0");
+    }
+    itoa(op->eipCount+op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
+    itoa(op->eipCount, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu);} CYCLES(7);");
+}
+
+void OPCALL loopz16(struct CPU* cpu, struct Op* op);
+void OPCALL loopz32(struct CPU* cpu, struct Op* op);
+void gen0e1(struct Op* op) {
+    char tmp[16];
+
+    if (op->func == loopz16) {
+        out("CX--; if (CX!=0 && getZF(cpu)) {cpu->eip.u32+=");
+    } else if (op->func == loopz32) {
+        out("ECX--; if (ECX!=0 && getZF(cpu)) {cpu->eip.u32+=");
+    } else {
+        kpanic("gen0e1");
+    }
+    itoa(op->eipCount+op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
+    itoa(op->eipCount, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu);} CYCLES(7);");
+}
+
+void OPCALL loop16(struct CPU* cpu, struct Op* op);
+void OPCALL loop32(struct CPU* cpu, struct Op* op);
+void gen0e2(struct Op* op) {
+    char tmp[16];
+
+    if (op->func == loop16) {
+        out("CX--; if (CX!=0) {cpu->eip.u32+=");
+    } else if (op->func == loop32) {
+        out("ECX--; if (ECX!=0) {cpu->eip.u32+=");
+    } else {
+        kpanic("gen0e2");
+    }
+    itoa(op->eipCount+op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
+    itoa(op->eipCount, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu);} CYCLES(7);");
+}
+
+void OPCALL jcxz16(struct CPU* cpu, struct Op* op);
+void OPCALL jcxz32(struct CPU* cpu, struct Op* op);
+void gen0e3(struct Op* op) {
+    char tmp[16];
+
+    if (op->func == jcxz16) {
+        out("if (CX==0) {cpu->eip.u32+=");
+    } else if (op->func == jcxz32) {
+        out("if (ECX==0) {cpu->eip.u32+=");
+    } else {
+        kpanic("gen0e3");
+    }
+    itoa(op->eipCount+op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
+    itoa(op->eipCount, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu);} CYCLES(7);");
+}
+
+void gen0e8(struct Op* op) {
+    char tmp[16];
+    itoa(op->eipCount, tmp, 10);
+    out("push16(cpu, cpu->eip.u32 + ");
+    out(tmp);
+    out("); cpu->eip.u32 += ");
+    out(tmp);
+    out(" + ");
+    itoa(op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu); CYCLES(1);");
+}
+
+void gen2e8(struct Op* op) {
+    char tmp[16];
+    itoa(op->eipCount, tmp, 10);
+    out("push32(cpu, cpu->eip.u32 + ");
+    out(tmp);
+    out("); cpu->eip.u32 += ");
+    out(tmp);
+    out(" + ");
+    itoa(op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu); CYCLES(1);");
+}
+
+void gen0e9(struct Op* op) {
+    char tmp[16];
+    itoa(op->eipCount, tmp, 10);
+    out("cpu->eip.u32 += ");
+    out(tmp);
+    out(" + ");
+    itoa(op->data1, tmp, 10);
+    out(tmp);
+    out("; cpu->nextBlock = getBlock1(cpu); CYCLES(1);");
+}
+
+void gen0f5(struct Op* op) {
+    out("fillFlags(cpu); setCF(cpu, !(cpu->flags & CF)); CYCLES(2);");
+}
+
+void OPCALL test8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL test8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL test8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL not8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL not8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL not8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL neg8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL neg8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL neg8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL mul8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL mul8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL mul8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL imul8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL imul8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL imul8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL div8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL div8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL div8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL idiv8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL idiv8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL idiv8_mem32(struct CPU* cpu, struct Op* op);
+void gen0f6(struct Op* op) {
+    char data[16];
+
+    itoa(op->data1, data, 16);
+
+    if (op->func == test8_reg) {
+        out("cpu->dst.u8 = ");
+        out(r8(op->r1));
+        out("; cpu->src.u8 = 0x");
+        out(data);
+        out("; cpu->result.u8 = cpu->dst.u8 & cpu->src.u8; cpu->lazyFlags = FLAGS_TEST8; CYCLES(1);");
+    } else if (op->func == test8_mem16) {
+        out("cpu->dst.u8 = readb(cpu->memory, ");
+        out(getEaa16(op));
+        out("); cpu->src.u8 = 0x");
+        out(data);
+        out("; cpu->result.u8 = cpu->dst.u8 & cpu->src.u8; cpu->lazyFlags = FLAGS_TEST8; CYCLES(2);");
+    } else if (op->func == test8_mem32) {
+        out("cpu->dst.u8 = readb(cpu->memory, ");
+        out(getEaa32(op));
+        out("); cpu->src.u8 = 0x");
+        out(data);
+        out("; cpu->result.u8 = cpu->dst.u8 & cpu->src.u8; cpu->lazyFlags = FLAGS_TEST8; CYCLES(2);");
+    } else if (op->func == not8_reg) {
+        out(r8(op->r1));
+        out(" = ~ ");
+        out(r8(op->r1));
+	    out("; CYCLES(1);");
+    } else if (op->func == not8_mem16) {
+        out("eaa = ");
+        out(getEaa16(op));
+        out("; writeb(cpu->memory, eaa, ~readb(cpu->memory, eaa)); CYCLES(3);");
+    } else if (op->func == not8_mem32) {
+        out("eaa = ");
+        out(getEaa32(op));
+        out("; writeb(cpu->memory, eaa, ~readb(cpu->memory, eaa)); CYCLES(3);");
+    } else if (op->func == neg8_reg) {
+        out("cpu->dst.u8 = ");
+        out(r8(op->r1));
+	    out("; cpu->result.u8 = 0-cpu->dst.u8; ");
+	    out(r8(op->r1));
+        out(" = cpu->result.u8; cpu->lazyFlags = FLAGS_NEG8; CYCLES(1);");
+    } else if (op->func == neg8_mem16) {
+        out("eaa = ");
+        out(getEaa16(op));
+        out("; cpu->dst.u8 = readb(cpu->memory, eaa); cpu->result.u8 = 0-cpu->dst.u8; writeb(cpu->memory, eaa, cpu->result.u8); cpu->lazyFlags = FLAGS_NEG8; CYCLES(3);");
+    } else if (op->func == neg8_mem32) {
+        out("eaa = ");
+        out(getEaa32(op));
+        out("; cpu->dst.u8 = readb(cpu->memory, eaa); cpu->result.u8 = 0-cpu->dst.u8; writeb(cpu->memory, eaa, cpu->result.u8); cpu->lazyFlags = FLAGS_NEG8; CYCLES(3);");
+    } else if (op->func == mul8_reg) {
+        out("AX = AL * ");
+        out(r8(op->r1));
+        out("; fillFlagsNoCFOF(cpu); if (AX>0xFF) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
+    } else if (op->func == mul8_mem16) {
+        out("AX = AL * readb(cpu->memory, ");
+        out(getEaa16(op));
+        out("); fillFlagsNoCFOF(cpu); if (AX>0xFF) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
+    } else if (op->func == mul8_mem32) {
+        out("AX = AL * readb(cpu->memory, ");
+        out(getEaa32(op));
+        out("); fillFlagsNoCFOF(cpu); if (AX>0xFF) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
+    } else if (op->func == imul8_reg) {
+        out("AX = (S16)((S8)AL) * (S8)(");
+        out(r8(op->r1));
+        out("); fillFlagsNoCFOF(cpu);if ((S16)AX<-128 || (S16)AX>127) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
+    } else if (op->func == imul8_mem16) {
+        out("AX = (S16)((S8)AL) * (S8)readb(cpu->memory, ");
+        out(getEaa16(op));
+        out("); fillFlagsNoCFOF(cpu); if ((S16)AX<-128 || (S16)AX>127) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
+    } else if (op->func == imul8_mem32) {
+        out("AX = (S16)((S8)AL) * (S8)readb(cpu->memory, ");
+        out(getEaa32(op));
+        out("); fillFlagsNoCFOF(cpu); if ((S16)AX<-128 || (S16)AX>127) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
+    } else if (op->func == div8_reg) {
+        out("div8(cpu, ");
+        out(r8(op->r1));
+        out("); CYCLES(17);");
+    } else if (op->func == div8_mem16) {
+        out("div8(cpu, readb(cpu->memory, ");
+        out(getEaa16(op));
+        out(")); CYCLES(17);");
+    } else if (op->func == div8_mem32) {
+        out("div8(cpu, readb(cpu->memory, ");
+        out(getEaa32(op));
+        out(")); CYCLES(17);");
+    } else if (op->func == idiv8_reg) {
+        out("idiv8(cpu, (S8)");
+        out(r8(op->r1));
+        out("); CYCLES(17);");
+    } else if (op->func == idiv8_mem16) {
+        out("idiv8(cpu, (S8)readb(cpu->memory, ");
+        out(getEaa16(op));
+        out(")); CYCLES(17);");
+    } else if (op->func == idiv8_mem32) {
+        out("idiv8(cpu, (S8)readb(cpu->memory, ");
+        out(getEaa32(op));
+        out(")); CYCLES(17);");
+    } else {
+        kpanic("gen0f6");
+    }
+}
+
 typedef void (*SRC_GEN)(struct Op* op);
 
 SRC_GEN srcgen[] = {
@@ -4761,9 +5038,9 @@ SRC_GEN srcgen[] = {
 	0, gen0c9, 0, gen0cb, 0, gen0cd, 0, 0,
 	gen0c0, gen0c1, gen0d2, gen0d3, gen0d4, gen0d5, gen0d6, gen0d7,
 	gen0d8, gen0d9, gen0da, gen0db, gen0dc, gen0dd, gen0de, gen0df,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	gen0e0, gen0e1, gen0e2, gen0e3, 0, 0, 0, 0,
+	gen0e8, gen0e9, 0, gen0e9, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, gen0f5, gen0f6, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
     // 100
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -4829,9 +5106,9 @@ SRC_GEN srcgen[] = {
 	0, gen2c9, 0, 0, 0, 0, 0, 0,
 	gen0c0, gen2c1, gen0d2, gen2d3, gen0d4, gen0d5, gen0d6, gen0d7,
 	gen0d8, gen0d9, gen0da, gen0db, gen0dc, gen0dd, gen0de, gen0df,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	gen0e0, gen0e1, gen0e2, gen0e3, 0, 0, 0, 0,
+	gen2e8, gen0e9, 0, gen0e9, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, gen0f5, gen0f6, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
     // 300
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -5019,6 +5296,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         sourceBuffer = kalloc(sourceBufferLen)       ;
         sourceBufferPos = 0;
         OUT_DEFINE(U8);
+        OUT_DEFINE(S8);
         OUT_DEFINE(U16);
         OUT_DEFINE(U32);
         OUT_DEFINE(S32);
@@ -5370,6 +5648,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("void FBLD_PACKED_BCD(struct CPU* cpu, U32 address);\n");
         out("void FPU_FBST(struct CPU* cpu, int addr);\n");
         out("void FPU_FST_I64(struct CPU* cpu, int addr);\n");
+        out("void div8(struct CPU* cpu, U8 src);\n");
+        out("void idiv8(struct CPU* cpu, S8 src);\n");
 
         out("#define TAG_Valid 0\n");
         out("#define TAG_Zero 1\n");
