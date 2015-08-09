@@ -5005,6 +5005,10 @@ void gen0f6(struct Op* op) {
     }
 }
 
+void gen400(struct Op* op) {
+    out("cpu->nextBlock = getBlock1(cpu);");
+}
+
 typedef void (*SRC_GEN)(struct Op* op);
 
 SRC_GEN srcgen[] = {
@@ -5144,7 +5148,7 @@ SRC_GEN srcgen[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-    0,
+    gen400,
 };
 
 static int generatedBlocks;
@@ -5298,6 +5302,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(U8);
         OUT_DEFINE(S8);
         OUT_DEFINE(U16);
+        OUT_DEFINE(S16);
         OUT_DEFINE(U32);
         OUT_DEFINE(S32);
         OUT_DEFINE(U64);

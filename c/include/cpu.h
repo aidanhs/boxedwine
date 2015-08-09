@@ -132,7 +132,7 @@ extern struct CPU c;
 #define DL cpu->reg[2].u8
 #define DH cpu->reg[2].h8
 #define BL cpu->reg[3].u8
-#define BH cpu->reg[4].h8
+#define BH cpu->reg[3].h8
 
 #define AX cpu->reg[0].u16
 #define CX cpu->reg[1].u16
