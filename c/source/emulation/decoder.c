@@ -2040,13 +2040,13 @@ DECODER decoder[1024] = {
 	decode140, decode141, decode142, decode143, decode144, decode145, decode146, decode147,
 	decode148, decode149, decode14a, decode14b, decode14c, decode14d, decode14e, decode14f,
 	// 150
-	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 160
-	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 170
-	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 180
 	decode180, decode181, decode180, decode183, decode184, decode185, decode186, decode187,
@@ -2122,13 +2122,13 @@ DECODER decoder[1024] = {
 	decode340, decode341, decode342, decode343, decode344, decode345, decode346, decode347,
 	decode348, decode349, decode34a, decode34b, decode34c, decode34d, decode34e, decode34f,
 	// 350
-	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 360
-	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 370
-	invalidOp, decode131, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 	// 380
 	decode380, decode381, decode382, decode383, decode384, decode385, decode386, decode387,

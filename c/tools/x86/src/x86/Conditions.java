@@ -89,6 +89,74 @@ public class Conditions extends Base {
         }
     }
 
+    public void gensrc(FileOutputStream fos) throws IOException {
+        condsrc(fos, "140", "O", "getOF(cpu)", 16);
+        condsrc(fos, "340", "O", "getOF(cpu)", 32);
+        condsrc(fos, "141", "NO", "!getOF(cpu)", 16);
+        condsrc(fos, "341", "NO", "!getOF(cpu)", 32);
+        condsrc(fos, "142", "B", "getCF(cpu)", 16);
+        condsrc(fos, "342", "B", "getCF(cpu)", 32);
+        condsrc(fos, "143", "NB", "!getCF(cpu)", 16);
+        condsrc(fos, "343", "NB", "!getCF(cpu)", 32);
+        condsrc(fos, "144", "Z", "getZF(cpu)", 16);
+        condsrc(fos, "344", "Z", "getZF(cpu)", 32);
+        condsrc(fos, "145", "NZ", "!getZF(cpu)", 16);
+        condsrc(fos, "345", "NZ", "!getZF(cpu)", 32);
+        condsrc(fos, "146", "BE", "getZF(cpu) || getCF(cpu)", 16);
+        condsrc(fos, "346", "BE", "getZF(cpu) || getCF(cpu)", 32);
+        condsrc(fos, "147", "NBE", "!getZF(cpu) && !getCF(cpu)", 16);
+        condsrc(fos, "347", "NBE", "!getZF(cpu) && !getCF(cpu)", 32);
+        condsrc(fos, "148", "S", "getSF(cpu)", 16);
+        condsrc(fos, "348", "S", "getSF(cpu)", 32);
+        condsrc(fos, "149", "NS", "!getSF(cpu)", 16);
+        condsrc(fos, "349", "NS", "!getSF(cpu)", 32);
+        condsrc(fos, "14a", "P", "getPF(cpu)", 16);
+        condsrc(fos, "34a", "P", "getPF(cpu)", 32);
+        condsrc(fos, "14b", "NP",  "!getPF(cpu)", 16);
+        condsrc(fos, "34b", "NP",  "!getPF(cpu)", 32);
+        condsrc(fos, "14c", "L", "getSF(cpu)!=getOF(cpu)", 16);
+        condsrc(fos, "34c", "L", "getSF(cpu)!=getOF(cpu)", 32);
+        condsrc(fos, "14d", "NL", "getSF(cpu)==getOF(cpu)", 16);
+        condsrc(fos, "34d", "NL", "getSF(cpu)==getOF(cpu)", 32);
+        condsrc(fos, "14e", "LE", "getZF(cpu) || getSF(cpu)!=getOF(cpu)", 16);
+        condsrc(fos, "34e", "LE", "getZF(cpu) || getSF(cpu)!=getOF(cpu)", 32);
+        condsrc(fos, "14f", "NLE", "!getZF(cpu) && getSF(cpu)==getOF(cpu)", 16);
+        condsrc(fos, "34f", "NLE", "!getZF(cpu) && getSF(cpu)==getOF(cpu)", 32);
+    }
+
+    public void condsrc(FileOutputStream fos, String inst, String c, String cond, int bits) throws IOException {
+        String width = "w";
+        if (bits==32)
+            width = "d";
+
+        out(fos, "void OPCALL cmov"+c+"_"+bits+"_reg(struct CPU* cpu, struct Op* op);");
+        out(fos, "void OPCALL cmov"+c+"_"+bits+"_mem16(struct CPU* cpu, struct Op* op);");
+        out(fos, "void OPCALL cmov"+c+"_"+bits+"_mem32(struct CPU* cpu, struct Op* op);");
+        out(fos, "void gen"+inst+"(struct Op* op) {");
+        out(fos, "    if (op->func == cmov"+c+"_"+bits+"_reg) {");
+        out(fos, "        out(\"if ("+cond+") {\");");
+        out(fos, "        out(r"+bits+"(op->r1));");
+        out(fos, "        out(\" = \");");
+        out(fos, "        out(r"+bits+"(op->r2));");
+        out(fos, "        out(\";} CYCLES(1);\");");
+        out(fos, "    } else if (op->func == cmov"+c+"_"+bits+"_mem16) {");
+        out(fos, "        out(\"if ("+cond+") {\");");
+        out(fos, "        out(r"+bits+"(op->r1));");
+        out(fos, "        out(\" = read"+width+"(cpu->memory, \");");
+        out(fos, "        out(getEaa16(op));");
+        out(fos, "        out(\");} CYCLES(1);\");");
+        out(fos, "    } else if (op->func == cmov"+c+"_"+bits+"_mem32) {");
+        out(fos, "        out(\"if ("+cond+") {\");");
+        out(fos, "        out(r"+bits+"(op->r1));");
+        out(fos, "        out(\" = read"+width+"(cpu->memory, \");");
+        out(fos, "        out(getEaa32(op));");
+        out(fos, "        out(\");} CYCLES(1);\");");
+        out(fos, "    } else {");
+        out(fos, "        kpanic(\"gen"+inst+"\");");
+        out(fos, "    }");
+        out(fos, "}");
+    }
+
     public void condition(FileOutputStream fos, String name, String condition) throws IOException {
         out(fos, "void OPCALL "+name+"_16_reg(struct CPU* cpu, struct Op* op) {");
         out(fos, "    if ("+condition+") {");

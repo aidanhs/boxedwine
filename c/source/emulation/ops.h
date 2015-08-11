@@ -1762,7 +1762,7 @@ void OPCALL imul32_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL div32(struct CPU* cpu, U32 src) {	
+void div32(struct CPU* cpu, U32 src) {	
 	U64 num = ((U64)EDX << 32) | EAX;
 	U64 quo;
 	U32 rem;
@@ -1798,7 +1798,7 @@ void OPCALL div32_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL idiv32(struct CPU* cpu, S32 src) {
+void idiv32(struct CPU* cpu, S32 src) {
 	S64 num = (S64)(((U64)EDX << 32) | EAX);
 	S64 quo;
 	S32 rem;
