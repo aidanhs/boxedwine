@@ -201,7 +201,7 @@ public class Decoder extends Base {
         decodeFunc(fos, "PUSH FS", "3a0", "pushSeg32", "FS");
         decodeFunc(fos, "POP FS", "1a1", "popSeg16", "FS");
         decodeFunc(fos, "POP FS", "3a1", "popSeg32", "FS");
-        decodeFunc(fos, "1a2", "cpuid", "CPUID");
+        decodeFunc(fos, "1a2", "cpuid_op", "CPUID");
         eg(fos, "1a3", "bt", 16);
         eg(fos, "3a3", "bt", 32);
         eg(fos, "1a4", "dshl", 16, "    data->op->data1 = FETCH8(data);\r\n    data->op->data1 &= 0x1f;\r\n    if (data->op->data1 == 0) {\r\n        RESTART(data);\r\n    }");

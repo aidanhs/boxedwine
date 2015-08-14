@@ -2367,9 +2367,7 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
     if (index) {
         sFlag = subOpInfo[index][op->subInst].setsFlags;
     }
-    // if this op does even set the flag, no reason to search for it
-    if ((sFlag & flag)==0)
-        return 0;
+
     op = op->next;
     while (op) {
         U16 gFlag = opInfo[op->inst].getsFlags;        
@@ -2409,8 +2407,33 @@ OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen);
 #endif
 
 void jit(struct CPU* cpu, U32 eip, struct Block* block) {
-    struct Op* op = block->ops;
+    struct Op* op;
     
+#ifdef AOT
+    U32 i;
+    U32 opPos=0;
+    unsigned char ops[1024];
+    U32 ip = eip;
+    U32 crc;
+    OpCallback func = 0;
+
+    op = block->ops;
+    while (op) {
+        for (i=0;i<op->eipCount;i++)
+            ops[opPos++] = readb(cpu->memory, ip++);
+        op = op->next;
+    }
+    crc = crc32b(ops, opPos);
+    func = getCompiledFunction(crc, ops, opPos);
+    if (func) {
+        block->ops->func = func;
+        freeOp(block->ops->next);
+        block->ops->next = 0;            
+        return;
+    }
+#endif
+
+    op = block->ops;
     while (op) {
         U16 sFlags = opInfo[op->inst].setsFlags;
         U16 index = sFlags >> 12;
@@ -2424,30 +2447,7 @@ void jit(struct CPU* cpu, U32 eip, struct Block* block) {
                 } else
                     klog("Found op that doesn't need flags: %x", op->inst);
             }
-        } /* Messes with the recompiler
-          else if (op->func == pushReg32) {
-            if (op->next && op->next->func == pushReg32) {
-                struct Op* removedOp = op->next;
-
-                op->r2 = op->next->r1;
-                op->func = push2Reg32;    
-                op->eipCount+=op->next->eipCount;
-                op->next = op->next->next;
-                removedOp->next = 0; // don't free all of them
-                freeOp(removedOp);
-            }
-        } else if (op->func == popReg32) {
-            if (op->next && op->next->func == popReg32) {
-                struct Op* removedOp = op->next;
-
-                op->r2 = op->next->r1;
-                op->func = pop2Reg32;    
-                op->eipCount+=op->next->eipCount;
-                op->next = op->next->next;
-                removedOp->next = 0; // don't free all of them
-                freeOp(removedOp);
-            }
-        }*/
+        }
         op = op->next;
     }
 #ifdef GENERATE_SOURCE
@@ -2455,29 +2455,4 @@ void jit(struct CPU* cpu, U32 eip, struct Block* block) {
         generateSource(cpu, eip, block);
 #endif
 
-#ifdef AOT
-    {
-        U32 i;
-        U32 opPos=0;
-        unsigned char ops[1024];
-        U32 ip = eip;
-        U32 crc;
-        OpCallback func = 0;
-
-        op = block->ops;
-        while (op) {
-            for (i=0;i<op->eipCount;i++)
-                ops[opPos++] = readb(cpu->memory, ip++);
-            op = op->next;
-        }
-        crc = crc32b(ops, opPos);
-        func = getCompiledFunction(crc, ops, opPos);
-        if (func) {
-            block->ops->func = func;
-            freeOp(block->ops->next);
-            block->ops->next = 0;            
-        }
-    }
-
-#endif
 }

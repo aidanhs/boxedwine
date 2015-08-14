@@ -852,13 +852,13 @@ void OPCALL movxz16r32r32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL movxz16r32e32_16(struct CPU* cpu, struct Op* op) {
 	cpu->reg[op->r1].u32 = readw(cpu->memory, eaa16(cpu, op));
-	CYCLES(1);
+	CYCLES(3);
 	NEXT();
 }
 
 void OPCALL movxz16r32e32_32(struct CPU* cpu, struct Op* op) {
 	cpu->reg[op->r1].u32 = readw(cpu->memory, eaa32(cpu, op));
-	CYCLES(1);
+	CYCLES(3);
 	NEXT();
 }
 
@@ -2024,7 +2024,7 @@ void OPCALL rdtsc(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL cpuid(struct CPU* cpu, struct Op* op) {
+void cpuid(struct CPU* cpu) {
 	switch (EAX) {
         case 0:	/* Vendor ID String and maximum level? */
             EAX=1;  /* Maximum level */
@@ -2053,6 +2053,10 @@ void OPCALL cpuid(struct CPU* cpu, struct Op* op) {
             EDX=0;
             break;
     }
+}
+
+void OPCALL cpuid_op(struct CPU* cpu, struct Op* op) {
+	cpuid(cpu);
 	CYCLES(14);
 	NEXT();
 }

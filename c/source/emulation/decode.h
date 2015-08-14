@@ -4330,7 +4330,7 @@ void decode3a1(struct DecodeData* data) {
 }
 // CPUID
 void decode1a2(struct DecodeData* data) {
-    data->op->func = cpuid;
+    data->op->func = cpuid_op;
     LOG_OP("CPUID");
     NEXT_OP(data);
 }
