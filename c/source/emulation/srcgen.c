@@ -2013,74 +2013,98 @@ void gen0c0(struct Op* op) {
         out(r8(op->r1));
         out(" << ");
         out(value);
-        out(") | (");
-        out(r8(op->r1));
-        out(" >> (9 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1)); CYCLES(8);");
+        if (op->data1 == 1) {
+            out(") | getCF(cpu); CYCLES(8);");
+        } else {
+            out(") | (");
+            out(r8(op->r1));
+            out(" >> (9 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1)); CYCLES(8);");
+        }
     } else if (op->func == rcl8_mem16_noflags) {
         out("eaa = ");
         out(getEaa16(op));
         out("; tmp8 = readb(cpu->memory, eaa); writeb(cpu->memory, eaa, (tmp8 << ");
         out(value);
-        out(") | (");
-        out(r8(op->r1));
-        out(" >> (9 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1))); CYCLES(10);");
+        if (op->data1 == 1) {
+            out(") | getCF(cpu); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r8(op->r1));
+            out(" >> (9 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1)); CYCLES(10);");
+        }
     } else if (op->func == rcl8_mem32_noflags) {
         out("eaa = ");
         out(getEaa32(op));
         out("; tmp8 = readb(cpu->memory, eaa); writeb(cpu->memory, eaa, (tmp8 << ");
         out(value);
-        out(") | (");
-        out(r8(op->r1));
-        out(" >> (9 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1))); CYCLES(10);");
+        if (op->data1 == 1) {
+            out(") | getCF(cpu); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r8(op->r1));
+            out(" >> (9 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1)); CYCLES(10);");
+        }
     } else if (op->func == rcr8_reg_noflags) {
         out(r8(op->r1));
         out(" = (");
         out(r8(op->r1));
         out(" >> ");
         out(value);
-        out(") | (");
-        out(r8(op->r1));
-        out(" << (9 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (8 - ");
-        out(value);
-        out(")); CYCLES(8);");
+        if (op->data1 == 1) {
+            out(") | (getCF(cpu) << 7); CYCLES(8);");
+        } else {
+            out(") | (");
+            out(r8(op->r1));
+            out(" << (9 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (8 - ");
+            out(value);
+            out(")); CYCLES(8);");
+        }
     } else if (op->func == rcr8_mem16_noflags) {
         out("eaa = ");
         out(getEaa16(op));
         out("; tmp8 = readb(cpu->memory, eaa); writeb(cpu->memory, eaa, (tmp8 >> ");
         out(value);
-        out(") | (");
-        out(r8(op->r1));
-        out(" << (9 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (8 - ");
-        out(value);
-        out("))); CYCLES(10);");        
+        if (op->data1 == 1) {
+            out(") | (getCF(cpu) << 7); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r8(op->r1));
+            out(" << (9 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (8 - ");
+            out(value);
+            out(")); CYCLES(10);");
+        }       
     } else if (op->func == rcr8_mem32_noflags) {
         out("eaa = ");
         out(getEaa32(op));
         out("; tmp8 = readb(cpu->memory, eaa); writeb(cpu->memory, eaa, (tmp8 >> ");
         out(value);
-        out(") | (");
-        out(r8(op->r1));
-        out(" << (9 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (8 - ");
-        out(value);
-        out("))); CYCLES(10);"); 
+        if (op->data1 == 1) {
+            out(") | (getCF(cpu) << 7); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r8(op->r1));
+            out(" << (9 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (8 - ");
+            out(value);
+            out(")); CYCLES(10);");
+        } 
     } else if (op->func == shl8_reg_noflags) {
         out(r8(op->r1));
         out(" = ");
@@ -2379,74 +2403,98 @@ void gen0c1(struct Op* op) {
         out(r16(op->r1));
         out(" << ");
         out(value);
-        out(") | (");
-        out(r16(op->r1));
-        out(" >> (17 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1)); CYCLES(8);");
+        if (op->data1 == 1) {
+            out(") | getCF(cpu); CYCLES(8);");
+        } else {
+            out(") | (");
+            out(r16(op->r1));
+            out(" >> (17 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1)); CYCLES(8);");
+        }
     } else if (op->func == rcl16_mem16_noflags) {
         out("eaa = ");
         out(getEaa16(op));
         out("; tmp16 = readw(cpu->memory, eaa); writew(cpu->memory, eaa, (tmp16 << ");
         out(value);
-        out(") | (");
-        out(r16(op->r1));
-        out(" >> (17 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1))); CYCLES(10);");
+        if (op->data1 == 1) {
+            out(") | getCF(cpu); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r16(op->r1));
+            out(" >> (17 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1)); CYCLES(10);");
+        }
     } else if (op->func == rcl16_mem32_noflags) {
         out("eaa = ");
         out(getEaa32(op));
         out("; tmp16 = readw(cpu->memory, eaa); writew(cpu->memory, eaa, (tmp16 << ");
         out(value);
-        out(") | (");
-        out(r16(op->r1));
-        out(" >> (17 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1))); CYCLES(10);");
+        if (op->data1 == 1) {
+            out(") | getCF(cpu); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r16(op->r1));
+            out(" >> (17 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1)); CYCLES(10);");
+        }
     } else if (op->func == rcr16_reg_noflags) {
         out(r16(op->r1));
         out(" = (");
         out(r16(op->r1));
         out(" >> ");
         out(value);
-        out(") | (");
-        out(r16(op->r1));
-        out(" << (17 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (16 - ");
-        out(value);
-        out(")); CYCLES(8);");
+        if (op->data1 == 1) {
+            out(") | (getCF(cpu) << 15); CYCLES(8);");
+        } else {
+            out(") | (");
+            out(r16(op->r1));
+            out(" << (17 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (16 - ");
+            out(value);
+            out(")); CYCLES(8);");
+        }
     } else if (op->func == rcr16_mem16_noflags) {
         out("eaa = ");
         out(getEaa16(op));
         out("; tmp16 = readw(cpu->memory, eaa); writew(cpu->memory, eaa, (tmp16 >> ");
         out(value);
-        out(") | (");
-        out(r16(op->r1));
-        out(" << (17 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (16 - ");
-        out(value);
-        out("))); CYCLES(10);");        
+        if (op->data1 == 1) {
+            out(") | (getCF(cpu) << 15); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r16(op->r1));
+            out(" << (17 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (16 - ");
+            out(value);
+            out(")); CYCLES(10);");
+        }       
     } else if (op->func == rcr16_mem32_noflags) {
         out("eaa = ");
         out(getEaa32(op));
         out("; tmp16 = readw(cpu->memory, eaa); writew(cpu->memory, eaa, (tmp16 >> ");
         out(value);
-        out(") | (");
-        out(r16(op->r1));
-        out(" << (17 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (16 - ");
-        out(value);
-        out("))); CYCLES(10);"); 
+        if (op->data1 == 1) {
+            out(") | (getCF(cpu) << 15); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r16(op->r1));
+            out(" << (17 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (16 - ");
+            out(value);
+            out(")); CYCLES(10);");
+        }
     } else if (op->func == shl16_reg_noflags) {
         out(r16(op->r1));
         out(" = ");
@@ -2745,74 +2793,98 @@ void gen2c1(struct Op* op) {
         out(r32(op->r1));
         out(" << ");
         out(value);
-        out(") | (");
-        out(r32(op->r1));
-        out(" >> (33 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1)); CYCLES(8);");
+        if (op->data1==1) {
+            out(") | getCF(cpu); CYCLES(8);");
+        } else {
+            out(") | (");
+            out(r32(op->r1));
+            out(" >> (33 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1))); CYCLES(8);");
+        }
     } else if (op->func == rcl32_mem16_noflags) {
         out("eaa = ");
         out(getEaa16(op));
         out("; tmp32 = readd(cpu->memory, eaa); writed(cpu->memory, eaa, (tmp32 << ");
         out(value);
-        out(") | (");
-        out(r32(op->r1));
-        out(" >> (33 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1))); CYCLES(10);");
+        if (op->data1==1) {
+            out(") | getCF(cpu); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r32(op->r1));
+            out(" >> (33 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1))); CYCLES(10);");
+        }
     } else if (op->func == rcl32_mem32_noflags) {
         out("eaa = ");
         out(getEaa32(op));
         out("; tmp32 = readd(cpu->memory, eaa); writed(cpu->memory, eaa, (tmp32 << ");
         out(value);
-        out(") | (");
-        out(r32(op->r1));
-        out(" >> (33 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (");
-        out(value);
-        out(" - 1))); CYCLES(10);");
+        if (op->data1==1) {
+            out(") | getCF(cpu); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r32(op->r1));
+            out(" >> (33 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (");
+            out(value);
+            out(" - 1))); CYCLES(10);");
+        }
     } else if (op->func == rcr32_reg_noflags) {
         out(r32(op->r1));
         out(" = (");
         out(r32(op->r1));
         out(" >> ");
         out(value);
-        out(") | (");
-        out(r32(op->r1));
-        out(" << (33 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (32 - ");
-        out(value);
-        out(")); CYCLES(8);");
+        if (op->data1==1) {
+            out(") | (getCF(cpu) << 31); CYCLES(8);");
+        } else {
+            out(") | (");
+            out(r32(op->r1));
+            out(" << (33 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (32 - ");
+            out(value);
+            out(")); CYCLES(8);");
+        }
     } else if (op->func == rcr32_mem16_noflags) {
         out("eaa = ");
         out(getEaa16(op));
         out("; tmp32 = readd(cpu->memory, eaa); writed(cpu->memory, eaa, (tmp32 >> ");
         out(value);
-        out(") | (");
-        out(r32(op->r1));
-        out(" << (33 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (32 - ");
-        out(value);
-        out("))); CYCLES(10);");        
+        if (op->data1==1) {
+            out(") | (getCF(cpu) << 31); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r32(op->r1));
+            out(" << (33 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (32 - ");
+            out(value);
+            out(")); CYCLES(10);");
+        }      
     } else if (op->func == rcr32_mem32_noflags) {
         out("eaa = ");
         out(getEaa32(op));
         out("; tmp32 = readd(cpu->memory, eaa); writed(cpu->memory, eaa, (tmp32 >> ");
         out(value);
-        out(") | (");
-        out(r32(op->r1));
-        out(" << (33 - ");
-        out(value);
-        out(")) | (getCF(cpu) << (32 - ");
-        out(value);
-        out("))); CYCLES(10);"); 
+        if (op->data1==1) {
+            out(") | (getCF(cpu) << 31); CYCLES(10);");
+        } else {
+            out(") | (");
+            out(r32(op->r1));
+            out(" << (33 - ");
+            out(value);
+            out(")) | (getCF(cpu) << (32 - ");
+            out(value);
+            out(")); CYCLES(10);");
+        }
     } else if (op->func == shl32_reg_noflags) {
         out(r32(op->r1));
         out(" = ");
