@@ -1078,10 +1078,22 @@ void OPCALL leave16(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
+void OPCALL enter16(struct CPU* cpu, struct Op* op) {
+    cpu_enter16(cpu, op->data1, op->r1);
+	CYCLES(15);
+	NEXT();
+}
+
 void OPCALL leave32(struct CPU* cpu, struct Op* op) {
 	ESP = EBP;
 	EBP = pop32(cpu);
 	CYCLES(3);
+	NEXT();
+}
+
+void OPCALL enter32(struct CPU* cpu, struct Op* op) {
+    cpu_enter32(cpu, op->data1, op->r1);
+	CYCLES(15);
 	NEXT();
 }
 

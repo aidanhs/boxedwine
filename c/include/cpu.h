@@ -62,6 +62,9 @@ struct CPU {
     U32     blockInstructionCount;
 	BOOL log;
 	U32 cpl;
+    U32 stackMask;
+    U32 stackNotMask;
+    struct user_desc* ldt;
 };
 
 void threadDone(struct CPU* cpu);
@@ -94,6 +97,8 @@ void fillFlagsNoOF(struct CPU* cpu);
 void cpu_ret(struct CPU* cpu, U32 big, U32 eip);
 void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip);
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip);
+void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level);
+void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level);
 
 extern U8 parity_lookup[];
 

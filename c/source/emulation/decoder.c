@@ -1134,6 +1134,22 @@ void decode2c1(struct DecodeData* data) {
 #endif
 	NEXT_OP(data);
 }
+
+// ENTER
+void decode0c8(struct DecodeData* data) {
+    data->op->func = enter16;
+    data->op->data1 = FETCH16(data);
+    data->op->r1 = FETCH8(data) & 0x1f;
+    NEXT_OP(data);
+}
+
+void decode2c8(struct DecodeData* data) {
+    data->op->func = enter32;
+    data->op->data1 = FETCH16(data);
+    data->op->r1 = FETCH8(data) & 0x1f;
+    NEXT_OP(data);
+}
+
 // RETF
 void decode2cb(struct DecodeData* data) {
 	data->op->func = retf32;
@@ -2016,7 +2032,7 @@ DECODER decoder[1024] = {
 	decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,
 	decode0b8, decode0b9, decode0ba, decode0bb, decode0bc, decode0bd, decode0be, decode0bf,
 	decode0c0, decode0c1, decode0c2, decode0c3, invalidOp, invalidOp, decode0c6, decode0c7,
-	invalidOp, decode0c9, invalidOp, decode0cb, invalidOp, decode0cd, invalidOp, invalidOp,
+	decode0c8, decode0c9, invalidOp, decode0cb, invalidOp, decode0cd, invalidOp, invalidOp,
 	decode0d0, decode0d1, decode0d2, decode0d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
 	decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2098,7 +2114,7 @@ DECODER decoder[1024] = {
 	decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,
 	decode2b8, decode2b9, decode2ba, decode2bb, decode2bc, decode2bd, decode2be, decode2bf,
 	decode0c0, decode2c1, decode2c2, decode2c3, invalidOp, invalidOp, decode0c6, decode2c7,
-	invalidOp, decode2c9, invalidOp, decode2cb, invalidOp, decode0cd, invalidOp, decode2cf,
+	decode2c8, decode2c9, invalidOp, decode2cb, invalidOp, decode0cd, invalidOp, decode2cf,
 	decode0d0, decode2d1, decode0d2, decode2d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
 	decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,

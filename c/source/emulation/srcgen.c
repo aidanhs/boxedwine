@@ -113,7 +113,7 @@ const char* getEaa16(struct Op* op) {
 const char* getEaa32(struct Op* op) {
     eaaStr[0]=0;
 
-    if (op->base==4 || op->base==5) {
+    if (op->base<6) {
         strcat(eaaStr, "cpu->segAddress[");
         strcat(eaaStr, getBase(op->base));
         strcat(eaaStr, "]");
@@ -1214,7 +1214,7 @@ void gen08e(struct Op* op) {
         out(r16(op->r1));
         out("; cpu->segAddress[");
         out(getBase(op->r2));
-        out("] = cpu->thread->process->ldt[cpu->segValue[");
+        out("] = cpu->ldt[cpu->segValue[");
         out(getBase(op->r2));
         out("] >> 3].base_addr; CYCLES(2);");
     } else {                
@@ -1230,7 +1230,7 @@ void gen08e(struct Op* op) {
         }
         out("); cpu->segAddress[");
         out(getBase(op->r2));
-        out("] = cpu->thread->process->ldt[cpu->segValue[");
+        out("] = cpu->ldt[cpu->segValue[");
         out(getBase(op->r2));
         out("] >> 3].base_addr; CYCLES(3);");
     }
@@ -3712,6 +3712,30 @@ void gen2c7(struct Op* op) {
         out(tmp);
         out("); CYCLES(1);");
     }
+}
+
+void gen0c8(struct Op* op) {
+    char tmp[16];
+
+    out("cpu_enter16(cpu, ");
+    itoa(op->data1, tmp, 10);
+    out(tmp);
+    out(", ");
+    itoa(op->r1, tmp, 10);
+    out(tmp);
+    out("); CYCLES(15);");
+}
+
+void gen2c8(struct Op* op) {
+    char tmp[16];
+
+    out("cpu_enter32(cpu, ");
+    itoa(op->data1, tmp, 10);
+    out(tmp);
+    out(", ");
+    itoa(op->r1, tmp, 10);
+    out(tmp);
+    out("); CYCLES(15);");
 }
 
 void gen0c9(struct Op* op) {
@@ -7191,7 +7215,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("struct Reg {union {U32 u32;union {union {U16 u16;struct {U8 u8;U8 h8;};};U16 h16;};};};\n");
         out("struct FPU_Reg {union {double d;U64 l;};};\n");
         out("struct FPU {struct FPU_Reg regs[9];U32 tags[9];U32 cw;U32 cw_mask_all;U32 sw;U32 top;U32 round;};\n");
-        out("struct CPU {struct Reg reg[9];U8* reg8[8]; U32 segAddress[6];U32 segValue[7];U32 flags;struct Reg eip;struct Memory* memory;struct KThread* thread;struct Reg src;struct Reg dst;struct Reg dst2;struct Reg result;struct LazyFlags* lazyFlags;int df;U32 oldcf;U32 big;struct FPU fpu;struct Block* nextBlock;struct Block* currentBlock;U64 timeStampCounter;U32 blockCounter;U32 blockInstructionCount;BOOL log;U32 cpl;};\n");
+        out("struct user_desc {U32  entry_number;U32 base_addr;U32  limit;union {struct {U32  seg_32bit:1;U32  contents:2;U32  read_exec_only:1;U32  limit_in_pages:1;U32  seg_not_present:1;U32  useable:1;};U32 flags;};};");
+        out("struct CPU {struct Reg reg[9];U8* reg8[8]; U32 segAddress[6];U32 segValue[7];U32 flags;struct Reg eip;struct Memory* memory;struct KThread* thread;struct Reg src;struct Reg dst;struct Reg dst2;struct Reg result;struct LazyFlags* lazyFlags;int df;U32 oldcf;U32 big;struct FPU fpu;struct Block* nextBlock;struct Block* currentBlock;U64 timeStampCounter;U32 blockCounter;U32 blockInstructionCount;BOOL log;U32 cpl;U32 stackMask;U32 stackNotMask;struct user_desc* ldt;};\n");
         out("struct LazyFlags {U32 (*getCF)(struct CPU* cpu);U32 (*getOF)(struct CPU* cpu);U32 (*getAF)(struct CPU* cpu);U32 (*getZF)(struct CPU* cpu);U32 (*getSF)(struct CPU* cpu);U32 (*getPF)(struct CPU* cpu);};\n");
         out("U8 readb(struct Memory* memory, U32 address);\n");
         out("void writeb(struct Memory* memory, U32 address, U8 value);\n");
@@ -7206,12 +7231,15 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("struct Block* getBlock2(struct CPU* cpu);\n");
         out("void push16(struct CPU* cpu, U16 value);\n");
         out("void push32(struct CPU* cpu, U32 value);\n");
+        out("U32 peek32(struct CPU* cpu, U32 index);\n");
         out("U16 pop16(struct CPU* cpu);\n");
         out("U32 pop32(struct CPU* cpu);\n");
         out("void fillFlagsNoCFOF(struct CPU* cpu);\n");
         out("void fillFlagsNoCF(struct CPU* cpu);\n");
         out("void fillFlags(struct CPU* cpu);\n");
         out("void setFlags(struct CPU* cpu, U32 word, U32 mask);\n");
+        out("void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level);\n");
+        out("void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level);\n");
 
         out("void rol8_reg(struct CPU* cpu, U32 reg, U32 value);\n");
         out("void rol8_mem16(struct CPU* cpu, U32 eaa, U32 value);\n");
@@ -7440,7 +7468,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out("void idiv32(struct CPU* cpu, S32 src);\n");
         out("void syscall(struct CPU* cpu, U32 eipCount);\n");
         out("void cpuid(struct CPU* cpu);\n");
-
+        out("typedef void (*Int99Callback)(struct CPU* cpu);\n");
+        out("extern Int99Callback* int99Callback;\n");
         out("#define TAG_Valid 0\n");
         out("#define TAG_Zero 1\n");
         out("#define TAG_Empty 3\n");

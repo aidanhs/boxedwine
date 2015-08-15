@@ -28,6 +28,9 @@ void initCPU(struct CPU* cpu, struct Memory* memory) {
 	cpu->lazyFlags = FLAGS_NONE;
 	cpu->big = 1;
 	cpu->df = 1;
+    cpu->stackMask = 0xFFFFFFFF;
+    cpu->stackNotMask = 0;
+    cpu->ldt = memory->process->ldt;
 	FPU_FINIT(&cpu->fpu);
 }
 
@@ -212,6 +215,50 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 		kpanic("IRET to outer level not implemented");
 	}
 } 
+
+void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
+    U32 sp_index=ESP & cpu->stackMask;
+    U32 bp_index=EBP & cpu->stackMask;
+
+    sp_index-=4;
+    writed(cpu->memory, cpu->segAddress[SS] + sp_index, EBP);
+    EBP = ESP - 4;
+    if (level!=0) {
+        U32 i;
+
+        for (i=1;i<level;i++) {
+            sp_index-=4;
+            bp_index-=4;
+            writed(cpu->memory, cpu->segAddress[SS] + sp_index, readd(cpu->memory, cpu->segAddress[SS] + bp_index));
+        }
+        sp_index-=4;
+        writed(cpu->memory, cpu->segAddress[SS] + sp_index, EBP);
+    }
+    sp_index-=bytes;
+    ESP = (ESP & cpu->stackNotMask) | (sp_index & cpu->stackMask);
+}
+
+void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level) {
+    U32 sp_index=ESP & cpu->stackMask;
+    U32 bp_index=EBP & cpu->stackMask;
+
+    sp_index-=2;
+    writew(cpu->memory, cpu->segAddress[SS] + sp_index, BP);
+    BP = SP - 2;
+    if (level!=0) {
+        U32 i;
+
+        for (i=1;i<level;i++) {
+            sp_index-=2;bp_index-=2;
+            writew(cpu->memory, cpu->segAddress[SS] + sp_index, readw(cpu->memory, cpu->segAddress[SS] + bp_index));
+        }
+        sp_index-=2;
+        writew(cpu->memory, cpu->segAddress[SS] + sp_index, BP);
+    }
+
+    sp_index-=bytes;
+    ESP = (ESP & cpu->stackNotMask) | (sp_index & cpu->stackMask);
+}
 
 void fillFlagsNoCFOF(struct CPU* cpu) {
 	if (cpu->lazyFlags!=FLAGS_NONE) {
