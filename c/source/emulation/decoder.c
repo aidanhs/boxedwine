@@ -2186,6 +2186,38 @@ void OPCALL restoreOps(struct CPU* cpu, struct Op* op) {
     cpu->currentBlock->ops->func(cpu, cpu->currentBlock->ops);    
 }
 
+#ifdef GENERATE_SOURCE
+void generateSource(struct CPU* cpu, U32 eip, struct Block* block);
+extern U32 gensrc;
+#endif
+#ifdef AOT
+OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen);
+#include "crc.h"
+void aot(struct CPU* cpu, struct Block* block, U32 eip) {
+    U32 i;
+    U32 opPos=0;
+    unsigned char ops[1024];
+    U32 ip = eip;
+    U32 crc;
+    OpCallback func = 0;
+    struct Op* op = block->ops;
+
+    while (op) {
+        for (i=0;i<op->eipCount;i++)
+            ops[opPos++] = readb(cpu->memory, ip++);
+        op = op->next;
+    }
+    crc = crc32b(ops, opPos);
+    func = getCompiledFunction(crc, ops, opPos);
+    if (func) {
+        block->ops->func = func;
+        freeOp(block->ops->next);
+        block->ops->next = 0;     
+        block->block1 = 0;
+        block->block2 = 0;
+    }
+}
+#endif
 void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     struct Block* block = cpu->currentBlock;
     U32 eip = cpu->eip.u32;
@@ -2204,7 +2236,14 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
         block->ops = block->ops->next;
         op->next = 0;
         freeOp(op);
-        jit(cpu, eip, block);
+        jit(cpu, block);
+#ifdef GENERATE_SOURCE
+    if (gensrc)
+        generateSource(cpu, eip, block);
+#endif
+#ifdef AOT
+    aot(cpu, block, eip);
+#endif
     }
 }
 

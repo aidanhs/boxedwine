@@ -3,6 +3,7 @@
 #include "block.h"
 #include "cpu.h"
 #include "kalloc.h"
+#include "jit.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,6 +11,9 @@
 char* sourceBuffer;
 U32 sourceBufferLen;
 U32 sourceBufferPos;
+struct CPU* genCPU;
+struct Block* currentGenBlock;
+void writeOps(struct Op* op);
 
 U32 needsToSetFlag(struct Op* op, U32 flag);
 
@@ -1432,17 +1436,23 @@ void OPCALL movsb32_op(struct CPU* cpu, struct Op* op);
 void gen0a4(struct Op* op) {
     if (op->func==movsb16_r_op) {
         out("movsb16_r(cpu, ");        
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==movsb16_op) {
-        out("movsb16(cpu, ");
+        out("writeb(cpu->memory, cpu->segAddress[ES]+DI, readb(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI)); DI+=cpu->df; SI+=cpu->df; CYCLES(4);");
     } else if (op->func==movsb32_r_op) {
         out("movsb32_r(cpu, ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==movsb32_op) {
-        out("movsb32(cpu, ");
+        out("writeb(cpu->memory, cpu->segAddress[ES]+EDI, readb(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI)); EDI+=cpu->df; ESI+=cpu->df; CYCLES(4);");
     } else {
         kpanic("gen0a4");
-    }
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL movsw16_r_op(struct CPU* cpu, struct Op* op);
@@ -1452,17 +1462,23 @@ void OPCALL movsw32_op(struct CPU* cpu, struct Op* op);
 void gen0a5(struct Op* op) {
     if (op->func==movsw16_r_op) {
         out("movsw16_r(cpu, ");        
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==movsw16_op) {
-        out("movsw16(cpu, ");
+        out("writew(cpu->memory, cpu->segAddress[ES]+DI, readw(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI)); DI+=cpu->df<<1; SI+=cpu->df<<1; CYCLES(4);");
     } else if (op->func==movsw32_r_op) {
         out("movsw32_r(cpu, ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==movsw32_op) {
-        out("movsw32(cpu, ");
+        out("writew(cpu->memory, cpu->segAddress[ES]+EDI, readw(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI)); EDI+=cpu->df<<1; ESI+=cpu->df<<1; CYCLES(4);");
     } else {
         kpanic("gen0a5");
-    }
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL movsd16_r_op(struct CPU* cpu, struct Op* op);
@@ -1473,11 +1489,15 @@ void gen2a5(struct Op* op) {
     if (op->func==movsd16_r_op) {
         out("movsd16_r(cpu, ");
     } else if (op->func==movsd16_op) {
-        out("movsd16(cpu, ");
+        out("writed(cpu->memory, cpu->segAddress[ES]+DI, readd(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI)); DI+=cpu->df<<2; SI+=cpu->df<<2; CYCLES(4);");
     } else if (op->func==movsd32_r_op) {
         out("movsd32_r(cpu, ");
     } else if (op->func==movsd32_op) {
-        out("movsd32(cpu, ");        
+        out("writed(cpu->memory, cpu->segAddress[ES]+EDI, readd(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI)); EDI+=cpu->df<<2; ESI+=cpu->df<<2; CYCLES(4);");
     } else {
         kpanic("gen2a5");
     }
@@ -1495,19 +1515,27 @@ void gen0a6(struct Op* op) {
     itoa(op->data1, tmp, 16);
     if (op->func==cmpsb16_r_op) {
         out("cmpsb16_r(cpu, ");        
+        out(tmp);
+        out(", ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==cmpsb16_op) {
-        out("cmpsb16(cpu, ");
+        out("cpu->dst.u8 = readb(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI); cpu->src.u8 = readb(cpu->memory, cpu->segAddress[ES]+DI); cpu->result.u8 = cpu->dst.u8 - cpu->src.u8; cpu->lazyFlags = FLAGS_SUB8; DI+=cpu->df; SI+=cpu->df; CYCLES(5);");
     } else if (op->func==cmpsb32_r_op) {
         out("cmpsb32_r(cpu, ");
+        out(tmp);
+        out(", ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==cmpsb32_op) {
-        out("cmpsb32(cpu, ");
+        out("cpu->dst.u8 = readb(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI); cpu->src.u8 = readb(cpu->memory, cpu->segAddress[ES]+EDI); cpu->result.u8 = cpu->dst.u8 - cpu->src.u8; cpu->lazyFlags = FLAGS_SUB8; EDI+=cpu->df; ESI+=cpu->df; CYCLES(5);");
     } else {
         kpanic("gen0a6");
-    }
-    out(tmp);
-    out(", ");
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL cmpsw16_r_op(struct CPU* cpu, struct Op* op);
@@ -1520,19 +1548,27 @@ void gen0a7(struct Op* op) {
     itoa(op->data1, tmp, 16);
     if (op->func==cmpsw16_r_op) {
         out("cmpsw16_r(cpu, ");
+        out(tmp);
+        out(", ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==cmpsw16_op) {
-        out("cmpsw16(cpu, ");
+        out("cpu->dst.u16 = readw(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI); cpu->src.u16 = readw(cpu->memory, cpu->segAddress[ES]+DI); cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_SUB16; DI+=cpu->df<<1; SI+=cpu->df<<1; CYCLES(5);");
     } else if (op->func==cmpsw32_r_op) {
         out("cmpsw32_r(cpu, ");
+        out(tmp);
+        out(", ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==cmpsw32_op) {
-        out("cmpsw32(cpu, ");
+        out("cpu->dst.u16 = readw(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI); cpu->src.u16 = readw(cpu->memory, cpu->segAddress[ES]+EDI); cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_SUB16; EDI+=cpu->df<<1; ESI+=cpu->df<<1; CYCLES(5);");
     } else {
         kpanic("gen0a7");
-    }
-    out(tmp);
-    out(", ");
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL cmpsd16_r_op(struct CPU* cpu, struct Op* op);
@@ -1545,19 +1581,27 @@ void gen2a7(struct Op* op) {
     itoa(op->data1, tmp, 16);
     if (op->func==cmpsd16_r_op) {
         out("cmpsd16_r(cpu, ");
+        out(tmp);
+        out(", ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==cmpsd16_op) {
-        out("cmpsd16(cpu, ");
+        out("cpu->dst.u32 = readd(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI); cpu->src.u32 = readd(cpu->memory, cpu->segAddress[ES]+DI); cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_SUB32; DI+=cpu->df<<2; SI+=cpu->df<<2; CYCLES(5);");
     } else if (op->func==cmpsd32_r_op) {
         out("cmpsd32_r(cpu, ");
+        out(tmp);
+        out(", ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==cmpsd32_op) {
-        out("cmpsd32(cpu, ");
+        out("cpu->dst.u32 = readd(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI); cpu->src.u32 = readd(cpu->memory, cpu->segAddress[ES]+EDI); cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_SUB32; EDI+=cpu->df<<2; ESI+=cpu->df<<2; CYCLES(5);");
     } else {
         kpanic("gen2a7");
-    }
-    out(tmp);
-    out(", ");
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL stosb16_r_op(struct CPU* cpu, struct Op* op);
@@ -1568,11 +1612,11 @@ void gen0aa(struct Op* op) {
     if (op->func==stosb16_r_op) {
         out("stosb16_r(cpu);");        
     } else if (op->func==stosb16_op) {
-        out("stosb16(cpu);");
+        out("writeb(cpu->memory, cpu->segAddress[ES]+DI, AL); DI+=cpu->df; CYCLES(3);");
     } else if (op->func==stosb32_r_op) {
         out("stosb32_r(cpu);");
     } else if (op->func==stosb32_op) {
-        out("stosb32(cpu);");
+        out("writeb(cpu->memory, cpu->segAddress[ES]+EDI, AL); EDI+=cpu->df; CYCLES(3);");
     } else {
         kpanic("gen0aa");
     }
@@ -1586,11 +1630,11 @@ void gen0ab(struct Op* op) {
     if (op->func==stosw16_r_op) {
         out("stosw16_r(cpu);");
     } else if (op->func==stosw16_op) {
-        out("stosw16(cpu);");
+        out("writew(cpu->memory, cpu->segAddress[ES]+DI, AX); DI+=cpu->df<<1; CYCLES(3);");
     } else if (op->func==stosw32_r_op) {
         out("stosw32_r(cpu);");
     } else if (op->func==stosw32_op) {
-        out("stosw32(cpu);");
+        out("writew(cpu->memory, cpu->segAddress[ES]+EDI, AX); EDI+=cpu->df<<1; CYCLES(3);");
     } else {
         kpanic("gen0ab");
     }
@@ -1604,11 +1648,11 @@ void gen2ab(struct Op* op) {
     if (op->func==stosd16_r_op) {
         out("stosd16_r(cpu);");
     } else if (op->func==stosd16_op) {
-        out("stosd16(cpu);");
+        out("writed(cpu->memory, cpu->segAddress[ES]+DI, EAX); DI+=cpu->df<<2; CYCLES(3);");
     } else if (op->func==stosd32_r_op) {
         out("stosd32_r(cpu);");
     } else if (op->func==stosd32_op) {
-        out("stosd32(cpu);");
+        out("writed(cpu->memory, cpu->segAddress[ES]+EDI, EAX); EDI+=cpu->df<<2; CYCLES(3);");
     } else {
         kpanic("gen2ab");
     }
@@ -1621,17 +1665,23 @@ void OPCALL lodsb32_op(struct CPU* cpu, struct Op* op);
 void gen0ac(struct Op* op) {
     if (op->func==lodsb16_r_op) {
         out("lodsb16_r(cpu, ");        
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==lodsb16_op) {
-        out("lodsb16(cpu, ");
+        out("AL = readb(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI); SI+=cpu->df; CYCLES(2);");
     } else if (op->func==lodsb32_r_op) {
         out("lodsb32_r(cpu, ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==lodsb32_op) {
-        out("lodsb32(cpu, ");
+        out("AL = readb(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI); ESI+=cpu->df; CYCLES(2);");
     } else {
         kpanic("gen0ac");
-    }
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL lodsw16_r_op(struct CPU* cpu, struct Op* op);
@@ -1641,17 +1691,23 @@ void OPCALL lodsw32_op(struct CPU* cpu, struct Op* op);
 void gen0ad(struct Op* op) {
     if (op->func==lodsw16_r_op) {
         out("lodsw16_r(cpu, ");        
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==lodsw16_op) {
-        out("lodsw16(cpu, ");
+        out("AX = readw(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI); SI+=cpu->df<<1; CYCLES(2);");
     } else if (op->func==lodsw32_r_op) {
         out("lodsw32_r(cpu, ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==lodsw32_op) {
-        out("lodsw32(cpu, ");
+        out("AX = readw(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI); ESI+=cpu->df<<1; CYCLES(2);");
     } else {
         kpanic("gen0ad");
-    }
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL lodsd16_r_op(struct CPU* cpu, struct Op* op);
@@ -1661,17 +1717,23 @@ void OPCALL lodsd32_op(struct CPU* cpu, struct Op* op);
 void gen2ad(struct Op* op) {
     if (op->func==lodsd16_r_op) {
         out("lodsd16_r(cpu, ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==lodsd16_op) {
-        out("lodsd16(cpu, ");
+        out("EAX = readd(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+SI); SI+=cpu->df<<2; CYCLES(2);");
     } else if (op->func==lodsd32_r_op) {
         out("lodsd32_r(cpu, ");
+        out(getBase(op->base));
+        out(");");
     } else if (op->func==lodsd32_op) {
-        out("lodsd32(cpu, ");        
+        out("EAX = readd(cpu->memory, cpu->segAddress[");
+        out(getBase(op->base));
+        out("]+ESI); ESI+=cpu->df<<2; CYCLES(2);");
     } else {
         kpanic("gen2ad");
-    }
-    out(getBase(op->base));
-    out(");");
+    }    
 }
 
 void OPCALL scasb16_r_op(struct CPU* cpu, struct Op* op);
@@ -1681,17 +1743,19 @@ void OPCALL scasb32_op(struct CPU* cpu, struct Op* op);
 void gen0ae(struct Op* op) {
     if (op->func==scasb16_r_op) {
         out("scasb16_r(cpu, ");        
+        out(getBase(op->data1));
+        out(");");
     } else if (op->func==scasb16_op) {
-        out("scasb16(cpu, ");
+        out("cpu->dst.u8 = AL; cpu->src.u8 = readb(cpu->memory,  cpu->segAddress[ES]+DI); cpu->result.u8 = cpu->dst.u8 - cpu->src.u8; cpu->lazyFlags = FLAGS_SUB8; DI+=cpu->df; CYCLES(4);");
     } else if (op->func==scasb32_r_op) {
         out("scasb32_r(cpu, ");
+        out(getBase(op->data1));
+        out(");");
     } else if (op->func==scasb32_op) {
-        out("scasb32(cpu, ");
+        out("cpu->dst.u8 = AL; cpu->src.u8 = readb(cpu->memory,  cpu->segAddress[ES]+EDI); cpu->result.u8 = cpu->dst.u8 - cpu->src.u8; cpu->lazyFlags = FLAGS_SUB8; EDI+=cpu->df; CYCLES(4);");
     } else {
         kpanic("gen0a4");
-    }
-    out(getBase(op->data1));
-    out(");");
+    }    
 }
 
 void OPCALL scasw16_r_op(struct CPU* cpu, struct Op* op);
@@ -1701,17 +1765,19 @@ void OPCALL scasw32_op(struct CPU* cpu, struct Op* op);
 void gen0af(struct Op* op) {
     if (op->func==scasw16_r_op) {
         out("scasw16_r(cpu, ");        
+        out(getBase(op->data1));
+        out(");");
     } else if (op->func==scasw16_op) {
-        out("scasw16(cpu, ");
+        out("cpu->dst.u16 = AX; cpu->src.u16 = readw(cpu->memory,  cpu->segAddress[ES]+DI); cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_SUB16; DI+=cpu->df<<1; CYCLES(4);");
     } else if (op->func==scasw32_r_op) {
         out("scasw32_r(cpu, ");
+        out(getBase(op->data1));
+        out(");");
     } else if (op->func==scasw32_op) {
-        out("scasw32(cpu, ");
+        out("cpu->dst.u16 = AX; cpu->src.u16 = readw(cpu->memory,  cpu->segAddress[ES]+EDI); cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_SUB16; EDI+=cpu->df<<1; CYCLES(4);");
     } else {
         kpanic("gen0a5");
-    }
-    out(getBase(op->data1));
-    out(");");
+    }    
 }
 
 void OPCALL scasd16_r_op(struct CPU* cpu, struct Op* op);
@@ -1720,18 +1786,18 @@ void OPCALL scasd32_r_op(struct CPU* cpu, struct Op* op);
 void OPCALL scasd32_op(struct CPU* cpu, struct Op* op);
 void gen2af(struct Op* op) {
     if (op->func==scasd16_r_op) {
-        out("scasd16_r(cpu, ");
+        out(getBase(op->data1));
+        out(");");
     } else if (op->func==scasd16_op) {
-        out("scasd16(cpu, ");
+        out("cpu->dst.u32 = EAX; cpu->src.u32 = readd(cpu->memory,  cpu->segAddress[ES]+DI); cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_SUB32; DI+=cpu->df<<2; CYCLES(4);");
     } else if (op->func==scasd32_r_op) {
-        out("scasd32_r(cpu, ");
+        out(getBase(op->data1));
+        out(");");
     } else if (op->func==scasd32_op) {
-        out("scasd32(cpu, ");        
+        out("cpu->dst.u32 = EAX; cpu->src.u32 = readd(cpu->memory,  cpu->segAddress[ES]+EDI); cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_SUB32; EDI+=cpu->df<<2; CYCLES(4);");
     } else {
         kpanic("gen2a5");
-    }
-    out(getBase(op->data1));
-    out(");");
+    }    
 }
 
 
@@ -6878,7 +6944,16 @@ void gen3c8(struct Op* op) {
 }
 
 void gen400(struct Op* op) {
-    out("cpu->nextBlock = getBlock1(cpu);");
+    struct Op* firstOp;
+
+    currentGenBlock = currentGenBlock->block1;
+    firstOp = currentGenBlock->ops;    
+    currentGenBlock->ops = currentGenBlock->ops->next;
+    firstOp->next = 0;
+    freeOp(firstOp);
+
+    jit(genCPU, currentGenBlock);
+    writeOps(currentGenBlock->ops);
 }
 
 typedef void (*SRC_GEN)(struct Op* op);
@@ -7138,6 +7213,23 @@ void writeSource() {
     fclose(fp);
 }
 
+void writeOps(struct Op* op) {
+    char tmp[16];
+
+     while (op) {
+        out("    ");
+        srcgen[op->inst](op);
+        // the last op is responsible for handling the eip adjustment
+        if (op->next) {
+            out(" cpu->eip.u32+=");
+            itoa(op->eipCount, tmp, 10);
+            out(tmp);    
+            out(";\n");
+        } 
+        op = op->next;
+    }
+}
+
 void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     struct Op* op = block->ops;
     char name[256];
@@ -7153,6 +7245,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         return;
     }
 
+    genCPU = cpu;
+    currentGenBlock = block;
     while (op) {
         if (!srcgen[op->inst]) {
             klog("missing instruction for recompiler: %X", op->inst);
@@ -7442,64 +7536,34 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
 
         out("void movsb32_r(struct CPU* cpu, U32 base);\n");
         out("void movsb16_r(struct CPU* cpu, U32 base);\n");
-        out("void movsb32(struct CPU* cpu, U32 base);\n");
-        out("void movsb16(struct CPU* cpu, U32 base);\n");
         out("void movsw32_r(struct CPU* cpu, U32 base);\n");
         out("void movsw16_r(struct CPU* cpu, U32 base);\n");
-        out("void movsw32(struct CPU* cpu, U32 base);\n");
-        out("void movsw16(struct CPU* cpu, U32 base);\n");
         out("void movsd32_r(struct CPU* cpu, U32 base);\n");
         out("void movsd16_r(struct CPU* cpu, U32 base);\n");
-        out("void movsd32(struct CPU* cpu, U32 base);\n");
-        out("void movsd16(struct CPU* cpu, U32 base);\n");
         out("void cmpsb32_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
         out("void cmpsb16_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
-        out("void cmpsb32(struct CPU* cpu, U32 rep_zero, U32 base);\n");
-        out("void cmpsb16(struct CPU* cpu, U32 rep_zero, U32 base);\n");
         out("void cmpsw32_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
         out("void cmpsw16_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
-        out("void cmpsw32(struct CPU* cpu, U32 rep_zero, U32 base);\n");
-        out("void cmpsw16(struct CPU* cpu, U32 rep_zero, U32 base);\n");
         out("void cmpsd32_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
         out("void cmpsd16_r(struct CPU* cpu, U32 rep_zero, U32 base);\n");
-        out("void cmpsd32(struct CPU* cpu, U32 rep_zero, U32 base);\n");
-        out("void cmpsd16(struct CPU* cpu, U32 rep_zero, U32 base);\n");
         out("void stosb32_r(struct CPU* cpu);\n");
         out("void stosb16_r(struct CPU* cpu);\n");
-        out("void stosb32(struct CPU* cpu);\n");
-        out("void stosb16(struct CPU* cpu);\n");
         out("void stosw32_r(struct CPU* cpu);\n");
         out("void stosw16_r(struct CPU* cpu);\n");
-        out("void stosw32(struct CPU* cpu);\n");
-        out("void stosw16(struct CPU* cpu);\n");
         out("void stosd32_r(struct CPU* cpu);\n");
         out("void stosd16_r(struct CPU* cpu);\n");
-        out("void stosd32(struct CPU* cpu);\n");
-        out("void stosd16(struct CPU* cpu);\n");
         out("void lodsb32_r(struct CPU* cpu, U32 base);\n");
         out("void lodsb16_r(struct CPU* cpu, U32 base);\n");
-        out("void lodsb32(struct CPU* cpu, U32 base);\n");
-        out("void lodsb16(struct CPU* cpu, U32 base);\n");
         out("void lodsw32_r(struct CPU* cpu, U32 base);\n");
         out("void lodsw16_r(struct CPU* cpu, U32 base);\n");
-        out("void lodsw32(struct CPU* cpu, U32 base);\n");
-        out("void lodsw16(struct CPU* cpu, U32 base);\n");
         out("void lodsd32_r(struct CPU* cpu, U32 base);\n");
         out("void lodsd16_r(struct CPU* cpu, U32 base);\n");
-        out("void lodsd32(struct CPU* cpu, U32 base);\n");
-        out("void lodsd16(struct CPU* cpu, U32 base);\n");
         out("void scasb32_r(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasb16_r(struct CPU* cpu, U32 rep_zero);\n");
-        out("void scasb32(struct CPU* cpu, U32 rep_zero);\n");
-        out("void scasb16(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasw32_r(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasw16_r(struct CPU* cpu, U32 rep_zero);\n");
-        out("void scasw32(struct CPU* cpu, U32 rep_zero);\n");
-        out("void scasw16(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasd32_r(struct CPU* cpu, U32 rep_zero);\n");
         out("void scasd16_r(struct CPU* cpu, U32 rep_zero);\n");
-        out("void scasd32(struct CPU* cpu, U32 rep_zero);\n");
-        out("void scasd16(struct CPU* cpu, U32 rep_zero);\n");
         out("void FPU_FCOM(struct FPU* fpu, int st, int other);\n");
         out("void FPU_FUCOM(struct FPU* fpu, int st, int other);\n");
         out("void FPU_FABS(struct FPU* fpu);\n");
@@ -7571,20 +7635,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     out("void OPCALL ");
     out(name);
     out("(struct CPU* cpu, struct Op* op) {\n");    
-    while (op) {
-        out("    ");
-        srcgen[op->inst](op);
-        // the last op is responsible for handling the eip adjustment
-        if (op->next) {
-            out(" cpu->eip.u32+=");
-            itoa(op->eipCount, tmp, 10);
-            out(tmp);    
-            out(";\n");
-        } else {
-            out("\n");
-        }
-        op = op->next;
-    }
+    writeOps(op);
+    out("\n");
     out("}\n\n");    
 
     {

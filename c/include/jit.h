@@ -4,6 +4,6 @@
 #include "block.h"
 #include "cpu.h"
 
-void jit(struct CPU* cpu, U32 eip, struct Block* block);
+void jit(struct CPU* cpu, struct Block* block);
 
 #endif

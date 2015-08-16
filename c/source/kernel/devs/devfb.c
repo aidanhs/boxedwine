@@ -351,7 +351,7 @@ void fbSetupScreen() {
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		flags |=SDL_HWPALETTE;
 	}
-	surface=SDL_SetVideoMode(fb_var_screeninfo.xres,fb_var_screeninfo.yres,fb_var_screeninfo.bits_per_pixel, flags);
+	surface=SDL_SetVideoMode(fb_var_screeninfo.xres_virtual,fb_var_screeninfo.yres_virtual,fb_var_screeninfo.bits_per_pixel, flags);
 #endif
 	if (fb_var_screeninfo.bits_per_pixel==8) {
 		SDL_Color colors[256];

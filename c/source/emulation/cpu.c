@@ -646,7 +646,7 @@ void push32(struct CPU* cpu, U32 value) {
 	index = ESP >> 12;
 	// can't assume the RAM page is already allocated, thread stacks are on demand
 	// don't call writed since that version will check if the write will go across a page boundry
-	// this custom code here will save an iff statement
+	// this custom code here will save an if statement
 	if (cpu->memory->write[index]) {
 		host_writed(ESP-cpu->memory->write[index], value);
 	} else {
@@ -668,8 +668,7 @@ U16 pop16(struct CPU* cpu) {
 
 U32 pop32(struct CPU* cpu) {
 	// we can assume the RAM page is already there since this read shouldn't happen unless we already wrote to it
-	int index = ESP >> 12;
-	U32 result = host_readd(ESP-cpu->memory->read[index]);
+	U32 result = host_readd(ESP-cpu->memory->read[ESP >> 12]);
     ESP+=4;
     return result;
 }

@@ -2396,17 +2396,7 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
     return 1; // this is the last instruction in this block that sets this flag, we should keep it
 }
 
-#ifdef GENERATE_SOURCE
-void generateSource(struct CPU* cpu, U32 eip, struct Block* block);
-extern U32 gensrc;
-#endif
-
-#ifdef AOT
-OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen);
-#include "crc.h"
-#endif
-
-void jit(struct CPU* cpu, U32 eip, struct Block* block) {
+void jit(struct CPU* cpu, struct Block* block) {
     struct Op* op;
     
     op = block->ops;
@@ -2426,35 +2416,4 @@ void jit(struct CPU* cpu, U32 eip, struct Block* block) {
         }
         op = op->next;
     }
-
-#ifdef GENERATE_SOURCE
-    if (gensrc)
-        generateSource(cpu, eip, block);
-#endif
-
-#ifdef AOT
-    {
-        U32 i;
-        U32 opPos=0;
-        unsigned char ops[1024];
-        U32 ip = eip;
-        U32 crc;
-        OpCallback func = 0;
-
-        op = block->ops;
-        while (op) {
-            for (i=0;i<op->eipCount;i++)
-                ops[opPos++] = readb(cpu->memory, ip++);
-            op = op->next;
-        }
-        crc = crc32b(ops, opPos);
-        func = getCompiledFunction(crc, ops, opPos);
-        if (func) {
-            block->ops->func = func;
-            freeOp(block->ops->next);
-            block->ops->next = 0;            
-        }
-    }
-#endif
-
 }
