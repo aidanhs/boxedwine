@@ -35,22 +35,22 @@ public class SetCC extends Base {
     }
 
     public void gensrc(FileOutputStream fos) throws IOException {
-        ccsrc(fos, "190", "O", "getOF(cpu)");
-        ccsrc(fos, "191", "NO", "!getOF(cpu)");
-        ccsrc(fos, "192", "B", "getCF(cpu)");
-        ccsrc(fos, "193", "NB", "!getCF(cpu)");
-        ccsrc(fos, "194", "Z", "getZF(cpu)");
-        ccsrc(fos, "195", "NZ", "!getZF(cpu)");
-        ccsrc(fos, "196", "BE", "getZF(cpu) || getCF(cpu)");
-        ccsrc(fos, "197", "NBE", "!getZF(cpu) && !getCF(cpu)");
-        ccsrc(fos, "198", "S", "getSF(cpu)");
-        ccsrc(fos, "199", "NS", "!getSF(cpu)");
-        ccsrc(fos, "19a", "P", "getPF(cpu)");
-        ccsrc(fos, "19b", "NP",  "!getPF(cpu)");
-        ccsrc(fos, "19c", "L", "getSF(cpu)!=getOF(cpu)");
-        ccsrc(fos, "19d", "NL", "getSF(cpu)==getOF(cpu)");
-        ccsrc(fos, "19e", "LE", "getZF(cpu) || getSF(cpu)!=getOF(cpu)");
-        ccsrc(fos, "19f", "NLE", "!getZF(cpu) && getSF(cpu)==getOF(cpu)");
+        ccsrc(fos, "190", "O", "0");
+        ccsrc(fos, "191", "NO", "1");
+        ccsrc(fos, "192", "B", "2");
+        ccsrc(fos, "193", "NB", "3");
+        ccsrc(fos, "194", "Z", "4");
+        ccsrc(fos, "195", "NZ", "5");
+        ccsrc(fos, "196", "BE", "6");
+        ccsrc(fos, "197", "NBE", "7");
+        ccsrc(fos, "198", "S", "8");
+        ccsrc(fos, "199", "NS", "9");
+        ccsrc(fos, "19a", "P", "10");
+        ccsrc(fos, "19b", "NP",  "11");
+        ccsrc(fos, "19c", "L", "12");
+        ccsrc(fos, "19d", "NL", "13");
+        ccsrc(fos, "19e", "LE", "14");
+        ccsrc(fos, "19f", "NLE", "15");
     }
 
     public void ccsrc(FileOutputStream fos, String inst, String c, String cond) throws IOException {
@@ -59,19 +59,25 @@ public class SetCC extends Base {
         out(fos, "void OPCALL set"+c+"_mem32(struct CPU* cpu, struct Op* op);");
         out(fos, "void gen"+inst+"(struct Op* op) {");
         out(fos, "    if (op->func == set"+c+"_reg) {");
-        out(fos, "        out(\"if ("+cond+") {\");");
+        out(fos, "        out(\"if (\");");
+        out(fos, "        out(getCondition("+cond+"));");
+        out(fos, "        out(\") {\");");
         out(fos, "        out(r8(op->r1));");
         out(fos, "        out(\" = 1;} else {\");");
         out(fos, "        out(r8(op->r1));");
         out(fos, "        out(\" = 0;} CYCLES(2);\");");
         out(fos, "    } else if (op->func == set"+c+"_mem16) {");
-        out(fos, "        out(\"if ("+cond+") {writeb(cpu->memory, \");");
+        out(fos, "        out(\"if (\");");
+        out(fos, "        out(getCondition("+cond+"));");
+        out(fos, "        out(\") {writeb(cpu->memory, \");");
         out(fos, "        out(getEaa16(op));");
         out(fos, "        out(\", 1);} else {writeb(cpu->memory, \");");
         out(fos, "        out(getEaa16(op));");
         out(fos, "        out(\", 0);} CYCLES(2);\");");
         out(fos, "    } else if (op->func == set"+c+"_mem32) {");
-        out(fos, "        out(\"if ("+cond+") {writeb(cpu->memory, \");");
+        out(fos, "        out(\"if (\");");
+        out(fos, "        out(getCondition("+cond+"));");
+        out(fos, "        out(\") {writeb(cpu->memory, \");");
         out(fos, "        out(getEaa32(op));");
         out(fos, "        out(\", 1);} else {writeb(cpu->memory, \");");
         out(fos, "        out(getEaa32(op));");

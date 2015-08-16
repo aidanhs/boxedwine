@@ -73,12 +73,12 @@ public class PushPop extends Base {
         out(fos, "}");
         if (pop16!=null) {
             out(fos, "void gen" + pop16 + "(struct Op* op) {");
-            out(fos, "    out(\"cpu->segValue[" + seg + "] = pop16(cpu); cpu->segAddress[" + seg + "] = cpu->thread->process->ldt[cpu->segValue[" + seg + "] >> 3].base_addr;CYCLES(3);\");");
+            out(fos, "    out(\"cpu->segValue[" + seg + "] = pop16(cpu); cpu->segAddress[" + seg + "] = cpu->ldt[cpu->segValue[" + seg + "] >> 3].base_addr;CYCLES(3);\");");
             out(fos, "}");
         }
         if (pop32!=null) {
             out(fos, "void gen" + pop32 + "(struct Op* op) {");
-            out(fos, "    out(\"cpu->segValue[" + seg + "] = pop32(cpu); cpu->segAddress[" + seg + "] = cpu->thread->process->ldt[cpu->segValue[" + seg + "] >> 3].base_addr;CYCLES(3);\");");
+            out(fos, "    out(\"cpu->segValue[" + seg + "] = pop32(cpu); cpu->segAddress[" + seg + "] = cpu->ldt[cpu->segValue[" + seg + "] >> 3].base_addr;CYCLES(3);\");");
             out(fos, "}");
         }
     }

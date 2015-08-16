@@ -4328,7 +4328,7 @@ void decode3a1(struct DecodeData* data) {
     LOG_OP("POP FS");
     NEXT_OP(data);
 }
-// CPUID
+// CPUID_OP
 void decode1a2(struct DecodeData* data) {
     data->op->func = cpuid_op;
     LOG_OP("CPUID");

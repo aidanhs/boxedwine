@@ -17,8 +17,11 @@ public class Arith extends Base {
 
     public void gensrc(FileOutputStream fos) throws IOException {
         String helpers = "void genArithRR(const char* op, const char* flags, const char* bits, const char* r1, const char* r2, U32 useResult, U32 useCF, const char* cycles) {\n" +
-                "    if (useCF)\n" +
-                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
+                "    if (useCF) {\n" +
+                "        out(\"cpu->oldcf = \");\n" +
+                "        out(getFlag(CF));\n" +
+                "        out(\";\");\n" +
+                "    }\n" +
                 "    out(\"cpu->dst.u\");\n" +
                 "    out(bits);\n" +
                 "    out(\" = \");\n" +
@@ -66,7 +69,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"getCF(cpu)\");\n" +
+                "        out(getFlag(CF));\n" +
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -74,8 +77,11 @@ public class Arith extends Base {
                 "}\n" +
                 "\n" +
                 "void genArithER(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
-                "    if (useCF)\n" +
-                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
+                "    if (useCF) {\n" +
+                "        out(\"cpu->oldcf = \");\n" +
+                "        out(getFlag(CF));\n" +
+                "        out(\";\");\n" +
+                "    }\n" +
                 "    out(\"eaa = \");\n" +
                 "    out(address);\n" +
                 "    out(\"; cpu->dst.u\");\n" +
@@ -129,7 +135,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"getCF(cpu)\");\n" +
+                "        out(getFlag(CF));\n" +
                 "    }\n" +
                 "    out(\");CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -137,8 +143,11 @@ public class Arith extends Base {
                 "}\n" +
                 "\n" +
                 "void genArithRE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
-                "    if (useCF)\n" +
-                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
+                "    if (useCF) {\n" +
+                "        out(\"cpu->oldcf = \");\n" +
+                "        out(getFlag(CF));\n" +
+                "        out(\";\");\n" +
+                "    }\n" +
                 "    out(\"cpu->dst.u\");\n" +
                 "    out(bits);\n" +
                 "    out(\" = \");\n" +
@@ -191,7 +200,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"getCF(cpu)\");\n" +
+                "        out(getFlag(CF));\n" +
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -201,8 +210,11 @@ public class Arith extends Base {
                 "void genArithR(const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
-                "    if (useCF)\n" +
-                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
+                "    if (useCF) {\n" +
+                "        out(\"cpu->oldcf = \");\n" +
+                "        out(getFlag(CF));\n" +
+                "        out(\";\");\n" +
+                "    }\n" +
                 "    out(\"cpu->dst.u\");\n" +
                 "    out(bits);\n" +
                 "    out(\" = \");\n" +
@@ -254,7 +266,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"getCF(cpu)\");\n" +
+                "        out(getFlag(CF));\n" +
                 "    }\n" +
                 "    out(\";CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -264,8 +276,11 @@ public class Arith extends Base {
                 "void genArithE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
-                "    if (useCF)\n" +
-                "        out(\"cpu->oldcf = getCF(cpu);\");\n" +
+                "    if (useCF) {\n" +
+                "        out(\"cpu->oldcf = \");\n" +
+                "        out(getFlag(CF));\n" +
+                "        out(\";\");\n" +
+                "    }\n" +
                 "    out(\"eaa = \");\n" +
                 "    out(address);\n" +
                 "    out(\"; cpu->dst.u\");\n" +
@@ -323,7 +338,7 @@ public class Arith extends Base {
                 "        out(\" \");\n" +
                 "        out(op);\n" +
                 "        out(\" \");\n" +
-                "        out(\"getCF(cpu)\");\n" +
+                "        out(getFlag(CF));\n" +
                 "    }\n" +
                 "    out(\");CYCLES(\");\n" +
                 "    out(cycles);\n" +
@@ -402,14 +417,17 @@ public class Arith extends Base {
         out(fos, "void gen"+inst+"(struct Op* op) {");
         out(fos, "    if (op->func=="+name+"r"+bits+"r"+bits+") {");
         out(fos, "        genArithRR(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rrCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"r"+bits+"_noflags) {");
         out(fos, "        genArithRR_noflags(\""+op+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useCF?"1":"0")+",\""+rrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_16) {");
         out(fos, "        genArithER(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_16_noflags) {");
         out(fos, "        genArithER_noflags(\""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_32) {");
         out(fos, "        genArithER(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_32_noflags) {");
         out(fos, "        genArithER_noflags(\""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    }");
@@ -426,14 +444,17 @@ public class Arith extends Base {
         out(fos, "void gen"+inst+"(struct Op* op) {");
         out(fos, "    if (op->func=="+name+"r"+bits+"r"+bits+") {");
         out(fos, "        genArithRR(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rrCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"r"+bits+"_noflags) {");
         out(fos, "        genArithRR_noflags(\""+op+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useCF?"1":"0")+",\""+rrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_16) {");
         out(fos, "        genArithRE(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_16_noflags) {");
         out(fos, "        genArithRE_noflags(\""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_32) {");
         out(fos, "        genArithRE(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_32_noflags) {");
         out(fos, "        genArithRE_noflags(\""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    }");
@@ -446,6 +467,7 @@ public class Arith extends Base {
         out(fos, "void gen"+inst+"(struct Op* op) {");
         out(fos, "    if (op->func=="+name+bits+"_reg) {");
         out(fos, "        genArithR(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), op->data1, "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rdCycles+"\");");
+        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+bits+"_reg_noflags) {");
         out(fos, "        genArithR_noflags(\""+op+"\", \""+bits+"\", r"+bits+"(op->r1), op->data1, "+(useCF?"1":"0")+",\""+rdCycles+"\");");
         out(fos, "    }");

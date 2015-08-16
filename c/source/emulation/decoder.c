@@ -2213,6 +2213,7 @@ void aot(struct CPU* cpu, struct Block* block, U32 eip) {
         block->ops->func = func;
         freeOp(block->ops->next);
         block->ops->next = 0;     
+        // blocks might have been combined, so we need to recache them
         block->block1 = 0;
         block->block2 = 0;
     }
