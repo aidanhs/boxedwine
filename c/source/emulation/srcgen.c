@@ -5293,7 +5293,7 @@ void gen0df(struct Op* op) {
     if (op->func == FFREEP_STi) {
         out("cpu->fpu.tags[STV(&cpu->fpu, ");
         out(tmp);
-        out("] = TAG_Empty; FPU_FPOP(&cpu->fpu); CYCLES(1);");
+        out("] = TAG_Empty; FPU_FPOP(cpu); CYCLES(1);");
     } else if (op->func == FXCH_STi) {
         out("tmp32 = STV(&cpu->fpu, ");
         out(tmp);
@@ -5307,7 +5307,7 @@ void gen0df(struct Op* op) {
     } else if (op->func == FUCOMI_ST0_STj_Pop) {
         out("FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, ");
         out(tmp);
-        out(")); FPU_FPOP(&cpu->fpu); CYCLES(1);");
+        out(")); FPU_FPOP(cpu); CYCLES(1);");
         currentLazyFlags = sFLAGS_NONE;
     } else if (op->func == FCOMI_ST0_STj_Pop) {
         out("FPU_FCOMI(cpu, cpu->fpu.top, STV(&cpu->fpu, ");
@@ -5341,7 +5341,7 @@ void gen0df(struct Op* op) {
     } else if (op->func == FBSTP_PACKED_BCD_16) {
         out("FPU_FBST(cpu, ");
         out(getEaa16(op));
-        out("); FPU_FPOP(&cpu->fpu); CYCLES(148);");
+        out("); FPU_FPOP(cpu); CYCLES(148);");
     } else if (op->func == FISTP_QWORD_INTEGER_16) {
         out("FPU_FST_I64(cpu, ");
         out(getEaa16(op));
@@ -5373,7 +5373,7 @@ void gen0df(struct Op* op) {
     } else if (op->func == FBSTP_PACKED_BCD_32) {
         out("FPU_FBST(cpu, ");
         out(getEaa32(op));
-        out("); FPU_FPOP(&cpu->fpu); CYCLES(148);");
+        out("); FPU_FPOP(cpu); CYCLES(148);");
     } else if (op->func == FISTP_QWORD_INTEGER_32) {
         out("FPU_FST_I64(cpu, ");
         out(getEaa32(op));
@@ -5902,7 +5902,7 @@ void gen2f7(struct Op* op) {
     } else if (op->func == mul32_mem16_noflags) {
         out("tmp64 = (U64)EAX * readd(cpu->memory, ");
         out(getEaa16(op));
-        out("); EAX = (U32)result; EDX = (U32)(result >> 32); CYCLES(10);");
+        out("); EAX = (U32)tmp64; EDX = (U32)(tmp64 >> 32); CYCLES(10);");
     } else if (op->func == mul32_mem32) {
         out("tmp64 = (U64)EAX * readd(cpu->memory, ");
         out(getEaa16(op));
@@ -5911,7 +5911,7 @@ void gen2f7(struct Op* op) {
     } else if (op->func == mul32_mem32_noflags) {
         out("tmp64 = (U64)EAX * readd(cpu->memory, ");
         out(getEaa32(op));
-        out("); EAX = (U32)result; EDX = (U32)(result >> 32); CYCLES(10);");
+        out("); EAX = (U32)tmp64; EDX = (U32)(tmp64 >> 32); CYCLES(10);");
     } else if (op->func == imul32_reg) {
         out("tmps64 = (S64)((S32)EAX) * (S32)");
         out(r32(op->r1));
@@ -6896,10 +6896,10 @@ void gen1af(struct Op* op) {
         out(r16(op->r2));
         out(") * (S32)");
         out(r16(op->r1));
-        out("; fillFlagsNoCFOF(cpu); if ((res >= -32767) && (res <= 32767)) {removeFlag(CF|OF);} else {addFlag(CF|OF);}");
+        out("; fillFlagsNoCFOF(cpu); if ((tmps32 >= -32767) && (tmps32 <= 32767)) {removeFlag(CF|OF);} else {addFlag(CF|OF);}");
         currentLazyFlags = sFLAGS_NONE;
         out(r16(op->r1));
-	    out(" = res; CYCLES(10);");
+	    out(" = tmps32; CYCLES(10);");
     } else {
         out("tmps32 = (S16)(readw(cpu->memory, ");
         if (op->func == dimulr16e16_16)
@@ -6911,10 +6911,10 @@ void gen1af(struct Op* op) {
 
         out(")) * (S32)");
         out(r16(op->r1));
-        out("; fillFlagsNoCFOF(cpu); if ((res >= -32767) && (res <= 32767)) {removeFlag(CF|OF);} else {addFlag(CF|OF);}");
+        out("; fillFlagsNoCFOF(cpu); if ((tmps32 >= -32767) && (tmps32 <= 32767)) {removeFlag(CF|OF);} else {addFlag(CF|OF);}");
         currentLazyFlags = sFLAGS_NONE;
 	    out(r16(op->r1));
-	    out(" = res; CYCLES(10);");
+	    out(" = tmps32; CYCLES(10);");
     }
 }
 
