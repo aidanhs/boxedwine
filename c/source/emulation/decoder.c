@@ -1173,7 +1173,7 @@ void decode0cd(struct DecodeData* data) {
 	} else if (i==0x99) {
 		data->op->func = int99;
 		LOG_OP("INT 80");
-		FINISH_OP(data);
+        NEXT_OP(data);
 	} else {
 		kpanic("Unhandled interrupt %d", i);
 	}
