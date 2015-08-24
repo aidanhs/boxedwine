@@ -7837,6 +7837,11 @@ void writeOps(struct Op* op) {
     }
 }
 
+
+U32 writeFunction(struct Op* op) {
+    return 0;
+}
+
 void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     struct Op* op = block->ops;
     char name[256];
@@ -8242,7 +8247,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     out("void OPCALL ");
     out(name);
     out("(struct CPU* cpu, struct Op* op) {\n");    
-    writeOps(op);
+    if (!block->startFunction || !writeFunction(op))
+        writeOps(op);
     out("\n");
     out("}\n\n");    
 

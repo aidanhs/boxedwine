@@ -412,8 +412,6 @@ static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
 	updateAvailable=1;
 	if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
 		((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
-	else
-		printf("fb_writeb missed\n");
 }
 
 static U16 fb_readw(struct Memory* memory, U32 address) {

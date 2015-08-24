@@ -1985,6 +1985,7 @@ void OPCALL callNear32_reg(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32 = cpu->reg[op->r1].u32;
 	CYCLES(2);
     cpu->nextBlock = getBlock(cpu);
+    cpu->nextBlock->startFunction = 1;
 }
 
 void OPCALL callNear32_mem16(struct CPU* cpu, struct Op* op) {
@@ -1995,6 +1996,7 @@ void OPCALL callNear32_mem16(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
+    cpu->nextBlock->startFunction = 1;
 }
 
 void OPCALL callNear32_mem32(struct CPU* cpu, struct Op* op) {
@@ -2005,6 +2007,7 @@ void OPCALL callNear32_mem32(struct CPU* cpu, struct Op* op) {
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
+    cpu->nextBlock->startFunction = 1;
 }
 
 void OPCALL jmpNear32_reg(struct CPU* cpu, struct Op* op) {

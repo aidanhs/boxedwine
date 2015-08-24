@@ -233,12 +233,14 @@ U64 lastCycleCount;
 U64 lastTime;
 
 U32 getMHz() {
-    U64 diff = cpuTotalTime-lastTime;
     U32 result = 0;
-    if (diff)
-	    result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
-    lastCycleCount = cpuTotalCycles;
-    lastTime = cpuTotalTime;
+    if (lastTime) {
+        U64 diff = getSystemTimeAsMicroSeconds()-lastTime;    
+        if (diff)
+	        result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
+        lastCycleCount = cpuTotalCycles;        
+    }
+    lastTime = getSystemTimeAsMicroSeconds();
     return result;
 }
 
@@ -246,11 +248,13 @@ U64 lastIPScount;
 U64 lastIPSTime;
 
 U32 getMIPS() {
-    U64 diff = cpuTotalTime-lastIPSTime;
     U32 result = 0;
-    if (diff)
-	    result = (U32)((cpuTotalInstructionCount-lastIPScount)/diff);
-    lastIPScount = cpuTotalInstructionCount;
-    lastIPSTime = cpuTotalTime;
+    if (lastIPSTime) {
+        U64 diff = getSystemTimeAsMicroSeconds()-lastIPSTime;        
+        if (diff)
+	        result = (U32)((cpuTotalInstructionCount-lastIPScount)/diff);
+        lastIPScount = cpuTotalInstructionCount;
+    }
+    lastIPSTime = getSystemTimeAsMicroSeconds();
     return result;
 }

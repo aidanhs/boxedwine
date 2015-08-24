@@ -2193,7 +2193,7 @@ extern U32 gensrc;
 #ifdef AOT
 OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen);
 #include "crc.h"
-void aot(struct CPU* cpu, struct Block* block, U32 eip) {
+U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     U32 i;
     U32 opPos=0;
     unsigned char ops[1024];
@@ -2216,7 +2216,9 @@ void aot(struct CPU* cpu, struct Block* block, U32 eip) {
         // blocks might have been combined, so we need to recache them
         block->block1 = 0;
         block->block2 = 0;
+        return 1;
     }
+    return 0;
 }
 #endif
 void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
@@ -2234,17 +2236,24 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
         block->ops->next = 0;
     }
     if (block->count==500) {        
+        U32 needJIT = 1;
         block->ops = block->ops->next;
         op->next = 0;
         freeOp(op);
-        jit(cpu, block);
+
 #ifdef GENERATE_SOURCE
-    if (gensrc)
-        generateSource(cpu, eip, block);
+        if (gensrc) {
+            jit(cpu, block);
+            generateSource(cpu, eip, block);
+            needJIT = 0;
+        }
 #endif
-#ifdef AOT
-    aot(cpu, block, eip);
+#ifdef AOT2
+        needJIT =  !aot(cpu, block, eip);
 #endif
+        if (needJIT) {
+            jit(cpu, block);
+        }
     }
 }
 

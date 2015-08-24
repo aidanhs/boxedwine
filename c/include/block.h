@@ -6,9 +6,10 @@
 
 struct Block{	
 	struct Op* ops;
-	U32 count;
+	U32 count;    
 	struct Block* block1;
 	struct Block* block2;
+    U32 startFunction;
 };
 
 #endif
