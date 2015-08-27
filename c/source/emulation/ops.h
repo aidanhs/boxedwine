@@ -1569,7 +1569,7 @@ void OPCALL imul16_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL div16(struct CPU* cpu, U16 src) {	
+void div16(struct CPU* cpu, U16 src) {	
 	U32 num = ((U32)DX << 16) | AX;
 	U32 quo;
 	U16 rem;
@@ -1605,7 +1605,7 @@ void OPCALL div16_mem32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
-void OPCALL idiv16(struct CPU* cpu, S16 src) {
+void idiv16(struct CPU* cpu, S16 src) {
 	S32 num = (S32)(((U32)DX << 16) | AX);
 	S32 quo;
 	S16 rem;

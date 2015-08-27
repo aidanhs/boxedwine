@@ -8,7 +8,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 192</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 192 -gensrc</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ES Debug|Win32'">
@@ -20,7 +20,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 192</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\squeeze -m 192 -gensrc</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">

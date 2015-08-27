@@ -2360,6 +2360,16 @@ void OPCALL pop2Reg32(struct CPU * cpu, struct Op * op){
     NEXT();
 }
 
+U16 flagsThatOpUses(struct Op* op) {
+    U16 gFlag = opInfo[op->inst].getsFlags;                
+    U16 index = gFlag >> 12;
+
+    if (index) {
+        gFlag = subOpInfo[index][op->subInst].getsFlags;
+    }
+    return gFlag;
+}
+
 U32 needsToSetFlag(struct Op* op, U32 flag) {  
     U16 sFlag = opInfo[op->inst].setsFlags;
     U16 index = sFlag >> 12;
@@ -2370,12 +2380,7 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
 
     op = op->next;
     while (op) {
-        U16 gFlag = opInfo[op->inst].getsFlags;        
-        
-        index = gFlag >> 12;
-        if (index) {
-            gFlag = subOpInfo[index][op->subInst].getsFlags;
-        }
+        U16 gFlag = flagsThatOpUses(op);
         // an op needs the flag
         if (gFlag & flag) {
             return 1;

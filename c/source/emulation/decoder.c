@@ -2248,8 +2248,9 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
             needJIT = 0;
         }
 #endif
-#ifdef AOT2
-        needJIT =  !aot(cpu, block, eip);
+#ifdef AOT
+        if (aot(cpu, block, eip))
+            needJIT = 0;
 #endif
         if (needJIT) {
             jit(cpu, block);

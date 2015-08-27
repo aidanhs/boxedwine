@@ -4,6 +4,7 @@
 #include "cpu.h"
 #include "kalloc.h"
 #include "jit.h"
+#include "decoder.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,6 +67,8 @@ struct CPU* genCPU;
 struct Block* currentGenBlock;
 void writeOps(struct Op* op);
 U32 currentLazyFlags;
+struct Op* inlinedLazyFlagOp;
+U32 genEIP;
 
 U32 needsToSetFlag(struct Op* op, U32 flag);
 
@@ -230,29 +233,7 @@ const char* getFlag(int flag) {
     return "";
 }
 
-char tmpCondition[256];
-
-const char* getCondition(int condition) {
-    switch (condition) {
-    case 0: return getFlag(OF);
-    case 1: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
-    case 2: return getFlag(CF);
-    case 3: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(CF)); return tmpCondition;
-    case 4: return getFlag(ZF);
-    case 5: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(ZF)); return tmpCondition;
-    case 6: strcpy(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " || "); strcat(tmpCondition, getFlag(CF)); return tmpCondition;
-    case 7: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " && !"); strcat(tmpCondition, getFlag(CF)); return tmpCondition;
-    case 8: return getFlag(SF);
-    case 9: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(SF)); return tmpCondition;
-    case 10: return getFlag(PF);
-    case 11: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(PF)); return tmpCondition;
-    case 12: strcpy(tmpCondition, getFlag(SF)); strcat(tmpCondition, " != "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
-    case 13: strcpy(tmpCondition, getFlag(SF)); strcat(tmpCondition, " == "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
-    case 14: strcpy(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " || "), strcat(tmpCondition, getFlag(SF)); strcat(tmpCondition, " != "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
-    case 15: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " && "), strcat(tmpCondition, getFlag(SF)); strcat(tmpCondition, " == "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
-    default: kpanic("getCondition %d", condition); return "";
-    }
-}
+const char* getCondition(int condition);
 
 const char* r8(int r) {
     switch (r) {
@@ -372,6 +353,89 @@ const char* getEaa32(struct Op* op) {
         strcat(eaaStr, tmp);
     }
     return eaaStr;
+}
+
+U32 isJump(struct Op* op) {
+    return ((op->inst>=0x70 && op->inst<0x80) || (op->inst>=0x180 && op->inst<0x180) || (op->inst>=0x270 && op->inst<0x280) || (op->inst>=0x380 && op->inst<0x380));
+}
+
+U32 getBlockEipCount(struct Block* block) {
+    struct Op* op = block->ops;
+    U32 result = 0;
+
+    while(op) {
+        result += op->eipCount;
+        op = op->next;
+    }
+    return result;
+}
+
+U16 flagsThatOpUses(struct Op* op);
+void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
+
+U32 inlineTestJump(struct Op* op, U32 lazyFlag, const char* cycles) {
+    struct Op* nextOpToUseFlags = op->next;
+
+    if (!needsToSetFlag(op, CF) && !needsToSetFlag(op, ZF) && !needsToSetFlag(op, SF) && !needsToSetFlag(op, OF) && !needsToSetFlag(op, AF) && !needsToSetFlag(op, PF)) {
+        out("// removed unecessary TEST\n");
+        out("CYCLES(");
+        out(cycles);
+        out(");");
+        return 1;
+    }
+    while(nextOpToUseFlags) {
+        U16 flags = flagsThatOpUses(nextOpToUseFlags);
+        if (flags!=0)
+            break;
+        nextOpToUseFlags = nextOpToUseFlags->next;
+    }
+    if (!nextOpToUseFlags) {
+        // ran into something else besides a jump that used this test or maybe a retn
+        return 0;
+    }
+    if (isJump(nextOpToUseFlags)) {
+        U32 found = 0;
+        if (!currentGenBlock->block1) {
+            U32 oldEIP = genCPU->eip.u32;
+            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock);
+            currentGenBlock->block1 = getBlock(genCPU);
+            genCPU->eip.u32 = oldEIP;
+        }   
+        if (currentGenBlock->block1->ops->func == restoreOps) {
+            U32 oldEIP = genCPU->eip.u32;
+            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock);
+            decodeBlockWithBlock(genCPU, currentGenBlock->block1);
+            genCPU->eip.u32 = oldEIP;
+        }
+
+        if (!currentGenBlock->block2) {
+            U32 oldEIP = genCPU->eip.u32;
+            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock) + nextOpToUseFlags->data1;
+            currentGenBlock->block2 = getBlock(genCPU);
+            genCPU->eip.u32 = oldEIP;
+        }
+        if (currentGenBlock->block2->ops->func == restoreOps) {
+            U32 oldEIP = genCPU->eip.u32;
+            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock) + nextOpToUseFlags->data1;
+            decodeBlockWithBlock(genCPU, currentGenBlock->block2);
+            genCPU->eip.u32 = oldEIP;
+        }
+
+        if (!needsToSetFlag(currentGenBlock->block1->ops, CF) && !needsToSetFlag(currentGenBlock->block1->ops, ZF) && !needsToSetFlag(currentGenBlock->block1->ops, SF) && !needsToSetFlag(currentGenBlock->block1->ops, OF) && !needsToSetFlag(currentGenBlock->block1->ops, AF) && !needsToSetFlag(currentGenBlock->block1->ops, PF)
+         && !needsToSetFlag(currentGenBlock->block2->ops, CF) && !needsToSetFlag(currentGenBlock->block2->ops, ZF) && !needsToSetFlag(currentGenBlock->block2->ops, SF) && !needsToSetFlag(currentGenBlock->block2->ops, OF) && !needsToSetFlag(currentGenBlock->block2->ops, AF) && !needsToSetFlag(currentGenBlock->block2->ops, PF)) {
+            found = 1;
+        }
+        if (found) {
+            out("// inlined TEST\n");
+            out("CYCLES(");
+            out(cycles);
+            out(");");
+            currentLazyFlags = lazyFlag;
+            inlinedLazyFlagOp = op;
+            return 1;
+        }
+    }
+    return 0;
 }
 
 void gen027(struct Op* op) {
@@ -1176,7 +1240,10 @@ void gen281(struct Op* op) {
 void OPCALL testr8r8(struct CPU* cpu, struct Op* op);
 void OPCALL teste8r8_16(struct CPU* cpu, struct Op* op);
 void OPCALL teste8r8_32(struct CPU* cpu, struct Op* op);
-void gen084(struct Op* op) {
+void gen084(struct Op* op) {    
+    if (inlineTestJump(op, sFLAGS_TEST8, op->func == testr8r8?"1":"2"))
+        return;
+
     if (op->func == testr8r8) {
         genArithRR("&", "FLAGS_TEST8", "8", r8(op->r1), r8(op->r2), 0, 0, "1");
     } else if (op->func==teste8r8_16) {
@@ -1193,6 +1260,9 @@ void OPCALL testr16r16(struct CPU* cpu, struct Op* op);
 void OPCALL teste16r16_16(struct CPU* cpu, struct Op* op);
 void OPCALL teste16r16_32(struct CPU* cpu, struct Op* op);
 void gen085(struct Op* op) {
+    if (inlineTestJump(op, sFLAGS_TEST16, op->func == testr16r16?"1":"2"))
+        return;
+
     if (op->func == testr16r16) {
         genArithRR("&", "FLAGS_TEST16", "16", r16(op->r1), r16(op->r2), 0, 0, "1");
     } else if (op->func==teste16r16_16) {
@@ -1209,6 +1279,9 @@ void OPCALL testr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL teste32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL teste32r32_32(struct CPU* cpu, struct Op* op);
 void gen285(struct Op* op) {
+    if (inlineTestJump(op, sFLAGS_TEST32, op->func == testr32r32?"1":"2"))
+        return;
+
     if (op->func == testr32r32) {
         genArithRR("&", "FLAGS_TEST32", "32", r32(op->r1), r32(op->r2), 0, 0, "1");        
     } else if (op->func==teste32r32_16) {
@@ -2123,16 +2196,24 @@ void gen2af(struct Op* op) {
 
 
 void gen0a8(struct Op* op) {
+    if (inlineTestJump(op, sFLAGS_TEST8, "1"))
+        return;
     genArithR("&", "FLAGS_TEST8", "8", r8(0), op->data1, 0, 0, "1");
     currentLazyFlags = sFLAGS_TEST8;
 }
 
 void gen0a9(struct Op* op) {
+    if (inlineTestJump(op, sFLAGS_TEST16, "1"))
+        return;
+
     genArithR("&", "FLAGS_TEST16", "16", r16(0), op->data1, 0, 0, "1");
     currentLazyFlags = sFLAGS_TEST16;
 }
 
 void gen2a9(struct Op* op) {
+    if (inlineTestJump(op, sFLAGS_TEST32, "1"))
+        return;
+
     genArithR("&", "FLAGS_TEST32", "32", r32(0), op->data1, 0, 0, "1");
     currentLazyFlags = sFLAGS_TEST32;
 }
@@ -5540,6 +5621,8 @@ void gen0f6(struct Op* op) {
     itoa(op->data1, data, 16);
 
     if (op->func == test8_reg) {
+        if (inlineTestJump(op, sFLAGS_TEST8, "1"))
+            return;
         out("cpu->dst.u8 = ");
         out(r8(op->r1));
         out("; cpu->src.u8 = 0x");
@@ -5547,6 +5630,8 @@ void gen0f6(struct Op* op) {
         out("; cpu->result.u8 = cpu->dst.u8 & cpu->src.u8; cpu->lazyFlags = FLAGS_TEST8; CYCLES(1);");
         currentLazyFlags = sFLAGS_TEST8;
     } else if (op->func == test8_mem16) {
+        if (inlineTestJump(op, sFLAGS_TEST8, "2"))
+            return;
         out("cpu->dst.u8 = readb(cpu->memory, ");
         out(getEaa16(op));
         out("); cpu->src.u8 = 0x");
@@ -5554,6 +5639,8 @@ void gen0f6(struct Op* op) {
         out("; cpu->result.u8 = cpu->dst.u8 & cpu->src.u8; cpu->lazyFlags = FLAGS_TEST8; CYCLES(2);");
         currentLazyFlags = sFLAGS_TEST8;
     } else if (op->func == test8_mem32) {
+        if (inlineTestJump(op, sFLAGS_TEST8, "2"))
+            return;
         out("cpu->dst.u8 = readb(cpu->memory, ");
         out(getEaa32(op));
         out("); cpu->src.u8 = 0x");
@@ -5676,6 +5763,8 @@ void gen0f7(struct Op* op) {
     itoa(op->data1, data, 16);
 
     if (op->func == test16_reg) {
+        if (inlineTestJump(op, sFLAGS_TEST16, "1"))
+            return;
         out("cpu->dst.u16 = ");
         out(r16(op->r1));
         out("; cpu->src.u16 = 0x");
@@ -5683,6 +5772,8 @@ void gen0f7(struct Op* op) {
         out("; cpu->result.u16 = cpu->dst.u16 & cpu->src.u16; cpu->lazyFlags = FLAGS_TEST16; CYCLES(1);");
         currentLazyFlags = sFLAGS_TEST16;
     } else if (op->func == test16_mem16) {
+        if (inlineTestJump(op, sFLAGS_TEST16, "2"))
+            return;
         out("cpu->dst.u16 = readw(cpu->memory, ");
         out(getEaa16(op));
         out("); cpu->src.u16 = 0x");
@@ -5690,6 +5781,8 @@ void gen0f7(struct Op* op) {
         out("; cpu->result.u16 = cpu->dst.u16 & cpu->src.u16; cpu->lazyFlags = FLAGS_TEST16; CYCLES(2);");
         currentLazyFlags = sFLAGS_TEST16;
     } else if (op->func == test16_mem32) {
+        if (inlineTestJump(op, sFLAGS_TEST16, "2"))
+        return;
         out("cpu->dst.u16 = readw(cpu->memory, ");
         out(getEaa32(op));
         out("); cpu->src.u16 = 0x");
@@ -5821,6 +5914,8 @@ void gen2f7(struct Op* op) {
     itoa(op->data1, data, 16);
 
     if (op->func == test32_reg) {
+        if (inlineTestJump(op, sFLAGS_TEST32, "1"))
+            return;
         out("cpu->dst.u32 = ");
         out(r32(op->r1));
         out("; cpu->src.u32 = 0x");
@@ -5828,6 +5923,8 @@ void gen2f7(struct Op* op) {
         out("; cpu->result.u32 = cpu->dst.u32 & cpu->src.u32; cpu->lazyFlags = FLAGS_TEST32; CYCLES(1);");
         currentLazyFlags = sFLAGS_TEST32;
     } else if (op->func == test32_mem16) {
+        if (inlineTestJump(op, sFLAGS_TEST32, "2"))
+            return;
         out("cpu->dst.u32 = readd(cpu->memory, ");
         out(getEaa16(op));
         out("); cpu->src.u32 = 0x");
@@ -5835,6 +5932,8 @@ void gen2f7(struct Op* op) {
         out("; cpu->result.u32 = cpu->dst.u32 & cpu->src.u32; cpu->lazyFlags = FLAGS_TEST32; CYCLES(2);");
         currentLazyFlags = sFLAGS_TEST32;
     } else if (op->func == test32_mem32) {
+        if (inlineTestJump(op, sFLAGS_TEST32, "2"))
+            return;
         out("cpu->dst.u32 = readd(cpu->memory, ");
         out(getEaa32(op));
         out("); cpu->src.u32 = 0x");
@@ -7563,6 +7662,210 @@ void gen400(struct Op* op) {
     writeOps(currentGenBlock->ops);
 }
 
+char tmpCondition[256];
+const char* getCondition(int condition) {
+    if (inlinedLazyFlagOp) {
+        if (currentLazyFlags == sFLAGS_TEST8 || currentLazyFlags == sFLAGS_TEST16 || currentLazyFlags == sFLAGS_TEST32) {
+            char left[256];
+            char right[256];
+            U32 same = 0;
+            const char* signMask;
+            const char* signCast;
+
+            if (currentLazyFlags == sFLAGS_TEST8) {
+                signMask = "0x80";
+                signCast = "(S8)";
+                if (inlinedLazyFlagOp->func == testr8r8) {
+                    strcpy(left, r8(inlinedLazyFlagOp->r1));
+                    strcpy(right, r8(inlinedLazyFlagOp->r2));
+                    if (inlinedLazyFlagOp->r1 == inlinedLazyFlagOp->r2)
+                        same = 1;
+                } else if (inlinedLazyFlagOp->func == teste8r8_16) {
+                    strcpy(left, "readb(cpu->memory, ");
+                    strcat(left, getEaa16(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, r8(inlinedLazyFlagOp->r1));
+                } else if (inlinedLazyFlagOp->func == teste8r8_32) {
+                    strcpy(left, "readb(cpu->memory, ");
+                    strcat(left, getEaa32(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, r8(inlinedLazyFlagOp->r1));
+                } else if (inlinedLazyFlagOp->func == test8_reg) {
+                    strcpy(left, r8(inlinedLazyFlagOp->r1));
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1 & 0xFF, right+2, 16);
+                } else if (inlinedLazyFlagOp->func == test8_mem16) {
+                    strcpy(left, "readb(cpu->memory, ");
+                    strcat(left, getEaa16(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1 & 0xFF, right+2, 16);
+                } else if (inlinedLazyFlagOp->func == test8_mem32) {
+                    strcpy(left, "readb(cpu->memory, ");
+                    strcat(left, getEaa32(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1 & 0xFF, right+2, 16);
+                } else {
+                    kpanic("getCondition: unknown inlinedLazyFlagOp");
+                }
+            } else if (currentLazyFlags == sFLAGS_TEST16) {
+                signMask = "0x8000";
+                signCast = "(S16)";
+                if (inlinedLazyFlagOp->func == testr16r16) {
+                    strcpy(left, r16(inlinedLazyFlagOp->r1));
+                    strcpy(right, r16(inlinedLazyFlagOp->r2));
+                    if (inlinedLazyFlagOp->r1 == inlinedLazyFlagOp->r2)
+                        same = 1;
+                } else if (inlinedLazyFlagOp->func == teste16r16_16) {
+                    strcpy(left, "readw(cpu->memory, ");
+                    strcat(left, getEaa16(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, r16(inlinedLazyFlagOp->r1));
+                } else if (inlinedLazyFlagOp->func == teste16r16_32) {
+                    strcpy(left, "readw(cpu->memory, ");
+                    strcat(left, getEaa32(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, r16(inlinedLazyFlagOp->r1));
+                } else if (inlinedLazyFlagOp->func == test16_reg) {
+                    strcpy(left, r16(inlinedLazyFlagOp->r1));
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1 & 0xFFFF, right+2, 16);
+                } else if (inlinedLazyFlagOp->func == test16_mem16) {
+                    strcpy(left, "readw(cpu->memory, ");
+                    strcat(left, getEaa16(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1 & 0xFFFF, right+2, 16);
+                } else if (inlinedLazyFlagOp->func == test16_mem32) {
+                    strcpy(left, "readw(cpu->memory, ");
+                    strcat(left, getEaa32(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1 & 0xFFFF, right+2, 16);
+                } else {
+                    kpanic("getCondition: unknown inlinedLazyFlagOp");
+                }
+            } else if (currentLazyFlags == sFLAGS_TEST32) {
+                signMask = "0x80000000";
+                signCast = "(S32)";
+                if (inlinedLazyFlagOp->func == testr32r32) {
+                    strcpy(left, r32(inlinedLazyFlagOp->r1));
+                    strcpy(right, r32(inlinedLazyFlagOp->r2));
+                    if (inlinedLazyFlagOp->r1 == inlinedLazyFlagOp->r2)
+                        same = 1;
+                } else if (inlinedLazyFlagOp->func == teste32r32_16) {
+                    strcpy(left, "readd(cpu->memory, ");
+                    strcat(left, getEaa16(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, r32(inlinedLazyFlagOp->r1));
+                } else if (inlinedLazyFlagOp->func == teste32r32_32) {
+                    strcpy(left, "readd(cpu->memory, ");
+                    strcat(left, getEaa32(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, r32(inlinedLazyFlagOp->r1));
+                } else if (inlinedLazyFlagOp->func == test32_reg) {
+                    strcpy(left, r32(inlinedLazyFlagOp->r1));
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1, right+2, 16);
+                } else if (inlinedLazyFlagOp->func == test32_mem16) {
+                    strcpy(left, "readd(cpu->memory, ");
+                    strcat(left, getEaa16(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1, right+2, 16);
+                } else if (inlinedLazyFlagOp->func == test32_mem32) {
+                    strcpy(left, "readd(cpu->memory, ");
+                    strcat(left, getEaa32(inlinedLazyFlagOp));
+                    strcat(left, ")");
+                    strcpy(right, "0x");
+                    itoa(inlinedLazyFlagOp->data1, right+2, 16);
+                } else {
+                    kpanic("getCondition: unknown inlinedLazyFlagOp");
+                }
+            } else {
+                kpanic("getCondition: oops");
+            }
+            inlinedLazyFlagOp = 0;
+
+            switch (condition) {                    
+                case 0: // OF
+                    return "0";                    
+                case 1: // !OF
+                    return "1";                    
+                case 2: // CF
+                    return "0";                    
+                case 3: // !CF
+                    return "1";                    
+                case 4: // ZF                    
+                case 6: // ZF or CF
+                    if (same) {
+                        strcpy(tmpCondition, "!"); strcat(tmpCondition, left); return tmpCondition;                        
+                    }                    
+                    strcpy(tmpCondition, "!("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ")"); return tmpCondition;                    
+                case 5: // !ZF
+                case 7: // !ZF and !CF
+                    if (same) {
+                        strcpy(tmpCondition, left); return tmpCondition;
+                    }
+                    strcpy(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); return tmpCondition;
+                case 8: // SF
+                case 12: // SF != OF
+                    strcpy(tmpCondition, "("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & "); strcat(tmpCondition, signMask); return tmpCondition;                    
+                case 9: // !SF
+                case 13: // SF == OF
+                    strcpy(tmpCondition, "!(("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & "); strcat(tmpCondition, signMask); strcat(tmpCondition, ")"); return tmpCondition;                    
+                case 10: // PF
+                    strcpy(tmpCondition, "parity_lookup["); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, "]");                    
+                case 11: // !PF
+                    strcpy(tmpCondition, "!"); strcat(tmpCondition, "parity_lookup[("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & 0xFF]");                    
+                case 14: // ZF || SF != OF       
+                    if (same) {
+                        strcpy(tmpCondition, signCast);
+                        strcat(tmpCondition, left);
+                        strcat(tmpCondition, " <= 0");
+                    } else {                   
+                        strcpy(tmpCondition, "!("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ")"); return tmpCondition;                    
+                        strcpy(tmpCondition, "|| (("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & "); strcat(tmpCondition, signMask); strcat(tmpCondition, ")"); return tmpCondition;                    
+                    }
+                    return tmpCondition;
+                case 15: // !ZF && SF == OF
+                    if (same) {
+                        strcpy(tmpCondition, signCast);
+                        strcat(tmpCondition, left);
+                        strcat(tmpCondition, " > 0");
+                    } else {                   
+                        strcpy(tmpCondition, "("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ")"); return tmpCondition;                    
+                        strcpy(tmpCondition, "&& !(("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & "); strcat(tmpCondition, signMask); strcat(tmpCondition, ")"); return tmpCondition;                    
+                    }
+                    return tmpCondition;
+                default: kpanic("getCondition %d", condition); return "";
+                }
+        } else {
+            kpanic("getCondition: unknown currentLazyFlags %d", currentLazyFlags);
+        }        
+    }
+    switch (condition) {
+    case 0: return getFlag(OF);
+    case 1: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
+    case 2: return getFlag(CF);
+    case 3: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(CF)); return tmpCondition;
+    case 4: return getFlag(ZF);
+    case 5: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(ZF)); return tmpCondition;
+    case 6: strcpy(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " || "); strcat(tmpCondition, getFlag(CF)); return tmpCondition;
+    case 7: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " && !"); strcat(tmpCondition, getFlag(CF)); return tmpCondition;
+    case 8: return getFlag(SF);
+    case 9: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(SF)); return tmpCondition;
+    case 10: return getFlag(PF);
+    case 11: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(PF)); return tmpCondition;
+    case 12: strcpy(tmpCondition, getFlag(SF)); strcat(tmpCondition, " != "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
+    case 13: strcpy(tmpCondition, getFlag(SF)); strcat(tmpCondition, " == "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
+    case 14: strcpy(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " || "), strcat(tmpCondition, getFlag(SF)); strcat(tmpCondition, " != "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
+    case 15: strcpy(tmpCondition, "!"); strcat(tmpCondition, getFlag(ZF)); strcat(tmpCondition, " && "), strcat(tmpCondition, getFlag(SF)); strcat(tmpCondition, " == "); strcat(tmpCondition, getFlag(OF)); return tmpCondition;
+    default: kpanic("getCondition %d", condition); return "";
+    }
+}
+
 typedef void (*SRC_GEN)(struct Op* op);
 
 SRC_GEN srcgen[] = {
@@ -7857,6 +8160,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         return;
     }
 
+    genEIP = eip;
     genCPU = cpu;
     currentGenBlock = block;
     while (op) {
