@@ -2386,6 +2386,7 @@ U32 getBlockEipCount(struct Block* block) {
 }
 
 void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
+void OPCALL jump(struct CPU* cpu, struct Op* op);
 
 U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags, U32 depth) {      
     if (depth==0)
@@ -2457,6 +2458,25 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         }
         if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount, 0, flags, depth-1) &&
             !needsToSetFlag_r(cpu, block->block2, blockEIP + blockCount + op->data1, 0, flags, depth-1))
+        {
+            return 0;
+        }
+    } else if (op->func == jump) {
+        U32 blockCount = getBlockEipCount(block);
+
+        if (!block->block1) {
+            U32 oldEIP = cpu->eip.u32;
+            cpu->eip.u32 = blockEIP + blockCount + op->data1;
+            block->block1 = getBlock(cpu);
+            cpu->eip.u32 = oldEIP;
+        }   
+        if (block->block1->ops->func == restoreOps) {
+            U32 oldEIP = cpu->eip.u32;
+            cpu->eip.u32 = blockEIP + blockCount + op->data1;
+            decodeBlockWithBlock(cpu, block->block1);
+            cpu->eip.u32 = oldEIP;
+        }
+        if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount + op->data1, 0, flags, depth-1))
         {
             return 0;
         }
