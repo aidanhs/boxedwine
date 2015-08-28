@@ -16,333 +16,333 @@ public class Arith extends Base {
     }
 
     public void gensrc(FileOutputStream fos) throws IOException {
-        String helpers = "void genArithRR(const char* op, const char* flags, const char* bits, const char* r1, const char* r2, U32 useResult, U32 useCF, const char* cycles) {\n" +
+        String helpers = "void genArithRR(struct GenData* data, const char* op, const char* flags, const char* bits, const char* r1, const char* r2, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    if (useCF) {\n" +
-                "        out(\"cpu->oldcf = \");\n" +
-                "        out(getFlag(CF));\n" +
-                "        out(\";\");\n" +
+                "        out(data, \"cpu->oldcf = \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
+                "        out(data, \";\");\n" +
                 "    }\n" +
-                "    out(\"cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\"; cpu->src.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = \");\n" +
-                "    out(r2);\n" +
-                "    out(\"; cpu->result.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" cpu->src.u\");\n" +
-                "    out(bits);\n" +
+                "    out(data, \"cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \"; cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r2);\n" +
+                "    out(data, \"; cpu->result.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, \"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\"; cpu->lazyFlags = \");\n" +
-                "    out(flags);\n" +
+                "    out(data, \"; cpu->lazyFlags = \");\n" +
+                "    out(data, flags);\n" +
                 "    if (useResult) {\n" +
-                "        out(\";\");\n" +
-                "        out(r1);\n" +
-                "        out(\" = cpu->result.u\");\n" +
-                "        out(bits);        \n" +
+                "        out(data, \";\");\n" +
+                "        out(data, r1);\n" +
+                "        out(data, \" = cpu->result.u\");\n" +
+                "        out(data, bits);        \n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithRR_noflags(const char* op, const char* bits, const char* r1, const char* r2, U32 useCF, const char* cycles) {\n" +
-                "    out(r1);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" \");\n" +
-                "    out(r2);\n" +
+                "void genArithRR_noflags(struct GenData* data, const char* op, const char* bits, const char* r1, const char* r2, U32 useCF, const char* cycles) {\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, r2);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(getFlag(CF));\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithER(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "void genArithER(struct GenData* data, const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    if (useCF) {\n" +
-                "        out(\"cpu->oldcf = \");\n" +
-                "        out(getFlag(CF));\n" +
-                "        out(\";\");\n" +
+                "        out(data, \"cpu->oldcf = \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
+                "        out(data, \";\");\n" +
                 "    }\n" +
-                "    out(\"eaa = \");\n" +
-                "    out(address);\n" +
-                "    out(\"; cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = read\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, eaa); cpu->src.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\"; cpu->result.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" cpu->src.u\");\n" +
-                "    out(bits);\n" +
+                "    out(data, \"eaa = \");\n" +
+                "    out(data, address);\n" +
+                "    out(data, \"; cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = read\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, eaa); cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \"; cpu->result.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, \"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\"; cpu->lazyFlags = \");\n" +
-                "    out(flags);\n" +
+                "    out(data, \"; cpu->lazyFlags = \");\n" +
+                "    out(data, flags);\n" +
                 "    if (useResult) {\n" +
-                "        out(\"; write\");\n" +
-                "        out(memWidth);\n" +
-                "        out(\"(cpu->memory, eaa,  cpu->result.u\");\n" +
-                "        out(bits);\n" +
-                "        out(\")\");\n" +
+                "        out(data, \"; write\");\n" +
+                "        out(data, memWidth);\n" +
+                "        out(data, \"(cpu->memory, eaa,  cpu->result.u\");\n" +
+                "        out(data, bits);\n" +
+                "        out(data, \")\");\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithER_noflags(const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {\n" +
-                "    out(\"eaa = \");\n" +
-                "    out(address);\n" +
-                "    out(\"; write\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, eaa, read\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, eaa) \");\n" +
-                "    out(op);\n" +
-                "    out(\" \");\n" +
-                "    out(r1);\n" +
+                "void genArithER_noflags(struct GenData* data, const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {\n" +
+                "    out(data, \"eaa = \");\n" +
+                "    out(data, address);\n" +
+                "    out(data, \"; write\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, eaa, read\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, eaa) \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, r1);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(getFlag(CF));\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
                 "    }\n" +
-                "    out(\");CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \");CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithRE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "void genArithRE(struct GenData* data, const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    if (useCF) {\n" +
-                "        out(\"cpu->oldcf = \");\n" +
-                "        out(getFlag(CF));\n" +
-                "        out(\";\");\n" +
+                "        out(data, \"cpu->oldcf = \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
+                "        out(data, \";\");\n" +
                 "    }\n" +
-                "    out(\"cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\"; cpu->src.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = read\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, \");\n" +
-                "    out(address);\n" +
-                "    out(\"); cpu->result.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" cpu->src.u\");\n" +
-                "    out(bits);\n" +
+                "    out(data, \"cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \"; cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = read\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, \");\n" +
+                "    out(data, address);\n" +
+                "    out(data, \"); cpu->result.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, \"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\"; cpu->lazyFlags = \");\n" +
-                "    out(flags);\n" +
+                "    out(data, \"; cpu->lazyFlags = \");\n" +
+                "    out(data, flags);\n" +
                 "    if (useResult) {\n" +
-                "        out(\"; \");\n" +
-                "        out(r1);\n" +
-                "        out(\" = cpu->result.u\");\n" +
-                "        out(bits);\n" +
+                "        out(data, \"; \");\n" +
+                "        out(data, r1);\n" +
+                "        out(data, \" = cpu->result.u\");\n" +
+                "        out(data, bits);\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithRE_noflags(const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {\n" +
-                "    out(r1);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" read\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, \");\n" +
-                "    out(address);\n" +
-                "    out(\")\");\n" +
+                "void genArithRE_noflags(struct GenData* data, const char* op, const char* bits, const char* address, const char* memWidth, const char* r1, U32 useCF, const char* cycles) {\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" read\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, \");\n" +
+                "    out(data, address);\n" +
+                "    out(data, \")\");\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(getFlag(CF));\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithR(const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "void genArithR(struct GenData* data, const char* op, const char* flags, const char* bits, const char* r1, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
                 "    if (useCF) {\n" +
-                "        out(\"cpu->oldcf = \");\n" +
-                "        out(getFlag(CF));\n" +
-                "        out(\";\");\n" +
+                "        out(data, \"cpu->oldcf = \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
+                "        out(data, \";\");\n" +
                 "    }\n" +
-                "    out(\"cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\"; cpu->src.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = 0x\");\n" +
+                "    out(data, \"cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \"; cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = 0x\");\n" +
                 "    itoa(value, tmp, 16);\n" +
-                "    out(tmp);\n" +
-                "    out(\"; cpu->result.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" cpu->src.u\");\n" +
-                "    out(bits);\n" +
+                "    out(data, tmp);\n" +
+                "    out(data, \"; cpu->result.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, \"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\"; cpu->lazyFlags = \");\n" +
-                "    out(flags);\n" +
+                "    out(data, \"; cpu->lazyFlags = \");\n" +
+                "    out(data, flags);\n" +
                 "    if (useResult) {\n" +
-                "        out(\"; \");\n" +
-                "        out(r1);\n" +
-                "        out(\" = cpu->result.u\");\n" +
-                "        out(bits);\n" +
+                "        out(data, \"; \");\n" +
+                "        out(data, r1);\n" +
+                "        out(data, \" = cpu->result.u\");\n" +
+                "        out(data, bits);\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithR_noflags(const char* op, const char* bits, const char* r1, unsigned int value, U32 useCF, const char* cycles) {\n" +
+                "void genArithR_noflags(struct GenData* data, const char* op, const char* bits, const char* r1, unsigned int value, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
-                "    out(r1);\n" +
-                "    out(\" = \");\n" +
-                "    out(r1);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" 0x\");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \" = \");\n" +
+                "    out(data, r1);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" 0x\");\n" +
                 "    itoa(value, tmp, 16);\n" +
-                "    out(tmp);\n" +
+                "    out(data, tmp);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(getFlag(CF));\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithE(const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
+                "void genArithE(struct GenData* data, const char* op, const char* flags, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useResult, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
                 "    if (useCF) {\n" +
-                "        out(\"cpu->oldcf = \");\n" +
-                "        out(getFlag(CF));\n" +
-                "        out(\";\");\n" +
+                "        out(data, \"cpu->oldcf = \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
+                "        out(data, \";\");\n" +
                 "    }\n" +
-                "    out(\"eaa = \");\n" +
-                "    out(address);\n" +
-                "    out(\"; cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = read\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, eaa); cpu->src.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = 0x\");\n" +
+                "    out(data, \"eaa = \");\n" +
+                "    out(data, address);\n" +
+                "    out(data, \"; cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = read\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, eaa); cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = 0x\");\n" +
                 "    itoa(value, tmp, 16);\n" +
-                "    out(tmp);\n" +
-                "    out(\"; cpu->result.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" = cpu->dst.u\");\n" +
-                "    out(bits);\n" +
-                "    out(\" \");\n" +
-                "    out(op);\n" +
-                "    out(\" cpu->src.u\");\n" +
-                "    out(bits);\n" +
+                "    out(data, tmp);\n" +
+                "    out(data, \"; cpu->result.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" = cpu->dst.u\");\n" +
+                "    out(data, bits);\n" +
+                "    out(data, \" \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" cpu->src.u\");\n" +
+                "    out(data, bits);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(\"cpu->oldcf\");\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, \"cpu->oldcf\");\n" +
                 "    }\n" +
-                "    out(\"; cpu->lazyFlags = \");\n" +
-                "    out(flags);\n" +
+                "    out(data, \"; cpu->lazyFlags = \");\n" +
+                "    out(data, flags);\n" +
                 "    if (useResult) {\n" +
-                "        out(\"; write\");\n" +
-                "        out(memWidth);\n" +
-                "        out(\"(cpu->memory, eaa,  cpu->result.u\");\n" +
-                "        out(bits);\n" +
-                "        out (\")\");\n" +
+                "        out(data, \"; write\");\n" +
+                "        out(data, memWidth);\n" +
+                "        out(data, \"(cpu->memory, eaa,  cpu->result.u\");\n" +
+                "        out(data, bits);\n" +
+                "        out(data, \")\");\n" +
                 "    }\n" +
-                "    out(\";CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \";CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}\n" +
                 "\n" +
-                "void genArithE_noflags(const char* op, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useCF, const char* cycles) {\n" +
+                "void genArithE_noflags(struct GenData* data, const char* op, const char* bits, const char* address, const char* memWidth, unsigned int value, U32 useCF, const char* cycles) {\n" +
                 "    char tmp[16];\n" +
                 "\n" +
-                "    out(\"eaa = \");\n" +
-                "    out(address);\n" +
-                "    out(\"; write\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, eaa, read\");\n" +
-                "    out(memWidth);\n" +
-                "    out(\"(cpu->memory, eaa) \");\n" +
-                "    out(op);\n" +
-                "    out(\" 0x\");\n" +
+                "    out(data, \"eaa = \");\n" +
+                "    out(data, address);\n" +
+                "    out(data, \"; write\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, eaa, read\");\n" +
+                "    out(data, memWidth);\n" +
+                "    out(data, \"(cpu->memory, eaa) \");\n" +
+                "    out(data, op);\n" +
+                "    out(data, \" 0x\");\n" +
                 "    itoa(value, tmp, 16);\n" +
-                "    out(tmp);\n" +
+                "    out(data, tmp);\n" +
                 "    if (useCF) {\n" +
-                "        out(\" \");\n" +
-                "        out(op);\n" +
-                "        out(\" \");\n" +
-                "        out(getFlag(CF));\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, op);\n" +
+                "        out(data, \" \");\n" +
+                "        out(data, getFlag(data, CF));\n" +
                 "    }\n" +
-                "    out(\");CYCLES(\");\n" +
-                "    out(cycles);\n" +
-                "    out(\");\");\n" +
+                "    out(data, \");CYCLES(\");\n" +
+                "    out(data, cycles);\n" +
+                "    out(data, \");\");\n" +
                 "}";
         out(fos, helpers);
 
@@ -414,22 +414,22 @@ public class Arith extends Base {
         out(fos, "void OPCALL "+name+"e"+bits+"r"+bits+"_16_noflags(struct CPU* cpu, struct Op* op);");
         out(fos, "void OPCALL "+name+"e"+bits+"r"+bits+"_32(struct CPU* cpu, struct Op* op);");
         out(fos, "void OPCALL "+name+"e"+bits+"r"+bits+"_32_noflags(struct CPU* cpu, struct Op* op);");
-        out(fos, "void gen"+inst+"(struct Op* op) {");
+        out(fos, "void gen"+inst+"(struct GenData* data, struct Op* op) {");
         out(fos, "    if (op->func=="+name+"r"+bits+"r"+bits+") {");
-        out(fos, "        genArithRR(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rrCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithRR(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rrCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"r"+bits+"_noflags) {");
-        out(fos, "        genArithRR_noflags(\""+op+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useCF?"1":"0")+",\""+rrCycles+"\");");
+        out(fos, "        genArithRR_noflags(data, \""+op+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useCF?"1":"0")+",\""+rrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_16) {");
-        out(fos, "        genArithER(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithER(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_16_noflags) {");
-        out(fos, "        genArithER_noflags(\""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        genArithER_noflags(data, \""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_32) {");
-        out(fos, "        genArithER(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithER(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"e"+bits+"r"+bits+"_32_noflags) {");
-        out(fos, "        genArithER_noflags(\""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
+        out(fos, "        genArithER_noflags(data, \""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+mrCycles+"\");");
         out(fos, "    }");
         out(fos, "}");
     }
@@ -441,22 +441,22 @@ public class Arith extends Base {
         out(fos, "void OPCALL "+name+"r"+bits+"e"+bits+"_16_noflags(struct CPU* cpu, struct Op* op);");
         out(fos, "void OPCALL "+name+"r"+bits+"e"+bits+"_32(struct CPU* cpu, struct Op* op);");
         out(fos, "void OPCALL "+name+"r"+bits+"e"+bits+"_32_noflags(struct CPU* cpu, struct Op* op);");
-        out(fos, "void gen"+inst+"(struct Op* op) {");
+        out(fos, "void gen"+inst+"(struct GenData* data, struct Op* op) {");
         out(fos, "    if (op->func=="+name+"r"+bits+"r"+bits+") {");
-        out(fos, "        genArithRR(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rrCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithRR(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rrCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"r"+bits+"_noflags) {");
-        out(fos, "        genArithRR_noflags(\""+op+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useCF?"1":"0")+",\""+rrCycles+"\");");
+        out(fos, "        genArithRR_noflags(data, \""+op+"\", \""+bits+"\", r"+bits+"(op->r1), r"+bits+"(op->r2), "+(useCF?"1":"0")+",\""+rrCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_16) {");
-        out(fos, "        genArithRE(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithRE(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_16_noflags) {");
-        out(fos, "        genArithRE_noflags(\""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        genArithRE_noflags(data, \""+op+"\", \""+bits+"\", getEaa16(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_32) {");
-        out(fos, "        genArithRE(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithRE(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+"r"+bits+"e"+bits+"_32_noflags) {");
-        out(fos, "        genArithRE_noflags(\""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
+        out(fos, "        genArithRE_noflags(data, \""+op+"\", \""+bits+"\", getEaa32(op), \""+memWidth+"\", r"+bits+"(op->r1), "+(useCF?"1":"0")+",\""+rmCycles+"\");");
         out(fos, "    }");
         out(fos, "}");
     }
@@ -464,12 +464,12 @@ public class Arith extends Base {
     public void srcArithAD(FileOutputStream fos, String inst, String name, int bits, String op, String memWidth, boolean useResult, boolean useCF, String rdCycles) throws IOException {
         out(fos, "void OPCALL "+name+bits+"_reg(struct CPU* cpu, struct Op* op);");
         out(fos, "void OPCALL "+name+bits+"_reg_noflags(struct CPU* cpu, struct Op* op);");
-        out(fos, "void gen"+inst+"(struct Op* op) {");
+        out(fos, "void gen"+inst+"(struct GenData* data, struct Op* op) {");
         out(fos, "    if (op->func=="+name+bits+"_reg) {");
-        out(fos, "        genArithR(\""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), op->data1, "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rdCycles+"\");");
-        out(fos, "        currentLazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
+        out(fos, "        genArithR(data, \""+op+"\", \"FLAGS_"+name.toUpperCase()+bits+"\", \""+bits+"\", r"+bits+"(op->r1), op->data1, "+(useResult?"1":"0")+", "+(useCF?"1":"0")+",\""+rdCycles+"\");");
+        out(fos, "        data->lazyFlags = sFLAGS_"+name.toUpperCase()+bits+";");
         out(fos, "    } else if (op->func=="+name+bits+"_reg_noflags) {");
-        out(fos, "        genArithR_noflags(\""+op+"\", \""+bits+"\", r"+bits+"(op->r1), op->data1, "+(useCF?"1":"0")+",\""+rdCycles+"\");");
+        out(fos, "        genArithR_noflags(data, \""+op+"\", \""+bits+"\", r"+bits+"(op->r1), op->data1, "+(useCF?"1":"0")+",\""+rdCycles+"\");");
         out(fos, "    }");
         out(fos, "}");
     }
