@@ -68,9 +68,10 @@ struct Block* currentGenBlock;
 void writeOps(struct Op* op);
 U32 currentLazyFlags;
 struct Op* inlinedLazyFlagOp;
+U32 inlinedLazyFlagOpAssignedToCPU;
 U32 genEIP;
 
-U32 needsToSetFlag(struct Op* op, U32 flag);
+U32 needsToSetFlag(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags);
 
 void outfp(FILE* fp, const char* str) {
     fwrite(str, strlen(str), 1, fp);
@@ -355,28 +356,14 @@ const char* getEaa32(struct Op* op) {
     return eaaStr;
 }
 
-U32 isJump(struct Op* op) {
-    return ((op->inst>=0x70 && op->inst<0x80) || (op->inst>=0x180 && op->inst<0x180) || (op->inst>=0x270 && op->inst<0x280) || (op->inst>=0x380 && op->inst<0x380));
-}
-
-U32 getBlockEipCount(struct Block* block) {
-    struct Op* op = block->ops;
-    U32 result = 0;
-
-    while(op) {
-        result += op->eipCount;
-        op = op->next;
-    }
-    return result;
-}
-
 U16 flagsThatOpUses(struct Op* op);
-void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
+U32 isConditionalJump(struct Op* op);
+U32 getTestLeftRight(struct Op* op, char* left, char* right);
 
 U32 inlineTestJump(struct Op* op, U32 lazyFlag, const char* cycles) {
     struct Op* nextOpToUseFlags = op->next;
 
-    if (!needsToSetFlag(op, CF) && !needsToSetFlag(op, ZF) && !needsToSetFlag(op, SF) && !needsToSetFlag(op, OF) && !needsToSetFlag(op, AF) && !needsToSetFlag(op, PF)) {
+    if (!needsToSetFlag(genCPU, currentGenBlock, genEIP, op, CF|ZF|SF|OF|AF|PF)) {
         out("// removed unecessary TEST\n");
         out("CYCLES(");
         out(cycles);
@@ -393,40 +380,42 @@ U32 inlineTestJump(struct Op* op, U32 lazyFlag, const char* cycles) {
         // ran into something else besides a jump that used this test or maybe a retn
         return 0;
     }
-    if (isJump(nextOpToUseFlags)) {
-        U32 found = 0;
-        if (!currentGenBlock->block1) {
-            U32 oldEIP = genCPU->eip.u32;
-            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock);
-            currentGenBlock->block1 = getBlock(genCPU);
-            genCPU->eip.u32 = oldEIP;
-        }   
-        if (currentGenBlock->block1->ops->func == restoreOps) {
-            U32 oldEIP = genCPU->eip.u32;
-            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock);
-            decodeBlockWithBlock(genCPU, currentGenBlock->block1);
-            genCPU->eip.u32 = oldEIP;
-        }
-
-        if (!currentGenBlock->block2) {
-            U32 oldEIP = genCPU->eip.u32;
-            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock) + nextOpToUseFlags->data1;
-            currentGenBlock->block2 = getBlock(genCPU);
-            genCPU->eip.u32 = oldEIP;
-        }
-        if (currentGenBlock->block2->ops->func == restoreOps) {
-            U32 oldEIP = genCPU->eip.u32;
-            genCPU->eip.u32 = genEIP + getBlockEipCount(currentGenBlock) + nextOpToUseFlags->data1;
-            decodeBlockWithBlock(genCPU, currentGenBlock->block2);
-            genCPU->eip.u32 = oldEIP;
-        }
-
-        if (!needsToSetFlag(currentGenBlock->block1->ops, CF) && !needsToSetFlag(currentGenBlock->block1->ops, ZF) && !needsToSetFlag(currentGenBlock->block1->ops, SF) && !needsToSetFlag(currentGenBlock->block1->ops, OF) && !needsToSetFlag(currentGenBlock->block1->ops, AF) && !needsToSetFlag(currentGenBlock->block1->ops, PF)
-         && !needsToSetFlag(currentGenBlock->block2->ops, CF) && !needsToSetFlag(currentGenBlock->block2->ops, ZF) && !needsToSetFlag(currentGenBlock->block2->ops, SF) && !needsToSetFlag(currentGenBlock->block2->ops, OF) && !needsToSetFlag(currentGenBlock->block2->ops, AF) && !needsToSetFlag(currentGenBlock->block2->ops, PF)) {
-            found = 1;
-        }
-        if (found) {
-            out("// inlined TEST\n");
+    if (isConditionalJump(nextOpToUseFlags)) {        
+        if (!needsToSetFlag(genCPU, currentGenBlock, genEIP, nextOpToUseFlags, CF|ZF|SF|OF|AF|PF)) {
+            out("// inlined TEST\n    ");
+            // TODO maybe in the future, the code will know what registers are set between these two instructions and whether or not it will cause a problem
+            inlinedLazyFlagOpAssignedToCPU = 0;
+            if (op->next != nextOpToUseFlags) {
+                char left[256];
+                char right[256];
+                U32 same = getTestLeftRight(op, left, right);
+                if (lazyFlag == sFLAGS_TEST8) {
+                    out("cpu->dst.u8 = ");
+                    out(left);
+                    if (!same) {
+                        out("; cpu->src.u8 = ");
+                        out(right);
+                    }
+                } else if (lazyFlag == sFLAGS_TEST16) {
+                    out("cpu->dst.u16 = ");
+                    out(left);
+                    if (!same) {
+                        out("; cpu->src.u16 = ");
+                        out(right);
+                    }
+                } else if (lazyFlag == sFLAGS_TEST32) {
+                    out("cpu->dst.u32 = ");
+                    out(left);
+                    if (!same) {
+                        out("; cpu->src.u32 = ");
+                        out(right);
+                    }
+                } else {
+                    kpanic("inlineTestJump: lazyFlag unknown %d", lazyFlag);
+                }
+                out("; ");
+                inlinedLazyFlagOpAssignedToCPU = 1;
+            }
             out("CYCLES(");
             out(cycles);
             out(");");
@@ -6487,9 +6476,11 @@ void OPCALL btr16r16(struct CPU* cpu, struct Op* op);
 void OPCALL bte16r16_16(struct CPU* cpu, struct Op* op);
 void OPCALL bte16r16_32(struct CPU* cpu, struct Op* op);
 void gen1a3(struct Op* op) {
-    if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+    if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
          out("fillFlagsNoCF(cpu); ");
          currentLazyFlags = sFLAGS_NONE;
+    } else {
+        out("cpu->lazyFlags = FLAGS_NONE; ");
     }
     if (op->func == btr16r16) {
         out("setCF(cpu, ");
@@ -6522,9 +6513,11 @@ void OPCALL btr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL bte32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL bte32r32_32(struct CPU* cpu, struct Op* op);
 void gen3a3(struct Op* op) {
-    if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+    if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
          out("fillFlagsNoCF(cpu); ");
          currentLazyFlags = sFLAGS_NONE;
+    } else {
+        out("cpu->lazyFlags = FLAGS_NONE; ");
     }
     if (op->func == btr32r32) {
         out("setCF(cpu, ");
@@ -6723,9 +6716,11 @@ void OPCALL btsr16r16(struct CPU* cpu, struct Op* op);
 void OPCALL btse16r16_16(struct CPU* cpu, struct Op* op);
 void OPCALL btse16r16_32(struct CPU* cpu, struct Op* op);
 void gen1ab(struct Op* op) {
-    if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+    if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
          out("fillFlagsNoCF(cpu); ");
          currentLazyFlags = sFLAGS_NONE;
+    } else {
+        out("cpu->lazyFlags = FLAGS_NONE; ");
     }
     if (op->func == btsr16r16) {
         out("tmp16 = (1 << (");
@@ -6760,9 +6755,11 @@ void OPCALL btsr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL btse32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL btse32r32_32(struct CPU* cpu, struct Op* op);
 void gen3ab(struct Op* op) {
-    if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+    if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
          out("fillFlagsNoCF(cpu); ");
          currentLazyFlags = sFLAGS_NONE;
+    } else {
+        out("cpu->lazyFlags = FLAGS_NONE; ");
     }
     if (op->func == btsr32r32) {
         out("tmp32 = (1 << (");
@@ -7239,9 +7236,11 @@ void gen3ba(struct Op* op) {
     char tmp[16];
     itoa(op->data1, tmp, 16);
     if (op->func == bt_reg) {       
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("setCF(cpu, ");
         out(r32(op->r1));
@@ -7249,9 +7248,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(4);");
     } else if (op->func == bt_mem16) {  
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("setCF(cpu, readd(cpu->memory, ");
         out(getEaa16(op));
@@ -7259,9 +7260,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(4);");
     } else if (op->func == bt_mem32) {
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("setCF(cpu, readd(cpu->memory, ");
         out(getEaa32(op));
@@ -7269,9 +7272,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(4);");
     } else if (op->func == bts_reg) {  
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("setCF(cpu, ");
         out(r32(op->r1));
@@ -7283,9 +7288,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("; CYCLES(7);");
     } else if (op->func == bts_mem16) {        
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("eaa = ");
         getEaa16(op);
@@ -7295,9 +7302,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(8);");
     } else if (op->func == bts_mem32) {
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("eaa = ");
         getEaa32(op);
@@ -7307,9 +7316,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(8);");
     } else if (op->func == btr_reg) {        
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("setCF(cpu, ");
         out(r32(op->r1));
@@ -7321,9 +7332,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("; CYCLES(7);");
     } else if (op->func == btr_mem16) {   
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("eaa = ");
         getEaa16(op);
@@ -7333,9 +7346,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(8);");
     } else if (op->func == btr_mem32) {
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("eaa = ");
         getEaa32(op);
@@ -7345,9 +7360,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(8);");
     } else if (op->func == btc_reg) {   
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("setCF(cpu, ");
         out(r32(op->r1));
@@ -7359,9 +7376,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("; CYCLES(7);");
     } else if (op->func == btc_mem16) {        
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("eaa = ");
         getEaa16(op);
@@ -7371,9 +7390,11 @@ void gen3ba(struct Op* op) {
         out(tmp);
         out("); CYCLES(8);");
     } else if (op->func == btc_mem32) {
-        if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+        if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
             out("fillFlagsNoCF(cpu);");
             currentLazyFlags = sFLAGS_NONE;
+        } else {
+            out("cpu->lazyFlags = FLAGS_NONE; ");
         }
         out("eaa = ");
         getEaa32(op);
@@ -7391,9 +7412,11 @@ void OPCALL btcr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL btce32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL btce32r32_32(struct CPU* cpu, struct Op* op);
 void gen3bb(struct Op* op) {
-    if (needsToSetFlag(op, ZF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+    if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, ZF|SF|OF|PF|AF)) {
         out("fillFlagsNoCF(cpu);");
         currentLazyFlags = sFLAGS_NONE;
+    } else {
+        out("cpu->lazyFlags = FLAGS_NONE; ");
     }
     if (op->func == btcr32r32) {        
         out("tmp32 = 1 << ");
@@ -7452,9 +7475,11 @@ void OPCALL bsfr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL bsfr32e32_16(struct CPU* cpu, struct Op* op);
 void OPCALL bsfr32e32_32(struct CPU* cpu, struct Op* op);
 void gen3bc(struct Op* op) {
-    if (needsToSetFlag(op, CF) || needsToSetFlag(op, SF) || needsToSetFlag(op, OF) || needsToSetFlag(op, PF) || needsToSetFlag(op, AF)) {
+    if (needsToSetFlag(genCPU, currentGenBlock, genEIP, op, CF|SF|OF|PF|AF)) {
         out("fillFlagsNoZF(cpu);");
         currentLazyFlags = sFLAGS_NONE;
+    } else {
+        out("cpu->lazyFlags = FLAGS_NONE; ");
     }
     out("tmp32 = ");
     if (op->func == bsfr32r32) {                
@@ -7649,8 +7674,11 @@ void gen3c8(struct Op* op) {
 	out(" = (((tmp32 & 0xff000000) >> 24) | ((tmp32 & 0x00ff0000) >>  8) | ((tmp32 & 0x0000ff00) <<  8) | ((tmp32 & 0x000000ff) << 24)); CYCLES(1);");
 }
 
+U32 getBlockEipCount(struct Block* block);
+
 void gen400(struct Op* op) {
     struct Op* firstOp;
+    U32 blockCount = getBlockEipCount(currentGenBlock);
 
     currentGenBlock = currentGenBlock->block1;
     firstOp = currentGenBlock->ops;    
@@ -7658,8 +7686,110 @@ void gen400(struct Op* op) {
     firstOp->next = 0;
     freeOp(firstOp);
 
-    jit(genCPU, currentGenBlock);
+    jit(genCPU, currentGenBlock, genCPU->eip.u32);
     writeOps(currentGenBlock->ops);
+}
+
+U32 getTestLeftRight(struct Op* op, char* left, char* right) {
+    U32 same = 0;
+
+    if (op->func == testr8r8) {
+        strcpy(left, r8(op->r1));
+        strcpy(right, r8(op->r2));
+        if (op->r1 == op->r2)
+            same = 1;
+    } else if (op->func == teste8r8_16) {
+        strcpy(left, "readb(cpu->memory, ");
+        strcat(left, getEaa16(op));
+        strcat(left, ")");
+        strcpy(right, r8(op->r1));
+    } else if (op->func == teste8r8_32) {
+        strcpy(left, "readb(cpu->memory, ");
+        strcat(left, getEaa32(op));
+        strcat(left, ")");
+        strcpy(right, r8(op->r1));
+    } else if (op->func == test8_reg) {
+        strcpy(left, r8(op->r1));
+        strcpy(right, "0x");
+        itoa(op->data1 & 0xFF, right+2, 16);
+    } else if (op->func == test8_mem16) {
+        strcpy(left, "readb(cpu->memory, ");
+        strcat(left, getEaa16(op));
+        strcat(left, ")");
+        strcpy(right, "0x");
+        itoa(op->data1 & 0xFF, right+2, 16);
+    } else if (op->func == test8_mem32) {
+        strcpy(left, "readb(cpu->memory, ");
+        strcat(left, getEaa32(op));
+        strcat(left, ")");
+        strcpy(right, "0x");
+        itoa(op->data1 & 0xFF, right+2, 16);
+    } else if (op->func == testr16r16) {
+        strcpy(left, r16(op->r1));
+        strcpy(right, r16(op->r2));
+        if (op->r1 == op->r2)
+            same = 1;
+    } else if (op->func == teste16r16_16) {
+        strcpy(left, "readw(cpu->memory, ");
+        strcat(left, getEaa16(op));
+        strcat(left, ")");
+        strcpy(right, r16(op->r1));
+    } else if (op->func == teste16r16_32) {
+        strcpy(left, "readw(cpu->memory, ");
+        strcat(left, getEaa32(op));
+        strcat(left, ")");
+        strcpy(right, r16(op->r1));
+    } else if (op->func == test16_reg) {
+        strcpy(left, r16(op->r1));
+        strcpy(right, "0x");
+        itoa(op->data1 & 0xFFFF, right+2, 16);
+    } else if (op->func == test16_mem16) {
+        strcpy(left, "readw(cpu->memory, ");
+        strcat(left, getEaa16(op));
+        strcat(left, ")");
+        strcpy(right, "0x");
+        itoa(op->data1 & 0xFFFF, right+2, 16);
+    } else if (op->func == test16_mem32) {
+        strcpy(left, "readw(cpu->memory, ");
+        strcat(left, getEaa32(op));
+        strcat(left, ")");
+        strcpy(right, "0x");
+        itoa(op->data1 & 0xFFFF, right+2, 16);
+    } else if (op->func == testr32r32) {
+        strcpy(left, r32(op->r1));
+        strcpy(right, r32(op->r2));
+        if (op->r1 == op->r2)
+            same = 1;
+    } else if (op->func == teste32r32_16) {
+        strcpy(left, "readd(cpu->memory, ");
+        strcat(left, getEaa16(op));
+        strcat(left, ")");
+        strcpy(right, r32(op->r1));
+    } else if (op->func == teste32r32_32) {
+        strcpy(left, "readd(cpu->memory, ");
+        strcat(left, getEaa32(op));
+        strcat(left, ")");
+        strcpy(right, r32(op->r1));
+    } else if (op->func == test32_reg) {
+        strcpy(left, r32(op->r1));
+        strcpy(right, "0x");
+        itoa(op->data1, right+2, 16);
+    } else if (op->func == test32_mem16) {
+        strcpy(left, "readd(cpu->memory, ");
+        strcat(left, getEaa16(op));
+        strcat(left, ")");
+        strcpy(right, "0x");
+        itoa(op->data1, right+2, 16);
+    } else if (op->func == test32_mem32) {
+        strcpy(left, "readd(cpu->memory, ");
+        strcat(left, getEaa32(op));
+        strcat(left, ")");
+        strcpy(right, "0x");
+        itoa(op->data1, right+2, 16);
+    } else {
+        kpanic("getTestLeftRight: unknown op");
+    }
+    return same;
 }
 
 char tmpCondition[256];
@@ -7671,120 +7801,33 @@ const char* getCondition(int condition) {
             U32 same = 0;
             const char* signMask;
             const char* signCast;
+            const char* src;
+            const char* dst;
 
             if (currentLazyFlags == sFLAGS_TEST8) {
                 signMask = "0x80";
                 signCast = "(S8)";
-                if (inlinedLazyFlagOp->func == testr8r8) {
-                    strcpy(left, r8(inlinedLazyFlagOp->r1));
-                    strcpy(right, r8(inlinedLazyFlagOp->r2));
-                    if (inlinedLazyFlagOp->r1 == inlinedLazyFlagOp->r2)
-                        same = 1;
-                } else if (inlinedLazyFlagOp->func == teste8r8_16) {
-                    strcpy(left, "readb(cpu->memory, ");
-                    strcat(left, getEaa16(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, r8(inlinedLazyFlagOp->r1));
-                } else if (inlinedLazyFlagOp->func == teste8r8_32) {
-                    strcpy(left, "readb(cpu->memory, ");
-                    strcat(left, getEaa32(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, r8(inlinedLazyFlagOp->r1));
-                } else if (inlinedLazyFlagOp->func == test8_reg) {
-                    strcpy(left, r8(inlinedLazyFlagOp->r1));
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1 & 0xFF, right+2, 16);
-                } else if (inlinedLazyFlagOp->func == test8_mem16) {
-                    strcpy(left, "readb(cpu->memory, ");
-                    strcat(left, getEaa16(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1 & 0xFF, right+2, 16);
-                } else if (inlinedLazyFlagOp->func == test8_mem32) {
-                    strcpy(left, "readb(cpu->memory, ");
-                    strcat(left, getEaa32(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1 & 0xFF, right+2, 16);
-                } else {
-                    kpanic("getCondition: unknown inlinedLazyFlagOp");
-                }
+                src = "cpu->src.u8";
+                dst = "cpu->dst.u8";
             } else if (currentLazyFlags == sFLAGS_TEST16) {
                 signMask = "0x8000";
                 signCast = "(S16)";
-                if (inlinedLazyFlagOp->func == testr16r16) {
-                    strcpy(left, r16(inlinedLazyFlagOp->r1));
-                    strcpy(right, r16(inlinedLazyFlagOp->r2));
-                    if (inlinedLazyFlagOp->r1 == inlinedLazyFlagOp->r2)
-                        same = 1;
-                } else if (inlinedLazyFlagOp->func == teste16r16_16) {
-                    strcpy(left, "readw(cpu->memory, ");
-                    strcat(left, getEaa16(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, r16(inlinedLazyFlagOp->r1));
-                } else if (inlinedLazyFlagOp->func == teste16r16_32) {
-                    strcpy(left, "readw(cpu->memory, ");
-                    strcat(left, getEaa32(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, r16(inlinedLazyFlagOp->r1));
-                } else if (inlinedLazyFlagOp->func == test16_reg) {
-                    strcpy(left, r16(inlinedLazyFlagOp->r1));
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1 & 0xFFFF, right+2, 16);
-                } else if (inlinedLazyFlagOp->func == test16_mem16) {
-                    strcpy(left, "readw(cpu->memory, ");
-                    strcat(left, getEaa16(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1 & 0xFFFF, right+2, 16);
-                } else if (inlinedLazyFlagOp->func == test16_mem32) {
-                    strcpy(left, "readw(cpu->memory, ");
-                    strcat(left, getEaa32(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1 & 0xFFFF, right+2, 16);
-                } else {
-                    kpanic("getCondition: unknown inlinedLazyFlagOp");
-                }
+                src = "cpu->src.u16";
+                dst = "cpu->dst.u16";
             } else if (currentLazyFlags == sFLAGS_TEST32) {
                 signMask = "0x80000000";
                 signCast = "(S32)";
-                if (inlinedLazyFlagOp->func == testr32r32) {
-                    strcpy(left, r32(inlinedLazyFlagOp->r1));
-                    strcpy(right, r32(inlinedLazyFlagOp->r2));
-                    if (inlinedLazyFlagOp->r1 == inlinedLazyFlagOp->r2)
-                        same = 1;
-                } else if (inlinedLazyFlagOp->func == teste32r32_16) {
-                    strcpy(left, "readd(cpu->memory, ");
-                    strcat(left, getEaa16(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, r32(inlinedLazyFlagOp->r1));
-                } else if (inlinedLazyFlagOp->func == teste32r32_32) {
-                    strcpy(left, "readd(cpu->memory, ");
-                    strcat(left, getEaa32(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, r32(inlinedLazyFlagOp->r1));
-                } else if (inlinedLazyFlagOp->func == test32_reg) {
-                    strcpy(left, r32(inlinedLazyFlagOp->r1));
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1, right+2, 16);
-                } else if (inlinedLazyFlagOp->func == test32_mem16) {
-                    strcpy(left, "readd(cpu->memory, ");
-                    strcat(left, getEaa16(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1, right+2, 16);
-                } else if (inlinedLazyFlagOp->func == test32_mem32) {
-                    strcpy(left, "readd(cpu->memory, ");
-                    strcat(left, getEaa32(inlinedLazyFlagOp));
-                    strcat(left, ")");
-                    strcpy(right, "0x");
-                    itoa(inlinedLazyFlagOp->data1, right+2, 16);
-                } else {
-                    kpanic("getCondition: unknown inlinedLazyFlagOp");
-                }
+                src = "cpu->src.u32";
+                dst = "cpu->dst.u32";
             } else {
                 kpanic("getCondition: oops");
+            }
+
+            same = getTestLeftRight(inlinedLazyFlagOp, left, right);
+
+            if (inlinedLazyFlagOpAssignedToCPU) {
+                strcpy(left, dst);
+                strcpy(right, src);
             }
             inlinedLazyFlagOp = 0;
 
@@ -7811,14 +7854,26 @@ const char* getCondition(int condition) {
                     strcpy(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); return tmpCondition;
                 case 8: // SF
                 case 12: // SF != OF
+                    if (same) {
+                        strcpy(tmpCondition, ""); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, signMask); return tmpCondition;
+                    }
                     strcpy(tmpCondition, "("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & "); strcat(tmpCondition, signMask); return tmpCondition;                    
                 case 9: // !SF
                 case 13: // SF == OF
+                    if (same) {
+                        strcpy(tmpCondition, "!("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, signMask); strcat(tmpCondition, ")"); return tmpCondition;                    
+                    }
                     strcpy(tmpCondition, "!(("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & "); strcat(tmpCondition, signMask); strcat(tmpCondition, ")"); return tmpCondition;                    
                 case 10: // PF
-                    strcpy(tmpCondition, "parity_lookup["); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, "]");                    
+                    if (same) {
+                        strcpy(tmpCondition, "parity_lookup["); strcat(tmpCondition, left); strcat(tmpCondition, " & 0xFF]"); 
+                    }
+                    strcpy(tmpCondition, "parity_lookup[("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & 0xFF]");                    
                 case 11: // !PF
-                    strcpy(tmpCondition, "!"); strcat(tmpCondition, "parity_lookup[("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & 0xFF]");                    
+                    if (same) {
+                        strcpy(tmpCondition, "!parity_lookup["); strcat(tmpCondition, left); strcat(tmpCondition, " & 0xFF]");                    
+                    }
+                    strcpy(tmpCondition, "!parity_lookup[("); strcat(tmpCondition, left); strcat(tmpCondition, " & "); strcat(tmpCondition, right); strcat(tmpCondition, ") & 0xFF]");                    
                 case 14: // ZF || SF != OF       
                     if (same) {
                         strcpy(tmpCondition, signCast);

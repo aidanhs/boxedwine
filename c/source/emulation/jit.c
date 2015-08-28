@@ -2370,19 +2370,46 @@ U16 flagsThatOpUses(struct Op* op) {
     return gFlag;
 }
 
-U32 needsToSetFlag(struct Op* op, U32 flag) {  
-    U16 sFlag = opInfo[op->inst].setsFlags;
-    U16 index = sFlag >> 12;
+U32 isConditionalJump(struct Op* op) {
+    return ((op->inst>=0x70 && op->inst<0x80) || (op->inst>=0x180 && op->inst<0x190) || (op->inst>=0x270 && op->inst<0x280) || (op->inst>=0x380 && op->inst<0x390));
+}
 
-    if (index) {
-        sFlag = subOpInfo[index][op->subInst].setsFlags;
+U32 getBlockEipCount(struct Block* block) {
+    struct Op* op = block->ops;
+    U32 result = 0;
+
+    while(op) {
+        result += op->eipCount;
+        op = op->next;
     }
+    return result;
+}
 
-    op = op->next;
-    while (op) {
-        U16 gFlag = flagsThatOpUses(op);
-        // an op needs the flag
-        if (gFlag & flag) {
+void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
+
+U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags, U32 depth) {      
+    if (depth==0)
+        return 1;    
+
+    while (1) {
+        U16 sFlag;
+        U16 index;
+        U16 gFlag;
+
+        if (op == 0) {
+            op = block->ops;
+        } else if (op->next) {
+            op = op->next;
+        } else {
+            break;
+        }
+
+        sFlag = opInfo[op->inst].setsFlags;
+        index = sFlag >> 12;
+        gFlag = flagsThatOpUses(op);
+
+        // an op needs a flag
+        if (gFlag & flags) {
             return 1;
         }
 
@@ -2393,15 +2420,55 @@ U32 needsToSetFlag(struct Op* op, U32 flag) {
         }
 
         // an op sets the flag before it is used so the op being tested doesn't need to set it
-        if (sFlag & flag && !(sFlag & MAYBE)) {
+        if (sFlag & flags && !(sFlag & MAYBE)) {
+            flags &=~ sFlag;
+            if (!flags)
+                return 0;
+        }
+    }
+
+    if (isConditionalJump(op)) {
+        U32 blockCount = getBlockEipCount(block);
+
+        if (!block->block1) {
+            U32 oldEIP = cpu->eip.u32;
+            cpu->eip.u32 = blockEIP + blockCount;
+            block->block1 = getBlock(cpu);
+            cpu->eip.u32 = oldEIP;
+        }   
+        if (block->block1->ops->func == restoreOps) {
+            U32 oldEIP = cpu->eip.u32;
+            cpu->eip.u32 = blockEIP + blockCount;
+            decodeBlockWithBlock(cpu, block->block1);
+            cpu->eip.u32 = oldEIP;
+        }
+
+        if (!block->block2) {
+            U32 oldEIP = cpu->eip.u32;
+            cpu->eip.u32 = blockEIP + blockCount + op->data1;
+            block->block2 = getBlock(cpu);
+            cpu->eip.u32 = oldEIP;
+        }
+        if (block->block2->ops->func == restoreOps) {
+            U32 oldEIP = cpu->eip.u32;
+            cpu->eip.u32 = blockEIP + blockCount + op->data1;
+            decodeBlockWithBlock(cpu, block->block2);
+            cpu->eip.u32 = oldEIP;
+        }
+        if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount, 0, flags, depth-1) &&
+            !needsToSetFlag_r(cpu, block->block2, blockEIP + blockCount + op->data1, 0, flags, depth-1))
+        {
             return 0;
         }
-        op = op->next;
     }
     return 1; // this is the last instruction in this block that sets this flag, we should keep it
 }
 
-void jit(struct CPU* cpu, struct Block* block) {
+U32 needsToSetFlag(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags) {
+    return needsToSetFlag_r(cpu, block, blockEIP, op, flags, 3);
+}
+
+void jit(struct CPU* cpu, struct Block* block, U32 blockEIP) {
     struct Op* op;
     
     op = block->ops;
@@ -2412,7 +2479,7 @@ void jit(struct CPU* cpu, struct Block* block) {
             sFlags = subOpInfo[index][op->subInst].setsFlags;
         }
         if (sFlags) {
-            if (!needsToSetFlag(op, CF) && !needsToSetFlag(op, ZF) && !needsToSetFlag(op, SF) && !needsToSetFlag(op, OF) && !needsToSetFlag(op, PF) && !needsToSetFlag(op, AF)) {
+            if (!needsToSetFlag(cpu, block, blockEIP, op, sFlags)) {
                 if (fastDecoder[op->inst]) {
                     fastDecoder[op->inst](op);
                 } else
