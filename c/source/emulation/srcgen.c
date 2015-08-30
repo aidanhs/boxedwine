@@ -59,6 +59,7 @@
 #define sFLAGS_NEG8 47
 #define sFLAGS_NEG16 48
 #define sFLAGS_NEG32 49
+#define sFLAGS_UNKNOWN 50
 
 struct GenData {
     struct CPU* cpu;
@@ -151,6 +152,8 @@ const char* srcGetZF(struct GenData* data) {
     case sFLAGS_DSHR32:
     case sFLAGS_NEG32:
         return "(cpu->result.u32 == 0)";
+    case sFLAGS_UNKNOWN:
+        return "getZF(cpu)";
     }
     kpanic("srcGetZF %d", data->lazyFlags);
     return "";
@@ -214,20 +217,244 @@ const char* srcGetSF(struct GenData* data) {
     case sFLAGS_DSHR32:
     case sFLAGS_NEG32:
         return "(cpu->result.u32 & 0x80000000)";
+    case sFLAGS_UNKNOWN:
+        return "getSF(cpu)";
     }
     kpanic("srcGetSF %d", data->lazyFlags);
     return "";
 }
 
+const char* srcGetCF(struct GenData* data) {
+    switch (data->lazyFlags) {
+    case sFLAGS_NONE:
+        return "(cpu->flags & CF)";
+    case sFLAGS_ADD8:
+        return "(cpu->result.u8<cpu->dst.u8)";
+    case sFLAGS_OR8:
+        return "0";
+    case sFLAGS_ADC8:
+        return "((cpu->result.u8 < cpu->dst.u8) || (cpu->oldcf && (cpu->result.u8 == cpu->dst.u8)))";
+    case sFLAGS_SBB8:
+        return "((cpu->dst.u8 < cpu->result.u8) || (cpu->oldcf && (cpu->src.u8==0xff)))";
+    case sFLAGS_AND8:
+        return "0";
+    case sFLAGS_SUB8:
+        return "(cpu->dst.u8<cpu->src.u8)";
+    case sFLAGS_XOR8:
+        return "0";
+    case sFLAGS_INC8:
+        return "cpu->oldcf";
+    case sFLAGS_DEC8:
+        return "cpu->oldcf";
+    case sFLAGS_SHL8:
+        return "((cpu->src.u8>8)?0:(cpu->dst.u8 >> (8-cpu->src.u8)) & 1)";
+    case sFLAGS_SHR8:
+        return "((cpu->dst.u8 >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_SAR8:
+        return "((((S8) cpu->dst.u8) >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_CMP8:
+        return "(cpu->dst.u8<cpu->src.u8)";
+    case sFLAGS_TEST8:
+        return "0";
+    case sFLAGS_NEG8:
+        return "(cpu->dst.u8!=0)";
+
+    case sFLAGS_ADD16:
+        return "(cpu->result.u16<cpu->dst.u16)";
+    case sFLAGS_OR16:
+        return "0";
+    case sFLAGS_ADC16:
+        return "((cpu->result.u16 < cpu->dst.u16) || (cpu->oldcf && (cpu->result.u16 == cpu->dst.u16)))";
+    case sFLAGS_SBB16:
+        return "((cpu->dst.u16 < cpu->result.u16) || (cpu->oldcf && (cpu->src.u16==0xffff)))";
+    case sFLAGS_AND16:
+        return "0";
+    case sFLAGS_SUB16:
+        return "(cpu->dst.u16<cpu->src.u16)";
+    case sFLAGS_XOR16:
+        return "0";
+    case sFLAGS_INC16:
+        return "cpu->oldcf";
+    case sFLAGS_DEC16:
+        return "cpu->oldcf";
+    case sFLAGS_SHL16:
+        return "((cpu->src.u8>16)?0:(cpu->dst.u16 >> (16-cpu->src.u8)) & 1)";
+    case sFLAGS_SHR16:
+        return "((cpu->dst.u16 >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_SAR16:
+        return "((((S16) cpu->dst.u16) >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_CMP16:
+        return "(cpu->dst.u16<cpu->src.u16)";
+    case sFLAGS_TEST16:
+        return "0";
+    case sFLAGS_DSHL16:
+        return "((cpu->src.u8>16) ? (cpu->dst2.u16 >> (32-cpu->src.u8)) & 1 : (cpu->dst.u16 >> (16-cpu->src.u8)) & 1)";
+    case sFLAGS_DSHR16:
+        return "((cpu->dst.u32 >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_NEG16:
+        return "(cpu->dst.u16!=0)";
+
+    case sFLAGS_ADD32:
+        return "(cpu->result.u32<cpu->dst.u32)";
+    case sFLAGS_OR32:
+        return "0";
+    case sFLAGS_ADC32:
+        return "((cpu->result.u32 < cpu->dst.u32) || (cpu->oldcf && (cpu->result.u32 == cpu->dst.u32)))";
+    case sFLAGS_SBB32:
+        return "((cpu->dst.u32 < cpu->result.u32) || (cpu->oldcf && (cpu->src.u32==0xffffffff)))";
+    case sFLAGS_AND32:
+        return "0";
+    case sFLAGS_SUB32:
+        return "(cpu->dst.u32<cpu->src.u32)";
+    case sFLAGS_XOR32:
+        return "0";
+    case sFLAGS_INC32:
+        return "cpu->oldcf";
+    case sFLAGS_DEC32:
+        return "cpu->oldcf";
+    case sFLAGS_SHL32:
+        return "((cpu->dst.u32 >> (32 - cpu->src.u8)) & 1)";
+    case sFLAGS_SHR32:
+        return "((cpu->dst.u32 >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_SAR32:
+        return "((((S32) cpu->dst.u32) >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_CMP32:
+        return "(cpu->dst.u32<cpu->src.u32)";
+    case sFLAGS_TEST32:
+        return "0";
+    case sFLAGS_DSHL32:
+        return "((cpu->dst.u32 >> (32 - cpu->src.u8)) & 1)";
+    case sFLAGS_DSHR32:
+        return "((cpu->dst.u32 >> (cpu->src.u8 - 1)) & 1)";
+    case sFLAGS_NEG32:
+        return "(cpu->dst.u32!=0)";
+    case sFLAGS_UNKNOWN:
+        return "getCF(cpu)";
+    }
+    kpanic("srcGetCF %d", data->lazyFlags);
+    return "";
+}
+
+const char* srcGetOF(struct GenData* data) {
+    switch (data->lazyFlags) {
+    case sFLAGS_NONE:
+        return "(cpu->flags & OF)";
+    case sFLAGS_ADD8:
+        return "(((cpu->dst.u8 ^ cpu->src.u8 ^ 0x80) & (cpu->result.u8 ^ cpu->src.u8)) & 0x80)";
+    case sFLAGS_OR8:
+        return "0";
+    case sFLAGS_ADC8:
+        return "(((cpu->dst.u8 ^ cpu->src.u8 ^ 0x80) & (cpu->result.u8 ^ cpu->src.u8)) & 0x80)";
+    case sFLAGS_SBB8:
+        return "(((cpu->dst.u8 ^ cpu->src.u8) & (cpu->dst.u8 ^ cpu->result.u8)) & 0x80)";
+    case sFLAGS_AND8:
+        return "0";
+    case sFLAGS_SUB8:
+        return "(((cpu->dst.u8 ^ cpu->src.u8) & (cpu->dst.u8 ^ cpu->result.u8)) & 0x80)";
+    case sFLAGS_XOR8:
+        return "0";
+    case sFLAGS_INC8:
+        return "(cpu->result.u8 == 0x80)";
+    case sFLAGS_DEC8:
+        return "(cpu->result.u8 == 0x7f)";
+    case sFLAGS_SHL8:
+        return "((cpu->result.u8 ^ cpu->dst.u8) & 0x80)";
+    case sFLAGS_SHR8:
+        return "(((cpu->src.u8&0x1f)==1) ? (cpu->dst.u8 >= 0x80); : 0)";
+    case sFLAGS_SAR8:
+        return "0";
+    case sFLAGS_CMP8:
+        return "(((cpu->dst.u8 ^ cpu->src.u8) & (cpu->dst.u8 ^ cpu->result.u8)) & 0x80)";
+    case sFLAGS_TEST8:
+        return "0";
+    case sFLAGS_NEG8:
+        return "(cpu->dst.u8 == 0x80)";
+
+    case sFLAGS_ADD16:
+        return "(((cpu->dst.u16 ^ cpu->src.u16 ^ 0x8000) & (cpu->result.u16 ^ cpu->src.u16)) & 0x8000)";
+    case sFLAGS_OR16:
+        return "0";
+    case sFLAGS_ADC16:
+        return "(((cpu->dst.u16 ^ cpu->src.u16 ^ 0x8000) & (cpu->result.u16 ^ cpu->src.u16)) & 0x8000)";
+    case sFLAGS_SBB16:
+        return "(((cpu->dst.u16 ^ cpu->src.u16) & (cpu->dst.u16 ^ cpu->result.u16)) & 0x8000)";
+    case sFLAGS_AND16:
+        return "0";
+    case sFLAGS_SUB16:
+        return "(((cpu->dst.u16 ^ cpu->src.u16) & (cpu->dst.u16 ^ cpu->result.u16)) & 0x8000)";
+    case sFLAGS_XOR16:
+        return "0";
+    case sFLAGS_INC16:
+        return "(cpu->result.u16 == 0x8000)";
+    case sFLAGS_DEC16:
+        return "(cpu->result.u16 == 0x7fff)";
+    case sFLAGS_SHL16:
+        return "((cpu->result.u16 ^ cpu->dst.u16) & 0x8000)";
+    case sFLAGS_SHR16:
+        return "(((cpu->src.u8&0x1f)==1) ? (cpu->dst.u16 >= 0x8000) : 0)";
+    case sFLAGS_SAR16:
+        return "0";
+    case sFLAGS_CMP16:
+        return "(((cpu->dst.u16 ^ cpu->src.u16) & (cpu->dst.u16 ^ cpu->result.u16)) & 0x8000)";
+    case sFLAGS_TEST16:
+        return "0";
+    case sFLAGS_DSHL16:
+        return "((cpu->result.u16 ^ cpu->dst.u16) & 0x8000)";
+    case sFLAGS_DSHR16:
+        return "((cpu->result.u16 ^ cpu->dst.u16) & 0x8000)";
+    case sFLAGS_NEG16:
+        return "(cpu->dst.u16 == 0x8000)";
+
+    case sFLAGS_ADD32:
+        return "(((cpu->dst.u32 ^ cpu->src.u32 ^ 0x80000000) & (cpu->result.u32 ^ cpu->src.u32)) & 0x80000000)";
+    case sFLAGS_OR32:
+        return "0";
+    case sFLAGS_ADC32:
+        return "(((cpu->dst.u32 ^ cpu->src.u32 ^ 0x80000000) & (cpu->result.u32 ^ cpu->src.u32)) & 0x80000000)";
+    case sFLAGS_SBB32:
+        return "(((cpu->dst.u32 ^ cpu->src.u32) & (cpu->dst.u32 ^ cpu->result.u32)) & 0x80000000)";
+    case sFLAGS_AND32:
+        return "0";
+    case sFLAGS_SUB32:
+        return "(((cpu->dst.u32 ^ cpu->src.u32) & (cpu->dst.u32 ^ cpu->result.u32)) & 0x80000000)";
+    case sFLAGS_XOR32:
+        return "0";
+    case sFLAGS_INC32:
+        return "(cpu->result.u32 == 0x80000000)";
+    case sFLAGS_DEC32:
+        return "(cpu->result.u32 == 0x7fffffff)";
+    case sFLAGS_SHL32:
+        return "((cpu->result.u32 ^ cpu->dst.u32) & 0x80000000)";
+    case sFLAGS_SHR32:
+        return "(((cpu->src.u8&0x1f)==1) ? (cpu->dst.u32 >= 0x80000000) : 0)";
+    case sFLAGS_SAR32:
+        return "0";
+    case sFLAGS_CMP32:
+        return "(((cpu->dst.u32 ^ cpu->src.u32) & (cpu->dst.u32 ^ cpu->result.u32)) & 0x80000000)";
+    case sFLAGS_TEST32:
+        return "0";
+    case sFLAGS_DSHL32:
+        return "((cpu->result.u32 ^ cpu->dst.u32) & 0x80000000)";
+    case sFLAGS_DSHR32:
+        return "((cpu->result.u32 ^ cpu->dst.u32) & 0x80000000)";
+    case sFLAGS_NEG32:
+        return "(cpu->dst.u32 == 0x80000000)";
+    case sFLAGS_UNKNOWN:
+        return "getOF(cpu)";
+    }
+    kpanic("srcGetOF %d", data->lazyFlags);
+    return "";
+}
+
 const char* getFlag(struct GenData* data, int flag) {
     if (flag == OF)
-        return "getOF(cpu)";
+        return srcGetOF(data);
     else if (flag == CF)
-        return "getCF(cpu)";
+        return srcGetCF(data);
     else if (flag == SF)
         return srcGetSF(data);
     else if (flag == PF)
-        return "getPF(cpu)";
+        return "parity_lookup[cpu->result.u8]";
     else if (flag == ZF)
         return srcGetZF(data);
     else if (flag == AF)
@@ -2361,54 +2588,63 @@ void gen0c0(struct GenData* data, struct Op* op) {
         out(data, value);
         out(data, ");");
     } else if (op->func == shl8_reg_op) {
+        data->lazyFlags = sFLAGS_SHL8;
         out(data, "shl8_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shl8_mem16_op) {
+        data->lazyFlags = sFLAGS_SHL8;
         out(data, "shl8_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shl8_mem32_op) {
+        data->lazyFlags = sFLAGS_SHL8;
         out(data, "shl8_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr8_reg_op) {
+        data->lazyFlags = sFLAGS_SHR8;
         out(data, "shr8_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr8_mem16_op) {
+        data->lazyFlags = sFLAGS_SHR8;
         out(data, "shr8_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr8_mem32_op) {
+        data->lazyFlags = sFLAGS_SHR8;
         out(data, "shr8_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar8_reg_op) {
+        data->lazyFlags = sFLAGS_SAR8;
         out(data, "sar8_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar8_mem16_op) {
+        data->lazyFlags = sFLAGS_SAR8;
         out(data, "sar8_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar8_mem32_op) {
+        data->lazyFlags = sFLAGS_SAR8;
         out(data, "sar8_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
@@ -2775,54 +3011,63 @@ void gen0c1(struct GenData* data, struct Op* op) {
         out(data, value);
         out(data, ");");
     } else if (op->func == shl16_reg_op) {
+        data->lazyFlags = sFLAGS_SHL16;
         out(data, "shl16_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shl16_mem16_op) {
+        data->lazyFlags = sFLAGS_SHL16;
         out(data, "shl16_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shl16_mem32_op) {
+        data->lazyFlags = sFLAGS_SHL16;
         out(data, "shl16_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr16_reg_op) {
+        data->lazyFlags = sFLAGS_SHR16;
         out(data, "shr16_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr16_mem16_op) {
+        data->lazyFlags = sFLAGS_SHR16;
         out(data, "shr16_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr16_mem32_op) {
+        data->lazyFlags = sFLAGS_SHL16;
         out(data, "shr16_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar16_reg_op) {
+        data->lazyFlags = sFLAGS_SAR16;
         out(data, "sar16_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar16_mem16_op) {
+        data->lazyFlags = sFLAGS_SAR16;
         out(data, "sar16_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar16_mem32_op) {
+        data->lazyFlags = sFLAGS_SAR16;
         out(data, "sar16_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
@@ -3189,54 +3434,63 @@ void gen2c1(struct GenData* data, struct Op* op) {
         out(data, value);
         out(data, ");");
     } else if (op->func == shl32_reg_op) {
+        data->lazyFlags = sFLAGS_SHL32;
         out(data, "shl32_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shl32_mem16_op) {
+        data->lazyFlags = sFLAGS_SHL32;
         out(data, "shl32_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shl32_mem32_op) {
+        data->lazyFlags = sFLAGS_SHL32;
         out(data, "shl32_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr32_reg_op) {
+        data->lazyFlags = sFLAGS_SHR32;
         out(data, "shr32_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr32_mem16_op) {
+        data->lazyFlags = sFLAGS_SHR32;
         out(data, "shr32_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == shr32_mem32_op) {
+        data->lazyFlags = sFLAGS_SHR32;
         out(data, "shr32_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar32_reg_op) {
+        data->lazyFlags = sFLAGS_SAR32;
         out(data, "sar32_reg(cpu, ");
         out(data, reg);
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar32_mem16_op) {
+        data->lazyFlags = sFLAGS_SAR32;
         out(data, "sar32_mem16(cpu, ");
         out(data, getEaa16(op));
         out(data, ", ");
         out(data, value);
         out(data, ");");
     } else if (op->func == sar32_mem32_op) {
+        data->lazyFlags = sFLAGS_SAR32;
         out(data, "sar32_mem32(cpu, ");
         out(data, getEaa32(op));
         out(data, ", ");
@@ -6479,9 +6733,9 @@ void OPCALL btr16r16(struct CPU* cpu, struct Op* op);
 void OPCALL bte16r16_16(struct CPU* cpu, struct Op* op);
 void OPCALL bte16r16_32(struct CPU* cpu, struct Op* op);
 void gen1a3(struct GenData* data, struct Op* op) {
+    data->lazyFlags = sFLAGS_NONE;
     if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-         out(data, "fillFlagsNoCF(cpu); ");
-         data->lazyFlags = sFLAGS_NONE;
+         out(data, "fillFlagsNoCF(cpu); ");         
     } else {
         out(data, "cpu->lazyFlags = FLAGS_NONE; ");
     }
@@ -6516,9 +6770,9 @@ void OPCALL btr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL bte32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL bte32r32_32(struct CPU* cpu, struct Op* op);
 void gen3a3(struct GenData* data, struct Op* op) {
+    data->lazyFlags = sFLAGS_NONE;
     if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-         out(data, "fillFlagsNoCF(cpu); ");
-         data->lazyFlags = sFLAGS_NONE;
+         out(data, "fillFlagsNoCF(cpu); ");         
     } else {
         out(data, "cpu->lazyFlags = FLAGS_NONE; ");
     }
@@ -6719,9 +6973,9 @@ void OPCALL btsr16r16(struct CPU* cpu, struct Op* op);
 void OPCALL btse16r16_16(struct CPU* cpu, struct Op* op);
 void OPCALL btse16r16_32(struct CPU* cpu, struct Op* op);
 void gen1ab(struct GenData* data, struct Op* op) {
+    data->lazyFlags = sFLAGS_NONE;
     if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-         out(data, "fillFlagsNoCF(cpu); ");
-         data->lazyFlags = sFLAGS_NONE;
+         out(data, "fillFlagsNoCF(cpu); ");         
     } else {
         out(data, "cpu->lazyFlags = FLAGS_NONE; ");
     }
@@ -6758,9 +7012,9 @@ void OPCALL btsr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL btse32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL btse32r32_32(struct CPU* cpu, struct Op* op);
 void gen3ab(struct GenData* data, struct Op* op) {
+    data->lazyFlags = sFLAGS_NONE;
     if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-         out(data, "fillFlagsNoCF(cpu); ");
-         data->lazyFlags = sFLAGS_NONE;
+         out(data, "fillFlagsNoCF(cpu); ");         
     } else {
         out(data, "cpu->lazyFlags = FLAGS_NONE; ");
     }
@@ -7239,9 +7493,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
     char tmp[16];
     itoa(op->data1, tmp, 16);
     if (op->func == bt_reg) {       
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7251,9 +7505,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(4);");
     } else if (op->func == bt_mem16) {  
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7263,9 +7517,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(4);");
     } else if (op->func == bt_mem32) {
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7275,9 +7529,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(4);");
     } else if (op->func == bts_reg) {  
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7290,10 +7544,10 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, " |= 0x");
         out(data, tmp);
         out(data, "; CYCLES(7);");
-    } else if (op->func == bts_mem16) {        
+    } else if (op->func == bts_mem16) {      
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7305,9 +7559,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(8);");
     } else if (op->func == bts_mem32) {
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7319,9 +7573,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(8);");
     } else if (op->func == btr_reg) {        
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7335,9 +7589,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "; CYCLES(7);");
     } else if (op->func == btr_mem16) {   
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7349,9 +7603,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(8);");
     } else if (op->func == btr_mem32) {
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7363,9 +7617,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(8);");
     } else if (op->func == btc_reg) {   
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7378,10 +7632,10 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, " ^= 0x");
         out(data, tmp);
         out(data, "; CYCLES(7);");
-    } else if (op->func == btc_mem16) {        
+    } else if (op->func == btc_mem16) {      
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7393,9 +7647,9 @@ void gen3ba(struct GenData* data, struct Op* op) {
         out(data, tmp);
         out(data, "); CYCLES(8);");
     } else if (op->func == btc_mem32) {
+        data->lazyFlags = sFLAGS_NONE;
         if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-            out(data, "fillFlagsNoCF(cpu);");
-            data->lazyFlags = sFLAGS_NONE;
+            out(data, "fillFlagsNoCF(cpu);");            
         } else {
             out(data, "cpu->lazyFlags = FLAGS_NONE; ");
         }
@@ -7415,9 +7669,9 @@ void OPCALL btcr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL btce32r32_16(struct CPU* cpu, struct Op* op);
 void OPCALL btce32r32_32(struct CPU* cpu, struct Op* op);
 void gen3bb(struct GenData* data, struct Op* op) {
+    data->lazyFlags = sFLAGS_NONE;
     if (needsToSetFlag(data->cpu, data->block, data->eip, op, ZF|SF|OF|PF|AF)) {
-        out(data, "fillFlagsNoCF(cpu);");
-        data->lazyFlags = sFLAGS_NONE;
+        out(data, "fillFlagsNoCF(cpu);");        
     } else {
         out(data, "cpu->lazyFlags = FLAGS_NONE; ");
     }
@@ -7478,9 +7732,9 @@ void OPCALL bsfr32r32(struct CPU* cpu, struct Op* op);
 void OPCALL bsfr32e32_16(struct CPU* cpu, struct Op* op);
 void OPCALL bsfr32e32_32(struct CPU* cpu, struct Op* op);
 void gen3bc(struct GenData* data, struct Op* op) {
+    data->lazyFlags = sFLAGS_NONE;
     if (needsToSetFlag(data->cpu, data->block, data->eip, op, CF|SF|OF|PF|AF)) {
-        out(data, "fillFlagsNoZF(cpu);");
-        data->lazyFlags = sFLAGS_NONE;
+        out(data, "fillFlagsNoZF(cpu);");        
     } else {
         out(data, "cpu->lazyFlags = FLAGS_NONE; ");
     }
@@ -8224,6 +8478,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     data->eip = eip;
     data->cpu = cpu;
     data->block = block;
+    data->lazyFlags = sFLAGS_UNKNOWN;
     while (op) {
         if (!srcgen[op->inst]) {
             klog("missing instruction for recompiler: %X", op->inst);
