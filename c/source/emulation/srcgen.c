@@ -951,30 +951,30 @@ void genJump(struct GenData* data, struct Op* op, int condition) {
                 itoa(op->eipCount+op->data1, tmp, 10);
                 out(data, tmp);
                 out(data, ";\n");
-                return;
             } else {
                 kpanic("genJump wasn't prepared for more than a 1 byte prefix");
             }
+        } else {
+            out(data, "if (");
+            out(data, getCondition(data, condition));           
+            out(data, ") {\n        cpu->eip.u32+=");
+            out(data, tmp); 
+            out(data, ";CYCLES(1);\n    } else {\n        cpu->eip.u32+=");
+            itoa(op->eipCount, tmp, 10);
+            out(data, tmp);
+            out(data, ";CYCLES(1);\n");
+            data->block = data->block->block1;
+            data->eip += getBlockEipCount(block);
+            data->inlinedBlock = 1;
+            data->indent++;
+            writeBlockWithEipCount(data, block->block1, op->data1);
+            addBlockToData(data, block->block1);
+            data->indent--;
+            data->inlinedBlock = 0;
+            data->block = block;
+            data->eip = eip;
+            out (data, "    }\n");
         }
-        out(data, "if (");
-        out(data, getCondition(data, condition));           
-        out(data, ") {\n        cpu->eip.u32+=");
-        out(data, tmp); 
-        out(data, ";CYCLES(1);\n    } else {\n        cpu->eip.u32+=");
-        itoa(op->eipCount, tmp, 10);
-        out(data, tmp);
-        out(data, ";CYCLES(1);\n");
-        data->block = data->block->block1;
-        data->eip += getBlockEipCount(block);
-        data->inlinedBlock = 1;
-        data->indent++;
-        writeBlockWithEipCount(data, block->block1, op->data1);
-        addBlockToData(data, block->block1);
-        data->indent--;
-        data->inlinedBlock = 0;
-        data->block = block;
-        data->eip = eip;
-        out (data, "    }\n");
         data->eip += getBlockEipCount(block)+op->data1;
         data->block = block->block2;
         writeBlock(data, block->block2);
