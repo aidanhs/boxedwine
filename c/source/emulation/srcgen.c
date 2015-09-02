@@ -903,6 +903,7 @@ struct Op* getLastOp(struct Block* block) {
 
 void OPCALL jump(struct CPU* cpu, struct Op* op);
 void OPCALL firstOp(struct CPU* cpu, struct Op* op);
+void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
 
 void addBlockToData(struct GenData* data, struct Block* block) {
     struct Op* op = block->ops;
@@ -923,13 +924,40 @@ void addBlockToData(struct GenData* data, struct Block* block) {
 void genJump(struct GenData* data, struct Op* op, int condition) {
     char tmp[16];
     itoa(op->data1+op->eipCount, tmp, 10);
-
-    out(data, "if (");
-    out(data, getCondition(data, condition));           
+    
     if ((S32)op->data1>0 && data->block->block2 && data->block->block1 && getBlockEipCount(data->block->block1) > op->data1) {
         struct Block* block = data->block;
         U32 eip = data->eip;
+        struct Op* first;
 
+        if (block->block1->ops->func == restoreOps) {
+            U32 eip = data->cpu->eip.u32;
+            data->cpu->eip.u32 = data->eip+getBlockEipCount(data->block);
+            decodeBlockWithBlock(data->cpu, block->block1);
+            data->cpu->eip.u32 = eip;
+        }
+        first = block->block1->ops;
+        if (first->func == firstOp)
+            first = first->next;
+        if ((S32)op->data1 < first->eipCount) {
+            // this if statement is for a prefix, like lock
+            if (op->data1==1) {
+                U8 inst = readb(data->cpu->memory, data->eip+getBlockEipCount(data->block));
+                if (inst != 0xF0)
+                    kpanic("genJump wasn't prepared for non lock prefix");
+                // we can ignore a lock prefix thuse we can ignore this entire conditional jump
+                out(data, "// removed conditional jump / lock instruction\n");
+                out(data, "    cpu->eip.u32+=");
+                itoa(op->eipCount+op->data1, tmp, 10);
+                out(data, tmp);
+                out(data, ";\n");
+                return;
+            } else {
+                kpanic("genJump wasn't prepared for more than a 1 byte prefix");
+            }
+        }
+        out(data, "if (");
+        out(data, getCondition(data, condition));           
         out(data, ") {\n        cpu->eip.u32+=");
         out(data, tmp); 
         out(data, ";CYCLES(1);\n    } else {\n        cpu->eip.u32+=");
@@ -955,6 +983,8 @@ void genJump(struct GenData* data, struct Op* op, int condition) {
         struct Block* block = data->block;
         U32 eip = data->eip;
 
+        out(data, "if (");
+        out(data, getCondition(data, condition));           
         out(data, ") {\n        cpu->eip.u32+=");
         out(data, tmp); 
         out(data, ";CYCLES(1);\n");
@@ -977,6 +1007,8 @@ void genJump(struct GenData* data, struct Op* op, int condition) {
         writeBlock(data, block->block1);
         addBlockToData(data, block->block1);
     } else {    
+        out(data, "if (");
+        out(data, getCondition(data, condition));           
         out(data, ") {cpu->eip.u32+=");
         out(data, tmp); 
         out(data, "; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
@@ -8536,8 +8568,6 @@ void writeSource() {
     fflush(fp);
     fclose(fp);
 }
-
-void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
 
 void writeBlock(struct GenData* data, struct Block* block) {
     char tmp[16];
