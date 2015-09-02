@@ -68,12 +68,19 @@ struct GenData {
     struct Op* inlinedLazyFlagOp;
     U32 inlinedLazyFlagOpAssignedToCPU;
     U32 eip;
+    U32 inlinedBlock;
     char* sourceBuffer;
     U32 sourceBufferLen;
     U32 sourceBufferPos;
+    U32 indent;
+    char* ops;
+    U32 opPos;
+    U32 maxOpPos;
+    U32 ip;
 }; 
 
-void writeOps(struct GenData* data, struct Op* op);
+void writeBlock(struct GenData* data, struct Block* block);
+void writeBlockWithEipCount(struct GenData* data, struct Block* block, S32 eipCount);
 
 U32 needsToSetFlag(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags);
 
@@ -884,18 +891,99 @@ void gen269(struct GenData* data, struct Op* op) {
     out(data, " = (S32)tmp64;CYCLES(10);");
 }
 
+U32 getBlockEipCount(struct Block* block);
+
+struct Op* getLastOp(struct Block* block) {
+    struct Op* result = block->ops;
+    while (result->next) {
+        result = result->next;
+    }
+    return result;
+}
+
+void OPCALL jump(struct CPU* cpu, struct Op* op);
+void OPCALL firstOp(struct CPU* cpu, struct Op* op);
+
+void addBlockToData(struct GenData* data, struct Block* block) {
+    struct Op* op = block->ops;
+    U32 i;
+
+    if (op->func==firstOp)
+        op = op->next;
+    while (op) {
+        for (i=0;i<op->eipCount;i++) {
+            if (data->opPos>=data->maxOpPos)
+                kpanic("Block is too big");
+            data->ops[data->opPos++] = readb(data->cpu->memory, data->ip++);
+        }
+        op = op->next;
+    }
+}
+
 void genJump(struct GenData* data, struct Op* op, int condition) {
     char tmp[16];
     itoa(op->data1+op->eipCount, tmp, 10);
 
     out(data, "if (");
-    out(data, getCondition(data, condition));
-    out(data, ") {cpu->eip.u32+=");
-    out(data, tmp);    
-    out(data, "; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
-    itoa(op->eipCount, tmp, 10);
-    out(data, tmp);
-    out(data, ";cpu->nextBlock = getBlock1(cpu);}CYCLES(1);");
+    out(data, getCondition(data, condition));           
+    if ((S32)op->data1>0 && data->block->block2 && data->block->block1 && getBlockEipCount(data->block->block1) > op->data1) {
+        struct Block* block = data->block;
+        U32 eip = data->eip;
+
+        out(data, ") {\n        cpu->eip.u32+=");
+        out(data, tmp); 
+        out(data, ";CYCLES(1);\n    } else {\n        cpu->eip.u32+=");
+        itoa(op->eipCount, tmp, 10);
+        out(data, tmp);
+        out(data, ";CYCLES(1);\n");
+        data->block = data->block->block1;
+        data->eip += getBlockEipCount(block);
+        data->inlinedBlock = 1;
+        data->indent++;
+        writeBlockWithEipCount(data, block->block1, op->data1);
+        addBlockToData(data, block->block1);
+        data->indent--;
+        data->inlinedBlock = 0;
+        data->block = block;
+        data->eip = eip;
+        out (data, "    }\n");
+        data->eip += getBlockEipCount(block)+op->data1;
+        data->block = block->block2;
+        writeBlock(data, block->block2);
+        addBlockToData(data, block->block2);
+    } else if ((S32)op->data1>0 && data->block->block2 && data->block->block1 && data->block->block1 == data->block->block2->block1 && getLastOp(data->block->block2)->func==jump) {
+        struct Block* block = data->block;
+        U32 eip = data->eip;
+
+        out(data, ") {\n        cpu->eip.u32+=");
+        out(data, tmp); 
+        out(data, ";CYCLES(1);\n");
+        data->block = data->block->block2;
+        data->eip += getBlockEipCount(block);
+        data->inlinedBlock = 1;
+        data->indent++;
+        writeBlock(data, block->block2);
+        addBlockToData(data, block->block2);
+        data->indent--;
+        data->inlinedBlock = 0;
+        data->block = block;
+        data->eip = eip;
+        out(data, "\n    } else {\n        cpu->eip.u32+=");
+        itoa(op->eipCount, tmp, 10);
+        out(data, tmp);
+        out(data, ";CYCLES(1);\n    }\n");
+        data->eip += getBlockEipCount(block);
+        data->block = block->block1;
+        writeBlock(data, block->block1);
+        addBlockToData(data, block->block1);
+    } else {    
+        out(data, ") {cpu->eip.u32+=");
+        out(data, tmp); 
+        out(data, "; cpu->nextBlock = getBlock2(cpu);} else {cpu->eip.u32+=");
+        itoa(op->eipCount, tmp, 10);
+        out(data, tmp);
+        out(data, ";cpu->nextBlock = getBlock1(cpu);}CYCLES(1);");
+    }    
 }
 
 void gen070(struct GenData* data, struct Op* op) {
@@ -5832,7 +5920,10 @@ void gen0e9(struct GenData* data, struct Op* op) {
     out(data, " + ");
     itoa(op->data1, tmp, 10);
     out(data, tmp);
-    out(data, "; cpu->nextBlock = getBlock1(cpu); CYCLES(1);");
+    out(data, ";");
+    if (!data->inlinedBlock)
+         out(data, " cpu->nextBlock = getBlock1(cpu);");
+    out(data, "CYCLES(1);");
 }
 
 void gen0f5(struct GenData* data, struct Op* op) {
@@ -7931,20 +8022,20 @@ void gen3c8(struct GenData* data, struct Op* op) {
 	out(data, " = (((tmp32 & 0xff000000) >> 24) | ((tmp32 & 0x00ff0000) >>  8) | ((tmp32 & 0x0000ff00) <<  8) | ((tmp32 & 0x000000ff) << 24)); CYCLES(1);");
 }
 
-U32 getBlockEipCount(struct Block* block);
-
 void gen400(struct GenData* data, struct Op* op) {
-    struct Op* firstOp;
+    struct Op* first;
     U32 blockCount = getBlockEipCount(data->block);
 
     data->block = data->block->block1;
-    firstOp = data->block->ops;    
+    first = data->block->ops;    
     data->block->ops = data->block->ops->next;
-    firstOp->next = 0;
-    freeOp(firstOp);
+    first->next = 0;
+    freeOp(first);
 
     jit(data->cpu, data->block, data->cpu->eip.u32);
-    writeOps(data, data->block->ops);
+    data->eip+=blockCount;
+    writeBlock(data, data->block);
+    addBlockToData(data, data->block);
 }
 
 U32 getTestLeftRight(struct Op* op, char* left, char* right) {
@@ -8416,14 +8507,23 @@ void writeSource() {
     outfp(fp, "};\n");        
 
     outfp(fp, "// :TODO: compiledCode is sorted, use a binary search\n");
-    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen) {\n");
+    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen, struct Memory* memory, U32 ip) {\n");
     outfp(fp, "    int i;\n");
     outfp(fp, "    int count = sizeof(compiledCode) / sizeof(struct CompiledCode);\n");
     outfp(fp, "    for (i=0;i<count;i++) {\n");
     outfp(fp, "        if (compiledCode[i].crc==crc) {\n");
     outfp(fp, "            while (compiledCode[i].crc==crc) {\n");
-    outfp(fp, "                if (compiledCode[i].byteLen == byteLen && !memcmp(bytes, compiledCode[i].bytes, byteLen)) {\n");
-    outfp(fp, "                    return compiledCode[i].func;\n");
+    outfp(fp, "                if (compiledCode[i].byteLen >= byteLen && !memcmp(bytes, compiledCode[i].bytes, byteLen)) {\n");
+    outfp(fp, "                    U32 count = compiledCode[i].byteLen - byteLen;\n");
+    outfp(fp, "                    U32 p = ip;\n");
+    outfp(fp, "                    U32 pos = byteLen;\n");
+    outfp(fp, "                    while (count) {\n");
+    outfp(fp, "                        if (compiledCode[i].bytes[pos++]!=readb(memory, p++))\n");
+    outfp(fp, "                            break;\n");
+    outfp(fp, "                        count--;\n");
+    outfp(fp, "                    }\n");
+    outfp(fp, "                    if (count==0)\n");
+    outfp(fp, "                        return compiledCode[i].func;\n");
     outfp(fp, "                }\n");
     outfp(fp, "                i++;\n");
     outfp(fp, "            }\n");
@@ -8437,14 +8537,31 @@ void writeSource() {
     fclose(fp);
 }
 
-void writeOps(struct GenData* data, struct Op* op) {
-    char tmp[16];
+void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
 
-     while (op) {
-        out(data, "    ");
+void writeBlock(struct GenData* data, struct Block* block) {
+    char tmp[16];
+    U32 i;
+    struct Op* op;
+
+    if (block->ops->func == restoreOps) {
+        U32 eip = data->cpu->eip.u32;
+        data->cpu->eip.u32 = data->eip;
+        jit(data->cpu, block, data->eip);
+        decodeBlockWithBlock(data->cpu, block);
+        data->cpu->eip.u32 = eip;
+    }
+    op = block->ops;
+    if (op->func == firstOp)
+        op = op->next;
+    jit(data->cpu, block, data->eip);
+    while (op) {
+        for (i=0;i<data->indent;i++) {
+            out(data, "    ");
+        }
         srcgen[op->inst](data, op);
         // the last op is responsible for handling the eip adjustment
-        if (op->next) {
+        if (op->next && op->eipCount) {
             out(data, " cpu->eip.u32+=");
             itoa(op->eipCount, tmp, 10);
             out(data, tmp);    
@@ -8454,18 +8571,52 @@ void writeOps(struct GenData* data, struct Op* op) {
     }
 }
 
+void writeBlockWithEipCount(struct GenData* data, struct Block* block, S32 eipCount) {
+    char tmp[16];
+    U32 i;
+    struct Op* op;
+
+    if (block->ops->func == restoreOps) {
+        U32 eip = data->cpu->eip.u32;
+        data->cpu->eip.u32 = data->eip;
+        decodeBlockWithBlock(data->cpu, block);
+        data->cpu->eip.u32 = eip;
+    }
+    op = block->ops;
+    if (op->func == firstOp) {
+        op = op->next;
+    }
+    
+    jit(data->cpu, block, data->eip);
+    while (op && eipCount>0) {
+        for (i=0;i<data->indent;i++) {
+            out(data, "    ");
+        }
+        srcgen[op->inst](data, op);
+        // the last op is responsible for handling the eip adjustment
+        if (op->next && op->eipCount) {
+            out(data, " cpu->eip.u32+=");
+            itoa(op->eipCount, tmp, 10);
+            out(data, tmp);    
+            out(data, ";\n");
+        } 
+        eipCount-=op->eipCount;
+        op = op->next;
+    }
+     if (eipCount!=0)
+         kpanic("writeBlockWithEipCount error");
+}
 
 U32 writeFunction(struct GenData* data, struct Op* op) {
     return 0;
 }
 
+static unsigned char opsBuffer[16384];
+
 void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     struct Op* op = block->ops;
     char name[256];
-    char tmp[1024];
-    unsigned char ops[1024];
-    int opPos = 0;
-    U32 ip = eip;
+    char tmp[1024];    
     int i;
     U32 crc;    
     struct GenData* data = &d;
@@ -8479,18 +8630,23 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     data->cpu = cpu;
     data->block = block;
     data->lazyFlags = sFLAGS_UNKNOWN;
+    data->ops = opsBuffer;
+    data->opPos = 0;
+    data->maxOpPos = sizeof(opsBuffer);
+    data->ip = eip;
+
     while (op) {
         if (!srcgen[op->inst]) {
             klog("missing instruction for recompiler: %X", op->inst);
             return;
         }
         for (i=0;i<op->eipCount;i++)
-            ops[opPos++] = readb(cpu->memory, ip++);
+            data->ops[data->opPos++] = readb(cpu->memory, data->ip++);
         op = op->next;
     }
-    crc = crc32b(ops, opPos);
+    crc = crc32b(data->ops, data->opPos);
 
-    if (doesBlockExist(crc, ops, opPos))
+    if (doesBlockExist(crc, data->ops, data->opPos))
         return;
 
     op = block->ops;
@@ -8867,15 +9023,16 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     out(data, "void OPCALL ");
     out(data, name);
     out(data, "(struct CPU* cpu, struct Op* op) {\n");    
+    data->indent=1;
     if (!block->startFunction || !writeFunction(data, op))
-        writeOps(data, op);
+        writeBlock(data, block);
     out(data, "\n");
     out(data, "}\n\n");    
 
     {
-        char* bytes = (char*)kalloc(opPos);
-        memcpy(bytes, ops, opPos);
-        addBlock(name, crc, bytes, opPos);
+        char* bytes = (char*)kalloc(data->opPos);
+        memcpy(bytes, data->ops, data->opPos);
+        addBlock(name, crc, bytes, data->opPos);
     }
 }
 #endif

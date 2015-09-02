@@ -2493,7 +2493,12 @@ U32 needsToSetFlag(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op
 void jit(struct CPU* cpu, struct Block* block, U32 blockEIP) {
     struct Op* op;
     
+    if (block->jit)
+        return;
+    block->jit = 1;    
     op = block->ops;
+    if (op->func == firstOp)
+        op = op->next;
     while (op) {
         U16 sFlags = opInfo[op->inst].setsFlags;
         U16 index = sFlags >> 12;

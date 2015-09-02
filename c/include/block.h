@@ -10,6 +10,7 @@ struct Block{
 	struct Block* block1;
 	struct Block* block2;
     U32 startFunction;
+    U32 jit;
 };
 
 #endif

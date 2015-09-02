@@ -78,7 +78,7 @@ char* getInterpreter(struct OpenNode* openNode, BOOL* isElf) {
 }
 
 BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct Node* node, const char** loader, const char** interpreter, const char** interpreterArgs, U32* interpreterArgsCount, struct OpenNode** result) {
-	BOOL isElf;
+	BOOL isElf = 0;
 	struct OpenNode* openNode = 0;
 	struct Node* interpreterNode = 0;
 	struct Node* loaderNode = 0;
