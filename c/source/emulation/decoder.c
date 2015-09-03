@@ -2172,17 +2172,17 @@ DECODER decoder[1024] = {
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 };
 
-struct Block* decodeBlock(struct CPU* cpu) {	
+struct Block* decodeBlock(struct CPU* cpu, U32 eip) {	
 	struct Block* result;
 	result = allocBlock();
-	decodeBlockWithBlock(cpu, result);
+	decodeBlockWithBlock(cpu, eip, result);
 	return result;	
 }
 
 void OPCALL restoreOps(struct CPU* cpu, struct Op* op) {
     op->next = 0;
     freeOp(op);
-	decodeBlockWithBlock(cpu, cpu->currentBlock);
+	decodeBlockWithBlock(cpu, cpu->eip.u32, cpu->currentBlock);
     cpu->currentBlock->ops->func(cpu, cpu->currentBlock->ops);    
 }
 
@@ -2258,7 +2258,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     }
 }
 
-void decodeBlockWithBlock(struct CPU* cpu, struct Block* block) {	
+void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {	
 	struct DecodeData data;
 	struct DecodeData* pData = &data;
 	block->ops = allocOp();
@@ -2266,7 +2266,7 @@ void decodeBlockWithBlock(struct CPU* cpu, struct Block* block) {
     data.op = allocOp();
     block->ops->next = data.op;
 
-	data.start = data.ip = cpu->eip.u32 + cpu->segAddress[CS];
+	data.start = data.ip = eip + cpu->segAddress[CS];
 	if (cpu->big) {
 		data.opCode = 0x200;
 		data.ea16 = 0;

@@ -791,6 +791,14 @@ void gen258(struct GenData* data, struct Op* op) {
     out(data, " = pop32(cpu);CYCLES(1);");
 }
 
+void gen260(struct GenData* data, struct Op* op) {
+    out(data, "tmp32 = ESP; push32(cpu, EAX); push32(cpu, ECX); push32(cpu, EDX); push32(cpu, EBX);push32(cpu, tmp32); push32(cpu, EBP); push32(cpu, ESI); push32(cpu, EDI); CYCLES(5);");
+}
+
+void gen261(struct GenData* data, struct Op* op) {
+    out(data, "EDI = pop32(cpu); ESI = pop32(cpu); EBP = pop32(cpu); pop32(cpu); EBX = pop32(cpu); EDX = pop32(cpu); ECX = pop32(cpu); EAX = pop32(cpu); CYCLES(5);");
+}
+
 void gen068(struct GenData* data, struct Op* op) {
     char tmp[16];
 
@@ -931,10 +939,7 @@ void genJump(struct GenData* data, struct Op* op, int condition) {
         struct Op* first;
 
         if (block->block1->ops->func == restoreOps) {
-            U32 eip = data->cpu->eip.u32;
-            data->cpu->eip.u32 = data->eip+getBlockEipCount(data->block);
-            decodeBlockWithBlock(data->cpu, block->block1);
-            data->cpu->eip.u32 = eip;
+            decodeBlockWithBlock(data->cpu, data->eip+getBlockEipCount(data->block), block->block1);
         }
         first = block->block1->ops;
         if (first->func == firstOp)
@@ -8060,12 +8065,14 @@ void gen400(struct GenData* data, struct Op* op) {
 
     data->block = data->block->block1;
     first = data->block->ops;    
-    data->block->ops = data->block->ops->next;
-    first->next = 0;
-    freeOp(first);
+    if (first->func == firstOp) {
+        data->block->ops = data->block->ops->next;
+        first->next = 0;
+        freeOp(first);
+    }
 
-    jit(data->cpu, data->block, data->cpu->eip.u32);
     data->eip+=blockCount;
+    jit(data->cpu, data->block, data->eip);    
     writeBlock(data, data->block);
     addBlockToData(data, data->block);
 }
@@ -8385,7 +8392,7 @@ SRC_GEN srcgen[] = {
 	gen248, gen248, gen248, gen248, gen248, gen248, gen248, gen248,
 	gen250, gen250, gen250, gen250, gen250, gen250, gen250, gen250,
 	gen258, gen258, gen258, gen258, gen258, gen258, gen258, gen258,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	gen260, gen261, 0, 0, 0, 0, 0, 0,
 	gen268, gen269, gen268, gen269, 0, 0, 0, 0,
 	gen070, gen071, gen072, gen073, gen074, gen075, gen076, gen077,
 	gen078, gen079, gen07a, gen07b, gen07c, gen07d, gen07e, gen07f,
@@ -8575,11 +8582,8 @@ void writeBlock(struct GenData* data, struct Block* block) {
     struct Op* op;
 
     if (block->ops->func == restoreOps) {
-        U32 eip = data->cpu->eip.u32;
-        data->cpu->eip.u32 = data->eip;
         jit(data->cpu, block, data->eip);
-        decodeBlockWithBlock(data->cpu, block);
-        data->cpu->eip.u32 = eip;
+        decodeBlockWithBlock(data->cpu, data->eip, block);
     }
     op = block->ops;
     if (op->func == firstOp)
@@ -8607,10 +8611,7 @@ void writeBlockWithEipCount(struct GenData* data, struct Block* block, S32 eipCo
     struct Op* op;
 
     if (block->ops->func == restoreOps) {
-        U32 eip = data->cpu->eip.u32;
-        data->cpu->eip.u32 = data->eip;
-        decodeBlockWithBlock(data->cpu, block);
-        data->cpu->eip.u32 = eip;
+        decodeBlockWithBlock(data->cpu, data->eip, block);
     }
     op = block->ops;
     if (op->func == firstOp) {

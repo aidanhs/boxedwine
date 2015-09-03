@@ -707,11 +707,11 @@ struct Block* getBlock(struct CPU* cpu) {
 	if (IS_PAGE_IN_RAM(flags)) {
 		block = getCode(cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
 		if (!block) {
-			block = decodeBlock(cpu);
+			block = decodeBlock(cpu, cpu->eip.u32);
 			addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
 		}
 	} else {		
-		block = decodeBlock(cpu);
+		block = decodeBlock(cpu, cpu->eip.u32);
 		addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
 	}
 	return block;
