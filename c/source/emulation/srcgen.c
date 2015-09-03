@@ -2220,12 +2220,16 @@ void OPCALL movsd32_op(struct CPU* cpu, struct Op* op);
 void gen2a5(struct GenData* data, struct Op* op) {
     if (op->func==movsd16_r_op) {
         out(data, "movsd16_r(cpu, ");
+        out(data, getBase(op->base));
+        out(data, ");");
     } else if (op->func==movsd16_op) {
         out(data, "writed(cpu->memory, cpu->segAddress[ES]+DI, readd(cpu->memory, cpu->segAddress[");
         out(data, getBase(op->base));
         out(data, "]+SI)); DI+=cpu->df<<2; SI+=cpu->df<<2; CYCLES(4);");
     } else if (op->func==movsd32_r_op) {
         out(data, "movsd32_r(cpu, ");
+        out(data, getBase(op->base));
+        out(data, ");");
     } else if (op->func==movsd32_op) {
         out(data, "writed(cpu->memory, cpu->segAddress[ES]+EDI, readd(cpu->memory, cpu->segAddress[");
         out(data, getBase(op->base));
@@ -2233,8 +2237,6 @@ void gen2a5(struct GenData* data, struct Op* op) {
     } else {
         kpanic("gen2a5");
     }
-    out(data, getBase(op->base));
-    out(data, ");");
 }
 
 void OPCALL cmpsb16_r_op(struct CPU* cpu, struct Op* op);
