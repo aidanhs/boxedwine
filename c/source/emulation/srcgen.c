@@ -7152,19 +7152,19 @@ void gen3ab(struct GenData* data, struct Op* op) {
     } else if (op->func == btse32r32_16) {
         out(data, "eaa = ");
         out(data, getEaa16(op));
-        out(data, ")+((S32)");
+        out(data, "+(((S32)");
         out(data, r32(op->r1));
         out(data, ")>>5)*4; tmp32 = (1 << (");
         out(data, r32(op->r1));
-        out(data, " & 31))); tmp32_2 = readd(cpu->memory, eaa); setCF(cpu, tmp32_2 & tmp32); writed(cpu->memory, eaa, tmp32_2 | tmp32); CYCLES(13);");
+        out(data, " & 31)); tmp32_2 = readd(cpu->memory, eaa); setCF(cpu, tmp32_2 & tmp32); writed(cpu->memory, eaa, tmp32_2 | tmp32); CYCLES(13);");
     } else if (op->func == btse32r32_32) {
         out(data, "eaa = ");
         out(data, getEaa32(op));
-        out(data, ")+((S32)");
+        out(data, "+(((S32)");
         out(data, r32(op->r1));
         out(data, ")>>5)*4; tmp32 = (1 << (");
         out(data, r32(op->r1));
-        out(data, " & 31))); tmp32_2 = readd(cpu->memory, eaa); setCF(cpu, tmp32_2 & tmp32); writed(cpu->memory, eaa, tmp32_2 | tmp32); CYCLES(13);");
+        out(data, " & 31)); tmp32_2 = readd(cpu->memory, eaa); setCF(cpu, tmp32_2 & tmp32); writed(cpu->memory, eaa, tmp32_2 | tmp32); CYCLES(13);");
     } else {
         kpanic("gen3ab");
     }

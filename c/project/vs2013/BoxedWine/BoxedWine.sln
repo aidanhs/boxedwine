@@ -17,6 +17,7 @@ Global
 		ES Debug|Win32 = ES Debug|Win32
 		Release|Win32 = Release|Win32
 		SDL Debug|Win32 = SDL Debug|Win32
+		SDL Release Source Generator|Win32 = SDL Release Source Generator|Win32
 		SDL Release|Win32 = SDL Release|Win32
 		Test|Win32 = Test|Win32
 	EndGlobalSection
@@ -31,6 +32,8 @@ Global
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Release|Win32.Build.0 = Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Debug|Win32.ActiveCfg = SDL Debug|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Debug|Win32.Build.0 = SDL Debug|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release Source Generator|Win32.ActiveCfg = SDL Release|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release Source Generator|Win32.Build.0 = SDL Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release|Win32.ActiveCfg = SDL Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release|Win32.Build.0 = SDL Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.ActiveCfg = Test|Win32
@@ -43,6 +46,8 @@ Global
 		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Release|Win32.ActiveCfg = Release|Win32
 		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Release|Win32.Build.0 = Release|Win32
 		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Debug|Win32.ActiveCfg = Debug|Win32
+		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Release Source Generator|Win32.ActiveCfg = Release|Win32
+		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Release Source Generator|Win32.Build.0 = Release|Win32
 		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Release|Win32.ActiveCfg = Release|Win32
 		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Test|Win32.ActiveCfg = Release|Win32
 		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Test|Win32.Build.0 = Release|Win32
