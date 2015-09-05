@@ -22,7 +22,7 @@ U32 madvise(struct KThread* thread, U32 addr, U32 len, U32 advice) {
 	return 0;
 }
 
-U32 mlock(struct KThread* thread, U32 addr, U32 len) {
+U32 syscall_mlock(struct KThread* thread, U32 addr, U32 len) {
 	return 0;
 }
 

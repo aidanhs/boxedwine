@@ -18,7 +18,7 @@
 #include <stdarg.h>
 
 extern U64 cpuTotalTime;
-
+extern struct Block emptyBlock;
 //#undef LOG_SYSCALLS
 //#undef LOG_OPS
 #ifdef LOG_OPS
@@ -106,6 +106,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_flock 143
 #define __NR_msync 144
 #define __NR_writev 146
+#define __NR_mlock 150
 #define __NR_sched_yield 158
 #define __NR_nanosleep 162
 #define __NR_mremap 163
@@ -556,6 +557,10 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		result=syscall_writev(thread, ARG1, ARG2, ARG3);
 		LOG("__NR_writev: fildes=%d iov=0x%X iovcn=%d result=%d", ARG1, ARG2, ARG3, result);
 		break;
+    case __NR_mlock:
+        result=syscall_mlock(thread, ARG1, ARG2);
+        LOG("__NR_mlock: address=0x%X len=%d result=%d", ARG1, ARG2, result);
+        break;
 	case __NR_sched_yield:
 		result = 0;
 		threadDone(cpu);
@@ -893,7 +898,8 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		break;
 	}	
 	if (result==-K_CONTINUE) {
-		
+        if (cpu->nextBlock!=&emptyBlock)
+		    cpu->nextBlock = getBlock(cpu);
 	} else if (result==-K_WAIT) {
 		thread->waitSyscall = EAX;		
 		waitThread(thread);		
@@ -904,10 +910,11 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		if (oldEAX == __NR_rt_sigprocmask) {
 			runSignals(thread);
 		}
+        if (cpu->nextBlock!=&emptyBlock)
+            cpu->nextBlock = getBlock(cpu);
 	}	
 	thread->inSysCall = 0;
-    cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);    
-    threadDone(cpu);
+    cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);        
 }
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op) {
