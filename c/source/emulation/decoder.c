@@ -118,11 +118,14 @@ struct Op* allocOp() {
 }
 
 void freeOp(struct Op* op) {
-	if (op->next)
-		freeOp(op->next);
-	op->next = freeOps;
-	freeOps = op;
-	freeOpCount++;
+    struct Op* next;
+    while (op) {
+        next = op->next;
+	    op->next = freeOps;
+	    freeOps = op;
+	    freeOpCount++;
+        op = next;
+    }
 }
 
 struct Block* freeBlocks;
@@ -2208,7 +2211,7 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
         op = op->next;
     }
     crc = crc32b(ops, opPos);
-    func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
+    //func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
     if (func) {
         block->ops->func = func;
         freeOp(block->ops->next);

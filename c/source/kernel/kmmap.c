@@ -126,7 +126,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
 				process->mappedFiles[index].offset = off;
 				process->mappedFiles[index].systemCacheEntry = cache;
-				process->mappedFiles[index].refCount = 1;
+				process->mappedFiles[index].refCount = 0;
 				process->mappedFiles[index].file = fd->kobject;
 				process->mappedFiles[index].file->refCount++;
 			}
@@ -215,14 +215,6 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 		memory->flags[i+pageStart]=0;
 		memory->read[i+pageStart]=0;
 		memory->write[i+pageStart]=0;
-	}
-	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (thread->process->mappedFiles[i].refCount && thread->process->mappedFiles[i].address >= address && thread->process->mappedFiles[i].address+thread->process->mappedFiles[i].len <= address + len) {
-			thread->process->mappedFiles[i].refCount--;
-			if (thread->process->mappedFiles[i].refCount==0)
-				closeKObject(thread->process->mappedFiles[i].file);
-			break;
-		}
 	}
 	return 0;
 }
