@@ -2224,11 +2224,15 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     return 0;
 }
 #endif
+extern struct Block emptyBlock;
 void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     struct Block* block = cpu->currentBlock;
     U32 eip = cpu->eip.u32;
 
     op->next->func(cpu, op->next);
+
+    if (cpu->thread->process->terminated)
+        return;
 
     // :TODO: should experiment more with different values here
 	// Keeping code that isn't used much from being cached reduces memory, it also improves the start time since
