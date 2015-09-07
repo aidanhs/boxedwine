@@ -30,7 +30,7 @@ struct MapedFiles {
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 10
 #define K_SIG_INFO_SIZE 10
-#define MAX_COMMANDLINE_LEN 4096
+#define MAX_COMMANDLINE_LEN 65536
 
 struct KSigAction {
 	U32 handlerAndSigAction;

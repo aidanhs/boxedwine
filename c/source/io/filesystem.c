@@ -489,21 +489,26 @@ BOOL file_setLastModifiedTime(struct Node* node, U32 time) {
 U32 file_getType(struct Node* node) {	
 	if (file_isDirectory(node))
 		return 4; // DT_DIR
-	if (node->path.isLink) 
-		return 10; // DT_LNK
+    // only lstat will return this
+	//if (node->path.isLink) 
+	//	return 10; // DT_LNK
 	return 8; // DT_REG
 }
 
-U32 file_getMode(struct Node* node) {
-	return K__S_IREAD | K__S_IWRITE | K__S_IEXEC | (file_getType(node) << 12);
+U32 file_getMode(struct KProcess* process, struct Node* node) {
+    U32 result = K__S_IREAD | K__S_IEXEC | (file_getType(node) << 12);
+    if (process->userId == 0 || strstr(node->path.localPath, "/tmp")==node->path.localPath || strstr(node->path.localPath, "/var")==node->path.localPath || strstr(node->path.localPath, "/home")==node->path.localPath) {
+        result|=K__S_IWRITE;
+    }
+    return result;
 }
 
-BOOL file_canRead(struct Node* node) {
-	return file_getMode(node) & K__S_IREAD;
+BOOL file_canRead(struct KProcess* process, struct Node* node) {
+	return file_getMode(process, node) & K__S_IREAD;
 }
 
-BOOL file_canWrite(struct Node* node) {
-	return file_getMode(node) & K__S_IREAD;
+BOOL file_canWrite(struct KProcess* process, struct Node* node) {
+	return file_getMode(process, node) & K__S_IWRITE;
 }
 
 BOOL file_exists(struct Node* node) {
@@ -733,6 +738,54 @@ BOOL normalizePath(char* path) {
 	return TRUE;
 }
 
+
+static const char* invalidPaths[] = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",    
+    "COM1",
+    "COM2",
+    "COM3",
+    "COM4",
+    "COM5",
+    "COM6",
+    "COM7",
+    "COM8",
+    "COM9",
+    "LPT1",
+    "LPT2",
+    "LPT3",
+    "LPT4",
+    "LPT5",
+    "LPT6",
+    "LPT7",
+    "LPT8",
+    "LPT9",
+    "con",
+    "prn",
+    "aux",
+    "nul",    
+    "com1",
+    "com2",
+    "com3",
+    "com4",
+    "com5",
+    "com6",
+    "com7",
+    "com8",
+    "com9",
+    "lpt1",
+    "lpt2",
+    "lpt3",
+    "lpt4",
+    "lpt5",
+    "lpt6",
+    "lpt7",
+    "lpt8",
+    "lpt9",
+};
+
 void localPathToRemote(char* path) {
 	int len = strlen(path);
 	int i;
@@ -747,6 +800,22 @@ void localPathToRemote(char* path) {
 			len+=8;
 		}
 	}
+    for (i=0;i<sizeof(invalidPaths)/sizeof(invalidPaths[0]);i++) {
+        const char* sub = strstr(path, invalidPaths[i]);
+        if (sub) {
+            int pos = sub-path;
+            int len = strlen(invalidPaths[i]);
+
+            if (path[pos-1]==pathSeperator && (path[pos+len]=='.' || path[pos+len]==pathSeperator || path[pos+len]==0)) {
+                memmove(path+pos+len+4, path+pos+len, strlen(path+pos+len)+1);
+                memcpy(path+pos+2, invalidPaths[i], len);
+                path[pos]='(';
+                path[pos+1]='_';
+                path[pos+2+len]='_';
+                path[pos+2+len+1]=')';
+            }
+        }
+    }
 }
 
 void remotePathToLocal(char* path) {
@@ -853,6 +922,9 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
 	if (!node || node->nodeType->exists(node)) {
 		return -K_EEXIST;
 	}
+    if (!node->nodeType->canWrite(thread->process, node)) {
+        return -K_EACCES;
+    }
 	openNode = node->nodeType->open(thread->process, node, K_O_WRONLY|K_O_CREAT);
 	if (!openNode) {
 		return -K_EIO;

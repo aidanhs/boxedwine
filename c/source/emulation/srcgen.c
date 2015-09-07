@@ -8673,8 +8673,11 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
             klog("missing instruction for recompiler: %X", op->inst);
             return;
         }
-        for (i=0;i<op->eipCount;i++)
+        for (i=0;i<op->eipCount;i++) {
+            if (!cpu->memory->read[data->ip >> 12])
+                return;
             data->ops[data->opPos++] = readb(cpu->memory, data->ip++);
+        }
         op = op->next;
     }
     crc = crc32b(data->ops, data->opPos);

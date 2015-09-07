@@ -25,6 +25,7 @@
 #include <stdio.h>
 
 #define THREAD_ID_SHIFT 6
+#define MAX_ARG_COUNT 1024
 
 void setupCommandlineNode(struct KProcess* process) {
 	char tmp[128];
@@ -334,18 +335,18 @@ void pushThreadStack(struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
 }
 
 void setupThreadStack(struct CPU* cpu, const char* programName, int argc, const char** args, int envc, const char** env) {
-	U32 a[128];
-	U32 e[128];
+	U32 a[MAX_ARG_COUNT];
+	U32 e[MAX_ARG_COUNT];
 	int i;
 
 	push32(cpu, 0);
 	push32(cpu, 0);
 	push32(cpu, 0);	
 	writeStackString(cpu, programName);
-	if (argc>128)
-		kpanic("Too many args: 128 is max");
-	if (envc>128)
-		kpanic("Too many env: 128 is max");
+	if (argc>MAX_ARG_COUNT)
+		kpanic("Too many args: %d is max", MAX_ARG_COUNT);
+	if (envc>MAX_ARG_COUNT)
+		kpanic("Too many env: %d is max", MAX_ARG_COUNT);
 	//klog("env");
 	for (i=0;i<envc;i++) {
 		writeStackString(cpu, env[i]);
@@ -420,8 +421,8 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
 	struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
 	const char* interpreter = 0;
 	const char* loader = 0;
-	const char* pArgs[128];
-	unsigned int argIndex=128;
+	const char* pArgs[MAX_ARG_COUNT];
+	unsigned int argIndex=MAX_ARG_COUNT;
 	struct KProcess* process = allocProcess();
 	struct Memory* memory = allocMemory();		
 	struct KThread* thread = allocThread();
@@ -827,9 +828,9 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	U32 threadIndex = 0;
 	U32 i;
 	const char* name;
-	const char* args[128];
-	U32 argc=128;
-	const char* envs[128];
+	const char* args[MAX_ARG_COUNT];
+	U32 argc=MAX_ARG_COUNT;
+	const char* envs[MAX_ARG_COUNT];
 	U32 envc=0;
 	int tmpIndex = 0;
 
@@ -883,8 +884,8 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			
 	args[argc++] = node->path.localPath;
 	// copy args/env out of memory before memory is reset
-	tmpIndex = readStringArray(memory, argv+4, args, 128, &argc, tmp64k, 1024*64, tmpIndex);
-	readStringArray(memory, envp, envs, 128, &envc, tmp64k, 1024*64, tmpIndex);		
+	tmpIndex = readStringArray(memory, argv+4, args, MAX_ARG_COUNT, &argc, tmp64k, 1024*64, tmpIndex);
+	readStringArray(memory, envp, envs, MAX_ARG_COUNT, &envc, tmp64k, 1024*64, tmpIndex);		
 
 	for (i=0;i<envc;i++) {
 		if (strncmp(envs[i], "PATH=", 5)==0) {

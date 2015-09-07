@@ -2206,12 +2206,16 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     struct Op* op = block->ops;
 
     while (op) {
-        for (i=0;i<op->eipCount;i++)
+        for (i=0;i<op->eipCount;i++) {
+            // don't generate pf's from AOT
+            if (!cpu->memory->read[ip>>12])
+                return 0;
             ops[opPos++] = readb(cpu->memory, ip++);
+        }
         op = op->next;
     }
     crc = crc32b(ops, opPos);
-    //func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
+    func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
     if (func) {
         block->ops->func = func;
         freeOp(block->ops->next);

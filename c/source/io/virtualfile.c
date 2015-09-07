@@ -24,29 +24,29 @@ U64 virtual_length(struct Node* node) {
 	return 0;
 }
 
-U32 virtual_getMode(struct Node* node) {
+U32 virtual_getMode(struct KProcess* process, struct Node* node) {
 	return node->data1;
 }
 
-BOOL virtual_canRead(struct Node* node) {
-	return virtual_getMode(node) & K__S_IREAD;
+BOOL virtual_canRead(struct KProcess* process, struct Node* node) {
+	return virtual_getMode(process, node) & K__S_IREAD;
 }
 
-BOOL virtual_canWrite(struct Node* node) {
-	return virtual_getMode(node) & K__S_IWRITE;
+BOOL virtual_canWrite(struct KProcess* process, struct Node* node) {
+	return virtual_getMode(process, node) & K__S_IWRITE;
 }
 
 struct OpenNode* virtual_open(struct KProcess* process, struct Node* node, U32 flags) {
 	if ((flags & K_O_ACCMODE)==K_O_RDONLY) {
-		if (!virtual_canRead(node))
+		if (!virtual_canRead(process, node))
 			return 0;
 	} else if ((flags & K_O_ACCMODE)==K_O_WRONLY) {
-		if (!virtual_canWrite(node))
+		if (!virtual_canWrite(process, node))
 			return 0;
 	} else {
-		if (!virtual_canWrite(node))
+		if (!virtual_canWrite(process, node))
 			return 0;
-		if (!virtual_canRead(node))
+		if (!virtual_canRead(process, node))
 			return 0;
 	}
 	if (flags & K_O_CREAT) {

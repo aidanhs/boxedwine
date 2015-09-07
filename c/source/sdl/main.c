@@ -409,7 +409,8 @@ int main(int argc, char **argv) {
 			while (SDL_PollEvent(&e)) {
 				if (e.type == SDL_QUIT) {
 #ifdef GENERATE_SOURCE
-                    writeSource();
+                    if (gensrc)
+                        writeSource();
 #endif
 					SDL_Quit();
                     return 0;
@@ -454,6 +455,10 @@ int main(int argc, char **argv) {
 		}
 #endif
 	}
+#ifdef GENERATE_SOURCE
+    if (gensrc)
+        writeSource();
+#endif
 	SDL_Quit();
 	
 	return 0;

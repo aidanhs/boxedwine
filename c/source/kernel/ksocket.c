@@ -136,15 +136,15 @@ U64 unixsocket_length(struct Node* node) {
 	return 0;
 }
 
-U32 unixsocket_getMode(struct Node* node) {
+U32 unixsocket_getMode(struct KProcess* process, struct Node* node) {
 	return K__S_IREAD | K__S_IWRITE | K_S_IFSOCK;
 }
 
-BOOL unixsocket_canRead(struct Node* node) {
+BOOL unixsocket_canRead(struct KProcess* process, struct Node* node) {
 	return TRUE;
 }
 
-BOOL unixsocket_canWrite(struct Node* node) {
+BOOL unixsocket_canWrite(struct KProcess* process, struct Node* node) {
 	return TRUE;
 }
 

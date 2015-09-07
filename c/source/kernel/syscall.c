@@ -146,6 +146,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_gettid 224
 #define __NR_fsetxattr 228
 #define __NR_fgetxattr 231
+#define __NR_flistxattr 234
 #define __NR_tkill 238
 #define __NR_futex 240
 #define __NR_sched_getaffinity 242
@@ -747,6 +748,9 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		break;
 	case __NR_fgetxattr:
 		result = -K_ENOTSUP;
+		break;
+    case __NR_flistxattr:
+        result = -K_ENOTSUP;
 		break;
 		/*
 	case __NR_tkill:

@@ -249,7 +249,7 @@ U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U3
 			}
 		}
 		len = node->nodeType->length(node);
-		writeStat(thread->process->memory, buf, TRUE, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+		writeStat(thread->process->memory, buf, TRUE, 1, node->id, node->nodeType->getMode(thread->process, node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node), getHardLinkCount(node));
 		return 0;
 	}
 	return -K_ENOENT;
@@ -264,12 +264,12 @@ U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
     if (flags==0)
         return 0;
     if ((flags & 4)!=0) {
-		if (!node->nodeType->canRead(node)) {
+		if (!node->nodeType->canRead(thread->process, node)) {
             return -K_EACCES;
         }
     }
     if ((flags & 2)!=0) {
-		if (!node->nodeType->canWrite(node)) {
+		if (!node->nodeType->canWrite(thread->process, node)) {
             return -K_EACCES;
         }
     }
@@ -310,7 +310,7 @@ U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
         return -K_ENOENT;
     }
 	len = node->nodeType->length(node);
-	writeStat(thread->process->memory, buffer, TRUE, 1, node->id, node->nodeType->getMode(node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+	writeStat(thread->process->memory, buffer, TRUE, 1, node->id, node->nodeType->getMode(thread->process, node), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node), getHardLinkCount(node));
 	return 0;
 }
 
@@ -330,7 +330,7 @@ U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
 	safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
 	link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
 	len = link->nodeType->length(link);
-	writeStat(thread->process->memory, buffer, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+	writeStat(thread->process->memory, buffer, TRUE, 1, link->id, K__S_IFLNK|(node->nodeType->getMode(thread->process, node) & 0xFFF), node->rdev, len, 4096, (len+4095)/4096, node->nodeType->lastModified(node), getHardLinkCount(node));
 	return 0;
 }
 
@@ -633,7 +633,7 @@ U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
 	if (node->nodeType->exists(node)) {
 		return -K_EEXIST;
 	}
-	if (MKDIR(node->path.nativePath)!=0)
+	if (!node->nodeType->canWrite(thread->process, node) || MKDIR(node->path.nativePath)!=0)
 		return -K_EACCES;
 	return 0;
 }
