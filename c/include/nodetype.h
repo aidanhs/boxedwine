@@ -20,6 +20,8 @@
 #define K_O_ASYNC 0x2000
 #define K_O_CLOEXEC 0x80000
 
+#define FD_CLOEXEC 1
+
 // type of lock
 #define K_F_RDLCK	   0
 #define K_F_WRLCK	   1

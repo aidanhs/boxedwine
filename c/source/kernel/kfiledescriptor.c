@@ -76,7 +76,11 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
         case K_F_GETFD:
 			return fd->descriptorFlags;
         case K_F_SETFD:
-            fd->descriptorFlags=arg;
+            if (arg) {
+                fd->descriptorFlags=FD_CLOEXEC;
+            } else {
+                fd->descriptorFlags=0;
+            }
             return 0;
 		// blocking is at the file description level, not the file descriptor level
         case K_F_GETFL:

@@ -402,7 +402,7 @@ struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char*
 }
 
 struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags) {
-	return openFileDescriptor(process, currentDirectory, localPath, accessFlags, accessFlags & (K_O_NONBLOCK|K_O_CLOEXEC), getNextFileDescriptorHandle(process, 0));
+	return openFileDescriptor(process, currentDirectory, localPath, accessFlags, (accessFlags & K_O_CLOEXEC)?FD_CLOEXEC:0, getNextFileDescriptorHandle(process, 0));
 }
 
 void initStdio(struct KProcess* process) {
@@ -925,7 +925,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	}
 	threadClearFutexes(thread);
 	for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
-		if (process->fds[i] && (process->fds[i]->descriptorFlags & K_O_CLOEXEC)) {
+		if (process->fds[i] && (process->fds[i]->descriptorFlags)) {
 			process->fds[i]->refCount = 1; // make sure it is really closed
 			closeFD(process->fds[i]);
 		}

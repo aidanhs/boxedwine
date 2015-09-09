@@ -100,6 +100,7 @@ struct KSocket {
 };
 
 void waitOnSocketRead(struct KSocket* s, struct KThread* thread) {
+    struct KProcess* p = getProcessById(s->connection->pid);
 	if (s->waitingOnReadThread)
 		kpanic("%d tried to wait on a socket read, but %d is already waiting.", thread->id, s->waitingOnReadThread->id);
 	s->waitingOnReadThread = thread;
@@ -1111,8 +1112,8 @@ U32 syscall_pipe2(struct KThread* thread, U32 address, U32 flags) {
 	if (result==0) {
 		struct Memory* memory = thread->process->memory;
 		if ((flags & K_O_CLOEXEC)!=0) {
-			syscall_fcntrl(thread, readd(memory, address), K_F_SETFD, K_O_CLOEXEC);
-			syscall_fcntrl(thread, readd(memory, address + 4), K_F_SETFD, K_O_CLOEXEC);
+			syscall_fcntrl(thread, readd(memory, address), K_F_SETFD, FD_CLOEXEC);
+			syscall_fcntrl(thread, readd(memory, address + 4), K_F_SETFD, FD_CLOEXEC);
 		}
 		if ((flags & K_O_NONBLOCK)!=0) {
 			syscall_fcntrl(thread, readd(memory, address), K_F_SETFL, K_O_NONBLOCK);
