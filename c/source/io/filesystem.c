@@ -486,17 +486,16 @@ BOOL file_setLastModifiedTime(struct Node* node, U32 time) {
 	return utime(node->path.nativePath, &buf)==0;
 }
 
-U32 file_getType(struct Node* node) {	
+U32 file_getType(struct Node* node, U32 checkForLink) {	
 	if (file_isDirectory(node))
 		return 4; // DT_DIR
-    // only lstat will return this
-	//if (node->path.isLink) 
-	//	return 10; // DT_LNK
+	if (checkForLink && node->path.isLink) 
+		return 10; // DT_LNK
 	return 8; // DT_REG
 }
 
 U32 file_getMode(struct KProcess* process, struct Node* node) {
-    U32 result = K__S_IREAD | K__S_IEXEC | (file_getType(node) << 12);
+    U32 result = K__S_IREAD | K__S_IEXEC | (file_getType(node, 0) << 12);
     if (process->userId == 0 || strstr(node->path.localPath, "/tmp")==node->path.localPath || strstr(node->path.localPath, "/var")==node->path.localPath || strstr(node->path.localPath, "/home")==node->path.localPath) {
         result|=K__S_IWRITE;
     }

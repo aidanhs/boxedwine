@@ -68,7 +68,7 @@ BOOL virtual_setLastModifiedTime(struct Node* node, U32 time) {
 	return 0;
 }
 
-U32 virtual_getType(struct Node* node) {
+U32 virtual_getType(struct Node* node, U32 checkForLink) {
 	U32 mode = node->data1;
 
 	if (virtual_isDirectory(node)) {

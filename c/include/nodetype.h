@@ -36,7 +36,7 @@ struct NodeType {
 	BOOL (*setLastModifiedTime)(struct Node* node, U32 time);
 	BOOL (*canRead)(struct KProcess* process, struct Node* node);
 	BOOL (*canWrite)(struct KProcess* process, struct Node* node);
-	U32 (*getType)(struct Node* node);
+	U32 (*getType)(struct Node* node, U32 checkForLink);
 	U32 (*getMode)(struct KProcess* process, struct Node* node);
 };
 

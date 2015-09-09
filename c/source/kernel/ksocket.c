@@ -158,7 +158,7 @@ BOOL unixsocket_setLastModifiedTime(struct Node* node, U32 time) {
 	return 0;
 }
 
-U32 unixsocket_getType(struct Node* node) {
+U32 unixsocket_getType(struct Node* node, U32 checkForLink) {
 	return 12; // DT_SOCK
 }
 

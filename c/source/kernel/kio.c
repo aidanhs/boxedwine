@@ -523,21 +523,21 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 	entries = getDirCount(openNode);
 
 	if ((U32)openNode->access->getFilePointer(openNode)==0) {
-		U32 recordLen = writeRecord(memory, dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->nodeType->getType(openNode->node));		
+		U32 recordLen = writeRecord(memory, dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->nodeType->getType(openNode->node, 1));		
 		struct Node* entry;
 
 		dirp+=recordLen;
 		len+=recordLen;
 
 		entry = getParentNode(openNode->node);
-		recordLen = writeRecord(memory, dirp, len, count, 1, is64, "..", entry->id, entry->nodeType->getType(entry));		
+		recordLen = writeRecord(memory, dirp, len, count, 1, is64, "..", entry->id, entry->nodeType->getType(entry, 1));		
 		dirp+=recordLen;
 		len+=recordLen;
 		openNode->access->seek(openNode, 2);
 	}
 	for (i=(U32)openNode->access->getFilePointer(openNode);i<entries;i++) {
 		struct Node* entry = getDirNode(openNode, i);
-		U32 recordLen = writeRecord(memory, dirp, len, count, i+2, is64, entry->name, entry->id, entry->nodeType->getType(entry));		
+		U32 recordLen = writeRecord(memory, dirp, len, count, i+2, is64, entry->name, entry->id, entry->nodeType->getType(entry, 1));		
 		if (recordLen>0) {
 			dirp+=recordLen;
 			len+=recordLen;
