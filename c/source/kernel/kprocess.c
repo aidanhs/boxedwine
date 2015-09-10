@@ -930,6 +930,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			closeFD(process->fds[i]);
 		}
 	}
+    initStdio(process);
 	for (i=0;i<MAX_SHM;i++) {
 		U32 j;
 
