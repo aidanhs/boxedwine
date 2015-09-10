@@ -919,7 +919,13 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
 	safe_strcat(s2, ".link", MAX_FILEPATH_LEN);
 	node = getNodeFromLocalPath(currentDirectory, s2, FALSE);
 	if (!node || node->nodeType->exists(node)) {
-		return -K_EEXIST;
+        // :TODO: figure out real problem and remove this hack for libpango1.0-common_1.28.3-1+squeeze2_all.deb
+        if (!strcmp(s2, "/var/lib/defoma/locked.link")) {
+            node->nodeType->remove(node);
+            node = getNodeFromLocalPath(currentDirectory, s2, FALSE);
+        } else {
+		    return -K_EEXIST;
+        }
 	}
     if (!node->nodeType->canWrite(thread->process, node)) {
         return -K_EACCES;

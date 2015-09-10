@@ -93,7 +93,7 @@ struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
 struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags);
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
 BOOL isProcessStopped(struct KProcess* process);
-BOOL isProcessTerminatedstruct (struct KProcess* process);
+BOOL isProcessTerminated(struct KProcess* process);
 struct Node* getNode(struct KProcess* process, U32 fileName);
 const char* getModuleName(struct CPU* cpu, U32 eip);
 U32 getModuleEip(struct CPU* cpu, U32 eip);

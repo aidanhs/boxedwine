@@ -450,8 +450,21 @@ int main(int argc, char **argv) {
 				sprintf(tmp, "BoxedWine %d MIPS (%d MHz) RAM %d/%dMB opCache %dMB", getMIPS(), getMHz(), (getPageCount()-getFreePageCount())/256, getPageCount()/256, allocatedOpMemory/1024/1024);
 				fbSetCaption(tmp, "BoxedWine");
 			}
-			if (!ran)
+			if (!ran) {
+                struct KProcess* process=0;
+                int count = 0;
+
+                i=0;
+                while (getNextProcess(&i, &process)) {
+                    if (process && !isProcessStopped(process) && !isProcessTerminated(process)) {
+                        count++;
+                    }
+                }
+                if (count==0) {
+                    break;
+                }
 				SDL_Delay(20);
+            }
 		}
 #endif
 	}
