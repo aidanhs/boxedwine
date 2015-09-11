@@ -533,8 +533,8 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 		}
     }
 	if (!process) {
-		if (options==1) { // WNOHANG
-			return -K_ECHILD;
+		if (options & 1) { // WNOHANG
+			return 0;
 		} else {
 			thread->waitType = WAIT_PID;
 			return -K_WAIT;
@@ -775,8 +775,10 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {
         process = thread->process;
     else
         process = getProcessById(pid);
-    if (!process)
+    if (!process) {
+        return 0;
         return -K_ESRCH;
+    }
 	if ((S32)gpid<0)
         return -K_EINVAL;
 	if (gpid==0)

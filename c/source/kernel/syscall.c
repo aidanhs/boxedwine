@@ -107,7 +107,11 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_msync 144
 #define __NR_writev 146
 #define __NR_mlock 150
+#define __NR_sched_getparam 155
+#define __NR_sched_getscheduler 157
 #define __NR_sched_yield 158
+#define __NR_sched_get_priority_max	159
+#define __NR_sched_get_priority_min	160
 #define __NR_nanosleep 162
 #define __NR_mremap 163
 #define __NR_poll 168
@@ -562,11 +566,23 @@ void syscall(struct CPU* cpu, U32 eipCount) {
         result=syscall_mlock(thread, ARG1, ARG2);
         LOG("__NR_mlock: address=0x%X len=%d result=%d", ARG1, ARG2, result);
         break;
+    case __NR_sched_getparam:
+        result = 0;
+        break;
+    case __NR_sched_getscheduler:
+        result = 0; // SCHED_OTHER
+        break;
 	case __NR_sched_yield:
 		result = 0;
 		threadDone(cpu);
 		LOG("__NR_sched_yield result=%d", result);
 		break;
+    case __NR_sched_get_priority_max:
+        result = 32;
+        break;
+    case __NR_sched_get_priority_min:
+        result = 0;
+        break;
 	case __NR_nanosleep:
 		if (thread->waitStartTime) {
 			U32 diff = getMilliesSinceStart()-thread->waitStartTime;

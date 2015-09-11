@@ -100,7 +100,6 @@ struct KSocket {
 };
 
 void waitOnSocketRead(struct KSocket* s, struct KThread* thread) {
-    struct KProcess* p = getProcessById(s->connection->pid);
 	if (s->waitingOnReadThread)
 		kpanic("%d tried to wait on a socket read, but %d is already waiting.", thread->id, s->waitingOnReadThread->id);
 	s->waitingOnReadThread = thread;
