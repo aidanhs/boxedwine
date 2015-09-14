@@ -15,6 +15,7 @@
 #include "kfiledescriptor.h"
 #include "ram.h"
 #include "kstring.h"
+#include "kscheduler.h"
 
 #include UNISTD
 #include UTIME
@@ -185,7 +186,10 @@ BOOL file_isAsync(struct OpenNode* node, struct KProcess* process) {
 }
 
 void file_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
-	kwarn("file_waitForEvents not implemented");
+	thread->timer.process = thread->process;
+    thread->timer.thread = thread;
+	thread->timer.millies = 20;
+	addTimer(&thread->timer);
 }
 
 BOOL file_isWriteReady(struct OpenNode* node) {

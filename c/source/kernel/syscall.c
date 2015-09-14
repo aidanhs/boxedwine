@@ -85,6 +85,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_readlink 85
 #define __NR_mmap 90
 #define __NR_munmap 91
+#define __NR_ftruncate 93
 #define __NR_fchmod 94
 #define __NR_setpriority 97
 #define __NR_statfs 99
@@ -394,6 +395,10 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		result = syscall_unmap(thread, ARG1, ARG2);
 		LOG("__NR_munmap address=%X len=%d result=%d", ARG1, ARG2, result);
 		break;
+    case __NR_ftruncate:
+        result = syscall_ftruncate64(thread, ARG1, ARG2);
+        LOG("__NR_ftruncate address=%X len=%d result=%d", ARG1, ARG2, result);
+        break;
 	case __NR_fchmod:
 		result = syscall_fchmod(thread, ARG1, ARG2);
 		LOG("__NR_fchmod fd=%d mod=%X result=%d", ARG1, ARG2, result);
