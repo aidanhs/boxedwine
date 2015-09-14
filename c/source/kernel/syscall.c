@@ -195,6 +195,7 @@ void logsyscall(const char* fmt, ...) {
 #define SARG4 readd(memory, ARG2+8)
 #define SARG5 readd(memory, ARG2+12)
 #define SARG6 readd(memory, ARG2+16)
+#define SARG7 readd(memory, ARG2+20)
 
 void syscall(struct CPU* cpu, U32 eipCount) {
 	struct KThread* thread = cpu->thread;
@@ -409,7 +410,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		switch (ARG1) {
 			case 1: // SYS_SOCKET
 				result = ksocket(thread, SARG2, SARG3 & 0xFF, SARG4);
-				SOCKET_LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", (SARG3 & 0xFF), (SARG3 & 0xFF)==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", result);
+				SOCKET_LOG("SYS_SOCKET: domain=%d(%s) type=%d(%s) protocol=%d(%s) result=%d", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", (SARG3 & 0xFF), (SARG3 & 0xFF)==K_SOCK_STREAM?"SOCK_STREAM":((SARG3 & 0xFF)==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", SARG4, (SARG4 == 0)?"IPPROTO_IP":(SARG4==6)?"IPPROTO_TCP":(SARG4==17)?"IPPROTO_UDP":"", result);
 				break;
 			case 2: // SYS_BIND
 				result = kbind(thread, SARG2, SARG3, SARG4);
@@ -447,8 +448,14 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 				result = krecv(thread, SARG2, SARG3, SARG4, SARG5);
 				SOCKET_LOG("SYS_RECV: socket=%d buffer=%X len=%d flags=%X result=%d", SARG2, SARG3, SARG4, SARG5, result);
 				break;
-			//case 11: // SYS_SENDTO
-			//case 12: // SYS_RECVFROM
+			case 11: // SYS_SENDTO
+                result = ksendto(thread, SARG2, SARG3, SARG4, SARG5, SARG6, SARG7);
+                SOCKET_LOG("SYS_SENDTO: socket=%d buffer=%X len=%d flags=%X dest=%s result=%d", SARG2, SARG3, SARG4, SARG5, socketAddressName(thread, SARG6, SARG7), result);
+                break;
+			case 12: // SYS_RECVFROM
+                result = krecvfrom(thread, SARG2, SARG3, SARG4, SARG5, SARG6, SARG7);
+                SOCKET_LOG("SYS_RECVFROM: socket=%d buffer=%X len=%d flags=%X address=%s result=%d", SARG2, SARG3, SARG4, SARG5, socketAddressName(thread, SARG6, SARG7), result);
+                break;
 			case 13: // SYS_SHUTDOWN
 				result = kshutdown(thread, SARG2, SARG3);
 				SOCKET_LOG("SYS_SHUTDOWN: socket=%d how=%d result=%d", SARG2, SARG3, result);

@@ -57,12 +57,14 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 			fd->kobject->access->waitForEvents(fd->kobject, thread, data->events);
 			data++;
 		}
-		thread->timer.process = thread->process;
-		thread->timer.thread = thread;
-		if (timeout<0xF0000000)
-			timeout+=thread->waitStartTime;
-		thread->timer.millies = timeout;
-		addTimer(&thread->timer);
+        if (!thread->timer.active) {
+		    thread->timer.process = thread->process;
+		    thread->timer.thread = thread;
+		    if (timeout<0xF0000000)
+			    timeout+=thread->waitStartTime;
+		    thread->timer.millies = timeout;
+		    addTimer(&thread->timer);
+        }
 	} else {		
 		if (interrupted) {			
 			return -K_EINTR;
@@ -77,13 +79,14 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
 			}
 			data++;
 		}
-
-		thread->timer.process = thread->process;
-		thread->timer.thread = thread;
-		if (timeout<0xF0000000)
-			timeout+=thread->waitStartTime;
-		thread->timer.millies = timeout;
-		addTimer(&thread->timer);
+        if (!thread->timer.active) {
+		    thread->timer.process = thread->process;
+		    thread->timer.thread = thread;
+		    if (timeout<0xF0000000)
+			    timeout+=thread->waitStartTime;
+		    thread->timer.millies = timeout;
+		    addTimer(&thread->timer);
+        }
 	}	
 	return -K_WAIT;
 }

@@ -191,7 +191,7 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
 					if (r)
 						events |= K_POLLIN;
 					if (w)
-						events |= K_POLLHUP;
+						events |= K_POLLHUP|K_POLLOUT;
 					if (e)
 						events |= K_POLLERR;
 					if (thread->pollCount>=MAX_POLL_DATA) {

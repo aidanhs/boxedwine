@@ -776,7 +776,7 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {
     else
         process = getProcessById(pid);
     if (!process) {
-        return 0;
+        return 0; // :TODO:
         return -K_ESRCH;
     }
 	if ((S32)gpid<0)
