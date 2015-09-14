@@ -1315,7 +1315,7 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
 			if (!s->connection) {
 				return -K_EINVAL; // :TODO: is this right
 			}
-			if (readd(memory, len) != 12)
+			if (len != 12)
 				kpanic("getsockopt SO_PEERCRED expecting len of 12");
 			writed(memory, value, s->connection->pid);
 			writed(memory, value+4, UID);
