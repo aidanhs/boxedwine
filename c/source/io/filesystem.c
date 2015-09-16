@@ -186,14 +186,11 @@ BOOL file_isAsync(struct OpenNode* node, struct KProcess* process) {
 }
 
 void file_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
-	thread->timer.process = thread->process;
-    thread->timer.thread = thread;
-	thread->timer.millies = 20;
-	addTimer(&thread->timer);
+	kwarn("file_waitForEvents not implemented");
 }
 
 BOOL file_isWriteReady(struct OpenNode* node) {
-	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
+	return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
 BOOL file_isReadReady(struct OpenNode* node) {

@@ -65,7 +65,7 @@ void buffer_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 eve
 }
 
 BOOL buffer_isWriteReady(struct OpenNode* node) {
-	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
+	return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
 BOOL buffer_isReadReady(struct OpenNode* node) {

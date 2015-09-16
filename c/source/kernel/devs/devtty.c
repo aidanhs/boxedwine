@@ -235,7 +235,7 @@ void tty_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events
 }
 
 BOOL tty_isWriteReady(struct OpenNode* node) {
-	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
+	return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
 BOOL tty_isReadReady(struct OpenNode* node) {

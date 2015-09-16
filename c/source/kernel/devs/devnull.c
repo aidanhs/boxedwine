@@ -55,7 +55,7 @@ void null_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 event
 }
 
 BOOL null_isWriteReady(struct OpenNode* node) {
-	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
+	return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
 BOOL null_isReadReady(struct OpenNode* node) {

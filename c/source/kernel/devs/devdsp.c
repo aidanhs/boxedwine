@@ -324,7 +324,7 @@ void dsp_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events
 }
 
 BOOL dsp_isWriteReady(struct OpenNode* node) {
-	return (node->flags & K_O_ACCMODE)==K_O_RDONLY;
+	return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
 BOOL dsp_isReadReady(struct OpenNode* node) {

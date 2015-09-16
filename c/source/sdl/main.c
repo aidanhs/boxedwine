@@ -283,6 +283,8 @@ U32 gensrc;
 void writeSource();
 #endif
 
+U32 checkWaitingNativeSockets(int timeout);
+
 int main(int argc, char **argv) {
 	int i;
 	const char* root = 0;
@@ -449,6 +451,7 @@ int main(int argc, char **argv) {
 				lastTitleUpdate = t;
 				sprintf(tmp, "BoxedWine %d MIPS (%d MHz) RAM %d/%dMB opCache %dMB", getMIPS(), getMHz(), (getPageCount()-getFreePageCount())/256, getPageCount()/256, allocatedOpMemory/1024/1024);
 				fbSetCaption(tmp, "BoxedWine");
+                checkWaitingNativeSockets(0); // just so it doesn't starve if the system is busy
 			}
 			if (!ran) {
                 struct KProcess* process=0;
@@ -463,7 +466,8 @@ int main(int argc, char **argv) {
                 if (count==0) {
                     break;
                 }
-				SDL_Delay(20);
+                if (!checkWaitingNativeSockets(20))
+				    SDL_Delay(20);
             }
 		}
 #endif
