@@ -2540,14 +2540,14 @@ void OPCALL dshrcle32r32_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL cmpxchgr16r16(struct CPU* cpu, struct Op* op) {
-	cpu->dst.u16 = cpu->reg[op->r1].u16;
-    cpu->src.u16 = AX;
-    cpu->result.u16 = cpu->dst.u16 - AX;
+	cpu->dst.u16 = AX;
+    cpu->src.u16 = cpu->reg[op->r1].u16;
+    cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
     cpu->lazyFlags = FLAGS_CMP16;
-	if (AX == cpu->dst.u16) {
+	if (AX == cpu->src.u16) {
         cpu->reg[op->r1].u16 = cpu->reg[op->r2].u16;
     } else {
-        AX = cpu->dst.u16;
+        AX = cpu->src.u16;
     }
 	CYCLES(5);
 	NEXT();
@@ -2555,14 +2555,14 @@ void OPCALL cmpxchgr16r16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL cmpxchge16r16_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
-	cpu->dst.u16 = readw(cpu->memory, address);
-    cpu->src.u16 = AX;
-    cpu->result.u16 = cpu->dst.u16 - AX;
+	cpu->dst.u16 = AX;
+    cpu->src.u16 = readw(cpu->memory, address);
+    cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
     cpu->lazyFlags = FLAGS_CMP16;
-	if (AX == cpu->dst.u16) {
+	if (AX == cpu->src.u16) {
         writew(cpu->memory, address, cpu->reg[op->r1].u16);
     } else {
-        AX = cpu->dst.u16;
+        AX = cpu->src.u16;
     }
 	CYCLES(6);
 	NEXT();
@@ -2570,28 +2570,28 @@ void OPCALL cmpxchge16r16_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL cmpxchge16r16_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
-	cpu->dst.u16 = readw(cpu->memory, address);
-    cpu->src.u16 = AX;
-    cpu->result.u16 = cpu->dst.u16 - AX;
+	cpu->dst.u16 = AX;
+    cpu->src.u16 = readw(cpu->memory, address);
+    cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
     cpu->lazyFlags = FLAGS_CMP16;
-	if (AX == cpu->dst.u16) {
+	if (AX == cpu->src.u16) {
         writew(cpu->memory, address, cpu->reg[op->r1].u16);
     } else {
-        AX = cpu->dst.u16;
+        AX = cpu->src.u16;
     }
 	CYCLES(6);
 	NEXT();
 }
 
 void OPCALL cmpxchgr32r32(struct CPU* cpu, struct Op* op) {
-	cpu->dst.u32 = cpu->reg[op->r1].u32;
-    cpu->src.u32 = EAX;
-    cpu->result.u32 = cpu->dst.u32 - EAX;
+	cpu->dst.u32 = EAX;
+    cpu->src.u32 = cpu->reg[op->r1].u32;
+    cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
     cpu->lazyFlags = FLAGS_CMP32;
-	if (EAX == cpu->dst.u32) {
+	if (EAX == cpu->src.u32) {
         cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;
     } else {
-        EAX = cpu->dst.u32;
+        EAX = cpu->src.u32;
     }
 	CYCLES(5);
 	NEXT();
@@ -2599,14 +2599,14 @@ void OPCALL cmpxchgr32r32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa16(cpu, op);
-	cpu->dst.u32 = readd(cpu->memory, address);
-    cpu->src.u32 = EAX;
-    cpu->result.u32 = cpu->dst.u32 - EAX;
+	cpu->dst.u32 = EAX;
+    cpu->src.u32 = readd(cpu->memory, address);
+    cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
     cpu->lazyFlags = FLAGS_CMP32;
-	if (EAX == cpu->dst.u32) {
+	if (EAX == cpu->src.u32) {
         writed(cpu->memory, address, cpu->reg[op->r1].u32);
     } else {
-        EAX = cpu->dst.u32;
+        EAX = cpu->src.u32;
     }
 	CYCLES(6);
 	NEXT();
@@ -2614,14 +2614,14 @@ void OPCALL cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL cmpxchge32r32_32(struct CPU* cpu, struct Op* op) {
 	U32 address = eaa32(cpu, op);
-	cpu->dst.u32 = readd(cpu->memory, address);
-    cpu->src.u32 = EAX;
-    cpu->result.u32 = cpu->dst.u32 - EAX;
+	cpu->dst.u32 = EAX;
+    cpu->src.u32 = readd(cpu->memory, address);
+    cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
     cpu->lazyFlags = FLAGS_CMP32;
-	if (EAX == cpu->dst.u32) {
+	if (EAX == cpu->src.u32) {
         writed(cpu->memory, address, cpu->reg[op->r1].u32);
     } else {
-        EAX = cpu->dst.u32;
+        EAX = cpu->src.u32;
     }
 	CYCLES(6);
 	NEXT();
