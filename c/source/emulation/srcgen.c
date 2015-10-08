@@ -7457,25 +7457,25 @@ void OPCALL cmpxchgr16r16(struct CPU* cpu, struct Op* op);
 void OPCALL cmpxchge16r16_32(struct CPU* cpu, struct Op* op);
 void gen1b1(struct GenData* data, struct Op* op) {
     if (op->func == cmpxchgr16r16) {
-        out(data, "cpu->dst.u16 = ");
+        out(data, "cpu->src.u16 = ");
         out(data, r16(op->r1));
-        out(data, "; cpu->src.u16 = AX; cpu->result.u16 = cpu->dst.u16 - AX; cpu->lazyFlags = FLAGS_CMP16; if (AX == cpu->dst.u16) {");        
+        out(data, "; cpu->dst.u16 = AX; cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_CMP16; if (AX == cpu->src.u16) {");        
         out(data, r16(op->r1));
         out(data, " = ");
         out(data, r16(op->r2));
-        out(data, "; } else {AX = cpu->dst.u16;} CYCLES(5);");
+        out(data, "; } else {AX = cpu->src.u16;} CYCLES(5);");
     } else if (op->func == cmpxchgr16r16) {
         out(data, "eaa = ");
         out(data, getEaa16(op));
-	    out(data, "; cpu->dst.u16 = readw(cpu->memory, eaa); cpu->src.u16 = AX; cpu->result.u16 = cpu->dst.u16 - AX; cpu->lazyFlags = FLAGS_CMP16; if (AX == cpu->dst.u16) {writew(cpu->memory, eaa, ");
+	    out(data, "; cpu->src.u16 = readw(cpu->memory, eaa); cpu->dst.u16 = AX; cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_CMP16; if (AX == cpu->src.u16) {writew(cpu->memory, eaa, ");
         out(data, r16(op->r1));
         out(data, ");} else {AX = cpu->dst.u16;} CYCLES(6);");
     } else if (op->func == cmpxchge16r16_32) {
         out(data, "eaa = ");
         out(data, getEaa32(op));
-	    out(data, "; cpu->dst.u16 = readw(cpu->memory, eaa); cpu->src.u16 = AX; cpu->result.u16 = cpu->dst.u16 - AX; cpu->lazyFlags = FLAGS_CMP16; if (AX == cpu->dst.u16) {writew(cpu->memory, eaa, ");
+	    out(data, "; cpu->src.u16 = readw(cpu->memory, eaa); cpu->dst.u16 = AX; cpu->result.u16 = cpu->dst.u16 - cpu->src.u16; cpu->lazyFlags = FLAGS_CMP16; if (AX == cpu->src.u16) {writew(cpu->memory, eaa, ");
         out(data, r16(op->r1));
-        out(data, ");} else {AX = cpu->dst.u16;} CYCLES(6);");
+        out(data, ");} else {AX = cpu->src.u16;} CYCLES(6);");
     }
     data->lazyFlags = sFLAGS_CMP16;
 }
@@ -7488,14 +7488,14 @@ void OPCALL cmpxchge32r32_16_noflags(struct CPU* cpu, struct Op* op);
 void OPCALL cmpxchge32r32_32_noflags(struct CPU* cpu, struct Op* op);
 void gen3b1(struct GenData* data, struct Op* op) {
     if (op->func == cmpxchgr32r32) {
-        out(data, "cpu->dst.u32 = ");
+        out(data, "cpu->src.u32 = ");
         out(data, r32(op->r1));
-        out(data, "; cpu->src.u32 = EAX; cpu->result.u32 = cpu->dst.u32 - EAX; cpu->lazyFlags = FLAGS_CMP32; if (EAX == cpu->dst.u32) {");
+        out(data, "; cpu->dst.u32 = EAX; cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_CMP32; if (EAX == cpu->src.u32) {");
         data->lazyFlags = sFLAGS_CMP32;
         out(data, r32(op->r1));
         out(data, " = ");
         out(data, r32(op->r2));
-        out(data, ";} else {EAX = cpu->dst.u32;} CYCLES(5);");
+        out(data, ";} else {EAX = cpu->src.u32;} CYCLES(5);");
     } else if (op->func == cmpxchgr32r32_noflags) {
         out(data, "if (EAX == ");
         out(data, r32(op->r1));
@@ -7509,10 +7509,10 @@ void gen3b1(struct GenData* data, struct Op* op) {
     } else if (op->func == cmpxchge32r32_16) {
         out(data, "eaa = ");
         out(data, getEaa16(op));
-	    out(data, "; cpu->dst.u32 = readd(cpu->memory, eaa); cpu->src.u32 = EAX; cpu->result.u32 = cpu->dst.u32 - EAX; cpu->lazyFlags = FLAGS_CMP32; if (EAX == cpu->dst.u32) { writed(cpu->memory, eaa, ");
+	    out(data, "; cpu->src.u32 = readd(cpu->memory, eaa); cpu->dst.u32 = EAX; cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_CMP32; if (EAX == cpu->src.u32) { writed(cpu->memory, eaa, ");
         data->lazyFlags = sFLAGS_CMP32;
         out(data, r32(op->r1));
-        out(data, "); } else {EAX = cpu->dst.u32;} CYCLES(6);");
+        out(data, "); } else {EAX = cpu->src.u32;} CYCLES(6);");
     } else if (op->func == cmpxchge32r32_16_noflags) {
         out(data, "eaa = ");
         out(data, getEaa16(op));
@@ -7522,10 +7522,10 @@ void gen3b1(struct GenData* data, struct Op* op) {
     } else if (op->func == cmpxchge32r32_32) {
         out(data, "eaa = ");
         out(data, getEaa32(op));
-	    out(data, "; cpu->dst.u32 = readd(cpu->memory, eaa); cpu->src.u32 = EAX; cpu->result.u32 = cpu->dst.u32 - EAX; cpu->lazyFlags = FLAGS_CMP32; if (EAX == cpu->dst.u32) { writed(cpu->memory, eaa, ");
+	    out(data, "; cpu->src.u32 = readd(cpu->memory, eaa); cpu->dst.u32 = EAX; cpu->result.u32 = cpu->dst.u32 - cpu->src.u32; cpu->lazyFlags = FLAGS_CMP32; if (EAX == cpu->src.u32) { writed(cpu->memory, eaa, ");
         data->lazyFlags = sFLAGS_CMP32;
         out(data, r32(op->r1));
-        out(data, "); } else {EAX = cpu->dst.u32;} CYCLES(6);");
+        out(data, "); } else {EAX = cpu->src.u32;} CYCLES(6);");
     } else if (op->func == cmpxchge32r32_32_noflags) {
         out(data, "eaa = ");
         out(data, getEaa32(op));
