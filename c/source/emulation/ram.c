@@ -272,9 +272,7 @@ static void copyOnWrite(struct Memory* memory, U32 address) {
 		memory->ramPage[page] = ram;
 
 		// read ram addresses changed, write changes are handled below
-		if (read && write) {
-			memory->read[page] = TO_TLB(ram,  address);
-		} else if (read) {
+		if (read) {
 			memory->read[page] = TO_TLB(ram,  address);
 		}
 	}

@@ -682,8 +682,10 @@ void decode262(struct DecodeData* data) {
 	NEXT_OP(data);
 }
 
+void log_pf(struct Memory* memory, U32 address);
 void invalidOp(struct DecodeData* data) {
-	kpanic("Invalid instruction %x", data->op->inst);
+	printf("Invalid instruction %x\n", data->op->inst);    
+    log_pf(data->cpu->memory, 0);
 }
 
 // Operand Size Prefix

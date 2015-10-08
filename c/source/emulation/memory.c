@@ -24,8 +24,8 @@ void log_pf(struct Memory* memory, U32 address) {
 
 	printf("%.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X %s at %.8X\n", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, getModuleName(cpu, cpu->eip.u32), getModuleEip(cpu, cpu->eip.u32));
 
-	kwarn("Page Fault at %.8X", address);
-	kwarn("Valid address ranges:");
+	printf("Page Fault at %.8X\n", address);
+	printf("Valid address ranges:\n");
 	for (i=0;i<NUMBER_OF_PAGES;i++) {
 		if (!start) {
 			if (memory->mmu[i] != &invalidPage) {
@@ -33,15 +33,15 @@ void log_pf(struct Memory* memory, U32 address) {
 			}
 		} else {
 			if (memory->mmu[i] == &invalidPage) {
-				kwarn("    %.8X - %.8X", start*PAGE_SIZE, i*PAGE_SIZE);
+				printf("    %.8X - %.8X\n", start*PAGE_SIZE, i*PAGE_SIZE);
 				start = 0;
 			}
 		}
 	}
-	kwarn("Mapped Files:");
+	printf("Mapped Files:\n");
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (memory->process->mappedFiles[i].refCount)
-			kwarn("    %.8X - %.8X %s", memory->process->mappedFiles[i].address, memory->process->mappedFiles[i].address+memory->process->mappedFiles[i].len, ((struct OpenNode*)memory->process->mappedFiles[i].file->data)->node->path.localPath);
+			printf("    %.8X - %.8X %s\n", memory->process->mappedFiles[i].address, memory->process->mappedFiles[i].address+memory->process->mappedFiles[i].len, ((struct OpenNode*)memory->process->mappedFiles[i].file->data)->node->path.localPath);
 	}
 	kpanic("pf");
 }
