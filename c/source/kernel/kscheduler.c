@@ -44,7 +44,9 @@ void waitThread(struct KThread* thread) {
 
 void wakeThread(struct KThread* thread) {
 	U32 i;
-
+    if (!thread->waitNode) {
+        kpanic("wakeThread: tried to wake a thread that is not asleep");
+    }
 	removeItemFromList(&waitingThreads, thread->waitNode);
 	thread->waitNode = 0;
 	for (i=0; i<thread->clearOnWakeCount; i++) {
