@@ -25,6 +25,10 @@ static int winsock_intialized;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/ioctl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 void closesocket(int socket) { close(socket); }
 #endif
 
@@ -180,7 +184,7 @@ void updateWaitingList() {
     FD_ZERO(&waitingWriteset);
 
     s = waitingNativeSockets;
-    maxSocketId = maxSocketId;
+    maxSocketId = 0;
     while (s) {
         if (getWaitingOnReadThreadCount(s))
             FD_SET(s->nativeSocket, &waitingReadset);
@@ -509,7 +513,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, struct Memory*
 
 	if (s->type == K_SOCK_DGRAM) {
 		if (!strcmp(s->destAddress.data, "/dev/log")) {
-			printf(getNativeString(thread->process->memory, buffer));
+			printf("%s\n", getNativeString(thread->process->memory, buffer));
 		}
 		return len;
 	}
@@ -796,7 +800,7 @@ U32 nativesocket_read(struct KThread* thread, struct KObject* obj, struct Memory
 }
 
 U32 nativesocket_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
-	struct KSocket* s = (struct KSocket*)obj->data;	
+	//struct KSocket* s = (struct KSocket*)obj->data;	
 	writeStat(memory, address, is64, 1, 0, K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, 0, 0, 4096, 0, 0, 1);
 	return 0;
 }
@@ -938,7 +942,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
                 ioctlsocket(nativeSocket, FIONBIO, &mode);
             }
 #else
-            fcntl(nativeSocket, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+            fcntl(nativeSocket, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) | O_NONBLOCK);
 #endif
             if (returnSocket)
 			    *returnSocket = s;
@@ -1167,7 +1171,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	}
     if (s->nativeSocket) {
         struct sockaddr addr;
-        int addrlen = sizeof(struct sockaddr);
+        unsigned int addrlen = sizeof(struct sockaddr);
         result = accept(s->nativeSocket, &addr, &addrlen);
         if (result>=0) {
             if (address)
@@ -1730,7 +1734,7 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
 	struct KSocket* s;
 	struct Memory* memory = thread->process->memory;
-    int len=sizeof(struct sockaddr);
+    unsigned int len=sizeof(struct sockaddr);
     S32 result;
     int f = 0;
     struct sockaddr from;
