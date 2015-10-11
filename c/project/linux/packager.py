@@ -48,7 +48,7 @@ try:
         }
         function postProcessPackageData(arrayBuffer){
     """
-    txt = txt.replace("function processPackageData(arrayBuffer){Module.finishedDataFileDownloads++;assert(arrayBuffer,\"Loading data file failed.\");", zeeCode)
+    txt = txt.replace("function processPackageData(arrayBuffer){Module.finishedDataFileDownloads++;assert(arrayBuffer,\"Loading data file failed.\");assert(arrayBuffer instanceof ArrayBuffer,\"bad input to processPackageData\");var byteArray=new Uint8Array(arrayBuffer);", zeeCode)
     
     outf = open('package.js', 'w')
     outf.write(txt)

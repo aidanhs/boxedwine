@@ -115,8 +115,10 @@
       &nbsp;&nbsp;&nbsp;
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
     </div>
-    <div class="emscripten_border">
-        <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="filedrag">
+        <div class="emscripten_border">
+            <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+        </div>
     </div>
     <div>
     	<textarea class="emscripten" id="output" rows="8" style="display: none"></textarea>
@@ -307,6 +309,19 @@ var flag_r = { isReadable: function() { return true; },
             console.log("setting allocated memory (Mbytes) to: "+mmemoryInMB);
             return mmemoryInMB;
         }
+        function dragHandler(e) {
+            e.stopPropagation();
+            e.preventDefault();
+        }
+        function selectHandler(e) {
+            dragHandler(e);
+            var files = e.target.files || e.dataTransfer.files;
+            startWithFiles(files);
+        }
+        var filedrag = document.getElementById("filedrag");
+        filedrag.addEventListener("dragover", dragHandler, false);
+        filedrag.addEventListener("dragleave", dragHandler, false);
+        filedrag.addEventListener("drop", selectHandler, false);
       var Module = {
         logReadFiles : false, //enable if you want to prune with Reduce utility
         preRun: [initialSetup],
