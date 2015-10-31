@@ -6,3 +6,36 @@ To compile, you need one and only one of the follow 3 flags
 MESA Mesa        off screen buffer will be used to render OpenGL.
 BOXEDWINE_ES     SDL OpenGL ES code will be used.  OpenGL calls will be translated to ES.
 BOXEDWINE_SDL    SDL OpenGL context will be used
+
+Javascript
+
+buildjs.sh/shell.html
+This build script is used to build an emscripten target.  A folder named root containing the linux filesystem must exist in the current directory.
+The contents of the root directory is gzipped up and merged into the emscripten build.
+
+settings:
+By default uploading/downloading occurs inside the directory /root/home/username/.wine/drive_c/files/.
+It is possible to modify this by appending a ?dir=somedir to the url, else change the dirPrefix in shell.html
+
+buildjsfs.sh/shellfs.sh
+This build script integrates the browserfs library [https://github.com/jvilk/BrowserFS].
+It introduces a writeable file store for the /home directory. By default dropbox integration is set.
+Alternatively browser local storage can be used.  A third option is memory which effectively imitates what the buildjs.sf provides.
+Again the root directory is zipped, but this time with zip.  Due to the slow unzipping process do not use a large filesystem
+(Use the Reduce util in the java source tree if needed).
+
+settings:
+var dirPrefix  - sets the directory where the upload/download functionality operates.
+var storageMode - can be either DROPBOX, LOCAL_STORAGE or MEMORY
+
+notes on modes:
+DROPBOX - OAuth dance provided via dropbox.js library [https://github.com/dropbox/dropbox-js].
+Because of this boxedwine must be served from a web server when using this option.
+Also must set DROPBOX_APP_KEY and RECEIVE_URL (absolute path) inside the html.
+Make remember to also set the receive_url in your dropbox app console.
+LOCAL_STORAGE - browsers are crap at storage (add to the long list of other things),
+may not be  available and even if it is there are limits depending on browser, os and position of the zodiac.
+MEMORY - but why? just like using buildjs.sh/shell.html but slower.
+
+other dials/tweaks for emscripten build files.
+see var Module inside the html file.  Can alter memory allocation and other bits and pieces.

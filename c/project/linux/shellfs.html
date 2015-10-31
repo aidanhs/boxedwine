@@ -138,6 +138,8 @@
 		</div>
 	</div>
     <hr>
+    
+    <script type="text/javascript" src="dropbox.min.js"></script>
     <script type="text/javascript" src="browserfs.min.js"></script>
     <script type="text/javascript" src="jszip.min.js"></script>
     <script type='text/javascript'>
@@ -146,10 +148,20 @@
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
         //hack for some reason i can only load/save files to the windows directory!
-        var dirPrefix = "/root/home/username/.wine/drive_c/windows/";
-        var dirPrefix2 = "/root/home/username/.wine/drive_c/files/";
+        //var dirPrefix = "/root/home/username/.wine/drive_c/windows/";
+        var dirPrefix = "/root/home/username/.wine/drive_c/files/";
         console.log("setting file directory to: "+dirPrefix);
-        var useLocalStorage = setLocalStorageOption();
+        var STORAGE_DROPBOX = "DROPBOX";
+        var STORAGE_LOCAL_STORAGE = "LOCAL_STORAGE";
+        var STORAGE_MEMORY = "MEMORY";
+        
+        var DROPBOX_APP_KEY = 'put key in here';
+        var RECEIVE_URL = "http://put url in here/oauth_receiver.html";
+        var client = null;
+        var storageMode = STORAGE_DROPBOX;
+        console.log("Use Storage mode: "+storageMode);
+        var DATA = null;
+        
 		var ae = document.createElement("a");
 		document.body.appendChild(ae);
 		ae.style = "display: none";
@@ -158,35 +170,78 @@
       	var progressElement = document.getElementById('progress');
       	var spinnerElement = document.getElementById('spinner');
 
-//recursive copy based on code in emularity github project
-var flag_r = { isReadable: function() { return true; },
-    isWriteable: function() { return false; },
-    isTruncating: function() { return false; },
-    isAppendable: function() { return false; },
-    isSynchronous: function() { return false; },
-    isExclusive: function() { return false; },
-    pathExistsAction: function() { return 0; },
-    pathNotExistsAction: function() { return 1; }
-};
+    //recursive copy based on code in emularity github project
+    var flag_r = { isReadable: function() { return true; },
+        isWriteable: function() { return false; },
+        isTruncating: function() { return false; },
+        isAppendable: function() { return false; },
+        isSynchronous: function() { return false; },
+        isExclusive: function() { return false; },
+        pathExistsAction: function() { return 0; },
+        pathNotExistsAction: function() { return 1; }
+    };
     
         function setGlobalArrayBuffer(arrayBuffer){
-            var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
-            var BFS = new BrowserFS.EmscriptenFS();
-            var mfs = new BrowserFS.FileSystem.MountableFileSystem();            
-            
-            var writableStorage;
-            if(useLocalStorage){
-                //make sure it is available
+            DATA = arrayBuffer;
+        }
+        var alreadyBuiltFileSystem = false;
+        function auth_callback(error) {
+            if (error) {
+                alert('Authentication error: ' + error);
+                return;
+            }
+            if (client.isAuthenticated()) {
+                if(alreadyBuiltFileSystem){
+                    return;
+                }
+                alreadyBuiltFileSystem = true;
+                document.getElementById('startbtn').disabled = true;
+                document.getElementById('startbtn').textContent = "Syncing...";
+                console.log("authenticated!");
+                var mirrorFS = new BrowserFS.FileSystem.AsyncMirrorFS(new BrowserFS.FileSystem.InMemory(), new BrowserFS.FileSystem.Dropbox(client));
+                mirrorFS.initialize(function callback(e){
+                    buildFileSystem(mirrorFS);
+                });
+            } else {
+                alert('unable to authenticate');
+            }
+        }
+        function dropboxLogin()
+        {
+            client = new Dropbox.Client({key: DROPBOX_APP_KEY});
+            client.authDriver(new Dropbox.AuthDriver.Popup({receiverUrl: RECEIVE_URL}));
+            client.authenticate(auth_callback);
+            document.getElementById('startbtn').textContent = "Start";
+        }
+    
+        function initFileSystem()
+        {          
+            if(storageMode === STORAGE_LOCAL_STORAGE){
+                var writableStorage;
                 if(BrowserFS.FileSystem.LocalStorage.isAvailable){
                     writableStorage = new BrowserFS.FileSystem.LocalStorage();
                 }else{
-                    useLocalStorage =false;
                     writableStorage = new BrowserFS.FileSystem.InMemory();
                     console.log("Switching to In Memory store as LocalStorage is not available");
                 }
+                buildFileSystem(writableStorage);
+            }else if(storageMode === STORAGE_DROPBOX){
+                client.authenticate({interactive:false}, auth_callback);
             }else{
-                writableStorage = new BrowserFS.FileSystem.InMemory();
+                buildFileSystem(new BrowserFS.FileSystem.InMemory());
             }
+        }
+
+        function buildFileSystem(writableStorage)
+        {
+            document.getElementById('startbtn').textContent = "Running...";
+                        
+            var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
+            var data = new Buffer(DATA);
+            
+            var BFS = new BrowserFS.EmscriptenFS();
+            var mfs = new BrowserFS.FileSystem.MountableFileSystem();            
+
             FS.createFolder(FS.root, 'root', true, true);
             mfs.mount('/home', writableStorage);
             FS.createFolder('root', 'home', true, true);
@@ -202,14 +257,14 @@ var flag_r = { isReadable: function() { return true; },
 
             var initCompleteFS = false;
 
-            var data = new Buffer(arrayBuffer);
             //I use ZipFS merely to unzip (faster than jszip)
             var zipfs = new BrowserFS.FileSystem.ZipFS(data);
             recursiveCopy(zipfs, '/');
             zipfs = null;
-            var folders = dirPrefix2.split("/");
+            var folders = dirPrefix.split("/");
             var parent = "";
             var started = false;
+            
             for(var k=0;k<folders.length;k++){
                 var folder = folders[k];
                 if(folder.length > 0){
@@ -220,7 +275,10 @@ var flag_r = { isReadable: function() { return true; },
                         try{
                             Module.FS_createFolder(parent, folder, true, true);
                         }catch(ee){//directory may already exist
-                            if(ee.message !== "File exists"){
+                            if(ee.message === "Not supported"){//not much i can do about this. probably Dropbox connection not working
+                                //alert("Dropbox connection not available");
+                                //throw ee;
+                            }else if(ee.message !== "File exists"){
                                 throw ee;
                             }
                         }
@@ -228,8 +286,11 @@ var flag_r = { isReadable: function() { return true; },
                     }
                 }
             }
+            document.getElementById('uploadbtn').style.display = "";
+            document.getElementById('downloadbtn').style.display = "";            
             Module["removeRunDependency"]("datafile_boxedwine.data");             
         }
+
     function recursiveCopy(fs, filename) {
         var path = BrowserFS.BFSRequire('path');
         copyDirectory(filename);
@@ -276,29 +337,18 @@ var flag_r = { isReadable: function() { return true; },
             }
         }
     }
-        function setLocalStorageOption(){
-            var usingLS = true;
-            var localStore =  getParameter("localStorage").toUpperCase();
-            if(localStore==="TRUE" || localStore==="ON" || localStore==="Y"|| localStore==="YES"){
-                usingLS = true;
-            }else if(localStore==="FALSE" || localStore==="OFF" || localStore==="N"|| localStore==="NO"){
-                usingLS = false;
-            }
-            console.log("Use Local Storage:"+usingLS);
-            return usingLS;
-        }
+
     
         var initialSetup = function(){
             console.log("running initial setup");
             spinnerElement.style.display = 'none';
-            Module['addRunDependency']('uploadFiles');
             toggleConsole();
-
-
-            document.getElementById('startbtn').disabled = false;
-            document.getElementById('startbtn').style.display = "";
-            document.getElementById('uploadbtn').style.display = "";
-            document.getElementById('downloadbtn').style.display = "";
+            var startBtn = document.getElementById('startbtn');
+            if(storageMode === STORAGE_DROPBOX){
+                startBtn.textContent = "Login";
+            }
+            startBtn.disabled = false;
+            startBtn.style.display = "";
         }
         function getMemoryAllocation()
         {
@@ -402,9 +452,13 @@ var flag_r = { isReadable: function() { return true; },
         };
       };
         function start(){
-            document.getElementById('startbtn').disabled = true;
-            Module['removeRunDependency']('uploadFiles');
-
+            if(storageMode === STORAGE_DROPBOX){
+                if(client == null || !client.isAuthenticated()){
+                    dropboxLogin();
+                    return;              
+                }
+            }
+            initFileSystem();
         }
         function startWithFiles(files){
             for (var i = 0; i < files.length; i++) {
