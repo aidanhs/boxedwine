@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-                    
+
     <title>BoxedWine</title>
     <meta name="description" content="boxedwine emulator">
     <meta name="keywords" content="emulator,wine,windows,x86,PC,emscripten,boxedwine">
@@ -101,12 +101,12 @@
         <figure style="overflow:visible;" id="spinner"><div class="spinner"></div><center style="margin-top:0.5em"></center></figure>
     <div class="emscripten" id="status">Downloading...</div>
     <div class="emscripten">
-      <progress value="0" max="100" id="progress" hidden=1></progress>  
+      <progress value="0" max="100" id="progress" hidden=1></progress>
     </div>
     <div class="emscripten">
         <button id="startbtn" style="display: none" onclick="start()">Start</button>
         <button id="uploadbtn" style="display: none" onclick="document.getElementById('upload').click()" >Add File(s)</button>
-        <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple="" />        
+        <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple="" />
         <button id="downloadbtn" style="display: none" onclick="buildTree();">Get File(s)</button>
 		<a style="display: none" id="modalLink" href="#openModal">Open</a>
       <input type="checkbox" id="resize">Resize canvas
@@ -138,30 +138,29 @@
 		</div>
 	</div>
     <hr>
-    
+
     <script type="text/javascript" src="dropbox.min.js"></script>
-    <script type="text/javascript" src="browserfs.min.js"></script>
-    <script type="text/javascript" src="jszip.min.js"></script>
-    <script type='text/javascript'>
+        <script type="text/javascript" src="browserfs.min.js"></script>
+        <script type="text/javascript" src="jszip.min.js"></script>
+        <script type='text/javascript'>
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
-        //hack for some reason i can only load/save files to the windows directory!
-        //var dirPrefix = "/root/home/username/.wine/drive_c/windows/";
         var dirPrefix = "/root/home/username/.wine/drive_c/files/";
         console.log("setting file directory to: "+dirPrefix);
         var STORAGE_DROPBOX = "DROPBOX";
         var STORAGE_LOCAL_STORAGE = "LOCAL_STORAGE";
         var STORAGE_MEMORY = "MEMORY";
-        
+
         var DROPBOX_APP_KEY = 'put key in here';
         var RECEIVE_URL = "http://put url in here/oauth_receiver.html";
         var client = null;
         var storageMode = STORAGE_DROPBOX;
         console.log("Use Storage mode: "+storageMode);
         var DATA = null;
-        
+        var alreadyBuiltFileSystem = false;
+
 		var ae = document.createElement("a");
 		document.body.appendChild(ae);
 		ae.style = "display: none";
@@ -180,11 +179,9 @@
         pathExistsAction: function() { return 0; },
         pathNotExistsAction: function() { return 1; }
     };
-    
         function setGlobalArrayBuffer(arrayBuffer){
             DATA = arrayBuffer;
         }
-        var alreadyBuiltFileSystem = false;
         function auth_callback(error) {
             if (error) {
                 alert('Authentication error: ' + error);
@@ -198,10 +195,7 @@
                 document.getElementById('startbtn').disabled = true;
                 document.getElementById('startbtn').textContent = "Syncing...";
                 console.log("authenticated!");
-                var mirrorFS = new BrowserFS.FileSystem.AsyncMirrorFS(new BrowserFS.FileSystem.InMemory(), new BrowserFS.FileSystem.Dropbox(client));
-                mirrorFS.initialize(function callback(e){
-                    buildFileSystem(mirrorFS);
-                });
+                buildFileSystem(new BrowserFS.FileSystem.InMemory(), true);
             } else {
                 alert('unable to authenticate');
             }
@@ -213,9 +207,9 @@
             client.authenticate(auth_callback);
             document.getElementById('startbtn').textContent = "Start";
         }
-    
+
         function initFileSystem()
-        {          
+        {
             if(storageMode === STORAGE_LOCAL_STORAGE){
                 var writableStorage;
                 if(BrowserFS.FileSystem.LocalStorage.isAvailable){
@@ -224,86 +218,91 @@
                     writableStorage = new BrowserFS.FileSystem.InMemory();
                     console.log("Switching to In Memory store as LocalStorage is not available");
                 }
-                buildFileSystem(writableStorage);
+                buildFileSystem(writableStorage, false);
             }else if(storageMode === STORAGE_DROPBOX){
                 client.authenticate({interactive:false}, auth_callback);
             }else{
-                buildFileSystem(new BrowserFS.FileSystem.InMemory());
+                buildFileSystem(new BrowserFS.FileSystem.InMemory(), false);
             }
         }
 
-        function buildFileSystem(writableStorage)
+        function buildFileSystem(writableStorage, isDropBox)
         {
             document.getElementById('startbtn').textContent = "Running...";
-                        
+
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
             var data = new Buffer(DATA);
-            
+
             var BFS = new BrowserFS.EmscriptenFS();
-            var mfs = new BrowserFS.FileSystem.MountableFileSystem();            
+            var zipfs = new BrowserFS.FileSystem.ZipFS(data);
 
             FS.createFolder(FS.root, 'root', true, true);
-            mfs.mount('/home', writableStorage);
-            FS.createFolder('root', 'home', true, true);
-            
-            var subdirs = ['bin','boot,','dev','etc','lib','media','mnt','opt','proc','root','sbin','selinux','srv','sys','tmp','usr','var'];
-            for(var j=0;j<subdirs.length;j++){
-                var subdir = subdirs[j];
-                mfs.mount('/' + subdir, new BrowserFS.FileSystem.InMemory());
-                FS.createFolder('root', subdir, true, true);
-            }
-            BrowserFS.initialize(mfs);  
-            FS.mount(BFS, {root: '/'}, '/root');
-
-            var initCompleteFS = false;
-
-            //I use ZipFS merely to unzip (faster than jszip)
-            var zipfs = new BrowserFS.FileSystem.ZipFS(data);
-            recursiveCopy(zipfs, '/');
-            zipfs = null;
-            var folders = dirPrefix.split("/");
-            var parent = "";
-            var started = false;
-            
-            for(var k=0;k<folders.length;k++){
-                var folder = folders[k];
-                if(folder.length > 0){
-                    if(!started){
-                        started = true;
-                        parent = "/" + folder;
-                    }else{
-                        try{
-                            Module.FS_createFolder(parent, folder, true, true);
-                        }catch(ee){//directory may already exist
-                            if(ee.message === "Not supported"){//not much i can do about this. probably Dropbox connection not working
-                                //alert("Dropbox connection not available");
-                                //throw ee;
-                            }else if(ee.message !== "File exists"){
-                                throw ee;
-                            }
-                        }
-                        parent = parent + "/" + folder;
-                    }
+            var rootOverlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), zipfs);
+            var dirPrefixParentDir = parentDir(dirPrefix);
+            dirPrefixParentDir = dirPrefixParentDir.substring(0, dirPrefixParentDir.length - 1);
+            var homeAdapter = new BrowserFS.FileSystem.FolderAdapter(dirPrefixParentDir, zipfs);
+            rootOverlay.initialize(function callback(e3){
+                if(e3){
+                    console.log(e3);
                 }
-            }
-            document.getElementById('uploadbtn').style.display = "";
-            document.getElementById('downloadbtn').style.display = "";            
-            Module["removeRunDependency"]("datafile_boxedwine.data");             
+                homeAdapter.initialize(function callback(e){
+                    if(e){
+                        console.log(e);
+                    }
+                    var homeOverlay = new BrowserFS.FileSystem.OverlayFS(writableStorage, homeAdapter);
+                    homeOverlay.initialize(function callback(e2){
+                        if(e2){
+                            console.log(e2);
+                        }
+                        if(isDropBox) {
+                            var mirrorFS = new BrowserFS.FileSystem.AsyncMirror(homeOverlay, new BrowserFS.FileSystem.Dropbox(client));
+                            mirrorFS.initialize(function callback(e4){
+                                if(e4){
+                                    console.log(e4);
+                                }
+                                postBuildFileSystem(BFS, rootOverlay, mirrorFS);
+                            });
+                        }else{
+                            postBuildFileSystem(BFS, rootOverlay, homeOverlay);
+                        }
+                    });
+                });
+            });
         }
+    function postBuildFileSystem(BFS, rootFS, homeFS)
+    {
+        var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
+        var mfs = new BrowserFS.FileSystem.MountableFileSystem();
+        mfs.mount('/', rootFS);
+        mfs.mount(dirPrefixWithoutEndSlash, homeFS);
 
-    function recursiveCopy(fs, filename) {
+        BrowserFS.initialize(mfs);
+        FS.mount(BFS, {root: '/root'}, '/root');
+
+        document.getElementById('uploadbtn').style.display = "";
+        document.getElementById('downloadbtn').style.display = "";
+        Module["removeRunDependency"]("datafile_boxedwine.data");
+    }
+
+    function recursiveCopy(fs, filename, isDropBox) {
         var path = BrowserFS.BFSRequire('path');
         copyDirectory(filename);
         function copyDirectory(filename) {
-            createFolderFromZip(filename);
-            fs.readdirSync(filename).forEach(function(item) {
-                var file = path.resolve(filename, item);
-                if (fs.statSync(file).isDirectory()) {
-                    copyDirectory(file);
-                } else {
-                    copyFile(file);
-                }
-            });
+            var parent =  extractFirstPartOfPath(filename);
+            if(isDropBox && isHomeDirectory(parent)){
+                //skipping home directory
+                //console.log("skipping home dir");
+            }else{
+                createFolderFromZip(filename);
+                fs.readdirSync(filename).forEach(function(item) {
+                    var file = path.resolve(filename, item);
+                    if (fs.statSync(file).isDirectory()) {
+                        copyDirectory(file);
+                    } else {
+                        copyFile(file);
+                    }
+                });
+            }
         }
         function copyFile(filename) {
             var contents = fs.readFileSync(filename, null, flag_r);
@@ -338,7 +337,7 @@
         }
     }
 
-    
+
         var initialSetup = function(){
             console.log("running initial setup");
             spinnerElement.style.display = 'none';
@@ -455,10 +454,20 @@
             if(storageMode === STORAGE_DROPBOX){
                 if(client == null || !client.isAuthenticated()){
                     dropboxLogin();
-                    return;              
+                }else{
+                    initFileSystem();
+                }
+            }else{
+                initFileSystem();
+            }
+        }
+        function isHomeDirectory(str){
+            if(str.length >= 10){
+                if(str.substring(0,10) === '/root/home'){
+                    return true;
                 }
             }
-            initFileSystem();
+            return false;
         }
         function startWithFiles(files){
             for (var i = 0; i < files.length; i++) {
@@ -584,18 +593,8 @@ function toggleConsole() {
         console.style.display = 'none';
     }
 }
-function toggleConsole2() {
-    var el = document.getElementById('showConsole');
-    var console = document.getElementById('output');
-    if(el.checked){
-        console.style.display = '';
-    }else{
-        console.style.display = 'none';
-    }
-}
-        //get files functions
 function toggleDirectory(item){
-	var itemWidget =document.getElementById(item); 
+	var itemWidget =document.getElementById(item);
 	if(itemWidget!=null){
 		if(itemWidget.style.display=='none'){//show
 			itemWidget.style.display="";
@@ -638,7 +637,7 @@ function select(index, dir, filename){
 	if(filename != null){
 		fullpath = fullpath + filename;
 	}
-	document.getElementById('selectedItem').value = fullpath 
+	document.getElementById('selectedItem').value = fullpath
 	selectedFilename = filename
 }
 function endsWith(str, suffix){
@@ -647,7 +646,7 @@ function endsWith(str, suffix){
 function extract(){
 	if(url != null){
 		window.URL.revokeObjectURL(url);
-	}	
+	}
 	var file = document.getElementById('selectedItem').value;
 	if(file != null && file.length > 0 && files.length > 1) {
         if(endsWith(file,"/")){
@@ -661,7 +660,7 @@ function extract(){
 			isDirectory = true;
 			outputFilename = file.substring(file.lastIndexOf('/') + 1) + ".zip";
 		}
-		
+
 		var blob = getFile(file, isDirectory);
 		url = window.URL.createObjectURL(blob);
 		ae.href = url;
@@ -672,7 +671,7 @@ function extract(){
 function done(){
 	if(url != null){
 		window.URL.revokeObjectURL(url);
-	}	
+	}
 }
 function leaf(entry){
     index++;
@@ -726,7 +725,7 @@ function buildTree()
 	files = [];
     root.innerHTML = "";
     index = 0;
-                                
+
     var currentDir = dirPrefix;
 	readFiles(currentDir, files);
 
@@ -739,7 +738,7 @@ function buildTree()
 	root.innerHTML = contents;
 	toggleDirectory('1');
 }
-                                
+
 function readFiles(currentDir, files)
 {
     console.log("adding directory: " + currentDir);
@@ -756,8 +755,8 @@ function readFiles(currentDir, files)
             files.push({dir : currentDir, filename : entry});
         }
     });
-}                                
-                                
+}
+
 function startsWith(str, prefix)
 {
     return str.slice(0, prefix.length) == prefix;
@@ -780,8 +779,8 @@ function getFile(file, isDirectory)
 		return zip.generate({type:"blob", compression:"DEFLATE"});
 	}else{
 		var data = FS.readFile(file, { encoding: 'binary' });
-		return new Blob([data], {type: "octet/stream"});		
-	} 
+		return new Blob([data], {type: "octet/stream"});
+	}
 }
     </script>
     {{{ SCRIPT }}}
