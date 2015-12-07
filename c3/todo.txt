@@ -1,0 +1,49 @@
+TODO list
+
+1) basic test, get a win95 era unzip program to unzip a file
+
+Status: DONE 
+
+2) Get PERF_W95.EXE to work so that performance can be compared to c1 of BoxedWine
+
+Status: STARTED 
+Estimate: Done in January
+
+3) Get code to compile with emscripten, there is some platform work to do here
+
+Estimate: 1 week
+
+4) implement user32 and gdi32 so that notepad can run
+
+Estimate: 1-2 months
+Subtasks:
+A) font handling
+B) mouse input
+C) keyboard input
+D) Message pump
+
+5) get one direct draw game to run well, perhaps Age of Empire shareware.
+
+Estimate: 1-2 months
+Subtasks:
+A) MM Sound
+B) DirectDraw
+
+6) get Quake 2 share to run using OpenGL
+
+Estimate: 2-3 weeks
+Subtasks:
+A) marshal OpenGL calls to SDL
+B) DirectSound
+
+7) get a Direct3D game to run
+
+Estimate: 1 month
+
+8) get some installers to run
+
+Estimate: 1 month
+
+9) get a 16-bit game to run
+
+Estimate: 2 months
