@@ -6,7 +6,7 @@
 #include "pbl.h"
 
 struct KModule {
-    char localDir[MAX_FILEPATH_LEN];
+    char localPath[MAX_FILEPATH_LEN];
     char name[256];
     U8* pointer;
     U8* baseAddress;
@@ -18,6 +18,7 @@ struct KModule {
     U32 startAddress;
     U32 native;
     U32 handle;
+    U32 disableThreadLibraryCalls;
 };
 
 struct KModule* createModule(U32 native);

@@ -568,7 +568,7 @@ int WINAPI GetCalendarInfoA_k(LCID lcid, CALID Calendar, CALTYPE CalType,
     */
 
     if (cchData &&
-        !(lpCalDataW = HeapAlloc(GetProcessHeap(), 0, cchData*sizeof(WCHAR))))
+        !(lpCalDataW = HeapAlloc_k(GetProcessHeap_k(), 0, cchData*sizeof(WCHAR))))
       return 0;
 
     ret = GetCalendarInfoW_k(lcid, Calendar, CalType, lpCalDataW, cchData, lpValue);
@@ -576,7 +576,7 @@ int WINAPI GetCalendarInfoA_k(LCID lcid, CALID Calendar, CALTYPE CalType,
       WideCharToMultiByte_k(CP_ACP, 0, lpCalDataW, cchData, lpCalData, cchData, NULL, NULL);
     else if (CalType & CAL_RETURN_NUMBER)
         ret *= sizeof(WCHAR);
-    HeapFree(GetProcessHeap(), 0, lpCalDataW);
+    HeapFree_k(GetProcessHeap_k(), 0, lpCalDataW);
 
     return ret;
 }
@@ -748,7 +748,7 @@ int WINAPI GetCalendarInfoW_k(LCID Locale, CALID Calendar, CALTYPE CalType,
 int WINAPI	SetCalendarInfoA_k(LCID Locale, CALID Calendar, CALTYPE CalType, LPCSTR lpCalData)
 {
     FIXME("(%08x,%08x,%08x,%s): stub\n",
-	  Locale, Calendar, CalType, debugstr_a(lpCalData));
+	  Locale, Calendar, CalType, lpCalData);
     return 0;
 }
 

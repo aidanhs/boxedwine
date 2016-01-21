@@ -630,13 +630,13 @@ static int init_tz_info(RTL_TIME_ZONE_INFORMATION *tzi)
     year_end = mktime(tm);
     TRACE("year_end: %s", ctime(&year_end));
 
-    tmp = find_dst_change(year_start, year_end, &is_dst);
+    tmp = find_dst_change((unsigned long)year_start, (unsigned long)year_end, &is_dst);
     if (is_dst)
         dlt = tmp;
     else
         std = tmp;
 
-    tmp = find_dst_change(tmp, year_end, &is_dst);
+    tmp = find_dst_change((unsigned long)tmp, (unsigned long)year_end, &is_dst);
     if (is_dst)
         dlt = tmp;
     else

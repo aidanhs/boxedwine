@@ -47,12 +47,18 @@
     <ClInclude Include="..\..\..\..\source\cpu\shift_op.h" />
     <ClInclude Include="..\..\..\..\source\cpu\strings.h" />
     <ClInclude Include="..\..\..\..\source\cpu\strings_op.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\basetsd.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\gdi_driver.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\guiddef.h" />
     <ClInclude Include="..\..\..\..\source\win32\include\ntstatus.h" />
     <ClInclude Include="..\..\..\..\source\win32\include\unicode.h" />
     <ClInclude Include="..\..\..\..\source\win32\include\winbase.h" />
-    <ClInclude Include="..\..\..\..\source\win32\include\wineincludes.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\windef.h" />
     <ClInclude Include="..\..\..\..\source\win32\include\winerror.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\wingdi.h" />
     <ClInclude Include="..\..\..\..\source\win32\include\winhandle.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\winnt.h" />
+    <ClInclude Include="..\..\..\..\source\win32\include\winuser.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\source\cpu\cpu.c" />
@@ -80,22 +86,95 @@
     <ClCompile Include="..\..\..\..\source\util\pbl\qsorttest.c" />
     <ClCompile Include="..\..\..\..\source\util\stringutil.c" />
     <ClCompile Include="..\..\..\..\source\win32\advapi32\advapi32.c" />
+    <ClCompile Include="..\..\..\..\source\win32\dinput\dinput.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_bitblt.c">
+      <ShowIncludes Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ShowIncludes>
+      <ShowIncludes Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ShowIncludes>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_dc.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_graphics.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_objects.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_opengl.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_primitives.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_bitblt.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_brush.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_font.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_gdiobj.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_mapping.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_painting.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_path.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_pen.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_region.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_bitmap.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_clipping.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_dc.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_dib.c" />
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_palette.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\interlocked.c" />
     <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_atom.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_environ.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_file.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_heap.c" />
     <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_locale.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_main.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_string.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_sync.c" />
     <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_time.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_version.c" />
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_volumn.c" />
     <ClCompile Include="..\..\..\..\source\win32\kernel32\kmodule.c" />
     <ClCompile Include="..\..\..\..\source\win32\kernel32\kprocess.c" />
     <ClCompile Include="..\..\..\..\source\win32\kernel32\kthread.c" />
     <ClCompile Include="..\..\..\..\source\win32\loader.c" />
     <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll.c" />
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_atom.c" />
     <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_critsection.c" />
     <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_error.c" />
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_heap.c" />
     <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_resource.c" />
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_rtlstr.c" />
     <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_time.c" />
     <ClCompile Include="..\..\..\..\source\win32\platform\windows.c" />
     <ClCompile Include="..\..\..\..\source\win32\system.c" />
     <ClCompile Include="..\..\..\..\source\win32\user32\user32.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_button.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_caret.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_class.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_clipboard.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_combo.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_cursoricon.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_defdlg.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_defwnd.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_desktop.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_dialog.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_edit.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_exticon.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_focus.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_hook.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_icontitle.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_input.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_listbox.c" />
     <ClCompile Include="..\..\..\..\source\win32\user32\user32_lstr.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_mdi.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_menu.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_message.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_misc.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_msgbox.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_nonclient.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_painting.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_property.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_resource.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_scroll.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_static.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_sysparams.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_text.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_uitools.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_win.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_winpos.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_winproc.c" />
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_winstation.c" />
     <ClCompile Include="..\..\..\..\source\win32\utils\sdl_wine.c" />
     <ClCompile Include="..\..\..\..\source\win32\utils\strcasecmp.c" />
     <ClCompile Include="..\..\..\..\source\win32\utils\strncasecmp.c" />
@@ -113,6 +192,7 @@
     <ClCompile Include="..\..\..\..\source\win32\winelib\utf8.c" />
     <ClCompile Include="..\..\..\..\source\win32\winelib\wctomb.c" />
     <ClCompile Include="..\..\..\..\source\win32\winelib\wctype.c" />
+    <ClCompile Include="..\..\..\..\source\win32\winmm\winmm.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0683E0B1-913E-474C-A605-9CE05A0AB379}</ProjectGuid>
@@ -155,7 +235,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INLINE=__inline;PACKAGE_STRING="BoxedWine 1.6.2";_CRT_SECURE_NO_WARNINGS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\lib\sdl1\include;..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
@@ -174,7 +254,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INLINE=__inline;PACKAGE_STRING="BoxedWine 1.6.2";_CRT_SECURE_NO_WARNINGS;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\lib\sdl1\include;..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>

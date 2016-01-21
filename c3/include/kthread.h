@@ -16,12 +16,19 @@ struct KThread {
     struct kmutex* waitingOnMutex;
     void* stack;
     U32 stackSize;
+    struct user_thread_info* Win32ClientInfo;
+    struct thread_input* input;
+    struct msg_queue* queue;
+    struct _UNICODE_STRING* StaticUnicodeString;
 };
 
 struct KThread* allocThread(U32 id, struct KProcess* process);
+struct KThread* currentThread();
+struct KThread* getThread(U32 id);
 void startThread(struct KThread* thread, U32 address);
 void freeThread(struct KThread* thread);
 void stopThread(struct KThread* thread);
 void joinThread(struct KThread* thread);
+struct user_thread_info* get_user_thread_info();
 
 #endif

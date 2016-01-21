@@ -52,6 +52,18 @@
     <Filter Include="Source Files\win32\winelib">
       <UniqueIdentifier>{bed680a2-0d39-4172-8a6c-7de9c25a9356}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\win32\winmm">
+      <UniqueIdentifier>{17b8300c-97ae-4682-88a4-fad63fc331ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\win32\gdi32">
+      <UniqueIdentifier>{a47241bd-15b2-4ccc-820f-41314ae27e3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\win32\dinput">
+      <UniqueIdentifier>{ceacaf82-fc35-486d-94d3-17f87c8bb63e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\win32\gdi32\dibdrv">
+      <UniqueIdentifier>{0eacd408-9899-40a7-ba18-5b9053dc7783}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\source\cpu\arith.h">
@@ -171,13 +183,31 @@
     <ClInclude Include="..\..\..\..\include\builtin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\win32\include\wineincludes.h">
-      <Filter>Source Files\win32\include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\source\win32\include\ntstatus.h">
       <Filter>Source Files\win32\include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\win32\include\unicode.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\gdi_driver.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\wingdi.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\winuser.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\basetsd.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\guiddef.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\windef.h">
+      <Filter>Source Files\win32\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\win32\include\winnt.h">
       <Filter>Source Files\win32\include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -293,9 +323,6 @@
     <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_error.c">
       <Filter>Source Files\win32\ntdll</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_resource.c">
-      <Filter>Source Files\win32\ntdll</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\win32\utils\strncasecmp.c">
       <Filter>Source Files\win32\utils</Filter>
     </ClCompile>
@@ -355,6 +382,222 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\win32\winelib\wctype.c">
       <Filter>Source Files\win32\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\winmm\winmm.c">
+      <Filter>Source Files\win32\winmm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\dinput\dinput.c">
+      <Filter>Source Files\win32\dinput</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_win.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_class.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_gdiobj.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\interlocked.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_rtlstr.c">
+      <Filter>Source Files\win32\ntdll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_main.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_environ.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_sysparams.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_bitmap.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_dc.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_clipping.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_palette.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_brush.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_path.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_pen.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_region.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_version.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi_dib.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_bitblt.c">
+      <Filter>Source Files\win32\gdi32\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_dc.c">
+      <Filter>Source Files\win32\gdi32\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_graphics.c">
+      <Filter>Source Files\win32\gdi32\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_objects.c">
+      <Filter>Source Files\win32\gdi32\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_opengl.c">
+      <Filter>Source Files\win32\gdi32\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\dibdrv\dib_primitives.c">
+      <Filter>Source Files\win32\gdi32\dibdrv</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_mapping.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_bitblt.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_font.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\gdi32\gdi32_painting.c">
+      <Filter>Source Files\win32\gdi32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_uitools.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_atom.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_atom.c">
+      <Filter>Source Files\win32\ntdll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_resource.c">
+      <Filter>Source Files\win32\ntdll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_button.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_caret.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_clipboard.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_combo.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_cursoricon.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_defdlg.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_defwnd.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_desktop.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_dialog.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_edit.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_exticon.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_focus.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_icontitle.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_input.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_message.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_hook.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_listbox.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_volumn.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_file.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_mdi.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_menu.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_misc.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_msgbox.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_nonclient.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_painting.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_property.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_resource.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_scroll.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_static.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_text.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_winpos.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_winproc.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\user32\user32_winstation.c">
+      <Filter>Source Files\win32\user32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_heap.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\ntdll\ntdll_heap.c">
+      <Filter>Source Files\win32\ntdll</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_sync.c">
+      <Filter>Source Files\win32\kernel32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\win32\kernel32\kernel32_string.c">
+      <Filter>Source Files\win32\kernel32</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

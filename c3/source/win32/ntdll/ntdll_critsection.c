@@ -163,7 +163,7 @@ NTSTATUS WINAPI RtlInitializeCriticalSectionEx_k( RTL_CRITICAL_SECTION *crit, UL
     if (flags & RTL_CRITICAL_SECTION_FLAG_NO_DEBUG_INFO)
         crit->DebugInfo = NULL;
     else
-        crit->DebugInfo = HeapAlloc(GetProcessHeap(), 0, sizeof(RTL_CRITICAL_SECTION_DEBUG));
+        crit->DebugInfo = HeapAlloc_k(GetProcessHeap_k(), 0, sizeof(RTL_CRITICAL_SECTION_DEBUG));
 
     if (crit->DebugInfo)
     {
@@ -231,7 +231,7 @@ ULONG WINAPI RtlSetCriticalSectionSpinCount( RTL_CRITICAL_SECTION *crit, ULONG s
  *  RtlDeleteCriticalSection(), RtlEnterCriticalSection(),
  *  RtlLeaveCriticalSection(), RtlTryEnterCriticalSection()
  */
-NTSTATUS WINAPI RtlDeleteCriticalSection( RTL_CRITICAL_SECTION *crit )
+NTSTATUS WINAPI RtlDeleteCriticalSection_k( RTL_CRITICAL_SECTION *crit )
 {
     crit->LockCount      = -1;
     crit->RecursionCount = 0;
@@ -241,7 +241,7 @@ NTSTATUS WINAPI RtlDeleteCriticalSection( RTL_CRITICAL_SECTION *crit )
         /* only free the ones we made in here */
         if (!crit->DebugInfo->Spare[0])
         {
-            HeapFree( GetProcessHeap(), 0, crit->DebugInfo );
+            HeapFree_k( GetProcessHeap_k(), 0, crit->DebugInfo );
             crit->DebugInfo = NULL;
         }
         NtClose_k( crit->LockSemaphore );

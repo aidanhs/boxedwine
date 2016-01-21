@@ -6,12 +6,15 @@
 #include "pbl.h"
 #include "loader.h"
 #include "kmodule.h"
+#include "../include/winbase.h"
 
 PblMap* builtinModules;
 PblMap* processMap;
 U32 nextProcessId = 10000;
 U32 nextThreadId = 11000;
 char rootDirectory[1024];
+
+struct UserHandle userHandles[MAX_USER_HANDLES];
 
 void freeProcess(struct KProcess* process);
 
@@ -21,6 +24,7 @@ struct KProcess* createProcess(int argc, char **argv) {
     int i;
     int len=0;
 
+    process->Caret.timeout = 500;
     process->modules = pblMapNewHashMap();
     process->threadMap = pblMapNewHashMap();
     process->processMutex = KCreateMutex();
@@ -28,7 +32,11 @@ struct KProcess* createProcess(int argc, char **argv) {
     process->environmentMap = pblMapNewHashMap();
     process->paths = pblListNewArrayList();
 
+    process->classes = pblListNewLinkedList();;
+    process->atoms = pblMapNewHashMap();
+
     process->id = nextProcessId++;
+    process->SystemPaletteUse = 1; // SYSPAL_STATIC
 
     for (i=0;i<argc;i++) {
         if (i>0)
@@ -105,11 +113,22 @@ void unlockProcess(struct KProcess* process) {
 }
 
 void freeProcess(struct KProcess* process) {    
+    PblIterator* it;
+
     KDestroyMutex(process->interlockedMutex);
     pblMapFree(process->modules);
     pblMapFree(process->threadMap);
     pblMapFree(process->environmentMap);
     pblListFree(process->paths);
+
+    it = pblListIterator(process->classes);
+    while (it && pblIteratorHasNext(it)) {
+        kfree(pblMapEntryValue(pblIteratorNext(it)));
+    }
+    pblIteratorFree(it);
+
+    pblListFree(process->classes);
+    pblMapFree(process->atoms);
 
     kfree(process->commandLine);
     process->refCount--;
@@ -138,11 +157,19 @@ void initSystem() {
     }
     module = createModule_kernel32();
     pblMapAdd(builtinModules, "kernel32.dll", strlen("kernel32.dll")+1, &module, sizeof(struct KModule*));
+    module = createModule_gdi32();
+    pblMapAdd(builtinModules, "gdi32.dll", strlen("gdi32.dll")+1, &module, sizeof(struct KModule*));
     module = createModule_advapi32();
     pblMapAdd(builtinModules, "advapi32.dll", strlen("advapi32.dll")+1, &module, sizeof(struct KModule*));
     module = createModule_user32();
     pblMapAdd(builtinModules, "user32.dll", strlen("user32.dll")+1, &module, sizeof(struct KModule*));
+    module = createModule_winmm();
+    pblMapAdd(builtinModules, "winmm.dll", strlen("winmm.dll")+1, &module, sizeof(struct KModule*));
+    module = createModule_dinput();
+    pblMapAdd(builtinModules, "dinput.dll", strlen("dinput.dll")+1, &module, sizeof(struct KModule*));
+
     processMap = pblMapNewHashMap();
+    
 
     LOCALE_Init();
 }
@@ -175,6 +202,28 @@ U32 allocHandle(struct KProcess* process, U32 type) {
     return 0;
 }
 
+U32 allocUserHandle(struct KProcess* process, U32 type) {
+    int i;
+    for (i=0;i<MAX_HANDLES;i++) {
+        if (userHandles[i].type == USER_HANDLE_UNUSED) {
+            userHandles[i].type = type;
+            userHandles[i].process = process;
+            return i;
+        }
+    }
+    kpanic("Ran out of user handles");
+    return 0;
+}
+
+struct UserHandle* getUserHandle(U32 handle) {
+    return &userHandles[handle];
+}
+
+void* get_user_handle_ptr(U32 handle, U32 type) {
+    if (handle<MAX_USER_HANDLES && userHandles[handle].type == type)
+        return userHandles[handle].data;
+    return 0;
+}
 void closeHandle(struct KProcess* process, U32 handle) {
     if (handle<MAX_HANDLES) {
         switch (process->handles[handle].type) {
@@ -204,6 +253,26 @@ U32 freeHandle(struct KProcess* process, U32 handle) {
         if (!process->handles[handle].refCount) {
             closeHandle(process, handle);
         }
+        return 1;
+    }    
+    return 0;
+}
+
+void closeUserHandle(U32 handle) {
+    if (handle<MAX_HANDLES) {
+        if (userHandles[handle].type!=USER_HANDLE_UNUSED) {
+            userHandles[handle].type = USER_HANDLE_UNUSED;
+            if (userHandles[handle].data) {
+                kfree(userHandles[handle].data);
+                userHandles[handle].data = 0;
+            }
+        }
+    }
+}
+
+U32 freeUserHandle(U32 handle) {
+    if (handle<MAX_USER_HANDLES) {
+        closeUserHandle(handle);
         return 1;
     }    
     return 0;
@@ -282,4 +351,23 @@ void terminateProcess(struct KThread* currentThread, struct KProcess* process, U
     pblIteratorFree(it);    
 
     unlockProcess(process);
+}
+
+BOOL WINAPI DisableThreadLibraryCalls_k( HMODULE hModule ) {
+    ((struct KModule*)hModule)->disableThreadLibraryCalls = 1;
+    return TRUE;
+}
+
+HMODULE WINAPI GetModuleHandleW_k(LPCWSTR module) {
+    if (!module)
+        return (HMODULE)currentProcess()->mainModule->baseAddress;
+    NOT_IMPLEMENTED("GetModuleHandleW");
+    return 0;
+}
+
+HMODULE WINAPI GetModuleHandleA_k(LPCSTR module) {
+    if (!module)
+        return (HMODULE)currentProcess()->mainModule->baseAddress;
+    NOT_IMPLEMENTED("GetModuleHandleA");
+    return 0;
 }

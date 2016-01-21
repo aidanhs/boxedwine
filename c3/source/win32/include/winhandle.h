@@ -18,6 +18,19 @@ struct WinHandle {
     };
 };
 
+struct UserHandle {
+    U32 type;
+    struct KProcess* process;
+    void* data;
+};
+
+#define USER_HANDLE_UNUSED 0
+#define USER_HANDLE_WND 1
+#define USER_HANDLE_MENU 2
+#define USER_HANDLE_ACCEL 3
+#define USER_HANDLE_ICON 4
+#define USER_HANDLE_DWP 5
+ 
 #define HANDLE_UNUSED 0
 #define HANDLE_FILE 1
 #define HANDLE_MUTEX 2

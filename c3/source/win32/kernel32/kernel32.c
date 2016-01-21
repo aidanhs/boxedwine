@@ -15,35 +15,26 @@
 #include "../include/winerror.h"
 #include "../include/winbase.h"
 #include "../include/unicode.h"
+#include "../include/ntstatus.h"
 
 extern PblMap* processMap;
 
 #define LOG_KERNEL if (0) printf
 
-struct KThread* currentThread() {
-    U32 threadId = SDL_ThreadID();
-    PblIterator* processIt = pblMapIteratorNew(processMap);
-    struct KThread* result = 0;
-
-    while (processIt && pblIteratorHasNext(processIt)) {
-        PblMapEntry* entry = pblIteratorNext(processIt);
-        struct KProcess** process = pblMapEntryValue(entry);
-        PblIterator* it = pblMapIteratorNew((*process)->threadMap);
-
-        while (it && pblIteratorHasNext(it)) {
-            struct KThread** thread = pblMapEntryValue(pblIteratorNext(it));
-            if (SDL_GetThreadID((*thread)->sdlThread) == threadId) {
-                result = *thread;
-                break;
-            }
-        }
-        pblIteratorFree(it);
-        if (result)
-            break;
-    }
-    pblIteratorFree(processIt);
-    return result;
-}
+/*
+Failed to import CreateEventA from kernel32.dll
+Failed to import CreateThread from kernel32.dll
+Failed to import ExitThread from kernel32.dll
+Failed to import GetCurrentProcessId from kernel32.dll
+Failed to import GetCurrentThreadId from kernel32.dll
+Failed to import GetCurrentThread from kernel32.dll
+Failed to import GetModuleHandleA from kernel32.dll
+Failed to import SetEvent from kernel32.dll
+Failed to import TlsAlloc from kernel32.dll
+Failed to import TlsFree from kernel32.dll
+Failed to import TlsGetValue from kernel32.dll
+Failed to import TlsSetValue from kernel32.dll
+*/
 
 struct KProcess* currentProcess() {
     return currentThread()->process;
@@ -61,7 +52,7 @@ DWORD WINAPI GetLastError_k() {
     return readd(NtCurrentTeb_k()+TEB_LAST_ERROR);
 }
 
-void SetLastError_k(U32 error) {
+void SetLastError_k(DWORD error) {
     writed(NtCurrentTeb_k()+TEB_LAST_ERROR, error);
 }
 
@@ -162,7 +153,7 @@ void CreateFileA_cpu(struct CPU* cpu) {
         case 1: // CREATE_NEW
             if (stat(nativePath, &st)==0) {
                 setError(cpu, ERROR_FILE_EXISTS);
-                EAX = INVALID_HANDLE_VALUE;
+                EAX = (U32)INVALID_HANDLE_VALUE;
                 break;
             }
             openFlags |= O_CREAT | O_TRUNC;
@@ -179,7 +170,7 @@ void CreateFileA_cpu(struct CPU* cpu) {
         case 3: // OPEN_EXISTING
             if (stat(nativePath, &st)!=0) {
                 setError(cpu, ERROR_FILE_NOT_FOUND);
-                EAX = INVALID_HANDLE_VALUE;
+                EAX = (U32)INVALID_HANDLE_VALUE;
                 break;
             }
             if (S_ISDIR(st.st_mode)) {
@@ -201,17 +192,17 @@ void CreateFileA_cpu(struct CPU* cpu) {
         case 5: // TRUNCATE_EXISTING
             if (stat(nativePath, &st)!=0) {
                 setError(cpu, ERROR_FILE_NOT_FOUND);
-                EAX = INVALID_HANDLE_VALUE;
+                EAX = (U32)INVALID_HANDLE_VALUE;
                 break;
             }
             openFlags = O_TRUNC;
             break;
     }
-    if (EAX != INVALID_HANDLE_VALUE) {
+    if (EAX != (U32)INVALID_HANDLE_VALUE) {
         f = open(nativePath, openFlags, S_IREAD | _S_IWRITE);
         if (f<0) {
             setError(cpu, ERROR_ACCESS_DENIED);
-            EAX = INVALID_HANDLE_VALUE;
+            EAX = (U32)INVALID_HANDLE_VALUE;
         } else {
             EAX = allocHandle(cpu->thread->process, HANDLE_FILE);
             cpu->thread->process->handles[EAX].data = f;
@@ -347,9 +338,78 @@ void FileTimeToSystemTime_cpu(struct CPU* cpu) {
     LOG_KERNEL("FileTimeToSystemTime(%X, %X)=%d\n", lpFileTime, lpSystemTime, EAX);
 }
 
-void FindClose_cpu(struct CPU* cpu);
-void FindFirstFileA_cpu(struct CPU* cpu);
-void FindNextFileA_cpu(struct CPU* cpu);
+void FindClose_cpu(struct CPU* cpu) {
+    U32 hFindFile = pop32(cpu);
+    EAX = FindClose_k((HANDLE)hFindFile);
+}
+
+void FindFirstFileA_cpu(struct CPU* cpu) {
+    U32 lpFileName = pop32(cpu);
+    U32 lpFindFileData = pop32(cpu);
+    WIN32_FIND_DATAA data;
+    char path[MAX_FILEPATH_LEN];
+
+    getFullNativePath(cpu->thread->process->currentDirectory, getStringFromMemory(lpFileName), path);
+
+    EAX = (U32)FindFirstFileA_k(path, &data);
+
+    if (EAX != (U32)INVALID_HANDLE_VALUE) {
+        writed(lpFindFileData, data.dwFileAttributes); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftCreationTime.dwLowDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftCreationTime.dwHighDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastAccessTime.dwLowDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastAccessTime.dwHighDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastWriteTime.dwLowDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastWriteTime.dwHighDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.nFileSizeHigh); lpFindFileData+=4;
+        writed(lpFindFileData, data.nFileSizeLow); lpFindFileData+=4;
+        writed(lpFindFileData, data.dwReserved0); lpFindFileData+=4;
+        writed(lpFindFileData, data.dwReserved1); lpFindFileData+=4;
+        writeBufferToMemory(lpFindFileData, data.cFileName, MAX_PATH); lpFindFileData+=MAX_PATH;
+        writeBufferToMemory(lpFindFileData, data.cAlternateFileName, 14); lpFindFileData+=14;
+    }
+    LOG_KERNEL("FindFirstFileA(%s, %X)=%d\n", getStringFromMemory(lpFileName), lpFindFileData, EAX);
+}
+
+void FindNextFileA_cpu(struct CPU* cpu) {
+    U32 hFindFile = pop32(cpu);
+    U32 lpFindFileData = pop32(cpu);
+    U32 originalData = lpFindFileData;
+    WIN32_FIND_DATAA data;
+
+    data.dwFileAttributes = readd(lpFindFileData); lpFindFileData+=4;
+    data.ftCreationTime.dwLowDateTime = readd(lpFindFileData); lpFindFileData+=4;
+    data.ftCreationTime.dwHighDateTime = readd(lpFindFileData); lpFindFileData+=4;
+    data.ftLastAccessTime.dwLowDateTime = readd(lpFindFileData); lpFindFileData+=4;
+    data.ftLastAccessTime.dwHighDateTime = readd(lpFindFileData); lpFindFileData+=4;
+    data.ftLastWriteTime.dwLowDateTime = readd(lpFindFileData); lpFindFileData+=4;
+    data.ftLastWriteTime.dwHighDateTime = readd(lpFindFileData); lpFindFileData+=4;
+    data.nFileSizeHigh = readd(lpFindFileData); lpFindFileData+=4;
+    data.nFileSizeLow = readd(lpFindFileData); lpFindFileData+=4;
+    data.dwReserved0 = readd(lpFindFileData); lpFindFileData+=4;
+    data.dwReserved1 = readd(lpFindFileData); lpFindFileData+=4;
+    readBufferFromMemory(lpFindFileData, data.cFileName, MAX_PATH); lpFindFileData+=MAX_PATH;
+    readBufferFromMemory(lpFindFileData, data.cAlternateFileName, 14); lpFindFileData+=14;
+
+    EAX = (U32)FindNextFileA_k((HANDLE)hFindFile, &data);
+    if (EAX) {
+        lpFindFileData = originalData;
+
+        writed(lpFindFileData, data.dwFileAttributes); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftCreationTime.dwLowDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftCreationTime.dwHighDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastAccessTime.dwLowDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastAccessTime.dwHighDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastWriteTime.dwLowDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.ftLastWriteTime.dwHighDateTime); lpFindFileData+=4;
+        writed(lpFindFileData, data.nFileSizeHigh); lpFindFileData+=4;
+        writed(lpFindFileData, data.nFileSizeLow); lpFindFileData+=4;
+        writed(lpFindFileData, data.dwReserved0); lpFindFileData+=4;
+        writed(lpFindFileData, data.dwReserved1); lpFindFileData+=4;
+        writeBufferToMemory(lpFindFileData, data.cFileName, MAX_PATH); lpFindFileData+=MAX_PATH;
+        writeBufferToMemory(lpFindFileData, data.cAlternateFileName, 14); lpFindFileData+=14;
+    }
+}
 
 void FlushFileBuffers_cpu(struct CPU* cpu) {
     U32 hFile = pop32(cpu);
@@ -426,7 +486,7 @@ void GetCurrentProcess_cpu(struct CPU* cpu) {
 
 void GetDriveTypeA_cpu(struct CPU* cpu) {
     U32 lpRootPathName = pop32(cpu);
-    EAX = 3; // DRIVE_FIXED
+    EAX = (U32)GetDriveTypeA_k((LPCSTR)lpRootPathName);
     LOG_KERNEL("GetDriveTypeA(%s)=%d\n", getStringFromMemory(lpRootPathName), EAX);
 }
 
@@ -655,30 +715,8 @@ void GetModuleFileNameA_cpu(struct CPU* cpu) {
     U32 hModule = pop32(cpu);
     U32 lpFilename = pop32(cpu);
     U32 nSize = pop32(cpu);
-    U32 len;
-    U32 originalPoint = lpFilename;
-
-    if (hModule>=MAX_HANDLES || cpu->thread->process->handles[hModule].type != HANDLE_MODULE) {
-        setError(cpu, ERROR_INVALID_HANDLE);
-        EAX = 0;
-    } else {
-        len = strlen(cpu->thread->process->handles[hModule].module->localDir);
-        if (len>nSize)
-            len=nSize;
-        writeBufferToMemory(lpFilename, cpu->thread->process->handles[hModule].module->localDir, len);
-        lpFilename+=len;
-        nSize-=len;
-        if (nSize) {
-            writeBufferToMemory(lpFilename++, "\\", 1);
-            nSize--;
-        }
-        len = strlen(cpu->thread->process->handles[hModule].module->name);
-        if (len>nSize)
-            len=nSize;
-        writeBufferToMemory(lpFilename, cpu->thread->process->handles[hModule].module->name, len);
-        EAX = len;
-    }
-    LOG_KERNEL("GetModuleFileNameA(%d, %X, %d)=%d %s\n", hModule, originalPoint, nSize, EAX, (EAX?getStringFromMemory(originalPoint):""));
+    EAX = GetModuleFileNameA_k((HMODULE)hModule, (LPSTR)lpFilename, nSize);
+    LOG_KERNEL("GetModuleFileNameA(%d, %X, %d)=%d %s\n", hModule, lpFilename, nSize, EAX, (EAX?getStringFromMemory(lpFilename):""));
 }
 
 void GetOEMCP_cpu(struct CPU* cpu) {
@@ -708,30 +746,29 @@ void GetProcessHeap_cpu(struct CPU* cpu) {
 
 void GetStartupInfoA_cpu(struct CPU* cpu) {
     U32 lpStartupInfo = pop32(cpu);
-    int cb = readd(lpStartupInfo);
-    writed(lpStartupInfo, 68); lpStartupInfo+=4; // cb
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // lpReserved
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // lpDesktop
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // lpTitle
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwX
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwY
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwXSize
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwYSize
-    if (cpu->thread->process->isConsole) {
-        writed(lpStartupInfo, 80); lpStartupInfo+=4; // dwXCountChars
-        writed(lpStartupInfo, 25); lpStartupInfo+=4; // dwYCountChars
-    } else {
-        writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwXCountChars
-        writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwYCountChars
-    }
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwFillAttribute
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // dwFlags
-    writew(lpStartupInfo, 0); lpStartupInfo+=2; // wShowWindow
-    writew(lpStartupInfo, 0); lpStartupInfo+=2; // cbReserved2
-    writed(lpStartupInfo, 0); lpStartupInfo+=4; // lpReserved2
-    writed(lpStartupInfo, cpu->thread->process->stdInHandle); lpStartupInfo+=4; // hStdInput
-    writed(lpStartupInfo, cpu->thread->process->stdOutHandle); lpStartupInfo+=4; // hStdOutput
-    writed(lpStartupInfo, cpu->thread->process->stdErrHandle); // hStdError
+    STARTUPINFOA info;
+
+    info.cb = sizeof(STARTUPINFOA);
+    GetStartupInfoA_k(&info);
+
+    writed(lpStartupInfo, info.cb); lpStartupInfo+=4; // cb
+    writed(lpStartupInfo, (U32)info.lpReserved); lpStartupInfo+=4; // lpReserved
+    writed(lpStartupInfo, (U32)info.lpDesktop); lpStartupInfo+=4; // lpDesktop
+    writed(lpStartupInfo, (U32)info.lpTitle); lpStartupInfo+=4; // lpTitle
+    writed(lpStartupInfo, info.dwX); lpStartupInfo+=4; // dwX
+    writed(lpStartupInfo, info.dwY); lpStartupInfo+=4; // dwY
+    writed(lpStartupInfo, info.dwXSize); lpStartupInfo+=4; // dwXSize
+    writed(lpStartupInfo, info.dwYSize); lpStartupInfo+=4; // dwYSize
+    writed(lpStartupInfo, info.dwXCountChars); lpStartupInfo+=4; // dwXCountChars
+    writed(lpStartupInfo, info.dwYCountChars); lpStartupInfo+=4; // dwYCountChars
+    writed(lpStartupInfo, info.dwFillAttribute); lpStartupInfo+=4; // dwFillAttribute
+    writed(lpStartupInfo, info.dwFlags); lpStartupInfo+=4; // dwFlags
+    writew(lpStartupInfo, info.wShowWindow); lpStartupInfo+=2; // wShowWindow
+    writew(lpStartupInfo, info.cbReserved2); lpStartupInfo+=2; // cbReserved2
+    writed(lpStartupInfo, (U32)info.lpReserved2); lpStartupInfo+=4; // lpReserved2
+    writed(lpStartupInfo, (U32)info.hStdInput); lpStartupInfo+=4; // hStdInput
+    writed(lpStartupInfo, (U32)info.hStdOutput); lpStartupInfo+=4; // hStdOutput
+    writed(lpStartupInfo, (U32)info.hStdError); // hStdError
     LOG_KERNEL("GetStartupInfoA(%X)\n", lpStartupInfo);
 }
 
@@ -745,7 +782,7 @@ void GetStdHandle_cpu(struct CPU* cpu) {
     else if (nStdHandle == -12)
         EAX = cpu->thread->process->stdErrHandle;
     else {
-        EAX = INVALID_HANDLE_VALUE;
+        EAX = (U32)INVALID_HANDLE_VALUE;
         setError(cpu, ERROR_INVALID_HANDLE);
     }
     LOG_KERNEL("GetStdHandle(%d)=%d\n", nStdHandle, EAX);
@@ -962,7 +999,7 @@ void lstrcmpiA_cpu(struct CPU* cpu) {
     U32 pStr1 = pop32(cpu);
     U32 pStr2 = pop32(cpu);
     
-    EAX = lstrcmpiA_k(getStringFromMemory(pStr1), getStringFromMemory(pStr2));
+    EAX = lstrcmpiA(getStringFromMemory(pStr1), getStringFromMemory(pStr2));
     LOG_KERNEL("lstrcmpiA(%s, %s)=%d\n", getStringFromMemory(pStr1), getStringFromMemory(pStr2), EAX);
 }
 
@@ -1403,7 +1440,7 @@ void WriteFile_cpu(struct CPU* cpu) {
 struct KModule* createModule_kernel32() {
     struct KModule* result = createModule(0);
     strcpy(result->name, "kernel32.dll");
-    strcpy(result->localDir, "c:\\Windows\\System32");
+    strcpy(result->localPath, "c:\\Windows\\System32\\kernel32.dll");
 
     addBuiltInFunction(result, "CloseHandle", CloseHandle_cpu);        
     addBuiltInFunction(result, "CompareStringA", CompareStringA_cpu);

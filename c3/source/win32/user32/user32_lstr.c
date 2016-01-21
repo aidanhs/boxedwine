@@ -140,12 +140,12 @@ BOOL WINAPI CharToOemBuffA_k( LPCSTR s, LPSTR d, DWORD len )
 {
     WCHAR *bufW;
 
-    bufW = HeapAlloc( GetProcessHeap(), 0, len * sizeof(WCHAR) );
+    bufW = HeapAlloc_k(GetProcessHeap_k(), 0, len * sizeof(WCHAR) );
     if( bufW )
     {
-	MultiByteToWideChar_k( CP_ACP, 0, s, len, bufW, len );
-	WideCharToMultiByte_k( CP_OEMCP, 0, bufW, len, d, len, NULL, NULL );
-	HeapFree( GetProcessHeap(), 0, bufW );
+	    MultiByteToWideChar_k( CP_ACP, 0, s, len, bufW, len );
+	    WideCharToMultiByte_k( CP_OEMCP, 0, bufW, len, d, len, NULL, NULL );
+	    HeapFree_k(GetProcessHeap_k(), 0, bufW );
     }
     return TRUE;
 }
@@ -187,12 +187,12 @@ BOOL WINAPI OemToCharBuffA_k( LPCSTR s, LPSTR d, DWORD len )
 {
     WCHAR *bufW;
 
-    bufW = HeapAlloc( GetProcessHeap(), 0, len * sizeof(WCHAR) );
+    bufW = HeapAlloc_k(GetProcessHeap_k(), 0, len * sizeof(WCHAR) );
     if( bufW )
     {
-	MultiByteToWideChar_k( CP_OEMCP, 0, s, len, bufW, len );
-	WideCharToMultiByte_k( CP_ACP, 0, bufW, len, d, len, NULL, NULL );
-	HeapFree( GetProcessHeap(), 0, bufW );
+	    MultiByteToWideChar_k( CP_OEMCP, 0, s, len, bufW, len );
+	    WideCharToMultiByte_k( CP_ACP, 0, bufW, len, d, len, NULL, NULL );
+	    HeapFree_k(GetProcessHeap_k(), 0, bufW );
     }
     return TRUE;
 }
@@ -224,7 +224,7 @@ LPSTR WINAPI CharLowerA_k(LPSTR str)
 {
     if (IS_INTRESOURCE(str))
     {
-        char ch = LOWORD(str);
+        char ch = (char)(LOWORD(str));
         CharLowerBuffA_k( &ch, 1 );
         return (LPSTR)(UINT_PTR)(BYTE)ch;
     }
@@ -252,7 +252,7 @@ LPSTR WINAPI CharUpperA_k(LPSTR str)
 {
     if (IS_INTRESOURCE(str))
     {
-        char ch = LOWORD(str);
+        char ch = (char)(LOWORD(str));
         CharUpperBuffA_k( &ch, 1 );
         return (LPSTR)(UINT_PTR)(BYTE)ch;
     }
@@ -307,13 +307,13 @@ DWORD WINAPI CharLowerBuffA_k( LPSTR str, DWORD len )
     lenW = MultiByteToWideChar_k(CP_ACP, 0, str, len, NULL, 0);
     if (lenW > sizeof(buffer)/sizeof(WCHAR))
     {
-        strW = HeapAlloc(GetProcessHeap(), 0, lenW * sizeof(WCHAR));
+        strW = HeapAlloc_k(GetProcessHeap_k(), 0, lenW * sizeof(WCHAR));
         if (!strW) return 0;
     }
     MultiByteToWideChar_k(CP_ACP, 0, str, len, strW, lenW);
     CharLowerBuffW_k(strW, lenW);
     len = WideCharToMultiByte_k(CP_ACP, 0, strW, lenW, str, len, NULL, NULL);
-    if (strW != buffer) HeapFree(GetProcessHeap(), 0, strW);
+    if (strW != buffer) HeapFree_k(GetProcessHeap_k(), 0, strW);
     return len;
 }
 
@@ -344,13 +344,13 @@ DWORD WINAPI CharUpperBuffA_k( LPSTR str, DWORD len )
     lenW = MultiByteToWideChar_k(CP_ACP, 0, str, len, NULL, 0);
     if (lenW > sizeof(buffer)/sizeof(WCHAR))
     {
-        strW = HeapAlloc(GetProcessHeap(), 0, lenW * sizeof(WCHAR));
+        strW = HeapAlloc_k(GetProcessHeap_k(), 0, lenW * sizeof(WCHAR));
         if (!strW) return 0;
     }
     MultiByteToWideChar_k(CP_ACP, 0, str, len, strW, lenW);
     CharUpperBuffW_k(strW, lenW);
     len = WideCharToMultiByte_k(CP_ACP, 0, strW, lenW, str, len, NULL, NULL);
-    if (strW != buffer) HeapFree(GetProcessHeap(), 0, strW);
+    if (strW != buffer) HeapFree_k(GetProcessHeap_k(), 0, strW);
     return len;
 }
 

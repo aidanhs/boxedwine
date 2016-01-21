@@ -8,6 +8,10 @@ void* kalloc(U32 len) {
 	return result;
 }
 
+void* krealloc(void* p, U32 len) {
+	return realloc(p, len);
+}
+
 void kfree(void* p) {
 	free(p);
 }

@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "../win32/include/winbase.h"
+
 #include UNISTD
 
 void getFullNativePath(const char* currentDirectory, const char* localFile, char* nativeFile);
@@ -32,7 +34,7 @@ void loadExports(struct KModule* module, IMAGE_EXPORT_DIRECTORY* exportDirectory
 }
 
 U32 loadImports(struct KProcess* process, struct KModule* module, IMAGE_IMPORT_DESCRIPTOR* desc) {
-    while (desc->u.Characteristics) {
+    while (desc->Characteristics) {
         char* name = (char*)(module->baseAddress+desc->Name);
         IMAGE_THUNK_DATA32* thunkData;
         struct KModule* importModule = getModuleByName(process, name);
@@ -97,7 +99,7 @@ struct KModule* loadModule(struct KProcess* process, const char* name) {
         if (!doesPathExist(localDir, localName, nativePath)) {
             return 0;
         }
-    } else if (process->mainModule && doesPathExist(process->mainModule->localDir, localName, nativePath)) {
+    } else if (process->mainModule && doesPathExist(process->mainModulePath, localName, nativePath)) {
         
     } else if (doesPathExist(process->currentDirectory, localName, nativePath)) {
 
@@ -150,7 +152,9 @@ struct KModule* loadModule(struct KProcess* process, const char* name) {
     module->baseAddress = (U8*)(((U32)module->pointer + 0xFFFF) & 0xFFFF0000);
     module->size = size;
     convertStringToLower(localName, module->name);
-    strcpy(module->localDir, localDir);    
+    strcpy(module->localPath, localDir);    
+    strcat(module->localPath, "\\");
+    strcat(module->localPath, localName);
 
     for (i=0;i<nt->FileHeader.NumberOfSections;i++) {
         if (section->SizeOfRawData) {

@@ -5,5 +5,6 @@
 
 void* kalloc(U32 len);
 void kfree(void* p);
+void* krealloc(void* p, U32 len);
 
 #endif

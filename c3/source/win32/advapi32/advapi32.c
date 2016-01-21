@@ -128,7 +128,7 @@ void SetKernelObjectSecurity_cpu(struct CPU* cpu) {
 struct KModule* createModule_advapi32() {
     struct KModule* result = createModule(0);
     strcpy(result->name, "advapi32.dll");
-    strcpy(result->localDir, "c:\\Windows\\System32");
+    strcpy(result->localPath, "c:\\Windows\\System32\\advapi32.dll");
     
     addBuiltInFunction(result, "AdjustTokenPrivileges", AdjustTokenPrivileges_cpu);
     addBuiltInFunction(result, "GetKernelObjectSecurity", GetKernelObjectSecurity_cpu);    

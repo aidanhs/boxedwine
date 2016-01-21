@@ -2,6 +2,58 @@
 #include "kalloc.h"
 #include "kprocess.h"
 
+extern PblMap* processMap;
+
+struct KThread* getThread(U32 threadId) {
+    PblIterator* processIt = pblMapIteratorNew(processMap);
+    struct KThread* result = 0;
+
+    while (processIt && pblIteratorHasNext(processIt)) {
+        PblMapEntry* entry = pblIteratorNext(processIt);
+        struct KProcess** process = pblMapEntryValue(entry);
+        PblIterator* it = pblMapIteratorNew((*process)->threadMap);
+
+        while (it && pblIteratorHasNext(it)) {
+            struct KThread** thread = pblMapEntryValue(pblIteratorNext(it));
+            if ((*thread)->id == threadId) {
+                result = *thread;
+                break;
+            }
+        }
+        pblIteratorFree(it);
+        if (result)
+            break;
+    }
+    pblIteratorFree(processIt);
+    return result;
+}
+
+struct KThread* currentThread() {
+    U32 threadId = SDL_ThreadID();
+    PblIterator* processIt = pblMapIteratorNew(processMap);
+    struct KThread* result = 0;
+
+    while (processIt && pblIteratorHasNext(processIt)) {
+        PblMapEntry* entry = pblIteratorNext(processIt);
+        struct KProcess** process = pblMapEntryValue(entry);
+        PblIterator* it = pblMapIteratorNew((*process)->threadMap);
+
+        while (it && pblIteratorHasNext(it)) {
+            struct KThread** thread = pblMapEntryValue(pblIteratorNext(it));
+            if (SDL_GetThreadID((*thread)->sdlThread) == threadId) {
+                result = *thread;
+                break;
+            }
+        }
+        pblIteratorFree(it);
+        if (result)
+            break;
+    }
+    pblIteratorFree(processIt);
+    return result;
+    
+}
+
 struct KThread* allocThread(U32 id, struct KProcess* process) {
     struct KThread* thread = kalloc(sizeof(struct KThread));
     U32 tib;
@@ -69,4 +121,8 @@ void joinThread(struct KThread* thread) {
     SDL_WaitThread(thread->sdlThread, NULL);
     //SDL_DetachThread(thread->sdlThread); // SDL 2
     thread->sdlThread = 0;
+}
+
+struct user_thread_info* get_user_thread_info() {
+    return currentThread()->Win32ClientInfo;
 }

@@ -344,7 +344,7 @@ static UINT find_charset( const WCHAR *name )
 
     /* remove punctuation characters from charset name */
     for (i = j = 0; name[i] && j < sizeof(charset_name)-1; i++)
-        if (isalnum((unsigned char)name[i])) charset_name[j++] = name[i];
+        if (isalnum((unsigned char)name[i])) charset_name[j++] = (char)name[i];
     charset_name[j] = 0;
 
     entry = bsearch( charset_name, charset_names,
@@ -754,7 +754,7 @@ INT WINAPI GetLocaleInfoA_k( LCID lcid, LCTYPE lctype, LPSTR buffer, INT len )
 
     if (!(lenW = GetLocaleInfoW_k( lcid, lctype, NULL, 0 ))) return 0;
 
-    if (!(bufferW = HeapAlloc( GetProcessHeap(), 0, lenW * sizeof(WCHAR) )))
+    if (!(bufferW = HeapAlloc_k( GetProcessHeap_k(), 0, lenW * sizeof(WCHAR) )))
     {
         SetLastError_k( ERROR_NOT_ENOUGH_MEMORY );
         return 0;
@@ -783,7 +783,7 @@ INT WINAPI GetLocaleInfoA_k( LCID lcid, LCTYPE lctype, LPSTR buffer, INT len )
             ret = WideCharToMultiByte_k( codepage, 0, bufferW, ret, buffer, len, NULL, NULL );
         }
     }
-    HeapFree( GetProcessHeap(), 0, bufferW );
+    HeapFree_k( GetProcessHeap_k(), 0, bufferW );
     return ret;
 }
 
@@ -944,14 +944,14 @@ BOOL WINAPI SetLocaleInfoA_k(LCID lcid, LCTYPE lctype, LPCSTR data)
         return FALSE;
     }
     len = MultiByteToWideChar_k( codepage, 0, data, -1, NULL, 0 );
-    if (!(strW = HeapAlloc( GetProcessHeap(), 0, len * sizeof(WCHAR) )))
+    if (!(strW = HeapAlloc_k( GetProcessHeap_k(), 0, len * sizeof(WCHAR) )))
     {
         SetLastError_k( ERROR_NOT_ENOUGH_MEMORY );
         return FALSE;
     }
     MultiByteToWideChar_k( codepage, 0, data, -1, strW, len );
     ret = SetLocaleInfoW_k( lcid, lctype, strW );
-    HeapFree( GetProcessHeap(), 0, strW );
+    HeapFree_k( GetProcessHeap_k(), 0, strW );
     return ret;
 }
 
@@ -1912,7 +1912,7 @@ BOOL WINAPI GetStringTypeA_k( LCID locale, DWORD type, LPCSTR src, INT count, LP
     }
 
     countW = MultiByteToWideChar_k(cp, 0, src, count, NULL, 0);
-    if((srcW = HeapAlloc(GetProcessHeap(), 0, countW * sizeof(WCHAR))))
+    if((srcW = HeapAlloc_k(GetProcessHeap_k(), 0, countW * sizeof(WCHAR))))
     {
         MultiByteToWideChar_k(cp, 0, src, count, srcW, countW);
     /*
@@ -1921,7 +1921,7 @@ BOOL WINAPI GetStringTypeA_k( LCID locale, DWORD type, LPCSTR src, INT count, LP
      * than character space in the buffer!
      */
         ret = GetStringTypeW_k(type, srcW, countW, chartype);
-        HeapFree(GetProcessHeap(), 0, srcW);
+        HeapFree_k(GetProcessHeap_k(), 0, srcW);
     }
     return ret;
 }
@@ -2145,7 +2145,7 @@ INT WINAPI LCMapStringA_k(LCID lcid, DWORD flags, LPCSTR src, INT srclen,
     else
     {
         srclenW = MultiByteToWideChar_k(locale_cp, 0, src, srclen, NULL, 0);
-        srcW = HeapAlloc(GetProcessHeap(), 0, srclenW * sizeof(WCHAR));
+        srcW = HeapAlloc_k(GetProcessHeap_k(), 0, srclenW * sizeof(WCHAR));
         if (!srcW)
         {
             SetLastError_k(ERROR_NOT_ENOUGH_MEMORY);
@@ -2179,7 +2179,7 @@ INT WINAPI LCMapStringA_k(LCID lcid, DWORD flags, LPCSTR src, INT srclen,
     if (!dstlenW)
         goto map_string_exit;
 
-    dstW = HeapAlloc(GetProcessHeap(), 0, dstlenW * sizeof(WCHAR));
+    dstW = HeapAlloc_k(GetProcessHeap_k(), 0, dstlenW * sizeof(WCHAR));
     if (!dstW)
     {
         SetLastError_k(ERROR_NOT_ENOUGH_MEMORY);
@@ -2188,10 +2188,10 @@ INT WINAPI LCMapStringA_k(LCID lcid, DWORD flags, LPCSTR src, INT srclen,
 
     LCMapStringEx_k(NULL, flags, srcW, srclenW, dstW, dstlenW, NULL, NULL, 0);
     ret = WideCharToMultiByte_k(locale_cp, 0, dstW, dstlenW, dst, dstlen, NULL, NULL);
-    HeapFree(GetProcessHeap(), 0, dstW);
+    HeapFree_k(GetProcessHeap_k(), 0, dstW);
 
 map_string_exit:
-    if (srcW != bufW) HeapFree(GetProcessHeap(), 0, srcW);
+    if (srcW != bufW) HeapFree_k(GetProcessHeap_k(), 0, srcW);
     return ret;
 }
 
@@ -2227,7 +2227,7 @@ INT WINAPI FoldStringA_k(DWORD dwFlags, LPCSTR src, INT srclen,
 
     srclenW = MultiByteToWideChar_k(CP_ACP, dwFlags & MAP_COMPOSITE ? MB_COMPOSITE : 0,
                                   src, srclen, NULL, 0);
-    srcW = HeapAlloc(GetProcessHeap(), 0, srclenW * sizeof(WCHAR));
+    srcW = HeapAlloc_k(GetProcessHeap_k(), 0, srclenW * sizeof(WCHAR));
 
     if (!srcW)
     {
@@ -2243,7 +2243,7 @@ INT WINAPI FoldStringA_k(DWORD dwFlags, LPCSTR src, INT srclen,
     ret = FoldStringW_k(dwFlags, srcW, srclenW, NULL, 0);
     if (ret && dstlen)
     {
-        dstW = HeapAlloc(GetProcessHeap(), 0, ret * sizeof(WCHAR));
+        dstW = HeapAlloc_k(GetProcessHeap_k(), 0, ret * sizeof(WCHAR));
 
         if (!dstW)
         {
@@ -2259,10 +2259,10 @@ INT WINAPI FoldStringA_k(DWORD dwFlags, LPCSTR src, INT srclen,
         }
     }
 
-    HeapFree(GetProcessHeap(), 0, dstW);
+    HeapFree_k(GetProcessHeap_k(), 0, dstW);
 
 FoldStringA_exit:
-    HeapFree(GetProcessHeap(), 0, srcW);
+    HeapFree_k(GetProcessHeap_k(), 0, srcW);
     return ret;
 }
 
@@ -2396,7 +2396,7 @@ INT WINAPI CompareStringA_k(LCID lcid, DWORD flags,
         else
         {
             len1W = MultiByteToWideChar_k(locale_cp, 0, str1, len1, NULL, 0);
-            str1W = HeapAlloc(GetProcessHeap(), 0, len1W * sizeof(WCHAR));
+            str1W = HeapAlloc_k(GetProcessHeap_k(), 0, len1W * sizeof(WCHAR));
             if (!str1W)
             {
                 SetLastError_k(ERROR_NOT_ENOUGH_MEMORY);
@@ -2419,10 +2419,10 @@ INT WINAPI CompareStringA_k(LCID lcid, DWORD flags,
         else
         {
             len2W = MultiByteToWideChar_k(locale_cp, 0, str2, len2, NULL, 0);
-            str2W = HeapAlloc(GetProcessHeap(), 0, len2W * sizeof(WCHAR));
+            str2W = HeapAlloc_k(GetProcessHeap_k(), 0, len2W * sizeof(WCHAR));
             if (!str2W)
             {
-                if (str1W != buf1W) HeapFree(GetProcessHeap(), 0, str1W);
+                if (str1W != buf1W) HeapFree_k(GetProcessHeap_k(), 0, str1W);
                 SetLastError_k(ERROR_NOT_ENOUGH_MEMORY);
                 return 0;
             }
@@ -2437,8 +2437,8 @@ INT WINAPI CompareStringA_k(LCID lcid, DWORD flags,
 
     ret = CompareStringEx_k(NULL, flags, str1W, len1W, str2W, len2W, NULL, NULL, 0);
 
-    if (str1W != buf1W) HeapFree(GetProcessHeap(), 0, str1W);
-    if (str2W != buf2W) HeapFree(GetProcessHeap(), 0, str2W);
+    if (str1W != buf1W) HeapFree_k(GetProcessHeap_k(), 0, str1W);
+    if (str2W != buf2W) HeapFree_k(GetProcessHeap_k(), 0, str2W);
     return ret;
 }
 
@@ -3360,7 +3360,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
     norm_len = IdnToNameprepUnicode_k(dwFlags, lpUnicodeCharStr, cchUnicodeChar, NULL, 0);
     if(!norm_len)
         return 0;
-    norm_str = HeapAlloc(GetProcessHeap(), 0, norm_len*sizeof(WCHAR));
+    norm_str = HeapAlloc_k(GetProcessHeap_k(), 0, norm_len*sizeof(WCHAR));
     if(!norm_str) {
         SetLastError_k(ERROR_NOT_ENOUGH_MEMORY);
         return 0;
@@ -3368,7 +3368,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
     norm_len = IdnToNameprepUnicode_k(dwFlags, lpUnicodeCharStr,
             cchUnicodeChar, norm_str, norm_len);
     if(!norm_len) {
-        HeapFree(GetProcessHeap(), 0, norm_str);
+        HeapFree_k(GetProcessHeap_k(), 0, norm_str);
         return 0;
     }
 
@@ -3392,7 +3392,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
                 memcpy(lpASCIICharStr+out, norm_str+label_start, b*sizeof(WCHAR));
                 out += b;
             }else {
-                HeapFree(GetProcessHeap(), 0, norm_str);
+                HeapFree_k(GetProcessHeap_k(), 0, norm_str);
                 SetLastError_k(ERROR_INSUFFICIENT_BUFFER);
                 return 0;
             }
@@ -3410,7 +3410,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
                     lpASCIICharStr[out++] = norm_str[i];
             lpASCIICharStr[out++] = '-';
         }else {
-            HeapFree(GetProcessHeap(), 0, norm_str);
+            HeapFree_k(GetProcessHeap_k(), 0, norm_str);
             SetLastError_k(ERROR_INSUFFICIENT_BUFFER);
             return 0;
         }
@@ -3440,7 +3440,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
                             lpASCIICharStr[out++] = disp<='z'-'a' ?
                                 'a'+disp : '0'+disp-'z'+'a'-1;
                         }else {
-                            HeapFree(GetProcessHeap(), 0, norm_str);
+                            HeapFree_k(GetProcessHeap_k(), 0, norm_str);
                             SetLastError_k(ERROR_INSUFFICIENT_BUFFER);
                             return 0;
                         }
@@ -3458,7 +3458,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
         }
 
         if(out-out_label > 63) {
-            HeapFree(GetProcessHeap(), 0, norm_str);
+            HeapFree_k(GetProcessHeap_k(), 0, norm_str);
             SetLastError_k(ERROR_INVALID_NAME);
             return 0;
         }
@@ -3469,7 +3469,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
             }else if(out+1 <= cchASCIIChar) {
                 lpASCIICharStr[out++] = norm_str[label_end] ? '.' : 0;
             }else {
-                HeapFree(GetProcessHeap(), 0, norm_str);
+                HeapFree_k(GetProcessHeap_k(), 0, norm_str);
                 SetLastError_k(ERROR_INSUFFICIENT_BUFFER);
                 return 0;
             }
@@ -3477,7 +3477,7 @@ INT WINAPI IdnToAscii_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT cchUnicodeC
         label_start = label_end+1;
     }
 
-    HeapFree(GetProcessHeap(), 0, norm_str);
+    HeapFree_k(GetProcessHeap_k(), 0, norm_str);
     return out;
 }
 
@@ -3522,9 +3522,9 @@ INT WINAPI IdnToNameprepUnicode_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT c
         return 0;
     }
 
-    for(label_start=0; label_start<cchUnicodeChar;) {
+    for(label_start=0; (INT)label_start<cchUnicodeChar;) {
         ascii_only = TRUE;
-        for(i=label_start; i<cchUnicodeChar; i++) {
+        for(i=label_start; (INT)i<cchUnicodeChar; i++) {
             ch = lpUnicodeCharStr[i];
 
             if(i!=cchUnicodeChar-1 && !ch) {
@@ -3568,12 +3568,12 @@ INT WINAPI IdnToNameprepUnicode_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT c
                 SetLastError_k(ERROR_INVALID_NAME);
                 return 0;
             }
-            if(label_end < cchUnicodeChar)
+            if((INT)label_end < cchUnicodeChar)
                 label_end++;
 
             if(!lpNameprepCharStr) {
                 out += label_end-label_start;
-            }else if(out+label_end-label_start <= cchNameprepChar) {
+            }else if(out+label_end-label_start <= (DWORD)cchNameprepChar) {
                 memcpy(lpNameprepCharStr+out, lpUnicodeCharStr+label_start,
                         (label_end-label_start)*sizeof(WCHAR));
                 if(lpUnicodeCharStr[label_end-1] > 0x7f)
@@ -3600,7 +3600,7 @@ INT WINAPI IdnToNameprepUnicode_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT c
             else if(ptr[0]!=0xffff || ptr[1]!=0xffff || ptr[2]!=0xffff) map_len += 3;
         }
         if(map_len*sizeof(WCHAR) > sizeof(buf)) {
-            map_str = HeapAlloc(GetProcessHeap(), 0, map_len*sizeof(WCHAR));
+            map_str = HeapAlloc_k(GetProcessHeap_k(), 0, map_len*sizeof(WCHAR));
             if(!map_str) {
                 SetLastError_k(ERROR_NOT_ENOUGH_MEMORY);
                 return 0;
@@ -3631,21 +3631,21 @@ INT WINAPI IdnToNameprepUnicode_k(DWORD dwFlags, LPCWSTR lpUnicodeCharStr, INT c
         norm_len = FoldStringW_k(MAP_FOLDCZONE, map_str, map_len,
                 norm_str, sizeof(norm_str)/sizeof(WCHAR)-1);
         if(map_str != buf)
-            HeapFree(GetProcessHeap(), 0, map_str);
+            HeapFree_k(GetProcessHeap_k(), 0, map_str);
         if(!norm_len) {
             if(GetLastError_k() == ERROR_INSUFFICIENT_BUFFER)
                 SetLastError_k(ERROR_INVALID_NAME);
             return 0;
         }
 
-        if(label_end < cchUnicodeChar) {
+        if((INT)label_end < cchUnicodeChar) {
             norm_str[norm_len++] = lpUnicodeCharStr[label_end] ? '.' : 0;
             label_end++;
         }
 
         if(!lpNameprepCharStr) {
             out += norm_len;
-        }else if(out+norm_len <= cchNameprepChar) {
+        }else if(out+norm_len <= (DWORD)cchNameprepChar) {
             memcpy(lpNameprepCharStr+out, norm_str, norm_len*sizeof(WCHAR));
             out += norm_len;
         }else {
