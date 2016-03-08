@@ -14,7 +14,7 @@ EXPORTS
     get_char_typeW
     isalnumW
     isalphaW
-    iscntrlW
+    iscntr lW
     isdigitW
     isgraphW
     islowerW

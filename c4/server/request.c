@@ -596,7 +596,7 @@ static void create_dir( const char *name, struct stat *st )
     }
     if (!S_ISDIR(st->st_mode)) fatal_error( "%s is not a directory\n", name );
     if (st->st_uid != getuid()) fatal_error( "%s is not owned by you\n", name );
-    if (st->st_mode & 077) fatal_error( "%s must not be accessible by other users\n", name );
+    //if (st->st_mode & 077) fatal_error( "%s must not be accessible by other users\n", name );
 }
 
 /* create the server directory and chdir to it */
@@ -791,7 +791,6 @@ static void acquire_lock(void)
     atexit( socket_cleanup );
     chmod( server_socket_name, 0600 );  /* make sure no other user can connect */
     if (listen( fd, 5 ) == -1) fatal_error( "listen: %s\n", strerror( errno ));
-
     if (!(master_socket = alloc_object( &master_socket_ops )) ||
         !(master_socket->fd = create_anonymous_fd( &master_socket_fd_ops, fd, &master_socket->obj, 0 )))
         fatal_error( "out of memory\n" );
@@ -824,6 +823,7 @@ void open_master_socket(void)
 
     create_server_dir( server_dir );
 
+#ifndef BOXEDWINE
     if (!foreground)
     {
         if (pipe( sync_pipe ) == -1) fatal_error( "pipe: %s\n", strerror( errno ));
@@ -863,6 +863,7 @@ void open_master_socket(void)
         }
     }
     else  /* remain in the foreground */
+#endif
     {
         acquire_lock();
     }

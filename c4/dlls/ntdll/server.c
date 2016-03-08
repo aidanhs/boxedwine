@@ -1231,7 +1231,7 @@ static int server_connect(void)
     /* make sure we are at the right place */
     if (stat( ".", &st ) == -1) fatal_perror( "stat %s", serverdir );
     if (st.st_uid != getuid()) fatal_error( "'%s' is not owned by you\n", serverdir );
-    if (st.st_mode & 077) fatal_error( "'%s' must not be accessible by other users\n", serverdir );
+    //if (st.st_mode & 077) fatal_error( "'%s' must not be accessible by other users\n", serverdir );
 
     for (retry = 0; retry < 6; retry++)
     {
@@ -1441,7 +1441,7 @@ NTSTATUS server_init_process_done(void)
     SERVER_START_REQ( init_process_done )
     {
         req->module   = wine_server_client_ptr( peb->ImageBaseAddress );
-#ifdef __i386__
+#if defined __i386__ && !defined BOXEDWINE
         req->ldt_copy = wine_server_client_ptr( &wine_ldt_copy );
 #endif
         req->entry    = wine_server_client_ptr( (char *)peb->ImageBaseAddress + nt->OptionalHeader.AddressOfEntryPoint );

@@ -58,7 +58,7 @@ static RTL_CRITICAL_SECTION_DEBUG critsect_debug =
 };
 static RTL_CRITICAL_SECTION peb_lock = { &critsect_debug, -1, 0, 0, 0, 0 };
 
-#ifdef __i386__
+#if defined __i386__ && !defined(ASM_INTEL)
 #define DEFINE_FASTCALL4_ENTRYPOINT( name ) \
     __ASM_STDCALL_FUNC( name, 16, \
                        "popl %eax\n\t" \
@@ -645,10 +645,17 @@ ULONGLONG __cdecl RtlUlonglongByteSwap(ULONGLONG i)
  *  ix86 version takes argument in %ecx. Other systems use the inline version.
  */
 #ifdef __i386__
+#ifdef ASM_INTEL
+void NTDLL_RtlUlongByteSwap() {
+	_asm mov eax, ecx;
+	_asm bswap eax;
+}
+#else
 __ASM_GLOBAL_FUNC(NTDLL_RtlUlongByteSwap,
                   "movl %ecx,%eax\n\t"
                   "bswap %eax\n\t"
                   "ret")
+#endif
 #endif
 
 /*************************************************************************
@@ -660,10 +667,17 @@ __ASM_GLOBAL_FUNC(NTDLL_RtlUlongByteSwap,
  *  i386 version takes argument in %cx. Other systems use the inline version.
  */
 #ifdef __i386__
+#ifdef ASM_INTEL
+void NTDLL_RtlUshortByteSwap() {
+	_asm mov ah, cl;
+	_asm mov al, ch;
+}
+#else
 __ASM_GLOBAL_FUNC(NTDLL_RtlUshortByteSwap,
                   "movb %ch,%al\n\t"
                   "movb %cl,%ah\n\t"
                   "ret")
+#endif
 #endif
 
 

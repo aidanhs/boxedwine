@@ -349,7 +349,9 @@ static inline void *memcpy_unaligned( void *dst, const void *src, size_t size )
 extern void *memcpy_unaligned( void *dst, const void *src, size_t size );
 #endif /* __i386__ */
 
+#ifndef BOXEDWINE
 extern int mkstemps(char *template, int suffix_len);
+#endif
 
 /* Process creation flags */
 #ifndef _P_WAIT
@@ -449,6 +451,62 @@ static inline int interlocked_xchg( int *dest, int val )
     int ret;
     do ret = *dest; while (!__sync_bool_compare_and_swap( dest, ret, val ));
     return ret;
+}
+#elif defined ASM_INTEL
+__declspec(naked) inline int interlocked_cmpxchg(int *dest, int xchg, int compare)
+{
+	__asm mov eax, 12[esp];
+	__asm mov ecx, 8[esp];
+	__asm mov edx, 4[esp];
+	__asm lock cmpxchg[edx], ecx;
+	__asm ret;
+}
+
+__declspec(naked) inline void *interlocked_cmpxchg_ptr(void **dest, void *xchg, void *compare)
+{
+	__asm mov eax, 12[esp];
+	__asm mov ecx, 8[esp];
+	__asm mov edx, 4[esp];
+	__asm lock cmpxchg[edx], ecx;
+	__asm ret;
+}
+
+__declspec(naked) inline int interlocked_xchg(int *dest, int val)
+{
+	__asm mov eax, 8[esp];
+	__asm mov edx, 4[esp];
+	__asm lock xchg[edx], eax;
+	__asm ret;
+}
+
+__declspec(naked) inline void *interlocked_xchg_ptr(void **dest, void *val)
+{
+	__asm mov eax, 8[esp];
+	__asm mov edx, 4[esp];
+	__asm lock xchg[edx], eax;
+	__asm ret;
+}
+
+__declspec(naked) inline int interlocked_xchg_add(int *dest, int incr)
+{
+	__asm mov eax, 8[esp];
+	__asm mov edx, 4[esp];
+	__asm lock xadd[edx], eax;
+	__asm ret;
+}
+__declspec(naked) inline __int64 interlocked_cmpxchg64(__int64 *dest, __int64 xchg, __int64 compare)
+{
+    __asm push ebx;
+    __asm push esi;
+    __asm mov esi, 12[esp];
+    __asm mov ebx, 16[esp];
+    __asm mov ecx, 20[esp];
+    __asm mov eax, 24[esp];
+    __asm mov edx, 28[esp];
+    __asm lock cmpxchg8b[esi];
+    __asm pop esi;
+    __asm pop ebx;
+    __asm ret;
 }
 #else
 extern int interlocked_cmpxchg( int *dest, int xchg, int compare );

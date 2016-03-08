@@ -2320,7 +2320,7 @@ static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
     __asm__(".byte 0x64\n\tmovl (0x18),%0" : "=r" (teb));
     return teb;
 }
-#elif defined(__i386__) && defined(_MSC_VER)
+#elif defined(__i386__) && defined(_MSC_VER) && !defined(BOXEDWINE)
 static FORCEINLINE struct _TEB * WINAPI NtCurrentTeb(void)
 {
   struct _TEB *teb;

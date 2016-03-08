@@ -28,6 +28,9 @@
  *  Note that to avoid unexpected behaviour, the size of a bitmap should be set
  *  to a multiple of 32.
  */
+#include "config.h"
+#include "wine/port.h"
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>

@@ -17,13 +17,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
+#define WINE_UNICODE_INLINE  /* nothing */
+#include "wine/unicode.h"
 
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>
-
-#define WINE_UNICODE_INLINE  /* nothing */
-#include "wine/unicode.h"
 
 int strcmpiW( const WCHAR *str1, const WCHAR *str2 )
 {

@@ -852,7 +852,9 @@ static  SYSTEM_CPU_INFORMATION cached_sci;
  */
 static inline void do_cpuid(unsigned int ax, unsigned int *p)
 {
-#ifdef __i386__
+#ifdef _MSC_VER
+	__cpuid(p, ax);
+#elif defined __i386__
 	__asm__("pushl %%ebx\n\t"
                 "cpuid\n\t"
                 "movl %%ebx, %%esi\n\t"
@@ -872,7 +874,23 @@ static inline void do_cpuid(unsigned int ax, unsigned int *p)
 /* From xf86info havecpuid.c 1.11 */
 static inline BOOL have_cpuid(void)
 {
-#ifdef __i386__
+#ifdef ASM_INTEL
+	int have_cpuid = 0;
+	__asm {
+		    pushfd
+			pop eax
+			mov edx, eax
+			xor eax, 0x200000
+			push eax
+			popfd
+			pushfd
+			pop eax
+			xor eax, edx
+			and eax, 0x200000
+			mov have_cpuid, eax
+	}
+	return have_cpuid != 0;
+#elif __i386__
 	unsigned int f1, f2;
 	__asm__("pushfl\n\t"
                 "pushfl\n\t"
@@ -929,8 +947,11 @@ static inline BOOL have_sse_daz_mode(void)
     XMM_SAVE_AREA32 *state = (XMM_SAVE_AREA32 *)(((ULONG_PTR)buffer + 15) & ~15);
     memset(buffer, 0, sizeof(buffer));
 
+#ifdef _MSC_VER
+	_fxsave(state);
+#else
     __asm__ __volatile__( "fxsave %0" : "=m" (*state) : "m" (*state) );
-
+#endif
     return (state->MxCsr_Mask & (1 << 6)) >> 6;
 #else /* all x86_64 processors include SSE2 with DAZ mode */
     return TRUE;

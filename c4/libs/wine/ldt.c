@@ -463,4 +463,11 @@ __ASM_GLOBAL_FUNC( wine_get_ss, "movw %ss,%ax\n\tret" )
 __ASM_GLOBAL_FUNC( wine_set_fs, "movl 4(%esp),%eax\n\tmovw %ax,%fs\n\tret" )
 __ASM_GLOBAL_FUNC( wine_set_gs, "movl 4(%esp),%eax\n\tmovw %ax,%gs\n\tret" )
 
+#elif defined BOXEDWINE
+int wine_ldt_is_system(unsigned short sel) {
+    return 1;
+}
+
+void wine_ldt_init_locking(void(*lock_func)(void), void(*unlock_func)(void)) {
+}
 #endif /* __i386__ */

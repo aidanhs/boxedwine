@@ -227,7 +227,11 @@ HANDLE thread_init(void)
 
     /* reserve space for shared user data */
 
+#ifdef BOXEDWINE
+    addr = 0;
+#else
     addr = (void *)0x7ffe0000;
+#endif
     size = 0x10000;
     status = NtAllocateVirtualMemory( NtCurrentProcess(), &addr, 0, &size,
                                       MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE );

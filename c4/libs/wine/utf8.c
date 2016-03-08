@@ -18,9 +18,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <string.h>
-
 #include "wine/unicode.h"
+#include <string.h>
 
 extern WCHAR compose( const WCHAR *str );
 

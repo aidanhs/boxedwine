@@ -715,8 +715,10 @@ static inline void *unmap_extra_space( void *ptr, size_t total_size, size_t want
         ptr = (char *)ptr + extra;
         total_size -= extra;
     }
+#ifndef BOXEDWINE
     if (total_size > wanted_size)
         munmap( (char *)ptr + wanted_size, total_size - wanted_size );
+#endif
     return ptr;
 }
 

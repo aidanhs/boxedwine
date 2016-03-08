@@ -20,7 +20,8 @@
 
 #ifndef __WINE_WINE_UNICODE_H
 #define __WINE_WINE_UNICODE_H
-
+#include "config.h"
+#include "wine/port.h"
 #include <stdarg.h>
 
 #include <windef.h>

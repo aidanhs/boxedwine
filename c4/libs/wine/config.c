@@ -480,13 +480,18 @@ const char *wine_get_version(void)
 /* return the build id string */
 const char *wine_get_build_id(void)
 {
+#ifdef BOXEDWINE
+	return "BoxedWine";
+#else
     extern const char wine_build[];
     return wine_build;
+#endif
 }
 
 /* exec a binary using the preloader if requested; helper for wine_exec_wine_binary */
 static void preloader_exec( char **argv, int use_preloader )
 {
+#ifndef BOXEDWINE
     if (use_preloader)
     {
         static const char preloader[] = "wine-preloader";
@@ -513,6 +518,7 @@ static void preloader_exec( char **argv, int use_preloader )
         free( new_argv );
         free( full_name );
     }
+#endif
     execv( argv[0], argv );
 }
 

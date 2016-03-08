@@ -39,6 +39,14 @@
 WINE_DEFAULT_DEBUG_CHANNEL(relay);
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
+#define USE_RELAY 1
+#endif
+
+#ifdef ASM_INTEL
+#undef USE_RELAY
+#endif
+
+#ifdef USE_RELAY
 
 WINE_DECLARE_DEBUG_CHANNEL(timestamp);
 WINE_DECLARE_DEBUG_CHANNEL(pid);
@@ -770,7 +778,7 @@ void RELAY_SetupDLL( HMODULE module )
 /* snoop support */
 /***********************************************************************/
 
-#ifdef __i386__
+#if defined(__i386__) && !defined(ASM_INTEL)
 
 WINE_DECLARE_DEBUG_CHANNEL(seh);
 WINE_DECLARE_DEBUG_CHANNEL(snoop);

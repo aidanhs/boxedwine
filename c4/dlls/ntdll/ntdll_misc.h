@@ -222,8 +222,13 @@ struct ntdll_thread_data
     DWORD              dr3;           /* 1c8 */
     DWORD              dr6;           /* 1cc */
     DWORD              dr7;           /* 1d0 */
+#ifndef IGNORE_FS_GS
     DWORD              fs;            /* 1d4 TEB selector */
-    DWORD              gs;            /* 1d8 libc selector; update winebuild if you move this! */
+	DWORD              gs;            /* 1d8 libc selector; update winebuild if you move this! */
+#else
+	DWORD			   unused;
+	DWORD			   unused2;
+#endif    
     void              *vm86_ptr;      /* 1dc data for vm86 mode */
 #else
     void              *exit_frame;    /*    /2e8 exit frame pointer */
@@ -251,13 +256,23 @@ extern HANDLE keyed_event DECLSPEC_HIDDEN;
 /* Register functions */
 
 #ifdef __i386__
-#define DEFINE_REGS_ENTRYPOINT( name, args ) \
+#ifdef ASM_INTEL
+#define DEFINE_REGS_ENTRYPOINT( name, args )	\
+__declspec(naked) void WINAPI #name() {			\
+	_asm push __regs_##name;					\
+	_asm push args;								\
+	_asm call __wine_call_from_regs;			\
+	_asm retn 4*args;							\
+}
+
+#else
     __ASM_GLOBAL_FUNC( name, \
                        ".byte 0x68\n\t"  /* pushl $__regs_func */       \
                        ".long " __ASM_NAME("__regs_") #name "-.-11\n\t" \
                        ".byte 0x6a," #args "\n\t" /* pushl $args */     \
                        "call " __ASM_NAME("__wine_call_from_regs") "\n\t" \
                        "ret $(4*" #args ")" ) /* fake ret to make copy protections happy */
+#endif
 #endif
 
 #define HASH_STRING_ALGORITHM_DEFAULT  0

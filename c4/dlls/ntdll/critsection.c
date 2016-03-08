@@ -52,7 +52,9 @@ static inline LONG interlocked_dec( PLONG dest )
 
 static inline void small_pause(void)
 {
-#ifdef __i386__
+#if defined(ASM_INTEL)
+	_asm nop;
+#elif defined(__i386__)
     __asm__ __volatile__( "rep;nop" : : : "memory" );
 #else
     __asm__ __volatile__( "" : : : "memory" );

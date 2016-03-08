@@ -1855,6 +1855,10 @@ static pid_t exec_loader( LPCWSTR cmd_line, unsigned int flags, int socketfd,
     if (!is_win64 ^ !(binary_info->flags & BINARY_FLAG_64BIT))
         loader = get_alternate_loader( &wineloader );
 
+#ifdef BOXEDWINE
+	pid = fork();
+	wine_exec_wine_binary(loader, argv, NULL);
+#else
     if (exec_only || !(pid = fork()))  /* child */
     {
         if (exec_only || !(pid = fork()))  /* grandchild */
@@ -1912,7 +1916,7 @@ static pid_t exec_loader( LPCWSTR cmd_line, unsigned int flags, int socketfd,
 
         _exit(pid == -1);
     }
-
+#endif
     if (pid != -1)
     {
         /* reap child */
