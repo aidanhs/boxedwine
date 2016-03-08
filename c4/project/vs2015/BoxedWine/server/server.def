@@ -1,0 +1,4 @@
+LIBRARY SERVER
+
+EXPORTS
+server_main=main

@@ -1,0 +1,446 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\winelib">
+      <UniqueIdentifier>{5cb13370-fd5a-409f-9cd6-9ec5ebb129b4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\server\async.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\atom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\change.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\class.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\clipboard.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\completion.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\console.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\debugger.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\device.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\directory.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\event.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\fd.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\file.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\handle.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\hook.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\mailslot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\mapping.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\mutex.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\named_pipe.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\object.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\process.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\procfs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\ptrace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\queue.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\region.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\registry.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\request.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\semaphore.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\serial.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\signal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\snapshot.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\sock.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\symlink.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\thread.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\timer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\token.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\trace.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\unicode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\user.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\window.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\server\winstation.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_037.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_424.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_437.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_500.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_737.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_775.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_850.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_852.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_855.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_856.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_857.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_860.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_861.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_862.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_863.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_864.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_865.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_866.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_869.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_874.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_875.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_878.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_932.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_936.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_949.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_950.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1006.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1026.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1250.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1251.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1252.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1253.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1254.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1255.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1256.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1257.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1258.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_1361.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10000.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10001.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10002.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10003.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10004.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10005.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10006.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10007.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10008.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10010.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10017.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10021.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10029.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10079.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10081.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_10082.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_20127.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_20866.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_20932.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_21866.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28591.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28592.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28593.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28594.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28595.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28596.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28597.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28598.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28599.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28600.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28603.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28604.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28605.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\c_28606.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\casemap.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\collation.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\compose.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\config.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\cptable.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\debug.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\fold.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\loader.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\mbtowc.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\mmap.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\port.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\sortkey.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\string.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\utf8.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\wctomb.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\libs\wine\wctype.c">
+      <Filter>Source Files\winelib</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\server\file.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\handle.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\object.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\process.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\request.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\security.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\thread.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\unicode.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\server\user.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="server.def">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
+</Project>
