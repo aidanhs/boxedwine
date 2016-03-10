@@ -13,6 +13,8 @@
 #include <time.h>
 #include <direct.h>
 
+#include "src\pbl\pbl.h"
+
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 
@@ -89,36 +91,84 @@ void wine2stat(struct winecrt_stat *buf, struct stat* s) {
 	buf->st_blocks = buf->st_size / buf->st_blksize;
 }
 
-struct PerProcessInfo {
-	char currentDirectory[MAX_PATH];
-    int id;
+#define UNIX_FILE_HANDLE_NONE 0
+#define UNIX_FILE_HANDLE_SOCKET 1
+#define UNIX_FILE_HANDLE_UNIX_SOCKET 2
+#define UNIX_FILE_HANDLE_DIRECTORY 3
+#define UNIX_FILE_HANDLE_FILE 4
+
+struct UnixFileHandle {
+    int fd;
+    int refCount;
+    int type;
+    void* data;
 };
 
-static int nextProcessId = 1;
+struct FakeFile {
+    struct UnixFileHandle* ufd;
+};
 
-#define UNIX_SOCKET_HANDLE 0x2000
-#define SOCKET_HANDLE 0x4000
-#define OPEN_DIR_HANDLE 0x8000
-#define FILE_TYPE_MSASK 0xF000
-#define MAX_OPEN_DIR 32
+PblMap* fakeFiles;
 
-#define IS_FD_SOCKET(x) ((x & UNIX_SOCKET_HANDLE) || (x & SOCKET_HANDLE))
-#define GET_SOCKET_FD(x) (x &~ (UNIX_SOCKET_HANDLE|SOCKET_HANDLE))
+struct PerProcessInfo {
+    char currentDirectory[MAX_PATH];
+    int id;
 
-struct UnixSocket {
-	struct UnixSocket* next;
-	char path[MAX_PATH];
-	int fd;
+    struct UnixFileHandle** unixFileHandles;
+    int maxFileHandles;
 };
 
 __declspec(thread) char* getPathBuffer;
 __declspec(thread) struct PerProcessInfo* processInfo;
 __declspec(thread) void* pthreadTLS;
 
+struct UnixFileHandle* getUnixFileHandle(int fd) {
+    if (fd >= 0 && fd <= processInfo->maxFileHandles)
+        return processInfo->unixFileHandles[fd];
+    return NULL;
+}
+
+int getNewUnixFileHandle(int fd, int type) {
+    int i;
+    struct UnixFileHandle* ufd;
+
+    for (i = 0; i<processInfo->maxFileHandles; i++) {
+        if (!processInfo->unixFileHandles[i]) {
+            struct UnixFileHandle* ufd = malloc(sizeof(struct UnixFileHandle));
+            ufd->fd = fd;
+            ufd->type = type;
+            ufd->refCount = 1;
+            ufd->data = 0;
+            processInfo->unixFileHandles[i] = ufd;
+            return i;
+        }
+    }
+
+    // :TODO: need to make this function thread safe in order to reallocate unixFileHandles
+    printf("Ran out of file handles\n");
+    exit(-1);
+}
+
+int dupUnixFileHandle(struct UnixFileHandle* ufd) {
+    int i;
+
+    for (i = 0; i<processInfo->maxFileHandles; i++) {
+        if (!processInfo->unixFileHandles[i]) {
+            processInfo->unixFileHandles[i] = ufd;
+            return i;
+        }
+    }
+
+    // :TODO: need to make this function thread safe in order to reallocate unixFileHandles
+    printf("Ran out of file handles\n");
+    exit(-1);
+}
+
+static int nextProcessId = 1;
+
 char rootPath[MAX_PATH];
 
 // not thread safe, just hope for the best
-char* openDirectory[MAX_OPEN_DIR];
 struct UnixSocket* unixSocket;
 
 char *winecrt_getcwd(char *buf, size_t size);
@@ -143,12 +193,20 @@ void initSystem(const char* root) {
 	_mkdir(getPath("/home/boxedwine"));
 	_mkdir(getPath("/home/boxedwine/.wine"));
 	_mkdir(getPath("/tmp"));
+    fakeFiles = pblMapNewHashMap();
 }
 
 void initProcess() {
 	processInfo = malloc(sizeof(struct PerProcessInfo));
 	strcpy(processInfo->currentDirectory, "/home/boxedwine");	
     processInfo->id = nextProcessId++;
+    processInfo->maxFileHandles = 16*1024;
+    processInfo->unixFileHandles = malloc(sizeof(struct UnixFileHandle*)*processInfo->maxFileHandles);
+    memset(processInfo->unixFileHandles, 0, sizeof(struct UnixFileHandle*)*processInfo->maxFileHandles);
+    // set up stdout, stdin, stderr
+    getNewUnixFileHandle(0, UNIX_FILE_HANDLE_FILE);
+    getNewUnixFileHandle(1, UNIX_FILE_HANDLE_FILE);
+    getNewUnixFileHandle(2, UNIX_FILE_HANDLE_FILE);
 }
 
 void notimplemented(const char* msg) {
@@ -165,10 +223,16 @@ int winecrt_abs(int i) {
     return abs(i);
 }
 int winecrt_accept(int socket, struct sockaddr* address, socklen_t *raddress_len) {
-    if (socket & UNIX_SOCKET_HANDLE) {
-        int result = accept(GET_SOCKET_FD(socket), address, raddress_len);
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_SOCKET || ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result = accept(ufd->fd, address, raddress_len);
         if (result>0)
-            result |= UNIX_SOCKET_HANDLE | SOCKET_HANDLE;
+            result = getNewUnixFileHandle(result, UNIX_FILE_HANDLE_SOCKET);
         return result;
     } else {
         printf("accept: currently only AF_UNIX is supported\n");
@@ -203,33 +267,28 @@ struct wine_sockaddr_un
 	char sun_path[108];		/* Path name.  */
 };
 int winecrt_bind(int socket, const struct sockaddr *address, socklen_t address_len) {
-	if (socket & UNIX_SOCKET_HANDLE) {
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+	if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
 		struct sockaddr_in addr;
-		struct UnixSocket* s = unixSocket;
 		const char* name = getPath(((struct wine_sockaddr_un*)address)->sun_path);
+        struct FakeFile fakeFile;
 
-		while (s) {
-			if (!strcmp(s->path, name)) {
-				errno = EADDRINUSE;
-				return -1;
-			}
-			s = s->next;
+		if (pblMapGet(fakeFiles, name, strlen(name)+1, NULL)) {
+			errno = EADDRINUSE;
+			return -1;
 		}
-
-		s = unixSocket;
-		while (s) {
-			if (s->fd == GET_SOCKET_FD(socket)) {
-				strcpy(s->path, name);
-				break;
-			}
-			s = s->next;
-		}
-
+        fakeFile.ufd = ufd;
+        pblMapPut(fakeFiles, name, strlen(name)+1, &fakeFile, sizeof(struct FakeFile), NULL);
 		memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;
 		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 		addr.sin_port = 0;   /* kernel chooses port.  */
-		return bind(GET_SOCKET_FD(socket), (struct sockaddr *) &addr, sizeof(addr));
+		return bind(ufd->fd, (struct sockaddr *) &addr, sizeof(addr));
 	}
 	else {
 		printf("bind: currently only AF_UNIX is supported\n");
@@ -275,51 +334,70 @@ int winecrt_chdir(const char *path) {
 	return -1;
 }
 int winecrt_close(int fildes) {
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    int result;
+
 	if (fildes == -1)
 		return 0;
-	if (fildes & OPEN_DIR_HANDLE) {
-		int i = fildes &= ~OPEN_DIR_HANDLE;
-		free(openDirectory[i]);
-		openDirectory[i] = 0;
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    processInfo->unixFileHandles[fildes] = NULL;
+    ufd->refCount--;
+    if (ufd->refCount>0)
+        return 0;
+	if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
+		return 0;
+	} else if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        PblIterator iterator;
+        pblIteratorInit(fakeFiles, &iterator);
+
+        while ((pblIteratorHasNext(&iterator)) > 0) {
+            struct FakeFile* fakeFile = pblMapEntryKey((PblMapEntry*)pblIteratorNext(&iterator));
+            if (fakeFile->ufd==ufd) {
+                char* path = (char*)pblMapEntryKey((PblMapEntry*)pblIteratorNext(&iterator));
+                fakeFile = pblMapRemove(fakeFile, path, strlen(path)+1, NULL);
+                free(fakeFile);
+                break;
+            }
+        }
+        return closesocket(ufd->fd);
 	}
-	else if (IS_FD_SOCKET(fildes)) {
-		if (fildes & UNIX_SOCKET_HANDLE) {
-			struct UnixSocket* s = unixSocket;
-			struct UnixSocket** p = &s;
-			while (s) {
-				if (s->fd == GET_SOCKET_FD(fildes)) {
-					*p = s->next;
-					free(s);
-					break;
-				}
-				p = &s->next;
-				s = s->next;
-			}
-		}
-		return closesocket(GET_SOCKET_FD(fildes));
-	}
-	return close(fildes);
+    else if (ufd->type == UNIX_FILE_HANDLE_SOCKET) {
+        return closesocket(ufd->fd);
+    } else {
+	    result = close(ufd->fd);
+    }
+    if (ufd->data) {
+        free(ufd->data);
+    }
+    free(ufd);
+    return result;
 }
 int winecrt_closedir(DIR *dirp) {
     notimplemented("closedir");
 }
 int winecrt_connect(int socket, const struct sockaddr *address, socklen_t address_len) {
-    if (socket & UNIX_SOCKET_HANDLE) {
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
         struct sockaddr_in addr;
         struct UnixSocket* s = unixSocket;
         const char* name = getPath(((struct wine_sockaddr_un*)address)->sun_path);
+        struct FakeFile* fakeFile = pblMapGet(fakeFiles, name, strlen(name) + 1, NULL);
 
-        while (s) {
-            if (!strcmp(s->path, name)) {
-                struct sockaddr_in connect_addr;
-                int size = sizeof(connect_addr);
-                int result;
+        if (fakeFile && fakeFile->ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+            struct sockaddr_in connect_addr;
+            int size = sizeof(connect_addr);
+            int result;
 
-                if (getsockname(s->fd, (struct sockaddr *) &connect_addr, &size) == -1)
-                    return -1;
-                return connect(GET_SOCKET_FD(socket), &connect_addr, &size);
-            }
-            s = s->next;
+            if (getsockname(fakeFile->ufd->fd, (struct sockaddr *) &connect_addr, &size) == -1)
+                return -1;
+            return connect(ufd->fd, &connect_addr, &size);
         }
         // :TODO: what errno?
         return -1;
@@ -354,10 +432,16 @@ void *winecrt_dlsym(void* handle, const char* name) {
     return GetProcAddress(handle, name);
 }
 int winecrt_dup(int fildes) {
-    return dup(fildes);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    ufd->refCount++;
+    return dupUnixFileHandle(ufd);
 }
 int winecrt_dup2(int fildes, int fildes2) {
-    return dup2(fildes, fildes2);
+    notimplemented("dup2");
 }
 int winecrt_execv(const char *path, char *const argv[]) {
     notimplemented("execv");
@@ -372,8 +456,13 @@ double winecrt_fabs(double x) {
     return fabs(x);
 }
 int winecrt_fchdir(int fildes) {
-	if (fildes & OPEN_DIR_HANDLE) {
-		return winecrt_chdir(openDirectory[fildes & ~OPEN_DIR_HANDLE]);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+	if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
+		return winecrt_chdir((const char*)ufd->data);
 	}
 	errno = ENOTDIR;
 	return -1;
@@ -442,12 +531,17 @@ int winecrt_fseek(FILE* f, long offset, int whence) {
 	return fseek(f, offset, whence);
 }
 int winecrt_fstat(int fildes, struct winecrt_stat *buf) {
-	if (fildes & OPEN_DIR_HANDLE) {
-		return winecrt_stat(openDirectory[fildes & ~OPEN_DIR_HANDLE], buf);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+	if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
+		return winecrt_stat((const char*)ufd->data, buf);
 	}
 	{
 		struct stat s;
-		int result = fstat(fildes, &s);
+		int result = fstat(ufd->fd, &s);
 		if (result == 0) {
 			wine2stat(buf, &s);
 		}
@@ -479,7 +573,6 @@ char *winecrt_getcwd(char *buf, size_t size) {
 	strncpy(buf, processInfo->currentDirectory, size);
 	return buf;
 }
-
 char* winecrt_getenv(const char * name) {
 	if (!stricmp(name, "HOME"))
 		return "/home/boxedwine";
@@ -491,6 +584,7 @@ char** winecrt_getEnviron() {
     notimplemented("getEnviron");
 }
 int* winecrt_getErrno() {
+    // :TODO: I doublt all of these are the name, I should map them
 	return _errno();
 }
 int winecrt_gethostname(char *name, size_t namelen) {
@@ -593,7 +687,12 @@ int winecrt_link(const char *path1, const char *path2) {
     notimplemented("link");
 }
 int winecrt_listen(int socket, int backlog) {
-	return listen(GET_SOCKET_FD(socket), backlog);
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+	return listen(ufd->fd, backlog);
 }
 struct tm *winecrt_localtime(const winecrt_time_t *time) {
     return localtime(time);
@@ -809,24 +908,16 @@ int winecrt_open(const char *path, int oflag, ...) {
 			p[len - 1] = 0;
 		if (stat(p, &s) == 0) {
 			if (S_ISDIR(s.st_mode)) {
-				int i = 0;
-
-				for (i = 0; i < MAX_OPEN_DIR; i++) {
-					if (openDirectory[i] == 0)
-						break;
-				}
-				if (i >= MAX_OPEN_DIR) {
-					printf("Ran out of open directories\n");
-					errno = EMFILE;
-					return -1;
-				} else {
-					openDirectory[i] = strdup(p+strlen(rootPath));
-					return i | OPEN_DIR_HANDLE;
-				}
+                struct UnixFileHandle* ufd;
+                result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_DIRECTORY);
+                ufd = getUnixFileHandle(result);
+                ufd->data = strdup(p + strlen(rootPath));
+				return result;
 			}
 		}
+        return result;
 	}
-	return result;
+    return getNewUnixFileHandle(result, UNIX_FILE_HANDLE_FILE);
 }
 DIR *winecrt_opendir(const char *dirname) {
     notimplemented("opendir");
@@ -834,8 +925,9 @@ DIR *winecrt_opendir(const char *dirname) {
 void winecrt_perror(const char *s) {
     perror(s);
 }
+int winecrt_socketpair(int domain, int type, int protocol, int socket_vector[2]);
 int winecrt_pipe(int fildes[2]) {
-    return _pipe(fildes, 0, O_BINARY);
+    return winecrt_socketpair(1/*AF_UNIX*/, 1/*SOCK_STREAM*/, 0, fildes);
 }
 int winecrt_poll(struct pollfd *fds, unsigned int count, int timeout) {
     struct pollfd f[256];
@@ -847,7 +939,12 @@ int winecrt_poll(struct pollfd *fds, unsigned int count, int timeout) {
         p = malloc(sizeof(struct pollfd)*count);
     }
     for (i=0;i<count;i++) {
-        p[i].fd = GET_SOCKET_FD(fds[i].fd);
+        struct UnixFileHandle* ufd = getUnixFileHandle(fds[i].fd);
+        if (!ufd) {
+            errno = EBADF;
+            return -1;
+        }
+        p[i].fd = ufd->fd;
         p[i].events = fds[i].events;
         p[i].revents = fds[i].revents;
     }
@@ -939,33 +1036,46 @@ void *winecrt_realloc(void *ptr, size_t size) {
 	return realloc(ptr, size);
 }
 ssize_t winecrt_recv(int socket, void *buffer, size_t length, int flags) {
-    recv(GET_SOCKET_FD(socket), buffer, length, flags);
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    recv(ufd->fd, buffer, length, flags);
 }
 ssize_t winecrt_recvmsg(int socket, struct msghdr *message, int flags) {
     int totalRead = 0;
     int i;
     int result;
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
 
-    result = recv(GET_SOCKET_FD(socket), &message->msg_iovlen, sizeof(message->msg_iovlen), 0);
+    result = recv(ufd->fd, &message->msg_iovlen, sizeof(message->msg_iovlen), 0);
     if (result<0)
         return result;
     for (i = 0; i<message->msg_iovlen; i++) {
-        result = recv(GET_SOCKET_FD(socket), &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), 0);
+        result = recv(ufd->fd, &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), 0);
         if (result<0)
             return result;
-        result = recv(GET_SOCKET_FD(socket), message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
+        result = recv(ufd->fd, message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
         if (result >= 0)
             totalRead += result;
         else
             return result;
     }
-    result = recv(GET_SOCKET_FD(socket), &message->msg_accrightslen, sizeof(message->msg_accrightslen), 0);
+    result = recv(ufd->fd, &message->msg_accrightslen, sizeof(message->msg_accrightslen), 0);
     if (result<0)
         return result;
     for (i = 0; i<message->msg_accrightslen / sizeof(int); i++) {
-        result = recv(GET_SOCKET_FD(socket), ((int*)message->msg_accrights)[i], sizeof(int), 0);
+        struct UnixFileHandle* ufdRecv = NULL;
+
+        result = recv(ufd->fd, &ufdRecv, sizeof(struct UnixFileHandle*), 0);
         if (result<0)
             return result;
+        ((int*)message->msg_accrights)[i] = dupUnixFileHandle(ufdRecv);
     }
     return totalRead;
 }
@@ -984,41 +1094,50 @@ int winecrt_select(int nfds, winecrt_fd_set *readfds, winecrt_fd_set *writefds, 
     notimplemented("select");
 }
 ssize_t winecrt_send(int socket, const void *buffer, size_t length, int flags) {
-    send(GET_SOCKET_FD(socket), buffer, length, flags);
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    return send(ufd->fd, buffer, length, flags);
 }
 ssize_t winecrt_sendmsg(int socket, const struct msghdr *message, int flags) {
     int totalSent = 0;
     int i;
     int result;
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
 
-    result = send(GET_SOCKET_FD(socket), &message->msg_iovlen, sizeof(message->msg_iovlen), 0);
+    result = send(ufd->fd, &message->msg_iovlen, sizeof(message->msg_iovlen), 0);
     if (result<0)
         return result;
     for (i=0;i<message->msg_iovlen;i++) {
-        result = send(GET_SOCKET_FD(socket), &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), 0);
+        result = send(ufd->fd, &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), 0);
         if (result<0)
             return result;
-        result = send(GET_SOCKET_FD(socket), message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
+        result = send(ufd->fd, message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
         if (result>=0)
             totalSent +=result;
         else
             return result;
     }
-    result = send(GET_SOCKET_FD(socket), &message->msg_accrightslen, sizeof(message->msg_accrightslen), 0);
+    result = send(ufd->fd, &message->msg_accrightslen, sizeof(message->msg_accrightslen), 0);
     if (result<0)
         return result;
     for (i=0;i<message->msg_accrightslen/sizeof(int);i++) {
         int fd = ((int*)message->msg_accrights)[i];
-        int fdType = fd & FILE_TYPE_MSASK;
-        if (fdType & OPEN_DIR_HANDLE) {
-            notimplemented("sendMsg with open directory handle");
-        } else {
-            fd = dup(fd & ~FILE_TYPE_MSASK);
-            fd|=fdType;
-            result = send(GET_SOCKET_FD(socket), &fd, sizeof(fd), 0);
-            if (result<0)
-                return result;
+        struct UnixFileHandle* ufdToSend = getUnixFileHandle(fd);
+        if (!ufd) {
+            errno = EBADF;
+            return -1;
         }
+        ufdToSend->refCount++; // :TODO: will leak if the socket is shutdown before recvMsg is called
+        result = send(ufd->fd, &ufdToSend, sizeof(struct UnixFileHandle*), 0);
+        if (result<0)
+            return result;
     }
     return totalSent;
 }
@@ -1037,7 +1156,12 @@ int winecrt_setvbuf(FILE * stream, char * buf, int type, size_t size) {
 }
 
 int winecrt_shutdown(int socket, int how) {
-	return shutdown(GET_SOCKET_FD(socket), how);
+    struct UnixFileHandle* ufd = getUnixFileHandle(socket);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+	return shutdown(ufd->fd, how);
 }
 
 int winecrt_sigaction(int sig, const struct sigaction * act, struct sigaction * oact) {
@@ -1085,11 +1209,7 @@ int winecrt_socket(int domain, int type, int protocol) {
 	}
 	// AF_UNIX
 	if (domain == 1) {
-		struct UnixSocket* s = calloc(1, sizeof(struct UnixSocket));
-		s->fd = socket(AF_INET, type, 0);
-		s->next = unixSocket;
-		unixSocket = s;
-		return s->fd | UNIX_SOCKET_HANDLE | SOCKET_HANDLE;
+        return getNewUnixFileHandle(socket(AF_INET, type, 0), UNIX_FILE_HANDLE_UNIX_SOCKET);
 	} else {
 		printf("Currently only AF_UNIX sockets are supported");
 	}
@@ -1158,8 +1278,8 @@ int winecrt_socketpair(int domain, int type, int protocol, int socket_vector[2])
 		errno = WSAECONNABORTED;
 		goto fail;
 	}
-	socket_vector[0] = connector | SOCKET_HANDLE;
-	socket_vector[1] = acceptor | SOCKET_HANDLE;
+	socket_vector[0] = getNewUnixFileHandle(connector, UNIX_FILE_HANDLE_SOCKET);
+	socket_vector[1] = getNewUnixFileHandle(acceptor, UNIX_FILE_HANDLE_SOCKET);
 
 	return 0;
 
@@ -1202,26 +1322,27 @@ int winecrt_stat(const char * path, struct winecrt_stat * buf) {
 	if (result == 0) {
 		wine2stat(buf, &s);
 	} else {
-        struct UnixSocket* u = unixSocket;
-        while (u) {
-            if (!strcmp(u->path, p)) {
-                buf->st_dev = 1;
-                buf->st_ino = 1;
+        struct FakeFile* fakeFile = pblMapGet(fakeFiles, p, strlen(p)+1, NULL);
+        if (fakeFile) {
+            buf->st_dev = 1;
+            buf->st_ino = 1;
+            if (fakeFile->ufd->type==UNIX_FILE_HANDLE_UNIX_SOCKET)
                 buf->st_mode = 0xC000; // S_IFSOCK
-                buf->st_nlink = 1;
-                buf->st_uid = 1;
-                buf->st_gid = 2;
-                buf->st_rdev = 1;
-                buf->st_size = 0;
-                buf->st_atime = 0;
-                buf->st_mtime = 0;
-                buf->st_ctime = 0;
-                buf->st_ctime_usec = 0;
-                buf->st_blksize = 512;
-                buf->st_blocks = buf->st_size / buf->st_blksize;
-                return 0;
+            else {
+                printf("need to implemented stat for fake file type %d\n", fakeFile->ufd->type);
             }
-            u=u->next;
+            buf->st_nlink = 1;
+            buf->st_uid = 1;
+            buf->st_gid = 2;
+            buf->st_rdev = 1;
+            buf->st_size = 0;
+            buf->st_atime = 0;
+            buf->st_mtime = 0;
+            buf->st_ctime = 0;
+            buf->st_ctime_usec = 0;
+            buf->st_blksize = 512;
+            buf->st_blocks = buf->st_size / buf->st_blksize;
+            return 0;
         }
     }
 	return result;

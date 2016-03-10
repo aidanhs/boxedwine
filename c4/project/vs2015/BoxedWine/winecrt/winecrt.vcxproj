@@ -155,9 +155,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\pbl\pbl.c" />
+    <ClCompile Include="src\pbl\pblCollection.c" />
+    <ClCompile Include="src\pbl\pblhash.c" />
+    <ClCompile Include="src\pbl\pblHeap.c" />
+    <ClCompile Include="src\pbl\pblisam.c" />
+    <ClCompile Include="src\pbl\pblIterator.c" />
+    <ClCompile Include="src\pbl\pblkf.c" />
+    <ClCompile Include="src\pbl\pblList.c" />
+    <ClCompile Include="src\pbl\pblMap.c" />
+    <ClCompile Include="src\pbl\pblPriorityQueue.c" />
+    <ClCompile Include="src\pbl\pblSet.c" />
+    <ClCompile Include="src\pbl\qsorttest.c" />
     <ClCompile Include="winecrt.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\pbl\pbl.h" />
     <ClInclude Include="src\winecrt.h" />
   </ItemGroup>
   <ItemGroup>

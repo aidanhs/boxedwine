@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\pbl">
+      <UniqueIdentifier>{7679f0d4-195f-4f9e-848f-83c6fefac331}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.c">
@@ -21,10 +24,49 @@
     <ClCompile Include="winecrt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\pbl\pbl.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblCollection.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblhash.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblHeap.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblisam.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblIterator.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblkf.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblList.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblMap.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblPriorityQueue.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\pblSet.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pbl\qsorttest.c">
+      <Filter>Source Files\pbl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\winecrt.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pbl\pbl.h">
+      <Filter>Source Files\pbl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -155,9 +155,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="..\..\..\..\libs\wine\casemap.c" />
     <ClCompile Include="..\..\..\..\libs\wine\collation.c" />
     <ClCompile Include="..\..\..\..\libs\wine\compose.c" />
