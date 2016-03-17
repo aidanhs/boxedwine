@@ -60,6 +60,9 @@
     <ClCompile Include="src\pbl\qsorttest.c">
       <Filter>Source Files\pbl</Filter>
     </ClCompile>
+    <ClCompile Include="windows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\winecrt.h">

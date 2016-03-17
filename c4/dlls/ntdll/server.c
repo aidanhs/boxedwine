@@ -1343,7 +1343,7 @@ static int get_unix_tid(void)
     ret = pthread_getthreadid_np();
 #elif defined(linux)
     ret = syscall( __NR_gettid );
-#elif defined(__sun)
+#elif defined(__sun) || defined (BOXEDWINE)
     ret = pthread_self();
 #elif defined(__APPLE__)
     ret = mach_thread_self();

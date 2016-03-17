@@ -1,7 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _CRT_NONSTDC_NO_WARNINGS
 #define _USE_32BIT_TIME_T
-#include <Winsock2.h>
 #include <windows.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -14,6 +13,12 @@
 #include <direct.h>
 
 #include "src\pbl\pbl.h"
+
+#include <SDL.h>
+
+#ifndef MAX_PATH
+#define MAX_PATH 260
+#endif
 
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
@@ -97,17 +102,114 @@ void wine2stat(struct winecrt_stat *buf, struct stat* s) {
 #define UNIX_FILE_HANDLE_DIRECTORY 3
 #define UNIX_FILE_HANDLE_FILE 4
 
+#define UNIX_SOCKET_STATE_NONE 0
+#define UNIX_SOCKET_STATE_LISTEN 1
+#define UNIX_SOCKET_STATE_CONNECTING 2
+#define UNIX_SOCKET_STATE_CONNECTED 3
+#define UNIX_SOCKET_STATE_DISCONNECTED 4
+
+struct UnixSocket {
+    struct UnixFileHandle* connection;    
+    unsigned char readOpen;
+    unsigned char writeOpen;
+    unsigned char bound;
+    int state;
+    char* buffer;
+    int bufferMaxSize;
+    int bufferSize;
+    int bufferEnd;
+    int bufferStart;
+    SDL_mutex* lock;
+    SDL_cond* connectionReady;
+    SDL_cond* pendingConnectionAvailable;
+    SDL_cond* dataAvailable;
+    PblList* pendingConnections;
+};
+
+SDL_mutex* unixSocketPollLock;
+SDL_cond* unixSocketPollCondition;
+
 struct UnixFileHandle {
-    int fd;
+    union {
+        int fd;
+        struct UnixSocket* socket;
+    };
     int refCount;
     int type;
     void* data;
+    unsigned char blocking;
 };
+
+int writeToSocketBuffer(struct UnixSocket* socket, void* data, int len)
+{
+    struct UnixSocket* s = socket->connection->socket;
+    int todo;
+    int result = len;    
+
+    if (len > s->bufferMaxSize - s->bufferSize) {
+        int size = s->bufferMaxSize + 256 * 1024 + len;
+        char* buffer = malloc(size);
+        if (!s->buffer) {
+            s->buffer = buffer;           
+        } else {
+            memcpy(buffer, s->buffer+s->bufferStart, s->bufferMaxSize- s->bufferStart);
+            memcpy(buffer, s->buffer, s->bufferStart);
+            s->bufferStart = 0;
+            s->bufferEnd = s->bufferSize;
+            free(s->buffer);
+            s->buffer = buffer;
+        }
+        s->bufferMaxSize = size;
+    }
+    todo = len;
+    if (s->bufferEnd +todo>s->bufferMaxSize) {
+        todo = s->bufferMaxSize - s->bufferEnd;        
+    }
+    len-=todo;
+    memcpy(s->buffer + s->bufferEnd, data, todo);
+    s->bufferEnd+=todo;
+    s->bufferSize+=todo;
+    if (len) {
+        memcpy(s->buffer, (char*)data+todo, len);
+        s->bufferEnd = len;
+        s->bufferSize+=len;
+    }    
+    return result;
+}
+
+int readFromSocketBuffer(struct UnixSocket* socket, void* data, int len, int blocking) {
+    int todo = len;
+    struct UnixSocket* s = socket;
+    int result = 0;
+    
+    while (blocking && !s->bufferSize && s->readOpen) {
+        SDL_CondWait(s->dataAvailable, socket->lock);
+    }
+    if (todo>s->bufferSize)
+        todo = s->bufferSize;
+    if (todo>s->bufferMaxSize-s->bufferStart)
+        todo = s->bufferMaxSize - s->bufferStart;
+    memcpy(data, s->buffer + s->bufferStart, todo);
+    len-=todo;
+    s->bufferStart+=todo;
+    s->bufferSize-=todo;
+    result+=todo;   
+    if (len && s->bufferSize) {
+        if (len>s->bufferSize)
+            len = s->bufferSize;
+        memcpy((char*)data+todo, s->buffer, len);
+        s->bufferStart = len;
+        s->bufferSize -= len;
+        result += len;
+    }
+    return result;
+}
 
 struct FakeFile {
     struct UnixFileHandle* ufd;
 };
 
+SDL_mutex* fakeFilesLock;
 PblMap* fakeFiles;
 
 struct PerProcessInfo {
@@ -121,6 +223,7 @@ struct PerProcessInfo {
 __declspec(thread) char* getPathBuffer;
 __declspec(thread) struct PerProcessInfo* processInfo;
 __declspec(thread) void* pthreadTLS;
+__declspec(thread) int threadId;
 
 struct UnixFileHandle* getUnixFileHandle(int fd) {
     if (fd >= 0 && fd <= processInfo->maxFileHandles)
@@ -168,9 +271,6 @@ static int nextProcessId = 1;
 
 char rootPath[MAX_PATH];
 
-// not thread safe, just hope for the best
-struct UnixSocket* unixSocket;
-
 char *winecrt_getcwd(char *buf, size_t size);
 char* getPath(const char* path) {
 	if (!getPathBuffer) {
@@ -194,6 +294,9 @@ void initSystem(const char* root) {
 	_mkdir(getPath("/home/boxedwine/.wine"));
 	_mkdir(getPath("/tmp"));
     fakeFiles = pblMapNewHashMap();
+    fakeFilesLock = SDL_CreateMutex();
+    unixSocketPollLock = SDL_CreateMutex();
+    unixSocketPollCondition = SDL_CreateCond();
 }
 
 void initProcess() {
@@ -229,7 +332,41 @@ int winecrt_accept(int socket, struct sockaddr* address, socklen_t *raddress_len
         errno = EBADF;
         return -1;
     }
-    if (ufd->type == UNIX_FILE_HANDLE_SOCKET || ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result;
+        struct UnixFileHandle* resultUfd;
+
+        SDL_LockMutex(ufd->socket->lock);
+        while (!ufd->socket->pendingConnections || pblListSize(ufd->socket->pendingConnections)==0) {
+            if (ufd->blocking) {
+                SDL_CondWait(ufd->socket->pendingConnectionAvailable, ufd->socket->lock);
+                continue;
+            }
+            errno = EWOULDBLOCK;
+            return -1;
+        }
+        result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_UNIX_SOCKET);
+        resultUfd = getUnixFileHandle(result);
+        resultUfd->socket = malloc(sizeof(struct UnixSocket));
+        memset(resultUfd->socket, 0, sizeof(struct UnixSocket));
+        resultUfd->blocking = 1;
+        resultUfd->socket->connection = pblListRemoveFirst(ufd->socket->pendingConnections);
+        resultUfd->socket->connection->socket->connection = resultUfd;
+        resultUfd->socket->writeOpen = 1;
+        resultUfd->socket->readOpen = 1;
+        resultUfd->socket->connection->socket->readOpen = 1;
+        resultUfd->socket->connection->socket->writeOpen = 1;
+        resultUfd->socket->state = UNIX_SOCKET_STATE_CONNECTED;
+        resultUfd->socket->connection->socket->state = UNIX_SOCKET_STATE_CONNECTED;
+        SDL_UnlockMutex(ufd->socket->lock);
+        if (resultUfd->socket->connection->socket->connectionReady) {
+            SDL_LockMutex(resultUfd->socket->connection->socket->lock);
+            SDL_CondSignal(resultUfd->socket->connection->socket->connectionReady);
+            SDL_UnlockMutex(resultUfd->socket->connection->socket->lock);
+        }
+        return result;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_SOCKET) {
         int result = accept(ufd->fd, address, raddress_len);
         if (result>0)
             result = getNewUnixFileHandle(result, UNIX_FILE_HANDLE_SOCKET);
@@ -274,21 +411,20 @@ int winecrt_bind(int socket, const struct sockaddr *address, socklen_t address_l
         return -1;
     }
 	if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
-		struct sockaddr_in addr;
 		const char* name = getPath(((struct wine_sockaddr_un*)address)->sun_path);
         struct FakeFile fakeFile;
 
+        SDL_LockMutex(fakeFilesLock);
 		if (pblMapGet(fakeFiles, name, strlen(name)+1, NULL)) {
+            SDL_UnlockMutex(fakeFilesLock);
 			errno = EADDRINUSE;
 			return -1;
 		}
         fakeFile.ufd = ufd;
         pblMapPut(fakeFiles, name, strlen(name)+1, &fakeFile, sizeof(struct FakeFile), NULL);
-		memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;
-		addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-		addr.sin_port = 0;   /* kernel chooses port.  */
-		return bind(ufd->fd, (struct sockaddr *) &addr, sizeof(addr));
+        ufd->socket->bound = 1;
+        SDL_UnlockMutex(fakeFilesLock);
+        return 0;
 	}
 	else {
 		printf("bind: currently only AF_UNIX is supported\n");
@@ -350,22 +486,66 @@ int winecrt_close(int fildes) {
 	if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
 		return 0;
 	} else if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
-        PblIterator iterator;
-        pblIteratorInit(fakeFiles, &iterator);
+        struct UnixFileHandle* connection = ufd->socket->connection;
 
-        while ((pblIteratorHasNext(&iterator)) > 0) {
-            struct FakeFile* fakeFile = pblMapEntryKey((PblMapEntry*)pblIteratorNext(&iterator));
-            if (fakeFile->ufd==ufd) {
-                char* path = (char*)pblMapEntryKey((PblMapEntry*)pblIteratorNext(&iterator));
-                fakeFile = pblMapRemove(fakeFile, path, strlen(path)+1, NULL);
-                free(fakeFile);
-                break;
+        if (ufd->socket->bound) {
+            PblIterator iterator;
+            SDL_LockMutex(fakeFilesLock);
+            pblIteratorInit(fakeFiles, &iterator);
+
+            while ((pblIteratorHasNext(&iterator)) > 0) {
+                struct FakeFile* fakeFile = pblMapEntryKey((PblMapEntry*)pblIteratorNext(&iterator));
+                if (fakeFile->ufd == ufd) {
+                    char* path = (char*)pblMapEntryKey((PblMapEntry*)pblIteratorNext(&iterator));
+                    fakeFile = pblMapRemove(fakeFile, path, strlen(path) + 1, NULL);
+                    free(fakeFile);
+                    break;
+                }
             }
+            SDL_UnlockMutex(fakeFilesLock);
+        }        
+        if (connection) {                        
+            SDL_LockMutex(unixSocketPollLock);
+            SDL_LockMutex(connection->socket->lock);
+            connection->socket->connection = NULL;
+            connection->socket->readOpen = 0;
+            connection->socket->writeOpen = 0;
+            connection->socket->state = UNIX_SOCKET_STATE_DISCONNECTED;            
+            if (connection->socket->connectionReady)
+                SDL_CondSignal(connection->socket->connectionReady);
+            else
+                SDL_CondSignal(connection->socket->dataAvailable);
+            SDL_UnlockMutex(connection->socket->lock);
+            SDL_CondSignal(unixSocketPollCondition);
+            SDL_UnlockMutex(unixSocketPollLock);
+            connection->refCount--; // :TODO: what if this went to 0?
         }
-        return closesocket(ufd->fd);
+        if (ufd->socket->buffer)
+            free(ufd->socket->buffer);
+        if (ufd->socket->connectionReady) {
+            SDL_DestroyCond(ufd->socket->connectionReady);
+            ufd->socket->connectionReady = NULL;
+        }
+        if (ufd->socket->pendingConnectionAvailable) {
+            SDL_DestroyCond(ufd->socket->pendingConnectionAvailable);
+            ufd->socket->pendingConnectionAvailable = NULL;
+        }
+        if (ufd->socket->dataAvailable) {
+            SDL_DestroyCond(ufd->socket->dataAvailable);
+            ufd->socket->dataAvailable = NULL;
+        }
+        if (ufd->socket->pendingConnections) {
+            pblListFree(ufd->socket->pendingConnections);
+            ufd->socket->pendingConnections = NULL;
+        }
+        SDL_DestroyMutex(ufd->socket->lock);
+        ufd->socket->lock = NULL;
+
+        free(ufd->socket);        
+        result = 0;
 	}
     else if (ufd->type == UNIX_FILE_HANDLE_SOCKET) {
-        return closesocket(ufd->fd);
+        result = closesocket(ufd->fd);
     } else {
 	    result = close(ufd->fd);
     }
@@ -385,21 +565,54 @@ int winecrt_connect(int socket, const struct sockaddr *address, socklen_t addres
         return -1;
     }
     if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
-        struct sockaddr_in addr;
-        struct UnixSocket* s = unixSocket;
+        struct UnixSocket* s;
         const char* name = getPath(((struct wine_sockaddr_un*)address)->sun_path);
-        struct FakeFile* fakeFile = pblMapGet(fakeFiles, name, strlen(name) + 1, NULL);
+        struct FakeFile* fakeFile;
+
+        if (ufd->socket->connection) {
+            errno = EALREADY;
+            return -1;
+        }
+        SDL_LockMutex(fakeFilesLock);
+        fakeFile = pblMapGet(fakeFiles, name, strlen(name) + 1, NULL);
+        SDL_UnlockMutex(fakeFilesLock);
 
         if (fakeFile && fakeFile->ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
-            struct sockaddr_in connect_addr;
-            int size = sizeof(connect_addr);
-            int result;
-
-            if (getsockname(fakeFile->ufd->fd, (struct sockaddr *) &connect_addr, &size) == -1)
+            if (!fakeFile->ufd->socket->pendingConnections) {
+                errno = ECONNREFUSED;
                 return -1;
-            return connect(ufd->fd, &connect_addr, &size);
+            }
+            ufd->refCount++;            
+
+            SDL_LockMutex(unixSocketPollLock);
+            SDL_LockMutex(fakeFile->ufd->socket->lock);
+            pblListAdd(fakeFile->ufd->socket->pendingConnections, ufd);
+
+            if (ufd->blocking) {
+                ufd->socket->connectionReady = SDL_CreateCond();
+            }
+            if (fakeFile->ufd->socket->pendingConnectionAvailable) {
+                SDL_CondSignal(fakeFile->ufd->socket->pendingConnectionAvailable);
+            }
+            SDL_UnlockMutex(fakeFile->ufd->socket->lock);
+            SDL_CondSignal(unixSocketPollCondition);
+            SDL_UnlockMutex(unixSocketPollLock);
+
+            if (ufd->blocking) {
+                SDL_LockMutex(ufd->socket->lock);
+                SDL_CondWait(ufd->socket->connectionReady, ufd->socket->lock);
+                SDL_DestroyCond(ufd->socket->connectionReady);
+                ufd->socket->connectionReady = NULL;
+                SDL_UnlockMutex(ufd->socket->lock);            
+                if (ufd->socket->state == UNIX_SOCKET_STATE_CONNECTED)
+                    return 0;
+                errno = ECONNREFUSED; // close socket before processing request
+                return -1;
+            }
+            errno = EINPROGRESS;
+            return -1;
         }
-        // :TODO: what errno?
+        errno = ECONNREFUSED;
         return -1;
     }
     notimplemented("connect for non unix socket");
@@ -471,9 +684,22 @@ int winecrt_fclose(FILE *stream) {
     return fclose(stream);
 }
 int winecrt_fcntl(int fildes, int cmd, ...) {
-	if (cmd == 6/*F_SETLK*/) {
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (cmd == 4/*F_SETFL*/) {
+        int arg;
+        va_list args;
+        va_start(args, cmd);
+        arg = va_arg(args, int);
+        ufd->blocking = (arg & 0x800)?1:0;
+        return 0;
+    } else if (cmd == 6/*F_SETLK*/) {
 		errno = ENOLCK;
-	} else {
+	} else if (cmd == 2/*F_SETFD*/) {
+    } else {
 		printf("unhandled fcntl cmd %d\n", cmd);
 	}
 	return -1;
@@ -578,6 +804,8 @@ char* winecrt_getenv(const char * name) {
 		return "/home/boxedwine";
 	if (!stricmp(name, "USER"))
 		return "boxedwine";
+    if (!stricmp(name, "WINEARCH"))
+        return "win32";
 	return NULL;
 }
 char** winecrt_getEnviron() {
@@ -615,23 +843,6 @@ FILE* winecrt_getStdin() {
 FILE* winecrt_getStdout() {
 	return stdout;
 }
-
-static const unsigned __int64 epoch = 116444736000000000Ui64;
-int winecrt_gettimeofday(struct timeval * tp, void * tzp) {
-    FILETIME	file_time;
-    SYSTEMTIME	system_time;
-    ULARGE_INTEGER ularge;
-
-    GetSystemTime(&system_time);
-    SystemTimeToFileTime(&system_time, &file_time);
-    ularge.LowPart = file_time.dwLowDateTime;
-    ularge.HighPart = file_time.dwHighDateTime;
-
-    tp->tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
-    tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
-    return 0;
-}
-
 uid_t winecrt_getuid(void) {
 	return 1;
 }
@@ -692,6 +903,22 @@ int winecrt_listen(int socket, int backlog) {
         errno = EBADF;
         return -1;
     }
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        if (!ufd->socket->bound) {
+            errno = EDESTADDRREQ;
+            return -1;
+        }
+        if (ufd->socket->state != UNIX_SOCKET_STATE_NONE) {
+            errno = EINVAL;
+            return -1;
+        }
+        if (!ufd->socket->pendingConnections)
+            ufd->socket->pendingConnections = pblListNewLinkedList();
+        if (!ufd->socket->pendingConnectionAvailable)
+            ufd->socket->pendingConnectionAvailable = SDL_CreateCond();
+        ufd->socket->state = UNIX_SOCKET_STATE_LISTEN;
+        return 0;
+    }
 	return listen(ufd->fd, backlog);
 }
 struct tm *winecrt_localtime(const winecrt_time_t *time) {
@@ -740,10 +967,7 @@ winecrt_time_t winecrt_mktime(struct tm *timeptr) {
     return mktime(timeptr);
 }
 int winecrt_mlock(const void *addr, size_t len) {
-    if (VirtualLock((LPVOID)addr, len))
-        return 0;
-    errno = EPERM;
-    return -1;
+    return 0;
 }
 #define MAP_FAILED	((void *) -1)
 #define	PROT_NONE	 0x00
@@ -761,95 +985,37 @@ int winecrt_mlock(const void *addr, size_t len) {
 #define MAP_NOEXTEND	 0x0200
 #define MAP_HASSEMPHORE 0x0400
 #define MAP_INHERIT	 0x0800
-static DWORD mmap_prot(int prot)
-{
-    DWORD protect = 0;
 
-    if (prot == PROT_NONE)
-        return protect;
+void *winecrt_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
+    struct UnixFileHandle* ufd = NULL;
+    void* result;
 
-    if (prot & PROT_EXEC) {
-        protect = ((prot & PROT_WRITE) != 0) ? PAGE_EXECUTE_READWRITE : PAGE_EXECUTE_READ;
-    } else {
-        protect = ((prot & PROT_WRITE) != 0) ? PAGE_READWRITE : PAGE_READONLY;
+    if (fildes>=0) {
+        ufd = getUnixFileHandle(fildes);
+        if (!ufd) {
+            errno = EBADF;
+            return MAP_FAILED;
+        }
     }
 
-    return protect;
-}
-
-static DWORD mmap_access(int prot)
-{
-    DWORD result = 0;
-
-    if (prot == PROT_NONE)
-        return result;
-    if ((prot & PROT_READ) != 0)
-        result |= FILE_MAP_READ;
-    if ((prot & PROT_WRITE) != 0)
-        result |= FILE_MAP_WRITE;
-    if ((prot & PROT_EXEC) != 0)
-        result |= FILE_MAP_EXECUTE;
+    if (fildes>=0) {
+        notimplemented("mmap with fildes\n");
+        return MAP_FAILED;
+    }
+    result = malloc(len);
+    memset(result, 0, len);
     return result;
 }
-void *winecrt_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
-    HANDLE fm, h;
-    void * map = MAP_FAILED;
 
-    DWORD protect = mmap_prot(prot);
-    DWORD desiredAccess = mmap_access(prot);
-
-    errno = 0;
-
-    if (len == 0 || (flags & MAP_FIXED) != 0 || prot == PROT_EXEC)
-    {
-        errno = EINVAL;
-        return MAP_FAILED;
-    }
-
-    h = (!(flags & MAP_ANONYMOUS)) ? (HANDLE)_get_osfhandle(fildes) : INVALID_HANDLE_VALUE;
-
-    if (!(flags & MAP_ANONYMOUS) && h == INVALID_HANDLE_VALUE)
-    {
-        errno = EBADF;
-        return MAP_FAILED;
-    }
-
-    fm = CreateFileMapping(h, NULL, protect, 0, (DWORD)(off + len), NULL);
-    if (!fm)
-    {
-        errno = EPERM;
-        return MAP_FAILED;
-    }
-
-    map = MapViewOfFile(fm, desiredAccess, 0, (DWORD)off, len);
-    CloseHandle(fm);
-    if (!map)
-    {
-        errno = EPERM;
-        return MAP_FAILED;
-    }
-
-    return map;
-}
 int winecrt_mprotect(void *addr, size_t len, int prot) {
-    DWORD lpflOldProtect = 0;
-
-    if (VirtualProtect(addr, len, mmap_prot(prot), &lpflOldProtect))
-        return 0;
-    errno = EPERM;
-    return -1;
+    return 0;
 }
 int winecrt_msync(void *addr, size_t len, int flags) {
-    if (FlushViewOfFile(addr, len))
-        return 0;
-    errno = EPERM;
-    return -1;
+    notimplemented("msync");
+    return 0;
 }
 int winecrt_munlock(const void *addr, size_t len) {
-    if (VirtualUnlock((LPVOID)addr, len))
-        return 0;
-    errno = EPERM;
-    return -1;
+    return 0;
 }
 int winecrt_munmap(void *addr, size_t len) {
     if (UnmapViewOfFile(addr))
@@ -929,34 +1095,99 @@ int winecrt_socketpair(int domain, int type, int protocol, int socket_vector[2])
 int winecrt_pipe(int fildes[2]) {
     return winecrt_socketpair(1/*AF_UNIX*/, 1/*SOCK_STREAM*/, 0, fildes);
 }
-int winecrt_poll(struct pollfd *fds, unsigned int count, int timeout) {
-    struct pollfd f[256];
-    struct pollfd* p=f;
-    int result;
-    int i;
 
-    if (count>256) {
-        p = malloc(sizeof(struct pollfd)*count);
-    }
-    for (i=0;i<count;i++) {
-        struct UnixFileHandle* ufd = getUnixFileHandle(fds[i].fd);
-        if (!ufd) {
-            errno = EBADF;
-            return -1;
+struct pollfd
+{
+    int fd;
+    short events;
+    short revents;
+};
+
+// These values match win32 values, don't change
+#define POLLRDNORM  0x0100
+#define POLLRDBAND  0x0200
+#define POLLIN      (POLLRDNORM | POLLRDBAND)
+#define POLLPRI     0x0400
+
+#define POLLWRNORM  0x0010
+#define POLLOUT     (POLLWRNORM)
+#define POLLWRBAND  0x0020
+
+#define POLLERR     0x0001
+#define POLLHUP     0x0002
+#define POLLNVAL    0x0004
+
+int winecrt_poll(struct pollfd *fds, unsigned int count, int timeout) {
+    int result = 0;
+    int i;
+    unsigned int lastTickCount = SDL_GetTicks();
+
+    SDL_LockMutex(unixSocketPollLock);
+    while (1) {        
+        for (i=0;i<count;i++) {
+            struct UnixFileHandle* ufd;
+
+            fds[i].revents = 0;
+            if (fds[i].fd<0)
+                continue;
+            ufd = getUnixFileHandle(fds[i].fd);
+            if (!ufd) {
+                errno = EBADF;
+                SDL_UnlockMutex(unixSocketPollLock);
+                return -1;
+            }           
+            if (ufd->type != UNIX_FILE_HANDLE_UNIX_SOCKET) {
+                printf("currently poll only support unix sockets\n");
+            } else {
+                if (ufd->socket->state != UNIX_SOCKET_STATE_LISTEN && ufd->socket->state != UNIX_SOCKET_STATE_CONNECTED) {
+                    fds[i].revents = POLLHUP;
+                } else {
+                    if (fds[i].events & POLLIN) {
+                        if (ufd->socket->state == UNIX_SOCKET_STATE_LISTEN) {
+                            if (pblListSize(ufd->socket->pendingConnections)) {
+                                fds[i].revents = POLLIN;
+                            }
+                        } else {
+                            if (ufd->socket->bufferSize || !ufd->socket->readOpen) {
+                                fds[i].revents = POLLIN;
+                            }
+                        }
+                    }
+                    if (fds[i].events & POLLOUT) {
+                        if (ufd->socket->state == UNIX_SOCKET_STATE_CONNECTED) {
+                            fds[i].revents = POLLOUT;
+                        }
+                    }
+                }
+            }
+            if (fds[i].revents)
+                result++;
         }
-        p[i].fd = ufd->fd;
-        p[i].events = fds[i].events;
-        p[i].revents = fds[i].revents;
-    }
-	result = WSAPoll(p, count, timeout);
-    if (result>0) {
-        for (i = 0; i<count; i++) {
-            fds[i].revents = p[i].revents;
+        if (result)
+            break;
+        if (timeout>0) {
+            int res = SDL_CondWaitTimeout(unixSocketPollCondition, unixSocketPollLock, timeout);
+            if (res==0) {
+                unsigned int ticks = SDL_GetTicks();
+                int diff = ticks - lastTickCount;
+                timeout -= diff;
+                if (timeout<0)
+                    timeout = 0;
+                lastTickCount = ticks;
+                continue;
+            } else if (res == SDL_MUTEX_TIMEDOUT) {
+                result = 0;
+                break;
+            } else {
+                continue; // not sure what happened
+            }
+        } else if (timeout == 0) {
+            break;
+        } else {
+            SDL_CondWait(unixSocketPollCondition, unixSocketPollLock);
         }
     }
-    if (p!=f) {
-        free(p);
-    }
+    SDL_UnlockMutex(unixSocketPollLock);
     return result;
 }
 double winecrt_pow(double x, double y) {
@@ -1001,7 +1232,7 @@ int winecrt_pthread_key_create(pthread_key_t *key, void(*destructor)(void*)) {
     notimplemented("pthread_key_create");
 }
 pthread_t winecrt_pthread_self(void) {
-    notimplemented("pthread_self");
+    return GetCurrentThreadId();
 }
 int winecrt_pthread_setspecific(pthread_key_t key, const void *value) {
     if (pthreadTLS)
@@ -1024,7 +1255,21 @@ void winecrt_qsort(void *base, size_t nel, size_t width, int(*compar)(const void
     qsort(base, nel, width, compar);
 }
 ssize_t winecrt_read(int fildes, void *buf, size_t nbyte) {
-    return read(fildes, buf, nbyte);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result;
+        SDL_LockMutex(ufd->socket->lock);
+        result = readFromSocketBuffer(ufd->socket, buf, nbyte, ufd->blocking);
+        SDL_UnlockMutex(ufd->socket->lock);
+        return result;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_SOCKET)
+        return recv(ufd->fd, buf, nbyte, 0);
+    return read(ufd->fd, buf, nbyte);
 }
 struct dirent *winecrt_readdir(DIR *dirp) {
     notimplemented("readdir");
@@ -1041,7 +1286,15 @@ ssize_t winecrt_recv(int socket, void *buffer, size_t length, int flags) {
         errno = EBADF;
         return -1;
     }
-    recv(ufd->fd, buffer, length, flags);
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result;
+
+        SDL_LockMutex(ufd->socket->lock);
+        result = readFromSocketBuffer(ufd->socket, buffer, length, ufd->blocking);
+        SDL_UnlockMutex(ufd->socket->lock);
+        return result;
+    }
+    return recv(ufd->fd, buffer, length, flags);
 }
 ssize_t winecrt_recvmsg(int socket, struct msghdr *message, int flags) {
     int totalRead = 0;
@@ -1052,32 +1305,41 @@ ssize_t winecrt_recvmsg(int socket, struct msghdr *message, int flags) {
         errno = EBADF;
         return -1;
     }
-
-    result = recv(ufd->fd, &message->msg_iovlen, sizeof(message->msg_iovlen), 0);
+    if (ufd->type != UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        printf("Only unix sockets support recvmsg\n");
+        errno = EBADF;
+        return -1;
+    }
+    // entire msg is atomic
+    SDL_LockMutex(ufd->socket->lock);
+    result = readFromSocketBuffer(ufd->socket, &message->msg_iovlen, sizeof(message->msg_iovlen), ufd->blocking);
     if (result<0)
-        return result;
+        goto fail;
     for (i = 0; i<message->msg_iovlen; i++) {
-        result = recv(ufd->fd, &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), 0);
+        result = readFromSocketBuffer(ufd->socket, &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), ufd->blocking);
         if (result<0)
-            return result;
-        result = recv(ufd->fd, message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
+            goto fail;
+        result = readFromSocketBuffer(ufd->socket, message->msg_iov->iov_base, message->msg_iov->iov_len, ufd->blocking);
         if (result >= 0)
             totalRead += result;
         else
-            return result;
+            goto fail;
     }
-    result = recv(ufd->fd, &message->msg_accrightslen, sizeof(message->msg_accrightslen), 0);
+    result = readFromSocketBuffer(ufd->socket, &message->msg_accrightslen, sizeof(message->msg_accrightslen), ufd->blocking);
     if (result<0)
-        return result;
+        goto fail;
     for (i = 0; i<message->msg_accrightslen / sizeof(int); i++) {
         struct UnixFileHandle* ufdRecv = NULL;
 
-        result = recv(ufd->fd, &ufdRecv, sizeof(struct UnixFileHandle*), 0);
+        result = readFromSocketBuffer(ufd->socket, &ufdRecv, sizeof(struct UnixFileHandle*), ufd->blocking);
         if (result<0)
-            return result;
+            goto fail;
         ((int*)message->msg_accrights)[i] = dupUnixFileHandle(ufdRecv);
     }
+    SDL_UnlockMutex(ufd->socket->lock);
     return totalRead;
+fail:
+    return result;
 }
 int winecrt_rename(const char *old, const char *new) {
     char temp[MAX_PATH];
@@ -1099,6 +1361,17 @@ ssize_t winecrt_send(int socket, const void *buffer, size_t length, int flags) {
         errno = EBADF;
         return -1;
     }
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result;
+        SDL_LockMutex(unixSocketPollLock);
+        SDL_LockMutex(ufd->socket->connection->socket->lock);
+        result = writeToSocketBuffer(ufd->socket, buffer, length);        
+        SDL_CondSignal(unixSocketPollCondition);
+        SDL_CondSignal(ufd->socket->connection->socket->dataAvailable);
+        SDL_UnlockMutex(ufd->socket->connection->socket->lock);
+        SDL_UnlockMutex(unixSocketPollLock);
+        return result;
+    }
     return send(ufd->fd, buffer, length, flags);
 }
 ssize_t winecrt_sendmsg(int socket, const struct msghdr *message, int flags) {
@@ -1110,36 +1383,51 @@ ssize_t winecrt_sendmsg(int socket, const struct msghdr *message, int flags) {
         errno = EBADF;
         return -1;
     }
-
-    result = send(ufd->fd, &message->msg_iovlen, sizeof(message->msg_iovlen), 0);
+    if (ufd->type != UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        printf("Only unix sockets support sendmsg\n");
+        errno = EBADF;
+        return -1;
+    }
+    SDL_LockMutex(unixSocketPollLock);
+    SDL_LockMutex(ufd->socket->connection->socket->lock);
+    result = writeToSocketBuffer(ufd->socket, &message->msg_iovlen, sizeof(message->msg_iovlen));
     if (result<0)
-        return result;
+        goto fail;
     for (i=0;i<message->msg_iovlen;i++) {
-        result = send(ufd->fd, &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len), 0);
+        result = writeToSocketBuffer(ufd->socket, &message->msg_iov->iov_len, sizeof(message->msg_iov->iov_len));
         if (result<0)
-            return result;
-        result = send(ufd->fd, message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
+            goto fail;
+        result = writeToSocketBuffer(ufd->socket, message->msg_iov->iov_base, message->msg_iov->iov_len, 0);
         if (result>=0)
             totalSent +=result;
         else
-            return result;
+            goto fail;
     }
-    result = send(ufd->fd, &message->msg_accrightslen, sizeof(message->msg_accrightslen), 0);
+    result = writeToSocketBuffer(ufd->socket, &message->msg_accrightslen, sizeof(message->msg_accrightslen));
     if (result<0)
-        return result;
+        goto fail;
     for (i=0;i<message->msg_accrightslen/sizeof(int);i++) {
         int fd = ((int*)message->msg_accrights)[i];
         struct UnixFileHandle* ufdToSend = getUnixFileHandle(fd);
         if (!ufd) {
             errno = EBADF;
-            return -1;
+            result = -1;
+            goto fail;
         }
         ufdToSend->refCount++; // :TODO: will leak if the socket is shutdown before recvMsg is called
-        result = send(ufd->fd, &ufdToSend, sizeof(struct UnixFileHandle*), 0);
+        result = writeToSocketBuffer(ufd->socket, &ufdToSend, sizeof(struct UnixFileHandle*));
         if (result<0)
-            return result;
+            goto fail;
     }
+    SDL_CondSignal(unixSocketPollCondition);
+    SDL_CondSignal(ufd->socket->connection->socket->dataAvailable);
+    SDL_UnlockMutex(unixSocketPollLock);
+    SDL_UnlockMutex(ufd->socket->connection->socket->lock);
     return totalSent;
+fail:
+    SDL_UnlockMutex(unixSocketPollLock);
+    SDL_UnlockMutex(ufd->socket->connection->socket->lock);
+    return result;
 }
 void winecrt_setbuf(FILE * stream, char * buf) {
     setbuf(stream, buf);
@@ -1160,6 +1448,26 @@ int winecrt_shutdown(int socket, int how) {
     if (!ufd) {
         errno = EBADF;
         return -1;
+    }
+    if (ufd->type != UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        if (ufd->socket->state!=UNIX_SOCKET_STATE_CONNECTED || !ufd->socket->connection) {
+            errno = ENOTCONN;
+            return -1;
+        }
+        if (how == 0 || how == 2) {
+            ufd->socket->connection->socket->writeOpen = 0;
+            ufd->socket->readOpen = 0;
+        }
+        if (how == 1 || how == 2) {
+            ufd->socket->connection->socket->readOpen = 0;
+            ufd->socket->writeOpen = 0;
+            SDL_LockMutex(unixSocketPollLock);
+            SDL_LockMutex(ufd->socket->connection->socket->lock);
+            SDL_CondSignal(ufd->socket->connection->socket->dataAvailable);
+            SDL_CondSignal(unixSocketPollCondition);            
+            SDL_UnlockMutex(ufd->socket->connection->socket->lock);
+            SDL_UnlockMutex(unixSocketPollLock);
+        }
     }
 	return shutdown(ufd->fd, how);
 }
@@ -1200,6 +1508,7 @@ int winecrt_snprintf(char *s, size_t n, const char *format, ...) {
     return result;
 }
 int winecrt_socket(int domain, int type, int protocol) {
+    /*
 	if (type == 1) {
 		type = SOCK_STREAM;
 	} else if (type == 2) {
@@ -1207,9 +1516,17 @@ int winecrt_socket(int domain, int type, int protocol) {
 	} else {
 		printf("unknown type for socket: %d\n", type);
 	}
+    */
 	// AF_UNIX
 	if (domain == 1) {
-        return getNewUnixFileHandle(socket(AF_INET, type, 0), UNIX_FILE_HANDLE_UNIX_SOCKET);
+        int result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_UNIX_SOCKET);
+        struct UnixFileHandle* ufd = getUnixFileHandle(result);
+        ufd->socket = malloc(sizeof(struct UnixSocket));
+        memset(ufd->socket, 0, sizeof(struct UnixSocket));
+        ufd->blocking = 1;
+        ufd->socket->dataAvailable = SDL_CreateCond();
+        ufd->socket->lock = SDL_CreateMutex();
+        return result;
 	} else {
 		printf("Currently only AF_UNIX sockets are supported");
 	}
@@ -1217,13 +1534,8 @@ int winecrt_socket(int domain, int type, int protocol) {
 	return -1;
 }
 int winecrt_socketpair(int domain, int type, int protocol, int socket_vector[2]) {
-	SOCKET listener = -1;
-	SOCKET connector = -1;
-	SOCKET acceptor = -1;
-	struct sockaddr_in listen_addr;
-	struct sockaddr_in connect_addr;
-	int size;
-	int save_errno;
+    struct UnixFileHandle* ufd1;
+    struct UnixFileHandle* ufd2;
 
 	if (domain != 1 /*AF_UNIX*/) {
 		errno = EAFNOSUPPORT;
@@ -1233,66 +1545,20 @@ int winecrt_socketpair(int domain, int type, int protocol, int socket_vector[2])
 		errno = EINVAL;
 		return -1;
 	}
+    socket_vector[0] = winecrt_socket(1, 1, 0);
+    socket_vector[1] = winecrt_socket(1, 1, 0);
+    ufd1 = getUnixFileHandle(socket_vector[0]);
+    ufd2 = getUnixFileHandle(socket_vector[1]);
 
-	listener = socket(AF_INET, type, 0);
-	if (listener == -1)
-		return -1;
-	memset(&listen_addr, 0, sizeof(listen_addr));
-	listen_addr.sin_family = AF_INET;
-	listen_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	listen_addr.sin_port = 0;   /* kernel chooses port.  */
-	if (bind(listener, (struct sockaddr *) &listen_addr, sizeof(listen_addr)) == -1)
-		goto fail;
-	if (listen(listener, 1) == -1)
-		goto fail;
-
-	connector = socket(AF_INET, type, 0);
-	if (connector == -1)
-		goto fail;
-
-	size = sizeof(connect_addr);
-	if (getsockname(listener, (struct sockaddr *) &connect_addr, &size) == -1)
-		goto fail;
-
-	if (size != sizeof(connect_addr)) {
-		errno = WSAECONNABORTED;
-		goto fail;
-	}
-	if (connect(connector, (struct sockaddr *) &connect_addr, sizeof(connect_addr)) == -1)
-		goto fail;
-
-	size = sizeof(listen_addr);
-	acceptor = accept(listener, (struct sockaddr *) &listen_addr, &size);
-	if (acceptor == -1)
-		goto fail;
-	if (size != sizeof(listen_addr)) {
-		errno = WSAECONNABORTED;
-		goto fail;
-	}
-	closesocket(listener);
-	/* Now check we are talking to ourself by matching port and host on the
-	two sockets.  */
-	if (getsockname(connector, (struct sockaddr *) &connect_addr, &size) == -1)
-		goto fail;
-	if (size != sizeof(connect_addr) || listen_addr.sin_family != connect_addr.sin_family || listen_addr.sin_addr.s_addr != connect_addr.sin_addr.s_addr || listen_addr.sin_port != connect_addr.sin_port) {
-		errno = WSAECONNABORTED;
-		goto fail;
-	}
-	socket_vector[0] = getNewUnixFileHandle(connector, UNIX_FILE_HANDLE_SOCKET);
-	socket_vector[1] = getNewUnixFileHandle(acceptor, UNIX_FILE_HANDLE_SOCKET);
-
-	return 0;
-
-fail:
-	save_errno = errno;
-	if (listener != -1)
-		closesocket(listener);
-	if (connector != -1)
-		closesocket(connector);
-	if (acceptor != -1)
-		closesocket(acceptor);
-	errno = save_errno;
-	return -1;
+    ufd1->socket->connection = ufd2;
+    ufd2->socket->connection = ufd1;
+    ufd1->socket->state = UNIX_SOCKET_STATE_CONNECTED;
+    ufd2->socket->state = UNIX_SOCKET_STATE_CONNECTED;
+    ufd1->socket->readOpen = 1;
+    ufd1->socket->writeOpen = 1;
+    ufd2->socket->readOpen = 1;
+    ufd2->socket->writeOpen = 1;
+    return 0;
 }
 
 int winecrt_sprintf(char* buffer, const char* format, ...) {
@@ -1322,7 +1588,11 @@ int winecrt_stat(const char * path, struct winecrt_stat * buf) {
 	if (result == 0) {
 		wine2stat(buf, &s);
 	} else {
-        struct FakeFile* fakeFile = pblMapGet(fakeFiles, p, strlen(p)+1, NULL);
+        struct FakeFile* fakeFile;
+
+        SDL_LockMutex(fakeFilesLock);
+        fakeFile = pblMapGet(fakeFiles, p, strlen(p) + 1, NULL);
+        SDL_UnlockMutex(fakeFilesLock);
         if (fakeFile) {
             buf->st_dev = 1;
             buf->st_ino = 1;
@@ -1471,7 +1741,25 @@ pid_t winecrt_waitpid(pid_t pid, int *stat_loc, int options) {
     notimplemented("waitpid");
 }
 ssize_t winecrt_write(int fildes, const void *buf, size_t nbyte) {
-    return write(fildes, buf, nbyte);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result;
+        SDL_LockMutex(unixSocketPollLock);
+        SDL_LockMutex(ufd->socket->connection->socket->lock);
+        result = writeToSocketBuffer(ufd->socket, buf, nbyte);        
+        SDL_CondSignal(unixSocketPollCondition);
+        SDL_CondSignal(ufd->socket->connection->socket->dataAvailable);
+        SDL_UnlockMutex(ufd->socket->connection->socket->lock);
+        SDL_UnlockMutex(unixSocketPollLock);
+        return result;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_SOCKET)
+        return send(ufd->fd, buf, nbyte, 0);
+    return write(ufd->fd, buf, nbyte);
 }
 ssize_t winecrt_writev(int fildes, const struct iovec *iov, int iovcnt) {
     notimplemented("writev");
