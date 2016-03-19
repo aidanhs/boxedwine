@@ -9,6 +9,7 @@
 #define LC_TIME 5
 #define LC_MESSAGES 6
 
-WINECRT char *setlocale(int category, const char *locale);
+char *winecrt_setlocale(int category, const char *locale);
+#define setlocale winecrt_setlocale
 
 #endif

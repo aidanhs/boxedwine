@@ -27,6 +27,9 @@
  *  - Checks for integer addition overflow in user marshall functions
  */
 
+#include "config.h"
+#include "wine/port.h"
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -6613,7 +6616,7 @@ static unsigned char *WINAPI NdrBaseTypeMarshall(
     {
         USHORT val = *(UINT *)pMemory;
         /* only 16-bits on the wire, so do a sanity check */
-        if (*(UINT *)pMemory > SHRT_MAX)
+        if (*(UINT *)pMemory > 0xFFFF)
             RpcRaiseException(RPC_X_ENUM_VALUE_OUT_OF_RANGE);
         align_pointer_clear(&pStubMsg->Buffer, sizeof(USHORT));
         safe_copy_to_buffer(pStubMsg, &val, sizeof(val));

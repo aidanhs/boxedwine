@@ -384,7 +384,12 @@ void WINAPI OutputDebugStringW( LPCWSTR str )
  *  Raises an exception so that a debugger (if attached)
  *  can take some action.
  */
-#if defined(__i386__) || defined(__x86_64__)
+#ifdef BOXEDWINE
+void WINAPI DebugBreak(void)
+{
+    DbgBreakPoint();
+}
+#elif defined(__i386__) || defined(__x86_64__)
 __ASM_STDCALL_FUNC( DebugBreak, 0, "jmp " __ASM_NAME("DbgBreakPoint") )
 #else
 void WINAPI DebugBreak(void)

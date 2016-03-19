@@ -1432,6 +1432,9 @@ fail:
 void winecrt_setbuf(FILE * stream, char * buf) {
     setbuf(stream, buf);
 }
+char *winecrt_setlocale(int category, const char *locale) {
+    return NULL;
+}
 pid_t winecrt_setsid(void) {
     notimplemented("setsid");
 }
@@ -1762,5 +1765,25 @@ ssize_t winecrt_write(int fildes, const void *buf, size_t nbyte) {
     return write(ufd->fd, buf, nbyte);
 }
 ssize_t winecrt_writev(int fildes, const struct iovec *iov, int iovcnt) {
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_UNIX_SOCKET) {
+        int result = 0;
+        int i;
+
+        SDL_LockMutex(unixSocketPollLock);
+        SDL_LockMutex(ufd->socket->connection->socket->lock);
+        for (i=0;i<iovcnt;i++) {
+            result += writeToSocketBuffer(ufd->socket, iov[i].iov_base, iov[i].iov_len);
+        }
+        SDL_CondSignal(unixSocketPollCondition);
+        SDL_CondSignal(ufd->socket->connection->socket->dataAvailable);
+        SDL_UnlockMutex(ufd->socket->connection->socket->lock);
+        SDL_UnlockMutex(unixSocketPollLock);
+        return result;
+    }
     notimplemented("writev");
 }

@@ -79,10 +79,10 @@ extern "C" {
  */
 #ifdef USE_COMPILER_EXCEPTIONS
 
-#define __TRY __try
+#define __TRY while(1) { __try
 #define __EXCEPT(func) __except((func)(GetExceptionInformation()))
 #define __FINALLY(func) __finally { (func)(!AbnormalTermination()); }
-#define __ENDTRY /*nothing*/
+#define __ENDTRY } /*nothing*/
 #define __EXCEPT_PAGE_FAULT __except(GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION)
 #define __EXCEPT_ALL __except(EXCEPTION_EXECUTE_HANDLER)
 

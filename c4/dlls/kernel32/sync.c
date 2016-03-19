@@ -2362,53 +2362,40 @@ BOOL WINAPI InitOnceExecuteOnce( INIT_ONCE *once, PINIT_ONCE_FN func, void *para
  *		InterlockedCompareExchange (KERNEL32.@)
  */
 /* LONG WINAPI InterlockedCompareExchange( PLONG dest, LONG xchg, LONG compare ); */
-__ASM_STDCALL_FUNC(InterlockedCompareExchange, 12,
-                  "movl 12(%esp),%eax\n\t"
-                  "movl 8(%esp),%ecx\n\t"
-                  "movl 4(%esp),%edx\n\t"
-                  "lock; cmpxchgl %ecx,(%edx)\n\t"
-                  "ret $12")
+LONG WINAPI InterlockedCompareExchange(PLONG dest, LONG xchg, LONG compare) {
+    return interlocked_cmpxchg(dest, xchg, compare);
+}
 
 /***********************************************************************
  *		InterlockedExchange (KERNEL32.@)
  */
 /* LONG WINAPI InterlockedExchange( PLONG dest, LONG val ); */
-__ASM_STDCALL_FUNC(InterlockedExchange, 8,
-                  "movl 8(%esp),%eax\n\t"
-                  "movl 4(%esp),%edx\n\t"
-                  "lock; xchgl %eax,(%edx)\n\t"
-                  "ret $8")
+LONG WINAPI InterlockedExchange(PLONG dest, LONG val) {
+    return interlocked_xchg(dest, val);
+}
 
 /***********************************************************************
  *		InterlockedExchangeAdd (KERNEL32.@)
  */
 /* LONG WINAPI InterlockedExchangeAdd( PLONG dest, LONG incr ); */
-__ASM_STDCALL_FUNC(InterlockedExchangeAdd, 8,
-                  "movl 8(%esp),%eax\n\t"
-                  "movl 4(%esp),%edx\n\t"
-                  "lock; xaddl %eax,(%edx)\n\t"
-                  "ret $8")
+LONG WINAPI InterlockedExchangeAdd(PLONG dest, LONG incr) {
+    return interlocked_xchg_add(dest, incr);
+}
 
 /***********************************************************************
  *		InterlockedIncrement (KERNEL32.@)
  */
 /* LONG WINAPI InterlockedIncrement( PLONG dest ); */
-__ASM_STDCALL_FUNC(InterlockedIncrement, 4,
-                  "movl 4(%esp),%edx\n\t"
-                  "movl $1,%eax\n\t"
-                  "lock; xaddl %eax,(%edx)\n\t"
-                  "incl %eax\n\t"
-                  "ret $4")
+LONG WINAPI InterlockedIncrement(PLONG dest) {
+    return InterlockedExchangeAdd(dest, 1) + 1;
+}
 
 /***********************************************************************
  *		InterlockedDecrement (KERNEL32.@)
  */
-__ASM_STDCALL_FUNC(InterlockedDecrement, 4,
-                  "movl 4(%esp),%edx\n\t"
-                  "movl $-1,%eax\n\t"
-                  "lock; xaddl %eax,(%edx)\n\t"
-                  "decl %eax\n\t"
-                  "ret $4")
+LONG WINAPI InterlockedDecrement(PLONG dest) {
+    return InterlockedExchangeAdd(dest, -1) - 1;
+}
 
 #endif  /* __i386__ */
 

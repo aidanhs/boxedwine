@@ -4,7 +4,7 @@
 
 
  /* File created by MIDL compiler version 8.00.0603 */
-/* at Wed Feb 17 09:54:03 2016
+/* at Fri Mar 18 16:11:14 2016
  */
 /* Compiler settings for ..\..\..\..\include\propidl.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.00.0603 
@@ -47,7 +47,7 @@
 #endif /* __RPCPROXY_H_VERSION__ */
 
 
-#include "propidl_h.h"
+#include "propidl.h"
 
 #define TYPE_FORMAT_STRING_SIZE   2529                              
 #define PROC_FORMAT_STRING_SIZE   883                               
@@ -2748,20 +2748,20 @@ static const USER_MARSHAL_ROUTINE_QUADRUPLE UserMarshalRoutines[ WIRE_MARSHAL_TA
         };
 
 
-static void __RPC_USER IPropertyStorage_PROPVARIANTExprEval_0000( PMIDL_STUB_MESSAGE pStubMsg )
-{
-    PROPVARIANT *pS	=	( PROPVARIANT * )(( pStubMsg->StackTop - 8 ) );
-    
-    pStubMsg->Offset = 0;
-    pStubMsg->MaxCount = ( unsigned long ) ( ( pS->vt & 0x1fff )  );
-}
-
 static void __RPC_USER IPropertyStorage_CLIPDATAExprEval_0001( PMIDL_STUB_MESSAGE pStubMsg )
 {
     CLIPDATA *pS	=	( CLIPDATA * )pStubMsg->StackTop;
     
     pStubMsg->Offset = 0;
     pStubMsg->MaxCount = ( unsigned long ) ( ( pS->cbSize - sizeof( long  ) )  );
+}
+
+static void __RPC_USER IPropertyStorage_PROPVARIANTExprEval_0000( PMIDL_STUB_MESSAGE pStubMsg )
+{
+    PROPVARIANT *pS	=	( PROPVARIANT * )(( pStubMsg->StackTop - 8 ) );
+    
+    pStubMsg->Offset = 0;
+    pStubMsg->MaxCount = ( unsigned long ) ( ( pS->vt & 0x1fff )  );
 }
 
 static const EXPR_EVAL ExprEvalRoutines[] = 

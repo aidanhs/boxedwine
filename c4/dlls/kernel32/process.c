@@ -1055,8 +1055,12 @@ static void start_wineboot( HANDLE handles[2] )
     }
 }
 
-
-#ifdef __i386__
+#ifdef BOXEDWINE
+static inline DWORD call_process_entry(PEB *peb, LPTHREAD_START_ROUTINE entry)
+{
+    return entry(peb);
+}
+#elif defined __i386__
 extern DWORD call_process_entry( PEB *peb, LPTHREAD_START_ROUTINE entry );
 __ASM_GLOBAL_FUNC( call_process_entry,
                     "pushl %ebp\n\t"
@@ -2699,7 +2703,12 @@ BOOL WINAPI TerminateProcess( HANDLE handle, DWORD exit_code )
  * RETURNS
  *  Nothing.
  */
-#ifdef __i386__
+#ifdef BOXEDWINE
+void WINAPI ExitProcess(DWORD status)
+{
+    RtlExitUserProcess(status);
+}
+#elif __i386__
 __ASM_STDCALL_FUNC( ExitProcess, 4, /* Shrinker depend on this particular ExitProcess implementation */
                    "pushl %ebp\n\t"
                    ".byte 0x8B, 0xEC\n\t" /* movl %esp, %ebp */

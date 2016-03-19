@@ -11,6 +11,7 @@
 
 *********************************************************/
 
+#define PROXY_DELEGATION
 
 #include <rpcproxy.h>
 
@@ -18,14 +19,20 @@
 extern "C"   {
 #endif
 
+EXTERN_PROXY_FILE( iads )
+EXTERN_PROXY_FILE( oaidl )
 EXTERN_PROXY_FILE( objidl )
+EXTERN_PROXY_FILE( oleidl )
 EXTERN_PROXY_FILE( propidl )
 EXTERN_PROXY_FILE( unknwn )
 
 
 PROXYFILE_LIST_START
 /* Start of list */
+  REFERENCE_PROXY_FILE( iads ),
+  REFERENCE_PROXY_FILE( oaidl ),
   REFERENCE_PROXY_FILE( objidl ),
+  REFERENCE_PROXY_FILE( oleidl ),
   REFERENCE_PROXY_FILE( propidl ),
   REFERENCE_PROXY_FILE( unknwn ),
 /* End of list */

@@ -30,5 +30,14 @@
     <Midl Include="..\..\..\..\include\propidl.idl">
       <Filter>Source Files</Filter>
     </Midl>
+    <Midl Include="..\..\..\..\include\oaidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\oleidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\iads.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
   </ItemGroup>
 </Project>

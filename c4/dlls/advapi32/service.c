@@ -2216,7 +2216,7 @@ BOOL WINAPI ChangeServiceConfig2W( SC_HANDLE hService, DWORD dwInfoLevel,
         SC_RPC_CONFIG_INFOW info;
 
         info.dwInfoLevel = dwInfoLevel;
-        info.u.descr = lpInfo;
+        info.descr = lpInfo;
         err = svcctl_ChangeServiceConfig2W( hService, info );
     }
     __EXCEPT(rpc_filter)

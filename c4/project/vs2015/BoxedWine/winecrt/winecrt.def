@@ -164,6 +164,7 @@ winecrt_select
 winecrt_send
 winecrt_sendmsg
 winecrt_setbuf
+winecrt_setlocale
 winecrt_setsid
 winecrt_setsockopt
 winecrt_setvbuf

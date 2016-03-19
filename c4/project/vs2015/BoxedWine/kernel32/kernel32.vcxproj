@@ -19,33 +19,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{778E81A7-5813-4AF1-9B26-88D5D0631ECF}</ProjectGuid>
+    <ProjectGuid>{28EE1BF9-5A49-49B1-B67B-944D4E552234}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>PreBuild</RootNamespace>
+    <RootNamespace>kernel32</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>NotSet</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -70,10 +70,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
     <IncludePath>..\..\..\..\include;..\include</IncludePath>
+    <LibraryPath>..\Debug</LibraryPath>
+    <TargetName>wine_$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
     <IncludePath>..\..\..\..\include;..\include</IncludePath>
+    <LibraryPath>..\Release</LibraryPath>
+    <TargetName>wine_$(ProjectName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -81,10 +93,17 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <NoEntryPoint>true</NoEntryPoint>
+      <ModuleDefinitionFile>kernel32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -93,10 +112,12 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>kernel32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -107,12 +128,18 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <NoEntryPoint>true</NoEntryPoint>
+      <ModuleDefinitionFile>kernel32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -123,46 +150,69 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>kernel32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
+    <ClInclude Include="..\..\..\..\dlls\kernel32\console_private.h" />
+    <ClInclude Include="..\..\..\..\dlls\kernel32\kernel_private.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="..\..\..\..\include\iads.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\include\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\include\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\oaidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\include\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\include\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\objidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\oleidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\propidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\unknwn.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\wtypes.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
+    <ClCompile Include="..\..\..\..\dlls\kernel32\actctx.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\atom.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\change.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\comm.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\computername.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\console.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\cpu.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\debugger.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\editline.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\environ.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\except.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\fiber.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\file.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\format_msg.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\heap.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\kernel_main.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\lcformat.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\locale.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\lzexpand.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\module.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\nameprep.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\oldconfig.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\path.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\powermgnt.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\process.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\profile.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\resource.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\string.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\sync.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\tape.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\term.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\thread.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\time.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\toolhelp.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\version.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\virtual.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\volume.c" />
+    <ClCompile Include="..\..\..\..\dlls\kernel32\wer.c" />
+    <ClCompile Include="registry.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\..\..\..\dlls\kernel32\locale_rc.rc" />
+    <ResourceCompile Include="..\..\..\..\dlls\kernel32\version.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="kernel32.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

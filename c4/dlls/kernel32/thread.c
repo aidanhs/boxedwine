@@ -652,35 +652,41 @@ HANDLE WINAPI GetCurrentThread(void)
  *		SetLastError (KERNEL32.@)
  */
 /* void WINAPI SetLastError( DWORD error ); */
-__ASM_STDCALL_FUNC( SetLastError, 4,
-                   "movl 4(%esp),%eax\n\t"
-                   ".byte 0x64\n\t"
-                   "movl %eax,0x34\n\t"
-                   "ret $4" )
+void WINAPI SetLastError(DWORD error) {
+    RtlSetLastWin32Error(error);
+}
 
 /***********************************************************************
  *		GetLastError (KERNEL32.@)
  */
 /* DWORD WINAPI GetLastError(void); */
-__ASM_STDCALL_FUNC( GetLastError, 0, ".byte 0x64\n\tmovl 0x34,%eax\n\tret" )
+DWORD WINAPI GetLastError(void) {
+    return RtlGetLastWin32Error();
+}
 
 /***********************************************************************
  *		GetCurrentProcessId (KERNEL32.@)
  */
 /* DWORD WINAPI GetCurrentProcessId(void) */
-__ASM_STDCALL_FUNC( GetCurrentProcessId, 0, ".byte 0x64\n\tmovl 0x20,%eax\n\tret" )
+DWORD WINAPI GetCurrentProcessId(void) {
+    return NtCurrentTeb()->ClientId.UniqueProcess;
+}
 
 /***********************************************************************
  *		GetCurrentThreadId (KERNEL32.@)
  */
 /* DWORD WINAPI GetCurrentThreadId(void) */
-__ASM_STDCALL_FUNC( GetCurrentThreadId, 0, ".byte 0x64\n\tmovl 0x24,%eax\n\tret" )
+DWORD WINAPI GetCurrentThreadId(void) {
+    return NtCurrentTeb()->ClientId.UniqueThread;
+}
 
 /***********************************************************************
  *		GetProcessHeap (KERNEL32.@)
  */
 /* HANDLE WINAPI GetProcessHeap(void) */
-__ASM_STDCALL_FUNC( GetProcessHeap, 0, ".byte 0x64\n\tmovl 0x30,%eax\n\tmovl 0x18(%eax),%eax\n\tret");
+HANDLE WINAPI GetProcessHeap(void) {
+    return NtCurrentTeb()->Peb->ProcessHeap;
+}
 
 #elif defined(__x86_64__) && !defined(__APPLE__)
 

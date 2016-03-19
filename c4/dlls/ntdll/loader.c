@@ -3278,9 +3278,7 @@ void CDECL __wine_init_windows_dir( const WCHAR *windir, const WCHAR *sysdir )
  */
 void __wine_process_init(void)
 {
-    static const WCHAR kernel32W[] = {'k','e','r','n','e','l','3','2','.','d','l','l',0};
-
-    WINE_MODREF *wm;
+    void* kernel32dll;
     NTSTATUS status;
     ANSI_STRING func_name;
     void (* DECLSPEC_NORETURN CDECL init_func)(void);
@@ -3296,20 +3294,17 @@ void __wine_process_init(void)
     /* setup the load callback and create ntdll modref */
     wine_dll_set_callback( load_builtin_callback );
 
-    if ((status = load_builtin_dll( NULL, kernel32W, 0, 0, &wm )) != STATUS_SUCCESS)
-    {
-        MESSAGE( "wine: could not load kernel32.dll, status %x\n", status );
+    kernel32dll = wine_dlopen("/lib/kernel32.dll.so", RTLD_NOW, NULL, 0);
+    if (!kernel32dll) {
+        MESSAGE("wine: could not load kernel32.dll, status %x\n", status);
         exit(1);
     }
-    RtlInitAnsiString( &func_name, "UnhandledExceptionFilter" );
-    LdrGetProcedureAddress( wm->ldr.BaseAddress, &func_name, 0, (void **)&unhandled_exception_filter );
+    unhandled_exception_filter = wine_dlsym(kernel32dll, "UnhandledExceptionFilter", NULL, 0);
+    if (!(init_func = wine_dlsym(kernel32dll, "__wine_kernel_init", NULL, 0)))
+    {
+        MESSAGE( "wine: could not find __wine_kernel_init in kernel32.dll, status %x\n", 1 );
+        exit(1);
+    }
 
-    RtlInitAnsiString( &func_name, "__wine_kernel_init" );
-    if ((status = LdrGetProcedureAddress( wm->ldr.BaseAddress, &func_name,
-                                          0, (void **)&init_func )) != STATUS_SUCCESS)
-    {
-        MESSAGE( "wine: could not find __wine_kernel_init in kernel32.dll, status %x\n", status );
-        exit(1);
-    }
     init_func();
 }
