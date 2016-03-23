@@ -1,0 +1,1 @@
+1) need an automated way to convert .spec to .def files so that future changes don't get missed
