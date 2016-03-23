@@ -86,6 +86,11 @@
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Midl>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <PreprocessorDefinitions>__WINESRC__;__i386__</PreprocessorDefinitions>
+      <OutputDirectory>..\generated\</OutputDirectory>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -114,6 +119,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Midl>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <PreprocessorDefinitions>__WINESRC__;__i386__</PreprocessorDefinitions>
+      <OutputDirectory>..\generated\</OutputDirectory>
+    </Midl>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -132,37 +142,60 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="..\..\..\..\include\iads.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\include\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\include\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\oaidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\include\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\include\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\objidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\oleidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\propidl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\unknwn.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
-    <Midl Include="..\..\..\..\include\wtypes.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\%(Filename).h</HeaderFileName>
-    </Midl>
+    <Midl Include="..\..\..\..\include\activaut.idl" />
+    <Midl Include="..\..\..\..\include\activdbg.idl" />
+    <Midl Include="..\..\..\..\include\activscp.idl" />
+    <Midl Include="..\..\..\..\include\comcat.idl" />
+    <Midl Include="..\..\..\..\include\commoncontrols.idl" />
+    <Midl Include="..\..\..\..\include\ctfutb.idl" />
+    <Midl Include="..\..\..\..\include\ctxtcall.idl" />
+    <Midl Include="..\..\..\..\include\dimm.idl" />
+    <Midl Include="..\..\..\..\include\dispex.idl" />
+    <Midl Include="..\..\..\..\include\docobj.idl" />
+    <Midl Include="..\..\..\..\include\docobjectservice.idl" />
+    <Midl Include="..\..\..\..\include\downloadmgr.idl" />
+    <Midl Include="..\..\..\..\include\exdisp.idl" />
+    <Midl Include="..\..\..\..\include\hlink.idl" />
+    <Midl Include="..\..\..\..\include\htiface.idl" />
+    <Midl Include="..\..\..\..\include\htiframe.idl" />
+    <Midl Include="..\..\..\..\include\iads.idl" />
+    <Midl Include="..\..\..\..\include\icftypes.idl" />
+    <Midl Include="..\..\..\..\include\indexsrv.idl" />
+    <Midl Include="..\..\..\..\include\mlang.idl" />
+    <Midl Include="..\..\..\..\include\msctf.idl" />
+    <Midl Include="..\..\..\..\include\msdasc.idl" />
+    <Midl Include="..\..\..\..\include\mshtmhst.idl" />
+    <Midl Include="..\..\..\..\include\mshtml.idl" />
+    <Midl Include="..\..\..\..\include\msxml.idl" />
+    <Midl Include="..\..\..\..\include\netcfgx.idl" />
+    <Midl Include="..\..\..\..\include\netcon.idl" />
+    <Midl Include="..\..\..\..\include\netfw.idl" />
+    <Midl Include="..\..\..\..\include\oaidl.idl" />
+    <Midl Include="..\..\..\..\include\objectarray.idl" />
+    <Midl Include="..\..\..\..\include\objidl.idl" />
+    <Midl Include="..\..\..\..\include\objsafe.idl" />
+    <Midl Include="..\..\..\..\include\ocidl.idl" />
+    <Midl Include="..\..\..\..\include\ocmm.idl" />
+    <Midl Include="..\..\..\..\include\oledb.idl" />
+    <Midl Include="..\..\..\..\include\oleidl.idl" />
+    <Midl Include="..\..\..\..\include\optary.idl" />
+    <Midl Include="..\..\..\..\include\perhist.idl" />
+    <Midl Include="..\..\..\..\include\propidl.idl" />
+    <Midl Include="..\..\..\..\include\propsys.idl" />
+    <Midl Include="..\..\..\..\include\richole.idl" />
+    <Midl Include="..\..\..\..\include\sensevts.idl" />
+    <Midl Include="..\..\..\..\include\servprov.idl" />
+    <Midl Include="..\..\..\..\include\shdeprecated.idl" />
+    <Midl Include="..\..\..\..\include\shldisp.idl" />
+    <Midl Include="..\..\..\..\include\shobjidl.idl" />
+    <Midl Include="..\..\..\..\include\shtypes.idl" />
+    <Midl Include="..\..\..\..\include\structuredquerycondition.idl" />
+    <Midl Include="..\..\..\..\include\textstor.idl" />
+    <Midl Include="..\..\..\..\include\tlogstg.idl" />
+    <Midl Include="..\..\..\..\include\unknwn.idl" />
+    <Midl Include="..\..\..\..\include\urlhist.idl" />
+    <Midl Include="..\..\..\..\include\urlmon.idl" />
+    <Midl Include="..\..\..\..\include\wtypes.idl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

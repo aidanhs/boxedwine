@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{48F95B7C-B540-4AD0-A580-27CE06725659}</ProjectGuid>
+    <ProjectGuid>{B3FFC3A9-7A6C-4D84-8303-AFA04B1E09E4}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>advapi32</RootNamespace>
+    <RootNamespace>secur32</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_ADVAPI32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -99,10 +99,10 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>advapi32.lib;wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <NoEntryPoint>true</NoEntryPoint>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>secur32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -111,12 +111,12 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;SECUR32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>secur32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,7 +127,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_ADVAPI32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -136,10 +136,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
+      <AdditionalDependencies>advapi32.lib;wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <NoEntryPoint>true</NoEntryPoint>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>secur32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -150,50 +150,38 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;SECUR32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>secur32.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\dlls\advapi32\advapi32_misc.h" />
-    <ClInclude Include="..\..\..\..\dlls\advapi32\crypt.h" />
+    <ClInclude Include="..\..\..\..\dlls\secur32\hmac_md5.h" />
+    <ClInclude Include="..\..\..\..\dlls\secur32\secur32_priv.h" />
+    <ClInclude Include="..\..\..\..\dlls\secur32\thunks.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\advapi.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\cred.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_arc4.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_des.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_lmhash.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_md4.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_md5.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_sha.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\eventlog.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\lsa.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\registry.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\security.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\service.c" />
-    <ClCompile Include="delay.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\base64_codec.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\dispatcher.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\hmac_md5.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\lsa.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\negotiate.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\ntlm.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\schannel.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\schannel_gnutls.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\secur32.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\thunks.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\util.c" />
+    <ClCompile Include="..\..\..\..\dlls\secur32\wrapper.c" />
     <ClCompile Include="stub.c" />
-    <ClCompile Include="svcctl_c.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\..\dlls\advapi32\version.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="..\..\..\..\dlls\advapi32\svcctl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename).h</HeaderFileName>
-    </Midl>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="advapi32.def" />
+    <None Include="secur32.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

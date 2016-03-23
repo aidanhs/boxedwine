@@ -61,7 +61,13 @@
 #define HAVE_SYS_STATVFS_H
 #define HAVE_STRUCT_STATVFS_F_BLOCKS
 #define HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS
-
+#define HAVE_NETDB_H
+#define HAVE_NETINET_TCP_H
+#define HAVE_SOCKETPAIR
+#define HAVE_SYS_IOCTL_H
+#define HAVE_NET_IF_H
+#define HAVE_STRUCT_IFREQ_IFR_HWADDR
+#define HAVE_ARPA_INET_H
 typedef unsigned int uid_t;
 
 #endif

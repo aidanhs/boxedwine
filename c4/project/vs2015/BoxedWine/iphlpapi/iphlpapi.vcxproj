@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{48F95B7C-B540-4AD0-A580-27CE06725659}</ProjectGuid>
+    <ProjectGuid>{481CB44E-2CB9-4D0C-8690-797CBA91BD2D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>advapi32</RootNamespace>
+    <RootNamespace>iphlpapi</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\..\include;..\include;..\generated</IncludePath>
+    <IncludePath>..\..\..\..\include;..\include</IncludePath>
     <LibraryPath>..\Debug</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -79,7 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\..\include;..\include;..\generated</IncludePath>
+    <IncludePath>..\..\..\..\include;..\include</IncludePath>
     <LibraryPath>..\Release</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -91,7 +91,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_ADVAPI32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;IPHLPAPI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -99,10 +99,10 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;winecrt.lib;winelib.lib;wine_kernel32.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <NoEntryPoint>true</NoEntryPoint>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>iphlpapi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -111,12 +111,12 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;IPHLPAPI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>iphlpapi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -127,7 +127,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_ADVAPI32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;IPHLPAPI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -136,10 +136,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;winecrt.lib;winelib.lib;wine_kernel32.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <NoEntryPoint>true</NoEntryPoint>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>iphlpapi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -150,50 +150,34 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;ADVAPI32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;IPHLPAPI_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>iphlpapi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\dlls\advapi32\advapi32_misc.h" />
-    <ClInclude Include="..\..\..\..\dlls\advapi32\crypt.h" />
+    <ClInclude Include="..\..\..\..\dlls\iphlpapi\ifenum.h" />
+    <ClInclude Include="..\..\..\..\dlls\iphlpapi\ip.h" />
+    <ClInclude Include="..\..\..\..\dlls\iphlpapi\ipstats.h" />
+    <ClInclude Include="..\..\..\..\dlls\iphlpapi\ip_icmp.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\advapi.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\cred.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_arc4.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_des.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_lmhash.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_md4.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_md5.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_sha.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\eventlog.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\lsa.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\registry.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\security.c" />
-    <ClCompile Include="..\..\..\..\dlls\advapi32\service.c" />
-    <ClCompile Include="delay.c" />
+    <ClCompile Include="..\..\..\..\dlls\iphlpapi\icmp.c" />
+    <ClCompile Include="..\..\..\..\dlls\iphlpapi\ifenum.c" />
+    <ClCompile Include="..\..\..\..\dlls\iphlpapi\iphlpapi_main.c" />
+    <ClCompile Include="..\..\..\..\dlls\iphlpapi\ipstats.c" />
     <ClCompile Include="stub.c" />
-    <ClCompile Include="svcctl_c.c" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\..\dlls\advapi32\version.rc" />
+    <ResourceCompile Include="..\..\..\..\dlls\iphlpapi\version.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="..\..\..\..\dlls\advapi32\svcctl.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(Filename).h</HeaderFileName>
-    </Midl>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="advapi32.def" />
+    <None Include="iphlpapi.def" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

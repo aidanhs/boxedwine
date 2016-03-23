@@ -1,0 +1,18 @@
+LIBRARY VERSION
+EXPORTS
+GetFileVersionInfoA
+GetFileVersionInfoExA
+GetFileVersionInfoExW
+GetFileVersionInfoSizeA
+GetFileVersionInfoSizeExA
+GetFileVersionInfoSizeExW
+GetFileVersionInfoSizeW
+GetFileVersionInfoW
+VerFindFileA
+VerFindFileW
+VerInstallFileA
+VerInstallFileW
+VerLanguageNameA=kernel32.VerLanguageNameA
+VerLanguageNameW=kernel32.VerLanguageNameW
+VerQueryValueA
+VerQueryValueW

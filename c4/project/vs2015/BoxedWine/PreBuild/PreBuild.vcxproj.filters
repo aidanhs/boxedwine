@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <Midl Include="..\..\..\..\include\unknwn.idl">
       <Filter>Source Files</Filter>
     </Midl>
@@ -37,6 +34,147 @@
       <Filter>Source Files</Filter>
     </Midl>
     <Midl Include="..\..\..\..\include\iads.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\shtypes.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\servprov.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\ocidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\urlmon.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\msxml.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\ctxtcall.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\docobj.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\exdisp.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\shldisp.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\shdeprecated.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\comcat.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\activaut.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\activscp.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\dispex.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\mlang.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\mshtml.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\docobjectservice.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\richole.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\downloadmgr.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\mshtmhst.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\hlink.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\optary.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\indexsrv.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\dimm.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\htiface.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\htiframe.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\urlhist.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\objsafe.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\perhist.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\netcon.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\netfw.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\msctf.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\sensevts.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\ocmm.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\commoncontrols.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\tlogstg.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\msdasc.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\netcfgx.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\activdbg.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\shobjidl.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\icftypes.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\oledb.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\propsys.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\structuredquerycondition.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\objectarray.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\textstor.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
+    <Midl Include="..\..\..\..\include\ctfutb.idl">
       <Filter>Source Files</Filter>
     </Midl>
   </ItemGroup>

@@ -745,6 +745,10 @@ int winecrt_fread(char* buf, int size, int nelm, FILE* fp) {
 void winecrt_free(void *ptr) {
 	free(ptr);
 }
+void winecrt_freeaddrinfo(struct addrinfo *ai) {
+    notimplemented("freeaddrinfo");
+}
+
 int winecrt_fscanf(FILE * stream, const char * format, ...) {
 	int result;
 	va_list args;
@@ -795,6 +799,14 @@ int winecrt_futimes(int fd, const struct timeval *tv) {
 int winecrt_fwrite(const void * ptr, int size, int nitems, FILE* stream) {
 	return fwrite(ptr, size, nitems, stream);
 }
+const char *winecrt_gai_strerror(int ecode) {
+    notimplemented("gai_strerror");
+    return NULL;
+}
+int winecrt_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) {
+    notimplemented("getaddrinfo");
+    return -1;
+}
 char *winecrt_getcwd(char *buf, size_t size) {
 	strncpy(buf, processInfo->currentDirectory, size);
 	return buf;
@@ -818,6 +830,10 @@ int* winecrt_getErrno() {
 int winecrt_gethostname(char *name, size_t namelen) {
     return gethostname(name, namelen);
 }
+int winecrt_getnameinfo(const struct sockaddr * sa, socklen_t salen, char * host, socklen_t hostlen, char * serv, socklen_t servlen, int flags) {
+    notimplemented("getnameinfo");
+    return 0;
+}
 char* winecrt_getoptArg() {
     notimplemented("getoptArg");
 }
@@ -830,6 +846,10 @@ int winecrt_getpagesize(void) {
 }
 pid_t winecrt_getpid(void) {
     return processInfo->id;
+}
+int winecrt_getsockname(int socket, struct sockaddr * address, socklen_t * address_len) {
+    notimplemented("getsockname");
+    return 0;
 }
 int winecrt_getsockopt(int socket, int level, int option_name, void *option_value, socklen_t *option_len) {
     notimplemented("getsockopt");
@@ -851,6 +871,29 @@ struct tm *winecrt_gmtime(const winecrt_time_t *time) {
 }
 double winecrt_hypot(double x, double y) {
     return hypot(x, y);
+}
+char *winecrt_if_indextoname(unsigned ifindex, char *ifname) {
+    notimplemented("if_indextoname");
+    return NULL;
+}
+unsigned int winecrt_inet_addr(const char *cp) {
+    return inet_addr(cp);
+}
+char *winecrt_inet_ntoa(struct in_addr in) {
+    notimplemented("winecrt_inet_ntoa");
+    return "";
+}
+const char *winecrt_inet_ntop(int af, const void * src, char * dst, socklen_t size) {
+    notimplemented("inet_ntop");
+    return NULL;
+}
+unsigned int winecrt_if_nametoindex(const char *ifname) {
+    notimplemented("if_nametoindex");
+    return 0;
+}
+int winecrt_ioctl(int fd, unsigned long request, ...) {
+    notimplemented("ioctl");
+    return 0;
 }
 int winecrt_isalnum(int c) {
 	return isalnum(c);
@@ -1022,6 +1065,9 @@ int winecrt_munmap(void *addr, size_t len) {
         return 0;
     errno = EPERM;
     return -1;
+}
+unsigned int winecrt_ntohl(unsigned int netlong) {
+    return ntohl(netlong);
 }
 unsigned short winecrt_ntohs(unsigned short netshort) {
     return ntohs(netshort);
@@ -1254,6 +1300,9 @@ ssize_t winecrt_pwrite(int fd, const void *buf, size_t count, off_t offset) {
 void winecrt_qsort(void *base, size_t nel, size_t width, int(*compar)(const void *, const void *)) {
     qsort(base, nel, width, compar);
 }
+int winecrt_rand() {
+    return rand();
+}
 ssize_t winecrt_read(int fildes, void *buf, size_t nbyte) {
     struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
     if (!ufd) {
@@ -1295,6 +1344,10 @@ ssize_t winecrt_recv(int socket, void *buffer, size_t length, int flags) {
         return result;
     }
     return recv(ufd->fd, buffer, length, flags);
+}
+ssize_t winecrt_recvfrom(int socket, void * buffer, size_t length, int flags, struct sockaddr * address, socklen_t * address_len) {
+    notimplemented("recvfrom");
+    return 0;
 }
 ssize_t winecrt_recvmsg(int socket, struct msghdr *message, int flags) {
     int totalRead = 0;
@@ -1428,6 +1481,10 @@ fail:
     SDL_UnlockMutex(unixSocketPollLock);
     SDL_UnlockMutex(ufd->socket->connection->socket->lock);
     return result;
+}
+ssize_t winecrt_sendto(int socket, const void *message, size_t length, int flags, const struct sockaddr *dest_addr, socklen_t dest_len) {
+    notimplemented("sendto");
+    return 0;
 }
 void winecrt_setbuf(FILE * stream, char * buf) {
     setbuf(stream, buf);

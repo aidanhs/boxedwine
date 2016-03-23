@@ -96,6 +96,7 @@
       <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -130,6 +131,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -163,8 +165,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\..\dlls\kernel32\console_private.h" />
     <ClInclude Include="..\..\..\..\dlls\kernel32\kernel_private.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\dlls\kernel32\actctx.c" />

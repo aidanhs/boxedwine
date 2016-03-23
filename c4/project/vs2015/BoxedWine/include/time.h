@@ -17,7 +17,7 @@ struct tm
 };
 
 time_t winecrt_time(time_t *tloc);
-#define time winecrt_time
+#define time(x) winecrt_time(x)
 
 struct tm *winecrt_localtime(const time_t *timer);
 #define localtime winecrt_localtime

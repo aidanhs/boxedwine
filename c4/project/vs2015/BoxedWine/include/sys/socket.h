@@ -3,11 +3,38 @@
 
 #include <sys/types.h>
 
-#define SOCK_STREAM 1
-#define SOCK_DGRAM 2
+#define	SOCK_STREAM	1		/* stream socket */
+#define	SOCK_DGRAM	2		/* datagram socket */
+#define	SOCK_RAW	3		/* raw-protocol interface */
+#define	SOCK_RDM	4		/* reliably-delivered message */
+#define	SOCK_SEQPACKET	5		/* sequenced packet stream */
 
-#define PF_UNIX 1
+#define AF_UNSPEC	0
+#define AF_UNIX		1	/* Unix domain sockets 		*/
+#define AF_INET		2	/* Internet IP Protocol 	*/
+#define AF_AX25		3	/* Amateur Radio AX.25 		*/
+#define AF_IPX		4	/* Novell IPX 			*/
+#define AF_APPLETALK	5	/* Appletalk DDP 		*/
+#define	AF_NETROM	6	/* Amateur radio NetROM 	*/
+#define AF_BRIDGE	7	/* Multiprotocol bridge 	*/
+#define AF_AAL5		8	/* Reserved for Werner's ATM 	*/
+#define AF_X25		9	/* Reserved for X.25 project 	*/
+#define AF_INET6	10	/* IP version 6			*/
+#define AF_MAX		12	/* For now.. */
 
+#define PF_UNSPEC	AF_UNSPEC
+#define PF_UNIX		AF_UNIX
+#define PF_INET		AF_INET
+#define PF_AX25		AF_AX25
+#define PF_IPX		AF_IPX
+#define PF_APPLETALK	AF_APPLETALK
+#define	PF_NETROM	AF_NETROM
+#define PF_BRIDGE	AF_BRIDGE
+#define PF_AAL5		AF_AAL5
+#define PF_X25		AF_X25
+#define PF_INET6	AF_INET6
+
+#define PF_MAX		AF_MAX
 /* Bits in the FLAGS argument to `send', `recv', et al.  */
 enum
   {
@@ -105,5 +132,23 @@ int winecrt_bind(int socket, const struct sockaddr *address, socklen_t address_l
 
 int winecrt_listen(int socket, int backlog);
 #define listen winecrt_listen
+
+int winecrt_getsockname(int socket, struct sockaddr * address, socklen_t * address_len);
+#define getsockname winecrt_getsockname
+
+char *winecrt_inet_ntoa(struct in_addr in);
+#define inet_ntoa winecrt_inet_ntoa
+
+ssize_t winecrt_sendto(int socket, const void *message, size_t length, int flags, const struct sockaddr *dest_addr, socklen_t dest_len);
+#define sendto winecrt_sendto
+
+ssize_t winecrt_recvfrom(int socket, void * buffer, size_t length, int flags, struct sockaddr * address, socklen_t * address_len);
+#define recvfrom winecrt_recvfrom
+
+int winecrt_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
+#define getaddrinfo winecrt_getaddrinfo
+
+void winecrt_freeaddrinfo(struct addrinfo *ai);
+#define freeaddrinfo winecrt_freeaddrinfo
 
 #endif

@@ -91,11 +91,16 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>MSWMSG;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_RPCRT4_;MSWMSG;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>uuid.lib;secur32.lib;advapi32.lib;wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -119,13 +124,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>MSWMSG;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_RPCRT4_;MSWMSG;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>uuid.lib;secur32.lib;advapi32.lib;wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -156,8 +165,6 @@
     <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_defs.h" />
     <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_message.h" />
     <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_server.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\dlls\rpcrt4\cproxy.c" />
@@ -178,6 +185,7 @@
     <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_message.c" />
     <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_server.c" />
     <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_transport.c" />
+    <ClCompile Include="epm_c.c" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="..\..\..\..\dlls\rpcrt4\epm.idl">

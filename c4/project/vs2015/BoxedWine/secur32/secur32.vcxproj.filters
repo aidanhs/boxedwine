@@ -15,60 +15,51 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\dlls\advapi32\advapi32_misc.h">
+    <ClInclude Include="..\..\..\..\dlls\secur32\hmac_md5.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\dlls\advapi32\crypt.h">
+    <ClInclude Include="..\..\..\..\dlls\secur32\secur32_priv.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\dlls\secur32\thunks.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\advapi.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\base64_codec.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\cred.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\dispatcher.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\hmac_md5.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_arc4.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\lsa.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_des.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\negotiate.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_lmhash.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\ntlm.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_md4.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\schannel.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_md5.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\schannel_gnutls.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\crypt_sha.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\secur32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\eventlog.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\thunks.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\lsa.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\registry.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\security.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\dlls\advapi32\service.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="svcctl_c.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="delay.c">
+    <ClCompile Include="..\..\..\..\dlls\secur32\wrapper.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="stub.c">
@@ -76,17 +67,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\..\..\..\dlls\advapi32\version.rc">
-      <Filter>Source Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="..\..\..\..\dlls\advapi32\svcctl.idl">
-      <Filter>Source Files</Filter>
-    </Midl>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="advapi32.def">
+    <None Include="secur32.def">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>

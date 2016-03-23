@@ -62,6 +62,9 @@ char** winecrt_getEnviron();
 int winecrt_mkstemps(char *template, int suffixlen);
 #define mkstemps winecrt_mkstemps
 
+int winecrt_rand(void);
+#define rand winecrt_rand
+
 //WINECRT void _allmul();
 //WINECRT void _alldiv();
 //WINECRT void _aulldiv();

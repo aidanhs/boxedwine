@@ -14,11 +14,12 @@ struct tms {
 	clock_t tms_cstime;	/* System CPU time of terminated child procs */
 };
 
-struct timeval
+struct _timeval
 {
     time_t tv_sec;		/* Seconds.  */
     int tv_usec;	/* Microseconds.  */
 };
+#define timeval _timeval
 
 struct timespec
   {

@@ -9,8 +9,8 @@ typedef long int __fd_mask;
 typedef struct
   {
     __fd_mask __fds_bits[__FD_SETSIZE / __NFDBITS];
-  } fd_set;
-
+  } _fd_set;
+#define fd_set _fd_set
 # define __FDS_BITS(set) ((set)->__fds_bits)
 
 #endif
