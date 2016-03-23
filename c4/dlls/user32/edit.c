@@ -43,6 +43,7 @@
  */
 
 #include "config.h"
+#include "wine/port.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -62,6 +63,26 @@
 WINE_DEFAULT_DEBUG_CHANNEL(edit);
 WINE_DECLARE_DEBUG_CHANNEL(combo);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
+
+static HMODULE imm32dll;
+
+typedef LONG (WINAPI *pfnImmGetCompositionStringW)(HIMC hIMC, DWORD dwIndex, LPVOID lpBuf, DWORD dwBufLen);
+pfnImmGetCompositionStringW pImmGetCompositionStringW;
+
+typedef HIMC (WINAPI *pfnImmGetContext)(HWND hWnd);
+pfnImmGetContext pImmGetContext;
+
+typedef BOOL (WINAPI *pfnImmReleaseContext)(HWND hWnd, HIMC hIMC);
+pfnImmReleaseContext pImmReleaseContext;
+
+static void loadImm32() {
+    if (!imm32dll) {
+        imm32dll = LoadLibraryA("imm32.dll");
+        pImmGetCompositionStringW = (pfnImmGetCompositionStringW)GetProcAddress(imm32dll, "ImmGetCompositionStringW");
+        pImmGetContext = (pfnImmGetContext)GetProcAddress(imm32dll, "ImmGetContext");
+        pImmReleaseContext = (pfnImmReleaseContext)GetProcAddress(imm32dll, "ImmReleaseContext");
+    }
+}
 
 #define BUFLIMIT_INITIAL    30000   /* initial buffer size */
 #define GROWLENGTH		32	/* buffers granularity in bytes: must be power of 2 */
@@ -4303,7 +4324,8 @@ static void EDIT_GetCompositionStr(HIMC hIMC, LPARAM CompFlag, EDITSTATE *es)
     LPSTR lpCompStrAttr = NULL;
     DWORD dwBufLenAttr;
 
-    buflen = ImmGetCompositionStringW(hIMC, GCS_COMPSTR, NULL, 0);
+    loadImm32();
+    buflen = pImmGetCompositionStringW(hIMC, GCS_COMPSTR, NULL, 0);
 
     if (buflen < 0)
     {
@@ -4318,7 +4340,7 @@ static void EDIT_GetCompositionStr(HIMC hIMC, LPARAM CompFlag, EDITSTATE *es)
     }
 
     if (buflen)
-        ImmGetCompositionStringW(hIMC, GCS_COMPSTR, lpCompStr, buflen);
+        pImmGetCompositionStringW(hIMC, GCS_COMPSTR, lpCompStr, buflen);
     lpCompStr[buflen/sizeof(WCHAR)] = 0;
 
     if (CompFlag & GCS_COMPATTR)
@@ -4327,7 +4349,7 @@ static void EDIT_GetCompositionStr(HIMC hIMC, LPARAM CompFlag, EDITSTATE *es)
          * We do not use the attributes yet. it would tell us what characters
          * are in transition and which are converted or decided upon
          */
-        dwBufLenAttr = ImmGetCompositionStringW(hIMC, GCS_COMPATTR, NULL, 0);
+        dwBufLenAttr = pImmGetCompositionStringW(hIMC, GCS_COMPATTR, NULL, 0);
         if (dwBufLenAttr)
         {
             dwBufLenAttr ++;
@@ -4338,7 +4360,7 @@ static void EDIT_GetCompositionStr(HIMC hIMC, LPARAM CompFlag, EDITSTATE *es)
                 HeapFree(GetProcessHeap(),0,lpCompStr);
                 return;
             }
-            ImmGetCompositionStringW(hIMC,GCS_COMPATTR, lpCompStrAttr, 
+            pImmGetCompositionStringW(hIMC,GCS_COMPATTR, lpCompStrAttr, 
                     dwBufLenAttr);
             lpCompStrAttr[dwBufLenAttr] = 0;
         }
@@ -4371,7 +4393,8 @@ static void EDIT_GetResultStr(HIMC hIMC, EDITSTATE *es)
     LONG buflen;
     LPWSTR lpResultStr;
 
-    buflen = ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, NULL, 0);
+    loadImm32();
+    buflen = pImmGetCompositionStringW(hIMC, GCS_RESULTSTR, NULL, 0);
     if (buflen <= 0)
     {
         return;
@@ -4384,7 +4407,7 @@ static void EDIT_GetResultStr(HIMC hIMC, EDITSTATE *es)
         return;
     }
 
-    ImmGetCompositionStringW(hIMC, GCS_RESULTSTR, lpResultStr, buflen);
+    pImmGetCompositionStringW(hIMC, GCS_RESULTSTR, lpResultStr, buflen);
     lpResultStr[buflen/sizeof(WCHAR)] = 0;
 
     /* check for change in composition start */
@@ -4410,8 +4433,8 @@ static void EDIT_ImeComposition(HWND hwnd, LPARAM CompFlag, EDITSTATE *es)
         EDIT_EM_ReplaceSel(es, TRUE, empty_stringW, TRUE, TRUE);
         es->composition_start = es->selection_end;
     }
-
-    hIMC = ImmGetContext(hwnd);
+    loadImm32();
+    hIMC = pImmGetContext(hwnd);
     if (!hIMC)
         return;
 
@@ -4424,9 +4447,9 @@ static void EDIT_ImeComposition(HWND hwnd, LPARAM CompFlag, EDITSTATE *es)
     {
         if (CompFlag & GCS_COMPSTR)
             EDIT_GetCompositionStr(hIMC, CompFlag, es);
-        cursor = ImmGetCompositionStringW(hIMC, GCS_CURSORPOS, 0, 0);
+        cursor = pImmGetCompositionStringW(hIMC, GCS_CURSORPOS, 0, 0);
     }
-    ImmReleaseContext(hwnd, hIMC);
+    pImmReleaseContext(hwnd, hIMC);
     EDIT_SetCaretPos(es, es->selection_start + cursor, es->flags & EF_AFTER_WRAP);
 }
 

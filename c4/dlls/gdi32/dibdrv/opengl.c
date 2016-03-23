@@ -21,7 +21,7 @@
 #include "config.h"
 #include "wine/port.h"
 
-#include "gdi_private.h"
+#include "../gdi_private.h"
 #include "dibdrv.h"
 
 #include "wine/library.h"

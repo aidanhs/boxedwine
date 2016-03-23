@@ -173,7 +173,7 @@ static inline WINDOWPROC *alloc_winproc( WNDPROC func, BOOL unicode )
     return proc;
 }
 
-#ifdef __i386__
+#if defined __i386__ && !defined BOXEDWINE
 /* Some window procedures modify register they shouldn't, or are not
  * properly declared stdcall; so we need a small assembly wrapper to
  * call them. */

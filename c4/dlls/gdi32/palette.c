@@ -80,7 +80,7 @@ static HPALETTE hLastRealizedPalette = 0; /* UnrealizeObject() needs it */
 HPALETTE PALETTE_Init(void)
 {
     const RGBQUAD *entries = get_default_color_table( 8 );
-    char buffer[FIELD_OFFSET( LOGPALETTE, palPalEntry[20] )];
+    char buffer[sizeof(LOGPALETTE) + sizeof(PALETTEENTRY) * 19];
     LOGPALETTE *palPtr = (LOGPALETTE *)buffer;
     int i;
 
@@ -157,7 +157,7 @@ HPALETTE WINAPI CreateHalftonePalette(
     HDC hdc) /* [in] Handle to device context */
 {
     const RGBQUAD *entries = get_default_color_table( 8 );
-    char buffer[FIELD_OFFSET( LOGPALETTE, palPalEntry[256] )];
+    char buffer[sizeof(LOGPALETTE)+sizeof(PALETTEENTRY)*255];
     LOGPALETTE *pal = (LOGPALETTE *)buffer;
     int i;
 

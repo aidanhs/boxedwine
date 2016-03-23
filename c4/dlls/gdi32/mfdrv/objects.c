@@ -27,8 +27,7 @@
 #include "winbase.h"
 #include "wingdi.h"
 #include "wine/wingdi16.h"
-#include "mfdrv/metafiledrv.h"
-#include "gdi_private.h"
+#include "metafiledrv.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(metafile);
@@ -176,7 +175,7 @@ INT16 MFDRV_CreateBrushIndirect(PHYSDEV dev, HBRUSH hBrush )
     case BS_PATTERN:
     case BS_DIBPATTERN:
         {
-            char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+            char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
             BITMAPINFO *dst_info, *src_info = (BITMAPINFO *)buffer;
             DWORD info_size;
             char *dst_ptr;

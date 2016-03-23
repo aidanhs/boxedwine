@@ -24,8 +24,7 @@
 #include "windef.h"
 #include "winbase.h"
 #include "winnls.h"
-#include "gdi_private.h"
-#include "mfdrv/metafiledrv.h"
+#include "metafiledrv.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(metafile);

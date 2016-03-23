@@ -724,7 +724,7 @@ interface IDelayedPropertyStoreFactory : IPropertyStoreFactory
 };
 typedef int PERSIST_SPROPSTORE_FLAGS;
 
-typedef struct tagSERIALIZEDROPSTORAGE SERIALIZEDPROPSTORAGE;
+typedef int SERIALIZEDPROPSTORAGE;
 
 cpp_quote("#if 0") /* Wine doesn't have __unaligned builtin, hack */
 typedef SERIALIZEDPROPSTORAGE *PUSERIALIZEDPROPSTORAGE;

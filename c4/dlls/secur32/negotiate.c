@@ -19,6 +19,8 @@
  * This file implements a Negotiate provider that simply forwards to
  * the NTLM provider.
  */
+#include "config.h"
+#include "wine/port.h"
 
 #include <stdarg.h>
 #include "windef.h"

@@ -29,6 +29,8 @@
  * TODO:
  *    - LBS_NODATA
  */
+#include "config.h"
+#include "wine/port.h"
 
 #include <string.h>
 #include <stdlib.h>

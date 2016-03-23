@@ -21,6 +21,23 @@
 
 #include <stdarg.h>
 
+#define __out_opt
+#define __in
+#define __in_opt
+#define __in_ecount(x)
+#define __out
+#define __out_ecount_opt(x)
+#define __deref_out_ecount_opt(x)
+#define __in_ecount_opt(x)
+#define deref_out_opt
+#define __deref_out_opt
+#define __inout_opt
+#define __deref_opt_out
+#define __deref_out_z_opt
+#define __deref_opt_inout_opt
+#define __inout_ecount(x)
+#define __deref_opt_out_opt
+
 #include "windef.h"
 #include "initguid.h"
 

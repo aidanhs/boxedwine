@@ -1941,7 +1941,7 @@ BOOL nulldrv_ExtTextOut( PHYSDEV dev, INT x, INT y, UINT flags, const RECT *rect
 
     if (dc->aa_flags != GGO_BITMAP)
     {
-        char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+        char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
         BITMAPINFO *info = (BITMAPINFO *)buffer;
         struct gdi_image_bits bits;
         struct bitblt_coords src, dst;

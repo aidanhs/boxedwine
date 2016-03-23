@@ -51,6 +51,8 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(service);
 
+extern HMODULE rpcrt4dll;
+
 void  __RPC_FAR * __RPC_USER MIDL_user_allocate(SIZE_T len)
 {
     return heap_alloc(len);
@@ -99,6 +101,44 @@ static HANDLE service_event;
 static HANDLE stop_event;
 
 extern HANDLE CDECL __wine_make_process_system(void);
+
+typedef RPC_STATUS(WINAPI *pfnRpcBindingFree)(RPC_BINDING_HANDLE* Binding);
+pfnRpcBindingFree pRpcBindingFree;
+
+typedef RPC_STATUS(WINAPI *pfnRpcBindingFromStringBindingA)(RPC_CSTR StringBinding, RPC_BINDING_HANDLE* Binding);
+pfnRpcBindingFromStringBindingA pRpcBindingFromStringBindingA;
+
+typedef RPC_STATUS(WINAPI *pfnRpcBindingFromStringBindingW)(RPC_WSTR StringBinding, RPC_BINDING_HANDLE* Binding);
+pfnRpcBindingFromStringBindingW pRpcBindingFromStringBindingW;
+
+typedef RPC_STATUS(WINAPI *pfnRpcStringFreeW)(RPC_WSTR* String);
+pfnRpcStringFreeW pRpcStringFreeW;
+
+typedef RPC_STATUS(WINAPI *pfnRpcStringBindingComposeW)(RPC_WSTR ObjUuid, RPC_WSTR Protseq, RPC_WSTR NetworkAddr, RPC_WSTR Endpoint, RPC_WSTR Options, RPC_WSTR* StringBinding);
+pfnRpcStringBindingComposeW pRpcStringBindingComposeW;
+
+typedef RPC_STATUS(WINAPI *pfnRpcStringBindingComposeA)(RPC_CSTR ObjUuid, RPC_CSTR Protseq, RPC_CSTR NetworkAddr, RPC_CSTR Endpoint, RPC_CSTR Options, RPC_CSTR *StringBinding);
+pfnRpcStringBindingComposeA pRpcStringBindingComposeA;
+
+typedef RPC_STATUS(WINAPI *pfnRpcStringFreeA)(RPC_CSTR* String);
+pfnRpcStringFreeA pRpcStringFreeA;
+
+typedef int(WINAPI *pfnI_RpcExceptionFilter)(ULONG ExceptionCode);
+pfnI_RpcExceptionFilter pI_RpcExceptionFilter;
+
+void loadRPC() {
+    if (!rpcrt4dll) {
+        rpcrt4dll = LoadLibraryA("rpcrt.dll");
+        pRpcBindingFree = (pfnRpcBindingFree)GetProcAddress(rpcrt4dll, "RpcBindingFree");
+        pRpcBindingFromStringBindingA = (pfnRpcBindingFromStringBindingA)GetProcAddress(rpcrt4dll, "RpcBindingFromStringBindingA");
+        pRpcBindingFromStringBindingW = (pfnRpcBindingFromStringBindingW)GetProcAddress(rpcrt4dll, "RpcBindingFromStringBindingW");
+        pRpcStringFreeW = (pfnRpcStringFreeW)GetProcAddress(rpcrt4dll, "RpcStringFreeW");
+        pRpcStringFreeA = (pfnRpcStringFreeA)GetProcAddress(rpcrt4dll, "RpcStringFreeA");
+        pRpcStringBindingComposeW = (pfnRpcStringBindingComposeW)GetProcAddress(rpcrt4dll, "RpcStringBindingComposeW");
+        pRpcStringBindingComposeA = (pfnRpcStringBindingComposeA)GetProcAddress(rpcrt4dll, "RpcStringBindingComposeA");
+        pI_RpcExceptionFilter = (pfnI_RpcExceptionFilter)GetProcAddress(rpcrt4dll, "I_RpcExceptionFilter");
+    }
+}
 
 /******************************************************************************
  * String management functions (same behaviour as strdup)
@@ -160,15 +200,17 @@ static handle_t rpc_wstr_bind(RPC_WSTR str)
     RPC_STATUS status;
     handle_t rpc_handle;
 
-    status = RpcStringBindingComposeW(NULL, transport, str, endpoint, NULL, &binding_str);
+    loadRPC();
+
+    status = pRpcStringBindingComposeW(NULL, transport, str, endpoint, NULL, &binding_str);
     if (status != RPC_S_OK)
     {
         ERR("RpcStringBindingComposeW failed (%d)\n", (DWORD)status);
         return NULL;
     }
 
-    status = RpcBindingFromStringBindingW(binding_str, &rpc_handle);
-    RpcStringFreeW(&binding_str);
+    status = pRpcBindingFromStringBindingW(binding_str, &rpc_handle);
+    pRpcStringFreeW(&binding_str);
 
     if (status != RPC_S_OK)
     {
@@ -187,15 +229,17 @@ static handle_t rpc_cstr_bind(RPC_CSTR str)
     RPC_STATUS status;
     handle_t rpc_handle;
 
-    status = RpcStringBindingComposeA(NULL, transport, str, endpoint, NULL, &binding_str);
+    loadRPC();
+
+    status = pRpcStringBindingComposeA(NULL, transport, str, endpoint, NULL, &binding_str);
     if (status != RPC_S_OK)
     {
-        ERR("RpcStringBindingComposeW failed (%d)\n", (DWORD)status);
+        ERR("RpcStringBindingComposeA failed (%d)\n", (DWORD)status);
         return NULL;
     }
 
-    status = RpcBindingFromStringBindingA(binding_str, &rpc_handle);
-    RpcStringFreeA(&binding_str);
+    status = pRpcBindingFromStringBindingA(binding_str, &rpc_handle);
+    pRpcStringFreeA(&binding_str);
 
     if (status != RPC_S_OK)
     {
@@ -212,8 +256,9 @@ DECLSPEC_HIDDEN handle_t __RPC_USER MACHINE_HANDLEA_bind(MACHINE_HANDLEA Machine
 }
 
 DECLSPEC_HIDDEN void __RPC_USER MACHINE_HANDLEA_unbind(MACHINE_HANDLEA MachineName, handle_t h)
-{
-    RpcBindingFree(&h);
+{    
+    loadRPC();
+    pRpcBindingFree(&h);
 }
 
 DECLSPEC_HIDDEN handle_t __RPC_USER MACHINE_HANDLEW_bind(MACHINE_HANDLEW MachineName)
@@ -223,7 +268,8 @@ DECLSPEC_HIDDEN handle_t __RPC_USER MACHINE_HANDLEW_bind(MACHINE_HANDLEW Machine
 
 DECLSPEC_HIDDEN void __RPC_USER MACHINE_HANDLEW_unbind(MACHINE_HANDLEW MachineName, handle_t h)
 {
-    RpcBindingFree(&h);
+    loadRPC();
+    pRpcBindingFree(&h);
 }
 
 DECLSPEC_HIDDEN handle_t __RPC_USER SVCCTL_HANDLEW_bind(SVCCTL_HANDLEW MachineName)
@@ -233,12 +279,14 @@ DECLSPEC_HIDDEN handle_t __RPC_USER SVCCTL_HANDLEW_bind(SVCCTL_HANDLEW MachineNa
 
 DECLSPEC_HIDDEN void __RPC_USER SVCCTL_HANDLEW_unbind(SVCCTL_HANDLEW MachineName, handle_t h)
 {
-    RpcBindingFree(&h);
+    loadRPC();
+    pRpcBindingFree(&h);
 }
 
 static LONG WINAPI rpc_filter(EXCEPTION_POINTERS *eptr)
 {
-    return I_RpcExceptionFilter(eptr->ExceptionRecord->ExceptionCode);
+    loadRPC();
+    return pI_RpcExceptionFilter(eptr->ExceptionRecord->ExceptionCode);
 }
 
 static DWORD map_exception_code(DWORD exception_code)

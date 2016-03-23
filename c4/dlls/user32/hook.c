@@ -202,7 +202,7 @@ static HHOOK set_windows_hook( INT id, HOOKPROC proc, HINSTANCE inst, DWORD tid,
     return handle;
 }
 
-#ifdef __i386__
+#if defined __i386__ && !defined BOXEDWINE
 /* Some apps pass a non-stdcall proc to SetWindowsHookExA,
  * so we need a small assembly wrapper to call the proc.
  */

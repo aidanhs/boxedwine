@@ -51,6 +51,22 @@ WINE_DEFAULT_DEBUG_CHANNEL(msg);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 WINE_DECLARE_DEBUG_CHANNEL(key);
 
+static HMODULE imm32dll;
+
+typedef BOOL (WINAPI *pfnImmProcessKey)(HWND hwnd, HKL hKL, UINT vKey, LPARAM lKeyData, DWORD unknown);
+pfnImmProcessKey pImmProcessKey;
+
+typedef BOOL (WINAPI *pfnImmTranslateMessage)(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lKeyData);
+pfnImmTranslateMessage pImmTranslateMessage;
+
+static void loadImm32() {
+    if (!imm32dll) {
+        imm32dll = LoadLibraryA("imm32.dll");
+        pImmProcessKey = (pfnImmProcessKey)GetProcAddress(imm32dll, "ImmProcessKey");
+        pImmTranslateMessage = (pfnImmTranslateMessage)GetProcAddress(imm32dll, "ImmTranslateMessage");
+    }
+}
+
 #define WM_NCMOUSEFIRST WM_NCMOUSEMOVE
 #define WM_NCMOUSELAST  (WM_NCMOUSEFIRST+(WM_MOUSELAST-WM_MOUSEFIRST))
 
@@ -2466,9 +2482,11 @@ static BOOL process_keyboard_message( MSG *msg, UINT hw_id, HWND hwnd_filter,
     }
     accept_hardware_message( hw_id, remove );
 
-    if ( remove && msg->message == WM_KEYDOWN )
-        if (ImmProcessKey(msg->hwnd, GetKeyboardLayout(0), msg->wParam, msg->lParam, 0) )
+    if ( remove && msg->message == WM_KEYDOWN ) {
+        loadImm32();
+        if (pImmProcessKey(msg->hwnd, GetKeyboardLayout(0), msg->wParam, msg->lParam, 0) )
             msg->wParam = VK_PROCESSKEY;
+    }
 
     return TRUE;
 }
@@ -3894,8 +3912,10 @@ BOOL WINAPI TranslateMessage( const MSG *msg )
         PostMessageW( msg->hwnd, message, HIWORD(msg->lParam), LOWORD(msg->lParam));
         return TRUE;
 
-    case VK_PROCESSKEY:
-        return ImmTranslateMessage(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+    case VK_PROCESSKEY: {
+            loadImm32();
+            return pImmTranslateMessage(msg->hwnd, msg->message, msg->wParam, msg->lParam);
+        }
     }
 
     GetKeyboardState( state );

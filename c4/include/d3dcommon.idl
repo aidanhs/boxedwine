@@ -56,7 +56,7 @@ typedef enum _D3D_INCLUDE_TYPE
     object,
     local,
 ]
-interface ID3DInclude
+interface ID3DInclude 
 {
     HRESULT Open(D3D_INCLUDE_TYPE include_type,
                  const char *filename,

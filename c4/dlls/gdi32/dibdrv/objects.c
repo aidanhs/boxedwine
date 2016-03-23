@@ -21,7 +21,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "gdi_private.h"
+#include "../gdi_private.h"
 #include "dibdrv.h"
 
 #include "wine/debug.h"
@@ -1912,7 +1912,7 @@ static BOOL matching_pattern_format( dib_info *dib, dib_info *pattern )
 
 static BOOL select_pattern_brush( dibdrv_physdev *pdev, dib_brush *brush, BOOL *needs_reselect )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     RGBQUAD color_table[2];
     dib_info pattern;

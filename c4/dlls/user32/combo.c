@@ -31,6 +31,8 @@
  *   - CB_GETMINVISIBLE, CB_SETMINVISIBLE
  *   - CB_SETTOPINDEX
  */
+#include "config.h"
+#include "wine/port.h"
 
 #include <stdarg.h>
 #include <string.h>

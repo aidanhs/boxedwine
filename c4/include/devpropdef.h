@@ -93,7 +93,7 @@ typedef struct _DEVPROPKEY {
 #endif
 #else
 #define DEFINE_DEVPROPKEY(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8, pid) \
-    EXTERN_C const DEVPROPKEY name DECLSPEC_HIDDEN DECLSPEC_SELECTANY
+    EXTERN_C const DEVPROPKEY DECLSPEC_HIDDEN DECLSPEC_SELECTANY name
 #endif
 
 #ifndef IsEqualDevPropKey

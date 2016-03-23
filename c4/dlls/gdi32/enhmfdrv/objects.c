@@ -22,8 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "enhmfdrv/enhmetafiledrv.h"
-#include "gdi_private.h"
+#include "enhmetafiledrv.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(enhmetafile);
@@ -136,7 +135,7 @@ DWORD EMFDRV_CreateBrushIndirect( PHYSDEV dev, HBRUSH hBrush )
     case BS_DIBPATTERN:
       {
         EMRCREATEDIBPATTERNBRUSHPT *emr;
-        char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+        char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
         BITMAPINFO *info = (BITMAPINFO *)buffer;
         DWORD info_size;
         void *bits;

@@ -269,6 +269,10 @@ error:
 #undef CRYPT_GetProvFunc
 #undef CRYPT_GetProvFuncOpt
 
+typedef RPC_STATUS(WINAPI *pfnUuidCreate)(UUID *Uuid);
+pfnUuidCreate pUuidCreate;
+
+HMODULE rpcrt4dll;
 
 static void CRYPT_CreateMachineGuid(void)
 {
@@ -300,8 +304,12 @@ static void CRYPT_CreateMachineGuid(void)
                         '%','0','2','x','%','0','2','x',
                         '%','0','2','x','%','0','2','x',
                         '%','0','2','x',0 };
-
-                    rs = UuidCreate(&uuid);
+                    if (!pUuidCreate) {
+                        if (!rpcrt4dll)
+                            rpcrt4dll = LoadLibraryA("rpcrt4");
+                        pUuidCreate = (pfnUuidCreate)GetProcAddress(rpcrt4dll, "UuidCreate");
+                    }
+                    rs = pUuidCreate(&uuid);
                     if (rs == S_OK)
                     {
                         sprintfW(buf, uuidFmt,

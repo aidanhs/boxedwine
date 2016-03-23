@@ -766,7 +766,7 @@ void move_window_bits( HWND hwnd, struct window_surface *old_surface,
         src.left - old_visible_rect->left != dst.left - visible_rect->left ||
         src.top - old_visible_rect->top != dst.top - visible_rect->top)
     {
-        char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+        char buffer[sizeof(BITMAPINFO)+sizeof(RGBQUAD)*256];
         BITMAPINFO *info = (BITMAPINFO *)buffer;
         void *bits;
         UINT flags = UPDATE_NOCHILDREN;

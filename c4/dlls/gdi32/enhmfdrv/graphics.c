@@ -28,7 +28,7 @@
 #include "windef.h"
 #include "winbase.h"
 #include "wingdi.h"
-#include "enhmfdrv/enhmetafiledrv.h"
+#include "enhmetafiledrv.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(enhmetafile);

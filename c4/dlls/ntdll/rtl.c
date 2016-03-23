@@ -646,7 +646,7 @@ ULONGLONG __cdecl RtlUlonglongByteSwap(ULONGLONG i)
  */
 #ifdef __i386__
 #ifdef ASM_INTEL
-void NTDLL_RtlUlongByteSwap() {
+__declspec(naked) void NTDLL_RtlUlongByteSwap() {
 	_asm mov eax, ecx;
 	_asm bswap eax;
 }

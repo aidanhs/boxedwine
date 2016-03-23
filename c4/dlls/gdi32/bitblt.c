@@ -251,8 +251,8 @@ BOOL nulldrv_StretchBlt( PHYSDEV dst_dev, struct bitblt_coords *dst,
                          PHYSDEV src_dev, struct bitblt_coords *src, DWORD rop )
 {
     DC *dc_src, *dc_dst = get_nulldrv_dc( dst_dev );
-    char src_buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
-    char dst_buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char src_buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
+    char dst_buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *src_info = (BITMAPINFO *)src_buffer;
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_buffer;
     DWORD err;
@@ -314,8 +314,8 @@ BOOL nulldrv_AlphaBlend( PHYSDEV dst_dev, struct bitblt_coords *dst,
                          PHYSDEV src_dev, struct bitblt_coords *src, BLENDFUNCTION func )
 {
     DC *dc_src, *dc_dst = get_nulldrv_dc( dst_dev );
-    char src_buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
-    char dst_buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char src_buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
+    char dst_buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *src_info = (BITMAPINFO *)src_buffer;
     BITMAPINFO *dst_info = (BITMAPINFO *)dst_buffer;
     DWORD err;
@@ -354,7 +354,7 @@ done:
 DWORD nulldrv_BlendImage( PHYSDEV dev, BITMAPINFO *info, const struct gdi_image_bits *bits,
                           struct bitblt_coords *src, struct bitblt_coords *dst, BLENDFUNCTION blend )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *dst_info = (BITMAPINFO *)buffer;
     struct gdi_image_bits dst_bits;
     struct bitblt_coords orig_dst;
@@ -404,7 +404,7 @@ BOOL nulldrv_GradientFill( PHYSDEV dev, TRIVERTEX *vert_array, ULONG nvert,
                            void * grad_array, ULONG ngrad, ULONG mode )
 {
     DC *dc = get_nulldrv_dc( dev );
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     struct bitblt_coords src, dst;
     struct gdi_image_bits bits;
@@ -488,7 +488,7 @@ done:
 COLORREF nulldrv_GetPixel( PHYSDEV dev, INT x, INT y )
 {
     DC *dc = get_nulldrv_dc( dev );
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     struct bitblt_coords src;
     struct gdi_image_bits bits;

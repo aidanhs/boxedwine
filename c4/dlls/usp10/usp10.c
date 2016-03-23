@@ -24,6 +24,9 @@
  * and filtering characters and bi-directional text with custom line breaks.
  */
 
+#include "config.h"
+#include "wine/port.h"
+
 #include <stdarg.h>
 #include <stdlib.h>
 #include <math.h>
@@ -43,6 +46,21 @@
 
 WINE_DEFAULT_DEBUG_CHANNEL(uniscribe);
 
+HMODULE user32dll;
+
+typedef COLORREF (WINAPI *pfnGetSysColor)(INT nIndex);
+pfnGetSysColor pGetSysColor;
+
+typedef BOOL (WINAPI *pfnCopyRect)(RECT *dest, const RECT *src);
+pfnCopyRect pCopyRect;
+
+void loadUser32() {
+    if (!user32dll) {
+        user32dll = LoadLibraryA("user32.dll");
+        pGetSysColor = (pfnGetSysColor)GetProcAddress(user32dll, "GetSysColor");
+        pCopyRect = (pfnCopyRect)GetProcAddress(user32dll, "CopyRect");
+    }
+}
 typedef struct _scriptRange
 {
     WORD script;
@@ -2145,17 +2163,18 @@ static HRESULT SS_ItemOut( SCRIPT_STRING_ANALYSIS ssa,
          (cEnd >= 0 && analysis->pItem[iItem].iCharPos >= cEnd))
             return S_OK;
 
-    CopyRect(&crc,prc);
+    loadUser32();
+    pCopyRect(&crc,prc);
     if (fSelected)
     {
         BkMode = GetBkMode(analysis->hdc);
         SetBkMode( analysis->hdc, OPAQUE);
         BkColor = GetBkColor(analysis->hdc);
-        SetBkColor(analysis->hdc, GetSysColor(COLOR_HIGHLIGHT));
+        SetBkColor(analysis->hdc, pGetSysColor(COLOR_HIGHLIGHT));
         if (!fDisabled)
         {
             TextColor = GetTextColor(analysis->hdc);
-            SetTextColor(analysis->hdc, GetSysColor(COLOR_HIGHLIGHTTEXT));
+            SetTextColor(analysis->hdc, pGetSysColor(COLOR_HIGHLIGHTTEXT));
         }
     }
     if (analysis->glyphs[iItem].fallbackFont)

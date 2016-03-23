@@ -19,7 +19,7 @@
 #ifndef __dxgitype_h__
 #define __dxgitype_h__
 
-#include "dxgiformat.h"
+//#include "dxgiformat.h"
 
 #ifndef D3DCOLORVALUE_DEFINED
 typedef struct _D3DCOLORVALUE {

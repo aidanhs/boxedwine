@@ -71,6 +71,11 @@ static inline StdProxyImpl *impl_from_proxy_obj( void *iface )
 
 #ifdef __i386__
 
+#ifdef ASM_INTEL
+__declspec(naked) void call_stubless_func(void) {
+}
+
+#else
 extern void call_stubless_func(void);
 __ASM_GLOBAL_FUNC(call_stubless_func,
                   "movl 4(%esp),%ecx\n\t"         /* This pointer */
@@ -97,7 +102,7 @@ __ASM_GLOBAL_FUNC(call_stubless_func,
                   "movl (%esp),%ecx\n\t"  /* return address */
                   "addl %edx,%esp\n\t"
                   "jmp *%ecx" );
-
+#endif
 #include "pshpack1.h"
 struct thunk
 {

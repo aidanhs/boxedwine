@@ -49,6 +49,26 @@ WINE_DEFAULT_DEBUG_CHANNEL(win);
 static short iF10Key = 0;
 static short iMenuSysKey = 0;
 
+static HMODULE imm32dll;
+
+typedef HWND (WINAPI *pfnImmGetDefaultIMEWnd)(HWND hWnd);
+pfnImmGetDefaultIMEWnd pImmGetDefaultIMEWnd;
+
+typedef BOOL (WINAPI *pfnImmIsUIMessageA)(HWND hWndIME, UINT msg, WPARAM wParam, LPARAM lParam);
+pfnImmIsUIMessageA pImmIsUIMessageA;
+
+typedef BOOL (WINAPI *pfnImmIsUIMessageW)(HWND hWndIME, UINT msg, WPARAM wParam, LPARAM lParam);
+pfnImmIsUIMessageW pImmIsUIMessageW;
+
+static void loadImm32() {
+    if (!imm32dll) {
+        imm32dll = LoadLibraryA("imm32.dll");
+        pImmGetDefaultIMEWnd = (pfnImmGetDefaultIMEWnd)GetProcAddress(imm32dll, "ImmGetDefaultIMEWnd");
+        pImmIsUIMessageA = (pfnImmIsUIMessageA)GetProcAddress(imm32dll, "ImmIsUIMessageA");
+        pImmIsUIMessageW = (pfnImmIsUIMessageW)GetProcAddress(imm32dll, "ImmIsUIMessageW");
+    }
+}
+
 /***********************************************************************
  *           DEFWND_HandleWindowPosChanged
  *
@@ -853,15 +873,21 @@ LRESULT WINAPI DefWindowProcA( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
     case WM_IME_NOTIFY:
     case WM_IME_CONTROL:
         {
-            HWND hwndIME = ImmGetDefaultIMEWnd( hwnd );
+            HWND hwndIME;
+            
+            loadImm32();
+            hwndIME = pImmGetDefaultIMEWnd( hwnd );
             if (hwndIME)
                 result = SendMessageA( hwndIME, msg, wParam, lParam );
         }
         break;
     case WM_IME_SETCONTEXT:
         {
-            HWND hwndIME = ImmGetDefaultIMEWnd( hwnd );
-            if (hwndIME) result = ImmIsUIMessageA( hwndIME, msg, wParam, lParam );
+            HWND hwndIME;
+
+            loadImm32();
+            hwndIME = pImmGetDefaultIMEWnd( hwnd );
+            if (hwndIME) result = pImmIsUIMessageA( hwndIME, msg, wParam, lParam );
         }
         break;
 
@@ -994,8 +1020,11 @@ LRESULT WINAPI DefWindowProcW(
 
     case WM_IME_SETCONTEXT:
         {
-            HWND hwndIME = ImmGetDefaultIMEWnd( hwnd );
-            if (hwndIME) result = ImmIsUIMessageW( hwndIME, msg, wParam, lParam );
+            HWND hwndIME;
+
+            loadImm32();
+            hwndIME = pImmGetDefaultIMEWnd(hwnd);
+            if (hwndIME) result = pImmIsUIMessageW( hwndIME, msg, wParam, lParam );
         }
         break;
 
@@ -1006,7 +1035,10 @@ LRESULT WINAPI DefWindowProcW(
     case WM_IME_NOTIFY:
     case WM_IME_CONTROL:
         {
-            HWND hwndIME = ImmGetDefaultIMEWnd( hwnd );
+            HWND hwndIME;
+
+            loadImm32();
+            hwndIME = pImmGetDefaultIMEWnd(hwnd);
             if (hwndIME)
                 result = SendMessageW( hwndIME, msg, wParam, lParam );
         }

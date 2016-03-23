@@ -344,6 +344,10 @@ static void RPC_UuidGetSystemTime(ULONGLONG *time)
 /* Assume that a hardware address is at least 6 bytes long */
 #define ADDRESS_BYTES_NEEDED 6
 
+HMODULE iphlpapi;
+typedef DWORD (WINAPI* pfnGetAdaptersInfo)(PIP_ADAPTER_INFO pAdapterInfo, PULONG pOutBufLen);
+pfnGetAdaptersInfo pGetAdaptersInfo;
+
 static RPC_STATUS RPC_UuidGetNodeAddress(BYTE *address)
 {
     int i;
@@ -352,12 +356,16 @@ static RPC_STATUS RPC_UuidGetNodeAddress(BYTE *address)
     ULONG buflen = sizeof(IP_ADAPTER_INFO);
     PIP_ADAPTER_INFO adapter = HeapAlloc(GetProcessHeap(), 0, buflen);
 
-    if (GetAdaptersInfo(adapter, &buflen) == ERROR_BUFFER_OVERFLOW) {
+    if (!iphlpapi) {
+        iphlpapi = LoadLibraryA("iphlpapi.dll");
+        pGetAdaptersInfo = (pfnGetAdaptersInfo)GetProcAddress(iphlpapi, "GetAdaptersInfo");
+    }
+    if (pGetAdaptersInfo(adapter, &buflen) == ERROR_BUFFER_OVERFLOW) {
         HeapFree(GetProcessHeap(), 0, adapter);
         adapter = HeapAlloc(GetProcessHeap(), 0, buflen);
     }
 
-    if (GetAdaptersInfo(adapter, &buflen) == NO_ERROR) {
+    if (pGetAdaptersInfo(adapter, &buflen) == NO_ERROR) {
         for (i = 0; i < ADDRESS_BYTES_NEEDED; i++) {
             address[i] = adapter->Address[i];
         }

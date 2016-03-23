@@ -42,6 +42,7 @@
  */
 
 #include "config.h"
+#include "wine/port.h"
 
 #include <stdarg.h>
 #include "windef.h"
@@ -54,6 +55,30 @@
 #include "gdi_private.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(bidi);
+
+HMODULE usp10dll;
+
+typedef HRESULT(WINAPI *pfnScriptItemize)(const WCHAR *pwcInChars, int cInChars, int cMaxItems, const SCRIPT_CONTROL *psControl, const SCRIPT_STATE *psState, SCRIPT_ITEM *pItems, int *pcItems);
+pfnScriptItemize pScriptItemize;
+
+typedef HRESULT(WINAPI *pfnScriptFreeCache)(SCRIPT_CACHE *psc);
+pfnScriptFreeCache pScriptFreeCache;
+
+typedef HRESULT(WINAPI *pfnScriptLayout)(int runs, const BYTE *level, int *vistolog, int *logtovis);
+pfnScriptLayout pScriptLayout;
+
+typedef HRESULT(WINAPI *pfnScriptShape)(HDC hdc, SCRIPT_CACHE *psc, const WCHAR *pwcChars, int cChars, int cMaxGlyphs, SCRIPT_ANALYSIS *psa, WORD *pwOutGlyphs, WORD *pwLogClust, SCRIPT_VISATTR *psva, int *pcGlyphs);
+pfnScriptShape pScriptShape;
+
+void loadUsp10() {
+    if (!usp10dll) {
+        usp10dll = LoadLibraryA("usp10.dll");
+        pScriptItemize = (pfnScriptItemize)GetProcAddress(usp10dll, "ScriptItemize");
+        pScriptFreeCache = (pfnScriptFreeCache)GetProcAddress(usp10dll, "ScriptFreeCache");
+        pScriptLayout = (pfnScriptLayout)GetProcAddress(usp10dll, "ScriptLayout");
+        pScriptShape = (pfnScriptShape)GetProcAddress(usp10dll, "ScriptShape");
+    }
+}
 
 /* HELPER FUNCTIONS AND DECLARATIONS */
 
@@ -309,6 +334,7 @@ static void BidiLines(int baselevel, LPWSTR pszOutLine, LPCWSTR pszLine, const W
         return;
     }
 
+    loadUsp10();
     do
     {
         /* break lines at LS */
@@ -321,7 +347,7 @@ static void BidiLines(int baselevel, LPWSTR pszOutLine, LPCWSTR pszLine, const W
         {
             int i;
             /* reorder each line in place */
-            ScriptLayout(cchLine, plevelLine, NULL, run);
+            pScriptLayout(cchLine, plevelLine, NULL, run);
             for (i = 0; i < cchLine; i++)
                 pszOutLine[done+run[i]] = pszLine[i];
         }
@@ -402,6 +428,8 @@ BOOL BIDI_Reorder(
         WARN("Out of memory\n");
         return FALSE;
     }
+
+    loadUsp10();
 
     if (lpOutString)
         memcpy(lpOutString, lpString, uCount * sizeof(WCHAR));
@@ -536,7 +564,7 @@ BOOL BIDI_Reorder(
                 }
         }
 
-        res = ScriptItemize(lpString + done, i, maxItems, &Control, &State, pItems, &nItems);
+        res = pScriptItemize(lpString + done, i, maxItems, &Control, &State, pItems, &nItems);
         while (res == E_OUTOFMEMORY)
         {
             maxItems = maxItems * 2;
@@ -551,7 +579,7 @@ BOOL BIDI_Reorder(
                 HeapFree(GetProcessHeap(), 0, psva);
                 return FALSE;
             }
-            res = ScriptItemize(lpString + done, i, maxItems, &Control, &State, pItems, &nItems);
+            res = pScriptItemize(lpString + done, i, maxItems, &Control, &State, pItems, &nItems);
         }
 
         if (lpOutString || lpOrder)
@@ -618,7 +646,7 @@ BOOL BIDI_Reorder(
             for (j = 0; j < nItems; j++)
                 runOrder[j] = pItems[j].a.s.uBidiLevel;
 
-            ScriptLayout(nItems, runOrder, visOrder, NULL);
+            pScriptLayout(nItems, runOrder, visOrder, NULL);
 
             for (j = 0; j < nItems; j++)
             {
@@ -628,7 +656,7 @@ BOOL BIDI_Reorder(
 
                 cChars = pItems[visOrder[j]+1].iCharPos - curItem->iCharPos;
 
-                res = ScriptShape(hDC, &psc, lpString + done + curItem->iCharPos, cChars, cMaxGlyphs, &curItem->a, run_glyphs, pwLogClust, psva, &cOutGlyphs);
+                res = pScriptShape(hDC, &psc, lpString + done + curItem->iCharPos, cChars, cMaxGlyphs, &curItem->a, run_glyphs, pwLogClust, psva, &cOutGlyphs);
                 while (res == E_OUTOFMEMORY)
                 {
                     cMaxGlyphs *= 2;
@@ -644,11 +672,11 @@ BOOL BIDI_Reorder(
                         HeapFree(GetProcessHeap(), 0, psva);
                         HeapFree(GetProcessHeap(), 0, pwLogClust);
                         HeapFree(GetProcessHeap(), 0, *lpGlyphs);
-                        ScriptFreeCache(&psc);
+                        pScriptFreeCache(&psc);
                         *lpGlyphs = NULL;
                         return FALSE;
                     }
-                    res = ScriptShape(hDC, &psc, lpString + done + curItem->iCharPos, cChars, cMaxGlyphs, &curItem->a, run_glyphs, pwLogClust, psva, &cOutGlyphs);
+                    res = pScriptShape(hDC, &psc, lpString + done + curItem->iCharPos, cChars, cMaxGlyphs, &curItem->a, run_glyphs, pwLogClust, psva, &cOutGlyphs);
                 }
                 if (res)
                 {
@@ -687,6 +715,6 @@ BOOL BIDI_Reorder(
     HeapFree(GetProcessHeap(), 0, run_glyphs);
     HeapFree(GetProcessHeap(), 0, pwLogClust);
     HeapFree(GetProcessHeap(), 0, psva);
-    ScriptFreeCache(&psc);
+    pScriptFreeCache(&psc);
     return TRUE;
 }

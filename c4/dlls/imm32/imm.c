@@ -18,6 +18,8 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA
  */
+#include "config.h"
+#include "wine/port.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -40,7 +42,25 @@ WINE_DEFAULT_DEBUG_CHANNEL(imm);
 #define IMM_INIT_MAGIC 0x19650412
 BOOL WINAPI User32InitializeImmEntryTable(DWORD);
 
-#define MAKE_FUNCPTR(f) typeof(f) * p##f
+#define MAKE_FUNCPTR(f) pf##f p##f
+
+typedef BOOL (WINAPI *pfImeInquire)(LPIMEINFO, LPWSTR, LPCWSTR lpszOptions);
+typedef BOOL (WINAPI *pfImeConfigure)(HKL, HWND, DWORD, LPVOID);
+typedef DWORD (WINAPI *pfImeConversionList)(HIMC, LPCWSTR, LPCANDIDATELIST, DWORD, UINT);
+typedef BOOL (WINAPI *pfImeDestroy)(UINT);
+typedef LRESULT (WINAPI *pfImeEscape)(HIMC, UINT, LPVOID);
+typedef BOOL (WINAPI *pfImeProcessKey)(HIMC, UINT, LPARAM, const LPBYTE);
+typedef BOOL (WINAPI *pfImeSelect)(HIMC, BOOL);
+typedef BOOL (WINAPI *pfImeSetActiveContext)(HIMC, BOOL);
+typedef UINT (WINAPI *pfImeToAsciiEx)(UINT, UINT, const LPBYTE, LPDWORD, UINT, HIMC);
+typedef BOOL (WINAPI *pfNotifyIME)(HIMC, DWORD, DWORD, DWORD);
+typedef BOOL (WINAPI *pfImeRegisterWord)(LPCWSTR, DWORD, LPCWSTR);
+typedef BOOL (WINAPI *pfImeUnregisterWord)(LPCWSTR, DWORD, LPCWSTR);
+typedef UINT (WINAPI *pfImeGetRegisterWordStyle)(UINT, LPSTYLEBUFW);
+typedef UINT (WINAPI *pfImeEnumRegisterWord)(REGISTERWORDENUMPROCW, LPCWSTR, DWORD, LPCWSTR, LPVOID);
+typedef BOOL (WINAPI *pfImeSetCompositionString)(HIMC, DWORD, LPCVOID, DWORD, LPCVOID, DWORD);
+typedef DWORD (WINAPI *pfImeGetImeMenuItems)(HIMC, DWORD, DWORD, LPIMEMENUITEMINFOW, LPIMEMENUITEMINFOW, DWORD);
+
 typedef struct _tagImmHkl{
     struct list entry;
     HKL         hkl;

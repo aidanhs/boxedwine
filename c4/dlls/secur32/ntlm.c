@@ -17,6 +17,8 @@
  *
  * This file implements the NTLM security provider.
  */
+#include "config.h"
+#include "wine/port.h"
 
 #include <assert.h>
 #include <stdarg.h>
@@ -42,6 +44,21 @@ WINE_DECLARE_DEBUG_CHANNEL(winediag);
 #define MIN_NTLM_AUTH_MICRO_VERSION 25
 
 static CHAR ntlm_auth[] = "ntlm_auth";
+HMODULE netAPIdll;
+
+typedef NET_API_STATUS(WINAPI *pfnNetWkstaUserGetInfo)(LMSTR reserved, DWORD level, PBYTE* bufptr);
+pfnNetWkstaUserGetInfo pNetWkstaUserGetInfo;
+
+typedef NET_API_STATUS(WINAPI *pfnNetApiBufferFree)(LPVOID Buffer);
+pfnNetApiBufferFree pNetApiBufferFree;
+
+void loadNetAPI() {
+    if (!netAPIdll) {
+        netAPIdll = LoadLibraryA("netapi32.dll");
+        pNetWkstaUserGetInfo = (pfnNetWkstaUserGetInfo)GetProcAddress(netAPIdll, "NetWkstaUserGetInfo");
+        pNetApiBufferFree = (pfnNetApiBufferFree)GetProcAddress(netAPIdll, "NetApiBufferFree");
+    }
+}
 
 /***********************************************************************
  *              QueryCredentialsAttributesA
@@ -530,14 +547,15 @@ SECURITY_STATUS SEC_ENTRY ntlm_InitializeSecurityContextW(
             }
             else
             {
-                status = NetWkstaUserGetInfo(NULL, 1, (LPBYTE *)&ui);
+                loadNetAPI();
+                status = pNetWkstaUserGetInfo(NULL, 1, (LPBYTE *)&ui);
                 if (status != NERR_Success || ui == NULL || ntlm_cred->no_cached_credentials)
                 {
                     ret = SEC_E_NO_CREDENTIALS;
                     goto isc_end;
                 }
                 username = ntlm_GetUsernameArg(ui->wkui1_username, -1);
-                NetApiBufferFree(ui);
+                pNetApiBufferFree(ui);
 
                 TRACE("using cached credentials\n");
 

@@ -3356,7 +3356,7 @@ BOOL WINAPI EnumDesktopWindows( HDESK desktop, WNDENUMPROC func, LPARAM lparam )
 }
 
 
-#ifdef __i386__
+#if defined __i386__ && !defined BOXEDWINE
 /* Some apps pass a non-stdcall proc to EnumChildWindows,
  * so we need a small assembly wrapper to call the proc.
  */

@@ -20,7 +20,7 @@
 
 #include <string.h>
 
-#include "mfdrv/metafiledrv.h"
+#include "metafiledrv.h"
 #include "wine/debug.h"
 
 WINE_DEFAULT_DEBUG_CHANNEL(metafile);

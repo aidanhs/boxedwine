@@ -20,7 +20,7 @@
 
 #include <assert.h>
 
-#include "gdi_private.h"
+#include "../gdi_private.h"
 #include "dibdrv.h"
 
 #include "wine/exception.h"
@@ -572,7 +572,7 @@ static void unlock_bits_surface( struct gdi_image_bits *bits )
 
 void dibdrv_set_window_surface( DC *dc, struct window_surface *surface )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256] )];
+    char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     RECT rect;
     void *bits;

@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include "wine/port.h"
 
 #include <stdarg.h>
 #include <string.h>
@@ -56,7 +57,7 @@ static const struct gdi_obj_funcs brush_funcs =
 
 static BOOL copy_bitmap( struct brush_pattern *brush, HBITMAP bitmap )
 {
-    char buffer[FIELD_OFFSET( BITMAPINFO, bmiColors[256])];
+    char buffer[sizeof(BITMAPINFO) + sizeof(RGBQUAD) * 256];
     BITMAPINFO *info = (BITMAPINFO *)buffer;
     struct gdi_image_bits bits;
     struct bitblt_coords src;

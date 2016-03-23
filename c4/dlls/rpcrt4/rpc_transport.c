@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
-#if defined(__MINGW32__) || defined (_MSC_VER)
+#if (defined(__MINGW32__) || defined (_MSC_VER)) && !defined(BOXEDWINE)
 # include <ws2tcpip.h>
 # ifndef EADDRINUSE
 #  define EADDRINUSE WSAEADDRINUSE
@@ -97,6 +97,10 @@
 #include "rpc_message.h"
 #include "rpc_server.h"
 #include "epm_towers.h"
+
+#ifdef BOXEDWINE
+typedef ULONG          u_long;
+#endif
 
 #ifndef SOL_TCP
 # define SOL_TCP IPPROTO_TCP

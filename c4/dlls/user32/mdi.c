@@ -79,6 +79,8 @@
  *                     Doc10                      5008
  *
  */
+#include "config.h"
+#include "wine/port.h"
 
 #include <stdlib.h>
 #include <stdarg.h>
