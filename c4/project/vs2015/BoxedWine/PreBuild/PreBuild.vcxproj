@@ -145,6 +145,7 @@
     <Midl Include="..\..\..\..\include\activaut.idl" />
     <Midl Include="..\..\..\..\include\activdbg.idl" />
     <Midl Include="..\..\..\..\include\activscp.idl" />
+    <Midl Include="..\..\..\..\include\atliface.idl" />
     <Midl Include="..\..\..\..\include\comcat.idl" />
     <Midl Include="..\..\..\..\include\commoncontrols.idl" />
     <Midl Include="..\..\..\..\include\ctfutb.idl" />

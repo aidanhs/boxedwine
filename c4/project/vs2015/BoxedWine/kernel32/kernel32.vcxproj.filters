@@ -140,6 +140,9 @@
     <ClCompile Include="registry.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="spec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\..\dlls\kernel32\locale_rc.rc">

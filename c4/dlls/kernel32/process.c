@@ -66,7 +66,7 @@ WINE_DEFAULT_DEBUG_CHANNEL(process);
 WINE_DECLARE_DEBUG_CHANNEL(file);
 WINE_DECLARE_DEBUG_CHANNEL(relay);
 
-#ifdef __APPLE__
+#if defined __APPLE__ || defined BOXEDWINE
 extern char **__wine_get_main_environment(void);
 #else
 extern char **__wine_main_environ;

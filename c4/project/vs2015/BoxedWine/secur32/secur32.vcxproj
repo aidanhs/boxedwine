@@ -100,7 +100,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>advapi32.lib;wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;kernel32.lib;ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>secur32.def</ModuleDefinitionFile>
     </Link>
@@ -137,7 +137,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>advapi32.lib;wine_kernel32.lib;wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;kernel32.lib;ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>secur32.def</ModuleDefinitionFile>
     </Link>

@@ -632,14 +632,41 @@ int winecrt_dlclose(void *handle) {
 char *winecrt_dlerror(void) {
     return 0;
 }
+
+typedef void (*pfn__wine_spec_init_ctor)(void);
+typedef BOOL (WINAPI *pfnDllMain)(HINSTANCE inst, DWORD reason, LPVOID reserved);
+
 void *winecrt_dlopen(const char *file, int mode) {
     char path[MAX_PATH];
+    HMODULE result=0;
+    int i;
+
     GetModuleFileName(NULL, path, MAX_PATH);
     strrchr(path, '\\')[0]=0;
-    strcat(path, "\\wine_");
+    strcat(path, "\\");
     strcat(path, strrchr(file, '/')+1);
     path[strlen(path)-3]=0;
-    return LoadLibrary(path);
+    
+    // not sure why kernel32.dll has such a hard time loading here
+    for (i=0;i<10 && !result;i++) {
+        result = LoadLibraryExA(path, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+        if (!result)
+            Sleep(10);
+    }        
+    if (result) {
+        IMAGE_DOS_HEADER* pDOSHeader = (IMAGE_DOS_HEADER*)result;
+        IMAGE_NT_HEADERS* pNTHeaders = (IMAGE_NT_HEADERS*)((BYTE*)pDOSHeader + pDOSHeader->e_lfanew);
+        IMAGE_NT_HEADERS* nt = GetProcAddress(result, "__wine_spec_nt_header");
+        pfn__wine_spec_init_ctor p__wine_spec_init_ctor = (pfn__wine_spec_init_ctor)GetProcAddress(result, "__wine_spec_init_ctor");
+        pfnDllMain pDllMain = (pfnDllMain)GetProcAddress(result, "DllMain");
+        if (nt)
+            *nt = *pNTHeaders;
+        if (p__wine_spec_init_ctor)
+            p__wine_spec_init_ctor();
+        if (pDllMain) 
+            pDllMain(result, 1, 0);
+    }
+    return result;
 }
 void *winecrt_dlsym(void* handle, const char* name) {
     return GetProcAddress(handle, name);
@@ -705,7 +732,12 @@ int winecrt_fcntl(int fildes, int cmd, ...) {
 	return -1;
 }
 FILE *winecrt_fdopen(int fildes, const char *mode) {
-    return fdopen(fildes, mode);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    return fdopen(ufd->fd, mode);
 }
 int winecrt_fflush(FILE* stream) {
     return fflush(stream);
@@ -821,10 +853,10 @@ char* winecrt_getenv(const char * name) {
 	return NULL;
 }
 char** winecrt_getEnviron() {
-    notimplemented("getEnviron");
+    return environ;
 }
 int* winecrt_getErrno() {
-    // :TODO: I doublt all of these are the name, I should map them
+    // :TODO: I doublt all of these are the same, I should map them
 	return _errno();
 }
 int winecrt_gethostname(char *name, size_t namelen) {
@@ -1051,6 +1083,17 @@ void *winecrt_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_
 }
 
 int winecrt_mprotect(void *addr, size_t len, int prot) {
+    int vprot = 0;
+
+    if (prot==6) // PROT_WRITE | PROT_READ
+        vprot = PAGE_WRITECOPY;
+    else if (prot==4) // PROT_READ
+        vprot = PAGE_READONLY;
+    else {
+        notimplemented("mprotect %X\n", prot);
+    }
+    if (vprot)
+        VirtualProtect(addr, len, vprot, NULL);
     return 0;
 }
 int winecrt_msync(void *addr, size_t len, int flags) {
@@ -1133,6 +1176,7 @@ int winecrt_open(const char *path, int oflag, ...) {
 }
 DIR *winecrt_opendir(const char *dirname) {
     notimplemented("opendir");
+    return NULL;
 }
 void winecrt_perror(const char *s) {
     perror(s);
@@ -1545,7 +1589,7 @@ int winecrt_sigaltstack(const stack_t * ss, stack_t * oss) {
     notimplemented("sigaltstack");
 }
 void winecrt_siglongjmp(sigjmp_buf env, int value) {
-    notimplemented("siglongjmp");
+    longjmp(env, value);
 }
 __sighandler_t winecrt_signal(int sig, __sighandler_t func) {
     notimplemented("signal");
@@ -1554,7 +1598,7 @@ int winecrt_sigprocmask(int how, const sigset_t *set, sigset_t *oset) {
     notimplemented("sigprocmask");
 }
 int winecrt_sigsetjmp(sigjmp_buf env, int savemask) {
-    notimplemented("sigsetjmp");
+    return setjmp(env);
 }
 double winecrt_sin(double x) {
     return sin(x);
@@ -1744,6 +1788,9 @@ long int winecrt_syscall(long int __sysno, ...) {
     notimplemented("syscall");
 }
 long winecrt_sysconf(int name) {
+    if (name == 4) { // _SC_PAGESIZE
+        return 4096;
+    }
     notimplemented("sysconf");
 }
 int winecrt_system(const char *command) {

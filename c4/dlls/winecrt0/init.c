@@ -26,7 +26,7 @@
 
 enum init_state __wine_spec_init_state = NO_INIT_DONE;
 
-extern const IMAGE_NT_HEADERS __wine_spec_nt_header;
+extern IMAGE_NT_HEADERS __wine_spec_nt_header;
 extern const char __wine_spec_file_name[];
 
 void DECLSPEC_HIDDEN __wine_spec_init(void)

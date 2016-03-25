@@ -18,34 +18,52 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\dlls\winecrt0\crt0_private.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\delay_load.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\dll_entry.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\dll_main.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\drv_entry.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\exception.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\exe16_entry.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\exe_entry.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\exe_main.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\exe_wentry.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\exe_wmain.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\init.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\register.c" />
+    <ClCompile Include="..\..\..\..\dlls\winecrt0\stub.c" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{80989600-BA3A-427F-9D30-DFFCF3C19C2B}</ProjectGuid>
+    <ProjectGuid>{713C726C-91C9-430B-A73A-11DFFC76F43A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>rpcrt4</RootNamespace>
+    <RootNamespace>winecrt0</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -70,20 +88,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\..\..\..\include;..\include</IncludePath>
+    <IncludePath>..\..\..\..\include;..\include;..\generated</IncludePath>
     <LibraryPath>..\Debug</LibraryPath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>..\..\..\..\include;..\include</IncludePath>
+    <IncludePath>..\..\..\..\include;..\include;..\generated</IncludePath>
     <LibraryPath>..\Release</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -91,16 +101,13 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_RPCRT4_;MSWMSG;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DECLSPEC_NORETURN=;BOXEDWINE;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>uuid.lib;secur32.lib;advapi32.lib;kernel32.lib;ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -109,11 +116,10 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -124,7 +130,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_RPCRT4_;MSWMSG;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DECLSPEC_NORETURN=;BOXEDWINE;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -132,9 +138,6 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>uuid.lib;secur32.lib;advapi32.lib;kernel32.lib;ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
-      <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -145,57 +148,14 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;RPCRT4_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\cpsf.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\epm_towers.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\ncastatus.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\ndr_misc.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\ndr_stubless.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_assoc.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_binding.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_defs.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_message.h" />
-    <ClInclude Include="..\..\..\..\dlls\rpcrt4\rpc_server.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\cproxy.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\cpsf.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\cstub.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_clientserver.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_contexthandle.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_es.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_fullpointer.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_marshall.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_ole.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\ndr_stubless.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpcrt4_main.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_assoc.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_async.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_binding.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_epmap.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_message.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_server.c" />
-    <ClCompile Include="..\..\..\..\dlls\rpcrt4\rpc_transport.c" />
-    <ClCompile Include="epm_c.c" />
-  </ItemGroup>
-  <ItemGroup>
-    <Midl Include="..\..\..\..\dlls\rpcrt4\epm.idl">
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\include\%(Filename).h</HeaderFileName>
-      <HeaderFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\include\%(Filename).h</HeaderFileName>
-    </Midl>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="..\..\..\..\dlls\rpcrt4\version.rc" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

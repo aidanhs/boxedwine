@@ -73,7 +73,7 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>..\..\..\..\include;..\include</IncludePath>
     <LibraryPath>..\Debug</LibraryPath>
-    <TargetName>wine_$(ProjectName)</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -82,7 +82,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>..\..\..\..\include;..\include</IncludePath>
     <LibraryPath>..\Release</LibraryPath>
-    <TargetName>wine_$(ProjectName)</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -93,7 +93,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;ASM_INTEL;__WINESRC__;__i386__;WIN32;_DEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -101,11 +101,16 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <AdditionalDependencies>ntdll.lib;winelib.lib;winecrt.lib;winecrt0.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>kernel32.def</ModuleDefinitionFile>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>kernel32.private.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -129,7 +134,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;USE_COMPILER_EXCEPTIONS;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_NORMALIZE_;_KERNEL32_;DECLSPEC_NORETURN=;BOXEDWINE;ASM_INTEL;__WINESRC__;__i386__;WIN32;NDEBUG;_WINDOWS;_USRDLL;KERNEL32_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -138,11 +143,16 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>wine_ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
+      <AdditionalDependencies>ntdll.lib;winelib.lib;winecrt.lib;winecrt0.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>kernel32.def</ModuleDefinitionFile>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>kernel32.private.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -206,6 +216,7 @@
     <ClCompile Include="..\..\..\..\dlls\kernel32\volume.c" />
     <ClCompile Include="..\..\..\..\dlls\kernel32\wer.c" />
     <ClCompile Include="registry.c" />
+    <ClCompile Include="spec.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\..\..\dlls\kernel32\locale_rc.rc" />

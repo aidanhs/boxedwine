@@ -7,7 +7,7 @@ __wine_dbg_set_functions
 __wine_dll_register
 __wine_main_argc
 __wine_main_argv
-__wine_main_environ
+__wine_get_main_environment
 __wine_main_wargv
 atoiW
 atolW

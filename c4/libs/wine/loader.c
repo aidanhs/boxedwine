@@ -378,7 +378,9 @@ static void fixup_resources( IMAGE_RESOURCE_DIRECTORY *dir, BYTE *root, int delt
 /* map a builtin dll in memory and fixup RVAs */
 static void *map_dll( const IMAGE_NT_HEADERS *nt_descr )
 {
-#ifdef HAVE_MMAP
+#ifdef BOXEDWINE
+    return nt_descr->OptionalHeader.ImageBase;
+#elif defined HAVE_MMAP
     IMAGE_DATA_DIRECTORY *dir;
     IMAGE_DOS_HEADER *dos;
     IMAGE_NT_HEADERS *nt;

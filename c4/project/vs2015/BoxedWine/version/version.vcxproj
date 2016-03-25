@@ -101,7 +101,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>version.def</ModuleDefinitionFile>
-      <AdditionalDependencies>winecrt.lib;winelib.lib;wine_kernel32.lib;wine_ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>winecrt.lib;winelib.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
@@ -138,7 +138,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>version.def</ModuleDefinitionFile>
-      <AdditionalDependencies>winecrt.lib;winelib.lib;wine_kernel32.lib;wine_ntdll.lib</AdditionalDependencies>
+      <AdditionalDependencies>winecrt.lib;winelib.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>

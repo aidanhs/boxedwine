@@ -1598,7 +1598,9 @@ static void load_builtin_callback( void *module, const char *filename )
         return;
     }
     wm->ldr.Flags |= LDR_WINE_INTERNAL;
-
+#ifdef BOXEDWINE
+    wm->ldr.Flags &= ~LDR_DONT_RESOLVE_REFS;
+#endif
     if ((nt->FileHeader.Characteristics & IMAGE_FILE_DLL) ||
         nt->OptionalHeader.Subsystem == IMAGE_SUBSYSTEM_NATIVE ||
         is_16bit_builtin( module ))

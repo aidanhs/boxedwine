@@ -177,5 +177,8 @@
     <Midl Include="..\..\..\..\include\ctfutb.idl">
       <Filter>Source Files</Filter>
     </Midl>
+    <Midl Include="..\..\..\..\include\atliface.idl">
+      <Filter>Source Files</Filter>
+    </Midl>
   </ItemGroup>
 </Project>

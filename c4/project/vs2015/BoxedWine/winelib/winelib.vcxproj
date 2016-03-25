@@ -98,6 +98,8 @@
       <ModuleDefinitionFile>wine.def</ModuleDefinitionFile>
       <MapFileName>../../../../libs/wine/wine.def</MapFileName>
       <MapExports>true</MapExports>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -135,6 +137,8 @@
       <ModuleDefinitionFile>wine.def</ModuleDefinitionFile>
       <MapFileName>../../../../libs/wine/wine.def</MapFileName>
       <MapExports>true</MapExports>
+      <EntryPointSymbol>
+      </EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

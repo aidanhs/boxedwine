@@ -1,4 +1,4 @@
-LIBRARY WINE_KERNEL32
+LIBRARY KERNEL32
 EXPORTS
 AcquireSRWLockExclusive=ntdll.RtlAcquireSRWLockExclusive
 AcquireSRWLockShared=ntdll.RtlAcquireSRWLockShared
@@ -1062,4 +1062,5 @@ __wine_dll_unregister_16
 wine_get_unix_file_name
 wine_get_dos_file_name
 __wine_kernel_init
-
+__wine_spec_nt_header DATA
+__wine_spec_init_ctor PRIVATE

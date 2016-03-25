@@ -1,4 +1,4 @@
-LIBRARY WINE_NTDLL
+LIBRARY NTDLL
 EXPORTS
 DbgBreakPoint
 DbgPrint
@@ -953,3 +953,5 @@ wine_nt_to_unix_file_name
 wine_unix_to_nt_file_name
 __wine_init_windows_dir
 __wine_process_init
+__wine_spec_nt_header DATA
+__wine_spec_init_ctor PRIVATE

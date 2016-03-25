@@ -138,6 +138,9 @@
     <ClCompile Include="..\..\..\..\dlls\ntdll\signal_win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="spec.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\dlls\ntdll\ntdll_misc.h">
