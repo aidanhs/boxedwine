@@ -104,6 +104,9 @@
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>advapi32.private.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -141,6 +144,9 @@
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>advapi32.def</ModuleDefinitionFile>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>advapi32.private.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

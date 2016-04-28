@@ -104,6 +104,9 @@
       <NoEntryPoint>true</NoEntryPoint>
       <ModuleDefinitionFile>usp10.def</ModuleDefinitionFile>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>usp10.private.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -139,6 +142,9 @@
       <AdditionalDependencies>gdi32.lib;winecrt.lib;winelib.lib;kernel32.lib;advapi32.lib</AdditionalDependencies>
       <ModuleDefinitionFile>usp10.def</ModuleDefinitionFile>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>usp10.private.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

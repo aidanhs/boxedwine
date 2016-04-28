@@ -903,7 +903,12 @@ static NTSTATUS map_file_into_view( struct file_view *view, int fd, size_t start
     }
 
     /* Reserve the memory with an anonymous mmap */
+#ifdef BOXEDWINE
+    // :TODO: probably not right
+    ptr = (char *)view->base + start;
+#else
     ptr = wine_anon_mmap( (char *)view->base + start, size, PROT_READ | PROT_WRITE, MAP_FIXED );
+#endif
     if (ptr == (void *)-1) return FILE_GetNtStatus();
     /* Now read in the file */
     pread( fd, ptr, size, offset );

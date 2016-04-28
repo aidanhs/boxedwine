@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+    <file name="ntdll.dll" />
+    <file name="kernel32.dll" />
+    <file name="advapi32.dll" />
+    <file name="gdi32.dll" />
+    <file name="version.dll" />
+    <file name="usp10.dll" />
+</assembly>

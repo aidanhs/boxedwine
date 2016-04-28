@@ -136,7 +136,8 @@ struct UnixFileHandle {
     };
     int refCount;
     int type;
-    void* data;
+    char path[MAX_PATH];
+    DIR* dir;
     unsigned char blocking;
 };
 
@@ -231,17 +232,19 @@ struct UnixFileHandle* getUnixFileHandle(int fd) {
     return NULL;
 }
 
-int getNewUnixFileHandle(int fd, int type) {
+int getNewUnixFileHandle(int fd, int type, const char* path) {
     int i;
     struct UnixFileHandle* ufd;
 
     for (i = 0; i<processInfo->maxFileHandles; i++) {
         if (!processInfo->unixFileHandles[i]) {
             struct UnixFileHandle* ufd = malloc(sizeof(struct UnixFileHandle));
+            memset(ufd, 0, sizeof(struct UnixFileHandle));
             ufd->fd = fd;
             ufd->type = type;
             ufd->refCount = 1;
-            ufd->data = 0;
+            if (path)
+                strcpy(ufd->path, path);
             processInfo->unixFileHandles[i] = ufd;
             return i;
         }
@@ -273,6 +276,9 @@ char rootPath[MAX_PATH];
 
 char *winecrt_getcwd(char *buf, size_t size);
 char* getPath(const char* path) {
+    int len;
+    char* p;
+
 	if (!getPathBuffer) {
 		getPathBuffer = malloc(MAX_PATH);
 	}
@@ -283,6 +289,23 @@ char* getPath(const char* path) {
 		winecrt_getcwd(getPathBuffer + len, MAX_PATH - len);
 		strcat(getPathBuffer, "/");
 	}
+    len = strlen(getPathBuffer);
+    p = getPathBuffer+len;
+    while(1) {
+        if (path[0]==0) {
+            p[0] = 0;
+            break;
+        }
+        if ((path[0]=='c' || path[0] == 'C') && path[1] == ':') {
+            path+=2;
+            strcpy(p, "../drive_c");
+            p+=10;            
+        } else {
+            p[0]=path[0];
+            path++;
+            p++;
+        }        
+    }
 	strcat(getPathBuffer, path);
 	return getPathBuffer;
 }
@@ -307,9 +330,9 @@ void initProcess() {
     processInfo->unixFileHandles = malloc(sizeof(struct UnixFileHandle*)*processInfo->maxFileHandles);
     memset(processInfo->unixFileHandles, 0, sizeof(struct UnixFileHandle*)*processInfo->maxFileHandles);
     // set up stdout, stdin, stderr
-    getNewUnixFileHandle(0, UNIX_FILE_HANDLE_FILE);
-    getNewUnixFileHandle(1, UNIX_FILE_HANDLE_FILE);
-    getNewUnixFileHandle(2, UNIX_FILE_HANDLE_FILE);
+    getNewUnixFileHandle(0, UNIX_FILE_HANDLE_FILE, "stdout");
+    getNewUnixFileHandle(1, UNIX_FILE_HANDLE_FILE, "stdin");
+    getNewUnixFileHandle(2, UNIX_FILE_HANDLE_FILE, "stderr");
 }
 
 void notimplemented(const char* msg) {
@@ -345,7 +368,7 @@ int winecrt_accept(int socket, struct sockaddr* address, socklen_t *raddress_len
             errno = EWOULDBLOCK;
             return -1;
         }
-        result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_UNIX_SOCKET);
+        result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_UNIX_SOCKET, "socket");
         resultUfd = getUnixFileHandle(result);
         resultUfd->socket = malloc(sizeof(struct UnixSocket));
         memset(resultUfd->socket, 0, sizeof(struct UnixSocket));
@@ -369,7 +392,7 @@ int winecrt_accept(int socket, struct sockaddr* address, socklen_t *raddress_len
     if (ufd->type == UNIX_FILE_HANDLE_SOCKET) {
         int result = accept(ufd->fd, address, raddress_len);
         if (result>0)
-            result = getNewUnixFileHandle(result, UNIX_FILE_HANDLE_SOCKET);
+            result = getNewUnixFileHandle(result, UNIX_FILE_HANDLE_SOCKET, "socket");
         return result;
     } else {
         printf("accept: currently only AF_UNIX is supported\n");
@@ -469,6 +492,7 @@ int winecrt_chdir(const char *path) {
 	errno = ENOENT;
 	return -1;
 }
+int winecrt_closedir(DIR* p);
 int winecrt_close(int fildes) {
     struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
     int result;
@@ -549,15 +573,17 @@ int winecrt_close(int fildes) {
     } else {
 	    result = close(ufd->fd);
     }
-    if (ufd->data) {
-        free(ufd->data);
+    if (ufd->dir) {
+        winecrt_closedir(ufd->dir);
     }
     free(ufd);
     return result;
 }
+#ifndef _MSC_VER
 int winecrt_closedir(DIR *dirp) {
     notimplemented("closedir");
 }
+#endif
 int winecrt_connect(int socket, const struct sockaddr *address, socklen_t address_len) {
     struct UnixFileHandle* ufd = getUnixFileHandle(socket);
     if (!ufd) {
@@ -702,7 +728,7 @@ int winecrt_fchdir(int fildes) {
         return -1;
     }
 	if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
-		return winecrt_chdir((const char*)ufd->data);
+		return winecrt_chdir(ufd->path);
 	}
 	errno = ENOTDIR;
 	return -1;
@@ -799,7 +825,7 @@ int winecrt_fstat(int fildes, struct winecrt_stat *buf) {
         return -1;
     }
 	if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
-		return winecrt_stat((const char*)ufd->data, buf);
+		return winecrt_stat(ufd->path, buf);
 	}
 	{
 		struct stat s;
@@ -1003,7 +1029,19 @@ double winecrt_log(double x) {
     return log(x);
 }
 off_t winecrt_lseek(int fildes, off_t offset, int whence) {
-    return lseek(fildes, offset, whence);
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_FILE)
+        return lseek(ufd->fd, offset, whence);
+    if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
+        int ii=0;
+        return 0;
+    }
+    notimplemented("lseek for type %d\n", ufd->type);
+    return 0;
 }
 int winecrt_lstat(const char *file_name, struct winecrt_stat *buf) {
 	return winecrt_stat(file_name, buf);
@@ -1075,6 +1113,7 @@ void *winecrt_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_
 
     if (fildes>=0) {
         notimplemented("mmap with fildes\n");
+        errno = ENODEV;
         return MAP_FAILED;
     }
     result = malloc(len);
@@ -1164,20 +1203,21 @@ int winecrt_open(const char *path, int oflag, ...) {
 		if (stat(p, &s) == 0) {
 			if (S_ISDIR(s.st_mode)) {
                 struct UnixFileHandle* ufd;
-                result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_DIRECTORY);
+                result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_DIRECTORY, p + strlen(rootPath));
                 ufd = getUnixFileHandle(result);
-                ufd->data = strdup(p + strlen(rootPath));
 				return result;
 			}
 		}
         return result;
 	}
-    return getNewUnixFileHandle(result, UNIX_FILE_HANDLE_FILE);
+    return getNewUnixFileHandle(result, UNIX_FILE_HANDLE_FILE, p + strlen(rootPath));
 }
+#ifndef _MSC_VER
 DIR *winecrt_opendir(const char *dirname) {
     notimplemented("opendir");
     return NULL;
 }
+#endif
 void winecrt_perror(const char *s) {
     perror(s);
 }
@@ -1283,8 +1323,25 @@ int winecrt_poll(struct pollfd *fds, unsigned int count, int timeout) {
 double winecrt_pow(double x, double y) {
     notimplemented("pow");
 }
+// :TODO: this isn't correct if multiple thread access this same file at the same time
 ssize_t winecrt_pread(int fd, void *buf, size_t count, off_t offset) {
-    notimplemented("pread");
+    struct UnixFileHandle* ufd = getUnixFileHandle(fd);
+    int result;
+    int pos;
+
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    if (ufd->type != UNIX_FILE_HANDLE_FILE) {
+        notimplemented("pread on non file");
+        return -1;
+    }
+    pos = lseek(ufd->fd, 0, SEEK_CUR);
+    lseek(ufd->fd, offset, SEEK_SET);
+    result = read(ufd->fd, buf, count);
+    lseek(ufd->fd, pos, SEEK_SET);
+    return result;
 }
 int winecrt_printf(const char* format, ...) {
     int result;
@@ -1364,9 +1421,11 @@ ssize_t winecrt_read(int fildes, void *buf, size_t nbyte) {
         return recv(ufd->fd, buf, nbyte, 0);
     return read(ufd->fd, buf, nbyte);
 }
+#ifndef _MSC_VER
 struct dirent *winecrt_readdir(DIR *dirp) {
     notimplemented("readdir");
 }
+#endif
 int winecrt_readlink(const char *path, char *buf, size_t size) {
     notimplemented("readlink");
 }
@@ -1623,7 +1682,7 @@ int winecrt_socket(int domain, int type, int protocol) {
     */
 	// AF_UNIX
 	if (domain == 1) {
-        int result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_UNIX_SOCKET);
+        int result = getNewUnixFileHandle(-1, UNIX_FILE_HANDLE_UNIX_SOCKET, "socket");
         struct UnixFileHandle* ufd = getUnixFileHandle(result);
         ufd->socket = malloc(sizeof(struct UnixSocket));
         memset(ufd->socket, 0, sizeof(struct UnixSocket));

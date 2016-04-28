@@ -105,7 +105,7 @@ __declspec(naked) int wine_call_on_stack( int (*func)(void *), void *arg, void *
   __asm xchg esp, esi;
   __asm push edx;
   __asm xor ebp, ebp;
-  __asm call [ecx];
+  __asm call ecx;
   __asm mov esp, esi;
   __asm pop esi;
   __asm pop ebp

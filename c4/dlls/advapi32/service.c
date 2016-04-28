@@ -100,7 +100,7 @@ static unsigned int nb_services;
 static HANDLE service_event;
 static HANDLE stop_event;
 
-extern HANDLE CDECL __wine_make_process_system(void);
+HANDLE DECLSPEC_IMPORT CDECL __wine_make_process_system(void);
 
 typedef RPC_STATUS(WINAPI *pfnRpcBindingFree)(RPC_BINDING_HANDLE* Binding);
 pfnRpcBindingFree pRpcBindingFree;

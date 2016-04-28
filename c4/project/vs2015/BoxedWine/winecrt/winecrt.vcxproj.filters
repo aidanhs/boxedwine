@@ -63,6 +63,9 @@
     <ClCompile Include="windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="dirent.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\winecrt.h">

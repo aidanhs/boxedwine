@@ -104,6 +104,9 @@
       <AdditionalDependencies>winecrt.lib;winelib.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>version.private.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -141,6 +144,9 @@
       <AdditionalDependencies>winecrt.lib;winelib.lib;kernel32.lib;ntdll.lib</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>version.private.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

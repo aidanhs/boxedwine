@@ -65,11 +65,26 @@ extern char **environ;
 #include "winbase.h"
 #include "wine/library.h"
 
+#undef __wine_main_argc
+#undef __wine_main_argv
+#undef __wine_main_wargv
+#undef __wine_main_environ
+
 /* argc/argv for the Windows application */
 int __wine_main_argc = 0;
 char **__wine_main_argv = NULL;
 WCHAR **__wine_main_wargv = NULL;
 char **__wine_main_environ = NULL;
+
+int* __get_wine_main_argc() {
+    return &__wine_main_argc;
+}
+char ***__get_wine_main_argv() {
+    return &__wine_main_argv;
+}
+WCHAR ***__get_wine_main_wargv() {
+    return &__wine_main_wargv;
+}
 
 struct dll_path_context
 {

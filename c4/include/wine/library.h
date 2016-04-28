@@ -62,9 +62,18 @@ extern void wine_dll_unload( void *handle );
 extern const char *wine_dll_enum_load_path( unsigned int index );
 extern int wine_dll_get_owner( const char *name, char *buffer, int size, int *file_exists );
 
+#ifdef BOXEDWINE
+int* __get_wine_main_argc();
+#define __wine_main_argc (*__get_wine_main_argc())
+char ***__get_wine_main_argv();
+#define __wine_main_argv (*__get_wine_main_argv())
+WCHAR ***__get_wine_main_wargv();
+#define __wine_main_wargv (*__get_wine_main_wargv())
+#else
 extern int __wine_main_argc;
 extern char **__wine_main_argv;
 extern WCHAR **__wine_main_wargv;
+#endif
 extern void __wine_dll_register( const IMAGE_NT_HEADERS *header, const char *filename );
 extern void wine_init( int argc, char *argv[], char *error, int error_size );
 

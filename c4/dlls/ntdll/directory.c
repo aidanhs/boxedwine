@@ -221,9 +221,11 @@ static inline void ignore_file( const char *name )
     assert( ignored_files_count < MAX_IGNORED_FILES );
     if (!stat( name, &st ))
     {
-        ignored_files[ignored_files_count].dev = st.st_dev;
-        ignored_files[ignored_files_count].ino = st.st_ino;
-        ignored_files_count++;
+        if (st.st_ino) {
+            ignored_files[ignored_files_count].dev = st.st_dev;
+            ignored_files[ignored_files_count].ino = st.st_ino;
+            ignored_files_count++;
+        }
     }
 }
 

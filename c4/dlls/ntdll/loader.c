@@ -1253,11 +1253,15 @@ static void attach_implicitly_loaded_dlls( LPVOID reserved )
         for (entry = mark->Flink; entry != mark; entry = entry->Flink)
         {
             LDR_MODULE *mod = CONTAINING_RECORD(entry, LDR_MODULE, InLoadOrderModuleList);
-
+            // :TODO: remove hardcoded hack
+            WCHAR crt[] = {'w', 'i', 'n', 'e', 'c', 'r', 't', '.', 'd', 'l', 'l', 0};
             if (mod->Flags & (LDR_LOAD_IN_PROGRESS | LDR_PROCESS_ATTACHED)) continue;
             TRACE( "found implicitly loaded %s, attaching to it\n",
                    debugstr_w(mod->BaseDllName.Buffer));
-            process_attach( CONTAINING_RECORD(mod, WINE_MODREF, ldr), reserved );
+            if (!strcmpW(mod->BaseDllName.Buffer, crt))
+                mod->Flags = LDR_PROCESS_ATTACHED;
+            else
+                process_attach( CONTAINING_RECORD(mod, WINE_MODREF, ldr), reserved );
             break;  /* restart the search from the start */
         }
         if (entry == mark) break;  /* nothing found */
@@ -1718,9 +1722,13 @@ static NTSTATUS perform_relocations( void *module, SIZE_T len )
 
     if (nt->FileHeader.Characteristics & IMAGE_FILE_RELOCS_STRIPPED)
     {
+        // cpu emulation will handle the relocation
+        return STATUS_SUCCESS;
+        /*
         WARN( "Need to relocate module from %p to %p, but there are no relocation records\n",
               base, module );
         return STATUS_CONFLICTING_ADDRESSES;
+        */
     }
 
     if (!relocs->Size) return STATUS_SUCCESS;
