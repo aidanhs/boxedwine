@@ -1092,6 +1092,7 @@ static DWORD WINAPI start_process( PEB *peb )
     IMAGE_NT_HEADERS *nt;
     LPTHREAD_START_ROUTINE entry;
 
+    DllMain(kernel32_handle, DLL_PROCESS_ATTACH, NULL);
     nt = RtlImageNtHeader( peb->ImageBaseAddress );
     entry = (LPTHREAD_START_ROUTINE)((char *)peb->ImageBaseAddress +
                                      nt->OptionalHeader.AddressOfEntryPoint);

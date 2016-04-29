@@ -849,7 +849,12 @@ long winecrt_ftell(FILE* f) {
 	return ftell(f);
 }
 int winecrt_ftruncate(int fildes, off_t length) {
-    notimplemented("ftruncate");
+    struct UnixFileHandle* ufd = getUnixFileHandle(fildes);
+    if (!ufd) {
+        errno = EBADF;
+        return -1;
+    }
+    return _chsize(ufd->fd, (long)length);
 }
 int winecrt_futimes(int fd, const struct timeval *tv) {
     notimplemented("futimes");
@@ -1401,7 +1406,8 @@ int winecrt_pthread_setspecific(pthread_key_t key, const void *value) {
     pthreadTLS = value;
 }
 int winecrt_pthread_sigmask(int how, const sigset_t * set, sigset_t * oset) {
-    notimplemented("pthread_sigmask");
+    //notimplemented("pthread_sigmask");
+    return 0;
 }
 int winecrt_putenv(char *string) {
     return putenv(string);

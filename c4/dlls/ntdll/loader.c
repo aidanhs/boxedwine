@@ -1791,6 +1791,8 @@ static NTSTATUS load_native_dll( LPCWSTR load_path, LPCWSTR name, HANDLE file,
     SIZE_T len = 0;
     WINE_MODREF *wm;
     NTSTATUS status;
+    int i;
+    unsigned char* p;
 
     TRACE("Trying native dll %s\n", debugstr_w(name));
 
@@ -1807,7 +1809,29 @@ static NTSTATUS load_native_dll( LPCWSTR load_path, LPCWSTR name, HANDLE file,
 
     if (status == STATUS_IMAGE_NOT_AT_BASE)
         status = perform_relocations( module, len );
+    // remap fs 
+    p = (unsigned char*)module;
+    for (i=0;i<len;i++) {
+        if (p==0x414017) {
+            int ii=0;
+        }
+        if (*p==0x64) {
+            int* test=0;
 
+            if (*(p+1)==0xA1)
+                test = p+2;
+            else if (*(p+1)==0x89 && *(p+2)==0x25)
+                test=p+3;
+            if (test && *test>=0 && *test<0x1000) {
+                *p = 0x90;
+                *test = *test+ NtCurrentTeb();
+            }
+            p++;
+
+        } else {
+            p++;
+        }
+    }
     if (status != STATUS_SUCCESS)
     {
         if (module) NtUnmapViewOfSection( NtCurrentProcess(), module );
@@ -3314,7 +3338,6 @@ void __wine_process_init(void)
     {
         MESSAGE( "wine: could not find __wine_kernel_init in kernel32.dll, status %x\n", 1 );
         exit(1);
-    }
-
+    }    
     init_func();
 }

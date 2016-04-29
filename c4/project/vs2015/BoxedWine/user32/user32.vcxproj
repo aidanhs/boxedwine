@@ -103,8 +103,9 @@
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
       <DelayLoadDLLs>
       </DelayLoadDLLs>
-      <NoEntryPoint>true</NoEntryPoint>
+      <NoEntryPoint>false</NoEntryPoint>
       <ModuleDefinitionFile>user32.def</ModuleDefinitionFile>
+      <EntryPointSymbol>DllMain</EntryPointSymbol>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>user32.private.manifest</AdditionalManifestFiles>
@@ -143,8 +144,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>version.lib;usp10.lib;gdi32.lib;advapi32.lib;kernel32.lib;ntdll.lib;winelib.lib;winecrt.lib;</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>
-      <NoEntryPoint>true</NoEntryPoint>
+      <NoEntryPoint>false</NoEntryPoint>
       <ModuleDefinitionFile>user32.def</ModuleDefinitionFile>
+      <EntryPointSymbol>DllMain</EntryPointSymbol>
     </Link>
     <Manifest>
       <AdditionalManifestFiles>user32.private.manifest</AdditionalManifestFiles>
