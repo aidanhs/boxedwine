@@ -23,6 +23,8 @@ void initModule(HMODULE module, IMAGE_NT_HEADERS* nt, const char* name) {
     *nt = *pNTHeaders;
     __wine_dll_register(nt, name);
 }
+char reserved[1024*1024*64];
+
 int main(int argc, char *argv[]) {
     char error[1024];
 

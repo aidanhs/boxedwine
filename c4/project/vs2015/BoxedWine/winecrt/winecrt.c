@@ -1101,7 +1101,7 @@ int winecrt_mlock(const void *addr, size_t len) {
 
 void *winecrt_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_t off) {
     struct UnixFileHandle* ufd = NULL;
-    void* result;
+    void* result = 0;
 
     if (fildes>=0) {
         ufd = getUnixFileHandle(fildes);
@@ -1116,7 +1116,21 @@ void *winecrt_mmap(void *addr, size_t len, int prot, int flags, int fildes, off_
         errno = ENODEV;
         return MAP_FAILED;
     }
-    result = malloc(len);
+    if (addr) {
+        if (addr>= 0x00300000 && (char*)addr+len<0x04000000)
+            result = addr;
+        else
+            result = VirtualAlloc(addr, len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        if (!addr) {
+            char buf[256];
+            FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), buf, 256, NULL);
+            printf("last error=%X (%s)\n", GetLastError(), buf);
+        }
+    }
+    
+    if (!result) {
+        result = VirtualAlloc(NULL, len, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    }
     memset(result, 0, len);
     return result;
 }
