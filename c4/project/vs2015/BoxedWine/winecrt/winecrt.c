@@ -78,10 +78,10 @@ struct winecrt_stat {
 	long int st_spare[2];
 };
 int winecrt_stat(const char * path, struct winecrt_stat * buf);
-void wine2stat(struct winecrt_stat *buf, struct stat* s) {
+void wine2stat(struct winecrt_stat *buf, struct stat* s, int inode) {
     // :TODO: translate mode
 	buf->st_dev = s->st_dev;
-	buf->st_ino = s->st_ino;
+	buf->st_ino = inode;
 	buf->st_mode = s->st_mode;
 	buf->st_nlink = s->st_nlink;
 	buf->st_uid = 1;
@@ -272,7 +272,67 @@ int dupUnixFileHandle(struct UnixFileHandle* ufd) {
 
 static int nextProcessId = 1;
 
-char rootPath[MAX_PATH];
+static PblMap* inodes;
+static int nextInode;
+static char rootPath[MAX_PATH];
+
+int getInode(const char* path) {
+    char* dirs[64];
+    int dirPos=0;
+    int len;
+    int i;
+    char buffer[512];
+    int bufferPos = 0;
+    int dirStart = 0;
+    char normalizedPath[MAX_PATH];
+    int* result;
+
+    if (!inodes)
+        inodes = pblMapNewHashMap();
+    len = strlen(path);
+    for (i=0;i<len;i++) {
+        if (path[i]=='/') {
+            int dirLen = i-dirStart;
+            if (dirLen) {
+                strncpy(buffer+bufferPos, path+dirStart, dirLen);
+                buffer[bufferPos+dirLen]=0;
+                if (strcmp(buffer+bufferPos, ".")==0) {
+                } else if (strcmp(buffer+bufferPos, "..")==0) {
+                    dirPos--;
+                    if (dirPos<0) {
+                        printf("someone tried to escape: %s\n", path);
+                    }
+                } else {
+                    dirs[dirPos++]=(dirs, buffer+bufferPos);
+                    bufferPos+=dirLen+1;
+                }
+            }
+            dirStart=i+1;
+        }
+    }
+    normalizedPath[0]=0;
+    if (dirStart<len && strcmp(&path[dirStart], "..")==0) {
+        dirPos--;
+        if (dirPos<0) {
+            printf("someone tried to escape: %s\n", path);
+        }
+    }
+    for (i=0;i<dirPos;i++) {
+       strcat(normalizedPath, "/");
+       strcat(normalizedPath, dirs[i]);
+    }
+    if (dirStart<len && strcmp(&path[dirStart], ".") != 0) {
+        strcat(normalizedPath, "/");
+        strcat(normalizedPath, &path[dirStart]);
+    }
+    result = pblMapGet(inodes, normalizedPath, strlen(normalizedPath)+1, NULL);
+    if (result) {
+        return *result;
+    }
+    nextInode++;
+    pblMapPut(inodes, normalizedPath, strlen(normalizedPath)+1, &nextInode, sizeof(nextInode), NULL);
+    return nextInode;
+}
 
 char *winecrt_getcwd(char *buf, size_t size);
 char* getPath(const char* path) {
@@ -831,7 +891,7 @@ int winecrt_fstat(int fildes, struct winecrt_stat *buf) {
 		struct stat s;
 		int result = fstat(ufd->fd, &s);
 		if (result == 0) {
-			wine2stat(buf, &s);
+			wine2stat(buf, &s, getInode(ufd->path));
 		}
 		return result;
 	}
@@ -884,7 +944,8 @@ char* winecrt_getenv(const char * name) {
 	return NULL;
 }
 char** winecrt_getEnviron() {
-    return environ;
+    static char* result[] = {"HOME=/home/boxedwine", "USER=boxedwine", "WINEARCH=win32", 0};
+    return result;
 }
 int* winecrt_getErrno() {
     // :TODO: I doublt all of these are the same, I should map them
@@ -1207,7 +1268,7 @@ int winecrt_open(const char *path, int oflag, ...) {
 		oflag &= ~0x400;
 	}
 	if (oflag & 0x800) {
-		flags |= _O_APPEND;
+		//flags |= _O_NONBLOCK;
 		oflag &= ~0x800;
 	}
 	if (oflag) {
@@ -1350,6 +1411,10 @@ ssize_t winecrt_pread(int fd, void *buf, size_t count, off_t offset) {
 
     if (!ufd) {
         errno = EBADF;
+        return -1;
+    }
+    if (ufd->type == UNIX_FILE_HANDLE_DIRECTORY) {
+        errno = EISDIR;
         return -1;
     }
     if (ufd->type != UNIX_FILE_HANDLE_FILE) {
@@ -1769,7 +1834,7 @@ int winecrt_stat(const char * path, struct winecrt_stat * buf) {
     char* p = getPath(path);
 	int result = stat(p, &s);
 	if (result == 0) {
-		wine2stat(buf, &s);
+		wine2stat(buf, &s, getInode(p+strlen(rootPath)));
 	} else {
         struct FakeFile* fakeFile;
 
@@ -1778,7 +1843,7 @@ int winecrt_stat(const char * path, struct winecrt_stat * buf) {
         SDL_UnlockMutex(fakeFilesLock);
         if (fakeFile) {
             buf->st_dev = 1;
-            buf->st_ino = 1;
+            buf->st_ino = getInode(p+ strlen(rootPath));
             if (fakeFile->ufd->type==UNIX_FILE_HANDLE_UNIX_SOCKET)
                 buf->st_mode = 0xC000; // S_IFSOCK
             else {
