@@ -21,7 +21,7 @@ float fARG(struct CPU* cpu, U32 arg) {
 
 double dARG(struct CPU* cpu, int address) {
 	struct long2Double i;
-	i.l = readq(cpu->memory, address);
+	i.l = readq(MMU_PARAM_CPU address);
 	return i.d;
 }
 
@@ -41,7 +41,7 @@ GLdouble* marshald(struct CPU* cpu, U32 address, U32 count) {
 	}
 	for (i=0;i<count;i++) {
 		struct long2Double d;
-		d.l = readq(cpu->memory, address);
+		d.l = readq(MMU_PARAM_CPU address);
 		address+=8;
 		bufferd[i] = d.d;
 	}
@@ -64,7 +64,7 @@ GLfloat* marshalf(struct CPU* cpu, U32 address, U32 count) {
 	}
 	for (i=0;i<count;i++) {
 		struct int2Float f;
-		f.i = readd(cpu->memory, address);
+		f.i = readd(MMU_PARAM_CPU address);
 		address+=4;
 		bufferf[i] = f.f;
 	}
@@ -86,7 +86,7 @@ GLint* marshali(struct CPU* cpu, U32 address, U32 count) {
 		bufferi_len = count;
 	}
 	for (i=0;i<count;i++) {
-		bufferi[i] = (GLint)readd(cpu->memory, address);
+		bufferi[i] = (GLint)readd(MMU_PARAM_CPU address);
 		address+=4;
 	}
 	return bufferi;
@@ -111,7 +111,7 @@ GLshort* marshals(struct CPU* cpu, U32 address, U32 count) {
 		buffers_len = count;
 	}
 	for (i=0;i<count;i++) {
-		buffers[i] = readw(cpu->memory, address);
+		buffers[i] = readw(MMU_PARAM_CPU address);
 		address+=2;
 	}
 	return buffers;
@@ -136,7 +136,7 @@ GLbyte* marshalb(struct CPU* cpu, U32 address, U32 count) {
 		bufferb_len = count;
 	}
 	for (i=0;i<count;i++) {
-		bufferb[i] = readb(cpu->memory, address++);
+		bufferb[i] = readb(MMU_PARAM_CPU address++);
 	}
 	return bufferb;
 }
@@ -165,7 +165,7 @@ GLdouble* marshal2d(struct CPU* cpu, U32 address, U32 count) {
 	}
 	for (i=0;i<count;i++) {
 		struct long2Double d;
-		d.l = readq(cpu->memory, address);
+		d.l = readq(MMU_PARAM_CPU address);
 		address+=8;
 		buffer2d[i] = d.d;
 	}
@@ -188,7 +188,7 @@ GLfloat* marshal2f(struct CPU* cpu, U32 address, U32 count) {
 	}
 	for (i=0;i<count;i++) {
 		struct int2Float f;
-		f.i = readd(cpu->memory, address);
+		f.i = readd(MMU_PARAM_CPU address);
 		address+=4;
 		buffer2f[i] = f.f;
 	}
@@ -210,7 +210,7 @@ GLint* marshal2i(struct CPU* cpu, U32 address, U32 count) {
 		buffer2i_len = count;
 	}
 	for (i=0;i<count;i++) {
-		buffer2i[i] = readd(cpu->memory, address);
+		buffer2i[i] = readd(MMU_PARAM_CPU address);
 		address+=4;
 	}
 	return buffer2i;
@@ -235,7 +235,7 @@ GLshort* marshal2s(struct CPU* cpu, U32 address, U32 count) {
 		buffer2s_len = count;
 	}
 	for (i=0;i<count;i++) {
-		buffer2s[i] = readw(cpu->memory, address);
+		buffer2s[i] = readw(MMU_PARAM_CPU address);
 		address+=2;
 	}
 	return buffer2s;
@@ -261,7 +261,7 @@ GLbyte* marshal2b(struct CPU* cpu, U32 address, U32 count) {
 		buffer2b_len = count;
 	}
 	for (i=0;i<count;i++) {
-		buffer2b[i] = readb(cpu->memory, address++);
+		buffer2b[i] = readb(MMU_PARAM_CPU address++);
 	}
 	return buffer2b;
 }
@@ -280,7 +280,7 @@ void marshalBackd(struct CPU* cpu, U32 address, GLdouble* buffer, U32 count) {
 	for (i=0;i<count;i++) {
 		struct long2Double d;
 		d.d = buffer[i];
-		writeq(cpu->memory, address, d.l);
+		writeq(MMU_PARAM_CPU address, d.l);
 		address+=8;
 	}
 }
@@ -291,7 +291,7 @@ void marshalBackf(struct CPU* cpu, U32 address, GLfloat* buffer, U32 count) {
 	for (i=0;i<count;i++) {
 		struct int2Float f;
 		f.f = buffer[i];
-		writed(cpu->memory, address, f.i);
+		writed(MMU_PARAM_CPU address, f.i);
 		address+=4;
 	}
 }
@@ -300,7 +300,7 @@ void marshalBacki(struct CPU* cpu, U32 address, GLint* buffer, U32 count) {
 	U32 i;
 
 	for (i=0;i<count;i++) {
-		writed(cpu->memory, address, buffer[i]);
+		writed(MMU_PARAM_CPU address, buffer[i]);
 		address+=4;
 	}
 }
@@ -313,7 +313,7 @@ void marshalBackus(struct CPU* cpu, U32 address, GLushort* buffer, U32 count) {
 	U32 i;
 
 	for (i=0;i<count;i++) {
-		writew(cpu->memory, address, buffer[i]);
+		writew(MMU_PARAM_CPU address, buffer[i]);
 		address+=2;
 	}
 }
@@ -323,15 +323,15 @@ void marshalBacks(struct CPU* cpu, U32 address, GLshort* buffer, U32 count) {
 }
 
 void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-	memcopyFromNative(cpu->memory, address, (char*)buffer, count);
+	memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
 }
 
 void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-	memcopyFromNative(cpu->memory, address, (char*)buffer, count);
+	memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
 }
 
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count) {
-	memcopyFromNative(cpu->memory, address, (char*)buffer, count);
+	memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
 }
 
 // GLAPI void APIENTRY glClearIndex( GLfloat c )
@@ -1050,9 +1050,13 @@ void glcommon_glGetString(struct CPU* cpu) {
 		index = STRING_GL_EXTENSIONS;
 		result = "";
 	}
+#ifdef USE_MMU
 	if (!cpu->thread->process->strings[index])
 		addString(cpu->thread->process, index, result);
 	EAX =  cpu->thread->process->strings[index];
+#else
+	EAX = (U32)result;
+#endif
 }
 
 // GLAPI void APIENTRY glHint( GLenum target, GLenum mode ) {

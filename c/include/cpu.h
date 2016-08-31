@@ -163,7 +163,7 @@ U16 pop16(struct CPU* cpu);
 U32 pop32(struct CPU* cpu);
 U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
-void initCPU(struct CPU* cpu, struct Memory* memory);
+void initCPU(struct CPU* cpu, struct KProcess* process);
 void onCreateCPU(struct CPU* cpu);
 INLINE void runBlock(struct CPU* cpu, struct Block* block) {
 	cpu->currentBlock = block;
@@ -241,5 +241,5 @@ typedef void (*Int99Callback)(struct CPU* cpu);
 
 extern Int99Callback* int99Callback;
 extern U32 int99CallbackSize;
-
+void initBlockCache();
 #endif

@@ -75,22 +75,22 @@ BOOL kepoll_isWriteReady(struct KObject* obj) {
 	return FALSE;
 }
 
-U32 kepoll_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
+U32 kepoll_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
 	kpanic("kepoll_write not implemented yet");
 	return 0;
 }
 
-U32 kepoll_read(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
+U32 kepoll_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
 	kpanic("kepoll_read not implemented yet");
 	return 0;
 }
 
-U32 kepoll_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
+U32 kepoll_stat(MMU_ARG struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
 	kpanic("kepoll_stat not implemented yet");
 	return 0;
 }
 
-U32 kepoll_map(struct KObject* obj, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 kepoll_map(MMU_ARG struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 	return 0;
 }
 
@@ -154,7 +154,6 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
 	struct KFileDescriptor* targetFD = getFileDescriptor(thread->process, fd);
 	struct KEpoll* existing;
 	struct KEpoll* prev = 0;
-	struct Memory* memory = thread->process->memory;
 
     if (!targetFD || !epollFD) {
         return -K_EBADF;
@@ -176,8 +175,8 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
 			}
 			existing = allocEpoll();
 			existing->fd = fd;
-			existing->events = readd(memory, address);
-			existing->data = readq(memory, address+4);
+			existing->events = readd(MMU_PARAM_THREAD address);
+			existing->data = readq(MMU_PARAM_THREAD address + 4);
 			existing->next = (struct KEpoll*)epollFD->kobject->data;
 			epollFD->kobject->data = existing;
             break;
@@ -194,8 +193,8 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
         case K_EPOLL_CTL_MOD:
 			if (!existing)
 				return -K_ENOENT;
-			existing->events = readd(memory, address);
-            existing->data = readq(memory, address+4);
+			existing->events = readd(MMU_PARAM_THREAD address);
+			existing->data = readq(MMU_PARAM_THREAD address + 4);
             break;
         default:
             return -K_EINVAL;
@@ -205,7 +204,6 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
 
 U32 syscall_epollwait(struct KThread* thread, FD epfd, U32 events, U32 maxevents, U32 timeout) {
 	struct KFileDescriptor* epollFD = getFileDescriptor(thread->process, epfd);
-	struct Memory* memory = thread->process->memory;
 	struct KEpoll* next;
 	S32 result = 0;
 	U32 i;
@@ -230,11 +228,11 @@ U32 syscall_epollwait(struct KThread* thread, FD epfd, U32 events, U32 maxevents
 		return result;
 	result = 0;
 	for (i=0;i<thread->pollCount;i++) {
-		writed(memory, events+i*12, thread->pollData[i].revents);
+		writed(MMU_PARAM_THREAD events + i * 12, thread->pollData[i].revents);
         if (thread->pollData[i].revents!=0) {
             result=i+1;
 		}
-		writeq(memory, events + i * 12 + 4, thread->pollData[i].data);
+		writeq(MMU_PARAM_THREAD events + i * 12 + 4, thread->pollData[i].data);
 	}
 	return result;
 }

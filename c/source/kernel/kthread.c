@@ -34,13 +34,18 @@ void freeThread(struct KThread* thread) {
 	}
 	unscheduleThread(thread);	
 	threadClearFutexes(thread);
+#ifdef USE_MMU
 	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
+#else
+	kfree(thread->stackAddress);
+#endif
 	processOnExitThread(thread->process);
 	thread->nextFreeThread = freeThreads;	
 	freeThreads = thread;
 }
 
 void setupStack(struct KThread* thread) {
+#ifdef USE_MMU
 	U32 page = 0;
 	U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
 	pageCount+=2; // guard pages
@@ -53,23 +58,24 @@ void setupStack(struct KThread* thread) {
 	reservePages(thread->cpu.memory, page, 1, PAGE_RESERVED);
 	thread->stackPageCount = pageCount;
 	thread->stackPageStart = page;
-	initStackPointer(thread);
+	thread->cpu.reg[4].u32 = (thread->stackPageStart + thread->stackPageCount - 1) << PAGE_SHIFT; // one page away from the top
+#else
+	thread->stackAddress = kalloc(1024 * 1024);
+	thread->cpu.reg[4].u32 = (U32)(thread->stackAddress + 1024 * 1024 - 4096);
+#endif
 	thread->cpu.thread = thread;
 }
 
-void initStackPointer(struct KThread* thread) {
-	thread->cpu.reg[4].u32 = (thread->stackPageStart+thread->stackPageCount-1) << PAGE_SHIFT; // one page away from the top
-}
-
 void initThread(struct KThread* thread, struct KProcess* process) {
-	memset(thread, 0, sizeof(struct KThread));
-	initCPU(&thread->cpu, process->memory);
+	memset(thread, 0, sizeof(struct KThread));	
+	initCPU(&thread->cpu, process);	
 	thread->process = process;
 	thread->id = processAddThread(process, thread);
 	thread->sigMask = 0;
 	setupStack(thread);
 }
 
+#ifdef USE_MMU
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process) {
 	memset(thread, 0, sizeof(struct KThread));
 	memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
@@ -85,12 +91,13 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
 	thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
 	thread->id = processAddThread(process, thread);
 }
+#endif
 
 void exitThread(struct KThread* thread, U32 status) {
 	struct KProcess* process = thread->process;
 
 	if (thread->clear_child_tid) {
-		writed(process->memory, thread->clear_child_tid, 0);
+		writed(MMU_PARAM_THREAD thread->clear_child_tid, 0);
 		syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
 	}
 	freeThread(thread);
@@ -153,8 +160,12 @@ void threadClearFutexes(struct KThread* thread) {
 }
 
 U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
-	struct Memory* memory = thread->process->memory;
-	U8* ramAddress = getPhysicalAddress(memory, addr);
+#ifdef USE_MMU
+	U8* ramAddress = getPhysicalAddress(MMU_PARAM_THREAD addr);
+#else
+	U8* ramAddress = (U8*)addr;
+#endif
+
 	if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
 		struct futex* f=getFutex(thread, ramAddress);
 		U32 millies;
@@ -179,11 +190,11 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         if (pTime == 0) {
             millies = 0xFFFFFFFF;
 		} else {
-			U32 seconds = readd(memory, pTime);
-            U32 nano = readd(memory, pTime + 4);
+			U32 seconds = readd(MMU_PARAM_THREAD pTime);
+            U32 nano = readd(MMU_PARAM_THREAD pTime + 4);
             millies = seconds * 1000 + nano / 1000000 + getMilliesSinceStart();
         }
-        if (readd(memory, addr) != value) {
+        if (readd(MMU_PARAM_THREAD addr) != value) {
 			return -K_EWOULDBLOCK;
         }
 		f = allocFutex(thread, ramAddress, millies);
@@ -410,63 +421,60 @@ void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStac
 	struct Memory* memory = cpu->memory;
 
 	if (altStack) {
-		writed(memory, context+0x8, thread->alternateStack);
-		writed(memory, context+0xC, K_SS_ONSTACK);
-		writed(memory, context+0x10, thread->alternateStackSize);
+		writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
+		writed(MMU_PARAM_THREAD context+0xC, K_SS_ONSTACK);
+		writed(MMU_PARAM_THREAD context+0x10, thread->alternateStackSize);
 	} else {
-		writed(memory, context+0x8, thread->alternateStack);
-		writed(memory, context+0xC, K_SS_DISABLE);
-		writed(memory, context+0x10, 0);
+		writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
+		writed(MMU_PARAM_THREAD context+0xC, K_SS_DISABLE);
+		writed(MMU_PARAM_THREAD context+0x10, 0);
 	}
-	writed(memory, context+0x14, cpu->segValue[GS]);
-	writed(memory, context+0x18, cpu->segValue[FS]);
-	writed(memory, context+0x1C, cpu->segValue[ES]);
-	writed(memory, context+0x20, cpu->segValue[DS]);
-	writed(memory, context+0x24, cpu->reg[7].u32); // EDI
-	writed(memory, context+0x28, cpu->reg[6].u32); // ESI
-	writed(memory, context+0x2C, cpu->reg[5].u32); // EBP
-	writed(memory, context+0x30, stack); // ESP
-	writed(memory, context+0x34, cpu->reg[3].u32); // EBX
-	writed(memory, context+0x38, cpu->reg[2].u32); // EDX
-	writed(memory, context+0x3C, cpu->reg[1].u32); // ECX
-	writed(memory, context+0x40, cpu->reg[0].u32); // EAX
-	writed(memory, context+0x44, trapNo); // REG_TRAPNO
-	writed(memory, context+0x48, 0); // REG_ERR
-	writed(memory, context+0x4C, cpu->eip.u32);
-	writed(memory, context+0x50, cpu->segValue[CS]);
-	writed(memory, context+0x54, cpu->flags);
-	writed(memory, context+0x54, 0); // REG_UESP
-	writed(memory, context+0x5C, cpu->segValue[SS]);	
-	writed(memory, context+0x60, 0); // fpu save state
+	writed(MMU_PARAM_THREAD context+0x14, cpu->segValue[GS]);
+	writed(MMU_PARAM_THREAD context+0x18, cpu->segValue[FS]);
+	writed(MMU_PARAM_THREAD context+0x1C, cpu->segValue[ES]);
+	writed(MMU_PARAM_THREAD context+0x20, cpu->segValue[DS]);
+	writed(MMU_PARAM_THREAD context+0x24, cpu->reg[7].u32); // EDI
+	writed(MMU_PARAM_THREAD context+0x28, cpu->reg[6].u32); // ESI
+	writed(MMU_PARAM_THREAD context+0x2C, cpu->reg[5].u32); // EBP
+	writed(MMU_PARAM_THREAD context+0x30, stack); // ESP
+	writed(MMU_PARAM_THREAD context+0x34, cpu->reg[3].u32); // EBX
+	writed(MMU_PARAM_THREAD context+0x38, cpu->reg[2].u32); // EDX
+	writed(MMU_PARAM_THREAD context+0x3C, cpu->reg[1].u32); // ECX
+	writed(MMU_PARAM_THREAD context+0x40, cpu->reg[0].u32); // EAX
+	writed(MMU_PARAM_THREAD context+0x44, trapNo); // REG_TRAPNO
+	writed(MMU_PARAM_THREAD context+0x48, 0); // REG_ERR
+	writed(MMU_PARAM_THREAD context+0x4C, cpu->eip.u32);
+	writed(MMU_PARAM_THREAD context+0x50, cpu->segValue[CS]);
+	writed(MMU_PARAM_THREAD context+0x54, cpu->flags);
+	writed(MMU_PARAM_THREAD context+0x54, 0); // REG_UESP
+	writed(MMU_PARAM_THREAD context+0x5C, cpu->segValue[SS]);	
+	writed(MMU_PARAM_THREAD context+0x60, 0); // fpu save state
 }
 
 void readFromContext(struct CPU* cpu, U32 context) {
-	struct Memory* memory = cpu->memory;
+	cpu->segValue[GS] = readd(MMU_PARAM_CPU context+0x14);
+	cpu->segValue[FS] = readd(MMU_PARAM_CPU context+0x18);
+	cpu->segValue[ES] = readd(MMU_PARAM_CPU context+0x1C);
+	cpu->segValue[DS] = readd(MMU_PARAM_CPU context+0x20);
 
-	cpu->segValue[GS] = readd(memory, context+0x14);
-	cpu->segValue[FS] = readd(memory, context+0x18);
-	cpu->segValue[ES] = readd(memory, context+0x1C);
-	cpu->segValue[DS] = readd(memory, context+0x20);
+	cpu->reg[7].u32 = readd(MMU_PARAM_CPU context+0x24); // EDI
+	cpu->reg[6].u32 = readd(MMU_PARAM_CPU context+0x28); // ESI
+	cpu->reg[5].u32 = readd(MMU_PARAM_CPU context+0x2C); // EBP
+	cpu->reg[4].u32 = readd(MMU_PARAM_CPU context+0x30); // ESP
 
-	cpu->reg[7].u32 = readd(memory, context+0x24); // EDI
-	cpu->reg[6].u32 = readd(memory, context+0x28); // ESI
-	cpu->reg[5].u32 = readd(memory, context+0x2C); // EBP
-	cpu->reg[4].u32 = readd(memory, context+0x30); // ESP
-
-	cpu->reg[3].u32 = readd(memory, context+0x34); // EBX
-	cpu->reg[2].u32 = readd(memory, context+0x38); // EDX
-	cpu->reg[1].u32 = readd(memory, context+0x3C); // ECX
-	cpu->reg[0].u32 = readd(memory, context+0x40); // EAX
+	cpu->reg[3].u32 = readd(MMU_PARAM_CPU context+0x34); // EBX
+	cpu->reg[2].u32 = readd(MMU_PARAM_CPU context+0x38); // EDX
+	cpu->reg[1].u32 = readd(MMU_PARAM_CPU context+0x3C); // ECX
+	cpu->reg[0].u32 = readd(MMU_PARAM_CPU context+0x40); // EAX
 	
-	cpu->eip.u32 = readd(memory, context+0x4C);
-	cpu->segValue[CS] = readd(memory, context+0x50);				
-	cpu->flags = readd(memory, context+0x54);
-	cpu->segValue[SS] = readd(memory, context+0x5C);		
+	cpu->eip.u32 = readd(MMU_PARAM_CPU context+0x4C);
+	cpu->segValue[CS] = readd(MMU_PARAM_CPU context+0x50);				
+	cpu->flags = readd(MMU_PARAM_CPU context+0x54);
+	cpu->segValue[SS] = readd(MMU_PARAM_CPU context+0x5C);		
 }
 
 U32 syscall_sigreturn(struct KThread* thread) {
-	struct Memory* memory = thread->process->memory;
-	memcopyToNative(memory, thread->cpu.reg[4].u32, (char*)&thread->cpu, sizeof(struct CPU));
+	memcopyToNative(MMU_PARAM_THREAD thread->cpu.reg[4].u32, (char*)&thread->cpu, sizeof(struct CPU));
 	//klog("signal return (threadId=%d)", thread->id);
 	return -K_CONTINUE;
 }
@@ -485,11 +493,11 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 
 #ifdef LOG_OPS
 	klog("onExitSignal signal=%d info=%X context=%X stack=%X interrupted=%d", signal, address, context, cpu->reg[4].u32, cpu->thread->interrupted);
-	klog("    before context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(cpu->memory, cpu->segAddress[4]+0x18):0);
+	klog("    before context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_CPU cpu->segAddress[4]+0x18):0);
 #endif
 	readFromContext(cpu, context);
 #ifdef LOG_OPS
-	klog("    after  context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(cpu->memory, cpu->segAddress[4]+0x18):0);
+	klog("    after  context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4] ? readd(MMU_PARAM_CPU cpu->segAddress[4] + 0x18) : 0);
 #endif
 	cpu->timeStampCounter = tsc;
 	cpu->blockCounter = b;
@@ -522,7 +530,6 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
     if (action->handlerAndSigAction==K_SIG_DFL) {
 
     } else if (action->handlerAndSigAction != K_SIG_IGN) {
-		struct Memory* memory = thread->process->memory;
 		U32 context;
 		U32 address = 0;
 		U32 stack = thread->cpu.reg[4].u32;
@@ -533,7 +540,7 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
 		fillFlags(cpu);
 #ifdef LOG_OPS
 		klog("runSignal %d", signal);
-		klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(memory, cpu->segAddress[4]+0x18):0);
+		klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_THREAD cpu->segAddress[4]+0x18):0);
 #endif
 		thread->inSigMask=action->mask | thread->sigMask;
 		if (action->flags & K_SA_RESETHAND) {
@@ -566,7 +573,7 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
 			thread->cpu.reg[4].u32-=INFO_SIZE;
 			address = thread->cpu.reg[4].u32;
 			for (i=0;i<K_SIG_INFO_SIZE;i++) {
-				writed(memory, address+i*4, thread->process->sigActions[signal].sigInfo[i]);
+				writed(MMU_PARAM_THREAD address+i*4, thread->process->sigActions[signal].sigInfo[i]);
 			}
 						
 			push32(&thread->cpu, interrupted);

@@ -20,6 +20,6 @@ struct KObject {
 
 struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data);
 void closeKObject(struct KObject* kobject);
-void writeStat(struct Memory* memory, U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime, U32 linkCount);
+void writeStat(MMU_ARG U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime, U32 linkCount);
 
 #endif

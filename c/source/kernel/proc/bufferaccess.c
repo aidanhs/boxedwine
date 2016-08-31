@@ -31,15 +31,15 @@ S64 buffer_seek(struct OpenNode* node, S64 pos) {
 	return node->idata = (U32)pos;
 }
 
-U32 buffer_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+U32 buffer_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 	U32 pos = node->idata;
 	if (pos+len>strlen((char*)node->access->data))
 		len = strlen((char*)node->access->data)-pos;
-	memcopyFromNative(memory, address, ((char*)node->access->data)+pos, len);
+	memcopyFromNative(MMU_PARAM address, ((char*)node->access->data)+pos, len);
 	return len;
 }
 
-U32 buffer_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+U32 buffer_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 	return 0;
 }
 
@@ -72,7 +72,7 @@ BOOL buffer_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 buffer_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 buffer_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 	return 0;
 }
 

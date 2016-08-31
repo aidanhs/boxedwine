@@ -33,10 +33,10 @@ struct NodeAccess {
 	BOOL (*setLength)(struct OpenNode* node, S64 length);
 	S64  (*getFilePointer)(struct OpenNode* node);
 	S64  (*seek)(struct OpenNode* node, S64 pos);	
-	U32  (*read)(struct Memory* memory, struct OpenNode* node, U32 address, U32 len);
-    U32  (*write)(struct Memory* memory, struct OpenNode* node, U32 address, U32 len);
+	U32  (*read)(MMU_ARG struct OpenNode* node, U32 address, U32 len);
+    U32  (*write)(MMU_ARG struct OpenNode* node, U32 address, U32 len);
 	void (*close)(struct OpenNode* node);
-	U32  (*map)(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off);
+	U32  (*map)(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off);
 	BOOL (*canMap)(struct OpenNode* node);
 	U32  (*ioctl)(struct KThread* thread, struct OpenNode* node, U32 request);	
 	void (*setAsync)(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync);

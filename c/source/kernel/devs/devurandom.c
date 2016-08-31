@@ -34,23 +34,23 @@ S64 urandom_seek(struct OpenNode* node, S64 pos) {
 	return 0;
 }
 
-U32 urandom_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+U32 urandom_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 	U32 result = len;
 
 	while (len>=4) {
-		writed(memory, address, rand());
+		writed(MMU_PARAM address, rand());
 		address+=4;
 		len-=4;
 	}
 	while (len>0) {
-		writeb(memory, address, rand());
+		writeb(MMU_PARAM address, rand());
 		address++;
 		len--;
 	}
 	return result;
 }
 
-U32 urandom_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+U32 urandom_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 	return 0;
 }
 
@@ -83,7 +83,7 @@ BOOL urandom_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 urandom_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 urandom_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 	return 0;
 }
 

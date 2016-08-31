@@ -22,7 +22,7 @@ struct MapedFiles {
 	struct KObject* file;
 	U32 refCount;
 	U32 address;
-	U32 len;
+	U64 len;
 	U64 offset;
 };
 
@@ -58,7 +58,9 @@ struct KProcess {
 	U32 signaled;
 	U32 exitCode;
 	BOOL terminated;
+#ifdef USE_MMU
 	struct Memory* memory;
+#endif
 	char currentDirectory[MAX_FILEPATH_LEN];
 	U32 brkEnd;
 	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
@@ -75,9 +77,11 @@ struct KProcess {
 	U32 shms[MAX_SHM][MAX_SHM_ATTACH];
 	struct KProcess* next;
 	struct KThread* waitingThread;
+#ifdef USE_MMU
 	U32 strings[NUMBER_OF_STRINGS];
 	U32 stringAddress;
 	U32 stringAddressIndex;
+#endif
 	U32 loaderBaseAddress;
 	U32 phdr;
 	U32 phnum;
@@ -94,7 +98,7 @@ struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDi
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
 BOOL isProcessStopped(struct KProcess* process);
 BOOL isProcessTerminated(struct KProcess* process);
-struct Node* getNode(struct KProcess* process, U32 fileName);
+struct Node* getNode(struct KThread* thread, U32 fileName);
 const char* getModuleName(struct CPU* cpu, U32 eip);
 U32 getModuleEip(struct CPU* cpu, U32 eip);
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after);

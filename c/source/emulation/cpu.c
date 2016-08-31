@@ -4,6 +4,7 @@
 #include "ram.h"
 #include "platform.h"
 #include "jit.h"
+#include "pbl.h"
 
 #include <string.h>
 
@@ -21,16 +22,18 @@ void onCreateCPU(struct CPU* cpu) {
 	cpu->reg8[7] = &cpu->reg[3].h8;
 }
 
-void initCPU(struct CPU* cpu, struct Memory* memory) {
+void initCPU(struct CPU* cpu, struct KProcess* process) {
 	memset(cpu, 0, sizeof(struct CPU));
 	onCreateCPU(cpu);
-	cpu->memory = memory;
+#ifdef USE_MMU
+	cpu->memory = process->memory;
+#endif
 	cpu->lazyFlags = FLAGS_NONE;
 	cpu->big = 1;
 	cpu->df = 1;
     cpu->stackMask = 0xFFFFFFFF;
     cpu->stackNotMask = 0;
-    cpu->ldt = memory->process->ldt;
+    cpu->ldt = process->ldt;
 	FPU_FINIT(&cpu->fpu);
 }
 
@@ -96,7 +99,6 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
 #define GET_IOPL(cpu) ((cpu->flags & IOPL) >> 12)
 
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
-	struct Memory* memory = cpu->memory;
 	U32 n_cs_sel, n_flags;
 	U32 n_eip;
 	U32 tempesp;
@@ -110,9 +112,9 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 			return;
 		} else {
 			if (big) {
-				U32 new_eip=readd(memory, cpu->segAddress[SS] + ESP);
-				U32 new_cs=readd(memory, cpu->segAddress[SS] + ESP+4); // only first 16-bits are read
-				U32 new_flags=readd(memory, cpu->segAddress[SS] + ESP+8);
+				U32 new_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+				U32 new_cs=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only first 16-bits are read
+				U32 new_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
 
 				ESP += 12;
 				cpu->eip.u32 = new_eip;
@@ -122,9 +124,9 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 				/* IOPL can not be modified in v86 mode by IRET */
 				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
 			} else {
-				U16 new_eip=readw(memory, cpu->segAddress[SS] + ESP);
-				U16 new_cs=readw(memory, cpu->segAddress[SS] + ESP+2);
-				U16 new_flags=readw(memory, cpu->segAddress[SS] + ESP+4);
+				U16 new_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+				U16 new_cs=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+2);
+				U16 new_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4);
 
 				ESP+=6;
 				cpu->eip.u32=new_eip;
@@ -135,7 +137,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
 			}
 			cpu->big = 0;
-			cpu->lazyFlags = 0;
+			cpu->lazyFlags = FLAGS_NONE;
 			return;
 		}
 	}
@@ -147,9 +149,9 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 	}
 	
 	if (big) {
-		n_eip=readd(memory, cpu->segAddress[SS] + ESP);
-		n_cs_sel=readd(memory, cpu->segAddress[SS] + ESP+4); // only read first 16-bits
-		n_flags=readd(memory, cpu->segAddress[SS] + ESP+8);
+		n_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+		n_cs_sel=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only read first 16-bits
+		n_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
 		if ((n_flags & VM) && cpu->cpl==0) {
 			U32 n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
 
@@ -164,7 +166,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 			n_fs=pop32(cpu) & 0xffff;
 			n_gs=pop32(cpu) & 0xffff;
 			setFlags(cpu, n_flags,FMASK_ALL | VM);
-			cpu->lazyFlags = 0;
+			cpu->lazyFlags = FLAGS_NONE;
 			cpu->cpl = 3;
 
 			cpu->segAddress[SS] = cpu->thread->process->ldt[n_ss>>3].base_addr;
@@ -187,9 +189,9 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 		tempesp=ESP+12;
 		if ((n_flags & VM)!=0) kpanic("IRET from pmode to v86 with CPL!=0");
 	} else {
-		n_eip=readw(memory, cpu->segAddress[SS] + ESP);
-		n_cs_sel=readw(memory, cpu->segAddress[SS] + ESP + 2);
-		n_flags=readw(memory, cpu->segAddress[SS] + ESP + 4);
+		n_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+		n_cs_sel=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 2);
+		n_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 4);
 		n_flags|=(cpu->flags & 0xffff0000);
 		tempesp=ESP+6;
 		if (n_flags & VM) kpanic("VM Flag in 16-bit iret");
@@ -210,7 +212,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 		
 		if (GET_IOPL(cpu)<cpu->cpl) mask &= ~IF;
 		setFlags(cpu, n_flags,mask);
-		cpu->lazyFlags = 0;
+		cpu->lazyFlags = FLAGS_NONE;
 	} else { /* Return to outer level */
 		kpanic("IRET to outer level not implemented");
 	}
@@ -221,7 +223,7 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
     U32 bp_index=EBP & cpu->stackMask;
 
     sp_index-=4;
-    writed(cpu->memory, cpu->segAddress[SS] + sp_index, EBP);
+	writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
     EBP = ESP - 4;
     if (level!=0) {
         U32 i;
@@ -229,10 +231,10 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
         for (i=1;i<level;i++) {
             sp_index-=4;
             bp_index-=4;
-            writed(cpu->memory, cpu->segAddress[SS] + sp_index, readd(cpu->memory, cpu->segAddress[SS] + bp_index));
+			writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readd(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
         }
         sp_index-=4;
-        writed(cpu->memory, cpu->segAddress[SS] + sp_index, EBP);
+		writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
     }
     sp_index-=bytes;
     ESP = (ESP & cpu->stackNotMask) | (sp_index & cpu->stackMask);
@@ -243,17 +245,17 @@ void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level) {
     U32 bp_index=EBP & cpu->stackMask;
 
     sp_index-=2;
-    writew(cpu->memory, cpu->segAddress[SS] + sp_index, BP);
+	writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
     BP = SP - 2;
     if (level!=0) {
         U32 i;
 
         for (i=1;i<level;i++) {
             sp_index-=2;bp_index-=2;
-            writew(cpu->memory, cpu->segAddress[SS] + sp_index, readw(cpu->memory, cpu->segAddress[SS] + bp_index));
+			writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readw(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
         }
         sp_index-=2;
-        writew(cpu->memory, cpu->segAddress[SS] + sp_index, BP);
+		writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
     }
 
     sp_index-=bytes;
@@ -632,14 +634,15 @@ struct LazyFlags* FLAGS_SAR32 = &flagsSar32;
 void push16(struct CPU* cpu, U16 value) {
 	if (cpu->big) {
         ESP-=2;
-		writew(cpu->memory, ESP, value);
+		writew(MMU_PARAM_CPU ESP, value);
     } else {
         SP-=2;
-		writew(cpu->memory, cpu->segAddress[SS] + SP, value);
+		writew(MMU_PARAM_CPU cpu->segAddress[SS] + SP, value);
     }
 }
 
 void push32(struct CPU* cpu, U32 value) {
+#ifdef USE_MMU
 	int index;
 
     ESP-=4;
@@ -652,15 +655,25 @@ void push32(struct CPU* cpu, U32 value) {
 	} else {
 		cpu->memory->mmu[index]->writed(cpu->memory, ESP, value);
 	}	
+#else
+	if (cpu->big) {
+		ESP -= 4;
+		writed(MMU_PARAM_CPU ESP, value);
+	}
+	else {
+		SP -= 4;
+		writed(MMU_PARAM_CPU cpu->segAddress[SS] + SP, value);
+	}
+#endif
 }
 
 U16 pop16(struct CPU* cpu) {
 	if (cpu->big) {
-		int result = readw(cpu->memory, ESP);
+		int result = readw(MMU_PARAM_CPU ESP);
         ESP+=2;
         return result;
     } else {
-		int result = readw(cpu->memory, cpu->segAddress[SS] + SP);
+		int result = readw(MMU_PARAM_CPU cpu->segAddress[SS] + SP);
         SP+=2;
         return result;
     }
@@ -668,16 +681,29 @@ U16 pop16(struct CPU* cpu) {
 
 U32 pop32(struct CPU* cpu) {
 	// we can assume the RAM page is already there since this read shouldn't happen unless we already wrote to it
+#ifdef USE_MMU
 	U32 result = host_readd(ESP-cpu->memory->read[ESP >> 12]);
     ESP+=4;
     return result;
+#else
+	if (cpu->big) {
+		int result = readd(MMU_PARAM_CPU ESP);
+		ESP += 4;
+		return result;
+	}
+	else {
+		int result = readd(MMU_PARAM_CPU cpu->segAddress[SS] + SP);
+		SP += 4;
+		return result;
+	}
+#endif
 }
 
 U32 peek32(struct CPU* cpu, U32 index) {
 	if (cpu->big) {
-		return readd(cpu->memory, cpu->segAddress[SS] + ESP+4*index);
+		return readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 4 * index);
     } else {
-		return readd(cpu->memory, cpu->segAddress[SS] + SP+4*index);
+		return readd(MMU_PARAM_CPU cpu->segAddress[SS] + SP + 4 * index);
     }
 }
 
@@ -699,6 +725,9 @@ void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op) {
     cpu->nextBlock = &emptyBlock;
 }
 
+#ifdef USE_MMU
+void initBlockCache() {
+}
 
 struct Block* getBlock(struct CPU* cpu) {
 	struct Block* block;	
@@ -716,7 +745,26 @@ struct Block* getBlock(struct CPU* cpu) {
 	}
 	return block;
 }
+#else
+PblMap* blockCache;
 
+void initBlockCache() {
+	blockCache = pblMapNewHashMap();
+}
+
+struct Block* getBlock(struct CPU* cpu) {
+	fflush(logFile);
+	{
+		struct Block** result = pblMapGet(blockCache, &cpu->eip.u32, 4, NULL);
+		if (!result) {
+			struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+			pblMapAdd(blockCache, &cpu->eip.u32, 4, &block, 4);
+			return block;
+		}
+		return *result;
+	}
+}
+#endif
 void runCPU(struct CPU* cpu) {	
 	runBlock(cpu, getBlock(cpu));
 }

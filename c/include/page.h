@@ -3,6 +3,7 @@
 
 #include "platform.h"
 
+#ifdef USE_MMU
 struct Memory;
 
 struct Page {
@@ -15,5 +16,7 @@ struct Page {
 	void (*clear)(struct Memory* memory, U32 page);
 	U8* (*physicalAddress)(struct Memory* memory, U32 address);
 };
+
+#endif
 
 #endif

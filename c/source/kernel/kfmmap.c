@@ -10,7 +10,7 @@
 #include <string.h>
 
 // :TODO: what about sync'ing the writes back to the file?
-
+#ifdef USE_MMU
 static void ondemmandFile(struct Memory* memory, U32 address) {
 	U32 page = address >> PAGE_SHIFT;
 	U32 flags = memory->flags[page];
@@ -57,7 +57,7 @@ static void ondemmandFile(struct Memory* memory, U32 address) {
 	if (!inCache) {
 		oldPos = mapped->file->access->getPos(mapped->file);
 		mapped->file->access->seek(mapped->file, offset);
-		len = mapped->file->access->read(0, mapped->file, memory, address, PAGE_SIZE);
+		len = mapped->file->access->read(memory, 0, mapped->file, address, PAGE_SIZE);
 		mapped->file->access->seek(mapped->file, oldPos);
 		if (len<PAGE_SIZE) {
 			// don't call zeroMemory because it might be read only
@@ -110,3 +110,5 @@ static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address) {
 }
 
 struct Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear, ondemandfile_physicalAddress};
+
+#endif

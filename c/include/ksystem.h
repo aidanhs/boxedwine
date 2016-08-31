@@ -17,7 +17,9 @@
 
 void initSystem();
 void initCallbacks();
+#ifdef USE_MMU
 void initCallbacksInProcess(struct KProcess* process);
+#endif
 
 extern U64 startTime;
 
@@ -38,8 +40,14 @@ U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec);
 U32 syscall_times(struct KThread* thread, U32 buf);
 
 struct MappedFileCache {
+#ifdef USE_MMU
 	U32* ramPages;
 	U32 pageCount;
+#else
+	U8* unalignedAddress;
+	U8* address;
+	U32 len;
+#endif
 	U32 refCount;
 	char name[MAX_FILEPATH_LEN];
 };

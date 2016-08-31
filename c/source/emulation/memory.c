@@ -17,7 +17,7 @@ char tmp64k[1024*64];
 
 extern jmp_buf runBlockJump;
 
-void log_pf(struct Memory* memory, U32 address) {
+void log_pf(struct KProcess* process, U32 address) {
 	U32 start = 0;
 	U32 i;
 	struct CPU* cpu = &currentThread->cpu;
@@ -25,27 +25,29 @@ void log_pf(struct Memory* memory, U32 address) {
 	printf("%.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X %s at %.8X\n", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, getModuleName(cpu, cpu->eip.u32), getModuleEip(cpu, cpu->eip.u32));
 
 	printf("Page Fault at %.8X\n", address);
+#ifdef USE_MMU
 	printf("Valid address ranges:\n");
 	for (i=0;i<NUMBER_OF_PAGES;i++) {
 		if (!start) {
-			if (memory->mmu[i] != &invalidPage) {
+			if (process->memory->mmu[i] != &invalidPage) {
 				start = i;
 			}
 		} else {
-			if (memory->mmu[i] == &invalidPage) {
+			if (process->memory->mmu[i] == &invalidPage) {
 				printf("    %.8X - %.8X\n", start*PAGE_SIZE, i*PAGE_SIZE);
 				start = 0;
 			}
 		}
 	}
+#endif
 	printf("Mapped Files:\n");
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
-		if (memory->process->mappedFiles[i].refCount)
-			printf("    %.8X - %.8X %s\n", memory->process->mappedFiles[i].address, memory->process->mappedFiles[i].address+memory->process->mappedFiles[i].len, ((struct OpenNode*)memory->process->mappedFiles[i].file->data)->node->path.localPath);
+		if (process->mappedFiles[i].refCount)
+			printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+process->mappedFiles[i].len, ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath);
 	}
 	kpanic("pf");
 }
-
+#ifdef USE_MMU
 void seg_mapper(struct Memory* memory, U32 address) {
 	if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
 		memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
@@ -56,7 +58,7 @@ void seg_mapper(struct Memory* memory, U32 address) {
 		printf("seg fault %X\n", address);
 		longjmp(runBlockJump, 1);		
 	} else {
-		log_pf(memory, address);
+		log_pf(memory->process, address);
 	}
 }
 
@@ -70,7 +72,7 @@ void seg_access(struct Memory* memory, U32 address) {
 		printf("seg fault %X\n", address);
 		longjmp(runBlockJump, 1);		
 	} else {
-		log_pf(memory, address);
+		log_pf(memory->process, address);
 	}
 }
 
@@ -133,8 +135,10 @@ void pf_clear(struct Memory* memory, U32 page) {
 }
 
 struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear};
+#endif
 
-U8 readb(struct Memory* memory, U32 address) {
+U8 readb(MMU_ARG U32 address) {
+#ifdef USE_MMU
 	int index = address >> 12;
 #ifdef LOG_OPS
 	U8 result;
@@ -149,9 +153,13 @@ U8 readb(struct Memory* memory, U32 address) {
 		return host_readb(address-memory->read[index]);
 	return memory->mmu[index]->readb(memory, address);
 #endif
+#else
+	return *(U8*)address;
+#endif
 }
 
-void writeb(struct Memory* memory, U32 address, U8 value) {
+void writeb(MMU_ARG U32 address, U8 value) {
+#ifdef USE_MMU
 	int index = address >> 12;
 #ifdef LOG_OPS
 	fprintf(logFile, "writeb %X @%X\n", value, address);
@@ -161,9 +169,13 @@ void writeb(struct Memory* memory, U32 address, U8 value) {
 	} else {
 		memory->mmu[index]->writeb(memory, address, value);
 	}
+#else
+	*(U8*)address = value;
+#endif
 }
 
-U16 readw(struct Memory* memory, U32 address) {
+U16 readw(MMU_ARG U32 address) {
+#ifdef USE_MMU
 #ifdef LOG_OPS
 	U16 result;
 
@@ -187,9 +199,17 @@ U16 readw(struct Memory* memory, U32 address) {
 	}
 	return readb(memory, address) | (readb(memory, address+1) << 8);
 #endif
+#else
+#ifdef UNALIGNED_MEMORY
+	return (*(U8*)address) | ((*(U8*)address+1) << 8);
+#else
+	return *(U16*)address;
+#endif
+#endif
 }
 
-void writew(struct Memory* memory, U32 address, U16 value) {
+void writew(MMU_ARG U32 address, U16 value) {
+#ifdef USE_MMU
 #ifdef LOG_OPS
 	fprintf(logFile, "writew %X @%X\n", value, address);
 #endif
@@ -204,9 +224,18 @@ void writew(struct Memory* memory, U32 address, U16 value) {
 		writeb(memory, address, (U8)value);
 		writeb(memory, address+1, (U8)(value >> 8));
 	}
+#else
+#ifdef UNALIGNED_MEMORY
+	*(U8*)address = (U8)value;
+	*(U8*)(address+1) = (U8)(value >> 8);
+#else
+	*(U16*)address = value;
+#endif
+#endif
 }
 
-U32 readd(struct Memory* memory, U32 address) {
+U32 readd(MMU_ARG U32 address) {
+#ifdef USE_MMU
 #ifdef LOG_OPS
 	U32 result;
 
@@ -231,9 +260,17 @@ U32 readd(struct Memory* memory, U32 address) {
 		return readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
 	}
 #endif
+#else
+#ifdef UNALIGNED_MEMORY
+	return (*(U8*)address) | ((*(U8*)address + 1) << 8) | ((*(U8*)address + 2) << 16) | ((*(U8*)address + 3) << 24);
+#else
+	return *(U32*)address;
+#endif
+#endif
 }
 
-void writed(struct Memory* memory, U32 address, U32 value) {
+void writed(MMU_ARG U32 address, U32 value) {
+#ifdef USE_MMU
 #ifdef LOG_OPS
 	fprintf(logFile, "writed %X @%X\n", value, address);
 #endif
@@ -250,17 +287,37 @@ void writed(struct Memory* memory, U32 address, U32 value) {
 		writeb(memory, address+2, value >> 16);
 		writeb(memory, address+3, value >> 24);
 	}
+#else
+#ifdef UNALIGNED_MEMORY
+	*(U8*)address = (U8)value;
+	*(U8*)(address + 1) = (U8)(value >> 8);
+	*(U8*)(address + 2) = (U8)(value >> 16);
+	*(U8*)(address + 3) = (U8)(value >> 24);
+#else
+	*(U32*)address = value;
+#endif
+#endif
 }
 
-U64 readq(struct Memory* memory, U32 address) {
+U64 readq(MMU_ARG U32 address) {
+#ifdef USE_MMU
 	return readd(memory, address) | ((U64)readd(memory, address+4) << 32);
+#else
+	return readd(address) | ((U64)readd(address + 4) << 32);
+#endif
 }
 
-void writeq(struct Memory* memory, U32 address, U64 value) {
+void writeq(MMU_ARG U32 address, U64 value) {
+#ifdef USE_MMU
 	writed(memory, address, (U32)value);
 	writed(memory, address+4, (U32)(value >> 32));
+#else
+	writed(address, (U32)value);
+	writed(address + 4, (U32)(value >> 32));
+#endif
 }
 
+#ifdef USE_MMU
 struct Memory* allocMemory() {
 	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
 	initMemory(memory);
@@ -370,33 +427,46 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
 		}
 	}
 }
-
-void zeroMemory(struct Memory* memory, U32 address, int len) {
+#endif
+void zeroMemory(MMU_ARG U32 address, int len) {
+#ifdef USE_MMU
 	int i;
 	for (i=0;i<len;i++) {
 		writeb(memory, address, 0);
 		address++;
 	}
+#else
+	memset((void*)address, 0, len);
+#endif
 }
 
-void readMemory(struct Memory* memory, U8* data, U32 address, int len) {
+void readMemory(MMU_ARG U8* data, U32 address, int len) {
+#ifdef USE_MMU
 	int i;
 	for (i=0;i<len;i++) {
 		*data=readb(memory, address);
 		address++;
 		data++;
 	}
+#else
+	memcpy(data, (void*)address, len);
+#endif
 }
 
-void writeMemory(struct Memory* memory, U32 address, U8* data, int len) {
+void writeMemory(MMU_ARG U32 address, U8* data, int len) {
+#ifdef USE_MMU
 	int i;
 	for (i=0;i<len;i++) {
 		writeb(memory, address, *data);
 		address++;
 		data++;
 	}
+#else
+	memcpy((void*)address, data, len);
+#endif
 }
 
+#ifdef USE_MMU
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeReMapped) {
 	U32 i;
 	
@@ -445,48 +515,63 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 	int index = address >> 12;
 	return memory->mmu[index]->physicalAddress(memory, address);
 }
-
-void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {
+#endif
+void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
+#ifdef USE_MMU
 	U32 i;
 	
 	for (i=0;i<len;i++) {
 		writeb(memory, address+i, p[i]);
 	}
+#else
+	memcpy((void*)address, p, len);
+#endif
 }
 
-void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
+void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
+#ifdef USE_MMU
 	U32 i;
 	
 	for (i=0;i<len;i++) {
 		p[i] = readb(memory, address+i);
 	}
+#else
+	memcpy(p, (void*)address, len);
+#endif
 }
 
-void writeNativeString(struct Memory* memory, U32 address, const char* str) {	
+void writeNativeString(MMU_ARG U32 address, const char* str) {	
+#ifdef USE_MMU
 	while (*str) {
 		writeb(memory, address, *str);
 		str++;
 		address++;
 	}
 	writeb(memory, address, 0);
+#else
+	strcpy((char*)address, str);
+#endif
 }
 
-U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len) {	
+U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len) {	
 	U32 count=0;
 
 	while (*str && count<len-1) {
-		writeb(memory, address, *str);
+		writeb(MMU_PARAM address, *str);
 		str++;
 		address++;
 		count++;
 	}
-	writeb(memory, address, 0);
+	writeb(MMU_PARAM address, 0);
 	return count;
 }
 
+#ifdef USE_MMU
 static char tmpBuffer[MAX_FILEPATH_LEN];
+#endif
 
-char* getNativeString(struct Memory* memory, U32 address) {
+char* getNativeString(MMU_ARG U32 address) {
+#ifdef USE_MMU
 	char c;
 	int i=0;
 
@@ -499,11 +584,17 @@ char* getNativeString(struct Memory* memory, U32 address) {
 		tmpBuffer[i++] = c;
 	} while(c);
 	return tmpBuffer;
+#else
+	return (char*)address;
+#endif
 }
 
+#ifdef USE_MMU
 static char tmpBuffer2[MAX_FILEPATH_LEN];
+#endif
 
-char* getNativeString2(struct Memory* memory, U32 address) {
+char* getNativeString2(MMU_ARG U32 address) {
+#ifdef USE_MMU
 	char c;
 	int i=0;
 
@@ -516,4 +607,7 @@ char* getNativeString2(struct Memory* memory, U32 address) {
 		tmpBuffer2[i++] = c;
 	} while(c);
 	return tmpBuffer2;
+#else
+	return (char*)address;
+#endif
 }

@@ -20,8 +20,12 @@ struct KThread {
 	U32 alternateStack;
 	U32 alternateStackSize;
 	struct CPU cpu;
+#ifdef USE_MMU
 	U32 stackPageStart;
 	U32 stackPageCount;
+#else
+	U8* stackAddress;
+#endif
 	struct KProcess* process;
 	struct KCNode* scheduledNode;
 	struct KListNode* waitNode;

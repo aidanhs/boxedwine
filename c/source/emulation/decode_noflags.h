@@ -5,23 +5,23 @@ void OPCALL addr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adde8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL adde8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL addr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL addr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -32,13 +32,13 @@ void OPCALL add8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL add8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL add8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -49,23 +49,23 @@ void OPCALL addr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adde16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL adde16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL addr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL addr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -76,13 +76,13 @@ void OPCALL add16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL add16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL add16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -93,23 +93,23 @@ void OPCALL addr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adde32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL adde32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL addr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL addr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -120,13 +120,13 @@ void OPCALL add32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL add32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL add32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -137,23 +137,23 @@ void OPCALL orr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL ore8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) | *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) | *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL ore8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) | *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) | *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL orr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] | readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] | readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL orr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] | readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] | readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -164,13 +164,13 @@ void OPCALL or8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL or8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) | op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) | op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL or8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) | op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) | op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -181,23 +181,23 @@ void OPCALL orr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL ore16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) | cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) | cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL ore16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) | cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) | cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL orr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 | readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 | readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL orr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 | readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 | readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -208,13 +208,13 @@ void OPCALL or16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL or16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) | op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) | op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL or16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) | op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) | op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -225,23 +225,23 @@ void OPCALL orr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL ore32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) | cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) | cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL ore32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) | cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) | cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL orr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 | readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 | readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL orr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 | readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 | readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -252,13 +252,13 @@ void OPCALL or32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL or32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) | op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) | op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL or32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) | op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) | op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -269,23 +269,23 @@ void OPCALL adcr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adce8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + *cpu->reg8[op->r1] + getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + *cpu->reg8[op->r1] + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adce8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + *cpu->reg8[op->r1] + getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + *cpu->reg8[op->r1] + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adcr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(cpu->memory, eaa16(cpu, op)) + getCF(cpu);
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(MMU_PARAM_CPU eaa16(cpu, op)) + getCF(cpu);
     CYCLES(2);
     NEXT();
 }
 void OPCALL adcr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(cpu->memory, eaa32(cpu, op)) + getCF(cpu);
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] + readb(MMU_PARAM_CPU eaa32(cpu, op)) + getCF(cpu);
     CYCLES(2);
     NEXT();
 }
@@ -296,13 +296,13 @@ void OPCALL adc8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adc8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + op->data1 + getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + op->data1 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adc8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) + op->data1 + getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) + op->data1 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -313,23 +313,23 @@ void OPCALL adcr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adce16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + cpu->reg[op->r1].u16 + getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u16 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adce16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + cpu->reg[op->r1].u16 + getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u16 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adcr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(cpu->memory, eaa16(cpu, op)) + getCF(cpu);
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(MMU_PARAM_CPU eaa16(cpu, op)) + getCF(cpu);
     CYCLES(2);
     NEXT();
 }
 void OPCALL adcr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(cpu->memory, eaa32(cpu, op)) + getCF(cpu);
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 + readw(MMU_PARAM_CPU eaa32(cpu, op)) + getCF(cpu);
     CYCLES(2);
     NEXT();
 }
@@ -340,13 +340,13 @@ void OPCALL adc16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adc16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + op->data1 + getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + op->data1 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adc16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) + op->data1 + getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) + op->data1 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -357,23 +357,23 @@ void OPCALL adcr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adce32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + cpu->reg[op->r1].u32 + getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u32 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adce32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + cpu->reg[op->r1].u32 + getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + cpu->reg[op->r1].u32 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adcr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(cpu->memory, eaa16(cpu, op)) + getCF(cpu);
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(MMU_PARAM_CPU eaa16(cpu, op)) + getCF(cpu);
     CYCLES(2);
     NEXT();
 }
 void OPCALL adcr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(cpu->memory, eaa32(cpu, op)) + getCF(cpu);
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 + readd(MMU_PARAM_CPU eaa32(cpu, op)) + getCF(cpu);
     CYCLES(2);
     NEXT();
 }
@@ -384,13 +384,13 @@ void OPCALL adc32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL adc32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + op->data1 + getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + op->data1 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL adc32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) + op->data1 + getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) + op->data1 + getCF(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -401,23 +401,23 @@ void OPCALL sbbr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sbbe8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - *cpu->reg8[op->r1] - getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - *cpu->reg8[op->r1] - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbbe8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - *cpu->reg8[op->r1] - getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - *cpu->reg8[op->r1] - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbbr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(cpu->memory, eaa16(cpu, op)) - getCF(cpu);
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(MMU_PARAM_CPU eaa16(cpu, op)) - getCF(cpu);
     CYCLES(2);
     NEXT();
 }
 void OPCALL sbbr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(cpu->memory, eaa32(cpu, op)) - getCF(cpu);
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(MMU_PARAM_CPU eaa32(cpu, op)) - getCF(cpu);
     CYCLES(2);
     NEXT();
 }
@@ -428,13 +428,13 @@ void OPCALL sbb8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sbb8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - op->data1 - getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - op->data1 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbb8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - op->data1 - getCF(cpu));
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - op->data1 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -445,23 +445,23 @@ void OPCALL sbbr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sbbe16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - cpu->reg[op->r1].u16 - getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u16 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbbe16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - cpu->reg[op->r1].u16 - getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u16 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbbr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(cpu->memory, eaa16(cpu, op)) - getCF(cpu);
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(MMU_PARAM_CPU eaa16(cpu, op)) - getCF(cpu);
     CYCLES(2);
     NEXT();
 }
 void OPCALL sbbr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(cpu->memory, eaa32(cpu, op)) - getCF(cpu);
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(MMU_PARAM_CPU eaa32(cpu, op)) - getCF(cpu);
     CYCLES(2);
     NEXT();
 }
@@ -472,13 +472,13 @@ void OPCALL sbb16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sbb16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - op->data1 - getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - op->data1 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbb16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - op->data1 - getCF(cpu));
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - op->data1 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -489,23 +489,23 @@ void OPCALL sbbr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sbbe32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - cpu->reg[op->r1].u32 - getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u32 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbbe32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - cpu->reg[op->r1].u32 - getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u32 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbbr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(cpu->memory, eaa16(cpu, op)) - getCF(cpu);
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(MMU_PARAM_CPU eaa16(cpu, op)) - getCF(cpu);
     CYCLES(2);
     NEXT();
 }
 void OPCALL sbbr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(cpu->memory, eaa32(cpu, op)) - getCF(cpu);
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(MMU_PARAM_CPU eaa32(cpu, op)) - getCF(cpu);
     CYCLES(2);
     NEXT();
 }
@@ -516,13 +516,13 @@ void OPCALL sbb32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sbb32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - op->data1 - getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - op->data1 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
 void OPCALL sbb32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - op->data1 - getCF(cpu));
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - op->data1 - getCF(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -533,23 +533,23 @@ void OPCALL andr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL ande8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL ande8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL andr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL andr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -560,13 +560,13 @@ void OPCALL and8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL and8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL and8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -577,23 +577,23 @@ void OPCALL andr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL ande16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL ande16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL andr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL andr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -604,13 +604,13 @@ void OPCALL and16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL and16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL and16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -621,23 +621,23 @@ void OPCALL andr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL ande32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL ande32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL andr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL andr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -648,13 +648,13 @@ void OPCALL and32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL and32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL and32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -665,23 +665,23 @@ void OPCALL subr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sube8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL sube8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL subr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL subr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -692,13 +692,13 @@ void OPCALL sub8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sub8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL sub8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -709,23 +709,23 @@ void OPCALL subr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sube16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL sube16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL subr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL subr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -736,13 +736,13 @@ void OPCALL sub16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sub16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL sub16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -753,23 +753,23 @@ void OPCALL subr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sube32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL sube32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL subr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL subr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -780,13 +780,13 @@ void OPCALL sub32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL sub32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL sub32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -797,23 +797,23 @@ void OPCALL xorr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL xore8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) ^ *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) ^ *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xore8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) ^ *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) ^ *cpu->reg8[op->r1]);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xorr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] ^ readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] ^ readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL xorr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] ^ readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] ^ readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -824,13 +824,13 @@ void OPCALL xor8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL xor8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) ^ op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) ^ op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xor8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) ^ op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) ^ op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -841,23 +841,23 @@ void OPCALL xorr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL xore16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) ^ cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) ^ cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xore16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) ^ cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) ^ cpu->reg[op->r1].u16);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xorr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 ^ readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 ^ readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL xorr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 ^ readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 ^ readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -868,13 +868,13 @@ void OPCALL xor16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL xor16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) ^ op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) ^ op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xor16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) ^ op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) ^ op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -885,23 +885,23 @@ void OPCALL xorr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL xore32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) ^ cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) ^ cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xore32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) ^ cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) ^ cpu->reg[op->r1].u32);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xorr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 ^ readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 ^ readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL xorr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 ^ readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 ^ readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -912,13 +912,13 @@ void OPCALL xor32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL xor32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) ^ op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) ^ op->data1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL xor32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) ^ op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) ^ op->data1);
     CYCLES(3);
     NEXT();
 }
@@ -929,23 +929,23 @@ void OPCALL cmpr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL cmpe8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - *cpu->reg8[op->r1]);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpe8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - *cpu->reg8[op->r1]);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] - readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -956,13 +956,13 @@ void OPCALL cmp8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL cmp8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmp8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) - op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(2);
     NEXT();
 }
@@ -973,23 +973,23 @@ void OPCALL cmpr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL cmpe16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u16);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpe16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u16);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 - readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -1000,13 +1000,13 @@ void OPCALL cmp16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL cmp16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmp16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) - op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(2);
     NEXT();
 }
@@ -1017,23 +1017,23 @@ void OPCALL cmpr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL cmpe32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u32);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpe32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - cpu->reg[op->r1].u32);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmpr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 - readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -1044,13 +1044,13 @@ void OPCALL cmp32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL cmp32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(2);
     NEXT();
 }
 void OPCALL cmp32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) - op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) - op->data1);
     CYCLES(2);
     NEXT();
 }
@@ -1061,23 +1061,23 @@ void OPCALL testr8r8_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL teste8r8_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & *cpu->reg8[op->r1]);
     CYCLES(2);
     NEXT();
 }
 void OPCALL teste8r8_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & *cpu->reg8[op->r1]);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & *cpu->reg8[op->r1]);
     CYCLES(2);
     NEXT();
 }
 void OPCALL testr8e8_16_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL testr8e8_32_noflags(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = *cpu->reg8[op->r1] & readb(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -1088,13 +1088,13 @@ void OPCALL test8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL test8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(2);
     NEXT();
 }
 void OPCALL test8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa) & op->data1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(2);
     NEXT();
 }
@@ -1105,23 +1105,23 @@ void OPCALL testr16r16_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL teste16r16_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u16);
     CYCLES(2);
     NEXT();
 }
 void OPCALL teste16r16_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & cpu->reg[op->r1].u16);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u16);
     CYCLES(2);
     NEXT();
 }
 void OPCALL testr16e16_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL testr16e16_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = cpu->reg[op->r1].u16 & readw(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -1132,13 +1132,13 @@ void OPCALL test16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL test16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(2);
     NEXT();
 }
 void OPCALL test16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa) & op->data1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(2);
     NEXT();
 }
@@ -1149,23 +1149,23 @@ void OPCALL testr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL teste32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u32);
     CYCLES(2);
     NEXT();
 }
 void OPCALL teste32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & cpu->reg[op->r1].u32);
     CYCLES(2);
     NEXT();
 }
 void OPCALL testr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(MMU_PARAM_CPU eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 void OPCALL testr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = cpu->reg[op->r1].u32 & readd(MMU_PARAM_CPU eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -1176,13 +1176,13 @@ void OPCALL test32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL test32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(2);
     NEXT();
 }
 void OPCALL test32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa) & op->data1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa) & op->data1);
     CYCLES(2);
     NEXT();
 }
@@ -2012,13 +2012,13 @@ void OPCALL inc8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL inc8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa)+1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa)+1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL inc8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa)+1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa)+1);
     CYCLES(3);
     NEXT();
 }
@@ -2029,13 +2029,13 @@ void OPCALL inc16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL inc16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa)+1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa)+1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL inc16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa)+1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa)+1);
     CYCLES(3);
     NEXT();
 }
@@ -2046,13 +2046,13 @@ void OPCALL inc32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL inc32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa)+1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa)+1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL inc32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa)+1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa)+1);
     CYCLES(3);
     NEXT();
 }
@@ -2063,13 +2063,13 @@ void OPCALL dec8_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL dec8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa)-1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa)-1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL dec8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, readb(cpu->memory, eaa)-1);
+    writeb(MMU_PARAM_CPU eaa, readb(MMU_PARAM_CPU eaa)-1);
     CYCLES(3);
     NEXT();
 }
@@ -2080,13 +2080,13 @@ void OPCALL dec16_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL dec16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa)-1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa)-1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL dec16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, readw(cpu->memory, eaa)-1);
+    writew(MMU_PARAM_CPU eaa, readw(MMU_PARAM_CPU eaa)-1);
     CYCLES(3);
     NEXT();
 }
@@ -2097,13 +2097,13 @@ void OPCALL dec32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 void OPCALL dec32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa)-1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa)-1);
     CYCLES(3);
     NEXT();
 }
 void OPCALL dec32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, readd(cpu->memory, eaa)-1);
+    writed(MMU_PARAM_CPU eaa, readd(MMU_PARAM_CPU eaa)-1);
     CYCLES(3);
     NEXT();
 }
@@ -2121,9 +2121,9 @@ void OPCALL rol8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2131,9 +2131,9 @@ void OPCALL rol8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2158,9 +2158,9 @@ void OPCALL rol8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2&=7;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2172,9 +2172,9 @@ void OPCALL rol8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2&=7;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2193,9 +2193,9 @@ void OPCALL rol16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2203,9 +2203,9 @@ void OPCALL rol16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2230,9 +2230,9 @@ void OPCALL rol16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2&=15;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2244,9 +2244,9 @@ void OPCALL rol16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2&=15;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2265,9 +2265,9 @@ void OPCALL rol32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2275,9 +2275,9 @@ void OPCALL rol32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (var1 >> (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2297,10 +2297,10 @@ void OPCALL rol32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (var1 << var2) | (var1 >> (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2309,10 +2309,10 @@ void OPCALL rol32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (var1 << var2) | (var1 >> (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2331,9 +2331,9 @@ void OPCALL ror8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2341,9 +2341,9 @@ void OPCALL ror8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2368,9 +2368,9 @@ void OPCALL ror8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2&=7;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2382,9 +2382,9 @@ void OPCALL ror8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2&=7;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (8 - var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2403,9 +2403,9 @@ void OPCALL ror16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2413,9 +2413,9 @@ void OPCALL ror16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2440,9 +2440,9 @@ void OPCALL ror16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2&=15;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2454,9 +2454,9 @@ void OPCALL ror16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2&=15;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (16 - var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2475,9 +2475,9 @@ void OPCALL ror32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2485,9 +2485,9 @@ void OPCALL ror32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (var1 << (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -2507,10 +2507,10 @@ void OPCALL ror32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (var1 >> var2) | (var1 << (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2519,10 +2519,10 @@ void OPCALL ror32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (var1 >> var2) | (var1 << (32 - var2));
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -2541,9 +2541,9 @@ void OPCALL rcl8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2551,9 +2551,9 @@ void OPCALL rcl8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2578,9 +2578,9 @@ void OPCALL rcl8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2=var2 % 9;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2592,9 +2592,9 @@ void OPCALL rcl8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2=var2 % 9;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2613,9 +2613,9 @@ void OPCALL rcl16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2623,9 +2623,9 @@ void OPCALL rcl16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2650,9 +2650,9 @@ void OPCALL rcl16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2=var2 % 17;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2664,9 +2664,9 @@ void OPCALL rcl16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2=var2 % 17;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 << var2) | (getCF(cpu) << (var2-1)) | (var1 >> (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2689,13 +2689,13 @@ void OPCALL rcl32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2==1) {
         result = (var1 << var2) | getCF(cpu);
     } else {
         result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2703,13 +2703,13 @@ void OPCALL rcl32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2==1) {
         result = (var1 << var2) | getCF(cpu);
     } else {
         result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2733,14 +2733,14 @@ void OPCALL rcl32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     if (var2==1) {
         result = (var1 << var2) | getCF(cpu);
     } else {
         result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2749,14 +2749,14 @@ void OPCALL rcl32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     if (var2==1) {
         result = (var1 << var2) | getCF(cpu);
     } else {
         result = (var1 << var2) | ((cpu->flags & CF) << (var2-1)) | (var1 >> (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2775,9 +2775,9 @@ void OPCALL rcr8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (8-var2)) | (var1 << (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2785,9 +2785,9 @@ void OPCALL rcr8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (8-var2)) | (var1 << (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2812,9 +2812,9 @@ void OPCALL rcr8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2=var2 % 9;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (8-var2)) | (var1 << (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2826,9 +2826,9 @@ void OPCALL rcr8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var1;
     if (var2) {
     var2=var2 % 9;
-    var1 = readb(cpu->memory, eaa);
+    var1 = readb(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (8-var2)) | (var1 << (9-var2));
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2847,9 +2847,9 @@ void OPCALL rcr16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (16-var2)) | (var1 << (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2857,9 +2857,9 @@ void OPCALL rcr16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (16-var2)) | (var1 << (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2884,9 +2884,9 @@ void OPCALL rcr16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2=var2 % 17;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (16-var2)) | (var1 << (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2898,9 +2898,9 @@ void OPCALL rcr16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var1;
     if (var2) {
     var2=var2 % 17;
-    var1 = readw(cpu->memory, eaa);
+    var1 = readw(MMU_PARAM_CPU eaa);
     result = (var1 >> var2) | (getCF(cpu) << (16-var2)) | (var1 << (17-var2));
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2923,13 +2923,13 @@ void OPCALL rcr32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2==1) {
         result = (var1 >> var2) | (getCF(cpu) << 31);
     } else {
         result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2937,13 +2937,13 @@ void OPCALL rcr32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2==1) {
         result = (var1 >> var2) | (getCF(cpu) << 31);
     } else {
         result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(10);
     NEXT();
 }
@@ -2967,14 +2967,14 @@ void OPCALL rcr32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     if (var2==1) {
         result = (var1 >> var2) | (getCF(cpu) << 31);
     } else {
         result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -2983,14 +2983,14 @@ void OPCALL rcr32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     if (var2==1) {
         result = (var1 >> var2) | (getCF(cpu) << 31);
     } else {
         result = (var1 >> var2) | ((cpu->flags & CF) << (32-var2)) | (var1 << (33-var2));
     }
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(9);
     NEXT();
@@ -3009,9 +3009,9 @@ void OPCALL shl8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = var1 << var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3019,9 +3019,9 @@ void OPCALL shl8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = var1 << var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3041,10 +3041,10 @@ void OPCALL shl8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 << var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3053,10 +3053,10 @@ void OPCALL shl8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 << var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3075,9 +3075,9 @@ void OPCALL shl16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = var1 << var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3085,9 +3085,9 @@ void OPCALL shl16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = var1 << var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3107,10 +3107,10 @@ void OPCALL shl16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 << var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3119,10 +3119,10 @@ void OPCALL shl16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 << var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3141,9 +3141,9 @@ void OPCALL shl32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = var1 << var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3151,9 +3151,9 @@ void OPCALL shl32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = var1 << var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3173,10 +3173,10 @@ void OPCALL shl32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 << var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3185,10 +3185,10 @@ void OPCALL shl32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 << var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3207,9 +3207,9 @@ void OPCALL shr8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3217,9 +3217,9 @@ void OPCALL shr8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3239,10 +3239,10 @@ void OPCALL shr8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3251,10 +3251,10 @@ void OPCALL shr8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3273,9 +3273,9 @@ void OPCALL shr16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3283,9 +3283,9 @@ void OPCALL shr16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3305,10 +3305,10 @@ void OPCALL shr16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3317,10 +3317,10 @@ void OPCALL shr16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3339,9 +3339,9 @@ void OPCALL shr32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3349,9 +3349,9 @@ void OPCALL shr32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3371,10 +3371,10 @@ void OPCALL shr32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3383,10 +3383,10 @@ void OPCALL shr32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3405,9 +3405,9 @@ void OPCALL sar8_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (S8)var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3415,9 +3415,9 @@ void OPCALL sar8_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     result = (S8)var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3437,10 +3437,10 @@ void OPCALL sar8cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (S8)var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3449,10 +3449,10 @@ void OPCALL sar8cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U8 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U8 result;
-    U8 var1=readb(cpu->memory, eaa);
+    U8 var1=readb(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (S8)var1 >> var2;
-    writeb(cpu->memory, eaa, result);
+    writeb(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3471,9 +3471,9 @@ void OPCALL sar16_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (S16)var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3481,9 +3481,9 @@ void OPCALL sar16_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     result = (S16)var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3503,10 +3503,10 @@ void OPCALL sar16cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (S16)var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3515,10 +3515,10 @@ void OPCALL sar16cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U16 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U16 result;
-    U16 var1=readw(cpu->memory, eaa);
+    U16 var1=readw(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (S16)var1 >> var2;
-    writew(cpu->memory, eaa, result);
+    writew(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3537,9 +3537,9 @@ void OPCALL sar32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = (S32)var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3547,9 +3547,9 @@ void OPCALL sar32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = op->data1;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     result = (S32)var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     CYCLES(3);
     NEXT();
 }
@@ -3569,10 +3569,10 @@ void OPCALL sar32cl_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa16(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (S32)var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();
@@ -3581,10 +3581,10 @@ void OPCALL sar32cl_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 var2 = CL & 0x1f;
     U32 eaa=eaa32(cpu, op);
     U32 result;
-    U32 var1=readd(cpu->memory, eaa);
+    U32 var1=readd(MMU_PARAM_CPU eaa);
     if (var2) {
     result = (S32)var1 >> var2;
-    writed(cpu->memory, eaa, result);
+    writed(MMU_PARAM_CPU eaa, result);
     }
     CYCLES(4);
     NEXT();

@@ -146,6 +146,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 	U32 address=0xFFFFFFFF;
 	U32 i;
 	U32 reloc;
+	U32 flags = K_MAP_PRIVATE | K_MAP_ANONYMOUS;
 
 	if (len!=sizeof(buffer)) {
 		return FALSE;
@@ -165,6 +166,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 				len=phdr.p_paddr+phdr.p_memsz;
 		}
 	}
+#ifdef USE_MMU
 	if (address>0x10000) {
 		reloc = 0;
 		len-=address;
@@ -172,7 +174,12 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 		reloc = ADDRESS_PROCESS_LOADER<<PAGE_SHIFT;
 		address = reloc;
 	}
-	address = syscall_mmap64(thread, address, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE|K_MAP_ANONYMOUS|K_MAP_FIXED, -1, 0);
+	flags |= K_MAP_FIXED;
+#endif
+	address = syscall_mmap64(thread, address, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, flags, -1, 0);
+#ifndef USE_MMU
+	reloc = address;
+#endif
 	process->loaderBaseAddress = address;
 	process->brkEnd = address+len;
 	process->phdr = 0;
@@ -187,7 +194,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 					process->phdr = reloc+phdr.p_paddr+hdr->e_phoff-phdr.p_offset;
 				}
 				openNode->access->seek(openNode, phdr.p_offset);
-				openNode->access->read(thread->process->memory, openNode, reloc+phdr.p_paddr, phdr.p_filesz);		
+				openNode->access->read(MMU_PARAM_THREAD openNode, reloc+phdr.p_paddr, phdr.p_filesz);		
 			}
 		}
 	}

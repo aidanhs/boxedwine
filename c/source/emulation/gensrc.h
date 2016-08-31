@@ -70,7 +70,7 @@ void genArithER(struct GenData* data, const char* op, const char* flags, const c
     out(data, bits);
     out(data, " = read");
     out(data, memWidth);
-    out(data, "(cpu->memory, eaa); cpu->src.u");
+    out(data, "(MMU_PARAM_CPU eaa); cpu->src.u");
     out(data, bits);
     out(data, " = ");
     out(data, r1);
@@ -93,7 +93,7 @@ void genArithER(struct GenData* data, const char* op, const char* flags, const c
     if (useResult) {
         out(data, "; write");
         out(data, memWidth);
-        out(data, "(cpu->memory, eaa,  cpu->result.u");
+        out(data, "(MMU_PARAM_CPU eaa,  cpu->result.u");
         out(data, bits);
         out(data, ")");
     }
@@ -107,9 +107,9 @@ void genArithER_noflags(struct GenData* data, const char* op, const char* bits, 
     out(data, address);
     out(data, "; write");
     out(data, memWidth);
-    out(data, "(cpu->memory, eaa, read");
+    out(data, "(MMU_PARAM_CPU eaa, read");
     out(data, memWidth);
-    out(data, "(cpu->memory, eaa) ");
+    out(data, "(MMU_PARAM_CPU eaa) ");
     out(data, op);
     out(data, " ");
     out(data, r1);
@@ -138,7 +138,7 @@ void genArithRE(struct GenData* data, const char* op, const char* flags, const c
     out(data, bits);
     out(data, " = read");
     out(data, memWidth);
-    out(data, "(cpu->memory, ");
+    out(data, "(MMU_PARAM_CPU ");
     out(data, address);
     out(data, "); cpu->result.u");
     out(data, bits);
@@ -175,7 +175,7 @@ void genArithRE_noflags(struct GenData* data, const char* op, const char* bits, 
     out(data, op);
     out(data, " read");
     out(data, memWidth);
-    out(data, "(cpu->memory, ");
+    out(data, "(MMU_PARAM_CPU ");
     out(data, address);
     out(data, ")");
     if (useCF) {
@@ -269,7 +269,7 @@ void genArithE(struct GenData* data, const char* op, const char* flags, const ch
     out(data, bits);
     out(data, " = read");
     out(data, memWidth);
-    out(data, "(cpu->memory, eaa); cpu->src.u");
+    out(data, "(MMU_PARAM_CPU eaa); cpu->src.u");
     out(data, bits);
     out(data, " = 0x");
     itoa(value, tmp, 16);
@@ -293,7 +293,7 @@ void genArithE(struct GenData* data, const char* op, const char* flags, const ch
     if (useResult) {
         out(data, "; write");
         out(data, memWidth);
-        out(data, "(cpu->memory, eaa,  cpu->result.u");
+        out(data, "(MMU_PARAM_CPU eaa,  cpu->result.u");
         out(data, bits);
         out(data, ")");
     }
@@ -309,9 +309,9 @@ void genArithE_noflags(struct GenData* data, const char* op, const char* bits, c
     out(data, address);
     out(data, "; write");
     out(data, memWidth);
-    out(data, "(cpu->memory, eaa, read");
+    out(data, "(MMU_PARAM_CPU eaa, read");
     out(data, memWidth);
-    out(data, "(cpu->memory, eaa) ");
+    out(data, "(MMU_PARAM_CPU eaa) ");
     out(data, op);
     out(data, " 0x");
     itoa(value, tmp, 16);
@@ -1801,7 +1801,7 @@ void gen140(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 0));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovO_16_mem32) {
@@ -1809,7 +1809,7 @@ void gen140(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 0));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -1833,7 +1833,7 @@ void gen340(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 0));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovO_32_mem32) {
@@ -1841,7 +1841,7 @@ void gen340(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 0));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -1865,7 +1865,7 @@ void gen141(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 1));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNO_16_mem32) {
@@ -1873,7 +1873,7 @@ void gen141(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 1));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -1897,7 +1897,7 @@ void gen341(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 1));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNO_32_mem32) {
@@ -1905,7 +1905,7 @@ void gen341(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 1));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -1929,7 +1929,7 @@ void gen142(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 2));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovB_16_mem32) {
@@ -1937,7 +1937,7 @@ void gen142(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 2));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -1961,7 +1961,7 @@ void gen342(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 2));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovB_32_mem32) {
@@ -1969,7 +1969,7 @@ void gen342(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 2));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -1993,7 +1993,7 @@ void gen143(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 3));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNB_16_mem32) {
@@ -2001,7 +2001,7 @@ void gen143(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 3));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2025,7 +2025,7 @@ void gen343(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 3));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNB_32_mem32) {
@@ -2033,7 +2033,7 @@ void gen343(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 3));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2057,7 +2057,7 @@ void gen144(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 4));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovZ_16_mem32) {
@@ -2065,7 +2065,7 @@ void gen144(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 4));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2089,7 +2089,7 @@ void gen344(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 4));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovZ_32_mem32) {
@@ -2097,7 +2097,7 @@ void gen344(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 4));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2121,7 +2121,7 @@ void gen145(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 5));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNZ_16_mem32) {
@@ -2129,7 +2129,7 @@ void gen145(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 5));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2153,7 +2153,7 @@ void gen345(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 5));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNZ_32_mem32) {
@@ -2161,7 +2161,7 @@ void gen345(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 5));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2185,7 +2185,7 @@ void gen146(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 6));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovBE_16_mem32) {
@@ -2193,7 +2193,7 @@ void gen146(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 6));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2217,7 +2217,7 @@ void gen346(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 6));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovBE_32_mem32) {
@@ -2225,7 +2225,7 @@ void gen346(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 6));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2249,7 +2249,7 @@ void gen147(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 7));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNBE_16_mem32) {
@@ -2257,7 +2257,7 @@ void gen147(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 7));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2281,7 +2281,7 @@ void gen347(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 7));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNBE_32_mem32) {
@@ -2289,7 +2289,7 @@ void gen347(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 7));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2313,7 +2313,7 @@ void gen148(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 8));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovS_16_mem32) {
@@ -2321,7 +2321,7 @@ void gen148(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 8));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2345,7 +2345,7 @@ void gen348(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 8));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovS_32_mem32) {
@@ -2353,7 +2353,7 @@ void gen348(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 8));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2377,7 +2377,7 @@ void gen149(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 9));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNS_16_mem32) {
@@ -2385,7 +2385,7 @@ void gen149(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 9));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2409,7 +2409,7 @@ void gen349(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 9));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNS_32_mem32) {
@@ -2417,7 +2417,7 @@ void gen349(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 9));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2441,7 +2441,7 @@ void gen14a(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 10));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovP_16_mem32) {
@@ -2449,7 +2449,7 @@ void gen14a(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 10));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2473,7 +2473,7 @@ void gen34a(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 10));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovP_32_mem32) {
@@ -2481,7 +2481,7 @@ void gen34a(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 10));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2505,7 +2505,7 @@ void gen14b(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 11));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNP_16_mem32) {
@@ -2513,7 +2513,7 @@ void gen14b(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 11));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2537,7 +2537,7 @@ void gen34b(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 11));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNP_32_mem32) {
@@ -2545,7 +2545,7 @@ void gen34b(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 11));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2569,7 +2569,7 @@ void gen14c(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 12));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovL_16_mem32) {
@@ -2577,7 +2577,7 @@ void gen14c(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 12));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2601,7 +2601,7 @@ void gen34c(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 12));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovL_32_mem32) {
@@ -2609,7 +2609,7 @@ void gen34c(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 12));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2633,7 +2633,7 @@ void gen14d(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 13));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNL_16_mem32) {
@@ -2641,7 +2641,7 @@ void gen14d(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 13));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2665,7 +2665,7 @@ void gen34d(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 13));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNL_32_mem32) {
@@ -2673,7 +2673,7 @@ void gen34d(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 13));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2697,7 +2697,7 @@ void gen14e(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 14));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovLE_16_mem32) {
@@ -2705,7 +2705,7 @@ void gen14e(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 14));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2729,7 +2729,7 @@ void gen34e(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 14));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovLE_32_mem32) {
@@ -2737,7 +2737,7 @@ void gen34e(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 14));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2761,7 +2761,7 @@ void gen14f(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 15));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNLE_16_mem32) {
@@ -2769,7 +2769,7 @@ void gen14f(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 15));
         out(data, ") {");
         out(data, r16(op->r1));
-        out(data, " = readw(cpu->memory, ");
+        out(data, " = readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2793,7 +2793,7 @@ void gen34f(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 15));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ");} CYCLES(1);");
     } else if (op->func == cmovNLE_32_mem32) {
@@ -2801,7 +2801,7 @@ void gen34f(struct GenData* data, struct Op* op) {
         out(data, getCondition(data, 15));
         out(data, ") {");
         out(data, r32(op->r1));
-        out(data, " = readd(cpu->memory, ");
+        out(data, " = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ");} CYCLES(1);");
     } else {
@@ -2823,17 +2823,17 @@ void gen190(struct GenData* data, struct Op* op) {
     } else if (op->func == setO_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 0));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setO_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 0));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -2855,17 +2855,17 @@ void gen191(struct GenData* data, struct Op* op) {
     } else if (op->func == setNO_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 1));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNO_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 1));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -2887,17 +2887,17 @@ void gen192(struct GenData* data, struct Op* op) {
     } else if (op->func == setB_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 2));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setB_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 2));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -2919,17 +2919,17 @@ void gen193(struct GenData* data, struct Op* op) {
     } else if (op->func == setNB_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 3));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNB_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 3));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -2951,17 +2951,17 @@ void gen194(struct GenData* data, struct Op* op) {
     } else if (op->func == setZ_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 4));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setZ_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 4));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -2983,17 +2983,17 @@ void gen195(struct GenData* data, struct Op* op) {
     } else if (op->func == setNZ_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 5));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNZ_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 5));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3015,17 +3015,17 @@ void gen196(struct GenData* data, struct Op* op) {
     } else if (op->func == setBE_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 6));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setBE_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 6));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3047,17 +3047,17 @@ void gen197(struct GenData* data, struct Op* op) {
     } else if (op->func == setNBE_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 7));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNBE_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 7));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3079,17 +3079,17 @@ void gen198(struct GenData* data, struct Op* op) {
     } else if (op->func == setS_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 8));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setS_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 8));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3111,17 +3111,17 @@ void gen199(struct GenData* data, struct Op* op) {
     } else if (op->func == setNS_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 9));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNS_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 9));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3143,17 +3143,17 @@ void gen19a(struct GenData* data, struct Op* op) {
     } else if (op->func == setP_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 10));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setP_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 10));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3175,17 +3175,17 @@ void gen19b(struct GenData* data, struct Op* op) {
     } else if (op->func == setNP_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 11));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNP_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 11));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3207,17 +3207,17 @@ void gen19c(struct GenData* data, struct Op* op) {
     } else if (op->func == setL_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 12));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setL_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 12));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3239,17 +3239,17 @@ void gen19d(struct GenData* data, struct Op* op) {
     } else if (op->func == setNL_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 13));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNL_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 13));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3271,17 +3271,17 @@ void gen19e(struct GenData* data, struct Op* op) {
     } else if (op->func == setLE_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 14));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setLE_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 14));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {
@@ -3303,17 +3303,17 @@ void gen19f(struct GenData* data, struct Op* op) {
     } else if (op->func == setNLE_mem16) {
         out(data, "if (");
         out(data, getCondition(data, 15));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
         out(data, ", 0);} CYCLES(2);");
     } else if (op->func == setNLE_mem32) {
         out(data, "if (");
         out(data, getCondition(data, 15));
-        out(data, ") {writeb(cpu->memory, ");
+        out(data, ") {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ", 1);} else {writeb(cpu->memory, ");
+        out(data, ", 1);} else {writeb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
         out(data, ", 0);} CYCLES(2);");
     } else {

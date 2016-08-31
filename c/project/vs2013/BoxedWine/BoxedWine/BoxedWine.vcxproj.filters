@@ -172,6 +172,42 @@
     <ClCompile Include="gen.c">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\ringbuf.c">
+      <Filter>source\util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pbl.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblCollection.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblhash.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblHeap.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblisam.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblIterator.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblkf.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblList.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblMap.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblPriorityQueue.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\util\pbl\pblSet.c">
+      <Filter>source\util\pbl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -381,6 +417,12 @@
     <ClInclude Include="..\..\..\..\include\crc.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\pbl.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ringbuf.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -433,6 +475,9 @@
     </Filter>
     <Filter Include="opengl\es">
       <UniqueIdentifier>{969d527d-7365-4095-b932-0de4af94a2a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\util\pbl">
+      <UniqueIdentifier>{59140a27-2526-4bd5-9d85-72fb5804c102}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -5,18 +5,18 @@
 #include "kthread.h"
 #include "kscheduler.h"
 
-void writeSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
-	writed(memory, address, signal->handlerAndSigAction);
-    writed(memory, address+4, signal->flags);
-	writed(memory, address+8, signal->restorer);
-    writed(memory, address+12, signal->mask);	
+void writeSigAction(MMU_ARG struct KSigAction* signal, U32 address) {
+	writed(MMU_PARAM address, signal->handlerAndSigAction);
+	writed(MMU_PARAM address + 4, signal->flags);
+	writed(MMU_PARAM address + 8, signal->restorer);
+	writed(MMU_PARAM address + 12, signal->mask);
 }
 
-void readSigAction(struct KSigAction* signal, struct Memory* memory, U32 address) {
-	signal->handlerAndSigAction = readd(memory, address);
-    signal->flags = readd(memory, address+4);
-	signal->restorer = readd(memory, address+8);
-    signal->mask = readd(memory, address+12);	
+void readSigAction(MMU_ARG struct KSigAction* signal, U32 address) {
+	signal->handlerAndSigAction = readd(MMU_PARAM address);
+	signal->flags = readd(MMU_PARAM address + 4);
+	signal->restorer = readd(MMU_PARAM address + 8);
+	signal->mask = readd(MMU_PARAM address + 12);
 }
 
 U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
@@ -25,21 +25,21 @@ U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
     }
 
     if (oact!=0) {
-		writeSigAction(&thread->process->sigActions[sig], thread->process->memory, oact);
+		writeSigAction(MMU_PARAM_THREAD &thread->process->sigActions[sig], oact);
     }
     if (act!=0) {
-        readSigAction(&thread->process->sigActions[sig], thread->process->memory, act);
+		readSigAction(MMU_PARAM_THREAD &thread->process->sigActions[sig], act);
 	}
     return 0;
 }
 
 U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
     if (oset!=0) {
-        writed(thread->process->memory, oset, thread->sigMask);
+        writed(MMU_PARAM_THREAD oset, thread->sigMask);
 		//klog("syscall_sigprocmask oset=%X", thread->sigMask);
     }
     if (set!=0) {
-        set = readd(thread->process->memory, set);
+		set = readd(MMU_PARAM_THREAD set);
         if (how == K_SIG_BLOCK) {
             thread->sigMask|=set;
 			//klog("syscall_sigprocmask block %X(%X)", set, thread->sigMask);
@@ -57,21 +57,19 @@ U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
 }
 
 U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss) {
-	struct Memory* memory = thread->process->memory;
-
 	if (oss!=0) {
-        writed(memory, oss, thread->alternateStack);
-		writed(memory, oss+4, (thread->alternateStack && thread->inSignal)?K_SS_ONSTACK:K_SS_DISABLE);
-		writed(memory, oss+8, thread->alternateStackSize);
+		writed(MMU_PARAM_THREAD oss, thread->alternateStack);
+		writed(MMU_PARAM_THREAD oss + 4, (thread->alternateStack && thread->inSignal) ? K_SS_ONSTACK : K_SS_DISABLE);
+		writed(MMU_PARAM_THREAD oss + 8, thread->alternateStackSize);
     }
     if (ss!=0) {
-		U32 flags = readd(memory, ss+4);
+		U32 flags = readd(MMU_PARAM_THREAD ss + 4);
 		if (flags & K_SS_DISABLE) {
 			thread->alternateStack = 0;
 			thread->alternateStackSize = 0;
 		} else {
-			thread->alternateStack = readd(memory, ss);
-			thread->alternateStackSize = readd(memory, ss+8);
+			thread->alternateStack = readd(MMU_PARAM_THREAD ss);
+			thread->alternateStackSize = readd(MMU_PARAM_THREAD ss + 8);
 		}
     }
     return 0;
@@ -83,7 +81,7 @@ U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask) {
 		return -K_EINTR;
 	}
 	thread->waitingForSignalToEndMaskToRestore = thread->sigMask | RESTORE_SIGNAL_MASK;
-	thread->sigMask = readd(thread->process->memory, mask);
+	thread->sigMask = readd(MMU_PARAM_THREAD mask);
 	waitThread(thread);			
 	return -K_CONTINUE;
 }

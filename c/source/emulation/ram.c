@@ -1,3 +1,18 @@
+#ifndef USE_MMU
+#include "platform.h"
+void initRAM(U32 pages) {
+
+}
+
+U32 getPageCount() {
+	return 262144; // 1GB
+}
+
+U32 getFreePageCount() {
+	return 196608; // 768MB
+}
+
+#else
 #include "memory.h"
 #include "log.h"
 #include "block.h"
@@ -288,3 +303,4 @@ static void copyOnWrite(struct Memory* memory, U32 address) {
 		memory->mmu[page] = &ramPageWR;
 	}
 }
+#endif

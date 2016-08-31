@@ -3,6 +3,8 @@
 
 #include "page.h"
 
+#ifdef USE_MMU
 extern struct Page ramOnDemandFilePage;
+#endif
 
 #endif

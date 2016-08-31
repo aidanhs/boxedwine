@@ -12,6 +12,7 @@
 
 extern char tmp64k[];
 
+#ifdef USE_MMU
 struct Memory {
 	struct Page* mmu[NUMBER_OF_PAGES];
 	U8 flags[NUMBER_OF_PAGES];
@@ -20,19 +21,32 @@ struct Memory {
 	U32 ramPage[NUMBER_OF_PAGES];
 	struct KProcess* process;
 };
+#endif
 
-U8 readb(struct Memory* memory, U32 address);
-void writeb(struct Memory* memory, U32 address, U8 value);
-U16 readw(struct Memory* memory, U32 address);
-void writew(struct Memory* memory, U32 address, U16 value);
-U32 readd(struct Memory* memory, U32 address);
-void writed(struct Memory* memory, U32 address, U32 value);
-U64 readq(struct Memory* memory, U32 address);
-void writeq(struct Memory* memory, U32 address, U64 value);
-void zeroMemory(struct Memory* memory, U32 address, int len);
-void readMemory(struct Memory* memory, U8* data, U32 address, int len);
-void writeMemory(struct Memory* memory, U32 address, U8* data, int len);
+#ifdef USE_MMU
+#define MMU_ARG struct Memory* memory,
+#define MMU_PARAM memory,
+#define MMU_PARAM_THREAD thread->process->memory,
+#define MMU_PARAM_CPU cpu->memory,
+#else
+#define MMU_ARG
+#define MMU_PARAM 
+#define MMU_PARAM_THREAD
+#define MMU_PARAM_CPU
+#endif
+U8 readb(MMU_ARG U32 address);
+void writeb(MMU_ARG U32 address, U8 value);
+U16 readw(MMU_ARG U32 address);
+void writew(MMU_ARG U32 address, U16 value);
+U32 readd(MMU_ARG U32 address);
+void writed(MMU_ARG U32 address, U32 value);
+U64 readq(MMU_ARG U32 address);
+void writeq(MMU_ARG U32 address, U64 value);
+void zeroMemory(MMU_ARG U32 address, int len);
+void readMemory(MMU_ARG U8* data, U32 address, int len);
+void writeMemory(MMU_ARG U32 address, U8* data, int len);
 
+#ifdef USE_MMU
 extern struct Page invalidPage;
 
 U8 nopermission_readb(struct Memory* memory, U32 address);
@@ -48,10 +62,8 @@ void resetMemory(struct Memory* memory);
 void cloneMemory(struct Memory* memory, struct Memory* from);
 void freeMemory(struct Memory* memory);
 void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
-char* getNativeString(struct Memory* memory, U32 address);
-char* getNativeString2(struct Memory* memory, U32 address);
-void writeNativeString(struct Memory* memory, U32 address, const char* str);
-U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len);
+
+#endif
 
 // values in the upper byte of data
 #define PAGE_READ 0x01
@@ -71,6 +83,7 @@ U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 
 #define IS_PAGE_SHARED(flags) (flags & PAGE_SHARED)
 #define IS_PAGE_IN_RAM(data) (data & PAGE_IN_RAM)
 
+#ifdef USE_MMU
 // data is only used if allocRAM is FALSE
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data);
 
@@ -80,9 +93,15 @@ void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 st
 
 U8* getPhysicalAddress(struct Memory* memory, U32 address);
 
-void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len);
-void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len);
-
 #define TO_TLB(ramPage, address) (((address) & 0xFFFFF000)-((ramPage) << PAGE_SHIFT))
+
+#endif
+char* getNativeString(MMU_ARG U32 address);
+char* getNativeString2(MMU_ARG U32 address);
+void writeNativeString(MMU_ARG U32 address, const char* str);
+U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len);
+
+void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len);
+void memcopyToNative(MMU_ARG U32 address, char* p, U32 len);
 
 #endif

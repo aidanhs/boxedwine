@@ -27,13 +27,16 @@ struct DecodeData {
 	U32 start;
 	U32 opCode;
 	struct CPU* cpu;
+#ifdef USE_MMU
 	struct Memory* memory;
-	struct Op* op;
 	U8* page;
 	U32 pagePos;
+#endif
+	struct Op* op;	
 	int count;
 };
 
+#ifdef USE_MMU
 extern U8* ram;
 
 void fillFetchPage(struct DecodeData* data) {
@@ -41,16 +44,23 @@ void fillFetchPage(struct DecodeData* data) {
 	readb(data->memory, data->ip);
 	data->page = &ram[(data->ip & 0xFFFFF000) - data->memory->read[data->ip>>12]];
 }
+#endif
 
 U8 FETCH8(struct DecodeData* data) {
+#ifdef USE_MMU
 	if (data->pagePos>=PAGE_SIZE)
 		fillFetchPage(data);
 	data->ip++;
 	return data->page[data->pagePos++];
+#else
+	return readb(data->ip++);
+#endif
 }
 
 U16 FETCH16(struct DecodeData* data) {
 	U16 result;
+
+#ifdef USE_MMU	
 
 #ifndef UNALIGNED_MEMORY
 	if (data->pagePos>=PAGE_SIZE-1) {
@@ -65,10 +75,16 @@ U16 FETCH16(struct DecodeData* data) {
 	data->pagePos+=2;
 	return result;
 #endif
+#else
+	result = readw(data->ip);
+	data->ip += 2;
+	return result;
+#endif
 }
 
 U32 FETCH32(struct DecodeData* data) {
 	U32 result;
+#ifdef USE_MMU
 #ifndef UNALIGNED_MEMORY
 	if (data->pagePos>=PAGE_SIZE-3) {
 #endif
@@ -82,6 +98,11 @@ U32 FETCH32(struct DecodeData* data) {
 	data->ip+=4;
 	result = *(U32*)(&data->page[data->pagePos]);
 	data->pagePos+=4;
+	return result;
+#endif
+#else
+	result = readd(data->ip);
+	data->ip += 4;
 	return result;
 #endif
 }
@@ -682,10 +703,10 @@ void decode262(struct DecodeData* data) {
 	NEXT_OP(data);
 }
 
-void log_pf(struct Memory* memory, U32 address);
+void log_pf(struct KProcess* process, U32 address);
 void invalidOp(struct DecodeData* data) {
 	printf("Invalid instruction %x\n", data->op->inst);    
-    log_pf(data->cpu->memory, 0);
+    log_pf(data->cpu->thread->process, data->ip);
 }
 
 // Operand Size Prefix
@@ -2210,14 +2231,16 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     while (op) {
         for (i=0;i<op->eipCount;i++) {
             // don't generate pf's from AOT
+#ifdef USE_MMU
             if (!cpu->memory->read[ip>>12])
                 return 0;
-            ops[opPos++] = readb(cpu->memory, ip++);
+#endif
+            ops[opPos++] = readb(MMU_PARAM_CPU ip++);
         }
         op = op->next;
     }
     crc = crc32b(ops, opPos);
-    func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
+    //func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
     if (func) {
         block->ops->func = func;
         freeOp(block->ops->next);
@@ -2254,17 +2277,6 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
         op->next = 0;
         freeOp(op);
 
-#ifdef GENERATE_SOURCE
-        if (gensrc) {
-            jit(cpu, block, eip);
-            generateSource(cpu, eip, block);
-            return; // uncompiled block are necessary for source generation, so don't use AOT
-        }
-#endif
-#ifdef AOT
-        if (aot(cpu, block, eip))
-            needJIT = 0;
-#endif
         if (needJIT) {
             jit(cpu, block, eip);
         }
@@ -2293,8 +2305,10 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
 	data.rep_zero = 0;
 	data.cpu = cpu;
 	data.count = 0;
+#ifdef USE_MMU
 	data.memory = cpu->memory;
 	fillFetchPage(pData);    
+#endif
 	data.op->inst = FETCH8(pData)+data.opCode;
 	decoder[data.op->inst](pData);    
 }

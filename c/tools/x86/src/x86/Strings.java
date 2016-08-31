@@ -152,13 +152,12 @@ public class Strings extends Base {
         out(fos, "    U32 dBase = cpu->segAddress[ES];");
         out(fos, "    U32 sBase = cpu->segAddress[base];");
         out(fos, "    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out(fos, "    struct Memory* memory = cpu->memory;");
         if (repeat) {
             out(fos, "    U32 count = " + CX + ";");
             out(fos, "    U32 i;");
             out(fos, "    for (i=0;i<count;i++) {");
         }
-        out(fos, "        write"+bits+"(memory, dBase+"+DI+", read"+bits+"(memory, sBase+"+SI+"));");
+        out(fos, "        write"+bits+"(MMU_PARAM_CPU dBase+"+DI+", read"+bits+"(MMU_PARAM_CPU sBase+"+SI+"));");
         out(fos, "        "+DI+"+=inc;");
         out(fos, "        "+SI+"+=inc;");
         if (repeat) {
@@ -182,7 +181,6 @@ public class Strings extends Base {
         out(fos, "    U32 dBase = cpu->segAddress[ES];");
         out(fos, "    U32 sBase = cpu->segAddress[base];");
         out(fos, "    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out(fos, "    struct Memory* memory = cpu->memory;");
         out(fos, "    U"+bits+" v1;");
         out(fos, "    U"+bits+" v2;");
         if (repeat) {
@@ -191,8 +189,8 @@ public class Strings extends Base {
             out(fos, "    if (count) {");
             out(fos, "        for (i=0;i<count;i++) {");
         }
-        out(fos, "            v1 = read"+width+"(memory, dBase+"+DI+");");
-        out(fos, "            v2 = read"+width+"(memory, sBase+"+SI+");");
+        out(fos, "            v1 = read"+width+"(MMU_PARAM_CPU dBase+"+DI+");");
+        out(fos, "            v2 = read"+width+"(MMU_PARAM_CPU sBase+"+SI+");");
         out(fos, "            "+DI+"+=inc;");
         out(fos, "            "+SI+"+=inc;");
         if (repeat) {
@@ -223,7 +221,6 @@ public class Strings extends Base {
         out(fos, "void "+name+"(struct CPU* cpu, U32 rep_zero) {");
         out(fos, "    U32 dBase = cpu->segAddress[ES];");
         out(fos, "    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-        out(fos, "    struct Memory* memory = cpu->memory;");
         out(fos, "    U"+bits+" v1;");
         if (repeat) {
             out(fos, "    U32 count = " + CX + ";");
@@ -231,7 +228,7 @@ public class Strings extends Base {
             out(fos, "    if (count) {");
             out(fos, "        for (i=0;i<count;i++) {");
         }
-        out(fos, "            v1 = read"+width+"(memory, dBase+"+DI+");");
+        out(fos, "            v1 = read"+width+"(MMU_PARAM_CPU dBase+"+DI+");");
         out(fos, "            "+DI+"+=inc;");
         if (repeat) {
             out(fos, "            "+CX+"--;");
@@ -262,16 +259,15 @@ public class Strings extends Base {
         if (repeat) {
             out(fos, "    U32 sBase = cpu->segAddress[base];");
             out(fos, "    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-            out(fos, "    struct Memory* memory = cpu->memory;");
             out(fos, "    U32 count = " + CX + ";");
             out(fos, "    U32 i;");
             out(fos, "    for (i=0;i<count;i++) {");
-            out(fos, "        "+AX+" = read"+bits+"(memory, sBase+"+SI+");");
+            out(fos, "        "+AX+" = read"+bits+"(MMU_PARAM_CPU sBase+"+SI+");");
             out(fos, "        "+SI+"+=inc;");
             out(fos, "    }");
             out(fos, "    " + CX + "=0;");
         } else {
-            out(fos, "    "+AX+" = read"+bits+"(cpu->memory, cpu->segAddress[base]+"+SI+");");
+            out(fos, "    "+AX+" = read"+bits+"(MMU_PARAM_CPU cpu->segAddress[base]+"+SI+");");
             out(fos, "    "+SI+"+=cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
         }
         out(fos, "    CYCLES(2);");
@@ -289,17 +285,16 @@ public class Strings extends Base {
         if (repeat) {
             out(fos, "    U32 dBase = cpu->segAddress[ES];");
             out(fos, "    S32 inc = cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
-            out(fos, "    struct Memory* memory = cpu->memory;");
             out(fos, "    U32 count = " + CX + ";");
             out(fos, "    U32 i;");
             out(fos, "    for (i=0;i<count;i++) {");
-            out(fos, "        write"+bits+"(memory, dBase+"+DI+", "+AX+");");
+            out(fos, "        write"+bits+"(MMU_PARAM_CPU dBase+"+DI+", "+AX+");");
             out(fos, "        "+DI+"+=inc;");
             out(fos, "    }");
             out(fos, "    " + CX + "=0;");
             out(fos, "    CYCLES(3+count);");
         } else {
-            out(fos, "    write"+bits+"(cpu->memory, cpu->segAddress[ES]+"+DI+", "+AX+");");
+            out(fos, "    write"+bits+"(MMU_PARAM_CPU cpu->segAddress[ES]+"+DI+", "+AX+");");
             out(fos, "    "+DI+"+=cpu->df"+(inc>0?" << "+String.valueOf(inc):"")+";");
             out(fos, "    CYCLES(3);");
         }

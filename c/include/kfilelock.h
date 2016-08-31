@@ -13,8 +13,8 @@ struct KFileLock {
 	struct KFileLock* next;
 };
 
-void writeFileLock(struct KFileLock* lock, struct Memory* memory, U32 address, BOOL is64);
-void readFileLock(struct KFileLock* lock, struct Memory* memory, U32 address, BOOL is64);
+void writeFileLock(MMU_ARG struct KFileLock* lock, U32 address, BOOL is64);
+void readFileLock(MMU_ARG struct KFileLock* lock, U32 address, BOOL is64);
 struct KFileLock* allocFileLock();
 void freeFileLock(struct KFileLock* lock);
 #endif

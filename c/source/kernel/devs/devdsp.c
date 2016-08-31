@@ -117,13 +117,13 @@ S64 dsp_seek(struct OpenNode* node, S64 pos) {
 	return 0;
 }
 
-U32 dsp_read(struct Memory* memory, struct OpenNode* node, U32 address, U32 len) {
+U32 dsp_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 	return 0;
 }
 
 extern struct KThread* currentThread;
 
-U32 dsp_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 l) {
+U32 dsp_write(MMU_ARG struct OpenNode* node, U32 address, U32 l) {
 	S32 len = (S32)l;
 	S32 available;
 	S32 result;
@@ -147,7 +147,7 @@ U32 dsp_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 l) 
 		available = len;
 	if (available>DSP_BUFFER_SIZE-dspBufferLen)
 		available=DSP_BUFFER_SIZE-dspBufferLen;
-	memcopyToNative(memory, address, (char*)dspBuffer+startPos, available);
+	memcopyToNative(MMU_PARAM address, (char*)dspBuffer+startPos, available);
 	dspBufferLen+=available;
 	result = available;	
 	if (len!=available && dspBufferLen< DSP_BUFFER_SIZE) {
@@ -165,7 +165,7 @@ U32 dsp_write(struct Memory* memory, struct OpenNode* node, U32 address, U32 l) 
 			available = len;
 		if (available>DSP_BUFFER_SIZE-dspBufferLen)
 			available=DSP_BUFFER_SIZE-dspBufferLen;
-		memcopyToNative(memory, address, (char*)dspBuffer+startPos, available);
+		memcopyToNative(MMU_PARAM address, (char*)dspBuffer+startPos, available);
 		dspBufferLen+=available;
 		result+=available;
 	}
@@ -182,7 +182,6 @@ void dsp_close(struct OpenNode* node) {
 
 U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 	U32 len = (request >> 16) & 0x3FFF;
-	struct Memory* memory = thread->process->memory;
 	struct CPU* cpu = &thread->cpu;
 	//BOOL read = request & 0x40000000;
 	BOOL write = request & 0x80000000;
@@ -194,7 +193,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		if (len!=4) {
 			kpanic("SNDCTL_DSP_SPEED was expecting a len of 4");
 		}
-		dspFreq = readd(memory, IOCTL_ARG1);
+		dspFreq = readd(MMU_PARAM_THREAD IOCTL_ARG1);
 		return 0;
 	case 0x5003: { // SNDCTL_DSP_STEREO
 		U32 fmt;
@@ -202,7 +201,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		if (len!=4) {
 			kpanic("SNDCTL_DSP_STEREO was expecting a len of 4");
 		}
-		fmt = readd(memory, IOCTL_ARG1);
+		fmt = readd(MMU_PARAM_THREAD IOCTL_ARG1);
 		if (fmt!=dspChannels-1) {
 			closeAudio();
 		}
@@ -214,7 +213,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 			kpanic("SNDCTL_DSP_STEREO wasn't expecting a value of %d", fmt);
 		}
 		if (write)
-			writed(memory, IOCTL_ARG1, dspChannels-1);
+			writed(MMU_PARAM_THREAD IOCTL_ARG1, dspChannels - 1);
 		return 0;
 	}
 	case 0x5005: { // SNDCTL_DSP_SETFMT 
@@ -223,7 +222,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		if (len!=4) {
 			kpanic("SNDCTL_DSP_SETFMT was expecting a len of 4");
 		}
-		fmt = readd(memory, IOCTL_ARG1);
+		fmt = readd(MMU_PARAM_THREAD IOCTL_ARG1);
 		if (fmt!=0 && fmt!=dspFmt) {
 			closeAudio();
 		}
@@ -266,14 +265,14 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 			break;
 		}
 		if (write)
-			writed(memory, IOCTL_ARG1, dspFmt);
+			writed(MMU_PARAM_THREAD IOCTL_ARG1, dspFmt);
 		else if (dspFmt!=fmt) {
 			kpanic("SNDCTL_DSP_SETFMT dspFmt!=fmt and can't write result");
 		}
 		return 0;
 		}
 	case 0x5006: {// SOUND_PCM_WRITE_CHANNELS
-		U32 channels = readd(memory, IOCTL_ARG1);
+		U32 channels = readd(MMU_PARAM_THREAD IOCTL_ARG1);
 		if (channels!=dspChannels) {
 			closeAudio();
 		}
@@ -285,17 +284,17 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 			dspChannels = 2;
 		}
 		if (write)
-			writed(memory, IOCTL_ARG1, dspChannels);
+			writed(MMU_PARAM_THREAD IOCTL_ARG1, dspChannels);
 		return 0;
 		}
 	case 0x500A: // SNDCTL_DSP_SETFRAGMENT
-		dspFragSize = 1 << (readd(memory, IOCTL_ARG1) & 0xFFFF);
+		dspFragSize = 1 << (readd(MMU_PARAM_THREAD IOCTL_ARG1) & 0xFFFF);
 		return 0;
 	case 0x500C: // SNDCTL_DSP_GETOSPACE
-		writed(memory, IOCTL_ARG1, (DSP_BUFFER_SIZE-dspBufferLen)/dspFragSize); // fragments
-		writed(memory, IOCTL_ARG1+4, DSP_BUFFER_SIZE/dspFragSize);
-		writed(memory, IOCTL_ARG1+8, dspFragSize);
-		writed(memory, IOCTL_ARG1+12, DSP_BUFFER_SIZE-dspBufferLen);
+		writed(MMU_PARAM_THREAD IOCTL_ARG1, (DSP_BUFFER_SIZE - dspBufferLen) / dspFragSize); // fragments
+		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 4, DSP_BUFFER_SIZE / dspFragSize);
+		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, dspFragSize);
+		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 12, DSP_BUFFER_SIZE - dspBufferLen);
 		return 0;
 	case 0x500F: // SNDCTL_DSP_GETCAPS
 		return 0;
@@ -331,7 +330,7 @@ BOOL dsp_isReadReady(struct OpenNode* node) {
 	return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 dsp_map(struct OpenNode* node, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 dsp_map(MMU_ARG struct OpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 	return 0;
 }
 

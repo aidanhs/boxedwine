@@ -1,5 +1,6 @@
 SDL2             This will cause SDL2 to be used instead of SDL1.  You will need to link to the correct libraries.
 UNALIGNED_MEMORY This is necessary if the host isn't little endian, necessary for emscripten
+USE_MMU          This emulates x86 and is more compatible but slower.  Without this, the linux binaries that run need to be compiled to load at any address.  Also fork and exec will fail.
 
 To compile, you need one and only one of the follow 3 flags
 

@@ -5,7 +5,10 @@
 #include "op.h"
 
 void initRAM(U32 pages);
+U32 getPageCount();
+U32 getFreePageCount();
 
+#ifdef USE_MMU
 extern struct Page ramPageRO;
 extern struct Page ramPageWO;
 extern struct Page ramPageWR;
@@ -19,8 +22,6 @@ int getRamRefCount(int page);
 void incrementRamRef(int page);
 void addCode(struct Block* op, int ramPage, int offset);
 struct Block* getCode(int ramPage, int offset);
-U32 getPageCount();
-U32 getFreePageCount();
 
 extern U8* ram;
 
@@ -92,5 +93,5 @@ INLINE void host_writed(U32 address, U32 value) {
 #endif
 }
 
-
+#endif
 #endif

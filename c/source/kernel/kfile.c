@@ -92,25 +92,25 @@ void kfile_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events
 	openNode->access->waitForEvents(openNode, thread, events);
 }
 
-U32  kfile_write(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
-	return ((struct OpenNode*)obj->data)->access->write(memory, (struct OpenNode*)obj->data, buffer, len);
+U32  kfile_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+	return ((struct OpenNode*)obj->data)->access->write(MMU_PARAM (struct OpenNode*)obj->data, buffer, len);
 }
 
-U32  kfile_read(struct KThread* thread, struct KObject* obj, struct Memory* memory, U32 buffer, U32 len) {
-	return ((struct OpenNode*)obj->data)->access->read(memory, (struct OpenNode*)obj->data, buffer, len);
+U32  kfile_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+	return ((struct OpenNode*)obj->data)->access->read(MMU_PARAM (struct OpenNode*)obj->data, buffer, len);
 }
 
-U32 kfile_stat(struct KObject* obj, struct Memory* memory, U32 address, BOOL is64) {
+U32 kfile_stat(MMU_ARG struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
 	struct OpenNode* openNode = (struct OpenNode*)obj->data;
 	struct Node* node = openNode->node;
 	U64 len = node->nodeType->length(node);
 
-	writeStat(memory, address, is64, 1, node->id, node->nodeType->getMode(memory->process, node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->nodeType->lastModified(node), getHardLinkCount(node));
+	writeStat(MMU_PARAM address, is64, 1, node->id, node->nodeType->getMode(process, node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->nodeType->lastModified(node), getHardLinkCount(node));
 	return 0;
 }
 
-U32 kfile_map(struct KObject* obj, struct Memory* memory, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-	return ((struct OpenNode*)obj->data)->access->map((struct OpenNode*)obj->data, memory, address, len, prot, flags, off);
+U32 kfile_map(MMU_ARG struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+	return ((struct OpenNode*)obj->data)->access->map(MMU_PARAM (struct OpenNode*)obj->data, address, len, prot, flags, off);
 }
 
 BOOL kfile_canMap(struct KObject* obj) {

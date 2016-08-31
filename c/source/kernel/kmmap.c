@@ -34,7 +34,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
     BOOL exec = (prot & K_PROT_EXEC)!=0;
 	U32 pageStart = addr >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
-	struct Memory* memory = thread->process->memory;
 	struct KFileDescriptor* fd = 0;
 	U32 i;
 
@@ -62,31 +61,39 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         if (addr & (PAGE_SIZE-1)) {
             return -K_EINVAL;
         }
-    } else {
-		if (pageStart+pageCount> ADDRESS_PROCESS_MMAP_START)
-            return -K_ENOMEM;
+#ifndef USE_MMU
+		if (!fd || !getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath))
+			return -K_EINVAL;
+#endif
+    } else {		
+#ifdef USE_MMU
+		if (pageStart + pageCount> ADDRESS_PROCESS_MMAP_START)
+			return -K_ENOMEM;
         if (pageStart == 0)
             pageStart = ADDRESS_PROCESS_MMAP_START;
-        if (!findFirstAvailablePage(memory, pageStart, pageCount, &pageStart, addr!=0)) {
+        if (!findFirstAvailablePage(MMU_PARAM_THREAD pageStart, pageCount, &pageStart, addr!=0)) {
 			// :TODO: what erro
             return -K_EINVAL;
 		}
         if (addr!=0 && pageStart+pageCount> ADDRESS_PROCESS_MMAP_START)
             return -K_ENOMEM;
 		addr = pageStart << PAGE_SHIFT;
+#endif		
     }
 	if (fd) {
-		U32 result = fd->kobject->access->map(fd->kobject, memory, addr, len, prot, flags, off);
+		U32 result = fd->kobject->access->map(MMU_PARAM_THREAD fd->kobject, addr, len, prot, flags, off);
 		if (result) {
 			return result;
 		}
 	}
+#ifdef USE_MMU
 	for (i=0;i<pageCount;i++) {
 		// This will prevent the next anonymous mmap from using this range
-		if (memory->mmu[i+pageStart]==&invalidPage) {
-			memory->flags[i+pageStart]=PAGE_RESERVED|PAGE_MAPPED;
+		if (thread->process->memory->mmu[i + pageStart] == &invalidPage) {
+			thread->process->memory->flags[i + pageStart] = PAGE_RESERVED | PAGE_MAPPED;
 		}
 	}
+#endif
 	if (write || read || exec) {		
 		U32 permissions = PAGE_MAPPED;
 
@@ -107,8 +114,18 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			if (!cache) {
 				cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache));
 				safe_strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath, MAX_FILEPATH_LEN);
+#ifdef USE_MMU
 				cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
 				cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount);
+#else
+				cache->len = (U32)fd->kobject->access->length(fd->kobject);
+				cache->unalignedAddress = kalloc(cache->len + 0xFFF);
+				cache->address = (((U32)cache->unalignedAddress) + 0xFFF) & 0xFFFFF000;
+				cache->refCount=1;
+				if (!cache->address)
+					return -K_ENOMEM;
+				syscall_pread64(thread, fildes, (U32)cache->address, cache->len, 0);
+#endif
 				putMappedFileInCache(cache);				
 			}
 			cache->refCount++;
@@ -122,8 +139,13 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			if (index<0) {
 				kwarn("MAX_MAPPED_FILE is not large enough");
 			} else {
+#ifdef USE_MMU
 				process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
 				process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
+#else
+				process->mappedFiles[index].address = (U32)(cache->address-off);
+				process->mappedFiles[index].len = cache->len-off;
+#endif
 				process->mappedFiles[index].offset = off;
 				process->mappedFiles[index].systemCacheEntry = cache;
 				process->mappedFiles[index].refCount = 0;
@@ -131,6 +153,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				process->mappedFiles[index].file->refCount++;
 			}
 
+#ifdef USE_MMU
 			for (i=0;i<pageCount;i++) {
 				U32 data = 0;	
 				if (fd) {
@@ -145,16 +168,31 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 					off+=4096;
 				}
 				process->mappedFiles[index].refCount++;
-				allocPages(memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
+				allocPages(thread->process->memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
 			}
+#else
+			process->mappedFiles[index].refCount = 1;
+			if ((flags & K_MAP_FIXED) && cache->address + off != addr) {
+				syscall_pread64(thread, fildes, addr, len, off);
+			} else {				
+				addr = process->mappedFiles[index].address;
+			}
+#endif
 		} else {
-			allocPages(memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
+#ifdef USE_MMU
+			allocPages(thread->process->memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
+#else
+			addr = ((U32)(kalloc(len+0xFFF))+0xFFF) & 0xFFFFF000;
+			if (!addr)
+				return -K_ENOMEM;
+#endif
 		}		
     }
 	return addr;
 }
 
 U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
+#ifdef USE_MMU
 	BOOL read = (prot & K_PROT_READ)!=0;
     BOOL write = (prot & K_PROT_WRITE)!=0;
     BOOL exec = (prot & K_PROT_EXEC)!=0;
@@ -200,10 +238,12 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 			kpanic("syscall_mprotect unknown page type");
 		}
 	}
+#endif
 	return 0;
 }
 
 U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
+#ifdef USE_MMU
 	U32 pageStart = address >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
 	U32 i;
@@ -216,10 +256,15 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 		memory->read[i+pageStart]=0;
 		memory->write[i+pageStart]=0;
 	}
+#else
+	// this address might not be the same as kalloc returned because of alignment
+	// :TODO: track mmap and kfree if the entire result of mmap is unmapped
+#endif
 	return 0;
 }
 
 U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 newsize, U32 flags) {
+#ifdef USE_MMU
 	if (flags > 1) {
         kpanic("__NR_mremap not implemented: flags=%X", flags);
     }
@@ -258,6 +303,10 @@ U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 news
             return -K_ENOMEM;
         }
     }
+#else 
+	kpanic("__NR_mremap not implemented");
+	return -K_ENOMEM;
+#endif
 }
 
 U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {

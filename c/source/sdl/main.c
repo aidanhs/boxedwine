@@ -345,6 +345,7 @@ int main(int argc, char **argv) {
 	initRAM(mb*1024*1024/PAGE_SIZE);
 	initFB(screenWidth, screenHeight, bpp, fullscreen);
 	initCallbacks();
+	initBlockCache();	
 	gl_init();
 #ifdef MESA
 	mesa_init();
