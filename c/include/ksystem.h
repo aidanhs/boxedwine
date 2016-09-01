@@ -55,4 +55,7 @@ struct MappedFileCache {
 struct MappedFileCache* getMappedFileInCache(const char* name);
 void putMappedFileInCache(struct MappedFileCache* file);
 void removeMappedFileInCache(struct MappedFileCache* file);
+#ifndef USE_MMU
+struct MappedFileCache* getMappedFileByAddress(U32 address);
+#endif
 #endif

@@ -61,9 +61,11 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         if (addr & (PAGE_SIZE-1)) {
             return -K_EINVAL;
         }
-#ifndef USE_MMU
-		if (!fd || !getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath))
-			return -K_EINVAL;
+#ifndef USE_MMU		
+		if (!fd || !getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath)) {
+			if (!getMappedFileByAddress(addr))
+				return -K_EINVAL;
+		}
 #endif
     } else {		
 #ifdef USE_MMU
@@ -118,12 +120,13 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
 				cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount);
 #else
-				cache->len = (U32)fd->kobject->access->length(fd->kobject);
+				cache->len = (U32)fd->kobject->access->length(fd->kobject) + getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
 				cache->unalignedAddress = kalloc(cache->len + 0xFFF);
 				cache->address = (((U32)cache->unalignedAddress) + 0xFFF) & 0xFFFFF000;
 				cache->refCount=1;
 				if (!cache->address)
 					return -K_ENOMEM;
+				// :TODO: processes can't share file mappings without a MMU
 				syscall_pread64(thread, fildes, (U32)cache->address, cache->len, 0);
 #endif
 				putMappedFileInCache(cache);				
@@ -143,8 +146,13 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
 				process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
 #else
-				process->mappedFiles[index].address = (U32)(cache->address-off);
-				process->mappedFiles[index].len = cache->len-off;
+				if (flags & K_MAP_FIXED) {
+					process->mappedFiles[index].address = addr;
+					process->mappedFiles[index].address = len;					
+				} else {
+					process->mappedFiles[index].address = (U32)(cache->address + off);
+					process->mappedFiles[index].len = cache->len - off;
+				}				
 #endif
 				process->mappedFiles[index].offset = off;
 				process->mappedFiles[index].systemCacheEntry = cache;
@@ -173,7 +181,8 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 #else
 			process->mappedFiles[index].refCount = 1;
 			if ((flags & K_MAP_FIXED) && cache->address + off != addr) {
-				syscall_pread64(thread, fildes, addr, len, off);
+				memmove((void*)addr, cache->address + off, len);
+				//syscall_pread64(thread, fildes, addr, len, off);
 			} else {				
 				addr = process->mappedFiles[index].address;
 			}
@@ -182,6 +191,16 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 #ifdef USE_MMU
 			allocPages(thread->process->memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
 #else
+			if (flags & K_MAP_FIXED) {
+				struct MappedFileCache* cache = getMappedFileByAddress(addr);
+				if (cache) {
+					if (cache->address + cache->len < addr + len) {
+						kpanic("mmap didn't allocate enough extra memory for a file");
+					}
+					return addr;
+				}
+				kpanic("Non mmu does not support mmap to a fixed address");
+			}
 			addr = ((U32)(kalloc(len+0xFFF))+0xFFF) & 0xFFFFF000;
 			if (!addr)
 				return -K_ENOMEM;

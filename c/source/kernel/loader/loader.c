@@ -139,6 +139,41 @@ BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct 
 	return FALSE;
 }
 
+int getMemSizeOfElf(struct OpenNode* openNode) {
+	U8 buffer[sizeof(struct Elf32_Ehdr)];
+	struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
+	U32 len;
+	U64 pos = openNode->access->getFilePointer(openNode);
+	U32 address = 0xFFFFFFFF;
+	int i;
+	int sections = 0;
+
+	openNode->access->seek(openNode, 0);
+	len = read(openNode->handle, buffer, sizeof(buffer));
+	if (len != sizeof(buffer)) {
+		return 0;
+	}
+	if (!isValidElf(hdr)) {
+		return 0;
+	}
+
+	len = 0;
+	openNode->access->seek(openNode, hdr->e_phoff);
+	for (i = 0; i<hdr->e_phnum; i++) {
+		struct Elf32_Phdr phdr;
+		read(openNode->handle, &phdr, sizeof(struct Elf32_Phdr));
+		if (phdr.p_type == PT_LOAD) {
+			if (phdr.p_paddr<address)
+				address = phdr.p_paddr;
+			if (len<phdr.p_paddr + phdr.p_memsz)
+				len = phdr.p_paddr + phdr.p_memsz;
+			sections++;
+		}
+	}
+	openNode->access->seek(openNode, pos);
+	return len - address + 4096*sections; // 4096 for alignment
+}
+
 BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNode* openNode, U32* eip) {
 	U8 buffer[sizeof(struct Elf32_Ehdr)];
 	struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;

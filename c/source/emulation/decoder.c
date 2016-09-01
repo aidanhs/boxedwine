@@ -2277,6 +2277,18 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
         op->next = 0;
         freeOp(op);
 
+#ifdef GENERATE_SOURCE
+		if (gensrc) {
+			jit(cpu, block, eip);
+			generateSource(cpu, eip, block);
+			return; // uncompiled block are necessary for source generation, so don't use AOT			
+		}
+#endif
+#ifdef AOT
+		if (aot(cpu, block, eip))
+			needJIT = 0;
+#endif
+
         if (needJIT) {
             jit(cpu, block, eip);
         }
