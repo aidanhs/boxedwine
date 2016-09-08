@@ -113,17 +113,17 @@ extern "C" {
 /*
  * Some functions have strange names on windows
  */
-#define strcasecmp   _stricmp
-#define strncasecmp  _strnicmp
-#define snprintf     _snprintf
-#define close        _close
-#define strdup       _strdup
-#define open         _open
-#define lseek        _lseek
+//#define strcasecmp   _stricmp
+//#define strncasecmp  _strnicmp
+//#define snprintf     _snprintf
+//#define close        _close
+//#define strdup       _strdup
+//#define open         _open
+//#define lseek        _lseek
 //#define write        _write
 //#define read         _read
-#define unlink       _unlink
-#define _CRT_SECURE_NO_WARNINGS 1
+//#define unlink       _unlink
+//#define _CRT_SECURE_NO_WARNINGS 1
 
 #else
 

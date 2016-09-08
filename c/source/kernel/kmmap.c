@@ -13,6 +13,7 @@
 #include "kfile.h"
 #include "nodetype.h"
 #include "filesystem.h"
+#include "loader.h"
 
 #include <string.h>
 
@@ -56,17 +57,10 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return -K_EACCES;
         }
     }        
-
     if (flags & K_MAP_FIXED) {
         if (addr & (PAGE_SIZE-1)) {
             return -K_EINVAL;
         }
-#ifndef USE_MMU		
-		if (!fd || !getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath)) {
-			if (!getMappedFileByAddress(addr))
-				return -K_EINVAL;
-		}
-#endif
     } else {		
 #ifdef USE_MMU
 		if (pageStart + pageCount> ADDRESS_PROCESS_MMAP_START)
@@ -95,7 +89,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			thread->process->memory->flags[i + pageStart] = PAGE_RESERVED | PAGE_MAPPED;
 		}
 	}
-#endif
 	if (write || read || exec) {		
 		U32 permissions = PAGE_MAPPED;
 
@@ -116,19 +109,8 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			if (!cache) {
 				cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache));
 				safe_strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath, MAX_FILEPATH_LEN);
-#ifdef USE_MMU
 				cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
 				cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount);
-#else
-				cache->len = (U32)fd->kobject->access->length(fd->kobject) + getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
-				cache->unalignedAddress = kalloc(cache->len + 0xFFF);
-				cache->address = (((U32)cache->unalignedAddress) + 0xFFF) & 0xFFFFF000;
-				cache->refCount=1;
-				if (!cache->address)
-					return -K_ENOMEM;
-				// :TODO: processes can't share file mappings without a MMU
-				syscall_pread64(thread, fildes, (U32)cache->address, cache->len, 0);
-#endif
 				putMappedFileInCache(cache);				
 			}
 			cache->refCount++;
@@ -142,18 +124,8 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			if (index<0) {
 				kwarn("MAX_MAPPED_FILE is not large enough");
 			} else {
-#ifdef USE_MMU
 				process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
 				process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
-#else
-				if (flags & K_MAP_FIXED) {
-					process->mappedFiles[index].address = addr;
-					process->mappedFiles[index].address = len;					
-				} else {
-					process->mappedFiles[index].address = (U32)(cache->address + off);
-					process->mappedFiles[index].len = cache->len - off;
-				}				
-#endif
 				process->mappedFiles[index].offset = off;
 				process->mappedFiles[index].systemCacheEntry = cache;
 				process->mappedFiles[index].refCount = 0;
@@ -161,7 +133,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				process->mappedFiles[index].file->refCount++;
 			}
 
-#ifdef USE_MMU
 			for (i=0;i<pageCount;i++) {
 				U32 data = 0;	
 				if (fd) {
@@ -178,35 +149,64 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				process->mappedFiles[index].refCount++;
 				allocPages(thread->process->memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
 			}
-#else
-			process->mappedFiles[index].refCount = 1;
-			if ((flags & K_MAP_FIXED) && cache->address + off != addr) {
-				memmove((void*)addr, cache->address + off, len);
-				//syscall_pread64(thread, fildes, addr, len, off);
-			} else {				
-				addr = process->mappedFiles[index].address;
-			}
-#endif
 		} else {
-#ifdef USE_MMU
 			allocPages(thread->process->memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
-#else
-			if (flags & K_MAP_FIXED) {
-				struct MappedFileCache* cache = getMappedFileByAddress(addr);
-				if (cache) {
-					if (cache->address + cache->len < addr + len) {
-						kpanic("mmap didn't allocate enough extra memory for a file");
-					}
-					return addr;
-				}
-				kpanic("Non mmu does not support mmap to a fixed address");
-			}
-			addr = ((U32)(kalloc(len+0xFFF))+0xFFF) & 0xFFFFF000;
-			if (!addr)
-				return -K_ENOMEM;
-#endif
 		}		
     }
+#else 
+	if (flags & K_MAP_FIXED) {
+		PblIterator* it = pblListIterator(thread->process->mmapedMemory);
+		struct MappedMemory* found = NULL;
+
+		while (pblIteratorHasNext(it)) {
+			struct MappedMemory* item = pblIteratorNext(it);
+			if (addr >= item->address && addr < item->address + item->len) {
+				found = item;
+				break;
+			}
+		}
+		if (!found)
+			kpanic("Non mmu does not support mmap to a fixed address");
+	}
+	else {
+		struct MappedMemory* result = kalloc(sizeof(struct MappedMemory));
+		int memLen = len;
+
+		if (fd) {
+			int fileLength = fd->kobject->access->length(fd->kobject);
+			// extra room, this is an overestimation, required by ld
+			int memSize = getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
+
+
+			if (fileLength > memLen) {
+				memLen = fileLength;
+			}
+			memLen += memSize;
+		}
+
+		result->allocatedAddress = kalloc(memLen + 0xFFF + (fd ? 32 * 1024 : 0));
+		if (!result->allocatedAddress) {
+			kfree(result);
+			return -K_ENOMEM;
+		}		
+		result->address = (U8*)((U32)(result->allocatedAddress + 0xFFF) & 0xFFFFF000);
+		result->len = memLen;
+		if (fd) {
+			char* name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
+			result->name = kalloc(strlen(name) + 1);
+			strcpy(result->name, name);
+
+			kwarn("%s @ %X (len=%d)\n", name, result->address, memLen);
+		}
+		pblListAdd(thread->process->mmapedMemory, result);
+		addr = result->address;
+	}
+	if (fd) {
+		syscall_pread64(thread, fildes, addr, len, off);
+	} else {
+		memset(addr, 0, len);
+	}
+#endif
 	return addr;
 }
 
@@ -329,6 +329,7 @@ U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 news
 }
 
 U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
+#ifdef USE_MMU
 	struct MapedFiles* file = 0;
 	U32 i;
 
@@ -340,5 +341,6 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
 	if (!file)
 		return -K_ENOMEM;
 	//kpanic("syscall_msync not implemented");
+#endif
 	return 0;
 }

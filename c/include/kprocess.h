@@ -9,6 +9,7 @@
 #include "nodeaccess.h"
 #include "ktimer.h"
 #include "kshm.h"
+#include "pbl.h"
 
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_STACK_START		0xE0000
@@ -17,6 +18,7 @@
 #define ADDRESS_PROCESS_FRAME_BUFFER	0xF8000
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
+#ifdef USE_MMU
 struct MapedFiles {
 	struct MappedFileCache* systemCacheEntry;
 	struct KObject* file;
@@ -25,8 +27,15 @@ struct MapedFiles {
 	U64 len;
 	U64 offset;
 };
-
 #define MAX_MAPPED_FILE 1024
+#else
+struct MappedMemory {
+	U8* allocatedAddress;
+	U8* address;
+	U32 len;
+	char* name;
+};
+#endif
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 10
 #define K_SIG_INFO_SIZE 10
@@ -60,11 +69,13 @@ struct KProcess {
 	BOOL terminated;
 #ifdef USE_MMU
 	struct Memory* memory;
+	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
+#else
+	PblList* mmapedMemory;
 #endif
 	char currentDirectory[MAX_FILEPATH_LEN];
 	U32 brkEnd;
-	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic
-	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
+	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic	
 	struct KSigAction sigActions[MAX_SIG_ACTIONS];
 	struct KTimer timer;
 	char commandLine[MAX_COMMANDLINE_LEN];

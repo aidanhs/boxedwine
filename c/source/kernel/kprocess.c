@@ -69,6 +69,8 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
 	}
 #ifdef USE_MMU
 	initCallbacksInProcess(process);
+#else
+	process->mmapedMemory = pblListNewArrayList();
 #endif
 }
 
@@ -84,6 +86,7 @@ struct KProcess* allocProcess() {
 	return (struct KProcess*)kalloc(sizeof(struct KProcess));		
 }
 
+#ifdef USE_MMU
 void closeMemoryMapped(struct MapedFiles* mapped) {
 	mapped->refCount--;
 	if (mapped->refCount == 0) {
@@ -91,22 +94,18 @@ void closeMemoryMapped(struct MapedFiles* mapped) {
 		mapped->file = 0;
 		mapped->systemCacheEntry->refCount--;
 		if (mapped->systemCacheEntry->refCount == 0) {			
-#ifdef USE_MMU
 			U32 i;
 			for (i=0;i<mapped->systemCacheEntry->pageCount;i++) {
 				if (mapped->systemCacheEntry->ramPages[i])
 					freeRamPage(mapped->systemCacheEntry->ramPages[i]);
 			}
 			kfree(mapped->systemCacheEntry->ramPages);
-#else
-			kfree(mapped->systemCacheEntry->unalignedAddress);
-#endif
 			removeMappedFileInCache(mapped->systemCacheEntry);
 			kfree(mapped->systemCacheEntry);
 		}
 	}
 }
-
+#endif
 void cleanupProcess(struct KProcess* process) {
 	U32 i;
 
@@ -133,7 +132,13 @@ void cleanupProcess(struct KProcess* process) {
 		freeMemory(process->memory);
 		process->memory = 0;
 	}
+#else
+	if (process->mmapedMemory) {
+		pblListFree(process->mmapedMemory);
+		process->mmapedMemory = NULL;
+	}
 #endif
+#ifdef USE_MMU
 	// must run after free'ing memory
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (process->mappedFiles[i].refCount) {
@@ -144,6 +149,7 @@ void cleanupProcess(struct KProcess* process) {
 			}
 		}
 	}
+#endif
 }
 
 void freeProcess(struct KProcess* process) {
@@ -576,24 +582,48 @@ struct Node* getNode(struct KThread* thread, U32 fileName) {
 const char* getModuleName(struct CPU* cpu, U32 eip) {
 	struct KProcess* process = cpu->thread->process;
 	U32 i;
-
+#ifdef USE_MMU
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
 			return ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath;
 	}
+#else
+	{
+		PblIterator* it = pblListIterator(cpu->thread->process->mmapedMemory);
+		while (pblIteratorHasNext(it)) {
+			struct MappedMemory* item = pblIteratorNext(it);
+			if (eip >= item->address && eip < item->address + item->len) {
+				if (item->name)
+					return item->name;
+			}
+		}
+	}
+#endif
 	return "Unknown";
 }
 
 U32 getModuleEip(struct CPU* cpu, U32 eip) {
 	struct KProcess* process = cpu->thread->process;
 	U32 i;
-
-    if (eip<0xd0000000)
-        return eip;
+    
+#ifdef USE_MMU
+	if (eip<0xd0000000)
+		return eip;
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
 			return eip-process->mappedFiles[i].address;
 	}
+#else
+	{
+		PblIterator* it = pblListIterator(cpu->thread->process->mmapedMemory);
+		while (pblIteratorHasNext(it)) {
+			struct MappedMemory* item = pblIteratorNext(it);
+			if (eip >= item->address && eip < item->address + item->len) {
+				return eip - (U32)item->address;
+			}
+		}
+	}
+#endif
 	return 0;
 }
 

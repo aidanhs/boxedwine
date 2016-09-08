@@ -5,6 +5,12 @@
 // maximum number of files per directory
 #define MAX_DIR_LISTING 4096
 
+#ifdef USE_MMU
+#define BRK_EXTRA 0
+#else
+#define BRK_EXTRA (64*1024)
+#endif
+
 #define U64 unsigned long long int
 #define S64 long long int
 #define U32 unsigned int

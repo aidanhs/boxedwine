@@ -65,6 +65,10 @@ char * pblisam_c_id = "$Id: pblisam.c,v 1.19 2015/02/22 07:06:06 peter Exp $";
 
 #include "pbl.h"                  /* program base library                     */
 
+#ifdef _WIN32
+#define snprintf     _snprintf
+#endif
+
 /******************************************************************************/
 /* #defines                                                                   */
 /******************************************************************************/

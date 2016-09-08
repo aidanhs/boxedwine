@@ -14,6 +14,7 @@
 #define K_MAP_PRIVATE 0x02
 #define K_MAP_FIXED 0x10
 #define K_MAP_ANONYMOUS 0x20
+#define K_MAP_TRY_FIXED 0x4000
 
 #define K_MADV_DONTNEED 4
 

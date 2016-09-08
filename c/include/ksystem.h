@@ -39,15 +39,10 @@ U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz);
 U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec);
 U32 syscall_times(struct KThread* thread, U32 buf);
 
-struct MappedFileCache {
 #ifdef USE_MMU
+struct MappedFileCache {
 	U32* ramPages;
 	U32 pageCount;
-#else
-	U8* unalignedAddress;
-	U8* address;
-	U32 len;
-#endif
 	U32 refCount;
 	char name[MAX_FILEPATH_LEN];
 };
@@ -55,7 +50,5 @@ struct MappedFileCache {
 struct MappedFileCache* getMappedFileInCache(const char* name);
 void putMappedFileInCache(struct MappedFileCache* file);
 void removeMappedFileInCache(struct MappedFileCache* file);
-#ifndef USE_MMU
-struct MappedFileCache* getMappedFileByAddress(U32 address);
 #endif
 #endif

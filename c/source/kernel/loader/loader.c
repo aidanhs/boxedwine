@@ -211,7 +211,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNo
 	}
 	flags |= K_MAP_FIXED;
 #endif
-	address = syscall_mmap64(thread, address, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, flags, -1, 0);
+	address = syscall_mmap64(thread, address, len+BRK_EXTRA, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, flags, -1, 0);
 #ifndef USE_MMU
 	reloc = address;
 #endif

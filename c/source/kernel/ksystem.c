@@ -66,21 +66,7 @@ void initCallbacks() {
 }
 #endif
 
-#ifndef USE_MMU
-struct MappedFileCache* getMappedFileByAddress(U32 address) {
-	PblIterator* it = pblMapIteratorNew(mappedFileCache);
-	while (pblIteratorHasNext(it)) {
-		struct PblMapEntry* entry = pblIteratorNext(it);
-		struct MappedFileCache** next = pblMapEntryValue(entry);
-		struct MappedFileCache* file = *next;
-		if (file->address <= address && address < file->address + file->len)
-			return file;
-	}
-	pblIteratorFree(it);
-	return NULL;
-}
-
-#endif
+#ifdef USE_MMU
 struct MappedFileCache* getMappedFileInCache(const char* name) {
 	struct MappedFileCache** result = pblMapGet(mappedFileCache, name, strlen(name), NULL);
 	if (result)
@@ -95,7 +81,7 @@ void putMappedFileInCache(struct MappedFileCache* file) {
 void removeMappedFileInCache(struct MappedFileCache* file) {
 	pblMapRemove(mappedFileCache, file->name, strlen(file->name), NULL);
 }
-
+#endif
 U32 addProcess(struct KProcess* process) {
 	return addObjecToArray(&processes, process);
 }
