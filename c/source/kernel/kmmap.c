@@ -27,6 +27,8 @@ U32 syscall_mlock(struct KThread* thread, U32 addr, U32 len) {
 	return 0;
 }
 
+static U8 reserved[0x04000000];
+
 U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
 	BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
@@ -153,58 +155,98 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			allocPages(thread->process->memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
 		}		
     }
-#else 
-	if (flags & K_MAP_FIXED) {
-		PblIterator* it = pblListIterator(thread->process->mmapedMemory);
-		struct MappedMemory* found = NULL;
+#else 	
+	{
+		struct MappedMemory* result = NULL;
+		if (flags & K_MAP_FIXED) {
+			PblIterator* it = pblListIterator(thread->process->mmapedMemory);
 
-		while (pblIteratorHasNext(it)) {
-			struct MappedMemory* item = pblIteratorNext(it);
-			if (addr >= item->address && addr < item->address + item->len) {
-				found = item;
-				break;
+			while (pblIteratorHasNext(it)) {
+				struct MappedMemory* item = pblIteratorNext(it);
+				if (addr >= item->address && addr < item->address + item->len) {
+					result = item;
+					if (item->address + item->len < addr + len) {
+						kpanic("tried to reallocate using mmap passed the end");
+					}
+					break;
+				}
 			}
-		}
-		if (!found)
-			kpanic("Non mmu does not support mmap to a fixed address");
-	}
-	else {
-		struct MappedMemory* result = kalloc(sizeof(struct MappedMemory));
-		int memLen = len;
-
-		if (fd) {
-			int fileLength = fd->kobject->access->length(fd->kobject);
-			// extra room, this is an overestimation, required by ld
-			int memSize = getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
-
-
-			if (fileLength > memLen) {
-				memLen = fileLength;
+			if (!result && addr >= reserved && addr + len < reserved + sizeof(reserved)) {
+				return addr;
 			}
-			memLen += memSize;
+			if (!result)
+				kpanic("Non mmu does not support mmap to a fixed address");
 		}
+		else {			
+			int memLen = len + 32 * 1024; // padding for the wine loader
+			
+			result = kalloc(sizeof(struct MappedMemory));
 
-		result->allocatedAddress = kalloc(memLen + 0xFFF + (fd ? 32 * 1024 : 0));
-		if (!result->allocatedAddress) {
-			kfree(result);
-			return -K_ENOMEM;
-		}		
-		result->address = (U8*)((U32)(result->allocatedAddress + 0xFFF) & 0xFFFFF000);
-		result->len = memLen;
+			if (addr >= reserved && addr + len < reserved + sizeof(reserved)) {
+				result->allocatedAddress = 0;
+				result->address = addr;
+				result->len = len;
+			}
+			else {
+				if (fd) {
+					int fileLength = (int)fd->kobject->access->length(fd->kobject);
+					// extra room, this is an overestimation, required by ld
+					int memSize = getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
+
+
+					if (fileLength > memLen) {
+						memLen = fileLength;
+					}
+					memLen += memSize;
+				}
+
+				result->allocatedAddress = kalloc(memLen + 0xFFF);
+				if (!result->allocatedAddress) {
+					kfree(result);
+					return -K_ENOMEM;
+				}
+				result->address = (U8*)((U32)(result->allocatedAddress + 0xFFF) & 0xFFFFF000);
+				result->len = memLen;
+			}			
+			if (fd) {
+				char* name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
+				result->name = kalloc(strlen(name) + 1);
+				strcpy(result->name, name);
+
+				kwarn("%s @ %X (len=%d)\n", name, result->address, memLen);
+			}
+			pblListAdd(thread->process->mmapedMemory, result);
+			addr = result->address;
+		}
 		if (fd) {
-			char* name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
-			result->name = kalloc(strlen(name) + 1);
-			strcpy(result->name, name);
+			syscall_pread64(thread, fildes, addr, len, off);
+			if (1) {
+				U32 baseOfData = 0;
+				U32 sizeofData = 0;
+				U32 loadAt = getPELoadAddress((struct OpenNode*)fd->kobject->data, &baseOfData, &sizeofData);
 
-			kwarn("%s @ %X (len=%d)\n", name, result->address, memLen);
+				if (loadAt > 4095) {
+					int i;
+
+					if (thread->process->reallocAddress && thread->process->reallocAddress != loadAt) {
+						kpanic("Currently only one stripped relocated file per process");
+					}
+					if (!thread->process->reallocAddress) {
+						thread->process->reallocAddress = loadAt;
+						thread->process->reallocLen = result->len;
+						thread->process->reallocOffset = addr - loadAt;
+					}
+					for (i = 0x0041A184; i < 0x00430000; i += 4) {
+						U32 tmp = readd(thread->process->reallocOffset + i);
+						if (tmp >= thread->process->reallocAddress && tmp < thread->process->reallocAddress + thread->process->reallocLen) {
+							writed(thread->process->reallocOffset + i, tmp + thread->process->reallocOffset);
+						}
+					}
+				}
+			}			
+		} else {
+			memset((void*)addr, 0, len);
 		}
-		pblListAdd(thread->process->mmapedMemory, result);
-		addr = result->address;
-	}
-	if (fd) {
-		syscall_pread64(thread, fildes, addr, len, off);
-	} else {
-		memset(addr, 0, len);
 	}
 #endif
 	return addr;

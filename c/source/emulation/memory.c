@@ -137,8 +137,8 @@ void pf_clear(struct Memory* memory, U32 page) {
 struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear};
 #endif
 
-U8 readb(MMU_ARG U32 address) {
 #ifdef USE_MMU
+U8 readb(MMU_ARG U32 address) {
 	int index = address >> 12;
 #ifdef LOG_OPS
 	U8 result;
@@ -153,13 +153,9 @@ U8 readb(MMU_ARG U32 address) {
 		return host_readb(address-memory->read[index]);
 	return memory->mmu[index]->readb(memory, address);
 #endif
-#else
-	return *(U8*)address;
-#endif
 }
 
 void writeb(MMU_ARG U32 address, U8 value) {
-#ifdef USE_MMU
 	int index = address >> 12;
 #ifdef LOG_OPS
 	fprintf(logFile, "writeb %X @%X\n", value, address);
@@ -169,13 +165,9 @@ void writeb(MMU_ARG U32 address, U8 value) {
 	} else {
 		memory->mmu[index]->writeb(memory, address, value);
 	}
-#else
-	*(U8*)address = value;
-#endif
 }
 
 U16 readw(MMU_ARG U32 address) {
-#ifdef USE_MMU
 #ifdef LOG_OPS
 	U16 result;
 
@@ -199,17 +191,9 @@ U16 readw(MMU_ARG U32 address) {
 	}
 	return readb(memory, address) | (readb(memory, address+1) << 8);
 #endif
-#else
-#ifdef UNALIGNED_MEMORY
-	return (*(U8*)address) | ((*(U8*)address+1) << 8);
-#else
-	return *(U16*)address;
-#endif
-#endif
 }
 
 void writew(MMU_ARG U32 address, U16 value) {
-#ifdef USE_MMU
 #ifdef LOG_OPS
 	fprintf(logFile, "writew %X @%X\n", value, address);
 #endif
@@ -224,18 +208,9 @@ void writew(MMU_ARG U32 address, U16 value) {
 		writeb(memory, address, (U8)value);
 		writeb(memory, address+1, (U8)(value >> 8));
 	}
-#else
-#ifdef UNALIGNED_MEMORY
-	*(U8*)address = (U8)value;
-	*(U8*)(address+1) = (U8)(value >> 8);
-#else
-	*(U16*)address = value;
-#endif
-#endif
 }
 
 U32 readd(MMU_ARG U32 address) {
-#ifdef USE_MMU
 #ifdef LOG_OPS
 	U32 result;
 
@@ -260,17 +235,9 @@ U32 readd(MMU_ARG U32 address) {
 		return readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
 	}
 #endif
-#else
-#ifdef UNALIGNED_MEMORY
-	return (*(U8*)address) | ((*(U8*)address + 1) << 8) | ((*(U8*)address + 2) << 16) | ((*(U8*)address + 3) << 24);
-#else
-	return *(U32*)address;
-#endif
-#endif
 }
 
 void writed(MMU_ARG U32 address, U32 value) {
-#ifdef USE_MMU
 #ifdef LOG_OPS
 	fprintf(logFile, "writed %X @%X\n", value, address);
 #endif
@@ -287,37 +254,8 @@ void writed(MMU_ARG U32 address, U32 value) {
 		writeb(memory, address+2, value >> 16);
 		writeb(memory, address+3, value >> 24);
 	}
-#else
-#ifdef UNALIGNED_MEMORY
-	*(U8*)address = (U8)value;
-	*(U8*)(address + 1) = (U8)(value >> 8);
-	*(U8*)(address + 2) = (U8)(value >> 16);
-	*(U8*)(address + 3) = (U8)(value >> 24);
-#else
-	*(U32*)address = value;
-#endif
-#endif
 }
 
-U64 readq(MMU_ARG U32 address) {
-#ifdef USE_MMU
-	return readd(memory, address) | ((U64)readd(memory, address+4) << 32);
-#else
-	return readd(address) | ((U64)readd(address + 4) << 32);
-#endif
-}
-
-void writeq(MMU_ARG U32 address, U64 value) {
-#ifdef USE_MMU
-	writed(memory, address, (U32)value);
-	writed(memory, address+4, (U32)(value >> 32));
-#else
-	writed(address, (U32)value);
-	writed(address + 4, (U32)(value >> 32));
-#endif
-}
-
-#ifdef USE_MMU
 struct Memory* allocMemory() {
 	struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
 	initMemory(memory);

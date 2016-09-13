@@ -72,6 +72,9 @@ struct KProcess {
 	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
 #else
 	PblList* mmapedMemory;
+	U32 reallocAddress;
+	U32 reallocLen;
+	U32 reallocOffset;
 #endif
 	char currentDirectory[MAX_FILEPATH_LEN];
 	U32 brkEnd;

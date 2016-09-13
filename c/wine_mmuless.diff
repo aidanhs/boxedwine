@@ -126,3 +126,173 @@ index 75ba199..31732a8 100644
  
  C_SRCS = \
  	async.c \
+diff --git a/configure b/configure
+index 6b9758f..2180549 100755
+--- a/configure
++++ b/configure
+@@ -8021,7 +8021,7 @@ done
+ 
+     APPKIT_LIBS="-framework AppKit"
+ 
+-    LDEXECFLAGS="-image_base 0x7bf00000 -Wl,-pagezero_size,0x1000,-segaddr,WINE_DOS,0x00001000,-segaddr,WINE_SHAREDHEAP,0x7f000000,-sectcreate,__TEXT,__info_plist,wine_info.plist"
++    LDEXECFLAGS="-Wl,-pagezero_size,0x1000,-segaddr,WINE_DOS,0x00001000,-segaddr,WINE_SHAREDHEAP,0x7f000000,-sectcreate,__TEXT,__info_plist,wine_info.plist"
+     { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports -Wl,-no_pie" >&5
+ $as_echo_n "checking whether the compiler supports -Wl,-no_pie... " >&6; }
+ if ${ac_cv_cflags__Wl__no_pie+:} false; then :
+@@ -8607,7 +8607,7 @@ if ${ac_cv_cflags__Wl__Ttext_segment_0x7bc00000+:} false; then :
+   $as_echo_n "(cached) " >&6
+ else
+   ac_wine_try_cflags_saved=$CFLAGS
+-CFLAGS="$CFLAGS -Wl,-Ttext-segment=0x7bc00000"
++CFLAGS="$CFLAGS"
+ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+ /* end confdefs.h.  */
+ int main(int argc, char **argv) { return 0; }
+@@ -8626,7 +8626,7 @@ $as_echo "$ac_cv_cflags__Wl__Ttext_segment_0x7bc00000" >&6; }
+ if test "x$ac_cv_cflags__Wl__Ttext_segment_0x7bc00000" = xyes; then :
+   case $host_os in
+                            freebsd* | kfreebsd*-gnu) LDEXECFLAGS="$LDEXECFLAGS -Wl,-Ttext-segment=0x60000000" ;;
+-                           *) LDEXECFLAGS="$LDEXECFLAGS -Wl,-Ttext-segment=0x7c000000" ;;
++                           *) LDEXECFLAGS="$LDEXECFLAGS" ;;
+                            esac
+ else
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the compiler supports -Wl,--section-start,.interp=0x7c000400" >&5
+@@ -8726,7 +8726,7 @@ fi
+ { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_cflags__Wl__z_max_page_size_0x1000" >&5
+ $as_echo "$ac_cv_cflags__Wl__z_max_page_size_0x1000" >&6; }
+ if test "x$ac_cv_cflags__Wl__z_max_page_size_0x1000" = xyes; then :
+-  LDEXECFLAGS="$LDEXECFLAGS -Wl,-z,max-page-size=0x1000"
++  LDEXECFLAGS="$LDEXECFLAGS -Wl,-z,max-page-size=0x1000 -pie"
+ fi
+           ;;
+       esac
+diff --git a/dlls/kernel32/Makefile.in b/dlls/kernel32/Makefile.in
+index 1399859..6668aec 100644
+--- a/dlls/kernel32/Makefile.in
++++ b/dlls/kernel32/Makefile.in
+@@ -3,7 +3,7 @@ MODULE    = kernel32.dll
+ IMPORTLIB = kernel32
+ IMPORTS   = winecrt0 ntdll
+ EXTRALIBS = $(COREFOUNDATION_LIBS) $(POLL_LIBS)
+-EXTRADLLFLAGS = -nodefaultlibs -Wb,-F,KERNEL32.dll -Wl,--image-base,0x7b400000
++EXTRADLLFLAGS = -nodefaultlibs -Wb,-F,KERNEL32.dll
+ 
+ C_SRCS = \
+ 	actctx.c \
+diff --git a/dlls/ntdll/Makefile.in b/dlls/ntdll/Makefile.in
+index ed4bb94..68ebe6f 100644
+--- a/dlls/ntdll/Makefile.in
++++ b/dlls/ntdll/Makefile.in
+@@ -3,7 +3,7 @@ MODULE    = ntdll.dll
+ IMPORTLIB = ntdll
+ IMPORTS   = winecrt0
+ EXTRALIBS = $(IOKIT_LIBS) $(RT_LIBS) $(PTHREAD_LIBS)
+-EXTRADLLFLAGS = -nodefaultlibs -Wl,--image-base,0x7bc00000
++EXTRADLLFLAGS = -nodefaultlibs
+ 
+ C_SRCS = \
+ 	actctx.c \
+diff --git a/dlls/ntdll/server.c b/dlls/ntdll/server.c
+index 356d631..2e251d9 100644
+--- a/dlls/ntdll/server.c
++++ b/dlls/ntdll/server.c
+@@ -1090,7 +1090,7 @@ static void start_server(void)
+     if (!started)
+     {
+         int status;
+-        int pid = fork();
++        int pid = vfork();
+         if (pid == -1) fatal_perror( "fork" );
+         if (!pid)
+         {
+@@ -1100,10 +1100,10 @@ static void start_server(void)
+             wine_exec_wine_binary( argv[0], argv, getenv("WINESERVER") );
+             fatal_error( "could not exec wineserver\n" );
+         }
+-        waitpid( pid, &status, 0 );
+-        status = WIFEXITED(status) ? WEXITSTATUS(status) : 1;
+-        if (status == 2) return;  /* server lock held by someone else, will retry later */
+-        if (status) exit(status);  /* server failed */
++        //waitpid( pid, &status, 0 );
++        //status = WIFEXITED(status) ? WEXITSTATUS(status) : 1;
++        //if (status == 2) return;  /* server lock held by someone else, will retry later */
++        //if (status) exit(status);  /* server failed */
+         started = TRUE;
+     }
+ }
+diff --git a/dlls/ntdll/thread.c b/dlls/ntdll/thread.c
+index f6a5fbe..fb6fce4 100644
+--- a/dlls/ntdll/thread.c
++++ b/dlls/ntdll/thread.c
+@@ -226,11 +226,17 @@ HANDLE thread_init(void)
+     virtual_init();
+ 
+     /* reserve space for shared user data */
+-
+     addr = (void *)0x7ffe0000;
+     size = 0x10000;
+     status = NtAllocateVirtualMemory( NtCurrentProcess(), &addr, 0, &size,
+                                       MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE );
++#ifdef BOXEDWINE
++    if (status) {
++        addr = NULL;
++        status = NtAllocateVirtualMemory( NtCurrentProcess(), &addr, 0, &size,
++                                      MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE );
++    }
++#endif
+     if (status)
+     {
+         MESSAGE( "wine: failed to map the shared user data: %08x\n", status );
+diff --git a/dlls/ntdll/virtual.c b/dlls/ntdll/virtual.c
+index 5c43d26..08307e4 100644
+--- a/dlls/ntdll/virtual.c
++++ b/dlls/ntdll/virtual.c
+@@ -844,8 +844,9 @@ static NTSTATUS map_view( struct file_view **view_ret, void *base, size_t size,
+             }
+             TRACE( "got mem with anon mmap %p-%p\n", ptr, (char *)ptr + size );
+             /* if we got something beyond the user limit, unmap it and retry */
+-            if (is_beyond_limit( ptr, view_size, user_space_limit )) add_reserved_area( ptr, view_size );
+-            else break;
++            // if (is_beyond_limit( ptr, view_size, user_space_limit )) add_reserved_area( ptr, view_size );
++            // else break;
++            break;
+         }
+         ptr = unmap_extra_space( ptr, view_size, size, mask );
+     }
+diff --git a/libs/wine/loader.c b/libs/wine/loader.c
+index b5b32cc..1be7626 100644
+--- a/libs/wine/loader.c
++++ b/libs/wine/loader.c
+@@ -935,7 +935,7 @@ void wine_init( int argc, char *argv[], char *error, int error_size )
+     __wine_main_argc = argc;
+     __wine_main_argv = argv;
+     __wine_main_environ = __wine_get_main_environment();
+-    mmap_init();
++    //mmap_init();
+ 
+     for (path = first_dll_path( "ntdll.dll", 0, &context ); path; path = next_dll_path( &context ))
+     {
+diff --git a/server/Makefile.in b/server/Makefile.in
+index 75ba199..31732a8 100644
+--- a/server/Makefile.in
++++ b/server/Makefile.in
+@@ -1,4 +1,5 @@
+ PROGRAMS = wineserver
++LDFLAGS = -pie
+ 
+ C_SRCS = \
+ 	async.c \
+diff --git a/server/request.c b/server/request.c
+index 597bf88..a488999 100644
+--- a/server/request.c
++++ b/server/request.c
+@@ -824,7 +824,8 @@ void open_master_socket(void)
+ 
+     create_server_dir( server_dir );
+ 
+-    if (!foreground)
++    // boxedwine without MMU cannot fork like this, and its not necessary for boxedwine
++    if (0)
+     {
+         if (pipe( sync_pipe ) == -1) fatal_error( "pipe: %s\n", strerror( errno ));
+         pid = fork();

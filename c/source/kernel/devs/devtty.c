@@ -123,7 +123,8 @@ U32 tty_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 		return result;
 	}
 #else
-	return fwrite((void*)address, len, 1, stdout);
+	fwrite((void*)address, len, 1, stdout);
+	return len;
 #endif
 }
 

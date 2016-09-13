@@ -8,7 +8,8 @@
 #ifdef USE_MMU
 #define BRK_EXTRA 0
 #else
-#define BRK_EXTRA (64*1024)
+// wine server uses a little more than 128k
+#define BRK_EXTRA (256*1024)
 #endif
 
 #define U64 unsigned long long int

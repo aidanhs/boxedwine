@@ -174,13 +174,14 @@ U32 processGetThreadCount(struct KProcess* process) {
 	return getArrayCount(&process->threads);
 }
 
-#ifdef USE_MMU
-void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory* memory) {
+void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
 	U32 i;
 
 	memset(process, 0, sizeof(struct KProcess));	
+#ifdef USE_MMU
 	process->memory = memory;
 	memory->process = process;
+#endif	
 	process->id = addProcess(process);
 	initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
 
@@ -197,6 +198,7 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 			process->fds[i]->refCount = from->fds[i]->refCount;
 		}
 	}
+#ifdef USE_MMU
 	memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (process->mappedFiles[i].refCount) {
@@ -204,6 +206,9 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 			process->mappedFiles[i].systemCacheEntry->refCount++;
 		}
 	}
+#else
+	process->mmapedMemory = pblListClone(from->mmapedMemory);
+#endif
 	memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
 	memcpy(process->path, from->path, sizeof(process->path));
 	safe_strcpy(process->commandLine, from->commandLine, MAX_COMMANDLINE_LEN);
@@ -219,18 +224,19 @@ void cloneProcess(struct KProcess* process, struct KProcess* from, struct Memory
 				incrementShmAttach(process, i);
 			}
 		}
-	}	
+	}
+#ifdef USE_MMU
 	for (i=0;i<NUMBER_OF_STRINGS;i++) {
 		process->strings[i] = from->strings[i];
 	}
 	process->stringAddress = from->stringAddress;
 	process->stringAddressIndex = from->stringAddressIndex;
+#endif
 	process->loaderBaseAddress = from->loaderBaseAddress;
 	process->phdr = from->phdr;
 	process->phnum = from->phnum;
 	process->entry = from->entry;
 }
-#endif
 
 void writeStackString(MMU_ARG struct CPU* cpu, const char* s) {
 	int count = (strlen(s)+4)/4;
@@ -662,27 +668,32 @@ and is now available for re-use. */
 #define K_CLONE_IO                0x80000000      /* Clone io context */
 
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid) {
-#ifdef USE_MMU
 	U32 vFork = 0;
 
 	if (flags & K_CLONE_VFORK) {
 		flags &=~K_CLONE_VFORK;
 		vFork = 1;
 	}
+#ifndef USE_MMU
+	vFork = 1;
+#endif
 	if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID) || (flags & 0xFFFFFF00)==(K_CLONE_PARENT_SETTID)) {
-        struct Memory* newMemory = allocMemory();
+#ifdef USE_MMU
+        struct Memory* memory = allocMemory();
+#endif
 		struct KProcess* newProcess = allocProcess();
 		struct KThread* newThread = allocThread();
 		newProcess->parentId = thread->process->id;        
-
-		cloneMemory(newMemory, thread->process->memory);
-		cloneProcess(newProcess, thread->process, newMemory);
+#ifdef USE_MMU
+		cloneMemory(memory, thread->process->memory);
+#endif		
+		cloneProcess(MMU_PARAM newProcess, thread->process);
 		cloneThread(newThread, thread, newProcess);
 		initStdio(newProcess);
 
         if ((flags & K_CLONE_CHILD_SETTID)!=0) {
             if (ctid!=0) {
-                writed(newThread->process->memory, ctid, newThread->id);
+				writed(MMU_PARAM ctid, newThread->id);
             }
         }
         if ((flags & K_CLONE_CHILD_CLEARTID)!=0) {
@@ -690,8 +701,8 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         }
 		if ((flags & K_CLONE_PARENT_SETTID)!=0) {
 			if (ptid) {
-				writed(thread->process->memory, ptid, newThread->id);
-				writed(newThread->process->memory, ptid, newThread->id);
+				writed(MMU_PARAM ptid, newThread->id);
+				writed(MMU_PARAM ptid, newThread->id);
 			}
 		}
         if (child_stack!=0)
@@ -701,15 +712,18 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 		//runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first
 		scheduleThread(newThread);
 		if (vFork) {
-			unscheduleThread(thread);
+			waitThread(thread);
 			newProcess->wakeOnExitOrExec = thread;
+		}
+		if (newProcess->id == 103) {
+			newThread->cpu.log = TRUE;
 		}
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
 		struct KThread* newThread = (struct KThread*)kalloc(sizeof(struct KThread));
         struct user_desc desc;
 
-		readMemory(thread->process->memory, (U8*)&desc, tls, sizeof(struct user_desc));
+		readMemory(MMU_PARAM_THREAD (U8*)&desc, tls, sizeof(struct user_desc));
 
 		initThread(newThread, thread->process);		
 
@@ -719,7 +733,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 			newThread->cpu.segValue[GS] = desc.entry_number << 3;
         }
         newThread->clear_child_tid = ctid;
-		writed(thread->process->memory, ptid, newThread->id);
+		writed(MMU_PARAM_THREAD ptid, newThread->id);
         newThread->cpu.reg[4].u32 = child_stack;
         newThread->cpu.reg[4].u32+=8;
         newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
@@ -729,7 +743,6 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         kpanic("sys_clone does not implement flags: %X", flags);
         return 0;
     }
-#endif
 	return -K_ENOSYS;
 }
 
@@ -850,7 +863,7 @@ U32 readStringArray(MMU_ARG U32 address, const char** a, int size, unsigned int*
 		char* str = getNativeString(MMU_PARAM p);
 		address+=4;
 
-		if (!str[0])
+		if (!str || !str[0])
 			break;		
 		if (*count>=(unsigned int)size)
 			kpanic("Too many env or arg: %d is max", size);
@@ -863,7 +876,6 @@ U32 readStringArray(MMU_ARG U32 address, const char** a, int size, unsigned int*
 }
 
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
-#ifdef USE_MMU
 	struct KProcess* process = thread->process;
 	char* first = getNativeString(MMU_PARAM_THREAD readd(MMU_PARAM_THREAD argv));
 	struct Node* node;
@@ -896,7 +908,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	i=0;
 	while (TRUE) {
 		char* arg = getNativeString(MMU_PARAM_THREAD readd(MMU_PARAM_THREAD argv + i * 4));
-		if (!arg[0]) {
+		if (!arg || !arg[0]) {
 			break;
 		}
 		if (process->commandLine[0])
@@ -940,7 +952,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 	}
 
 	// reset memory must come after we grab the args and env
+#ifdef USE_MMU
 	resetMemory(thread->process->memory);
+#else
+	// we assume we came here because of vfork, otherwise this would leak memory
+#endif
 	{
 		struct KProcess* process = thread->process;
 		U32 id = thread->id;
@@ -955,7 +971,11 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 
 	setupStack(thread);	
 
+#ifdef USE_MMU
 	memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
+#else
+	pblListClear(process->mmapedMemory);
+#endif
 	memset(process->sigActions, 0, sizeof(process->sigActions));
 	if (process->timer.millies!=0) {
 		removeTimer(&process->timer);
@@ -987,7 +1007,9 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 			}
 		}
 	}
+#ifdef USE_MMU
 	initCallbacksInProcess(process);
+#endif
 	if (!loadProgram(process, thread, openNode, &thread->cpu.eip.u32)) {		
 		// :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
 		kpanic("program failed to load, but memory was already reset");
@@ -1001,9 +1023,6 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 		process->wakeOnExitOrExec = 0;
 	}
 	return -K_CONTINUE;
-#else
-	return -K_ENOSYS;
-#endif
 }
 
 U32 syscall_chdir(struct KThread* thread, U32 path) {

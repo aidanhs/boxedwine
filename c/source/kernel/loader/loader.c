@@ -154,6 +154,7 @@ int getMemSizeOfElf(struct OpenNode* openNode) {
 		return 0;
 	}
 	if (!isValidElf(hdr)) {
+		openNode->access->seek(openNode, pos);
 		return 0;
 	}
 
@@ -172,6 +173,38 @@ int getMemSizeOfElf(struct OpenNode* openNode) {
 	}
 	openNode->access->seek(openNode, pos);
 	return len - address + 4096*sections; // 4096 for alignment
+}
+
+U32 getPELoadAddress(struct OpenNode* openNode, U32* baseOfData, U32* sizeofData) {
+	U8 buffer[1024];	
+	U64 pos = openNode->access->getFilePointer(openNode);
+	U32 len;
+	U32 address = 0xFFFFFFFF;
+	U32 i;
+	U32 reloc;
+	U32 flags = K_MAP_PRIVATE | K_MAP_ANONYMOUS;
+	int offset;
+
+	openNode->access->seek(openNode, 0);
+	len = read(openNode->handle, buffer, sizeof(buffer));
+	openNode->access->seek(openNode, pos);
+	if (len != sizeof(buffer)) {		
+		return FALSE;
+	}
+	// DOS Magic MZ
+	if (buffer[0] != 0x4D || buffer[1] != 0x5A) {
+		return 0;
+	}
+	offset = buffer[0x3C] | ((int)buffer[0x3D] << 8);
+	if (buffer[offset] != 0x50 || buffer[offset + 1] != 0x45 || buffer[offset + 2] != 0 || buffer[offset + 3] != 0) {
+		return 0;
+	}
+	// BaseOfData
+	*baseOfData = buffer[offset + 0x30] | ((U32)buffer[offset + 0x31] << 8) | ((U32)buffer[offset + 0x32] << 16) | ((U32)buffer[offset + 0x33] << 24);
+	// SizeOfInitializedData
+	*sizeofData = buffer[offset + 0x20] | ((U32)buffer[offset + 0x21] << 8) | ((U32)buffer[offset + 0x22] << 16) | ((U32)buffer[offset + 0x23] << 24);
+	// ImageBase
+	return buffer[offset + 0x34] | ((U32)buffer[offset + 0x35] << 8) | ((U32)buffer[offset + 0x36] << 16) | ((U32)buffer[offset + 0x37] << 24);
 }
 
 BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct OpenNode* openNode, U32* eip) {

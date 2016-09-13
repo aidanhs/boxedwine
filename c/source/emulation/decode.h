@@ -4970,6 +4970,25 @@ void decode3c1(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
+void decode3c7(struct DecodeData* data) {
+	U8 rm = FETCH8(data);
+	if ((rm & 0x38) == 8) { // CMPXCHG8B
+		if (data->ea16) {
+			data->op->func = cmpxchgg8b_16;
+			decodeEa16(data, rm);
+			LOG_OP1("CMPXCHG8B", M32(data, rm, data->op));
+		}
+		else {
+			data->op->func = cmpxchgg8b_32;
+			decodeEa32(data, rm);
+			LOG_OP1("CMPXCHG8B", M32(data, rm, data->op));
+		}
+	} else {
+		printf("Invalid instruction %x\n", data->op->inst);
+		log_pf(data->cpu->thread->process, data->ip);
+	}	
+	NEXT_OP(data);
+};
 // BSWAP
 void decode3c8(struct DecodeData* data) {
     data->op->func = bswap32;

@@ -17,6 +17,8 @@
 #define FETCH_S16(data) (S16)FETCH16(data)
 #define FETCH_S32(data) (S32)FETCH32(data)
 
+void log_pf(struct KProcess* process, U32 address);
+
 struct DecodeData {
 	int ds;
 	int ss;
@@ -102,6 +104,11 @@ U32 FETCH32(struct DecodeData* data) {
 #endif
 #else
 	result = readd(data->ip);
+	if (result >= data->cpu->thread->process->reallocAddress && result < data->cpu->thread->process->reallocAddress + data->cpu->thread->process->reallocLen) {
+		U32 tmp;
+
+		result += data->cpu->thread->process->reallocOffset;
+	}
 	data->ip += 4;
 	return result;
 #endif
@@ -703,7 +710,6 @@ void decode262(struct DecodeData* data) {
 	NEXT_OP(data);
 }
 
-void log_pf(struct KProcess* process, U32 address);
 void invalidOp(struct DecodeData* data) {
 	printf("Invalid instruction %x\n", data->op->inst);    
     log_pf(data->cpu->thread->process, data->ip);
@@ -2185,7 +2191,7 @@ DECODER decoder[1024] = {
 	invalidOp, decode3b1, invalidOp, decode3b3, invalidOp, invalidOp, decode3b6, decode3b7,
 	invalidOp, invalidOp, decode3ba, decode3bb, decode3bc, decode3bd, decode3be, decode3bf,
 	// 3c0
-	invalidOp, decode3c1, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+	invalidOp, decode3c1, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3c7,
 	decode3c8, decode3c9, decode3ca, decode3cb, decode3cc, decode3cd, decode3ce, decode3cf,
 	// 3d0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2217,7 +2223,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block);
 extern U32 gensrc;
 #endif
 #ifdef AOT
-OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen, struct Memory* memory, U32 ip, int* pi);
+OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen, MMU_ARG U32 ip, int* pi);
 #include "crc.h"
 U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     U32 i;
@@ -2240,7 +2246,7 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
         op = op->next;
     }
     crc = crc32b(ops, opPos);
-    //func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip, &i);
+    //func = getCompiledFunction(crc, ops, opPos, MMU_PARAM_CPU ip, &i);
     if (func) {
         block->ops->func = func;
         freeOp(block->ops->next);
@@ -2259,7 +2265,6 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     U32 eip = cpu->eip.u32;
 
     op->next->func(cpu, op->next);
-
     if (cpu->thread->process->terminated)
         return;
 
@@ -2322,5 +2327,5 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
 	fillFetchPage(pData);    
 #endif
 	data.op->inst = FETCH8(pData)+data.opCode;
-	decoder[data.op->inst](pData);    
+	decoder[data.op->inst](pData);
 }

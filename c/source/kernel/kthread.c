@@ -75,23 +75,25 @@ void initThread(struct KThread* thread, struct KProcess* process) {
 	setupStack(thread);
 }
 
-#ifdef USE_MMU
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process) {
 	memset(thread, 0, sizeof(struct KThread));
 	memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
 	onCreateCPU(&thread->cpu); // sets up the 8-bit high low regs
     thread->cpu.nextBlock = 0;
-	thread->cpu.thread = thread;
-	thread->cpu.memory = process->memory;
+	thread->cpu.thread = thread;	
 	thread->cpu.blockCounter = 0;
 	thread->process = process;
 	thread->sigMask = from->sigMask;
+#ifdef USE_MMU
+	thread->cpu.memory = process->memory;
 	thread->stackPageStart = from->stackPageStart;
 	thread->stackPageCount = from->stackPageCount;
+#else
+	thread->stackAddress = from->stackAddress;
+#endif
 	thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
 	thread->id = processAddThread(process, thread);
 }
-#endif
 
 void exitThread(struct KThread* thread, U32 status) {
 	struct KProcess* process = thread->process;
@@ -418,7 +420,9 @@ struct ucontext_ia32 {
 
 void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack, U32 trapNo) {	
 	struct CPU* cpu = &thread->cpu;
+#ifdef USE_MMU
 	struct Memory* memory = cpu->memory;
+#endif
 
 	if (altStack) {
 		writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);

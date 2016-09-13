@@ -2951,6 +2951,45 @@ void OPCALL bsfr32e32_32(struct CPU* cpu, struct Op* op) {
 	NEXT();
 }
 
+void OPCALL cmpxchgg8b_16(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa16(cpu, op);
+	U64 value1 = ((U64)EDX) << 32 | EAX;
+	U64 value2 = readq(MMU_PARAM_CPU eaa);
+
+	fillFlags(cpu);
+	if (value1 == value2) {
+		addFlag(ZF);
+		writed(MMU_PARAM_CPU eaa, EBX);
+		writed(MMU_PARAM_CPU eaa+4, ECX);
+	} else {
+		removeFlag(ZF);
+		EDX = (U32)(value2 >> 32);
+		EAX = (U32)value2;
+	}
+	CYCLES(10);
+	NEXT();
+}
+
+void OPCALL cmpxchgg8b_32(struct CPU* cpu, struct Op* op) {
+	U32 eaa = eaa32(cpu, op);
+	U64 value1 = ((U64)EDX) << 32 | EAX;
+	U64 value2 = readq(MMU_PARAM_CPU eaa);
+
+	fillFlags(cpu);
+	if (value1 == value2) {
+		addFlag(ZF);
+		writed(MMU_PARAM_CPU eaa, EBX);
+		writed(MMU_PARAM_CPU eaa + 4, ECX);
+	}
+	else {
+		removeFlag(ZF);
+		EDX = (U32)(value2 >> 32);
+		EAX = (U32)value2;
+	}
+	CYCLES(10);
+	NEXT();
+}
+
 void OPCALL bswap32(struct CPU* cpu, struct Op* op) {
 	U32 val = cpu->reg[op->r1].u32;
 

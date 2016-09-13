@@ -28,20 +28,74 @@ struct Memory {
 #define MMU_PARAM memory,
 #define MMU_PARAM_THREAD thread->process->memory,
 #define MMU_PARAM_CPU cpu->memory,
-#else
-#define MMU_ARG
-#define MMU_PARAM 
-#define MMU_PARAM_THREAD
-#define MMU_PARAM_CPU
-#endif
+
 U8 readb(MMU_ARG U32 address);
 void writeb(MMU_ARG U32 address, U8 value);
 U16 readw(MMU_ARG U32 address);
 void writew(MMU_ARG U32 address, U16 value);
 U32 readd(MMU_ARG U32 address);
 void writed(MMU_ARG U32 address, U32 value);
-U64 readq(MMU_ARG U32 address);
-void writeq(MMU_ARG U32 address, U64 value);
+#else
+#define MMU_ARG
+#define MMU_PARAM 
+#define MMU_PARAM_THREAD
+#define MMU_PARAM_CPU
+
+INLINE U8 readb(MMU_ARG U32 address) {
+	return *(U8*)address;
+}
+
+INLINE void writeb(MMU_ARG U32 address, U8 value) {
+	*(U8*)address = value;
+}
+
+INLINE U16 readw(MMU_ARG U32 address) {
+#ifdef UNALIGNED_MEMORY
+	return (*(U8*)address) | ((*(U8*)address + 1) << 8);
+#else
+	return *(U16*)address;
+#endif
+}
+
+INLINE void writew(MMU_ARG U32 address, U16 value) {
+#ifdef UNALIGNED_MEMORY
+	*(U8*)address = (U8)value;
+	*(U8*)(address + 1) = (U8)(value >> 8);
+#else
+	*(U16*)address = value;
+#endif
+}
+
+INLINE U32 readd(MMU_ARG U32 address) {
+#ifdef UNALIGNED_MEMORY
+	return (*(U8*)address) | ((*(U8*)address + 1) << 8) | ((*(U8*)address + 2) << 16) | ((*(U8*)address + 3) << 24);
+#else
+	return *(U32*)address;
+#endif
+}
+
+INLINE void writed(MMU_ARG U32 address, U32 value) {
+#ifdef UNALIGNED_MEMORY
+	*(U8*)address = (U8)value;
+	*(U8*)(address + 1) = (U8)(value >> 8);
+	*(U8*)(address + 2) = (U8)(value >> 16);
+	*(U8*)(address + 3) = (U8)(value >> 24);
+#else
+	*(U32*)address = value;
+#endif
+}
+
+#endif
+
+INLINE U64 readq(MMU_ARG U32 address) {
+	return readd(MMU_PARAM address) | ((U64)readd(MMU_PARAM address + 4) << 32);
+}
+
+INLINE void writeq(MMU_ARG U32 address, U64 value) {
+	writed(MMU_PARAM address, (U32)value);
+	writed(MMU_PARAM address + 4, (U32)(value >> 32));
+}
+
 void zeroMemory(MMU_ARG U32 address, int len);
 void readMemory(MMU_ARG U8* data, U32 address, int len);
 void writeMemory(MMU_ARG U32 address, U8* data, int len);

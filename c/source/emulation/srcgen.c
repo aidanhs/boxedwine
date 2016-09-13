@@ -8059,6 +8059,17 @@ void gen3c1(struct GenData* data, struct Op* op) {
     }
 }
 
+void OPCALL cmpxchgg8b_16(struct CPU* cpu, struct Op* op);
+void gen3c7(struct GenData* data, struct Op* op) {
+	out(data, "eaa = ");
+	if (op->func == cmpxchgg8b_16) {
+		out(data, getEaa16(op));
+	} else {
+		out(data, getEaa32(op));
+	}
+	out(data, "; tmp64 = readq(MMU_PARAM_CPU eaa); fillFlags(cpu); if (tmp64 == (((U64)EDX) << 32 | EAX)) { addFlag(ZF); writed(MMU_PARAM_CPU eaa, EBX); writed(MMU_PARAM_CPU eaa + 4, ECX); } else { removeFlag(ZF); EDX = (U32)(tmp64 >> 32); EAX = (U32)tmp64; } CYCLES(10);");
+}
+
 void gen3c8(struct GenData* data, struct Op* op) {
     out(data, "tmp32 = ");
     out(data, r32(op->r1));
@@ -8447,7 +8458,7 @@ SRC_GEN srcgen[] = {
 	gen3a8, gen3a9, 0, gen3ab, gen3ac, gen3ad, 0, gen3af,
 	0, gen3b1, 0, 0, 0, 0, gen3b6, gen3b7,
 	0, 0, gen3ba, gen3bb, gen3bc, gen3bd, gen3be, gen3bf,
-	0, gen3c1, 0, 0, 0, 0, 0, 0,
+	0, gen3c1, 0, 0, 0, 0, 0, gen3c7,
 	gen3c8, gen3c8, gen3c8, gen3c8, gen3c8, gen3c8, gen3c8, gen3c8,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -8554,7 +8565,7 @@ void writeSource() {
     outfp(fp, "};\n");        
 
     outfp(fp, "// :TODO: compiledCode is sorted, use a binary search\n");
-    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen, struct Memory* memory, U32 ip) {\n");
+    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen, MMU_ARG U32 ip) {\n");
     outfp(fp, "    int i;\n");
     outfp(fp, "    int count = sizeof(compiledCode) / sizeof(struct CompiledCode);\n");
     outfp(fp, "    for (i=0;i<count;i++) {\n");
@@ -8565,7 +8576,7 @@ void writeSource() {
     outfp(fp, "                    U32 p = ip;\n");
     outfp(fp, "                    U32 pos = byteLen;\n");
     outfp(fp, "                    while (count) {\n");
-    outfp(fp, "                        if (compiledCode[i].bytes[pos++]!=readb(memory, p++))\n");
+    outfp(fp, "                        if (compiledCode[i].bytes[pos++]!=readb(MMU_PARAM p++))\n");
     outfp(fp, "                            break;\n");
     outfp(fp, "                        count--;\n");
     outfp(fp, "                    }\n");
@@ -8740,6 +8751,15 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(ESI);
         OUT_DEFINE(EDI);
         OUT_DEFINE(FMASK_ALL);
+		out(data, "#ifdef USE_MMU\n");
+		out(data, "#define MMU_ARG struct Memory* memory,\n");
+		out(data, "#define MMU_PARAM memory,\n");
+		out(data, "#define MMU_PARAM_CPU cpu->memory,\n");
+		out(data, "#else\n");
+		out(data, "#define MMU_ARG\n");
+		out(data, "#define MMU_PARAM\n");
+		out(data, "#define MMU_PARAM_CPU\n");
+		out(data, "#endif\n");
         out(data, "#define setCF(cpu, b) if (b) cpu->flags|=CF; else cpu->flags&=~CF\n");
         out(data, "#define CYCLES(x) cpu->blockCounter += x; cpu->blockInstructionCount++\n");
 
@@ -8813,17 +8833,23 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "struct Reg {union {U32 u32;union {union {U16 u16;struct {U8 u8;U8 h8;};};U16 h16;};};};\n");
         out(data, "struct FPU_Reg {union {double d;U64 l;};};\n");
         out(data, "struct FPU {struct FPU_Reg regs[9];U32 tags[9];U32 cw;U32 cw_mask_all;U32 sw;U32 top;U32 round;};\n");
-        out(data, "struct user_desc {U32  entry_number;U32 base_addr;U32  limit;union {struct {U32  seg_32bit:1;U32  contents:2;U32  read_exec_only:1;U32  limit_in_pages:1;U32  seg_not_present:1;U32  useable:1;};U32 flags;};};");
-        out(data, "struct CPU {struct Reg reg[9];U8* reg8[8]; U32 segAddress[6];U32 segValue[7];U32 flags;struct Reg eip;struct Memory* memory;struct KThread* thread;struct Reg src;struct Reg dst;struct Reg dst2;struct Reg result;struct LazyFlags* lazyFlags;int df;U32 oldcf;U32 big;struct FPU fpu;struct Block* nextBlock;struct Block* currentBlock;U64 timeStampCounter;U32 blockCounter;U32 blockInstructionCount;BOOL log;U32 cpl;U32 stackMask;U32 stackNotMask;struct user_desc* ldt;};\n");
+        out(data, "struct user_desc {U32  entry_number;U32 base_addr;U32  limit;union {struct {U32  seg_32bit:1;U32  contents:2;U32  read_exec_only:1;U32  limit_in_pages:1;U32  seg_not_present:1;U32  useable:1;};U32 flags;};};\n");
+
+		out(data, "struct CPU { struct Reg reg[9]; U8* reg8[8]; U32 segAddress[6]; U32 segValue[7]; U32 flags; struct Reg eip;");
+#ifdef USE_MMU
+		out(data, "struct Memory* memory;");
+#endif
+		out(data, "struct KThread* thread; struct Reg src; struct Reg dst; struct Reg dst2; struct Reg result; struct LazyFlags* lazyFlags; int df; U32 oldcf; U32 big; struct FPU fpu; struct Block* nextBlock; struct Block* currentBlock; U64 timeStampCounter; U32 blockCounter; U32 blockInstructionCount; BOOL log; U32 cpl; U32 stackMask; U32 stackNotMask; struct user_desc* ldt; };\n");
+
         out(data, "struct LazyFlags {U32 (*getCF)(struct CPU* cpu);U32 (*getOF)(struct CPU* cpu);U32 (*getAF)(struct CPU* cpu);U32 (*getZF)(struct CPU* cpu);U32 (*getSF)(struct CPU* cpu);U32 (*getPF)(struct CPU* cpu);};\n");
-        out(data, "U8 readb(struct Memory* memory, U32 address);\n");
-        out(data, "void writeb(struct Memory* memory, U32 address, U8 value);\n");
-        out(data, "U16 readw(struct Memory* memory, U32 address);\n");
-        out(data, "void writew(struct Memory* memory, U32 address, U16 value);\n");
-        out(data, "U32 readd(struct Memory* memory, U32 address);\n");
-        out(data, "void writed(struct Memory* memory, U32 address, U32 value);\n");
-        out(data, "U64 readq(struct Memory* memory, U32 address);\n");
-        out(data, "void writeq(struct Memory* memory, U32 address, U64 value);\n");
+        out(data, "U8 readb(MMU_ARG U32 address);\n");
+        out(data, "void writeb(MMU_ARG U32 address, U8 value);\n");
+        out(data, "U16 readw(MMU_ARG U32 address);\n");
+        out(data, "void writew(MMU_ARG U32 address, U16 value);\n");
+        out(data, "U32 readd(MMU_ARG U32 address);\n");
+        out(data, "void writed(MMU_ARG U32 address, U32 value);\n");
+        out(data, "U64 readq(MMU_ARG U32 address);\n");
+        out(data, "void writeq(MMU_ARG U32 address, U64 value);\n");
         out(data, "struct Block* getBlock(struct CPU* cpu);\n");
         out(data, "struct Block* getBlock1(struct CPU* cpu);\n");
         out(data, "struct Block* getBlock2(struct CPU* cpu);\n");

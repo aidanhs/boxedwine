@@ -37,11 +37,6 @@ void removeTimer(struct KTimer* timer) {
 	timer->active = 0;
 }
 
-void waitThread(struct KThread* thread) {
-	unscheduleThread(thread);
-	thread->waitNode = addItemToList(&waitingThreads, thread);
-}
-
 void wakeThread(struct KThread* thread) {
 	U32 i;
     if (!thread->waitNode) {
@@ -142,6 +137,11 @@ void unscheduleThread(struct KThread* thread) {
 		}
 	}
 #endif
+}
+
+void waitThread(struct KThread* thread) {
+	unscheduleThread(thread);
+	thread->waitNode = addItemToList(&waitingThreads, thread);
 }
 
 U32 contextTime = 100000;
