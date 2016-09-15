@@ -8,7 +8,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\boxedwine -gensrc -m 192 /usr/bin/wine "z:/home/username/unzip"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\boxedwine -m 192 /usr/bin/wine "z:/home/username/unzip"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Debug|Win32'">

@@ -27,8 +27,6 @@ U32 syscall_mlock(struct KThread* thread, U32 addr, U32 len) {
 	return 0;
 }
 
-static U8 reserved[0x04000000];
-
 U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
 	BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
@@ -171,9 +169,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 					break;
 				}
 			}
-			if (!result && addr >= reserved && addr + len < reserved + sizeof(reserved)) {
-				return addr;
-			}
 			if (!result)
 				kpanic("Non mmu does not support mmap to a fixed address");
 		}
@@ -182,32 +177,26 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 			
 			result = kalloc(sizeof(struct MappedMemory));
 
-			if (addr >= reserved && addr + len < reserved + sizeof(reserved)) {
-				result->allocatedAddress = 0;
-				result->address = addr;
-				result->len = len;
+			if (fd) {
+				int fileLength = (int)fd->kobject->access->length(fd->kobject);
+				// extra room, this is an overestimation, required by ld
+				int memSize = getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
+
+
+				if (fileLength > memLen) {
+					memLen = fileLength;
+				}
+				memLen += memSize;
 			}
-			else {
-				if (fd) {
-					int fileLength = (int)fd->kobject->access->length(fd->kobject);
-					// extra room, this is an overestimation, required by ld
-					int memSize = getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
 
-
-					if (fileLength > memLen) {
-						memLen = fileLength;
-					}
-					memLen += memSize;
-				}
-
-				result->allocatedAddress = kalloc(memLen + 0xFFF);
-				if (!result->allocatedAddress) {
-					kfree(result);
-					return -K_ENOMEM;
-				}
-				result->address = (U8*)((U32)(result->allocatedAddress + 0xFFF) & 0xFFFFF000);
-				result->len = memLen;
-			}			
+			result->allocatedAddress = kalloc(memLen + 0xFFF);
+			if (!result->allocatedAddress) {
+				kfree(result);
+				return -K_ENOMEM;
+			}
+			result->address = (U8*)((U32)(result->allocatedAddress + 0xFFF) & 0xFFFFF000);
+			result->len = memLen;
+			
 			if (fd) {
 				char* name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
 				result->name = kalloc(strlen(name) + 1);
@@ -221,9 +210,10 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 		if (fd) {
 			syscall_pread64(thread, fildes, addr, len, off);
 			if (1) {
-				U32 baseOfData = 0;
-				U32 sizeofData = 0;
-				U32 loadAt = getPELoadAddress((struct OpenNode*)fd->kobject->data, &baseOfData, &sizeofData);
+				U32 section = 0;
+				U32 numberOfSections = 0;
+				U32 sizeOfSection = 0;
+				U32 loadAt = getPELoadAddress((struct OpenNode*)fd->kobject->data, &section, &numberOfSections, &sizeOfSection);
 
 				if (loadAt > 4095) {
 					int i;
@@ -236,11 +226,22 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 						thread->process->reallocLen = result->len;
 						thread->process->reallocOffset = addr - loadAt;
 					}
-					for (i = 0x0041A184; i < 0x00430000; i += 4) {
-						U32 tmp = readd(thread->process->reallocOffset + i);
-						if (tmp >= thread->process->reallocAddress && tmp < thread->process->reallocAddress + thread->process->reallocLen) {
-							writed(thread->process->reallocOffset + i, tmp + thread->process->reallocOffset);
+
+					for (i = 0; i<numberOfSections; i++) {
+						// :TODO: need to research this, why not rdata?
+						U32 SizeOfRawData = readd(section + 16);
+						if (SizeOfRawData && !strcmp(section, ".data")) {
+							U32 j;
+							U32 VirtualAddress = readd(section + 12) + thread->process->reallocAddress;
+
+							for (j = 0; j<SizeOfRawData; j += 4) {
+								U32 r = readd(thread->process->reallocOffset + VirtualAddress + j);
+								if (r >= thread->process->reallocAddress && r<thread->process->reallocAddress + thread->process->reallocLen) {
+									writed(thread->process->reallocOffset + VirtualAddress + j, r + thread->process->reallocOffset);
+								}
+							}
 						}
+						section+=sizeOfSection;
 					}
 				}
 			}			

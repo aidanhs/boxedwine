@@ -2020,13 +2020,26 @@ void OPCALL jmpNear32_reg(struct CPU* cpu, struct Op* op) {
 void OPCALL jmpNear32_mem16(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = readd(MMU_PARAM_CPU eaa16(cpu, op));
+#ifndef USE_MMU
+	// detect a hard coded address in the code segment, used for switch statements
+	if (cpu->eip.u32 >= cpu->thread->process->reallocAddress && cpu->eip.u32< cpu->thread->process->reallocAddress + cpu->thread->process->reallocLen) {
+		cpu->eip.u32 += cpu->thread->process->reallocOffset;
+	}
+#endif
 	CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL jmpNear32_mem32(struct CPU* cpu, struct Op* op) {
+	U32 e = cpu->eip.u32;
 	DONE();
 	cpu->eip.u32 = readd(MMU_PARAM_CPU eaa32(cpu, op));
+#ifndef USE_MMU
+	// detect a hard coded address in the code segment, used for switch statements
+	if (cpu->eip.u32 >= cpu->thread->process->reallocAddress && cpu->eip.u32< cpu->thread->process->reallocAddress + cpu->thread->process->reallocLen) {
+		cpu->eip.u32 += cpu->thread->process->reallocOffset;
+	}
+#endif
 	CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
 }

@@ -6835,11 +6835,21 @@ void gen2ff(struct GenData* data, struct Op* op) {
     } else if (op->func == jmpNear32_mem16) {
         out(data, "cpu->eip.u32 = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, "); CYCLES(4); cpu->nextBlock = getBlock(cpu);");
+#ifdef USE_MMU
+		out(data, ");");
+#else
+		out(data, "); if (cpu->eip.u32 >= cpu->thread->process->reallocAddress && cpu->eip.u32< cpu->thread->process->reallocAddress + cpu->thread->process->reallocLen) {cpu->eip.u32 += cpu->thread->process->reallocOffset;}");
+#endif
+		out(data, " CYCLES(4); cpu->nextBlock = getBlock(cpu);");
     } else if (op->func == jmpNear32_mem32) {
         out(data, "cpu->eip.u32 = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, "); CYCLES(4); cpu->nextBlock = getBlock(cpu);");
+#ifdef USE_MMU
+		out(data, ");");
+#else
+		out(data, "); if (cpu->eip.u32 >= cpu->thread->process->reallocAddress && cpu->eip.u32< cpu->thread->process->reallocAddress + cpu->thread->process->reallocLen) {cpu->eip.u32 += cpu->thread->process->reallocOffset;}");
+#endif
+		out(data, " CYCLES(4); cpu->nextBlock = getBlock(cpu);");
     } else if (op->func == pushEd_reg) {
         out(data, "push32(cpu, ");
         out(data, r32(op->r1));

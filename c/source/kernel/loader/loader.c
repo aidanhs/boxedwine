@@ -174,9 +174,8 @@ int getMemSizeOfElf(struct OpenNode* openNode) {
 	openNode->access->seek(openNode, pos);
 	return len - address + 4096*sections; // 4096 for alignment
 }
-
-U32 getPELoadAddress(struct OpenNode* openNode, U32* baseOfData, U32* sizeofData) {
-	U8 buffer[1024];	
+U32 getPELoadAddress(struct OpenNode* openNode, U32* section, U32* numberOfSections, U32* sizeOfSection) {
+	static U8 buffer[1024];	
 	U64 pos = openNode->access->getFilePointer(openNode);
 	U32 len;
 	U32 address = 0xFFFFFFFF;
@@ -184,6 +183,7 @@ U32 getPELoadAddress(struct OpenNode* openNode, U32* baseOfData, U32* sizeofData
 	U32 reloc;
 	U32 flags = K_MAP_PRIVATE | K_MAP_ANONYMOUS;
 	int offset;
+	U32 sizeOfOptionalHeader;
 
 	openNode->access->seek(openNode, 0);
 	len = read(openNode->handle, buffer, sizeof(buffer));
@@ -195,15 +195,25 @@ U32 getPELoadAddress(struct OpenNode* openNode, U32* baseOfData, U32* sizeofData
 	if (buffer[0] != 0x4D || buffer[1] != 0x5A) {
 		return 0;
 	}
+
+	// offset is pointer to IMAGE_NT_HEADERS
 	offset = buffer[0x3C] | ((int)buffer[0x3D] << 8);
+
+	// check IMAGE_NT_HEADERS.Signature
 	if (buffer[offset] != 0x50 || buffer[offset + 1] != 0x45 || buffer[offset + 2] != 0 || buffer[offset + 3] != 0) {
 		return 0;
 	}
-	// BaseOfData
-	*baseOfData = buffer[offset + 0x30] | ((U32)buffer[offset + 0x31] << 8) | ((U32)buffer[offset + 0x32] << 16) | ((U32)buffer[offset + 0x33] << 24);
-	// SizeOfInitializedData
-	*sizeofData = buffer[offset + 0x20] | ((U32)buffer[offset + 0x21] << 8) | ((U32)buffer[offset + 0x22] << 16) | ((U32)buffer[offset + 0x23] << 24);
-	// ImageBase
+	// IMAGE_NT_HEADERS.FileHeader.NumberOfSections
+	*numberOfSections = buffer[offset + 0x6] | ((U32)buffer[offset + 0x7] << 8);
+
+	*sizeOfSection = 0x28;
+
+	// IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader
+	sizeOfOptionalHeader = buffer[offset + 0x14] | ((U32)buffer[offset + 0x15] << 8);
+
+	*section = buffer + offset + 0x14 /*sizeof(IMAGE_FILE_HEADER)*/ + sizeOfOptionalHeader + 4 /*sizeof(IMAGE_NT_HEADERS.Signature)*/;
+
+	// IMAGE_NT_HEADERS.OptionalHeader.ImageBase
 	return buffer[offset + 0x34] | ((U32)buffer[offset + 0x35] << 8) | ((U32)buffer[offset + 0x36] << 16) | ((U32)buffer[offset + 0x37] << 24);
 }
 
