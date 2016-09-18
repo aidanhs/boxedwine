@@ -919,6 +919,7 @@ BOOL doesPathExist(const char* path) {
 U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path1, U32 path2) {
 	char* s1 = getNativeString(MMU_PARAM_THREAD path1);
 	char* s2 = getNativeString2(MMU_PARAM_THREAD path2);
+	char tmp[MAX_FILEPATH_LEN];
 	struct Node* node;
 	struct OpenNode* openNode;
 
@@ -926,13 +927,14 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
 	if (node && node->nodeType->exists(node)) {
 		return -K_EEXIST;
 	}
-	safe_strcat(s2, ".link", MAX_FILEPATH_LEN);
-	node = getNodeFromLocalPath(currentDirectory, s2, FALSE);
+	safe_strcpy(tmp, s2, MAX_FILEPATH_LEN);
+	safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
+	node = getNodeFromLocalPath(currentDirectory, tmp, FALSE);
 	if (!node || node->nodeType->exists(node)) {
         // :TODO: figure out real problem and remove this hack for libpango1.0-common_1.28.3-1+squeeze2_all.deb
-        if (!strcmp(s2, "/var/lib/defoma/locked.link")) {
+		if (!strcmp(tmp, "/var/lib/defoma/locked.link")) {
             node->nodeType->remove(node);
-            node = getNodeFromLocalPath(currentDirectory, s2, FALSE);
+			node = getNodeFromLocalPath(currentDirectory, tmp, FALSE);
         } else {
 		    return -K_EEXIST;
         }

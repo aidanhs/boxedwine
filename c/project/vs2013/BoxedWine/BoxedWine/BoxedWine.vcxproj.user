@@ -24,7 +24,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\boxedwine -m 192 /usr/bin/wine "z:/home/username/unzip" -t z:/home/username/ltcr6tsf.default.zip</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\boxedwine  -m 192 /usr/bin/wine "z:/home/username/unzip" -t z:/home/username/ltcr6tsf.default.zip</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|Win32'">
