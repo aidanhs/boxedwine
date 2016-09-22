@@ -230,7 +230,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 					for (i = 0; i<numberOfSections; i++) {
 						// :TODO: need to research this, why not rdata?
 						U32 SizeOfRawData = readd(section + 16);
-						if (SizeOfRawData && !strcmp(section, ".data")) {
+						if (SizeOfRawData && !strcmp((char*)section, ".data")) {
 							U32 j;
 							U32 VirtualAddress = readd(section + 12) + thread->process->reallocAddress;
 

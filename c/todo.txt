@@ -1,4 +1,8 @@
-TODO
+CURRENT
+1) MMUless with ahead of time compiling
+2) remove X11 dependency by implementing a new version of winex11.drv
+
+FUTURE
 1) Get emscripten with webgl working
 2) tcp sockets
 3) 16-bit code (win16 in wine)

@@ -284,6 +284,7 @@ void writeSource();
 #endif
 
 U32 checkWaitingNativeSockets(int timeout);
+void initWine();
 
 int main(int argc, char **argv) {
 	int i;
@@ -346,6 +347,7 @@ int main(int argc, char **argv) {
 	initFB(screenWidth, screenHeight, bpp, fullscreen);
 	initCallbacks();
 	initBlockCache();	
+	initWine();
 	gl_init();
 #ifdef MESA
 	mesa_init();
@@ -370,7 +372,7 @@ int main(int argc, char **argv) {
 	//ppenv[envc++] = "LD_DEBUG=all";
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 	ppenv[envc++] = "WINELOADERNOEXEC=1";
-	ppenv[envc++] = "WINEDEBUG=warn+all";
+	//ppenv[envc++] = "WINEDEBUG=warn+all";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg

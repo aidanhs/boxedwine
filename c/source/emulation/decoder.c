@@ -1204,9 +1204,14 @@ void decode0cd(struct DecodeData* data) {
 		FINISH_OP(data);		
 	} else if (i==0x99) {
 		data->op->func = int99;
-		LOG_OP("INT 80");
+		LOG_OP("INT 99");
         NEXT_OP(data);
-	} else {
+	} else if (i == 0x98) {
+		data->op->func = int98;
+		LOG_OP("INT 98");
+		NEXT_OP(data);
+	}
+	else {
 		kpanic("Unhandled interrupt %d", i);
 	}
 }
