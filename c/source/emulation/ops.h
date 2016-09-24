@@ -3050,7 +3050,7 @@ extern Int99Callback* wine_callback;
 extern int wine_callbackSize;
 
 void OPCALL int98(struct CPU* cpu, struct Op* op) {
-	U32 index = pop32(cpu);
+	U32 index = peek32(cpu, 0);
 
 	if (index<wine_callbackSize && wine_callback[index]) {
 		wine_callback[index](cpu);

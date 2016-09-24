@@ -1,25 +1,26 @@
 #include "cpu.h"
 #include "log.h"
+#include "wnd.h"
 
-int horz_res = 1024;
-int vert_res = 768;
-int default_horz_res = 1024;
-int default_vert_res = 768;
-int bits_per_pixel = 32;
-int default_bits_per_pixel = 32;
+extern int horz_res;
+extern int vert_res;
+extern default_horz_res;
+extern default_vert_res;
+extern int bits_per_pixel;
+extern int default_bits_per_pixel;
 
 void notImplemented(const char* s) {
 	kwarn(s);
 }
 
-#define ARG1 peek32(cpu, 2)
-#define ARG2 peek32(cpu, 3)
-#define ARG3 peek32(cpu, 4)
-#define ARG4 peek32(cpu, 5)
-#define ARG5 peek32(cpu, 6)
-#define ARG6 peek32(cpu, 7)
-#define ARG7 peek32(cpu, 8)
-#define ARG8 peek32(cpu, 9)
+#define ARG1 peek32(cpu, 1)
+#define ARG2 peek32(cpu, 2)
+#define ARG3 peek32(cpu, 3)
+#define ARG4 peek32(cpu, 4)
+#define ARG5 peek32(cpu, 5)
+#define ARG6 peek32(cpu, 6)
+#define ARG7 peek32(cpu, 7)
+#define ARG8 peek32(cpu, 8)
 
 
 #define BOXED_BASE 0
@@ -105,6 +106,93 @@ void notImplemented(const char* s) {
 #define BOXED_GET_KEYBOARD_LAYOUT_LIST				(BOXED_BASE+73)
 #define BOXED_REGISTER_HOT_KEY						(BOXED_BASE+74)
 #define BOXED_UNREGISTER_HOT_KEY					(BOXED_BASE+75)
+#define BOXED_SET_SURFACE							(BOXED_BASE+76)
+#define BOXED_GET_SURFACE							(BOXED_BASE+77)
+#define BOXED_FLUSH_SURFACE							(BOXED_BASE+78)
+
+# define __MSABI_LONG(x)         x
+
+#define WS_OVERLAPPED          __MSABI_LONG(0x00000000)
+#define WS_POPUP               __MSABI_LONG(0x80000000)
+#define WS_CHILD               __MSABI_LONG(0x40000000)
+#define WS_MINIMIZE            __MSABI_LONG(0x20000000)
+#define WS_VISIBLE             __MSABI_LONG(0x10000000)
+#define WS_DISABLED            __MSABI_LONG(0x08000000)
+#define WS_CLIPSIBLINGS        __MSABI_LONG(0x04000000)
+#define WS_CLIPCHILDREN        __MSABI_LONG(0x02000000)
+#define WS_MAXIMIZE            __MSABI_LONG(0x01000000)
+#define WS_BORDER              __MSABI_LONG(0x00800000)
+#define WS_DLGFRAME            __MSABI_LONG(0x00400000)
+#define WS_VSCROLL             __MSABI_LONG(0x00200000)
+#define WS_HSCROLL             __MSABI_LONG(0x00100000)
+#define WS_SYSMENU             __MSABI_LONG(0x00080000)
+#define WS_THICKFRAME          __MSABI_LONG(0x00040000)
+#define WS_GROUP               __MSABI_LONG(0x00020000)
+#define WS_TABSTOP             __MSABI_LONG(0x00010000)
+#define WS_MINIMIZEBOX         __MSABI_LONG(0x00020000)
+#define WS_MAXIMIZEBOX         __MSABI_LONG(0x00010000)
+#define WS_CAPTION             (WS_BORDER | WS_DLGFRAME)
+#define WS_TILED               WS_OVERLAPPED
+#define WS_ICONIC              WS_MINIMIZE
+#define WS_SIZEBOX             WS_THICKFRAME
+#define WS_OVERLAPPEDWINDOW    (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME| WS_MINIMIZEBOX | WS_MAXIMIZEBOX)
+#define WS_POPUPWINDOW         (WS_POPUP | WS_BORDER | WS_SYSMENU)
+#define WS_CHILDWINDOW         WS_CHILD
+#define WS_TILEDWINDOW         WS_OVERLAPPEDWINDOW
+
+
+/*** Window extended styles ***/
+#define WS_EX_DLGMODALFRAME    __MSABI_LONG(0x00000001)
+#define WS_EX_DRAGDETECT       __MSABI_LONG(0x00000002) /* Undocumented */
+#define WS_EX_NOPARENTNOTIFY   __MSABI_LONG(0x00000004)
+#define WS_EX_TOPMOST          __MSABI_LONG(0x00000008)
+#define WS_EX_ACCEPTFILES      __MSABI_LONG(0x00000010)
+#define WS_EX_TRANSPARENT      __MSABI_LONG(0x00000020)
+#define WS_EX_MDICHILD         __MSABI_LONG(0x00000040)
+#define WS_EX_TOOLWINDOW       __MSABI_LONG(0x00000080)
+#define WS_EX_WINDOWEDGE       __MSABI_LONG(0x00000100)
+#define WS_EX_CLIENTEDGE       __MSABI_LONG(0x00000200)
+#define WS_EX_CONTEXTHELP      __MSABI_LONG(0x00000400)
+#define WS_EX_RIGHT            __MSABI_LONG(0x00001000)
+#define WS_EX_LEFT             __MSABI_LONG(0x00000000)
+#define WS_EX_RTLREADING       __MSABI_LONG(0x00002000)
+#define WS_EX_LTRREADING       __MSABI_LONG(0x00000000)
+#define WS_EX_LEFTSCROLLBAR    __MSABI_LONG(0x00004000)
+#define WS_EX_RIGHTSCROLLBAR   __MSABI_LONG(0x00000000)
+#define WS_EX_CONTROLPARENT    __MSABI_LONG(0x00010000)
+#define WS_EX_STATICEDGE       __MSABI_LONG(0x00020000)
+#define WS_EX_APPWINDOW        __MSABI_LONG(0x00040000)
+#define WS_EX_LAYERED          __MSABI_LONG(0x00080000)
+#define WS_EX_NOINHERITLAYOUT  __MSABI_LONG(0x00100000)
+#define WS_EX_LAYOUTRTL        __MSABI_LONG(0x00400000)
+#define WS_EX_COMPOSITED       __MSABI_LONG(0x02000000)
+#define WS_EX_NOACTIVATE       __MSABI_LONG(0x08000000)
+
+#define WS_EX_OVERLAPPEDWINDOW (WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE)
+#define WS_EX_PALETTEWINDOW    (WS_EX_WINDOWEDGE | WS_EX_TOOLWINDOW | WS_EX_TOPMOST)
+
+#define SWP_NOSIZE          0x0001
+#define SWP_NOMOVE          0x0002
+#define SWP_NOZORDER        0x0004
+#define SWP_NOREDRAW        0x0008
+#define SWP_NOACTIVATE      0x0010
+#define SWP_FRAMECHANGED    0x0020  /* The frame changed: send WM_NCCALCSIZE */
+#define SWP_SHOWWINDOW      0x0040
+#define SWP_HIDEWINDOW      0x0080
+#define SWP_NOCOPYBITS      0x0100
+#define SWP_NOOWNERZORDER   0x0200  /* Don't do owner Z ordering */
+
+#define SWP_DRAWFRAME       SWP_FRAMECHANGED
+#define SWP_NOREPOSITION    SWP_NOOWNERZORDER
+
+#define SWP_NOSENDCHANGING  0x0400
+#define SWP_DEFERERASE      0x2000
+#define SWP_ASYNCWINDOWPOS  0x4000
+
+/* undocumented SWP flags - from SDK 3.1 */
+#define SWP_NOCLIENTSIZE    0x0800
+#define SWP_NOCLIENTMOVE    0x1000
+#define SWP_STATECHANGED    0x8000
 
 void boxeddrv_AcquireClipboard(struct CPU* cpu) {
 	
@@ -129,8 +217,6 @@ void boxeddrv_Beep(struct CPU* cpu) {
 #define DISP_CHANGE_BADFLAGS   (-4)
 #define DISP_CHANGE_BADPARAM   (-5)
 #define DISP_CHANGE_BADDUALVIEW (-6)
-
-# define __MSABI_LONG(x)         x
 
 #define DM_ORIENTATION          __MSABI_LONG(0x00000001)
 #define DM_PAPERSIZE            __MSABI_LONG(0x00000002)
@@ -173,11 +259,13 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 	if (devmode)
 	{
 		U32 dmFields;
-		U32 dmSize = read(MMU_PARAM_CPU devmode + 36);
+		U32 dmSize = readw(MMU_PARAM_CPU devmode + 36);
 
 		/* this is the minimal dmSize that XP accepts */
-		if (read(MMU_PARAM_CPU devmode + 36) < 44)
-			return DISP_CHANGE_FAILED;
+		if (dmSize < 44) {
+			EAX = DISP_CHANGE_FAILED;
+			return;
+		}
 
 		dmFields = readd(MMU_PARAM_CPU devmode + 40);
 
@@ -199,7 +287,7 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 		bpp = default_bits_per_pixel;
 	}
 	// :TODO: 
-	return DISP_CHANGE_SUCCESSFUL;
+	EAX = DISP_CHANGE_SUCCESSFUL;	
 }
 
 // BOOL CDECL drv_ClipCursor(LPCRECT clip)
@@ -252,6 +340,7 @@ void boxeddrv_EnumClipboardFormats(struct CPU* cpu) {
 
 // BOOL CDECL drv_EnumDisplayMonitors(HDC hdc, LPRECT rect, MONITORENUMPROC proc, LPARAM lparam)
 void boxeddrv_EnumDisplayMonitors(struct CPU* cpu) {
+	// handled in driver
 	notImplemented("drv_EnumDisplayMonitors not implemented");
 	EAX = 0;
 }
@@ -397,13 +486,16 @@ void boxeddrv_SetWindowStyle(struct CPU* cpu) {
 
 // void CDECL drv_SetWindowText(HWND hwnd, LPCWSTR text)
 void boxeddrv_SetWindowText(struct CPU* cpu) {
-	notImplemented("drv_SetWindowText not implemented");
+	struct Wnd* wnd = getWnd(ARG1);
+	if (wnd)
+		setWndText(wnd,  getNativeString(MMU_PARAM_CPU ARG2));
 }
 
 // UINT CDECL drv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp)
 void boxeddrv_ShowWindow(struct CPU* cpu) {
+	U32 swp = ARG4;
 	notImplemented("boxeddrv_ShowWindow not implemented");
-	EAX = 0;
+	EAX = swp & ~(SWP_NOMOVE | SWP_NOCLIENTMOVE | SWP_NOSIZE | SWP_NOCLIENTSIZE);
 }
 
 // LRESULT CDECL macdrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
@@ -453,14 +545,56 @@ void boxeddrv_WindowMessage(struct CPU* cpu) {
 	EAX = 0;
 }
 
-// void CDECL drv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, struct window_surface *surface)
+// void CDECL drv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, DWORD style)
 void boxeddrv_WindowPosChanged(struct CPU* cpu) {
-	notImplemented("boxeddrv_WindowPosChanged not implemented");
+	struct Wnd* wnd = getWnd(ARG1);
+	U32 style = ARG8;
+	U32 swp_flags = ARG3;
+
+	if (!wnd)
+		return;
+	writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
+	writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
+	writeRect(MMU_PARAM_CPU ARG6, &wnd->wholeRect);
+	wnd->surface = ARG7;
+	if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
+		showWnd(wnd, 0);
+	} else if (style & WS_VISIBLE) {
+		showWnd(wnd, 1);
+	}
+}
+
+// void boxeddrv_SetSurface(HWND wnd, struct window_surface *surface) {
+void boxeddrv_SetSurface(struct CPU* cpu) {
+	struct Wnd* wnd = getWnd(ARG1);
+	if (wnd)
+		wnd->surface = ARG2;
+}
+
+// struct window_surface* boxeddrv_GetSurface(HWND wnd)
+void boxeddrv_GetSurface(struct CPU* cpu) {
+	struct Wnd* wnd = getWnd(ARG1);
+	if (wnd)
+		EAX = wnd->surface;
+	else
+		EAX = 0;
 }
 
 // void CDECL drv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, RECT *visible_rect, struct window_surface **surface)
 void boxeddrv_WindowPosChanging(struct CPU* cpu) {
-	notImplemented("boxeddrv_WindowPosChanging not implemented");
+	struct Wnd* wnd = getWnd(ARG1);
+	struct wRECT rect;
+
+	if (!wnd) {
+		wnd = wndCreate(MMU_PARAM_CPU ARG1, ARG4, ARG5);
+	}
+
+	// *visible_rect = *window_rect;
+	readRect(MMU_PARAM_CPU ARG4, &rect);
+	writeRect(MMU_PARAM_CPU ARG6, &rect);
+
+	// *surface = wnd->surface;
+	writed(MMU_PARAM_CPU ARG7, wnd->surface);
 }
 
 // BOOL drv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
@@ -892,6 +1026,11 @@ void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
 	
 }
 
+// void boxeddrv_FlushSurface(HWND hwnd, void* bits, RECT* rect)
+void boxeddrv_FlushSurface(struct CPU* cpu) {
+	wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3);
+}
+
 #include "kalloc.h"
 
 Int99Callback* wine_callback;
@@ -975,5 +1114,8 @@ void initWine() {
 	wine_callback[BOXED_GET_KEYBOARD_LAYOUT_LIST] = boxeddrv_GetKeyboardLayoutList;
 	wine_callback[BOXED_REGISTER_HOT_KEY] = boxeddrv_RegisterHotKey;
 	wine_callback[BOXED_UNREGISTER_HOT_KEY] = boxeddrv_UnregisterHotKey;
-	wine_callbackSize = 76;
+	wine_callback[BOXED_SET_SURFACE] = boxeddrv_SetSurface;
+	wine_callback[BOXED_GET_SURFACE] = boxeddrv_GetSurface;
+	wine_callback[BOXED_FLUSH_SURFACE] = boxeddrv_FlushSurface;
+	wine_callbackSize = 79;
 }

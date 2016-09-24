@@ -506,6 +506,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
+    <ClInclude Include="..\..\..\..\source\sdl\wnd.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\platform\windows\platform.c">
@@ -570,6 +571,8 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\opengl\sdl\sdlgl.c" />
     <ClCompile Include="..\..\..\..\source\sdl\main.c" />
+    <ClCompile Include="..\..\..\..\source\sdl\sdlwindows.c" />
+    <ClCompile Include="..\..\..\..\source\sdl\winedrv.c" />
     <ClCompile Include="..\..\..\..\source\test\testCPU.c" />
     <ClCompile Include="..\..\..\..\source\util\crc.c" />
     <ClCompile Include="..\..\..\..\source\util\karray.c" />
@@ -591,7 +594,6 @@
     <ClCompile Include="..\..\..\..\source\util\pbl\pblSet.c" />
     <ClCompile Include="..\..\..\..\source\util\ringbuf.c" />
     <ClCompile Include="gen.c" />
-    <ClCompile Include="winedrv.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

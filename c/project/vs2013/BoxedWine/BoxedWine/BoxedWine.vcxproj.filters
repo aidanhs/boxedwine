@@ -208,7 +208,10 @@
     <ClCompile Include="..\..\..\..\source\util\pbl\pblSet.c">
       <Filter>source\util\pbl</Filter>
     </ClCompile>
-    <ClCompile Include="winedrv.c">
+    <ClCompile Include="..\..\..\..\source\sdl\winedrv.c">
+      <Filter>source\sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\sdl\sdlwindows.c">
       <Filter>source\sdl</Filter>
     </ClCompile>
   </ItemGroup>
@@ -425,6 +428,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\ringbuf.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\sdl\wnd.h">
+      <Filter>source\sdl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
