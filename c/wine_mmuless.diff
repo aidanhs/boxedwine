@@ -347,7 +347,7 @@ index 0000000..6a56fc7
 +#endif
 diff --git a/dlls/wineboxed.drv/surface.c b/dlls/wineboxed.drv/surface.c
 new file mode 100755
-index 0000000..9ae4753
+index 0000000..a4d37ab
 --- /dev/null
 +++ b/dlls/wineboxed.drv/surface.c
 @@ -0,0 +1,387 @@
@@ -573,7 +573,7 @@ index 0000000..9ae4753
 +/***********************************************************************
 + *              boxeddrv_surface_flush
 + */
-+void boxeddrv_FlushSurface(HWND hwnd, void* bits, RECT* rect);
++void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect);
 +static void boxeddrv_surface_flush(struct window_surface *window_surface)
 +{
 +    struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
@@ -604,7 +604,7 @@ index 0000000..9ae4753
 +	TRACE("unlock\n");
 +    window_surface->funcs->unlock(window_surface);
 +	TRACE("flushing to driver\n");
-+	boxeddrv_FlushSurface(surface->window, surface->bits, &surface->header.rect);
++	boxeddrv_FlushSurface(surface->window, surface->bits, surface->info.bmiHeader.biWidth, surface->info.bmiHeader.biHeight, &surface->header.rect);
 +}
 +
 +/***********************************************************************
@@ -694,7 +694,7 @@ index 0000000..9ae4753
 +    surface->use_alpha = use_alpha;
 +    surface->bits = HeapAlloc(GetProcessHeap(), 0, surface->info.bmiHeader.biSizeImage);
 +    if (!surface->bits) goto failed;
-+    memset(surface->bits, 0xFF, surface->info.bmiHeader.biSizeImage);
++    memset(surface->bits, 0x80, surface->info.bmiHeader.biSizeImage);
 +
 +    TRACE("created %p for %p %s bits %p-%p\n", surface, window, wine_dbgstr_rect(rect),
 +          surface->bits, surface->bits + surface->info.bmiHeader.biSizeImage);
@@ -741,10 +741,10 @@ index 0000000..9ae4753
 \ No newline at end of file
 diff --git a/dlls/wineboxed.drv/wineboxed.c b/dlls/wineboxed.drv/wineboxed.c
 new file mode 100755
-index 0000000..fb298a1
+index 0000000..f42ca1b
 --- /dev/null
 +++ b/dlls/wineboxed.drv/wineboxed.c
-@@ -0,0 +1,842 @@
+@@ -0,0 +1,856 @@
 +/*
 + * Boxedwine graphics driver initialisation functions
 + *
@@ -898,6 +898,7 @@ index 0000000..fb298a1
 +#define CALL_NORETURN_2(index, arg1, arg2) __asm__("push %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $12, %%esp"::"i"(index), "g"(arg1), "g"(arg2)); 
 +#define CALL_NORETURN_3(index, arg1, arg2, arg3) __asm__("push %3\n\rpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $16, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3)); 
 +#define CALL_NORETURN_4(index, arg1, arg2, arg3, arg4) __asm__("push %4\n\tpush %3\n\rpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $20, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4)); 
++#define CALL_NORETURN_5(index, arg1, arg2, arg3, arg4, arg5) __asm__("push %5\n\tpush %4\n\tpush %3\n\rpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $24, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5)); 
 +#define CALL_NORETURN_7(index, arg1,arg2,arg3,arg4,arg5,arg6,arg7) __asm__("push %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $32, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7));
 +#define CALL_NORETURN_8(index, arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8) __asm__("push %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $36, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8));
 +
@@ -1033,7 +1034,8 @@ index 0000000..fb298a1
 +		RECT monrect = r;
 +		RECT unused;
 +
-+		if (IntersectRect(&unused, &monrect, rect)) {
++		if (!rect || IntersectRect(&unused, &monrect, rect)) {
++            TRACE("calling proc hdc=%p monrect=%s proc=%p lparam=0x%08x\n", hdc, wine_dbgstr_rect(&monrect), proc, (int)lparam);
 +			if (!proc((HMONITOR)1, hdc, &monrect, lparam))
 +				return FALSE;
 +		}
@@ -1073,8 +1075,17 @@ index 0000000..fb298a1
 +}
 +
 +BOOL CDECL boxeddrv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info) {
++    static const WCHAR adapter_name[] = { '\\','\\','.','\\','D','I','S','P','L','A','Y','1',0 };
++
 +	TRACE("monitor=%p info=%p\n", monitor, info);
-+	CALL_2(BOXED_GET_MONITOR_INFO, monitor, info);
++    SetRect(&info->rcMonitor, 0, 0, boxeddrv_GetDeviceCaps(NULL, DESKTOPHORZRES), boxeddrv_GetDeviceCaps(NULL, DESKTOPVERTRES));
++    SetRect(&info->rcWork, 0, 0, boxeddrv_GetDeviceCaps(NULL, DESKTOPHORZRES), boxeddrv_GetDeviceCaps(NULL, DESKTOPVERTRES));
++    info->dwFlags = MONITORINFOF_PRIMARY;
++
++    if (info->cbSize >= sizeof(MONITORINFOEXW))
++        lstrcpyW(((MONITORINFOEXW*)info)->szDevice, adapter_name);
++    return TRUE;
++	//CALL_2(BOXED_GET_MONITOR_INFO, monitor, info);
 +}
 +
 +BOOL CDECL boxeddrv_IsClipboardFormatAvailable(UINT desired_format) {
@@ -1089,7 +1100,9 @@ index 0000000..fb298a1
 +
 +DWORD CDECL boxeddrv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *handles, DWORD timeout, DWORD mask, DWORD flags) {
 +	TRACE("count=%d handles=%p timeout=0x%08x mask=0x%08x flags=0x%08x\n", count, handles, timeout, mask, flags);
-+	CALL_5(BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX, count, handles, timeout, mask, flags);
++    if (!count && !timeout) return WAIT_TIMEOUT;
++        return WaitForMultipleObjectsEx(count, handles, flags & MWMO_WAITALL, timeout, flags & MWMO_ALERTABLE);
++	//CALL_5(BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX, count, handles, timeout, mask, flags);
 +}
 +
 +void CDECL boxeddrv_SetCapture(HWND hwnd, UINT flags) {
@@ -1144,6 +1157,7 @@ index 0000000..fb298a1
 +
 +UINT CDECL boxeddrv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp) {
 +	TRACE("hwnd=%p cmd=%d rect=%s swp=0x%08x\n", hwnd, cmd, wine_dbgstr_rect(rect), swp);
++    if (IsRectEmpty(rect)) return swp;
 +	CALL_4(BOXED_SHOW_WINDOW, hwnd, cmd, rect, swp);
 +}
 +
@@ -1206,9 +1220,9 @@ index 0000000..fb298a1
 +	}
 +}
 +
-+void boxeddrv_FlushSurface(HWND hwnd, void* bits, RECT* rect) {
-+	TRACE("hwnd=%p bits=%p rect=%s\n", hwnd, bits, wine_dbgstr_rect(rect));
-+	CALL_NORETURN_3(BOXED_FLUSH_SURFACE, hwnd, bits, rect);
++void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect) {
++	TRACE("hwnd=%p bits=%p width=%d height=%d rect=%s\n", hwnd, bits, width, height, wine_dbgstr_rect(rect));
++	CALL_NORETURN_5(BOXED_FLUSH_SURFACE, hwnd, bits, width, height, rect);
 +}
 +
 +BOOL boxeddrv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {

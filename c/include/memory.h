@@ -151,6 +151,7 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address);
 
 #endif
 char* getNativeString(MMU_ARG U32 address);
+char* getNativeStringW(MMU_ARG U32 address);
 char* getNativeString2(MMU_ARG U32 address);
 void writeNativeString(MMU_ARG U32 address, const char* str);
 U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len);

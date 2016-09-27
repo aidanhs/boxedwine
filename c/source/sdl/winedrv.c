@@ -488,7 +488,7 @@ void boxeddrv_SetWindowStyle(struct CPU* cpu) {
 void boxeddrv_SetWindowText(struct CPU* cpu) {
 	struct Wnd* wnd = getWnd(ARG1);
 	if (wnd)
-		setWndText(wnd,  getNativeString(MMU_PARAM_CPU ARG2));
+		setWndText(wnd,  getNativeStringW(MMU_PARAM_CPU ARG2));
 }
 
 // UINT CDECL drv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp)
@@ -587,7 +587,13 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
 
 	if (!wnd) {
 		wnd = wndCreate(MMU_PARAM_CPU ARG1, ARG4, ARG5);
-	}
+	} else {
+        if (wnd->text && !strcmp(wnd->text, "Untitled - Notepad")) {
+            int ii=0;
+        }
+        readRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
+        readRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
+    }
 
 	// *visible_rect = *window_rect;
 	readRect(MMU_PARAM_CPU ARG4, &rect);
@@ -1026,9 +1032,9 @@ void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
 	
 }
 
-// void boxeddrv_FlushSurface(HWND hwnd, void* bits, RECT* rect)
+// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect)
 void boxeddrv_FlushSurface(struct CPU* cpu) {
-	wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3);
+	wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5);
 }
 
 #include "kalloc.h"

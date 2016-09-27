@@ -527,6 +527,26 @@ char* getNativeString(MMU_ARG U32 address) {
 #endif
 }
 
+char* getNativeStringW(MMU_ARG U32 address) {
+#ifdef USE_MMU
+	char c;
+	int i=0;
+
+	if (!address) {
+		tmpBuffer[0]=0;
+		return tmpBuffer;
+	}
+	do {
+		c = readw(memory, address);
+        address+=2;
+		tmpBuffer[i++] = c;
+	} while(c);
+	return tmpBuffer;
+#else
+	return (char*)address;
+#endif
+}
+
 #ifdef USE_MMU
 static char tmpBuffer2[MAX_FILEPATH_LEN];
 #endif
