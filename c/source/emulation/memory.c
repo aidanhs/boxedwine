@@ -504,9 +504,7 @@ U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len) {
 	return count;
 }
 
-#ifdef USE_MMU
 static char tmpBuffer[MAX_FILEPATH_LEN];
-#endif
 
 char* getNativeString(MMU_ARG U32 address) {
 #ifdef USE_MMU
@@ -536,7 +534,7 @@ char* getNativeStringW(MMU_ARG U32 address) {
 		return tmpBuffer;
 	}
 	do {
-		c = readw(memory, address);
+		c = readw(MMU_PARAM address);
         address+=2;
 		tmpBuffer[i++] = c;
 	} while(c);

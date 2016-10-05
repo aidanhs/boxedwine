@@ -21,6 +21,7 @@ void notImplemented(const char* s) {
 #define ARG6 peek32(cpu, 6)
 #define ARG7 peek32(cpu, 7)
 #define ARG8 peek32(cpu, 8)
+#define ARG9 peek32(cpu, 9)
 
 
 #define BOXED_BASE 0
@@ -433,7 +434,8 @@ void boxeddrv_MapVirtualKeyEx(struct CPU* cpu) {
 
 // DWORD CDECL drv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *handles, DWORD timeout, DWORD mask, DWORD flags)
 void boxeddrv_MsgWaitForMultipleObjectsEx(struct CPU* cpu) {
-	notImplemented("boxeddrv_MsgWaitForMultipleObjectsEx not implemented");
+	// notImplemented("boxeddrv_MsgWaitForMultipleObjectsEx not implemented");
+    updateScreen();
 	EAX = 0;
 }
 
@@ -491,11 +493,11 @@ void boxeddrv_SetWindowText(struct CPU* cpu) {
 		setWndText(wnd,  getNativeStringW(MMU_PARAM_CPU ARG2));
 }
 
-// UINT CDECL drv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp)
+// void CDECL drv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp, UINT* result)
 void boxeddrv_ShowWindow(struct CPU* cpu) {
 	U32 swp = ARG4;
 	notImplemented("boxeddrv_ShowWindow not implemented");
-	EAX = swp & ~(SWP_NOMOVE | SWP_NOCLIENTMOVE | SWP_NOSIZE | SWP_NOCLIENTSIZE);
+	writed(MMU_PARAM_CPU ARG5, swp & ~(SWP_NOMOVE | SWP_NOCLIENTMOVE | SWP_NOSIZE | SWP_NOCLIENTSIZE));
 }
 
 // LRESULT CDECL macdrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
@@ -876,7 +878,6 @@ void boxeddrv_GetDeviceCaps(struct CPU* cpu) {
 		break;
 	}
 	EAX = ret;
-    klog("cap %d = %d\n", ARG2, ret);
 }
 
 // int CDECL wine_notify_icon(DWORD msg, NOTIFYICONDATAW *data)
@@ -1033,12 +1034,12 @@ void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
 	
 }
 
-// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect, RECT* rects, int rectCount)
+// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rect, RECT* rects, int rectCount)
 void boxeddrv_FlushSurface(struct CPU* cpu) {
     int i;
 
-    for (i=0;i<ARG7;i++) {
-	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6+16*i);
+    for (i=0;i<ARG9;i++) {
+	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8+16*i);
     }
 }
 
@@ -1048,7 +1049,7 @@ Int99Callback* wine_callback;
 int wine_callbackSize;
 
 void initWine() {
-	wine_callback = kalloc(sizeof(Int99Callback) * 76);
+	wine_callback = kalloc(sizeof(Int99Callback) * 79);
 	wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
 	wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
 	wine_callback[BOXED_BEEP] = boxeddrv_Beep;

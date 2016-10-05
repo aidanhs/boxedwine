@@ -173,7 +173,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
 				kpanic("Non mmu does not support mmap to a fixed address");
 		}
 		else {			
-			int memLen = len + 32 * 1024; // padding for the wine loader
+			int memLen = len + 1024 * 1024 * 4; // padding for the wine loader
 			
 			result = kalloc(sizeof(struct MappedMemory));
 
