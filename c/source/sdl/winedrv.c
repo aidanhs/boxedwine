@@ -876,6 +876,7 @@ void boxeddrv_GetDeviceCaps(struct CPU* cpu) {
 		break;
 	}
 	EAX = ret;
+    klog("cap %d = %d\n", ARG2, ret);
 }
 
 // int CDECL wine_notify_icon(DWORD msg, NOTIFYICONDATAW *data)
@@ -1032,9 +1033,13 @@ void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
 	
 }
 
-// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect)
+// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect, RECT* rects, int rectCount)
 void boxeddrv_FlushSurface(struct CPU* cpu) {
-	wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5);
+    int i;
+
+    for (i=0;i<ARG7;i++) {
+	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6+16*i);
+    }
 }
 
 #include "kalloc.h"

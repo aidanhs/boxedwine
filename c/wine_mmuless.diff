@@ -66,6 +66,23 @@ index f25c965..cb606d7 100644
  WINE_CONFIG_DLL(wing.dll16,enable_win16)
  WINE_CONFIG_DLL(wing32)
  WINE_CONFIG_DLL(winhttp,,[clean,implib])
+diff --git a/dlls/gdi32/dibdrv/dc.c b/dlls/gdi32/dibdrv/dc.c
+index 4aa1d1d..23df205 100644
+--- a/dlls/gdi32/dibdrv/dc.c
++++ b/dlls/gdi32/dibdrv/dc.c
+@@ -377,8 +377,11 @@ static HBITMAP dibdrv_SelectBitmap( PHYSDEV dev, HBITMAP bitmap )
+  */
+ static void dibdrv_SetDeviceClipping( PHYSDEV dev, HRGN rgn )
+ {
++    RECT r;
++
+     dibdrv_physdev *pdev = get_dibdrv_pdev(dev);
+-    TRACE("(%p, %p)\n", dev, rgn);
++    GetRgnBox(rgn, &r);
++    TRACE("(%p, %p-%s)\n", dev, rgn, wine_dbgstr_rect(&r));
+ 
+     pdev->clip = rgn;
+ }
 diff --git a/dlls/kernel32/Makefile.in b/dlls/kernel32/Makefile.in
 index 1399859..6668aec 100644
 --- a/dlls/kernel32/Makefile.in
@@ -347,10 +364,10 @@ index 0000000..6a56fc7
 +#endif
 diff --git a/dlls/wineboxed.drv/surface.c b/dlls/wineboxed.drv/surface.c
 new file mode 100755
-index 0000000..a4d37ab
+index 0000000..4ff777d
 --- /dev/null
 +++ b/dlls/wineboxed.drv/surface.c
-@@ -0,0 +1,387 @@
+@@ -0,0 +1,385 @@
 +// Ported from the mac driver by James Bryant
 +
 +/*
@@ -541,6 +558,7 @@ index 0000000..a4d37ab
 +{
 +    struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
 +
++    TRACE("bounds = %s\n", wine_dbgstr_rect(&surface->bounds));
 +    return &surface->bounds;
 +}
 +
@@ -573,7 +591,7 @@ index 0000000..a4d37ab
 +/***********************************************************************
 + *              boxeddrv_surface_flush
 + */
-+void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect);
++void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect, RECT* rects, int rectCount);
 +static void boxeddrv_surface_flush(struct window_surface *window_surface)
 +{
 +    struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
@@ -586,25 +604,22 @@ index 0000000..a4d37ab
 +
 +    if (!IsRectEmpty(&surface->bounds) && (region = CreateRectRgnIndirect(&surface->bounds)))
 +    {
-+		TRACE("region=%p\n", region);
 +        if (surface->drawn)
 +        {
-+			TRACE("about to combine\n");
 +            CombineRgn(surface->drawn, surface->drawn, region, RGN_OR);
-+			TRACE("about to delete\n");
 +            DeleteObject(region);
 +        }
 +        else
 +            surface->drawn = region;
 +    }
-+	TRACE("about to blit\n");
 +    update_blit_data(surface);
-+	TRACE("reset_bounds\n");
 +    reset_bounds(&surface->bounds);
-+	TRACE("unlock\n");
-+    window_surface->funcs->unlock(window_surface);
-+	TRACE("flushing to driver\n");
-+	boxeddrv_FlushSurface(surface->window, surface->bits, surface->info.bmiHeader.biWidth, surface->info.bmiHeader.biHeight, &surface->header.rect);
++    window_surface->funcs->unlock(window_surface);	
++
++    if (surface->blit_data)
++    {
++        boxeddrv_FlushSurface(surface->window, surface->bits, surface->info.bmiHeader.biWidth, surface->info.bmiHeader.biHeight, &surface->header.rect, (RECT*)surface->blit_data->Buffer, surface->blit_data->rdh.nCount);
++    }
 +}
 +
 +/***********************************************************************
@@ -741,10 +756,10 @@ index 0000000..a4d37ab
 \ No newline at end of file
 diff --git a/dlls/wineboxed.drv/wineboxed.c b/dlls/wineboxed.drv/wineboxed.c
 new file mode 100755
-index 0000000..f42ca1b
+index 0000000..c76483c
 --- /dev/null
 +++ b/dlls/wineboxed.drv/wineboxed.c
-@@ -0,0 +1,856 @@
+@@ -0,0 +1,921 @@
 +/*
 + * Boxedwine graphics driver initialisation functions
 + *
@@ -903,6 +918,33 @@ index 0000000..f42ca1b
 +#define CALL_NORETURN_8(index, arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8) __asm__("push %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $36, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8));
 +
 +INT boxeddrv_GetDeviceCaps(PHYSDEV dev, INT cap);
++
++static inline BOOL can_activate_window(HWND hwnd)
++{
++    LONG style = GetWindowLongW(hwnd, GWL_STYLE);
++
++    if (!(style & WS_VISIBLE)) {
++        TRACE("not visible\n");
++        return FALSE;
++    }
++    if ((style & (WS_POPUP|WS_CHILD)) == WS_CHILD) {
++        TRACE("child or popup\n");
++        return FALSE;
++    }
++    if (GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_NOACTIVATE) {
++        TRACE("not activate\n");
++        return FALSE;
++    }
++    if (hwnd == GetDesktopWindow()) {
++        TRACE("desktop\n");
++        return FALSE;
++    }
++    if (style & WS_DISABLED) {
++        TRACE("disabled\n");
++    }
++    TRACE("yes\n");
++    return TRUE;
++}
 +
 +int CDECL boxeddrv_AcquireClipboard(HWND hwnd) {
 +	TRACE("hwnd=%p\n", hwnd);
@@ -1126,8 +1168,23 @@ index 0000000..f42ca1b
 +}
 +
 +void CDECL boxeddrv_SetFocus(HWND hwnd) {
-+	TRACE("hwnd=%p\n", hwnd);
-+	CALL_NORETURN_1(BOXED_SET_FOCUS, hwnd);
++    LONG style = GetWindowLongW(hwnd, GWL_STYLE);
++
++	TRACE("hwnd=%p\n", hwnd);	
++    CALL_NORETURN_1(BOXED_SET_FOCUS, hwnd);
++
++    if (!hwnd) return;
++
++    if (can_activate_window(hwnd) && !(style & WS_MINIMIZE))
++    {
++        // simulate a mouse click on the caption to find out whether the window wants to be activated 
++        LRESULT ma = SendMessageW(hwnd, WM_MOUSEACTIVATE, (WPARAM)GetAncestor(hwnd, GA_ROOT), MAKELONG(HTCAPTION,WM_LBUTTONDOWN));
++        if (ma != MA_NOACTIVATEANDEAT && ma != MA_NOACTIVATE)
++        {
++            TRACE("setting foreground window to %p\n", hwnd);            
++            SetForegroundWindow(hwnd);            
++        }
++    }
 +}
 +
 +void CDECL boxeddrv_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWORD flags) {
@@ -1158,7 +1215,7 @@ index 0000000..f42ca1b
 +UINT CDECL boxeddrv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp) {
 +	TRACE("hwnd=%p cmd=%d rect=%s swp=0x%08x\n", hwnd, cmd, wine_dbgstr_rect(rect), swp);
 +    if (IsRectEmpty(rect)) return swp;
-+	CALL_4(BOXED_SHOW_WINDOW, hwnd, cmd, rect, swp);
++	CALL_4(BOXED_SHOW_WINDOW, hwnd, cmd, rect, swp);    
 +}
 +
 +LRESULT CDECL boxeddrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam) {
@@ -1197,8 +1254,13 @@ index 0000000..f42ca1b
 +
 +void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, struct window_surface *surface) {
 +	DWORD new_style = GetWindowLongW(hwnd, GWL_STYLE);
++    struct window_surface* oldSurface = boxeddrv_GetSurface(hwnd);
 +
 +	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style);
++    if (surface) 
++        window_surface_add_ref(surface);
++    if (oldSurface)
++        window_surface_release(oldSurface);
 +	boxeddrv_SetSurface(hwnd, surface);	
 +	CALL_NORETURN_8(BOXED_WINDOW_POS_CHANGED, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, valid_rects, new_style);
 +}
@@ -1206,23 +1268,41 @@ index 0000000..f42ca1b
 +void surface_clip_to_visible_rect(struct window_surface *window_surface, const RECT *visible_rect);
 +struct window_surface *create_surface(HWND window, const RECT *rect, struct window_surface *old_surface, BOOL use_alpha);
 +void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, RECT *visible_rect, struct window_surface **surface) {
++    DWORD style = GetWindowLongW(hwnd, GWL_STYLE); 
++
 +	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);
 +
++    *visible_rect = *window_rect;
++    if (swp_flags & SWP_HIDEWINDOW) return;
++    if (*surface) 
++        window_surface_release(*surface);
++    *surface = NULL;
 +	CALL_NORETURN_7(BOXED_WINDOW_POS_CHANGING, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, surface);
-+	if (*surface && !memcmp(&(*surface)->rect, window_rect, sizeof(RECT))) {
-+		// use existing surface
-+		surface_clip_to_visible_rect(*surface, visible_rect);
-+		window_surface_add_ref(*surface);
-+	}
-+	else {
-+		*surface = create_surface(hwnd, client_rect, *surface, FALSE);
++	if (*surface) {
++        int surfaceWidth = (*surface)->rect.right - (*surface)->rect.left;
++        int surfaceHeight = (*surface)->rect.bottom - (*surface)->rect.top;
++        int windowWidth = window_rect->right - window_rect->left;
++        int windowHeight = window_rect->bottom - window_rect->top;
++
++        if (surfaceWidth==windowWidth && surfaceHeight==windowHeight) {
++		    // use existing surface
++		    surface_clip_to_visible_rect(*surface, visible_rect);
++		    window_surface_add_ref(*surface);
++            return;
++        }
++    }
++	if ((swp_flags & SWP_SHOWWINDOW) || (style & WS_VISIBLE)) {
++        if (*surface) 
++            window_surface_release(*surface);
++		*surface = create_surface(hwnd, window_rect, *surface, FALSE);
 +		boxeddrv_SetSurface(hwnd, *surface);
++        window_surface_add_ref(*surface);
 +	}
 +}
 +
-+void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect) {
-+	TRACE("hwnd=%p bits=%p width=%d height=%d rect=%s\n", hwnd, bits, width, height, wine_dbgstr_rect(rect));
-+	CALL_NORETURN_5(BOXED_FLUSH_SURFACE, hwnd, bits, width, height, rect);
++void boxeddrv_FlushSurface(HWND hwnd, void* bits, int width, int height, RECT* rect, RECT* rects, int rectCount) {
++	TRACE("hwnd=%p bits=%p width=%d height=%d rect=%s rects=%p rectCount=%d\n", hwnd, bits, width, height, wine_dbgstr_rect(rect), rects, rectCount);
++	CALL_NORETURN_7(BOXED_FLUSH_SURFACE, hwnd, bits, width, height, rect, rects, rectCount);
 +}
 +
 +BOOL boxeddrv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {
