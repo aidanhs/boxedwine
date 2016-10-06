@@ -12,7 +12,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\boxedwine_unmodified -m 192 /usr/bin/wine explorer /desktop=BoxedWine,1024x768 notepad</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\\boxedwine_unmodified -m 192 /usr/bin/wine notepad</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ES Debug|Win32'">
