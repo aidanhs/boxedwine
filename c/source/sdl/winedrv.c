@@ -558,7 +558,6 @@ void boxeddrv_WindowPosChanged(struct CPU* cpu) {
 	writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
 	writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
 	writeRect(MMU_PARAM_CPU ARG6, &wnd->wholeRect);
-	wnd->surface = ARG7;
 	if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
 		showWnd(wnd, 0);
 	} else if (style & WS_VISIBLE) {
@@ -590,9 +589,6 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
 	if (!wnd) {
 		wnd = wndCreate(MMU_PARAM_CPU ARG1, ARG4, ARG5);
 	} else {
-        if (wnd->text && !strcmp(wnd->text, "Untitled - Notepad")) {
-            int ii=0;
-        }
         readRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
         readRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
     }

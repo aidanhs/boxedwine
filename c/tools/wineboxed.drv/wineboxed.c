@@ -503,10 +503,14 @@ void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flag
     struct window_surface* oldSurface = boxeddrv_GetSurface(hwnd);
 
 	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style);
-    if (surface) 
+    if (surface) {
+        TRACE("     using new surface %p (ref=%d)\n", surface, surface->ref);
         window_surface_add_ref(surface);
-    if (oldSurface)
+    }
+    if (oldSurface) {
+        TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
         window_surface_release(oldSurface);
+    }
 	boxeddrv_SetSurface(hwnd, surface);	
 	CALL_NORETURN_8(BOXED_WINDOW_POS_CHANGED, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, valid_rects, new_style);
 }
@@ -515,14 +519,18 @@ void surface_clip_to_visible_rect(struct window_surface *window_surface, const R
 struct window_surface *create_surface(HWND window, const RECT *rect, struct window_surface *old_surface, BOOL use_alpha);
 void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, RECT *visible_rect, struct window_surface **surface) {
     DWORD style = GetWindowLongW(hwnd, GWL_STYLE); 
+    struct window_surface *oldSurface = NULL;;
 
 	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);
 
-    *visible_rect = *window_rect;
-    if (swp_flags & SWP_HIDEWINDOW) return;
-    if (*surface) 
-        window_surface_release(*surface);
+    if (*surface)  {
+        oldSurface = *surface;
+        TRACE("     setting old surface %p (ref=%d)\n", *surface, (*surface)->ref);
+    }
     *surface = NULL;
+
+    *visible_rect = *window_rect;
+    if (swp_flags & SWP_HIDEWINDOW) return;    
 	CALL_NORETURN_7(BOXED_WINDOW_POS_CHANGING, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, surface);
 	if (*surface) {
         int surfaceWidth = (*surface)->rect.right - (*surface)->rect.left;
@@ -530,20 +538,25 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
         int windowWidth = window_rect->right - window_rect->left;
         int windowHeight = window_rect->bottom - window_rect->top;
 
+        if (oldSurface)  {
+            TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
+            window_surface_release(oldSurface);
+        }
+        TRACE("     checking existing surface %p (ref=%d)\n", *surface, (*surface)->ref);
         if (surfaceWidth==windowWidth && surfaceHeight==windowHeight) {
 		    // use existing surface
 		    surface_clip_to_visible_rect(*surface, visible_rect);
-		    window_surface_add_ref(*surface);
+            window_surface_add_ref(*surface);
             return;
         }
     }
+    if (oldSurface)  {
+        TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
+        window_surface_release(oldSurface);
+    }
 	if ((swp_flags & SWP_SHOWWINDOW) || (style & WS_VISIBLE)) {
-        if (*surface) 
-            window_surface_release(*surface);
 		*surface = create_surface(hwnd, window_rect, *surface, FALSE);
-		boxeddrv_SetSurface(hwnd, *surface);
-        window_surface_add_ref(*surface);
-        window_surface_add_ref(*surface);
+        TRACE("     created new surface %p (ref=%d)\n", *surface, (*surface)->ref);
 	}
 }
 

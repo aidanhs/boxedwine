@@ -177,7 +177,7 @@ U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
 	if (clock_id==0) { // CLOCK_REALTIME
 		writed(MMU_PARAM_THREAD tp, (U32)(m / 1000000l));
 		writed(MMU_PARAM_THREAD tp + 4, (U32)(m % 1000000l) * 1000);
-	} else if (clock_id==1 || clock_id==4 || clock_id==6) { // CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC_COARSE
+	} else if (clock_id==1 || clock_id==2 || clock_id==4 || clock_id==6) { // CLOCK_MONOTONIC_RAW, CLOCK_PROCESS_CPUTIME_ID , CLOCK_MONOTONIC_COARSE
 		U64 diff = m - startTime;
 		writed(MMU_PARAM_THREAD tp, (U32)(diff / 1000000l));
 		writed(MMU_PARAM_THREAD tp + 4, (U32)(diff % 1000000l) * 1000);
