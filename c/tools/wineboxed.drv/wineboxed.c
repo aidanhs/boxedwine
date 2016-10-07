@@ -408,11 +408,12 @@ BOOL CDECL boxeddrv_SetCursorPos(INT x, INT y) {
 
 void CDECL boxeddrv_SetFocus(HWND hwnd) {
     LONG style = GetWindowLongW(hwnd, GWL_STYLE);
+    BOOL canSetFocus = FALSE;
 
 	TRACE("hwnd=%p\n", hwnd);	
-    CALL_NORETURN_1(BOXED_SET_FOCUS, hwnd);
+    CALL_NORETURN_2(BOXED_SET_FOCUS, hwnd, &canSetFocus);
 
-    if (!hwnd) return;
+    if (!hwnd || !canSetFocus) return;
 
     if (can_activate_window(hwnd) && !(style & WS_MINIMIZE))
     {
@@ -519,19 +520,34 @@ void surface_clip_to_visible_rect(struct window_surface *window_surface, const R
 struct window_surface *create_surface(HWND window, const RECT *rect, struct window_surface *old_surface, BOOL use_alpha);
 void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, RECT *visible_rect, struct window_surface **surface) {
     DWORD style = GetWindowLongW(hwnd, GWL_STYLE); 
-    struct window_surface *oldSurface = NULL;;
+    struct window_surface *oldSurface = NULL;
+    HWND parent = GetAncestor(hwnd, GA_PARENT);
 
-	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);
+	TRACE("hwnd=%p (parent=%p) insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, parent, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);     
 
+    if (GetWindowThreadProcessId(hwnd, NULL) != GetCurrentThreadId()) return;
+
+    if (!parent)  /* desktop */
+    {
+        return;
+    }
+
+    /* don't create wnd for HWND_MESSAGE windows */
+    if (parent != GetDesktopWindow() && !GetAncestor(parent, GA_PARENT)) return;
+    
     if (*surface)  {
         oldSurface = *surface;
         TRACE("     setting old surface %p (ref=%d)\n", *surface, (*surface)->ref);
     }
     *surface = NULL;
-
+    
     *visible_rect = *window_rect;
     if (swp_flags & SWP_HIDEWINDOW) return;    
 	CALL_NORETURN_7(BOXED_WINDOW_POS_CHANGING, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, surface);
+
+    if (parent != GetDesktopWindow()) {
+        return; // don't create surface
+    }
 	if (*surface) {
         int surfaceWidth = (*surface)->rect.right - (*surface)->rect.left;
         int surfaceHeight = (*surface)->rect.bottom - (*surface)->rect.top;

@@ -461,9 +461,10 @@ void boxeddrv_SetCursorPos(struct CPU* cpu) {
 	EAX = 0;
 }
 
-// void CDECL drv_SetFocus(HWND hwnd)
+// void CDECL drv_SetFocus(HWND hwnd, BOOL* canSetFocus)
 void boxeddrv_SetFocus(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetFocus not implemented");
+    struct Wnd* wnd = getWnd(ARG1);
+    writed(MMU_PARAM_CPU ARG2, wnd!=0);
 }
 
 // void CDECL drv_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWORD flags)
@@ -558,6 +559,7 @@ void boxeddrv_WindowPosChanged(struct CPU* cpu) {
 	writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
 	writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
 	writeRect(MMU_PARAM_CPU ARG6, &wnd->wholeRect);
+    //wnd->surface = 0;
 	if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
 		showWnd(wnd, 0);
 	} else if (style & WS_VISIBLE) {
