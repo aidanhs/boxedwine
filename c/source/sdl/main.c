@@ -392,6 +392,8 @@ int main(int argc, char **argv) {
 		argv[0]="/usr/bin/wine";
 	        argv[1]="notepad";
 		argc=2;
+		//argv[0]="/init.sh";
+		//argc=1;
 	} else {
 		argv = &argv[i];
 	}

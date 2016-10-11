@@ -3,12 +3,14 @@
 #include "log.h"
 #include "ram.h"
 #include "kalloc.h"
-#include "pbl.h"
+//#include "pbl.h"
+#include "khashmap.h"
 
 #include <time.h>
 
 static struct KArray processes;
-static PblMap* mappedFileCache;
+//static PblMap* mappedFileCache;
+static struct KHashmap mappedFileCache;
 
 #ifdef USE_MMU
 static U32 callbackPage;
@@ -22,7 +24,8 @@ static U32 callbacks[512];
 
 void initSystem() {
 	initArray(&processes, 100);		
-	mappedFileCache = pblMapNewHashMap();
+	//mappedFileCache = pblMapNewHashMap();
+	initHashmap(&mappedFileCache);
 }
 
 void addCallback(void (OPCALL *func)(struct CPU*, struct Op*)) {
@@ -68,18 +71,21 @@ void initCallbacks() {
 
 #ifdef USE_MMU
 struct MappedFileCache* getMappedFileInCache(const char* name) {
-	struct MappedFileCache** result = pblMapGet(mappedFileCache, (void*)name, strlen(name), NULL);
-	if (result)
-		return *result;
-	return NULL;
+	return (struct MappedFileCache*)getHashmapValue(&mappedFileCache, name);
+	//struct MappedFileCache** result = pblMapGet(mappedFileCache, (void*)name, strlen(name), NULL);
+	//if (result)
+	//	return *result;
+	//return NULL;
 }
 
 void putMappedFileInCache(struct MappedFileCache* file) {
-	pblMapAdd(mappedFileCache, file->name, strlen(file->name), &file, sizeof(struct MappedFileCache*));
+	putHashmapValue(&mappedFileCache, file->name, file);
+	//pblMapAdd(mappedFileCache, file->name, strlen(file->name), &file, sizeof(struct MappedFileCache*));
 }
 
 void removeMappedFileInCache(struct MappedFileCache* file) {
-	pblMapRemove(mappedFileCache, file->name, strlen(file->name), NULL);
+	removeHashmapKey(&mappedFileCache, file->name);
+	//pblMapRemove(mappedFileCache, file->name, strlen(file->name), NULL);
 }
 #endif
 U32 addProcess(struct KProcess* process) {
