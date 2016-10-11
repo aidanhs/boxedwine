@@ -96,8 +96,6 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
 }
 
 void exitThread(struct KThread* thread, U32 status) {
-	struct KProcess* process = thread->process;
-
 	if (thread->clear_child_tid) {
 		writed(MMU_PARAM_THREAD thread->clear_child_tid, 0);
 		syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
@@ -420,9 +418,6 @@ struct ucontext_ia32 {
 
 void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack, U32 trapNo) {	
 	struct CPU* cpu = &thread->cpu;
-#ifdef USE_MMU
-	struct Memory* memory = cpu->memory;
-#endif
 
 	if (altStack) {
 		writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
@@ -484,13 +479,14 @@ U32 syscall_sigreturn(struct KThread* thread) {
 }
 
 void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
-	U32 signal = pop32(cpu);
-	U32 address = pop32(cpu);
-	U32 context = pop32(cpu);	
+	U32 context;	
 	U64 tsc = cpu->timeStampCounter;
 	U32 b = cpu->blockCounter;
 	U32 stackAddress;
 
+	pop32(cpu); // signal
+        pop32(cpu); // address
+        context = pop32(cpu);
 	cpu->thread->waitStartTime = pop32(cpu);
 	cpu->thread->interrupted = pop32(cpu);
 	stackAddress=cpu->reg[4].u32;

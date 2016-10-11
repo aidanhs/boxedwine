@@ -124,7 +124,7 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
         SDL_Rect dstRect;
         int pitch = width*4;
         char tmp[256];
-        static i;
+	static int i;
 
         srcRect.x = r.left;
         srcRect.y = r.top;
@@ -152,7 +152,7 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
             int srcY = height - y -1;
             if (y+r.top+yOrg>=surface->h)
                 break;;
-		    memcopyToNative(MMU_PARAM bits+r.left*4+srcY*width*4, (U8*)surface->pixels + surface->pitch*(y+r.top+yOrg) + (r.left+xOrg)*surface->format->BytesPerPixel, width*surface->format->BytesPerPixel);
+		    memcopyToNative(MMU_PARAM bits+r.left*4+srcY*width*4, (S8*)surface->pixels + surface->pitch*(y+r.top+yOrg) + (r.left+xOrg)*surface->format->BytesPerPixel, width*surface->format->BytesPerPixel);
 	    }	
     }	
     needsUpdate = 1;
@@ -195,10 +195,13 @@ void showWnd(struct Wnd* wnd, U32 bShow) {
 
 void setWndText(struct Wnd* wnd, const char* text) {
 	int len = strlen(text);
+	char* buf;
+
 	if (wnd->text)
-		kfree(wnd->text);
-	wnd->text = kalloc(len + 1);
-	strcpy(wnd->text, text);
+		kfree((void*)wnd->text);
+	buf = kalloc(len + 1);
+	strcpy(buf, text);
+	wnd->text = buf;
 }
 
 void updateScreen() {

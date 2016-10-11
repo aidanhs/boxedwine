@@ -389,8 +389,9 @@ int main(int argc, char **argv) {
 
 	argc = argc-i;
 	if (argc==0) {
-		argv[0]="/init.sh";
-		argc=1;
+		argv[0]="/usr/bin/wine";
+	        argv[1]="notepad";
+		argc=2;
 	} else {
 		argv = &argv[i];
 	}

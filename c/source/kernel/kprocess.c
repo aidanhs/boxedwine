@@ -1355,8 +1355,6 @@ struct user_desc {
 */
 
 U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
-	struct CPU* cpu = &thread->cpu;
-
 	if (func == 1 || func == 0x11) {
 		int index = readd(MMU_PARAM_THREAD ptr);
 		U32 address = readd(MMU_PARAM_THREAD ptr + 4);

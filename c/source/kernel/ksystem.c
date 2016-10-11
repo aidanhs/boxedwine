@@ -68,7 +68,7 @@ void initCallbacks() {
 
 #ifdef USE_MMU
 struct MappedFileCache* getMappedFileInCache(const char* name) {
-	struct MappedFileCache** result = pblMapGet(mappedFileCache, name, strlen(name), NULL);
+	struct MappedFileCache** result = pblMapGet(mappedFileCache, (void*)name, strlen(name), NULL);
 	if (result)
 		return *result;
 	return NULL;

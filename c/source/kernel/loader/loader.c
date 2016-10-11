@@ -178,10 +178,6 @@ U32 getPELoadAddress(struct OpenNode* openNode, U32* section, U32* numberOfSecti
 	static U8 buffer[1024];	
 	U64 pos = openNode->access->getFilePointer(openNode);
 	U32 len;
-	U32 address = 0xFFFFFFFF;
-	U32 i;
-	U32 reloc;
-	U32 flags = K_MAP_PRIVATE | K_MAP_ANONYMOUS;
 	int offset;
 	U32 sizeOfOptionalHeader;
 
@@ -211,7 +207,8 @@ U32 getPELoadAddress(struct OpenNode* openNode, U32* section, U32* numberOfSecti
 	// IMAGE_NT_HEADERS.FileHeader.SizeOfOptionalHeader
 	sizeOfOptionalHeader = buffer[offset + 0x14] | ((U32)buffer[offset + 0x15] << 8);
 
-	*section = buffer + offset + 0x14 /*sizeof(IMAGE_FILE_HEADER)*/ + sizeOfOptionalHeader + 4 /*sizeof(IMAGE_NT_HEADERS.Signature)*/;
+	// section should not reference buffer, but be mapped into memory
+	*section = (U32)(buffer + offset + 0x14 /*sizeof(IMAGE_FILE_HEADER)*/ + sizeOfOptionalHeader + 4 /*sizeof(IMAGE_NT_HEADERS.Signature)*/);
 
 	// IMAGE_NT_HEADERS.OptionalHeader.ImageBase
 	return buffer[offset + 0x34] | ((U32)buffer[offset + 0x35] << 8) | ((U32)buffer[offset + 0x36] << 16) | ((U32)buffer[offset + 0x37] << 24);

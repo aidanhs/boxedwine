@@ -42,7 +42,7 @@ void log_pf(struct KProcess* process, U32 address) {
 	printf("Mapped Files:\n");
 	for (i=0;i<MAX_MAPPED_FILE;i++) {
 		if (process->mappedFiles[i].refCount)
-			printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+process->mappedFiles[i].len, ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath);
+			printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+(int)process->mappedFiles[i].len, ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath);
 	}
 #endif
 	kpanic("pf");

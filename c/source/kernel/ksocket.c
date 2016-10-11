@@ -26,6 +26,10 @@ static int winsock_intialized;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/ioctl.h>
+#include <fcntl.h>
 void closesocket(int socket) { close(socket); }
 #endif
 
@@ -171,7 +175,6 @@ void updateWaitingList() {
     FD_ZERO(&waitingWriteset);
 
     s = waitingNativeSockets;
-    maxSocketId = maxSocketId;
     while (s) {
         if (getWaitingOnReadThreadCount(s))
             FD_SET(s->nativeSocket, &waitingReadset);
@@ -498,7 +501,7 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
 
 	if (s->type == K_SOCK_DGRAM) {
 		if (!strcmp(s->destAddress.data, "/dev/log")) {
-			printf(getNativeString(MMU_PARAM_THREAD buffer));
+			printf("%s\n", getNativeString(MMU_PARAM_THREAD buffer));
 		}
 		return len;
 	}
@@ -519,7 +522,7 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
 	ringbuf_memcpy_into(s->connection->recvBuffer, (void*)buffer, count);
 #else
 	while (!ringbuf_is_full(s->connection->recvBuffer) && len) {
-		U8 tmp[4096];
+		S8 tmp[4096];
 		U32 todo = len;
 
 		if (todo>4096)
@@ -558,7 +561,7 @@ U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buf
 	ringbuf_memcpy_from((void*)buffer, s->recvBuffer, count);
 #else
 	while (len && !ringbuf_is_empty(s->recvBuffer)) {
-		U8 tmp[4096];
+		S8 tmp[4096];
 		U32 todo = len;
 
 		if (todo > 4096)
@@ -781,7 +784,6 @@ U32 nativesocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 b
 }
 
 U32 nativesocket_stat(MMU_ARG struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
-	struct KSocket* s = (struct KSocket*)obj->data;	
 	writeStat(MMU_PARAM address, is64, 1, 0, K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, 0, 0, 4096, 0, 0, 1);
 	return 0;
 }
@@ -925,7 +927,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
                 ioctlsocket(nativeSocket, FIONBIO, &mode);
             }
 #else
-            fcntl(nativeSocket, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+            fcntl(nativeSocket, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) | O_NONBLOCK);
 #endif
             if (returnSocket)
 			    *returnSocket = s;
@@ -1154,7 +1156,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 	}
     if (s->nativeSocket) {
         struct sockaddr addr;
-        int addrlen = sizeof(struct sockaddr);
+        U32 addrlen = sizeof(struct sockaddr);
         result = accept(s->nativeSocket, &addr, &addrlen);
         if (result>=0) {
             if (address)
@@ -1166,7 +1168,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
         }
         return handleNativeSocketError(thread, s, 0);
     }
-	if (!s->pendingConnections) {
+	if (!s->pendingConnectionsCount) {
 		if (!s->blocking)
 			return -K_EWOULDBLOCK;
 		waitOnSocketConnect(s, thread);
@@ -1633,7 +1635,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
 		if (len<dataLen) {
 			kpanic("unhandled socket msg logic");
 		}
-		memcopyFromNative(MMU_PARAM_THREAD p, msg->data + pos, dataLen);
+		memcopyFromNative(MMU_PARAM_THREAD p, (S8*)msg->data + pos, dataLen);
 		result+=dataLen;
     }
 	msg->objectCount=0; // we closed the KObjects, this will prevent freeSocketMsg from closing them again;	
@@ -1704,7 +1706,7 @@ U32 ksendto(struct KThread* thread, U32 socket, U32 message, U32 length, U32 fla
 U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 flags, U32 address, U32 address_len) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
 	struct KSocket* s;
-    int len=sizeof(struct sockaddr);
+    U32 len=sizeof(struct sockaddr);
     S32 result;
     int f = 0;
     struct sockaddr from;

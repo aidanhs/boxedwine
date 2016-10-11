@@ -4,8 +4,8 @@
 
 extern int horz_res;
 extern int vert_res;
-extern default_horz_res;
-extern default_vert_res;
+extern int default_horz_res;
+extern int default_vert_res;
 extern int bits_per_pixel;
 extern int default_bits_per_pixel;
 

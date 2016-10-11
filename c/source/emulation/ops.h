@@ -2031,7 +2031,6 @@ void OPCALL jmpNear32_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL jmpNear32_mem32(struct CPU* cpu, struct Op* op) {
-	U32 e = cpu->eip.u32;
 	DONE();
 	cpu->eip.u32 = readd(MMU_PARAM_CPU eaa32(cpu, op));
 #ifndef USE_MMU
