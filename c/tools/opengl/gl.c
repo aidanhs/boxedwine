@@ -2,9 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef USE_GLX
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#endif
 
 typedef unsigned int    GLenum;
 typedef unsigned char   GLboolean;
@@ -23,6 +25,7 @@ typedef double          GLdouble;       /* double precision float */
 typedef double          GLclampd;       /* double precision float in [0,1] */
 
 typedef void *GLXContext;
+#ifdef USE_GLX
 typedef XID GLXContextID;
 typedef XID GLXPixmap;
 typedef XID GLXDrawable;
@@ -119,7 +122,7 @@ typedef XID GLXWindow;
 #define GLX_MAX_PBUFFER_HEIGHT		0x8017
 #define GLX_MAX_PBUFFER_PIXELS		0x8018
 #define GLX_VISUAL_ID			0x800B
-
+#endif
 #define GLAPI
 #define APIENTRY
 
@@ -1851,6 +1854,7 @@ GLAPI void APIENTRY glSamplePass( GLenum pass ) {
 	CALL_1(SamplePass, pass);
 }
 
+#ifdef USE_GLX
 typedef struct GLXFBConfigRecord {
 	int id;
 	int doubleBuffered;
@@ -2500,3 +2504,4 @@ void* glXGetProcAddressARB(const GLubyte *procName) {
 	return result;
 }
 
+#endif

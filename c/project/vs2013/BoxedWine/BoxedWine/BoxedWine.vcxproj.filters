@@ -214,6 +214,9 @@
     <ClCompile Include="..\..\..\..\source\sdl\sdlwindows.c">
       <Filter>source\sdl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\sdl\sdlopengl.c">
+      <Filter>source\sdl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">

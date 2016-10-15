@@ -5,11 +5,11 @@
 #include "memory.h"
 #include "wnd.h"
 
-int horz_res = 1024;
-int vert_res = 768;
+int horz_res = 800;
+int vert_res = 600;
 int bits_per_pixel = 32;
-int default_horz_res = 1024;
-int default_vert_res = 768;
+int default_horz_res = 800;
+int default_vert_res = 600;
 int default_bits_per_pixel = 32;
 static int initialized;
 static int needsUpdate;
@@ -43,9 +43,10 @@ SDL_GLContext sdlContext;
 SDL_Renderer *sdlRenderer;
 SDL_Texture* sdlTexture;
 
-void destroySDL2() {
+static void destroySDL2() {
 	if (sdlTexture) {
 		SDL_DestroyTexture(sdlTexture);
+        sdlTexture = 0;
 	}
 	if (sdlRenderer) {
 		SDL_DestroyRenderer(sdlRenderer);
@@ -64,12 +65,68 @@ void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
+U32 makeCurrent(void* context) {
+#ifdef SDL2
+    if (SDL_GL_MakeCurrent(sdlWindow, context)==0)
+        return 1;
+    return 0;
+#else
+    return 1;
+#endif
+}
+
+void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
+#ifdef SDL2
+    SDL_GLContext context = NULL;
+
+    destroySDL2();
+
+    SDL_GL_ResetAttributes();
+#endif
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, wnd->pixelFormat->cRedBits);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, wnd->pixelFormat->cGreenBits);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, wnd->pixelFormat->cBlueBits);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, wnd->pixelFormat->cAlphaBits);
+
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, wnd->pixelFormat->cDepthBits);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, wnd->pixelFormat->cStencilBits);
+
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_RED_SIZE, wnd->pixelFormat->cAccumRedBits);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_GREEN_SIZE, wnd->pixelFormat->cAccumGreenBits);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_BLUE_SIZE, wnd->pixelFormat->cAccumBlueBits);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_ALPHA_SIZE, wnd->pixelFormat->cAccumAlphaBits);
+
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, wnd->pixelFormat->dwFlags & 1);
+    SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, (wnd->pixelFormat->dwFlags & 0x40)?0:1);
+
+#ifdef SDL2
+    sdlWindow = SDL_CreateWindow("OpenGL Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
+    if (!sdlWindow) {
+        fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
+        displayChanged();
+        return NULL;
+    }
+
+    context = SDL_GL_CreateContext(sdlWindow);
+    if (!context) {
+        fprintf(stderr, "Couldn't create context: %s\n", SDL_GetError());
+        displayChanged();
+        return NULL;
+    }
+    wnd->openGlContext = context;
+    return context;
+#else
+    surface = NULL;
+    return SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);
+#endif
+}
+
 void displayChanged() {
 	U32 flags;
 
 #ifdef SDL2
 	destroySDL2();
-	sdlWindow = SDL_CreateWindow("", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
+	sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
 	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, horz_res, vert_res);
 #else
@@ -103,41 +160,57 @@ void displayChanged() {
 
 char b[1024*1024*4];
 
+void sdlSwapBuffers() {
+#ifdef SDL2
+    SDL_GL_SwapWindow(sdlWindow);
+#else
+    SDL_GL_SwapBuffers();
+#endif
+}
+
 void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 surfaceRect, U32 rect) {
 	struct Wnd* wnd = getWnd(hwnd);
 	struct wRECT r;
 	int y;
     SDL_Surface* s;
+    SDL_Rect srcRect;
+    SDL_Rect dstRect;
+    int pitch = width*4;
+    char tmp[256];
+	static int i;
+
+    if (!surface)
+        return;
+    readRect(MMU_PARAM rect, &r);
+    xOrg+=r.left;
+    yOrg+=r.top;
+
+    srcRect.x = r.left;
+    srcRect.y = r.top;
+    srcRect.w = r.right - r.left;
+    srcRect.h = r.bottom - r.top;
+    dstRect.x = xOrg;
+    dstRect.y = yOrg;
+    dstRect.w = srcRect.w;
+    dstRect.h = srcRect.h;        
 
 	if (!wnd)
 		return;
+
+    for (y = 0; y < height; y++) {
+            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, b+y*pitch, pitch);
+        }
+
 #ifdef SDL2
+    SDL_UpdateTexture(sdlTexture, NULL, b, pitch);
+	SDL_RenderClear(sdlRenderer);
+	SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
+	SDL_RenderPresent(sdlRenderer);
 #else
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
-	}
-	readRect(MMU_PARAM rect, &r);
-    xOrg+=r.left;
-    yOrg+=r.top;
-    if (1) {
-        SDL_Rect srcRect;
-        SDL_Rect dstRect;
-        int pitch = width*4;
-        char tmp[256];
-	static int i;
-
-        srcRect.x = r.left;
-        srcRect.y = r.top;
-        srcRect.w = r.right - r.left;
-        srcRect.h = r.bottom - r.top;
-        dstRect.x = xOrg;
-        dstRect.y = yOrg;
-        dstRect.w = srcRect.w;
-        dstRect.h = srcRect.h;
-
-        for (y = 0; y < height; y++) {
-            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, b+y*pitch, pitch);
-        }
+	}	
+    if (1) {        
         s = SDL_CreateRGBSurfaceFrom(b, width, height, 32, pitch, 0x00FF0000, 0x0000FF00, 0x000000FF, 0);
         SDL_BlitSurface(s, &srcRect, surface, &dstRect);
         sprintf(tmp, "test%d.bmp", i++);
@@ -156,7 +229,7 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
 	    }	
     }	
     needsUpdate = 1;
-    //SDL_UpdateRect(surface, 0, 0, 0, 0);
+    SDL_UpdateRect(surface, 0, 0, 0, 0);
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}      
@@ -206,8 +279,4 @@ void setWndText(struct Wnd* wnd, const char* text) {
 
 void updateScreen() {
     // this mechanism probably won't work well if multiple threads are updating the screen, there could be flickering
-    if (needsUpdate) {
-        SDL_UpdateRect(surface, 0, 0, 0, 0);
-        needsUpdate = 0;
-    }
 }

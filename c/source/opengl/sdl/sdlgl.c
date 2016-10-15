@@ -77,8 +77,16 @@ void sdl_glXMakeCurrent(struct CPU* cpu) {
 }
 
 // void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
+#ifdef SDL2
+extern SDL_Window *sdlWindow;
+#endif
+
 void sdl_glXSwapBuffers(struct CPU* cpu) {
+#ifdef SDL2
+    SDL_GL_SwapWindow(sdlWindow);
+#else
 	SDL_GL_SwapBuffers();
+#endif
 }
 
 void sdlgl_init() {	

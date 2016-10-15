@@ -320,6 +320,7 @@ void boxeddrv_DestroyCursorIcon(struct CPU* cpu) {
 
 // void CDECL drv_DestroyWindow(HWND hwnd)
 void boxeddrv_DestroyWindow(struct CPU* cpu) {
+    struct Wnd* wnd = getWnd(ARG1);
 	notImplemented("boxeddrv_DestroyWindow not implemented");
 }
 
@@ -981,43 +982,68 @@ void boxeddrv_NotifyIME(struct CPU* cpu) {
 }
 
 void boxeddrv_wglCopyContext(struct CPU* cpu) {
-	
+	notImplemented("boxeddrv_wglCopyContext not implemented");
 }
 
+void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags);
+// HWND hwnd, int major, int minor, int profile, int flags
 void boxeddrv_wglCreateContext(struct CPU* cpu) {
-	
+    struct Wnd* wnd = getWnd(ARG1);
+    if (!wnd) {
+        EAX = 0;
+    } else {
+        EAX = createOpenglWindow(wnd, ARG2, ARG3, ARG4, ARG5);
+    }
 }
 
 void boxeddrv_wglDeleteContext(struct CPU* cpu) {
-	
+	notImplemented("boxeddrv_wglDeleteContext not implemented");
 }
 
+// HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr
+int sdl_wglDescribePixelFormat(MMU_ARG U32 hdc, U32 fmt, U32 size, U32 descr);
 void boxeddrv_wglDescribePixelFormat(struct CPU* cpu) {
-	
+    EAX = sdl_wglDescribePixelFormat(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4);
 }
 
 void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
-	
+	notImplemented("boxeddrv_wglGetPixelFormat not implemented");
 }
 
 void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
-	
+    const char* name = getNativeString(MMU_PARAM_CPU ARG1);
+	notImplemented("boxeddrv_wglGetProcAddress not implemented");    
 }
 
+U32 makeCurrent(void* context);
+// HwND hwnd, void* context
 void boxeddrv_wglMakeCurrent(struct CPU* cpu) {
-	
+    EAX = makeCurrent(ARG2);
 }
 
+extern int numberOfPfs;
+extern PixelFormat pfs[512];
+
+// HWND hwnd, int fmt, const PIXELFORMATDESCRIPTOR *descr
 void boxeddrv_wglSetPixelFormat(struct CPU* cpu) {
-	
+    struct Wnd* wnd = getWnd(ARG1);
+    if (wnd && ARG2 < numberOfPfs) {
+        int index = ARG2;
+        wnd->pixelFormat = &(pfs[index]);
+        EAX = 1;
+    } else {
+        EAX = 0;
+    }
 }
 
 void boxeddrv_wglShareLists(struct CPU* cpu) {
-	
+	notImplemented("boxeddrv_wglShareLists not implemented");
 }
 
+void sdlSwapBuffers();
 void boxeddrv_wglSwapBuffers(struct CPU* cpu) {
-	
+	sdlSwapBuffers();
+    EAX = 1;
 }
 
 void boxeddrv_GetKeyboardLayoutList(struct CPU* cpu) {

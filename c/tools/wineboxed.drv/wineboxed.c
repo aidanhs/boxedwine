@@ -43,7 +43,13 @@
 #include "wine/unicode.h"
 #include "wine/server.h"
 
+#include <dlfcn.h>
+
 WINE_DEFAULT_DEBUG_CHANNEL(boxeddrv);
+
+#define USE_GL_FUNC(name) #name,
+static const char *opengl_func_names[] = { ALL_WGL_FUNCS };
+#undef USE_GL_FUNC
 
 typedef struct
 {
@@ -669,38 +675,51 @@ BOOL WINAPI NotifyIME(HIMC hIMC, DWORD dwAction, DWORD dwIndex, DWORD dwValue) {
 }
 
 static BOOL boxeddrv_wglCopyContext(struct wgl_context *src, struct wgl_context *dst, UINT mask) {
+    printf("boxeddrv_wglCopyContext src=%p dst=%p mask=%X\n", src, dst, mask);
 	CALL_3(BOXED_GL_COPY_CONTEXT, src, dst, mask);
 }
 
 static struct wgl_context *boxeddrv_wglCreateContext(HDC hdc) {
-	CALL_1(BOXED_GL_CREATE_CONTEXT, hdc);
+    printf("boxeddrv_wglCreateContext hdc=%X\n", (int)hdc);
+	CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), 0, 0, 0, 0);
 }
 
 static void boxeddrv_wglDeleteContext(struct wgl_context *context) {
+    printf("boxeddrv_wglDeleteContext context=%p\n", context);
 	CALL_NORETURN_1(BOXED_GL_DELETE_CONTEXT, context);
 }
 
 static int boxeddrv_wglDescribePixelFormat(HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr) {
+    printf("boxeddrv_wglDescribePixelFormat hdc=%X fmt=%d size=%d descr=%p\n", (int)hdc, fmt, size, descr);
 	CALL_4(BOXED_GL_DESCRIBE_PIXEL_FORMAT, hdc, fmt, size, descr);
 }
 
 static int boxeddrv_wglGetPixelFormat(HDC hdc) {
+    printf("boxeddrv_wglGetPixelFormat hdc=%X\n", (int)hdc);
 	CALL_1(BOXED_GL_GET_PIXEL_FORMAT, hdc);
 }
 
+static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct wgl_context *share_context, const int *attrib_list);
 static PROC boxeddrv_wglGetProcAddress(const char *proc) {
-	CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
+    printf("boxeddrv_wglGetProcAddress %s\n", proc);
+    //if (!strcmp(proc, "wglCreateContextAttribsARB"))
+    //    return (PROC)boxeddrv_wglCreateContextAttribsARB;
+	//CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
+    return NULL;
 }
 
 static BOOL boxeddrv_wglMakeCurrent(HDC hdc, struct wgl_context *context) {
-	CALL_2(BOXED_GL_MAKE_CURRENT, hdc, context);
+    printf("boxeddrv_wglMakeCurrent hdc=%X context=%p\n",(int)hdc, context);
+	CALL_2(BOXED_GL_MAKE_CURRENT, WindowFromDC(hdc), context);
 }
 
 static BOOL boxeddrv_wglSetPixelFormat(HDC hdc, int fmt, const PIXELFORMATDESCRIPTOR *descr) {
-	CALL_3(BOXED_GL_SET_PIXEL_FORMAT, hdc, fmt, descr);
+    printf("boxeddrv_wglSetPixelFormat hdc=%X fmt=%d descr=%p\n", (int)hdc, fmt, descr);
+	CALL_3(BOXED_GL_SET_PIXEL_FORMAT, WindowFromDC(hdc), fmt, descr);
 }
 
 static BOOL boxeddrv_wglShareLists(struct wgl_context *org, struct wgl_context *dest) {
+    printf("boxeddrv_wglShareLists org=%p dest=%p\n", org, dest);
 	CALL_2(BOXED_GL_SHARE_LISTS, org, dest);
 }
 
@@ -736,6 +755,42 @@ static struct opengl_funcs opengl_funcs =
 	}
 };
 
+int initOpengl() {
+    static int init_done;
+    static void *opengl_handle;
+
+    char buffer[200];
+    unsigned int i;
+
+    if (init_done) return (opengl_handle != NULL);
+    init_done = 1;
+
+    /* No need to load any other libraries as according to the ABI, libGL should be self-sufficient
+       and include all dependencies */
+    opengl_handle = wine_dlopen("libGL.so.1", RTLD_NOW|RTLD_GLOBAL, buffer, sizeof(buffer));
+    if (opengl_handle == NULL)
+    {
+        ERR( "Failed to load libGL: %s\n", buffer );
+        ERR( "OpenGL support is disabled.\n");
+        return FALSE;
+    }
+
+    for (i = 0; i < sizeof(opengl_func_names)/sizeof(opengl_func_names[0]); i++)
+    {
+        if (!(((void **)&opengl_funcs.gl)[i] = wine_dlsym( opengl_handle, opengl_func_names[i], NULL, 0 )))
+        {
+            ERR( "%s not found in libGL, disabling OpenGL.\n", opengl_func_names[i] );
+            goto failed;
+        }
+    }
+    return TRUE;
+
+failed:
+    wine_dlclose(opengl_handle, NULL, 0);
+    opengl_handle = NULL;
+    return FALSE;
+}
+
 /**********************************************************************
 *              macdrv_wine_get_wgl_driver
 */
@@ -747,7 +802,9 @@ struct opengl_funcs *boxeddrv_wine_get_wgl_driver(PHYSDEV dev, UINT version)
 		return NULL;
 	}
 
-	return &opengl_funcs;
+    if (initOpengl())
+	    return &opengl_funcs;
+    return NULL;
 }
 
 static inline BOXEDDRV_PDEVICE *get_boxeddrv_dev(PHYSDEV dev)
@@ -957,3 +1014,56 @@ const struct gdi_dc_funcs * CDECL boxeddrv_get_gdi_driver(unsigned int version)
     return &boxeddrv_funcs;
 }
 
+static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct wgl_context *share_context, const int *attrib_list)
+{
+    const int *iptr;
+    int major = 1, minor = 0, profile = WGL_CONTEXT_CORE_PROFILE_BIT_ARB, flags = 0;
+
+    printf("boxeddrv_wglCreateContextAttribsARB hdc=%p share_context=%p attrib_list=%p\n", hdc, share_context, attrib_list);
+
+    for (iptr = attrib_list; iptr && *iptr; iptr += 2)
+    {
+        int attr = iptr[0];
+        int value = iptr[1];
+
+        TRACE("attribute %d.%d\n", attr, value);
+
+        switch (attr)
+        {
+            case WGL_CONTEXT_MAJOR_VERSION_ARB:
+                major = value;
+                break;
+
+            case WGL_CONTEXT_MINOR_VERSION_ARB:
+                minor = value;
+                break;
+
+            case WGL_CONTEXT_LAYER_PLANE_ARB:
+                WARN("WGL_CONTEXT_LAYER_PLANE_ARB attribute ignored\n");
+                break;
+
+            case WGL_CONTEXT_FLAGS_ARB:
+                flags = value;
+                if (flags & ~WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB)
+                    WARN("WGL_CONTEXT_FLAGS_ARB attributes %#x ignored\n", flags & ~WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB);
+                break;
+
+            case WGL_CONTEXT_PROFILE_MASK_ARB:
+                if (value != WGL_CONTEXT_CORE_PROFILE_BIT_ARB &&
+                    value != WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB)
+                {
+                    WARN("WGL_CONTEXT_PROFILE_MASK_ARB bits %#x invalid\n", value);
+                    SetLastError(ERROR_INVALID_PROFILE_ARB);
+                    return NULL;
+                }
+                profile = value;
+                break;            
+            default:
+                WARN("Unknown attribute %d.%d\n", attr, value);
+                SetLastError(ERROR_INVALID_PARAMETER);
+                return NULL;
+        }
+    }
+
+    CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), major, minor, profile, flags);
+}
