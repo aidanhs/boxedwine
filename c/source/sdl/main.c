@@ -372,7 +372,7 @@ int main(int argc, char **argv) {
 	//ppenv[envc++] = "LD_DEBUG=all";
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 	ppenv[envc++] = "WINELOADERNOEXEC=1";
-	ppenv[envc++] = "WINEDEBUG=+boxeddrv";
+	//ppenv[envc++] = "WINEDEBUG=+d3d,+d3d_perf,+winediag,+boxeddrv,+relay";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -390,23 +390,26 @@ int main(int argc, char **argv) {
 	argc = argc-i;
 	if (argc==0) {
 		argv[0]="/usr/bin/wine";
-	        argv[1]="notepad";
+	        argv[1]="z:/home/username/wglgears.exe";
 		argc=2;
 		//argv[0]="/init.sh";
 		//argc=1;
 	} else {
 		argv = &argv[i];
 	}
-	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
+	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		kwarn("SDL_Init Error: %s", SDL_GetError());
 		return 0;
 	}
+
 	klog("Launching %s", argv[0]);
 	if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv, userId)) {
 #ifdef __EMSCRIPTEN__
                 EM_ASM(
+#ifndef SDL2
                        SDL.defaults.copyOnLock = false;
                        SDL.defaults.discardOnLock = true;
+#endif
                        //SDL.defaults.opaqueFrontBuffer = false;
                 );
                 emscripten_set_main_loop(mainloop, 0, 1);
