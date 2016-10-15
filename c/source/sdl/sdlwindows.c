@@ -12,6 +12,7 @@ int default_horz_res = 800;
 int default_vert_res = 600;
 int default_bits_per_pixel = 32;
 static int initialized;
+static int firstWindowCreated;
 static int needsUpdate;
 
 PblMap* hwndToWnd;
@@ -22,7 +23,6 @@ static void init() {
 	if (!initialized) {
 		initialized = 1;
 		hwndToWnd = pblMapNewHashMap();
-		displayChanged();
 	}
 }
 
@@ -74,13 +74,14 @@ U32 makeCurrent(void* context) {
     return 1;
 #endif
 }
-
+#include "SDL_opengles2.h"
 void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
     SDL_GLContext context = NULL;
-
+    unsigned char* version;
     destroySDL2();
 
+    firstWindowCreated = 1;
     SDL_GL_ResetAttributes();
 #endif
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, wnd->pixelFormat->cRedBits);
@@ -99,6 +100,11 @@ void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, wnd->pixelFormat->dwFlags & 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, (wnd->pixelFormat->dwFlags & 0x40)?0:1);
 
+#ifdef BOXEDWINE_ES
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
 #ifdef SDL2
     sdlWindow = SDL_CreateWindow("OpenGL Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
     if (!sdlWindow) {
@@ -117,13 +123,14 @@ void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int
     return context;
 #else
     surface = NULL;
-    return SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);
+    SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);    
 #endif
 }
 
 void displayChanged() {
 	U32 flags;
 
+    firstWindowCreated = 1;
 #ifdef SDL2
 	destroySDL2();
 	sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
@@ -196,6 +203,9 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
     dstRect.w = srcRect.w;
     dstRect.h = srcRect.h;        
 
+    if (!firstWindowCreated) {
+        displayChanged();
+    }
 	if (!wnd)
 		return;
 
