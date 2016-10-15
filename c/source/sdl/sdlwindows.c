@@ -74,7 +74,7 @@ U32 makeCurrent(void* context) {
     return 1;
 #endif
 }
-#include "SDL_opengles2.h"
+
 void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
     SDL_GLContext context = NULL;
@@ -100,11 +100,6 @@ void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, wnd->pixelFormat->dwFlags & 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, (wnd->pixelFormat->dwFlags & 0x40)?0:1);
 
-#ifdef BOXEDWINE_ES
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#endif
 #ifdef SDL2
     sdlWindow = SDL_CreateWindow("OpenGL Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
     if (!sdlWindow) {
@@ -124,6 +119,7 @@ void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int
 #else
     surface = NULL;
     SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);    
+    return 1;
 #endif
 }
 
