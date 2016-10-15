@@ -179,8 +179,10 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
     char tmp[256];
 	static int i;
 
+#ifndef SDL2
     if (!surface)
         return;
+#endif
     readRect(MMU_PARAM rect, &r);
     xOrg+=r.left;
     yOrg+=r.top;
