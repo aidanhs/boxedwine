@@ -364,17 +364,68 @@ void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
 	writed(MMU_PARAM_CPU devmode + 48, 0); // dmPosition.y
 	writed(MMU_PARAM_CPU devmode + 52, 0); // dmDisplayOrientation
 	writed(MMU_PARAM_CPU devmode + 56, DMDFO_CENTER); // dmDisplayFixedOutput
-
-	if (ARG2 == ENUM_REGISTRY_SETTINGS) {
-		writed(MMU_PARAM_CPU devmode + 104, default_bits_per_pixel);
-		writed(MMU_PARAM_CPU devmode + 108, default_horz_res);
-		writed(MMU_PARAM_CPU devmode + 112, default_vert_res);
-	}
-	else {
-		writed(MMU_PARAM_CPU devmode + 104, bits_per_pixel);
-		writed(MMU_PARAM_CPU devmode + 108, horz_res);
-		writed(MMU_PARAM_CPU devmode + 112, vert_res);
-	}
+	
+    switch (ARG2) {
+    case 0:
+        writed(MMU_PARAM_CPU devmode + 104, 32);
+		writed(MMU_PARAM_CPU devmode + 108, 1024);
+		writed(MMU_PARAM_CPU devmode + 112, 768);
+        break;
+    case 1:
+        writed(MMU_PARAM_CPU devmode + 104, 32);
+		writed(MMU_PARAM_CPU devmode + 108, 800);
+		writed(MMU_PARAM_CPU devmode + 112, 600);
+        break;
+    case 2:
+        writed(MMU_PARAM_CPU devmode + 104, 32);
+		writed(MMU_PARAM_CPU devmode + 108, 640);
+		writed(MMU_PARAM_CPU devmode + 112, 480);
+        break;
+    case 3:
+        writed(MMU_PARAM_CPU devmode + 104, 16);
+		writed(MMU_PARAM_CPU devmode + 108, 1024);
+		writed(MMU_PARAM_CPU devmode + 112, 768);
+        break;
+    case 4:
+        writed(MMU_PARAM_CPU devmode + 104, 16);
+		writed(MMU_PARAM_CPU devmode + 108, 800);
+		writed(MMU_PARAM_CPU devmode + 112, 600);
+        break;
+    case 5:
+        writed(MMU_PARAM_CPU devmode + 104, 16);
+		writed(MMU_PARAM_CPU devmode + 108, 640);
+		writed(MMU_PARAM_CPU devmode + 112, 480);
+        break;
+    case 6:
+        writed(MMU_PARAM_CPU devmode + 104, 8);
+		writed(MMU_PARAM_CPU devmode + 108, 1024);
+		writed(MMU_PARAM_CPU devmode + 112, 768);
+        break;
+    case 7:
+        writed(MMU_PARAM_CPU devmode + 104, 8);
+		writed(MMU_PARAM_CPU devmode + 108, 800);
+		writed(MMU_PARAM_CPU devmode + 112, 600);
+        break;
+    case 8:
+        writed(MMU_PARAM_CPU devmode + 104, 8);
+		writed(MMU_PARAM_CPU devmode + 108, 640);
+		writed(MMU_PARAM_CPU devmode + 112, 480);
+        break;
+    default:
+        if (ARG2 == ENUM_REGISTRY_SETTINGS) {
+		    writed(MMU_PARAM_CPU devmode + 104, default_bits_per_pixel);
+		    writed(MMU_PARAM_CPU devmode + 108, default_horz_res);
+		    writed(MMU_PARAM_CPU devmode + 112, default_vert_res);
+	    }
+	    else if (ARG2 == ENUM_CURRENT_SETTINGS) {
+		    writed(MMU_PARAM_CPU devmode + 104, bits_per_pixel);
+		    writed(MMU_PARAM_CPU devmode + 108, horz_res);
+		    writed(MMU_PARAM_CPU devmode + 112, vert_res);
+	    } else {
+            EAX = 0;
+            return;
+        }
+    }
 	writed(MMU_PARAM_CPU devmode + 116, 0); // dmDisplayFlags
 	writed(MMU_PARAM_CPU devmode + 120, 60); // dmDisplayFrequency
 	EAX = 1;
@@ -516,7 +567,8 @@ void boxeddrv_SystemParametersInfo(struct CPU* cpu) {
 	switch (ARG1)
 	{
 	case SPI_GETSCREENSAVEACTIVE:
-		*(U32*)ARG3 = FALSE;
+		if (ARG3)
+            writed(MMU_PARAM_CPU ARG3, FALSE);
 		EAX = 1;
 		return;
 	case SPI_SETSCREENSAVEACTIVE:
