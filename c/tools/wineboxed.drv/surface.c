@@ -188,7 +188,7 @@ static RECT *boxeddrv_surface_get_bounds(struct window_surface *window_surface)
 {
     struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
 
-    TRACE("bounds = %s\n", wine_dbgstr_rect(&surface->bounds));
+    TRACE("surface = %p bounds = %s\n", window_surface, wine_dbgstr_rect(&surface->bounds));
     return &surface->bounds;
 }
 

@@ -183,11 +183,11 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
 	static int i;
 
     readRect(MMU_PARAM rect, &r);
-    xOrg+=r.left;
-    yOrg+=r.top;
+    //xOrg+=r.left;
+    //yOrg+=r.top;
 
-    srcRect.x = r.left;
-    srcRect.y = r.top;
+    srcRect.x = 0;
+    srcRect.y = 0;
     srcRect.w = r.right - r.left;
     srcRect.h = r.bottom - r.top;
     dstRect.x = xOrg;
@@ -250,6 +250,10 @@ struct Wnd* wndCreate(MMU_ARG U32 hwnd, U32 windowRect, U32 clientRect) {
 	readRect(MMU_PARAM clientRect, &wnd->clientRect);
 	pblMapAdd(hwndToWnd, &hwnd, sizeof(U32), &wnd, sizeof(void*));
 	return wnd;
+}
+
+void wndDestroy(U32 hwnd) {
+    pblMapRemove(hwndToWnd, &hwnd, sizeof(U32), NULL);
 }
 
 void writeRect(MMU_ARG U32 address, struct wRECT* rect) {

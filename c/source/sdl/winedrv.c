@@ -321,7 +321,9 @@ void boxeddrv_DestroyCursorIcon(struct CPU* cpu) {
 // void CDECL drv_DestroyWindow(HWND hwnd)
 void boxeddrv_DestroyWindow(struct CPU* cpu) {
     struct Wnd* wnd = getWnd(ARG1);
-	notImplemented("boxeddrv_DestroyWindow not implemented");
+	if (wnd) {
+        wndDestroy(ARG1);
+    }
 }
 
 // void CDECL drv_EmptyClipboard(void)
@@ -516,7 +518,10 @@ void boxeddrv_SetCursorPos(struct CPU* cpu) {
 // void CDECL drv_SetFocus(HWND hwnd, BOOL* canSetFocus)
 void boxeddrv_SetFocus(struct CPU* cpu) {
     struct Wnd* wnd = getWnd(ARG1);
-    writed(MMU_PARAM_CPU ARG2, wnd!=0);
+    if (wnd && wnd->activated==0) {
+        writed(MMU_PARAM_CPU ARG2, 1);
+        wnd->activated = 1;
+    }
 }
 
 // void CDECL drv_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWORD flags)
@@ -550,7 +555,7 @@ void boxeddrv_SetWindowText(struct CPU* cpu) {
 void boxeddrv_ShowWindow(struct CPU* cpu) {
 	U32 swp = ARG4;
 	notImplemented("boxeddrv_ShowWindow not implemented");
-	writed(MMU_PARAM_CPU ARG5, swp & ~(SWP_NOMOVE | SWP_NOCLIENTMOVE | SWP_NOSIZE | SWP_NOCLIENTSIZE));
+	writed(MMU_PARAM_CPU ARG5, swp);
 }
 
 // LRESULT CDECL macdrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
@@ -650,6 +655,10 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
 
 	// *visible_rect = *window_rect;
 	readRect(MMU_PARAM_CPU ARG4, &rect);
+    //rect.left = 0;
+    //rect.top = 0;
+    //rect.right = 800;
+    //rect.bottom = 640;
 	writeRect(MMU_PARAM_CPU ARG6, &rect);
 
 	// *surface = wnd->surface;

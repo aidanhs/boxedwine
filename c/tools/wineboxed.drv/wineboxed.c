@@ -276,6 +276,13 @@ void CDECL boxeddrv_DestroyCursorIcon(HCURSOR cursor) {
 void CDECL boxeddrv_DestroyWindow(HWND hwnd) {
 	TRACE("hwnd=%p\n", hwnd);
 	CALL_NORETURN_1(BOXED_DESTROY_WINDOW, hwnd);
+
+    if (hwnd == GetForegroundWindow())
+    {
+        SendMessageW(hwnd, WM_CANCELMODE, 0, 0);
+        if (hwnd == GetForegroundWindow())
+            SetForegroundWindow(GetDesktopWindow());
+    }
 }
 
 void CDECL boxeddrv_EmptyClipboard(BOOL keepunowned) {
@@ -413,22 +420,25 @@ BOOL CDECL boxeddrv_SetCursorPos(INT x, INT y) {
 }
 
 void CDECL boxeddrv_SetFocus(HWND hwnd) {
-    LONG style = GetWindowLongW(hwnd, GWL_STYLE);
-    BOOL canSetFocus = FALSE;
+    LONG style = GetWindowLongW(hwnd, GWL_STYLE);    
 
 	TRACE("hwnd=%p\n", hwnd);	
-    CALL_NORETURN_2(BOXED_SET_FOCUS, hwnd, &canSetFocus);
+    if (!(style & WS_MINIMIZE)) {
+        BOOL shouldActivate = FALSE;
+        HWND parent = GetAncestor(hwnd, GA_ROOT);
+        
+        CALL_NORETURN_2(BOXED_SET_FOCUS, parent, &shouldActivate);
 
-    if (!hwnd || !canSetFocus) return;
-
-    if (can_activate_window(hwnd) && !(style & WS_MINIMIZE))
-    {
-        // simulate a mouse click on the caption to find out whether the window wants to be activated 
-        LRESULT ma = SendMessageW(hwnd, WM_MOUSEACTIVATE, (WPARAM)GetAncestor(hwnd, GA_ROOT), MAKELONG(HTCAPTION,WM_LBUTTONDOWN));
-        if (ma != MA_NOACTIVATEANDEAT && ma != MA_NOACTIVATE)
+        TRACE("shouldActivate=%s", shouldActivate?"TRUE":"FALSE");
+        if (shouldActivate && can_activate_window(parent))
         {
-            TRACE("setting foreground window to %p\n", hwnd);            
-            SetForegroundWindow(hwnd);            
+            // simulate a mouse click on the caption to find out whether the window wants to be activated 
+            LRESULT ma = SendMessageW(hwnd, WM_MOUSEACTIVATE, (WPARAM)parent, MAKELONG(HTCAPTION,WM_LBUTTONDOWN));
+            if (ma != MA_NOACTIVATEANDEAT && ma != MA_NOACTIVATE)
+            {
+                TRACE("setting foreground window to %p\n", parent);            
+                SetForegroundWindow(parent);            
+            }
         }
     }
 }
@@ -449,8 +459,13 @@ int CDECL boxeddrv_SetWindowRgn(HWND hwnd, HRGN hrgn, BOOL redraw) {
 }
 
 void CDECL boxeddrv_SetWindowStyle(HWND hwnd, INT offset, STYLESTRUCT *style) {
+    HWND hwndFocus;
+
 	TRACE("hwnd=%p offset=%d style=%p\n", hwnd, offset, style);
 	CALL_NORETURN_3(BOXED_SET_WINDOW_STYLE, hwnd, offset, style);
+    hwndFocus = GetFocus();
+    if (hwndFocus && (hwnd == hwndFocus || IsChild(hwnd, hwndFocus)))
+        boxeddrv_SetFocus(hwnd);
 }
 
 void CDECL boxeddrv_SetWindowText(HWND hwnd, LPCWSTR text) {
@@ -577,7 +592,12 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
         window_surface_release(oldSurface);
     }
 	if ((swp_flags & SWP_SHOWWINDOW) || (style & WS_VISIBLE)) {
-		*surface = create_surface(hwnd, window_rect, *surface, FALSE);
+        RECT rc;
+        rc.left = 0;
+        rc.right = window_rect->right - window_rect->left;
+        rc.top = 0;
+        rc.bottom = window_rect->bottom - window_rect->top;
+		*surface = create_surface(hwnd, &rc, *surface, FALSE);
         TRACE("     created new surface %p (ref=%d)\n", *surface, (*surface)->ref);
 	}
 }
@@ -874,7 +894,7 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pGetCharABCWidthsI */
     NULL,                                   /* pGetCharWidth */
     boxeddrv_GetDeviceCaps,                 /* pGetDeviceCaps */
-    boxeddrv_GetDeviceGammaRamp,            /* pGetDeviceGammaRamp */
+    NULL,                                   /* pGetDeviceGammaRamp */
     NULL,                                   /* pGetFontData */
     NULL,                                   /* pGetFontRealizationInfo */
     NULL,                                   /* pGetFontUnicodeRanges */
@@ -936,7 +956,7 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pSetDCPenColor */
     NULL,                                   /* pSetDIBitsToDevice */
     NULL,                                   /* pSetDeviceClipping */
-    boxeddrv_SetDeviceGammaRamp,            /* pSetDeviceGammaRamp */
+    NULL,                                   /* pSetDeviceGammaRamp */
     NULL,                                   /* pSetLayout */
     NULL,                                   /* pSetMapMode */
     NULL,                                   /* pSetMapperFlags */
