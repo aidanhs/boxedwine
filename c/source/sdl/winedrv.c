@@ -111,6 +111,8 @@ void notImplemented(const char* s) {
 #define BOXED_GET_SURFACE							(BOXED_BASE+77)
 #define BOXED_FLUSH_SURFACE							(BOXED_BASE+78)
 
+#define BOXED_CREATE_DC                             (BOXED_BASE+79)
+
 # define __MSABI_LONG(x)         x
 
 #define WS_OVERLAPPED          __MSABI_LONG(0x00000000)
@@ -260,7 +262,7 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 	if (devmode)
 	{
 		U32 dmFields;
-		U32 dmSize = readw(MMU_PARAM_CPU devmode + 36);
+		U32 dmSize = readw(MMU_PARAM_CPU devmode + 68);
 
 		/* this is the minimal dmSize that XP accepts */
 		if (dmSize < 44) {
@@ -268,16 +270,16 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 			return;
 		}
 
-		dmFields = readd(MMU_PARAM_CPU devmode + 40);
+		dmFields = readd(MMU_PARAM_CPU devmode + 72);
 
 		if (dmFields & DM_BITSPERPEL) {
-			bpp = readd(MMU_PARAM_CPU devmode + 104);
+			bpp = readd(MMU_PARAM_CPU devmode + 168);
 		}
 		if (dmFields & DM_PELSWIDTH) {
-			width = readd(MMU_PARAM_CPU devmode + 108);
+			width = readd(MMU_PARAM_CPU devmode + 172);
 		}
 		if (dmFields & DM_PELSHEIGHT) {
-			height = readd(MMU_PARAM_CPU devmode + 112);
+			height = readd(MMU_PARAM_CPU devmode + 176);
 		}
 	}	
 	if (!width || !height) {
@@ -359,77 +361,87 @@ void boxeddrv_EnumDisplayMonitors(struct CPU* cpu) {
 // BOOL CDECL macdrv_EnumDisplaySettingsEx(LPCWSTR devname, DWORD mode, LPDEVMODEW devmode, DWORD flags)
 void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
 	U32 devmode = ARG3;
+    static const U16 dev_name[32] = { 'B','o','x','e','d','W','i','n','e',' ','d','r','i','v','e','r',0 };
+    int i;
 
-	writed(MMU_PARAM_CPU devmode + 40, DM_POSITION | DM_DISPLAYORIENTATION | DM_DISPLAYFIXEDOUTPUT | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY);
+    zeroMemory(MMU_PARAM_CPU devmode, 188);
 
-	writed(MMU_PARAM_CPU devmode + 44, 0); // dmPosition.x
-	writed(MMU_PARAM_CPU devmode + 48, 0); // dmPosition.y
-	writed(MMU_PARAM_CPU devmode + 52, 0); // dmDisplayOrientation
-	writed(MMU_PARAM_CPU devmode + 56, DMDFO_CENTER); // dmDisplayFixedOutput
+    writew(MMU_PARAM_CPU devmode + 64, 0x401); // dmSpecVersion
+    writew(MMU_PARAM_CPU devmode + 66, 0x401); // dmDriverVersion
+    writew(MMU_PARAM_CPU devmode + 68, 188); // dmSize
+    for (i=0;i<17;i++) {
+        writew(MMU_PARAM_CPU devmode+i*2, dev_name[i]);
+    }
+	writed(MMU_PARAM_CPU devmode + 72, DM_POSITION | DM_DISPLAYORIENTATION | DM_DISPLAYFIXEDOUTPUT | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY);
+
+	writed(MMU_PARAM_CPU devmode + 76, 0); // dmPosition.x
+	writed(MMU_PARAM_CPU devmode + 80, 0); // dmPosition.y
+	writed(MMU_PARAM_CPU devmode + 84, 0); // dmDisplayOrientation
+	writed(MMU_PARAM_CPU devmode + 88, DMDFO_CENTER); // dmDisplayFixedOutput
 	
     switch (ARG2) {
     case 0:
-        writed(MMU_PARAM_CPU devmode + 104, 32);
-		writed(MMU_PARAM_CPU devmode + 108, 1024);
-		writed(MMU_PARAM_CPU devmode + 112, 768);
+        writed(MMU_PARAM_CPU devmode + 168, 32);
+		writed(MMU_PARAM_CPU devmode + 172, 1024);
+		writed(MMU_PARAM_CPU devmode + 176, 768);
         break;
     case 1:
-        writed(MMU_PARAM_CPU devmode + 104, 32);
-		writed(MMU_PARAM_CPU devmode + 108, 800);
-		writed(MMU_PARAM_CPU devmode + 112, 600);
+        writed(MMU_PARAM_CPU devmode + 168, 32);
+		writed(MMU_PARAM_CPU devmode + 172, 800);
+		writed(MMU_PARAM_CPU devmode + 176, 600);
         break;
     case 2:
-        writed(MMU_PARAM_CPU devmode + 104, 32);
-		writed(MMU_PARAM_CPU devmode + 108, 640);
-		writed(MMU_PARAM_CPU devmode + 112, 480);
+        writed(MMU_PARAM_CPU devmode + 168, 32);
+		writed(MMU_PARAM_CPU devmode + 172, 640);
+		writed(MMU_PARAM_CPU devmode + 176, 480);
         break;
     case 3:
-        writed(MMU_PARAM_CPU devmode + 104, 16);
-		writed(MMU_PARAM_CPU devmode + 108, 1024);
-		writed(MMU_PARAM_CPU devmode + 112, 768);
+        writed(MMU_PARAM_CPU devmode + 168, 16);
+		writed(MMU_PARAM_CPU devmode + 172, 1024);
+		writed(MMU_PARAM_CPU devmode + 176, 768);
         break;
     case 4:
-        writed(MMU_PARAM_CPU devmode + 104, 16);
-		writed(MMU_PARAM_CPU devmode + 108, 800);
-		writed(MMU_PARAM_CPU devmode + 112, 600);
+        writed(MMU_PARAM_CPU devmode + 168, 16);
+		writed(MMU_PARAM_CPU devmode + 172, 800);
+		writed(MMU_PARAM_CPU devmode + 176, 600);
         break;
     case 5:
-        writed(MMU_PARAM_CPU devmode + 104, 16);
-		writed(MMU_PARAM_CPU devmode + 108, 640);
-		writed(MMU_PARAM_CPU devmode + 112, 480);
+        writed(MMU_PARAM_CPU devmode + 168, 16);
+		writed(MMU_PARAM_CPU devmode + 172, 640);
+		writed(MMU_PARAM_CPU devmode + 176, 480);
         break;
     case 6:
-        writed(MMU_PARAM_CPU devmode + 104, 8);
-		writed(MMU_PARAM_CPU devmode + 108, 1024);
-		writed(MMU_PARAM_CPU devmode + 112, 768);
+        writed(MMU_PARAM_CPU devmode + 168, 8);
+		writed(MMU_PARAM_CPU devmode + 172, 1024);
+		writed(MMU_PARAM_CPU devmode + 176, 768);
         break;
     case 7:
-        writed(MMU_PARAM_CPU devmode + 104, 8);
-		writed(MMU_PARAM_CPU devmode + 108, 800);
-		writed(MMU_PARAM_CPU devmode + 112, 600);
+        writed(MMU_PARAM_CPU devmode + 168, 8);
+		writed(MMU_PARAM_CPU devmode + 172, 800);
+		writed(MMU_PARAM_CPU devmode + 176, 600);
         break;
     case 8:
-        writed(MMU_PARAM_CPU devmode + 104, 8);
-		writed(MMU_PARAM_CPU devmode + 108, 640);
-		writed(MMU_PARAM_CPU devmode + 112, 480);
+        writed(MMU_PARAM_CPU devmode + 168, 8);
+		writed(MMU_PARAM_CPU devmode + 172, 640);
+		writed(MMU_PARAM_CPU devmode + 176, 480);
         break;
     default:
         if (ARG2 == ENUM_REGISTRY_SETTINGS) {
-		    writed(MMU_PARAM_CPU devmode + 104, default_bits_per_pixel);
-		    writed(MMU_PARAM_CPU devmode + 108, default_horz_res);
-		    writed(MMU_PARAM_CPU devmode + 112, default_vert_res);
+		    writed(MMU_PARAM_CPU devmode + 168, default_bits_per_pixel);
+		    writed(MMU_PARAM_CPU devmode + 172, default_horz_res);
+		    writed(MMU_PARAM_CPU devmode + 176, default_vert_res);
 	    }
 	    else if (ARG2 == ENUM_CURRENT_SETTINGS) {
-		    writed(MMU_PARAM_CPU devmode + 104, bits_per_pixel);
-		    writed(MMU_PARAM_CPU devmode + 108, horz_res);
-		    writed(MMU_PARAM_CPU devmode + 112, vert_res);
+		    writed(MMU_PARAM_CPU devmode + 168, bits_per_pixel);
+		    writed(MMU_PARAM_CPU devmode + 172, horz_res);
+		    writed(MMU_PARAM_CPU devmode + 176, vert_res);
 	    } else {
             EAX = 0;
             return;
         }
     }
-	writed(MMU_PARAM_CPU devmode + 116, 0); // dmDisplayFlags
-	writed(MMU_PARAM_CPU devmode + 120, 60); // dmDisplayFrequency
+	writed(MMU_PARAM_CPU devmode + 180, 0); // dmDisplayFlags
+	writed(MMU_PARAM_CPU devmode + 184, 60); // dmDisplayFrequency
 	EAX = 1;
 }
 
@@ -655,25 +667,21 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
 
 	// *visible_rect = *window_rect;
 	readRect(MMU_PARAM_CPU ARG4, &rect);
-    //rect.left = 0;
-    //rect.top = 0;
-    //rect.right = 800;
-    //rect.bottom = 640;
 	writeRect(MMU_PARAM_CPU ARG6, &rect);
 
 	// *surface = wnd->surface;
 	writed(MMU_PARAM_CPU ARG7, wnd->surface);
 }
 
+U32 getGammaRamp(MMU_ARG U32 ramp);
 // BOOL drv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
 void boxeddrv_GetDeviceGammaRamp(struct CPU* cpu) {
-	notImplemented("boxeddrv_GetDeviceGammaRamp not implemented");
-	EAX = 0;
+	EAX = getGammaRamp(MMU_PARAM_CPU ARG2);
 }
 
 // BOOL drv_SetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
 void boxeddrv_SetDeviceGammaRamp(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetDeviceGammaRamp not implemented");
+	//notImplemented("boxeddrv_SetDeviceGammaRamp not implemented");
 	EAX = 0;
 }
 
@@ -1128,13 +1136,17 @@ void boxeddrv_FlushSurface(struct CPU* cpu) {
     }
 }
 
+void boxeddrv_CreateDC(struct CPU* cpu) {
+    U32 physdev = ARG1;    
+}
+
 #include "kalloc.h"
 
 Int99Callback* wine_callback;
 int wine_callbackSize;
 
 void initWine() {
-	wine_callback = kalloc(sizeof(Int99Callback) * 79);
+	wine_callback = kalloc(sizeof(Int99Callback) * 80);
 	wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
 	wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
 	wine_callback[BOXED_BEEP] = boxeddrv_Beep;
@@ -1214,5 +1226,6 @@ void initWine() {
 	wine_callback[BOXED_SET_SURFACE] = boxeddrv_SetSurface;
 	wine_callback[BOXED_GET_SURFACE] = boxeddrv_GetSurface;
 	wine_callback[BOXED_FLUSH_SURFACE] = boxeddrv_FlushSurface;
-	wine_callbackSize = 79;
+    wine_callback[BOXED_CREATE_DC] = boxeddrv_CreateDC;
+	wine_callbackSize = 80;
 }

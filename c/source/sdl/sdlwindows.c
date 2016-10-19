@@ -292,3 +292,24 @@ void setWndText(struct Wnd* wnd, const char* text) {
 void updateScreen() {
     // this mechanism probably won't work well if multiple threads are updating the screen, there could be flickering
 }
+
+U32 getGammaRamp(MMU_ARG U32 ramp) {
+    U16 r[256];
+    U16 g[256];
+    U16 b[256];
+
+#ifdef SDL2
+    SDL_GetWindowGammaRamp();
+#else
+    if (SDL_GetGammaRamp(r, g, b)==0) {
+        int i;
+        for (i=0;i<256;i++) {
+            writew(MMU_PARAM ramp+i*2, r[i]);
+            writew(MMU_PARAM ramp+i*2+512, g[i]);
+            writew(MMU_PARAM ramp+i*2+124, b[i]);
+        }
+        return 1;
+    }
+    return 0;
+#endif
+}

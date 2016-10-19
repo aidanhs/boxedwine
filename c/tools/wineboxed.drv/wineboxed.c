@@ -143,6 +143,8 @@ typedef struct
 #define BOXED_GET_SURFACE							(BOXED_BASE+77)
 #define BOXED_FLUSH_SURFACE							(BOXED_BASE+78)
 
+#define BOXED_CREATE_DC                             (BOXED_BASE+79)
+
 #define CALL_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index):"%eax"); 
 #define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
 #define CALL_2(index, arg1,arg2) __asm__("push %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $12, %%esp"::"i"(index), "g"(arg1), "g"(arg2):"%eax");
@@ -889,14 +891,19 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pFontIsLinked */
     NULL,                                   /* pFrameRgn */
     NULL,                                   /* pGdiComment */
+#ifdef WINE_GDI_DRIVER_VERSION==46
+    NULL,                                   /* pGdiRealizationInfo */
+#endif
     NULL,                                   /* pGetBoundsRect */
     NULL,                                   /* pGetCharABCWidths */
     NULL,                                   /* pGetCharABCWidthsI */
     NULL,                                   /* pGetCharWidth */
     boxeddrv_GetDeviceCaps,                 /* pGetDeviceCaps */
-    NULL,                                   /* pGetDeviceGammaRamp */
+    boxeddrv_GetDeviceGammaRamp,            /* pGetDeviceGammaRamp */
     NULL,                                   /* pGetFontData */
+#ifdef WINE_GDI_DRIVER_VERSION==47
     NULL,                                   /* pGetFontRealizationInfo */
+#endif
     NULL,                                   /* pGetFontUnicodeRanges */
     NULL,                                   /* pGetGlyphIndices */
     NULL,                                   /* pGetGlyphOutline */
@@ -956,7 +963,7 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pSetDCPenColor */
     NULL,                                   /* pSetDIBitsToDevice */
     NULL,                                   /* pSetDeviceClipping */
-    NULL,                                   /* pSetDeviceGammaRamp */
+    boxeddrv_SetDeviceGammaRamp,            /* pSetDeviceGammaRamp */
     NULL,                                   /* pSetLayout */
     NULL,                                   /* pSetMapMode */
     NULL,                                   /* pSetMapperFlags */
@@ -1001,6 +1008,7 @@ static BOOL boxeddrv_CreateDC(PHYSDEV *pdev, LPCWSTR driver, LPCWSTR device,
 	if (!physDev) return FALSE;
 
 	push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
+    CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
 	return TRUE;
 }
 
@@ -1018,6 +1026,7 @@ static BOOL boxeddrv_CreateCompatibleDC(PHYSDEV orig, PHYSDEV *pdev)
 	if (!physDev) return FALSE;
 
 	push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
+    CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
 	return TRUE;
 }
 
