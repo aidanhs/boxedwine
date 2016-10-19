@@ -891,7 +891,7 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pFontIsLinked */
     NULL,                                   /* pFrameRgn */
     NULL,                                   /* pGdiComment */
-#ifdef WINE_GDI_DRIVER_VERSION==46
+#if WINE_GDI_DRIVER_VERSION==46
     NULL,                                   /* pGdiRealizationInfo */
 #endif
     NULL,                                   /* pGetBoundsRect */
@@ -901,7 +901,7 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     boxeddrv_GetDeviceCaps,                 /* pGetDeviceCaps */
     boxeddrv_GetDeviceGammaRamp,            /* pGetDeviceGammaRamp */
     NULL,                                   /* pGetFontData */
-#ifdef WINE_GDI_DRIVER_VERSION==47
+#if WINE_GDI_DRIVER_VERSION==47
     NULL,                                   /* pGetFontRealizationInfo */
 #endif
     NULL,                                   /* pGetFontUnicodeRanges */
@@ -1008,7 +1008,8 @@ static BOOL boxeddrv_CreateDC(PHYSDEV *pdev, LPCWSTR driver, LPCWSTR device,
 	if (!physDev) return FALSE;
 
 	push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
-    CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
+	CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
+	TRACE("priority=%d\n", boxeddrv_funcs.priority);
 	return TRUE;
 }
 
