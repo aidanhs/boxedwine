@@ -144,6 +144,10 @@ typedef struct
 #define BOXED_FLUSH_SURFACE							(BOXED_BASE+78)
 
 #define BOXED_CREATE_DC                             (BOXED_BASE+79)
+#define BOXED_GET_SYSTEM_PALETTE                    (BOXED_BASE+80)
+#define BOXED_GET_NEAREST_COLOR                     (BOXED_BASE+81)
+#define BOXED_REALIZE_PALETTE                       (BOXED_BASE+82)
+#define BOXED_REALIZE_DEFAULT_PALETTE               (BOXED_BASE+83)
 
 #define CALL_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index):"%eax"); 
 #define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
@@ -571,6 +575,7 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
     if (parent != GetDesktopWindow()) {
         return; // don't create surface
     }
+    /*
 	if (*surface) {
         int surfaceWidth = (*surface)->rect.right - (*surface)->rect.left;
         int surfaceHeight = (*surface)->rect.bottom - (*surface)->rect.top;
@@ -589,11 +594,12 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
             return;
         }
     }
+    */
     if (oldSurface)  {
         TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
         window_surface_release(oldSurface);
     }
-	if ((swp_flags & SWP_SHOWWINDOW) || (style & WS_VISIBLE)) {
+	if (1) {
         RECT rc;
         rc.left = 0;
         rc.right = window_rect->right - window_rect->left;
@@ -853,6 +859,48 @@ static BOOL boxeddrv_DeleteDC(PHYSDEV dev)
 	return TRUE;
 }
 
+UINT boxeddrv_RealizePalette( PHYSDEV dev, HPALETTE hpal, BOOL primary ) {
+    PALETTEENTRY entries[256];
+    WORD num_entries;
+
+    TRACE("dev=%p hpal=%p primary=%d\n", dev, hpal, primary);
+    if (!GetObjectW( hpal, sizeof(num_entries), &num_entries )) return 0;
+
+     if (num_entries > 256)
+    {
+        FIXME( "more than 256 entries not supported\n" );
+        num_entries = 256;
+    }
+    if (!(num_entries = GetPaletteEntries( hpal, 0, num_entries, entries ))) return 0;
+    CALL_2(BOXED_REALIZE_PALETTE, num_entries, entries);
+}
+
+BOOL boxeddrv_UnrealizePalette( HPALETTE hpal )
+{
+    return TRUE;
+}
+
+UINT boxeddrv_GetSystemPaletteEntries( PHYSDEV dev, UINT start, UINT count, LPPALETTEENTRY entries )
+{
+    TRACE("dev=%p start=%d count=%d entries=%p\n", dev, start, count, entries);
+    CALL_3(BOXED_GET_SYSTEM_PALETTE, start, count, entries);
+}
+
+COLORREF boxeddrv_GetNearestColor( PHYSDEV dev, COLORREF color )
+{
+    CALL_1(BOXED_GET_NEAREST_COLOR, color);
+}
+
+UINT boxeddrv_RealizeDefaultPalette( PHYSDEV dev )
+{
+    PALETTEENTRY entries[256];
+    int count;
+
+    TRACE("dev=%p\n",dev);
+    count = GetPaletteEntries( GetStockObject(DEFAULT_PALETTE), 0, 256, entries );
+    CALL_2(BOXED_REALIZE_DEFAULT_PALETTE, count, entries);
+}
+
 static BOOL boxeddrv_CreateDC(PHYSDEV *pdev, LPCWSTR driver, LPCWSTR device, LPCWSTR output, const DEVMODEW* initData);
 static BOOL boxeddrv_CreateCompatibleDC(PHYSDEV orig, PHYSDEV *pdev);
 
@@ -910,10 +958,10 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pGetICMProfile */
     NULL,                                   /* pGetImage */
     NULL,                                   /* pGetKerningPairs */
-    NULL,                                   /* pGetNearestColor */
+    boxeddrv_GetNearestColor,               /* pGetNearestColor */
     NULL,                                   /* pGetOutlineTextMetrics */
     NULL,                                   /* pGetPixel */
-    NULL,                                   /* pGetSystemPaletteEntries */
+    boxeddrv_GetSystemPaletteEntries,       /* pGetSystemPaletteEntries */
     NULL,                                   /* pGetTextCharsetInfo */
     NULL,                                   /* pGetTextExtentExPoint */
     NULL,                                   /* pGetTextExtentExPointI */
@@ -940,8 +988,8 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pPolyline */
     NULL,                                   /* pPolylineTo */
     NULL,                                   /* pPutImage */
-    NULL,                                   /* pRealizeDefaultPalette */
-    NULL,                                   /* pRealizePalette */
+    boxeddrv_RealizeDefaultPalette,         /* pRealizeDefaultPalette */
+    boxeddrv_RealizePalette,                /* pRealizePalette */
     NULL,                                   /* pRectangle */
     NULL,                                   /* pResetDC */
     NULL,                                   /* pRestoreDC */
@@ -987,7 +1035,7 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
     NULL,                                   /* pStretchDIBits */
     NULL,                                   /* pStrokeAndFillPath */
     NULL,                                   /* pStrokePath */
-    NULL,                                   /* pUnrealizePalette */
+    boxeddrv_UnrealizePalette,              /* pUnrealizePalette */
     NULL,                                   /* pWidenPath */
     boxeddrv_wine_get_wgl_driver,           /* wine_get_wgl_driver */
     GDI_PRIORITY_GRAPHICS_DRV               /* priority */

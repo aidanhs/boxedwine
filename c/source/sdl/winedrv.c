@@ -112,6 +112,10 @@ void notImplemented(const char* s) {
 #define BOXED_FLUSH_SURFACE							(BOXED_BASE+78)
 
 #define BOXED_CREATE_DC                             (BOXED_BASE+79)
+#define BOXED_GET_SYSTEM_PALETTE                    (BOXED_BASE+80)
+#define BOXED_GET_NEAREST_COLOR                     (BOXED_BASE+81)
+#define BOXED_REALIZE_PALETTE                       (BOXED_BASE+82)
+#define BOXED_REALIZE_DEFAULT_PALETTE               (BOXED_BASE+83)
 
 # define __MSABI_LONG(x)         x
 
@@ -252,12 +256,10 @@ void boxeddrv_Beep(struct CPU* cpu) {
 #define DM_PANNINGHEIGHT        __MSABI_LONG(0x10000000)
 #define DM_DISPLAYFIXEDOUTPUT   __MSABI_LONG(0x20000000)
 
+void displayChanged();
 // LONG CDECL drv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode, HWND hwnd, DWORD flags, LPVOID lpvoid)
 void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 	U32 devmode = ARG2;
-	U32 bpp = 0;
-	U32 width = 0;
-	U32 height = 0;
 	
 	if (devmode)
 	{
@@ -273,23 +275,23 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 		dmFields = readd(MMU_PARAM_CPU devmode + 72);
 
 		if (dmFields & DM_BITSPERPEL) {
-			bpp = readd(MMU_PARAM_CPU devmode + 168);
+			bits_per_pixel = readd(MMU_PARAM_CPU devmode + 168);
 		}
 		if (dmFields & DM_PELSWIDTH) {
-			width = readd(MMU_PARAM_CPU devmode + 172);
+			horz_res = readd(MMU_PARAM_CPU devmode + 172);
 		}
 		if (dmFields & DM_PELSHEIGHT) {
-			height = readd(MMU_PARAM_CPU devmode + 176);
+			vert_res = readd(MMU_PARAM_CPU devmode + 176);
 		}
 	}	
-	if (!width || !height) {
-		width = default_horz_res;
-		height = default_vert_res;
+	if (!horz_res || !vert_res) {
+		horz_res = default_horz_res;
+		vert_res = default_vert_res;
 	}
-	if (!bpp) {
-		bpp = default_bits_per_pixel;
+	if (!bits_per_pixel) {
+		bits_per_pixel = default_bits_per_pixel;
 	}
-	// :TODO: 
+	displayChanged();
 	EAX = DISP_CHANGE_SUCCESSFUL;	
 }
 
@@ -1140,13 +1142,57 @@ void boxeddrv_CreateDC(struct CPU* cpu) {
     U32 physdev = ARG1;    
 }
 
+void sdlGetPalette(MMU_ARG U32 start, U32 count, U32 entries);
+void boxeddrv_GetSystemPalette(struct CPU* cpu) {
+    int start = ARG1;
+    int count = ARG2;
+    U32 paletteEntries = ARG3;
+    U32 numberOfEntries = (bits_per_pixel > 8) ? 0 : (1 << bits_per_pixel);
+
+    if (start + count >= numberOfEntries) count = numberOfEntries - start;
+    if (!paletteEntries) {
+        EAX = numberOfEntries;
+        return;
+    }
+    if (start>=numberOfEntries) {
+        EAX = 0;
+        return;
+    }
+    sdlGetPalette(MMU_PARAM_CPU start, count, paletteEntries);
+    EAX = count;
+}
+
+U32 sdlGetNearestColor(U32 color);
+void boxeddrv_GetNearestColor(struct CPU* cpu) {
+    EAX = sdlGetNearestColor(ARG1);
+}
+
+U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries);
+
+void boxeddrv_RealizePalette(struct CPU* cpu) {
+    int numberOfEntries = ARG1;
+    U32 entries = ARG2;
+    EAX = sdlRealizePalette(MMU_PARAM_CPU 0, numberOfEntries, entries);
+}
+
+void sdlRealizeDefaultPalette();
+void boxeddrv_RealizeDefaultPalette(struct CPU* cpu) {
+    int numberOfEntries = ARG1;
+    U32 entries = ARG2;
+
+    sdlRealizeDefaultPalette();
+    sdlRealizePalette(MMU_PARAM_CPU 0, 10, entries);
+    sdlRealizePalette(MMU_PARAM_CPU 246, 10, entries+40);
+    EAX = 0;
+}
+
 #include "kalloc.h"
 
 Int99Callback* wine_callback;
 int wine_callbackSize;
 
 void initWine() {
-	wine_callback = kalloc(sizeof(Int99Callback) * 80);
+	wine_callback = kalloc(sizeof(Int99Callback) * 84);
 	wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
 	wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
 	wine_callback[BOXED_BEEP] = boxeddrv_Beep;
@@ -1227,5 +1273,9 @@ void initWine() {
 	wine_callback[BOXED_GET_SURFACE] = boxeddrv_GetSurface;
 	wine_callback[BOXED_FLUSH_SURFACE] = boxeddrv_FlushSurface;
     wine_callback[BOXED_CREATE_DC] = boxeddrv_CreateDC;
-	wine_callbackSize = 80;
+    wine_callback[BOXED_GET_SYSTEM_PALETTE] = boxeddrv_GetSystemPalette;
+    wine_callback[BOXED_GET_NEAREST_COLOR] = boxeddrv_GetNearestColor;
+    wine_callback[BOXED_REALIZE_PALETTE] = boxeddrv_RealizePalette;
+    wine_callback[BOXED_REALIZE_DEFAULT_PALETTE] = boxeddrv_RealizeDefaultPalette;
+	wine_callbackSize = 84;
 }

@@ -283,20 +283,64 @@ static const struct window_surface_funcs boxeddrv_surface_funcs =
     boxeddrv_surface_destroy,
 };
 
+UINT boxeddrv_GetSystemPaletteEntries( PHYSDEV dev, UINT start, UINT count, LPPALETTEENTRY entries );
+static void set_color_info(BITMAPINFO *info)
+{
+    DWORD *colors = (DWORD *)((char *)info + info->bmiHeader.biSize);
+
+    info->bmiHeader.biCompression = BI_RGB;
+    info->bmiHeader.biClrUsed = 0;
+
+    TRACE("biBitCount=%d\n", info->bmiHeader.biBitCount);
+    switch (info->bmiHeader.biBitCount)
+    {
+    case 4:
+    case 8:
+    {
+        RGBQUAD *rgb = (RGBQUAD *)colors;
+        PALETTEENTRY palette[256];
+        UINT i, count;
+
+        info->bmiHeader.biClrUsed = 1 << info->bmiHeader.biBitCount;
+        count = boxeddrv_GetSystemPaletteEntries(NULL, 0, info->bmiHeader.biClrUsed, palette);
+        for (i = 0; i < count; i++)
+        {
+            rgb[i].rgbRed   = palette[i].peRed;
+            rgb[i].rgbGreen = palette[i].peGreen;
+            rgb[i].rgbBlue  = palette[i].peBlue;
+            rgb[i].rgbReserved = 0;
+        }
+        memset( &rgb[count], 0, (info->bmiHeader.biClrUsed - count) * sizeof(*rgb) );
+        break;
+    }
+    case 16:
+        colors[0] = 0xF800;
+        colors[1] = 0x7E0;
+        colors[2] = 0x1F;
+        info->bmiHeader.biCompression = BI_BITFIELDS;
+        break;
+    case 32:
+        colors[0] = 0x00ff0000;
+        colors[1] = 0x0000ff00;
+        colors[2] = 0x000000ff;
+        break;
+    }
+}
+
 /***********************************************************************
  *              create_surface
  */
+INT boxeddrv_GetDeviceCaps(PHYSDEV dev, INT cap);
 struct window_surface *create_surface(HWND window, const RECT *rect, struct window_surface *old_surface, BOOL use_alpha)
 {
     struct boxeddrv_window_surface *surface;
     struct boxeddrv_window_surface *old_boxed_surface = get_boxed_surface(old_surface);
     int width = rect->right - rect->left, height = rect->bottom - rect->top;
-    DWORD *colors;
     pthread_mutexattr_t attr;
     int err;
 
     surface = HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY,
-                        FIELD_OFFSET(struct boxeddrv_window_surface, info.bmiColors[3]));
+                        FIELD_OFFSET(struct boxeddrv_window_surface, info.bmiColors[256]));
     if (!surface) return NULL;
 
     err = pthread_mutexattr_init(&attr);
@@ -317,15 +361,11 @@ struct window_surface *create_surface(HWND window, const RECT *rect, struct wind
     surface->info.bmiHeader.biWidth       = width;
     surface->info.bmiHeader.biHeight      = height; /* bottom-up */
     surface->info.bmiHeader.biPlanes      = 1;
-    surface->info.bmiHeader.biBitCount    = 32;
+    surface->info.bmiHeader.biBitCount    = boxeddrv_GetDeviceCaps(NULL, BITSPIXEL);
     surface->info.bmiHeader.biSizeImage   = get_dib_image_size(&surface->info);
     surface->info.bmiHeader.biCompression = BI_RGB;
     surface->info.bmiHeader.biClrUsed     = 0;
-
-    colors = (DWORD *)((char *)&surface->info + surface->info.bmiHeader.biSize);
-    colors[0] = 0x00ff0000;
-    colors[1] = 0x0000ff00;
-    colors[2] = 0x000000ff;
+    set_color_info(&surface->info);
 
     surface->header.funcs = &boxeddrv_surface_funcs;
     surface->header.rect  = *rect;
