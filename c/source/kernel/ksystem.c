@@ -193,6 +193,10 @@ U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
 	return 0;
 }
 
+U64 getMonotonicClock() {
+    return getSystemTimeAsMicroSeconds()-startTime;
+}
+
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz) {
 	U64 m = getSystemTimeAsMicroSeconds();
 	

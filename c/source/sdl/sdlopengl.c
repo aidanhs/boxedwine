@@ -28,7 +28,7 @@
 static int modesInitialized;
 
 PixelFormat pfs[512];
-int numberOfPfs;
+U32 numberOfPfs;
 
 U32 tryPixelFormat(PixelFormat* pf, int rSize, int gSize, int bSize, int aSize, int depth, int stencil, int doubleBuffer, int accel, int arSize, int agSize, int abSize, int aaSize) {
 #ifdef SDL2
@@ -298,10 +298,8 @@ void initDisplayModes() {
     }
 }
 
-int sdl_wglDescribePixelFormat(MMU_ARG U32 hdc, U32 fmt, U32 size, U32 descr)
+U32 sdl_wglDescribePixelFormat(MMU_ARG U32 hdc, U32 fmt, U32 size, U32 descr)
 {
-    const struct color_mode *mode;
-
     initDisplayModes();
 
     if (!descr) return numberOfPfs;

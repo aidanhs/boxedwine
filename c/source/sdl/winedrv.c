@@ -1,6 +1,10 @@
 #include "cpu.h"
 #include "log.h"
 #include "wnd.h"
+#include "kprocess.h"
+#include "kthread.h"
+#include "sdlopengl.h"
+#include "sdlwindow.h"
 
 extern int horz_res;
 extern int vert_res;
@@ -116,6 +120,8 @@ void notImplemented(const char* s) {
 #define BOXED_GET_NEAREST_COLOR                     (BOXED_BASE+81)
 #define BOXED_REALIZE_PALETTE                       (BOXED_BASE+82)
 #define BOXED_REALIZE_DEFAULT_PALETTE               (BOXED_BASE+83)
+#define BOXED_SET_EVENT_FD                          (BOXED_BASE+84)
+#define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
 
 # define __MSABI_LONG(x)         x
 
@@ -520,7 +526,39 @@ void boxeddrv_SetClipboardData(struct CPU* cpu) {
 
 // void CDECL drv_SetCursor(HCURSOR cursor)
 void boxeddrv_SetCursor(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetCursor not implemented");
+	U32 hCursor = ARG1;
+    U32 wModuleName = ARG2;
+    U32 wResName = ARG3;
+    U32 resId = ARG4;
+    U32 pFound = ARG5;
+
+    if (sdlSetCursor(getNativeStringW(MMU_PARAM_CPU wModuleName), getNativeStringW2(MMU_PARAM_CPU wResName), resId))
+        writed(MMU_PARAM_CPU ARG5, 1);    
+    else
+        writed(MMU_PARAM_CPU ARG5, 0);    
+}
+
+void boxeddrv_SetCursorBits(struct CPU* cpu) {
+	U32 hCursor = ARG1;
+    U32 wModuleName = ARG2;
+    U32 wResName = ARG3;
+    U32 resId = ARG4;
+    U32 bits = ARG5;
+    U32 width = ARG6;
+    U32 height = ARG7 / 2;
+    U32 hotX = ARG8;
+    U32 hotY = ARG9;
+    int pitch = (width+31) / 32 *4;
+    U8 data[64*64/8];
+    U8 mask[64*64/8];
+    int size = pitch*height;
+    if (size>sizeof(data)) {
+        klog("boxeddrv_SetCursorBits too large of cursor\n");
+        return;
+    }
+    memcopyToNative(MMU_PARAM_CPU bits, data, size);
+    memcopyToNative(MMU_PARAM_CPU bits+size, mask, size);
+    sdlCreateAndSetCursor(getNativeStringW(MMU_PARAM_CPU wModuleName), getNativeStringW2(MMU_PARAM_CPU wResName), resId, data, mask, width, height, hotX, hotY);
 }
 
 // BOOL CDECL drv_SetCursorPos(INT x, INT y)
@@ -661,7 +699,7 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
 	struct wRECT rect;
 
 	if (!wnd) {
-		wnd = wndCreate(MMU_PARAM_CPU ARG1, ARG4, ARG5);
+		wnd = wndCreate(MMU_PARAM_CPU cpu->thread->process->id, ARG1, ARG4, ARG5);
 	} else {
         readRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
         readRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
@@ -1056,14 +1094,13 @@ void boxeddrv_wglCopyContext(struct CPU* cpu) {
 	notImplemented("boxeddrv_wglCopyContext not implemented");
 }
 
-void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags);
 // HWND hwnd, int major, int minor, int profile, int flags
 void boxeddrv_wglCreateContext(struct CPU* cpu) {
     struct Wnd* wnd = getWnd(ARG1);
     if (!wnd) {
         EAX = 0;
     } else {
-        EAX = createOpenglWindow(wnd, ARG2, ARG3, ARG4, ARG5);
+        EAX = (U32)sdlCreateOpenglWindow(wnd, ARG2, ARG3, ARG4, ARG5);
     }
 }
 
@@ -1072,7 +1109,6 @@ void boxeddrv_wglDeleteContext(struct CPU* cpu) {
 }
 
 // HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr
-int sdl_wglDescribePixelFormat(MMU_ARG U32 hdc, U32 fmt, U32 size, U32 descr);
 void boxeddrv_wglDescribePixelFormat(struct CPU* cpu) {
     EAX = sdl_wglDescribePixelFormat(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4);
 }
@@ -1086,13 +1122,12 @@ void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
 	notImplemented("boxeddrv_wglGetProcAddress not implemented");    
 }
 
-U32 makeCurrent(void* context);
 // HwND hwnd, void* context
 void boxeddrv_wglMakeCurrent(struct CPU* cpu) {
-    EAX = makeCurrent(ARG2);
+    EAX = sdlMakeCurrent((void*)ARG2);
 }
 
-extern int numberOfPfs;
+extern U32 numberOfPfs;
 extern PixelFormat pfs[512];
 
 // HWND hwnd, int fmt, const PIXELFORMATDESCRIPTOR *descr
@@ -1111,7 +1146,6 @@ void boxeddrv_wglShareLists(struct CPU* cpu) {
 	notImplemented("boxeddrv_wglShareLists not implemented");
 }
 
-void sdlSwapBuffers();
 void boxeddrv_wglSwapBuffers(struct CPU* cpu) {
 	sdlSwapBuffers();
     EAX = 1;
@@ -1131,7 +1165,7 @@ void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
 
 // void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rect, RECT* rects, int rectCount)
 void boxeddrv_FlushSurface(struct CPU* cpu) {
-    int i;
+    U32 i;
 
     for (i=0;i<ARG9;i++) {
 	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8+16*i);
@@ -1142,9 +1176,8 @@ void boxeddrv_CreateDC(struct CPU* cpu) {
     U32 physdev = ARG1;    
 }
 
-void sdlGetPalette(MMU_ARG U32 start, U32 count, U32 entries);
 void boxeddrv_GetSystemPalette(struct CPU* cpu) {
-    int start = ARG1;
+    U32 start = ARG1;
     int count = ARG2;
     U32 paletteEntries = ARG3;
     U32 numberOfEntries = (bits_per_pixel > 8) ? 0 : (1 << bits_per_pixel);
@@ -1162,12 +1195,9 @@ void boxeddrv_GetSystemPalette(struct CPU* cpu) {
     EAX = count;
 }
 
-U32 sdlGetNearestColor(U32 color);
 void boxeddrv_GetNearestColor(struct CPU* cpu) {
     EAX = sdlGetNearestColor(ARG1);
 }
-
-U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries);
 
 void boxeddrv_RealizePalette(struct CPU* cpu) {
     int numberOfEntries = ARG1;
@@ -1175,7 +1205,6 @@ void boxeddrv_RealizePalette(struct CPU* cpu) {
     EAX = sdlRealizePalette(MMU_PARAM_CPU 0, numberOfEntries, entries);
 }
 
-void sdlRealizeDefaultPalette();
 void boxeddrv_RealizeDefaultPalette(struct CPU* cpu) {
     int numberOfEntries = ARG1;
     U32 entries = ARG2;
@@ -1186,13 +1215,17 @@ void boxeddrv_RealizeDefaultPalette(struct CPU* cpu) {
     EAX = 0;
 }
 
+void boxeddrv_SetEventFD(struct CPU* cpu) {
+    cpu->thread->process->eventQueueFD = ARG1;
+}
+
 #include "kalloc.h"
 
 Int99Callback* wine_callback;
 int wine_callbackSize;
 
 void initWine() {
-	wine_callback = kalloc(sizeof(Int99Callback) * 84);
+	wine_callback = kalloc(sizeof(Int99Callback) * 86);
 	wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
 	wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
 	wine_callback[BOXED_BEEP] = boxeddrv_Beep;
@@ -1277,5 +1310,7 @@ void initWine() {
     wine_callback[BOXED_GET_NEAREST_COLOR] = boxeddrv_GetNearestColor;
     wine_callback[BOXED_REALIZE_PALETTE] = boxeddrv_RealizePalette;
     wine_callback[BOXED_REALIZE_DEFAULT_PALETTE] = boxeddrv_RealizeDefaultPalette;
-	wine_callbackSize = 84;
+    wine_callback[BOXED_SET_EVENT_FD] = boxeddrv_SetEventFD;
+    wine_callback[BOXED_SET_CURSOR_BITS] = boxeddrv_SetCursorBits;
+	wine_callbackSize = 86;
 }

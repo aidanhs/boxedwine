@@ -44,6 +44,8 @@
 #include "wine/server.h"
 
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(boxeddrv);
 
@@ -148,6 +150,8 @@ typedef struct
 #define BOXED_GET_NEAREST_COLOR                     (BOXED_BASE+81)
 #define BOXED_REALIZE_PALETTE                       (BOXED_BASE+82)
 #define BOXED_REALIZE_DEFAULT_PALETTE               (BOXED_BASE+83)
+#define BOXED_SET_EVENT_FD                          (BOXED_BASE+84)
+#define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
 
 #define CALL_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index):"%eax"); 
 #define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
@@ -398,11 +402,76 @@ UINT CDECL boxeddrv_MapVirtualKeyEx(UINT wCode, UINT wMapType, HKL hkl) {
 	CALL_3(BOXED_MAP_VIRTUAL_KEY_EX, wCode, wMapType, hkl);
 }
 
+int eventsInitialized = 0;
+int eventQueueFD;
+
+void initEvents() 
+{
+    HANDLE handle;
+    int ret;
+    int fds[2];
+
+    if (eventsInitialized)
+        return;
+    eventsInitialized = 1;
+    pipe(fds);
+    fcntl(fds[0], F_SETFD, 1);
+    fcntl(fds[0], F_SETFL, O_NONBLOCK);
+    fcntl(fds[1], F_SETFD, 1);
+    fcntl(fds[1], F_SETFL, O_NONBLOCK);
+
+    eventQueueFD = fds[0];
+    CALL_NORETURN_1(BOXED_SET_EVENT_FD, fds[1]);
+
+    if (wine_server_fd_to_handle(fds[0], GENERIC_READ | SYNCHRONIZE, 0, &handle))
+    {
+        MESSAGE("wineboxed.drv: Can't allocate handle for event queue fd\n");
+        ExitProcess(1);
+    }
+    SERVER_START_REQ(set_queue_fd)
+    {
+        req->handle = wine_server_obj_handle(handle);
+        ret = wine_server_call(req);
+    }
+    SERVER_END_REQ;
+    if (ret)
+    {
+        MESSAGE("wineboxed.drv: Can't store handle for event queue fd\n");
+        ExitProcess(1);
+    } else {
+        TRACE("event queue read fd=%d\n", eventQueueFD);
+    }
+    CloseHandle(handle);
+}
+
+void processEvents() {
+    HWND hwnd;
+    INPUT input;
+
+    if (read(eventQueueFD, &hwnd, sizeof(HWND))==-1) {
+        return;
+    }
+    read(eventQueueFD, &input, sizeof(INPUT));
+    TRACE("read event: type=");
+    if (input.type == 0) {
+        TRACE("mouse dx=%d dy=%d dwFlags=%X time=%X\n", input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
+    } else {
+    }
+    __wine_send_input(hwnd, &input);
+}
+
 DWORD CDECL boxeddrv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *handles, DWORD timeout, DWORD mask, DWORD flags) {
+    DWORD result;
+
 	TRACE("count=%d handles=%p timeout=0x%08x mask=0x%08x flags=0x%08x\n", count, handles, timeout, mask, flags);
+    initEvents();
     CALL_5(BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX, count, handles, timeout, mask, flags);
-    if (!count && !timeout) return WAIT_TIMEOUT;
-        return WaitForMultipleObjectsEx(count, handles, flags & MWMO_WAITALL, timeout, flags & MWMO_ALERTABLE);	
+    if (!count && !timeout) 
+        return WAIT_TIMEOUT;
+    processEvents();
+    result = WaitForMultipleObjectsEx(count, handles, flags & MWMO_WAITALL, timeout, flags & MWMO_ALERTABLE);	
+    processEvents();
+    return result;
 }
 
 void CDECL boxeddrv_SetCapture(HWND hwnd, UINT flags) {
@@ -416,8 +485,59 @@ BOOL CDECL boxeddrv_SetClipboardData(UINT format_id, HANDLE data, BOOL owner) {
 }
 
 void CDECL boxeddrv_SetCursor(HCURSOR cursor) {
+    ICONINFOEXW info;    
+    DWORD found = 0;
+
 	TRACE("cursor=%p\n", cursor);
-	CALL_NORETURN_1(BOXED_SET_CURSOR, cursor);
+
+    info.cbSize = sizeof(info);
+    if (!GetIconInfoExW(cursor, &info)) {
+        WARN("GetIconInfoExW failed\n");
+        return;
+    }        
+
+    TRACE("info->szModName %s info->szResName %s info->wResID %hu\n", debugstr_w(info.szModName), debugstr_w(info.szResName), (DWORD)info.wResID);
+	CALL_NORETURN_5(BOXED_SET_CURSOR, cursor, info.szModName, info.szResName, (DWORD)info.wResID, &found);
+
+    if (!found) {
+        char buffer[FIELD_OFFSET(BITMAPINFO, bmiColors[256])];
+        BITMAPINFO *bmInfo = (BITMAPINFO *)buffer;
+        BITMAP bmMask;
+        //BITMAP bmColor;    
+        LPVOID bits;
+        HDC hdc;
+
+        GetObjectW(info.hbmMask, sizeof(bmMask), &bmMask);
+        //GetObjectW(info.hbmColor, sizeof(bmColor), &bmColor);    
+        TRACE("bmMask.bmWidth=%d bmMask.bmHeight=%d\n", (DWORD)bmMask.bmWidth, (DWORD)bmMask.bmHeight);
+        bmInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmInfo->bmiHeader.biWidth = bmMask.bmWidth;
+        bmInfo->bmiHeader.biHeight = -bmMask.bmHeight;
+        bmInfo->bmiHeader.biPlanes = 1;
+        bmInfo->bmiHeader.biBitCount = 1;
+        bmInfo->bmiHeader.biCompression = BI_RGB;
+        bmInfo->bmiHeader.biSizeImage = (bmMask.bmWidth + 31) / 32 * 4 * bmMask.bmHeight;
+        bmInfo->bmiHeader.biXPelsPerMeter = 0;
+        bmInfo->bmiHeader.biYPelsPerMeter = 0;
+        bmInfo->bmiHeader.biClrUsed = 0;
+        bmInfo->bmiHeader.biClrImportant = 0;
+
+        bits = HeapAlloc(GetProcessHeap(), 0, bmInfo->bmiHeader.biSizeImage);
+        TRACE("bits=%p\n", bits);
+        hdc = CreateCompatibleDC(0);
+
+        if (!GetDIBits(hdc, info.hbmMask, 0, bmMask.bmHeight, bits, bmInfo, DIB_RGB_COLORS))
+        {
+            WARN("GetDIBits failed\n");
+        } else {
+            CALL_NORETURN_9(BOXED_SET_CURSOR_BITS, cursor, info.szModName, info.szResName, (DWORD)info.wResID, bits, (DWORD)bmMask.bmWidth, (DWORD)bmMask.bmHeight, info.xHotspot, info.yHotspot);
+        }
+        HeapFree(GetProcessHeap(), 0, bits);
+        DeleteDC(hdc);
+    }
+    if (info.hbmColor)
+        DeleteObject(info.hbmColor);
+    DeleteObject(info.hbmMask);
 }
 
 BOOL CDECL boxeddrv_SetCursorPos(INT x, INT y) {
@@ -550,6 +670,7 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
     struct window_surface *oldSurface = NULL;
     HWND parent = GetAncestor(hwnd, GA_PARENT);
 
+    initEvents();
 	TRACE("hwnd=%p (parent=%p) insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, parent, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);     
 
     if (GetWindowThreadProcessId(hwnd, NULL) != GetCurrentThreadId()) return;
@@ -569,7 +690,7 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
     *surface = NULL;
     
     *visible_rect = *window_rect;
-    if (swp_flags & SWP_HIDEWINDOW) return;    
+    if (swp_flags & SWP_HIDEWINDOW) return;        
 	CALL_NORETURN_7(BOXED_WINDOW_POS_CHANGING, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, surface);
 
     if (parent != GetDesktopWindow()) {
@@ -703,33 +824,33 @@ BOOL WINAPI NotifyIME(HIMC hIMC, DWORD dwAction, DWORD dwIndex, DWORD dwValue) {
 }
 
 static BOOL boxeddrv_wglCopyContext(struct wgl_context *src, struct wgl_context *dst, UINT mask) {
-    printf("boxeddrv_wglCopyContext src=%p dst=%p mask=%X\n", src, dst, mask);
+    TRACE("boxeddrv_wglCopyContext src=%p dst=%p mask=%X\n", src, dst, mask);
 	CALL_3(BOXED_GL_COPY_CONTEXT, src, dst, mask);
 }
 
 static struct wgl_context *boxeddrv_wglCreateContext(HDC hdc) {
-    printf("boxeddrv_wglCreateContext hdc=%X\n", (int)hdc);
+    TRACE("boxeddrv_wglCreateContext hdc=%X\n", (int)hdc);
 	CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), 0, 0, 0, 0);
 }
 
 static void boxeddrv_wglDeleteContext(struct wgl_context *context) {
-    printf("boxeddrv_wglDeleteContext context=%p\n", context);
+    TRACE("boxeddrv_wglDeleteContext context=%p\n", context);
 	CALL_NORETURN_1(BOXED_GL_DELETE_CONTEXT, context);
 }
 
 static int boxeddrv_wglDescribePixelFormat(HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr) {
-    printf("boxeddrv_wglDescribePixelFormat hdc=%X fmt=%d size=%d descr=%p\n", (int)hdc, fmt, size, descr);
+    TRACE("boxeddrv_wglDescribePixelFormat hdc=%X fmt=%d size=%d descr=%p\n", (int)hdc, fmt, size, descr);
 	CALL_4(BOXED_GL_DESCRIBE_PIXEL_FORMAT, hdc, fmt, size, descr);
 }
 
 static int boxeddrv_wglGetPixelFormat(HDC hdc) {
-    printf("boxeddrv_wglGetPixelFormat hdc=%X\n", (int)hdc);
+    TRACE("boxeddrv_wglGetPixelFormat hdc=%X\n", (int)hdc);
 	CALL_1(BOXED_GL_GET_PIXEL_FORMAT, hdc);
 }
 
 static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct wgl_context *share_context, const int *attrib_list);
 static PROC boxeddrv_wglGetProcAddress(const char *proc) {
-    printf("boxeddrv_wglGetProcAddress %s\n", proc);
+    TRACE("boxeddrv_wglGetProcAddress %s\n", proc);
     //if (!strcmp(proc, "wglCreateContextAttribsARB"))
     //    return (PROC)boxeddrv_wglCreateContextAttribsARB;
 	//CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
@@ -737,17 +858,17 @@ static PROC boxeddrv_wglGetProcAddress(const char *proc) {
 }
 
 static BOOL boxeddrv_wglMakeCurrent(HDC hdc, struct wgl_context *context) {
-    printf("boxeddrv_wglMakeCurrent hdc=%X context=%p\n",(int)hdc, context);
+    TRACE("boxeddrv_wglMakeCurrent hdc=%X context=%p\n",(int)hdc, context);
 	CALL_2(BOXED_GL_MAKE_CURRENT, WindowFromDC(hdc), context);
 }
 
 static BOOL boxeddrv_wglSetPixelFormat(HDC hdc, int fmt, const PIXELFORMATDESCRIPTOR *descr) {
-    printf("boxeddrv_wglSetPixelFormat hdc=%X fmt=%d descr=%p\n", (int)hdc, fmt, descr);
+    TRACE("boxeddrv_wglSetPixelFormat hdc=%X fmt=%d descr=%p\n", (int)hdc, fmt, descr);
 	CALL_3(BOXED_GL_SET_PIXEL_FORMAT, WindowFromDC(hdc), fmt, descr);
 }
 
 static BOOL boxeddrv_wglShareLists(struct wgl_context *org, struct wgl_context *dest) {
-    printf("boxeddrv_wglShareLists org=%p dest=%p\n", org, dest);
+    TRACE("boxeddrv_wglShareLists org=%p dest=%p\n", org, dest);
 	CALL_2(BOXED_GL_SHARE_LISTS, org, dest);
 }
 
@@ -1097,7 +1218,7 @@ static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct w
     const int *iptr;
     int major = 1, minor = 0, profile = WGL_CONTEXT_CORE_PROFILE_BIT_ARB, flags = 0;
 
-    printf("boxeddrv_wglCreateContextAttribsARB hdc=%p share_context=%p attrib_list=%p\n", hdc, share_context, attrib_list);
+    TRACE("boxeddrv_wglCreateContextAttribsARB hdc=%p share_context=%p attrib_list=%p\n", hdc, share_context, attrib_list);
 
     for (iptr = attrib_list; iptr && *iptr; iptr += 2)
     {

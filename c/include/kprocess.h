@@ -101,6 +101,7 @@ struct KProcess {
 	U32 phnum;
 	U32 phentsize;
 	U32 entry;
+    U32 eventQueueFD;
 	struct user_desc ldt[LDT_ENTRIES];
 	struct KThread* wakeOnExitOrExec;
 };

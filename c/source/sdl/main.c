@@ -20,6 +20,7 @@
 #include "devfb.h"
 #include "devinput.h"
 #include "devdsp.h"
+#include "sdlwindow.h"
 
 void mesa_init();
 void gl_init();
@@ -372,7 +373,7 @@ int main(int argc, char **argv) {
 	//ppenv[envc++] = "LD_DEBUG=all";
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 	ppenv[envc++] = "WINELOADERNOEXEC=1";
-	//ppenv[envc++] = "WINEDEBUG=+d3d,+d3d_perf,+winediag,+boxeddrv,+relay";
+	ppenv[envc++] = "WINEDEBUG=+boxeddrv";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -428,22 +429,29 @@ int main(int argc, char **argv) {
 					SDL_Quit();
                     return 0;
 				} else if (e.type == SDL_MOUSEMOTION) { 
-					onMouseMove(e.motion.x, e.motion.y);
+                    if (!sdlMouseMouse(e.motion.x, e.motion.y))
+					    onMouseMove(e.motion.x, e.motion.y);
 				} else if (e.type == SDL_MOUSEBUTTONDOWN) {
 					if (e.button.button==SDL_BUTTON_LEFT) {
-						onMouseButtonDown(0);
+                        if (!sdlMouseButton(1, 0, e.motion.x, e.motion.y))
+						    onMouseButtonDown(0);
 					} else if (e.button.button == SDL_BUTTON_MIDDLE) {
-						onMouseButtonDown(2);
+                        if (!sdlMouseButton(1, 2, e.motion.x, e.motion.y))
+						    onMouseButtonDown(2);
 					} else if (e.button.button == SDL_BUTTON_RIGHT) {
-						onMouseButtonDown(1);
+                        if (!sdlMouseButton(1, 1, e.motion.x, e.motion.y))
+						    onMouseButtonDown(1);
 					}
 				} else if (e.type == SDL_MOUSEBUTTONUP) {
 					if (e.button.button==SDL_BUTTON_LEFT) {
-						onMouseButtonUp(0);
+                        if (!sdlMouseButton(0, 0, e.motion.x, e.motion.y))
+						    onMouseButtonUp(0);
 					} else if (e.button.button == SDL_BUTTON_MIDDLE) {
-						onMouseButtonUp(2);
+                        if (!sdlMouseButton(0, 2, e.motion.x, e.motion.y))
+						    onMouseButtonUp(2);
 					} else if (e.button.button == SDL_BUTTON_RIGHT) {
-						onMouseButtonUp(1);
+                        if (!sdlMouseButton(0, 1, e.motion.x, e.motion.y))
+						    onMouseButtonUp(1);
 					}
 				} else if (e.type == SDL_KEYDOWN) {
 					onKeyDown(translate(e.key.keysym.sym));

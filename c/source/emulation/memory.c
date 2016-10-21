@@ -563,3 +563,23 @@ char* getNativeString2(MMU_ARG U32 address) {
 	return (char*)address;
 #endif
 }
+
+char* getNativeStringW2(MMU_ARG U32 address) {
+#ifdef USE_MMU
+	char c;
+	int i=0;
+
+	if (!address) {
+		tmpBuffer2[0]=0;
+		return tmpBuffer2;
+	}
+	do {
+		c = readw(memory, address);
+        address+=2;
+		tmpBuffer2[i++] = c;
+	} while(c);
+	return tmpBuffer2;
+#else
+	return (char*)address;
+#endif
+}

@@ -4,6 +4,8 @@
 #include "platform.h"
 #include "memory.h"
 #include "wnd.h"
+#include "kprocess.h"
+#include "ksystem.h"
 
 int horz_res = 800;
 int vert_res = 600;
@@ -15,6 +17,8 @@ static int initialized;
 static int firstWindowCreated;
 static int needsUpdate;
 
+static SDL_Cursor* defaultCursor;
+PblMap* cursors;
 PblMap* hwndToWnd;
 SDL_Color sdlPalette[256];
 SDL_Color sdlSystemPalette[256] = {
@@ -296,6 +300,20 @@ struct Wnd* getWnd(U32 hwnd) {
 	return NULL;
 }
 
+struct Wnd* getWndFromPoint(int x, int y) {
+    PblIterator* it = pblMapIteratorNew(hwndToWnd);
+    while (pblIteratorHasNext(it)) {
+        struct Wnd** ppWnd = pblMapEntryValue((PblMapEntry*)pblIteratorNext(it));
+        struct Wnd* wnd;
+        if (ppWnd) {
+            wnd = *ppWnd;
+            if (x>=wnd->windowRect.left && x<=wnd->windowRect.right && y>=wnd->windowRect.top && y<=wnd->windowRect.bottom)
+                return wnd;
+        }
+    }
+    return NULL;
+}
+
 #ifdef SDL2
 SDL_Window *sdlWindow;
 SDL_GLContext sdlContext;
@@ -324,7 +342,7 @@ static void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
-U32 makeCurrent(void* context) {
+U32 sdlMakeCurrent(void* context) {
 #ifdef SDL2
     if (SDL_GL_MakeCurrent(sdlWindow, context)==0)
         return 1;
@@ -334,7 +352,7 @@ U32 makeCurrent(void* context) {
 #endif
 }
 
-void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
+void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
     SDL_GLContext context = NULL;
     unsigned char* version;
@@ -378,8 +396,9 @@ void* createOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int
     return context;
 #else
     surface = NULL;
-    SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);    
-    return 1;
+    SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);        
+    defaultCursor = SDL_GetCursor();
+    return (void*)1;
 #endif
 }
 
@@ -415,7 +434,6 @@ void displayChanged() {
 #endif
 	}
 	*/
-	SDL_ShowCursor(0);
 }
 
 char b[1024*1024*4];
@@ -431,7 +449,7 @@ void sdlSwapBuffers() {
 void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 surfaceRect, U32 rect) {
 	struct Wnd* wnd = getWnd(hwnd);
 	struct wRECT r;
-	int y;
+	U32 y;
     SDL_Surface* s;
     SDL_Rect srcRect;
     SDL_Rect dstRect;
@@ -486,11 +504,11 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
     } else {
         //width = wnd->windowRect.right-wnd->windowRect.left;
         //height = wnd->wholeRect.bottom-wnd->windowRect.top;
-        if (r.left+xOrg+width>=surface->w)
+        if (r.left+xOrg+(int)width>=surface->w)
             width = surface->w - r.left-xOrg;
 	    for (y = 0; y < height; y++) {
             int srcY = height - y -1;
-            if (y+r.top+yOrg>=surface->h)
+            if ((int)y+r.top+yOrg>=surface->h)
                 break;;
 		    memcopyToNative(MMU_PARAM bits+r.left*4+srcY*width*4, (S8*)surface->pixels + surface->pitch*(y+r.top+yOrg) + (r.left+xOrg)*surface->format->BytesPerPixel, width*surface->format->BytesPerPixel);
 	    }	
@@ -503,10 +521,12 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
 #endif
 }
 
-struct Wnd* wndCreate(MMU_ARG U32 hwnd, U32 windowRect, U32 clientRect) {
+struct Wnd* wndCreate(MMU_ARG U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
 	struct Wnd* wnd = kalloc(sizeof(struct Wnd));
 	readRect(MMU_PARAM windowRect, &wnd->windowRect);
 	readRect(MMU_PARAM clientRect, &wnd->clientRect);
+    wnd->processId = processId;
+    wnd->hwnd = hwnd;
 	pblMapAdd(hwndToWnd, &hwnd, sizeof(U32), &wnd, sizeof(void*));
 	return wnd;
 }
@@ -574,7 +594,7 @@ U32 getGammaRamp(MMU_ARG U32 ramp) {
 }
 
 void sdlGetPalette(MMU_ARG U32 start, U32 count, U32 entries) {
-    int i;
+    U32 i;
 
     for (i=0;i<count;i++) {
         writeb(MMU_PARAM entries+4*i, sdlPalette[i+start].r);
@@ -589,7 +609,7 @@ U32 sdlGetNearestColor(U32 color) {
 }
 
 U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries) {
-    int i;
+    U32 i;
     int result = 0;
 
     if (numberOfEntries>256)
@@ -608,5 +628,230 @@ void sdlRealizeDefaultPalette() {
 
     for (i=0;i<256;i++) {
         sdlPalette[i] = sdlSystemPalette[i];
+    }
+}
+
+/*
+typedef struct tagMOUSEINPUT
+{
+    LONG    dx;
+    LONG    dy;
+    DWORD   mouseData;
+    DWORD   dwFlags;
+    DWORD   time;
+    ULONG_PTR dwExtraInfo;
+} MOUSEINPUT, *PMOUSEINPUT, *LPMOUSEINPUT;
+
+typedef struct tagKEYBDINPUT
+{
+    WORD    wVk;
+    WORD    wScan;
+    DWORD   dwFlags;
+    DWORD   time;
+    ULONG_PTR dwExtraInfo;
+} KEYBDINPUT, *PKEYBDINPUT, *LPKEYBDINPUT;
+
+typedef struct tagHARDWAREINPUT
+{
+    DWORD   uMsg;
+    WORD    wParamL;
+    WORD    wParamH;
+} HARDWAREINPUT, *PHARDWAREINPUT, *LPHARDWAREINPUT;
+
+#define INPUT_MOUSE     0
+#define INPUT_KEYBOARD  1
+#define INPUT_HARDWARE  2
+
+typedef struct tagINPUT
+{
+    DWORD type;
+    union
+    {
+        MOUSEINPUT      mi;
+        KEYBDINPUT      ki;
+        HARDWAREINPUT   hi;
+    } DUMMYUNIONNAME;
+} INPUT, *PINPUT, *LPINPUT;
+*/
+
+#define MOUSEEVENTF_MOVE            0x0001
+#define MOUSEEVENTF_LEFTDOWN        0x0002
+#define MOUSEEVENTF_LEFTUP          0x0004
+#define MOUSEEVENTF_RIGHTDOWN       0x0008
+#define MOUSEEVENTF_RIGHTUP         0x0010
+#define MOUSEEVENTF_MIDDLEDOWN      0x0020
+#define MOUSEEVENTF_MIDDLEUP        0x0040
+#define MOUSEEVENTF_XDOWN           0x0080
+#define MOUSEEVENTF_XUP             0x0100
+#define MOUSEEVENTF_WHEEL           0x0800
+#define MOUSEEVENTF_HWHEEL          0x1000
+#define MOUSEEVENTF_MOVE_NOCOALESCE 0x2000
+#define MOUSEEVENTF_VIRTUALDESK     0x4000
+#define MOUSEEVENTF_ABSOLUTE        0x8000
+
+U32 unixsocket_write_native_nowait(MMU_ARG struct KObject* obj, U8 value);
+
+void writeLittleEndian_4(MMU_ARG struct KFileDescriptor* fd, U32 value) {
+    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, value & 0xFF);
+    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 8) & 0xFF);
+    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 16) & 0xFF);
+    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 24) & 0xFF);
+}
+
+int sdlMouseMouse(int x, int y) {
+    struct Wnd* wnd;
+
+    if (!hwndToWnd)
+        return 0;
+    wnd = getWndFromPoint(x, y);
+    if (wnd) {
+        struct KProcess* process = getProcessById(wnd->processId);        
+        if (process) {
+            struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
+            if (fd) {
+#ifdef USE_MMU
+                struct Memory* memory = process->memory;
+#endif
+                writeLittleEndian_4(MMU_PARAM fd, wnd->hwnd);
+                writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
+                writeLittleEndian_4(MMU_PARAM fd, x); // dx
+                writeLittleEndian_4(MMU_PARAM fd, y); // dy
+                writeLittleEndian_4(MMU_PARAM fd, 0); // mouseData
+                writeLittleEndian_4(MMU_PARAM fd, MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE); // dwFlags
+                writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
+                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+            }
+        }
+    }
+    SDL_SetCursor(defaultCursor);
+    return 1;
+}
+
+int sdlMouseButton(U32 down, U32 button, int x, int y) {
+    struct Wnd* wnd;
+
+    if (!hwndToWnd)
+        return 0;
+    wnd = getWndFromPoint(x, y);
+    if (wnd) {
+        struct KProcess* process = getProcessById(wnd->processId);        
+        if (process) {
+            struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
+            if (fd) {
+#ifdef USE_MMU
+                struct Memory* memory = process->memory;
+#endif
+                U32 flags = MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE;
+
+                if (down) {
+                    switch (button) {
+                        case 0: flags |= MOUSEEVENTF_LEFTDOWN; break;
+                        case 1: flags |= MOUSEEVENTF_RIGHTDOWN; break;
+                        case 2: flags |= MOUSEEVENTF_MIDDLEDOWN; break;
+                    }
+                } else {
+                    switch (button) {
+                        case 0: flags |= MOUSEEVENTF_LEFTUP; break;
+                        case 1: flags |= MOUSEEVENTF_RIGHTUP; break;
+                        case 2: flags |= MOUSEEVENTF_MIDDLEUP; break;
+                    }
+                }
+                writeLittleEndian_4(MMU_PARAM fd, wnd->hwnd);
+                writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
+                writeLittleEndian_4(MMU_PARAM fd, x); // dx
+                writeLittleEndian_4(MMU_PARAM fd, y); // dy
+                writeLittleEndian_4(MMU_PARAM fd, 0); // mouseData
+                writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
+                writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
+                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+            }
+        }
+    }
+    SDL_SetCursor(defaultCursor);
+    return 1;
+}
+
+static char cursorName[1024];
+
+const char* getCursorName(char* moduleName, char* resourceName, int resource) {
+    safe_strcpy(cursorName, moduleName, 1024);
+    safe_strcat(cursorName, ":", 1024);
+    if (strlen(resourceName))
+        safe_strcat(cursorName, resourceName, 1024);
+    else {
+        char tmp[10];
+        itoa(resource, tmp, 16);
+        safe_strcat(cursorName, tmp, 1024);
+    }
+    return cursorName;
+}
+
+U32 sdlSetCursor(char* moduleName, char* resourceName, int resource) {
+    if (cursors) {
+        const char* name = getCursorName(moduleName, resourceName, resource);
+        SDL_Cursor** cursor = pblMapGet(cursors, (void*)name, strlen(name), 0);
+        if (!cursor)
+            return 0;
+        SDL_SetCursor(*cursor);
+        return 1;
+    }
+    return 0;
+}
+
+void sdlCreateAndSetCursor(char* moduleName, char* resourceName, int resource, U8* and_bits, U8* xor_bits, int width, int height, int hotX, int hotY) {
+    SDL_Cursor* cursor;
+    int byteCount = (width+31) / 31 * 4 * height;
+    int i;
+    U8 data_bits[64*64/8];
+    U8 mask_bits[64*64/8];
+
+    // AND | XOR | Windows cursor pixel | SDL
+    // --------------------------------------
+    // 0  |  0  | black                 | transparent
+    // 0  |  1  | white                 | White
+    // 1  |  0  | transparent           | Inverted color if possible, black if not
+    // 1  |  1  | invert                | Black
+
+    // 0 0 -> 1 1
+    // 0 1 -> 0 1
+    // 1 0 -> 0 0
+    // 1 1 -> 1 0
+    for (i = 0; i < byteCount; i++) {
+        int j;
+
+        for (j=0;j<8;j++) {
+            U8 aBit = (and_bits[i] >> j) & 0x1;
+            U8 xBit = (xor_bits[i] >> j) & 0x1;
+
+            if (aBit && xBit) {
+                xBit = 0;
+            } else if (aBit && !xBit) {
+                aBit = 0;
+            } else if (!aBit && xBit) {
+                
+            } else if (!aBit && !xBit) {
+                aBit = 1;
+                xBit = 1;
+            }
+            if (aBit)
+                data_bits[i] |= (1 << j);
+            else
+                data_bits[i] &= ~(1 << j);
+
+            if (xBit)
+                mask_bits[i] |= (1 << j);
+            else
+                mask_bits[i] &= (1 << j);
+        }
+    }
+
+    cursor = SDL_CreateCursor(data_bits, mask_bits, width, height, hotX, hotY);
+    if (cursor) {
+        const char* name = getCursorName(moduleName, resourceName, resource);
+        if (!cursors) {
+            cursors = pblMapNewHashMap();
+        }
+        pblMapPut(cursors, (void*)name, strlen(name), &cursor, sizeof(SDL_Cursor*), NULL);
+        SDL_SetCursor(cursor);
     }
 }
