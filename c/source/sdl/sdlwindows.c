@@ -578,9 +578,10 @@ U32 getGammaRamp(MMU_ARG U32 ramp) {
     U16 b[256];
 
 #ifdef SDL2
-    SDL_GetWindowGammaRamp();
+    if (SDL_GetWindowGammaRamp(sdlWindow, r, g, b)==0) {
 #else
     if (SDL_GetGammaRamp(r, g, b)==0) {
+#endif
         int i;
         for (i=0;i<256;i++) {
             writew(MMU_PARAM ramp+i*2, r[i]);
@@ -590,7 +591,6 @@ U32 getGammaRamp(MMU_ARG U32 ramp) {
         return 1;
     }
     return 0;
-#endif
 }
 
 void sdlGetPalette(MMU_ARG U32 start, U32 count, U32 entries) {
@@ -605,7 +605,11 @@ void sdlGetPalette(MMU_ARG U32 start, U32 count, U32 entries) {
 }
 
 U32 sdlGetNearestColor(U32 color) {
+#ifdef SDL2
+    return SDL_MapRGB(SDL_GetWindowSurface(sdlWindow)->format, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF);
+#else
     return SDL_MapRGB(surface->format, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF);
+#endif
 }
 
 U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries) {
@@ -618,7 +622,11 @@ U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries) {
         sdlPalette[i+start].r = readb(MMU_PARAM entries+4*i);
         sdlPalette[i+start].g = readb(MMU_PARAM entries+4*i+1);
         sdlPalette[i+start].b = readb(MMU_PARAM entries+4*i+2);
+#ifdef SDL2
+        sdlPalette[i+start].a = 0;
+#else
         sdlPalette[i+start].unused = 0;
+#endif
     }    
     return result;
 }
