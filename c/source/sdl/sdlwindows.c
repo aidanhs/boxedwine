@@ -307,7 +307,7 @@ struct Wnd* getWndFromPoint(int x, int y) {
         struct Wnd* wnd;
         if (ppWnd) {
             wnd = *ppWnd;
-            if (x>=wnd->windowRect.left && x<=wnd->windowRect.right && y>=wnd->windowRect.top && y<=wnd->windowRect.bottom)
+            if (x>=wnd->windowRect.left && x<=wnd->windowRect.right && y>=wnd->windowRect.top && y<=wnd->windowRect.bottom && wnd->surface)
                 return wnd;
         }
     }
@@ -719,8 +719,7 @@ int sdlMouseMouse(int x, int y) {
             if (fd) {
 #ifdef USE_MMU
                 struct Memory* memory = process->memory;
-#endif
-                writeLittleEndian_4(MMU_PARAM fd, wnd->hwnd);
+#endif               
                 writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
                 writeLittleEndian_4(MMU_PARAM fd, x); // dx
                 writeLittleEndian_4(MMU_PARAM fd, y); // dy
@@ -764,7 +763,6 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
                         case 2: flags |= MOUSEEVENTF_MIDDLEUP; break;
                     }
                 }
-                writeLittleEndian_4(MMU_PARAM fd, wnd->hwnd);
                 writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
                 writeLittleEndian_4(MMU_PARAM fd, x); // dx
                 writeLittleEndian_4(MMU_PARAM fd, y); // dy

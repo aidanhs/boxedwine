@@ -612,8 +612,7 @@ void boxeddrv_ShowWindow(struct CPU* cpu) {
 
 // LRESULT CDECL macdrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
 void boxeddrv_SysCommand(struct CPU* cpu) {
-	notImplemented("boxeddrv_SysCommand not implemented");
-	EAX = 0;
+	EAX = -1;
 }
 
 #define SPI_GETSCREENSAVEACTIVE   16

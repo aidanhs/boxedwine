@@ -447,16 +447,26 @@ void initEvents()
 void processEvents() {
     HWND hwnd;
     INPUT input;
+    POINT p;
 
-    if (read(eventQueueFD, &hwnd, sizeof(HWND))==-1) {
+    if (read(eventQueueFD, &input, sizeof(INPUT))==-1) {
         return;
     }
-    read(eventQueueFD, &input, sizeof(INPUT));
     TRACE("read event: type=");
     if (input.type == 0) {
-        TRACE("mouse dx=%d dy=%d dwFlags=%X time=%X\n", input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
+        POINT p;
+        p.x = input.mi.dx;
+        p.y = input.mi.dy;
+        hwnd = WindowFromPoint(p);
+        if (!hwnd) {
+            return;
+        }
+        hwnd = GetAncestor(hwnd, GA_ROOT);
+        TRACE("mouse hwnd=%p dx=%d dy=%d dwFlags=%X time=%X\n", hwnd, input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
     } else {
     }
+    
+    TRACE("hwnd=%p GetFocus()=%p GetForegroundWindow()=%p\n", hwnd, GetFocus(), GetForegroundWindow());
     __wine_send_input(hwnd, &input);
 }
 
@@ -649,8 +659,9 @@ struct window_surface* boxeddrv_GetSurface(HWND hwnd) {
 void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, struct window_surface *surface) {
 	DWORD new_style = GetWindowLongW(hwnd, GWL_STYLE);
     struct window_surface* oldSurface = boxeddrv_GetSurface(hwnd);
-
-	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style);
+    RECT r;
+    GetWindowRect(hwnd, &r);
+	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x GetWindowRect()=%s\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style, wine_dbgstr_rect(&r));
     if (surface) {
         TRACE("     using new surface %p (ref=%d)\n", surface, surface->ref);
         window_surface_add_ref(surface);
@@ -726,8 +737,10 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
         rc.right = window_rect->right - window_rect->left;
         rc.top = 0;
         rc.bottom = window_rect->bottom - window_rect->top;
-		*surface = create_surface(hwnd, &rc, *surface, FALSE);
-        TRACE("     created new surface %p (ref=%d)\n", *surface, (*surface)->ref);
+        if (rc.right && rc.bottom) {
+		    *surface = create_surface(hwnd, &rc, *surface, FALSE);
+            TRACE("     created new surface %p (ref=%d)\n", *surface, (*surface)->ref);
+        }
 	}
 }
 
