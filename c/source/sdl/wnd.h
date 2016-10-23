@@ -44,20 +44,25 @@ struct Wnd {
 	U32 surface;
 	struct wRECT windowRect;
 	struct wRECT clientRect;
-	struct wRECT wholeRect;
 	const char* text;
     PixelFormat* pixelFormat;
     void* openGlContext;
     U32 activated;
     U32 processId;
     U32 hwnd;
+#ifdef SDL2
+    void* sdlTexture;
+    int sdlTextureHeight;
+    int sdlTextureWidth;
+#else
+    void* sdlSurface;
+#endif
 };
 
 void writeRect(MMU_ARG U32 address, struct wRECT* rect);
 void readRect(MMU_ARG U32 address, struct wRECT* rect);
 
 struct Wnd* getWnd(U32 hwnd);
-void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 surfaceRect, U32 rect);
 struct Wnd* wndCreate(MMU_ARG U32 processId, U32 hwnd, U32 windowRect, U32 clientRect);
 void wndDestroy(U32 hwnd);
 void showWnd(struct Wnd* wnd, U32 bShow);

@@ -528,10 +528,14 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 		len+=recordLen;
 
 		entry = getParentNode(openNode->node);
-		recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 1, is64, "..", entry->id, entry->nodeType->getType(entry, 1));
-		dirp+=recordLen;
-		len+=recordLen;
-		openNode->access->seek(openNode, 2);
+        if (entry) {
+		    recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 1, is64, "..", entry->id, entry->nodeType->getType(entry, 1));
+		    dirp+=recordLen;
+		    len+=recordLen;
+            openNode->access->seek(openNode, 2);
+        } else {
+		    openNode->access->seek(openNode, 1);
+        }
 	}
 	for (i=(U32)openNode->access->getFilePointer(openNode);i<entries;i++) {
 		struct Node* entry = getDirNode(openNode, i);

@@ -152,6 +152,7 @@ typedef struct
 #define BOXED_REALIZE_DEFAULT_PALETTE               (BOXED_BASE+83)
 #define BOXED_SET_EVENT_FD                          (BOXED_BASE+84)
 #define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
+#define BOXED_CREATE_DESKTOP                        (BOXED_BASE+86)
 
 #define CALL_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index):"%eax"); 
 #define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
@@ -744,9 +745,26 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
 	}
 }
 
-void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rect, RECT* rects, int rectCount) {
-	TRACE("hwnd=%p bits=%p width=%d height=%d rect=%s rects=%p rectCount=%d\n", hwnd, bits, width, height, wine_dbgstr_rect(rect), rects, rectCount);
-	CALL_NORETURN_9(BOXED_FLUSH_SURFACE, hwnd, bits, xOrg, yOrg, width, height, rect, rects, rectCount);
+struct winZOrder {
+    int count;
+    HWND windows[1024];
+};
+
+BOOL getZOrderCallback(HWND hWnd, LPARAM lParam) {
+    struct winZOrder* zorder = (struct winZOrder*)lParam;
+    TRACE("hWnd=%p zorder->count=%d\n", hWnd, zorder->count);
+    if (zorder->count<1024) {
+        zorder->windows[zorder->count++] = hWnd;
+    }
+    return TRUE;
+}
+
+void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rects, int rectCount) {
+    struct winZOrder zorder;
+    zorder.count = 0;	
+    EnumWindows((WNDENUMPROC)getZOrderCallback, (LPARAM)&zorder);
+    TRACE("hwnd=%p bits=%p width=%d height=%d rects=%p rectCount=%d hWndCount=%d\n", hwnd, bits, width, height, rects, rectCount, zorder.count);
+	CALL_NORETURN_9(BOXED_FLUSH_SURFACE, hwnd, bits, xOrg, yOrg, width, height, &zorder, rects, rectCount);
 }
 
 BOOL boxeddrv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {
@@ -1278,4 +1296,9 @@ static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct w
     }
 
     CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), major, minor, profile, flags);
+}
+
+BOOL CDECL boxeddrv_create_desktop( UINT width, UINT height )
+{
+    CALL_2(BOXED_CREATE_DESKTOP, width, height);
 }

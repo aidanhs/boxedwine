@@ -122,6 +122,7 @@ void notImplemented(const char* s) {
 #define BOXED_REALIZE_DEFAULT_PALETTE               (BOXED_BASE+83)
 #define BOXED_SET_EVENT_FD                          (BOXED_BASE+84)
 #define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
+#define BOXED_CREATE_DESKTOP                        (BOXED_BASE+86)
 
 # define __MSABI_LONG(x)         x
 
@@ -667,7 +668,6 @@ void boxeddrv_WindowPosChanged(struct CPU* cpu) {
 		return;
 	writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
 	writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
-	writeRect(MMU_PARAM_CPU ARG6, &wnd->wholeRect);
     //wnd->surface = 0;
 	if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
 		showWnd(wnd, 0);
@@ -1162,13 +1162,14 @@ void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
 	
 }
 
-// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rect, RECT* rects, int rectCount)
+// void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, zOrder, RECT* rects, int rectCount)
 void boxeddrv_FlushSurface(struct CPU* cpu) {
     U32 i;
 
     for (i=0;i<ARG9;i++) {
-	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8+16*i);
+	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG8+16*i);
     }
+    drawAllWindows(MMU_PARAM_CPU ARG7+4, readd(MMU_PARAM_CPU ARG7));
 }
 
 void boxeddrv_CreateDC(struct CPU* cpu) {
@@ -1218,13 +1219,21 @@ void boxeddrv_SetEventFD(struct CPU* cpu) {
     cpu->thread->process->eventQueueFD = ARG1;
 }
 
+void boxeddrv_CreateDesktop(struct CPU* cpu) {
+    //horz_res = ARG1;
+    //vert_res = ARG2;
+    //default_horz_res = ARG1;
+    //default_vert_res = ARG2;
+    //displayChanged();
+    EAX = 0;
+}
 #include "kalloc.h"
 
 Int99Callback* wine_callback;
 int wine_callbackSize;
 
 void initWine() {
-	wine_callback = kalloc(sizeof(Int99Callback) * 86);
+	wine_callback = kalloc(sizeof(Int99Callback) * 87);
 	wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
 	wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
 	wine_callback[BOXED_BEEP] = boxeddrv_Beep;
@@ -1311,5 +1320,6 @@ void initWine() {
     wine_callback[BOXED_REALIZE_DEFAULT_PALETTE] = boxeddrv_RealizeDefaultPalette;
     wine_callback[BOXED_SET_EVENT_FD] = boxeddrv_SetEventFD;
     wine_callback[BOXED_SET_CURSOR_BITS] = boxeddrv_SetCursorBits;
-	wine_callbackSize = 86;
+    wine_callback[BOXED_CREATE_DESKTOP] = boxeddrv_CreateDesktop;
+	wine_callbackSize = 87;
 }

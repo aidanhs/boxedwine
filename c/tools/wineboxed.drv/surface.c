@@ -221,7 +221,7 @@ static void boxeddrv_surface_set_region(struct window_surface *window_surface, H
 /***********************************************************************
  *              boxeddrv_surface_flush
  */
-void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rect, RECT* rects, int rectCount);
+void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rects, int rectCount);
 static void boxeddrv_surface_flush(struct window_surface *window_surface)
 {
     struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
@@ -236,13 +236,13 @@ static void boxeddrv_surface_flush(struct window_surface *window_surface)
     {
         if (surface->drawn)
         {
-            TRACE("drawn += bounds");
+            TRACE("drawn += bounds\n");
             CombineRgn(surface->drawn, surface->drawn, region, RGN_OR);
             DeleteObject(region);
         }
         else
         {
-            TRACE("drawn = bounds");
+            TRACE("drawn = bounds\n");
             surface->drawn = region;
         }
     }
@@ -255,7 +255,7 @@ static void boxeddrv_surface_flush(struct window_surface *window_surface)
         RECT r;
 
         GetWindowRect(surface->window, &r);
-        boxeddrv_FlushSurface(surface->window, surface->bits, r.left, r.top, surface->info.bmiHeader.biWidth, surface->info.bmiHeader.biHeight, &surface->header.rect, (RECT*)surface->blit_data->Buffer, surface->blit_data->rdh.nCount);
+        boxeddrv_FlushSurface(surface->window, surface->bits, r.left, r.top, surface->info.bmiHeader.biWidth, surface->info.bmiHeader.biHeight, (RECT*)surface->blit_data->Buffer, surface->blit_data->rdh.nCount);
     }
 }
 

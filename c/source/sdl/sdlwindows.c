@@ -15,7 +15,6 @@ int default_vert_res = 600;
 int default_bits_per_pixel = 32;
 static int initialized;
 static int firstWindowCreated;
-static int needsUpdate;
 
 static SDL_Cursor* defaultCursor;
 PblMap* cursors;
@@ -307,10 +306,13 @@ struct Wnd* getWndFromPoint(int x, int y) {
         struct Wnd* wnd;
         if (ppWnd) {
             wnd = *ppWnd;
-            if (x>=wnd->windowRect.left && x<=wnd->windowRect.right && y>=wnd->windowRect.top && y<=wnd->windowRect.bottom && wnd->surface)
+            if (x>=wnd->windowRect.left && x<=wnd->windowRect.right && y>=wnd->windowRect.top && y<=wnd->windowRect.bottom && wnd->surface) {
+                pblIteratorFree(it);
                 return wnd;
+            }
         }
     }
+    pblIteratorFree(it);
     return NULL;
 }
 
@@ -318,13 +320,22 @@ struct Wnd* getWndFromPoint(int x, int y) {
 SDL_Window *sdlWindow;
 SDL_GLContext sdlContext;
 SDL_Renderer *sdlRenderer;
-SDL_Texture* sdlTexture;
 
 static void destroySDL2() {
-	if (sdlTexture) {
-		SDL_DestroyTexture(sdlTexture);
-        sdlTexture = 0;
-	}
+    PblIterator* it = pblMapIteratorNew(hwndToWnd);
+    while (pblIteratorHasNext(it)) {
+        struct Wnd** ppWnd = pblMapEntryValue((PblMapEntry*)pblIteratorNext(it));
+        struct Wnd* wnd;
+        if (ppWnd) {
+            wnd = *ppWnd;
+            if (wnd->sdlTexture) {
+                SDL_DestroyTexture(wnd->sdlTexture);
+                wnd->sdlTexture = NULL;
+            }
+        }
+    }
+    pblIteratorFree(it);
+
 	if (sdlRenderer) {
 		SDL_DestroyRenderer(sdlRenderer);
 		sdlRenderer = 0;
@@ -409,8 +420,7 @@ void displayChanged() {
 #ifdef SDL2
 	destroySDL2();
 	sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
-	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);
-	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, horz_res, vert_res);
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);	
 #else
 	flags = SDL_HWSURFACE;
 	if (surface && SDL_MUSTLOCK(surface)) {
@@ -419,24 +429,7 @@ void displayChanged() {
 	printf("Switching to %dx%d@%d\n", horz_res, vert_res, bits_per_pixel);
 	surface = SDL_SetVideoMode(horz_res, vert_res, 32, flags);
 #endif
-	/*
-	if (bits_per_pixel == 8) {
-		SDL_Color colors[256];
-		int i;
-
-		for (i = 0; i<256; i++){
-			colors[i].r = (U8)fb_cmap.red[i];
-			colors[i].g = (U8)fb_cmap.green[i];
-			colors[i].b = (U8)fb_cmap.blue[i];
-		}
-#ifndef SDL2
-		SDL_SetPalette(surface, SDL_PHYSPAL, colors, 0, 256);
-#endif
-	}
-	*/
 }
-
-char b[1024*1024*4];
 
 void sdlSwapBuffers() {
 #ifdef SDL2
@@ -446,11 +439,14 @@ void sdlSwapBuffers() {
 #endif
 }
 
-void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 surfaceRect, U32 rect) {
+#ifdef SDL2
+U8 b[1024*1024*4];
+#endif
+
+void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
 	struct Wnd* wnd = getWnd(hwnd);
 	struct wRECT r;
-	U32 y;
-    SDL_Surface* s;
+	U32 y;    
     SDL_Rect srcRect;
     SDL_Rect dstRect;
     int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
@@ -458,8 +454,6 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
 	static int i;
 
     readRect(MMU_PARAM rect, &r);
-    //xOrg+=r.left;
-    //yOrg+=r.top;
 
     srcRect.x = 0;
     srcRect.y = 0;
@@ -478,46 +472,99 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
         return;
 #endif
 	if (!wnd)
-		return;
-
-    for (y = 0; y < height; y++) {
-            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, b+y*pitch, pitch);
+		return;    
+#ifdef SDL2
+    {
+        SDL_Texture *sdlTexture = NULL;
+        
+        if (wnd->sdlTexture) {
+            sdlTexture = wnd->sdlTexture;
+            if (sdlTexture && (wnd->sdlTextureHeight != height || wnd->sdlTextureWidth != width)) {
+                SDL_DestroyTexture(wnd->sdlTexture);
+                wnd->sdlTexture = NULL;
+                sdlTexture = NULL;
+            }
+        }
+        if (!sdlTexture) {
+            sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+            wnd->sdlTexture = sdlTexture;
+            wnd->sdlTextureHeight = height;
+            wnd->sdlTextureWidth = width;
         }
 
-#ifdef SDL2
-    SDL_UpdateTexture(sdlTexture, NULL, b, pitch);
-	SDL_RenderClear(sdlRenderer);
-	SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
-	SDL_RenderPresent(sdlRenderer);
+        for (y = 0; y < height; y++) {
+            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, b+y*pitch, pitch);
+        } 
+        if (bits_per_pixel!=32) {
+            // SDL_ConvertPixels(width, height, )
+        }
+        SDL_UpdateTexture(sdlTexture, NULL, b, pitch);
+    }
 #else
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_LockSurface(surface);
 	}	
-    if (1) {        
-        s = SDL_CreateRGBSurfaceFrom(b, width, height, bits_per_pixel, pitch, 0x00FF0000, 0x0000FF00, 0x000000FF, 0);
-        if (bits_per_pixel==8)
-            SDL_SetPalette(s, SDL_LOGPAL, sdlPalette, 0, 256);
-        SDL_BlitSurface(s, &srcRect, surface, &dstRect);
-        sprintf(tmp, "test%d.bmp", i++);
+    {     
+        SDL_Surface* s = NULL;
+        if (wnd->surface) {
+            s = wnd->sdlSurface;
+            if (s && (s->w!=width || s->h!=height || s->format->BitsPerPixel!=bits_per_pixel)) {
+                SDL_FreeSurface(s);
+                wnd->sdlSurface = NULL;
+                s = NULL;
+            }
+        }
+        if (!s) {
+            s = SDL_CreateRGBSurface(0, width, height, bits_per_pixel, 0x00FF0000, 0x0000FF00, 0x000000FF, 0);
+            wnd->sdlSurface = s;
+        }
+        for (y = 0; y < height; y++) {
+            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
+        }   
+        
+        //sprintf(tmp, "test%d.bmp", i++);
         //SDL_SaveBMP(s, tmp);
-        SDL_FreeSurface(s);
-    } else {
-        //width = wnd->windowRect.right-wnd->windowRect.left;
-        //height = wnd->wholeRect.bottom-wnd->windowRect.top;
-        if (r.left+xOrg+(int)width>=surface->w)
-            width = surface->w - r.left-xOrg;
-	    for (y = 0; y < height; y++) {
-            int srcY = height - y -1;
-            if ((int)y+r.top+yOrg>=surface->h)
-                break;;
-		    memcopyToNative(MMU_PARAM bits+r.left*4+srcY*width*4, (S8*)surface->pixels + surface->pitch*(y+r.top+yOrg) + (r.left+xOrg)*surface->format->BytesPerPixel, width*surface->format->BytesPerPixel);
-	    }	
-    }	
-    needsUpdate = 1;
-    SDL_UpdateRect(surface, 0, 0, 0, 0);
+    }
 	if (SDL_MUSTLOCK(surface)) {
 		SDL_UnlockSurface(surface);
 	}      
+#endif
+}
+
+void drawAllWindows(MMU_ARG U32 hWnd, int count) {    
+    int i;
+
+#ifdef SDL2
+    SDL_SetRenderDrawColor(sdlRenderer, 58, 110, 165, 255 );
+    SDL_RenderClear(sdlRenderer);    
+    for (i=count-1;i>=0;i--) {
+        struct Wnd* wnd = getWnd(readd(MMU_PARAM hWnd+i*4));
+        if (wnd && wnd->sdlTextureWidth) {
+            SDL_Rect dstrect;
+            dstrect.x = wnd->windowRect.left;
+            dstrect.y = wnd->windowRect.top;
+            dstrect.w = wnd->sdlTextureWidth;
+            dstrect.h = wnd->sdlTextureHeight;
+            SDL_RenderCopy(sdlRenderer,  wnd->sdlTexture, NULL, &dstrect);	
+        }        	
+    } 
+    SDL_RenderPresent(sdlRenderer);
+#else
+    SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 58, 110, 165));
+    for (i=count-1;i>=0;i--) {
+        struct Wnd* wnd = getWnd(readd(MMU_PARAM hWnd+i*4));
+        if (wnd && wnd->sdlSurface) {
+            SDL_Rect dstrect;
+            dstrect.x = wnd->windowRect.left;
+            dstrect.y = wnd->windowRect.top;
+            dstrect.w = ((SDL_Surface*)(wnd->sdlSurface))->w;
+            dstrect.h = ((SDL_Surface*)(wnd->sdlSurface))->h;
+            if (bits_per_pixel==8)
+                SDL_SetPalette(wnd->sdlSurface, SDL_LOGPAL, sdlPalette, 0, 256);
+            SDL_BlitSurface(wnd->sdlSurface, NULL, surface, &dstrect);
+        }        	
+    }    
+    SDL_UpdateRect(surface, 0, 0, 0, 0);
 #endif
 }
 
