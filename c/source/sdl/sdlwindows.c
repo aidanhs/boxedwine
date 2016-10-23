@@ -500,10 +500,7 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
         }
         SDL_UpdateTexture(sdlTexture, NULL, b, pitch);
     }
-#else
-	if (SDL_MUSTLOCK(surface)) {
-		SDL_LockSurface(surface);
-	}	
+#else		
     {     
         SDL_Surface* s = NULL;
         if (wnd->surface) {
@@ -518,16 +515,19 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
             s = SDL_CreateRGBSurface(0, width, height, bits_per_pixel, 0x00FF0000, 0x0000FF00, 0x000000FF, 0);
             wnd->sdlSurface = s;
         }
+        if (SDL_MUSTLOCK(s)) {
+		    SDL_LockSurface(s);
+	    }
         for (y = 0; y < height; y++) {
             memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
         }   
-        
+        if (SDL_MUSTLOCK(s)) {
+		    SDL_UnlockSurface(s);
+	    }      
         //sprintf(tmp, "test%d.bmp", i++);
         //SDL_SaveBMP(s, tmp);
-    }
-	if (SDL_MUSTLOCK(surface)) {
-		SDL_UnlockSurface(surface);
-	}      
+
+    }	
 #endif
 }
 
