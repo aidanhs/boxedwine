@@ -833,7 +833,7 @@ const char* getCursorName(char* moduleName, char* resourceName, int resource) {
         safe_strcat(cursorName, resourceName, 1024);
     else {
         char tmp[10];
-        itoa(resource, tmp, 16);
+        SDL_itoa(resource, tmp, 16);
         safe_strcat(cursorName, tmp, 1024);
     }
     return cursorName;
