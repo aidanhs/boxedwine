@@ -541,6 +541,26 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
 	return count;
 }
 
+U32 unixsocket_write_native_nowait(MMU_ARG struct KObject* obj, U8 value) {
+	struct KSocket* s = (struct KSocket*)obj->data;
+	U32 count=0;
+
+	if (s->type == K_SOCK_DGRAM) {
+		return 1;
+	}
+	if (s->outClosed || !s->connection)
+		return -K_EPIPE;
+	if (ringbuf_is_full(s->connection->recvBuffer)) {
+		return -K_EWOULDBLOCK;
+	}
+	//printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
+    ringbuf_memcpy_into(s->connection->recvBuffer, &value, 1);
+	count++;
+    if (s->connection)
+        wakeAndResetWaitingOnReadThreads(s->connection);
+	return count;
+}
+
 U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
 	struct KSocket* s = (struct KSocket*)obj->data;
 	U32 count = 0;
