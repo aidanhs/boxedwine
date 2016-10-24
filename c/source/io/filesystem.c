@@ -16,6 +16,7 @@
 #include "ram.h"
 #include "kstring.h"
 #include "kscheduler.h"
+#include "pbl.h"
 
 #include UNISTD
 #include UTIME
@@ -24,6 +25,7 @@
 static char root[MAX_FILEPATH_LEN];
 static int nodeId = 1;
 static struct KHashmap nodeMap;
+static PblMap* localSkipLinksMap;
 
 char pathSeperator = '/';
 
@@ -43,7 +45,7 @@ void initFileSystem(const char* rootPath) {
 	if (root[len-1]==pathSeperator)
 		root[len-1] = 0;
 	initHashmap(&nodeMap);
-
+    localSkipLinksMap = pblMapNewHashMap();
 	{
 		struct Node* dir = getNodeFromLocalPath("", "/tmp/del", TRUE);
 		if (dir) {
@@ -591,11 +593,19 @@ void trimTrailingSpaces(char* path) {
 	}
 }
 
+struct LocalPath {
+    char nativePath[MAX_FILEPATH_LEN];
+    char localPath[MAX_FILEPATH_LEN];
+    U32 isLink;
+};
+
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, int localPathSize, char* nativePath, int nativePathSize, U32* isLink) {
 	struct Node* result;
 	U32 tmp32=0;
+    struct LocalPath localEntry;
+    struct LocalPath* found;
 
-	if (path[0]=='/')
+    if (path[0]=='/')
 		safe_strcpy(localPath, path, localPathSize);
 	else {
 		safe_strcpy(localPath, currentDirectory, localPathSize);
@@ -603,21 +613,38 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
 		safe_strcat(localPath, path, localPathSize);
 	}	
 	trimTrailingSpaces(localPath);
-	normalizePath(localPath);	
-	safe_strcpy(nativePath, root, nativePathSize);	
-	safe_strcat(nativePath, localPath, nativePathSize);
-	while (TRUE) {
-		localPathToRemote(nativePath+strlen(root)); // don't convert colon's in the root path			
-		if (followLinks(nativePath, nativePathSize, &tmp32)) {
-			normalizePath(nativePath);
-			memmove(nativePath+strlen(root), nativePath, strlen(nativePath)+1);
-			memcpy(nativePath, root, strlen(root));
-		} else {
-			break;
-		}
-	}
-	if (isLink)
-		*isLink = tmp32;
+
+    found = pblMapGet(localSkipLinksMap, localPath, strlen(localPath+1), NULL);
+    if (found) {
+        if (isLink)
+		    *isLink = found->isLink;
+        safe_strcpy(localPath, found->localPath, localPathSize);
+        safe_strcpy(nativePath, found->nativePath, nativePathSize);
+    } else {
+        char fullLocalPath[MAX_FILEPATH_LEN];
+        safe_strcpy(fullLocalPath, localPath, MAX_FILEPATH_LEN);	    
+
+	    normalizePath(localPath);	
+	    safe_strcpy(nativePath, root, nativePathSize);	
+	    safe_strcat(nativePath, localPath, nativePathSize);
+	    while (TRUE) {
+		    localPathToRemote(nativePath+strlen(root)); // don't convert colon's in the root path			
+		    if (followLinks(nativePath, nativePathSize, &tmp32)) {
+			    normalizePath(nativePath);
+			    memmove(nativePath+strlen(root), nativePath, strlen(nativePath)+1);
+			    memcpy(nativePath, root, strlen(root));
+		    } else {
+			    break;
+		    }
+	    }
+	    if (isLink)
+		    *isLink = tmp32;
+        safe_strcpy(localEntry.nativePath, nativePath, MAX_FILEPATH_LEN);
+        safe_strcpy(localEntry.localPath, localPath, MAX_FILEPATH_LEN);
+        localEntry.isLink = tmp32;
+        pblMapAdd(localSkipLinksMap, fullLocalPath, strlen(fullLocalPath+1), &localEntry, sizeof(struct LocalPath));
+    }
+
 	result = (struct Node*)getHashmapValue(&nodeMap, localPath);
 	if (result) {
 		// might have changed from link to file or visa versa
@@ -948,6 +975,7 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
 	}
 	openNode->access->write(MMU_PARAM_THREAD openNode, path1, strlen(s1));
 	openNode->access->close(openNode);
+    pblMapClear(localSkipLinksMap);
 	return 0;
 }
 
