@@ -4787,6 +4787,7 @@ void gen0cb(struct GenData* data, struct Op* op) {
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op);
 void OPCALL int99(struct CPU* cpu, struct Op* op);
+void OPCALL int98(struct CPU* cpu, struct Op* op);
 void gen0cd(struct GenData* data, struct Op* op) {
     char tmp[16];
 
@@ -4798,6 +4799,10 @@ void gen0cd(struct GenData* data, struct Op* op) {
         // syscall will set nextBlock
     } else if (op->func == int99) {
 	    out(data, "int99Callback[peek32(cpu, 0)](cpu); cpu->eip.u32+=");
+        out(data, tmp);
+        out(data, "; cpu->nextBlock = getBlock(cpu);");
+    } else if (op->func == int98) {
+	    out(data, "wine_callback[peek32(cpu, 0)](cpu); cpu->eip.u32+=");
         out(data, tmp);
         out(data, "; cpu->nextBlock = getBlock(cpu);");
     } else {
@@ -8574,8 +8579,9 @@ void writeSource() {
     }
     outfp(fp, "};\n");        
 
+    outfp(fp, "#include <string.h>\n");
     outfp(fp, "// :TODO: compiledCode is sorted, use a binary search\n");
-    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const char* bytes, U32 byteLen, MMU_ARG U32 ip) {\n");
+    outfp(fp, "OpCallback getCompiledFunction(U32 crc, const unsigned char* bytes, U32 byteLen, MMU_ARG U32 ip) {\n");
     outfp(fp, "    int i;\n");
     outfp(fp, "    int count = sizeof(compiledCode) / sizeof(struct CompiledCode);\n");
     outfp(fp, "    for (i=0;i<count;i++) {\n");
@@ -8719,6 +8725,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         data->sourceBufferLen = 1024*1024*10;
         data->sourceBuffer = kalloc(data->sourceBufferLen);
         data->sourceBufferPos = 0;
+        out(data, "struct Op;\n");
         OUT_DEFINE(U8);
         OUT_DEFINE(S8);
         OUT_DEFINE(U16);
@@ -8728,7 +8735,11 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(U64);
         OUT_DEFINE(S64);
         OUT_DEFINE(BOOL);
-        OUT_DEFINE(OPCALL);
+        out(data, "#ifdef PLATFORM_MSVC\n");
+        out(data, "#define OPCALL __fastcall\n");
+        out(data, "#else\n");
+        out(data, "#define OPCALL\n");
+        out(data, "#endif\n");        
         OUT_DEFINE(ES);
         OUT_DEFINE(CS);
         OUT_DEFINE(SS);
@@ -9074,6 +9085,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "void cpuid(struct CPU* cpu);\n");
         out(data, "typedef void (*Int99Callback)(struct CPU* cpu);\n");
         out(data, "extern Int99Callback* int99Callback;\n");
+        out(data, "extern Int99Callback* wine_callback;\n");
+        out(data, "U8 parity_lookup[256] ;\n");
         out(data, "#define TAG_Valid 0\n");
         out(data, "#define TAG_Zero 1\n");
         out(data, "#define TAG_Empty 3\n");
@@ -9096,6 +9109,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "struct F2I f2i;");
         out(data, "struct D2L {union {double d;U64 l;};};\n");
         out(data, "struct D2L d2l;");
+        out(data, "static U64 readq(MMU_ARG U32 address) {return readd(MMU_PARAM address) | ((U64)readd(MMU_PARAM address + 4) << 32);}\n static void writeq(MMU_ARG U32 address, U64 value) {writed(MMU_PARAM address, (U32)value);writed(MMU_PARAM address + 4, (U32)(value >> 32));}\n");
     }
     sprintf(tmp, "// 0x%.8x CRC=%.08X %s at 0x%.8x\n", eip, crc, getModuleName(cpu, eip), getModuleEip(cpu, eip));
     out(data, tmp);
