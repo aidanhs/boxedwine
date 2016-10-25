@@ -620,7 +620,17 @@ void readRect(MMU_ARG U32 address, struct wRECT* rect) {
 }
 
 void showWnd(struct Wnd* wnd, U32 bShow) {
-
+#ifdef SDL2
+    if (!bShow && wnd && wnd->sdlTexture) {
+        SDL_DestroyTexture(wnd->sdlTexture);
+        wnd->sdlTexture = NULL;
+    }
+#else
+    if (!bShow && wnd && wnd->sdlSurface) {
+        SDL_FreeSurface(wnd->sdlSurface);
+        wnd->sdlSurface = NULL;
+    }
+#endif
 }
 
 void setWndText(struct Wnd* wnd, const char* text) {
