@@ -16,7 +16,6 @@ int default_bits_per_pixel = 32;
 static int initialized;
 static int firstWindowCreated;
 
-static SDL_Cursor* defaultCursor;
 PblMap* cursors;
 PblMap* hwndToWnd;
 SDL_Color sdlPalette[256];
@@ -316,6 +315,27 @@ struct Wnd* getWndFromPoint(int x, int y) {
     return NULL;
 }
 
+struct Wnd* getFirstVisibleWnd() {
+    PblIterator* it = pblMapIteratorNew(hwndToWnd);
+    while (pblIteratorHasNext(it)) {
+        struct Wnd** ppWnd = pblMapEntryValue((PblMapEntry*)pblIteratorNext(it));
+        struct Wnd* wnd;
+        if (ppWnd) {
+            wnd = *ppWnd;
+#ifdef SDL2
+            if (wnd->sdlTexture) {
+#else
+            if (wnd->sdlSurface) {
+#endif
+                pblIteratorFree(it);
+                return wnd;
+            }
+        }
+    }
+    pblIteratorFree(it);
+    return NULL;
+}
+
 #ifdef SDL2
 SDL_Window *sdlWindow;
 SDL_GLContext sdlContext;
@@ -408,7 +428,6 @@ void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, 
 #else
     surface = NULL;
     SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);        
-    defaultCursor = SDL_GetCursor();
     return (void*)1;
 #endif
 }
@@ -759,6 +778,8 @@ int sdlMouseMouse(int x, int y) {
     if (!hwndToWnd)
         return 0;
     wnd = getWndFromPoint(x, y);
+    if (!wnd)
+        wnd = getFirstVisibleWnd();
     if (wnd) {
         struct KProcess* process = getProcessById(wnd->processId);        
         if (process) {
@@ -777,7 +798,6 @@ int sdlMouseMouse(int x, int y) {
             }
         }
     }
-    SDL_SetCursor(defaultCursor);
     return 1;
 }
 
@@ -787,6 +807,8 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
     if (!hwndToWnd)
         return 0;
     wnd = getWndFromPoint(x, y);
+    if (!wnd)
+        wnd = getFirstVisibleWnd();
     if (wnd) {
         struct KProcess* process = getProcessById(wnd->processId);        
         if (process) {
@@ -820,7 +842,6 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
             }
         }
     }
-    SDL_SetCursor(defaultCursor);
     return 1;
 }
 
