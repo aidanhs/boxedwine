@@ -2251,7 +2251,7 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
         op = op->next;
     }
     crc = crc32b(ops, opPos);
-    //func = getCompiledFunction(crc, ops, opPos, MMU_PARAM_CPU ip);
+    func = getCompiledFunction(crc, ops, opPos, MMU_PARAM_CPU ip);
     if (func) {
         block->ops->func = func;
         freeOp(block->ops->next);
