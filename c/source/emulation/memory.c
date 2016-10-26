@@ -457,7 +457,33 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
 #ifdef USE_MMU
 	U32 i;
-	
+#ifndef UNALIGNED_MEMORY
+    if (len>4) {
+	    U8* ram = getPhysicalAddress(memory, address);
+    
+        if (ram) {
+            U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
+            if (todo>len)
+                todo=len;
+            while (1) {
+                memcpy(ram, p, todo);
+                len-=todo;
+                if (!len) {
+                    return;
+                }
+                address+=todo;
+                p+=todo;
+                ram = getPhysicalAddress(memory, address);
+                if (!ram) {
+                    break;
+                }
+                todo = PAGE_SIZE;
+                if (todo>len)
+                    todo=len;
+            }
+        }
+    }
+#endif
 	for (i=0;i<len;i++) {
 		writeb(memory, address+i, p[i]);
 	}
@@ -469,7 +495,33 @@ void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
 void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
 #ifdef USE_MMU
 	U32 i;
-	
+#ifndef UNALIGNED_MEMORY
+    if (len>4) {
+	    U8* ram = getPhysicalAddress(memory, address);
+    
+        if (ram) {
+            U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
+            if (todo>len)
+                todo=len;
+            while (1) {
+                memcpy(p, ram, todo);
+                len-=todo;
+                if (!len) {
+                    return;
+                }
+                address+=todo;
+                p+=todo;
+                ram = getPhysicalAddress(memory, address);
+                if (!ram) {
+                    break;
+                }
+                todo = PAGE_SIZE;
+                if (todo>len)
+                    todo=len;
+            }
+        }
+    }
+#endif	
 	for (i=0;i<len;i++) {
 		p[i] = readb(memory, address+i);
 	}
