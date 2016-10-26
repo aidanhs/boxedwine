@@ -782,6 +782,11 @@ void writeLittleEndian_4(MMU_ARG struct KFileDescriptor* fd, U32 value) {
     unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 24) & 0xFF);
 }
 
+void writeLittleEndian_2(MMU_ARG struct KFileDescriptor* fd, U16 value) {
+    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, value & 0xFF);
+    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 8) & 0xFF);
+}
+
 int sdlMouseMouse(int x, int y) {
     struct Wnd* wnd;
 
@@ -938,4 +943,591 @@ void sdlCreateAndSetCursor(char* moduleName, char* resourceName, int resource, U
         pblMapPut(cursors, (void*)name, strlen(name), &cursor, sizeof(SDL_Cursor*), NULL);
         SDL_SetCursor(cursor);
     }
+}
+
+#define KEYEVENTF_EXTENDEDKEY        0x0001
+#define KEYEVENTF_KEYUP              0x0002
+#define KEYEVENTF_UNICODE            0x0004
+#define KEYEVENTF_SCANCODE           0x0008
+
+#define VK_CANCEL              0x03
+#define VK_BACK                0x08
+#define VK_TAB                 0x09
+#define VK_RETURN              0x0D
+#define VK_SHIFT               0x10
+#define VK_CONTROL             0x11
+#define VK_MENU                0x12
+#define VK_PAUSE               0x13
+#define VK_CAPITAL             0x14
+
+#define VK_ESCAPE              0x1B
+
+#define VK_SPACE               0x20
+#define VK_PRIOR               0x21
+#define VK_NEXT                0x22
+#define VK_END                 0x23
+#define VK_HOME                0x24
+#define VK_LEFT                0x25
+#define VK_UP                  0x26
+#define VK_RIGHT               0x27
+#define VK_DOWN                0x28
+#define VK_INSERT              0x2D
+#define VK_DELETE              0x2E
+#define VK_HELP                0x2F
+
+#define VK_DIVIDE              0x6F
+#define VK_MULTIPLY            0x6A
+
+#define VK_F1                  0x70
+#define VK_F2                  0x71
+#define VK_F3                  0x72
+#define VK_F4                  0x73
+#define VK_F5                  0x74
+#define VK_F6                  0x75
+#define VK_F7                  0x76
+#define VK_F8                  0x77
+#define VK_F9                  0x78
+#define VK_F10                 0x79
+#define VK_F11                 0x7A
+#define VK_F12                 0x7B
+#define VK_F24                 0x87
+
+#define VK_NUMLOCK             0x90
+#define VK_SCROLL              0x91
+
+#define VK_LSHIFT              0xA0
+#define VK_RSHIFT              0xA1
+#define VK_LCONTROL            0xA2
+#define VK_RCONTROL            0xA3
+#define VK_LMENU               0xA4
+#define VK_RMENU               0xA5
+
+#define VK_OEM_1               0xBA
+#define VK_OEM_PLUS            0xBB
+#define VK_OEM_COMMA           0xBC
+#define VK_OEM_MINUS           0xBD
+#define VK_OEM_PERIOD          0xBE
+#define VK_OEM_2               0xBF
+#define VK_OEM_3               0xC0
+#define VK_OEM_4               0xDB
+#define VK_OEM_5               0xDC
+#define VK_OEM_6               0xDD
+#define VK_OEM_7               0xDE
+
+#ifdef SDL2
+#define SDLK_NUMLOCK SDL_SCANCODE_NUMLOCKCLEAR
+#define SDLK_SCROLLOCK SDLK_SCROLLLOCK
+#endif
+
+int sdlKey(U32 key, U32 down) {
+    struct Wnd* wnd;
+    
+    if (!hwndToWnd)
+        return 0;
+    wnd = getFirstVisibleWnd();
+    if (wnd) {
+        struct KProcess* process = getProcessById(wnd->processId);        
+        if (process) {
+            struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
+            if (fd) {
+                U16 vKey = 0;
+                U16 scan = 0;
+#ifdef USE_MMU
+                struct Memory* memory = process->memory;
+#endif
+                U32 flags = 0;
+                if (!down) 
+                    flags|=KEYEVENTF_KEYUP;
+
+                switch (key) {
+                case SDLK_ESCAPE:
+                    vKey = VK_ESCAPE;
+                    scan = 0x01;
+                    break;
+                case SDLK_1:
+                    vKey = '1';
+                    scan = 0x02;
+                    break;
+                case SDLK_2:
+                    vKey = '2';
+                    scan = 0x03;
+                    break;
+                case SDLK_3:
+                    vKey = '3';
+                    scan = 0x04;
+                    break;
+                case SDLK_4:
+                    vKey = '4';
+                    scan = 0x05;
+                    break;
+                case SDLK_5:
+                    vKey = '5';
+                    scan = 0x06;
+                    break;
+                case SDLK_6:
+                    vKey = '6';
+                    scan = 0x07;
+                    break;
+                case SDLK_7:
+                    vKey = '7';
+                    scan = 0x08;
+                    break;
+                case SDLK_8:
+                    vKey = '8';
+                    scan = 0x09;
+                    break;
+                case SDLK_9:
+                    vKey = '9';
+                    scan = 0x0a;
+                    break;
+                case SDLK_0:
+                    vKey = '0';
+                    scan = 0x0b;
+                    break;
+                case SDLK_MINUS:
+                    vKey = VK_OEM_MINUS;
+                    scan = 0x0c;
+                    break;
+                case SDLK_EQUALS:
+                    vKey = VK_OEM_PLUS;
+                    scan = 0x0d;
+                    break;
+                case SDLK_BACKSPACE:
+                    vKey = VK_BACK;
+                    scan = 0x0e;
+                    break;
+                case SDLK_TAB:
+                    vKey = VK_TAB;
+                    scan = 0x0f;
+                    break;
+                case SDLK_q:
+                    vKey = 'Q';
+                    scan = 0x10;
+                    break;
+                case SDLK_w:
+                    vKey = 'W';
+                    scan = 0x11;
+                    break;
+                case SDLK_e:
+                    vKey = 'E';
+                    scan = 0x12;
+                    break;
+                case SDLK_r:
+                    vKey = 'R';
+                    scan = 0x13;
+                    break;
+                case SDLK_t:
+                    vKey = 'T';
+                    scan = 0x14;
+                    break;
+                case SDLK_y:
+                    vKey = 'Y';
+                    scan = 0x15;
+                    break;
+                case SDLK_u:
+                    vKey = 'U';
+                    scan = 0x16;
+                    break;
+                case SDLK_i:
+                    vKey = 'I';
+                    scan = 0x17;
+                    break;
+                case SDLK_o:
+                    vKey = 'O';
+                    scan = 0x18;
+                    break;
+                case SDLK_p:
+                    vKey = 'P';
+                    scan = 0x19;
+                    break;
+                case SDLK_LEFTBRACKET:
+                    vKey = VK_OEM_4;
+                    scan = 0x1a;
+                    break;
+                case SDLK_RIGHTBRACKET:
+                    vKey = VK_OEM_6;
+                    scan = 0x1b;
+                    break;
+                case SDLK_RETURN:
+                    vKey = VK_RETURN;
+                    scan = 0x1c;
+                    break;
+                case SDLK_LCTRL:
+                    vKey = VK_LCONTROL;
+                    scan = 0x1d;
+                    break;
+		        case SDLK_RCTRL:
+                    vKey = VK_RCONTROL;
+                    scan = 0x11d;
+                    break;
+                case SDLK_a:
+                    vKey = 'A';
+                    scan = 0x1e;
+                    break;
+                case SDLK_s:
+                    vKey = 'S';
+                    scan = 0x1f;
+                    break;
+                case SDLK_d:
+                    vKey = 'D';
+                    scan = 0x20;
+                    break;
+                case SDLK_f:
+                    vKey = 'F';
+                    scan = 0x21;
+                    break;
+                case SDLK_g:
+                    vKey = 'G';
+                    scan = 0x22;
+                    break;
+                case SDLK_h:
+                    vKey = 'H';
+                    scan = 0x23;
+                    break;
+                case SDLK_j:
+                    vKey = 'J';
+                    scan = 0x24;
+                    break;
+                case SDLK_k:
+                    vKey = 'K';
+                    scan = 0x25;
+                    break;
+                case SDLK_l:
+                    vKey = 'L';
+                    scan = 0x26;
+                    break;
+                case SDLK_SEMICOLON:
+                    vKey = VK_OEM_1;
+                    scan = 0x27;
+                    break;
+                case SDLK_QUOTE:
+                    vKey = VK_OEM_7;
+                    scan = 0x28;
+                    break;
+                case SDLK_BACKQUOTE:
+                    vKey = VK_OEM_3;
+                    scan = 0x29;
+                    break;
+                case SDLK_LSHIFT:
+                    vKey = VK_LSHIFT;
+                    scan = 0x2a;
+                    break;
+		        case SDLK_RSHIFT:
+                    vKey = VK_RSHIFT;
+                    scan = 0x36;
+                    break;
+                case SDLK_BACKSLASH:
+                    vKey = VK_OEM_5;
+                    scan = 0x2b;
+                    break;
+                case SDLK_z:
+                    vKey = 'Z';
+                    scan = 0x2c;
+                    break;
+                case SDLK_x:
+                    vKey = 'X';
+                    scan = 0x2d;
+                    break;
+                case SDLK_c:
+                    vKey = 'C';
+                    scan = 0x2e;
+                    break;
+                case SDLK_v:
+                    vKey = 'V';
+                    scan = 0x2f;
+                    break;
+                case SDLK_b:
+                    vKey = 'B';
+                    scan = 0x30;
+                    break;
+                case SDLK_n:
+                    vKey = 'N';
+                    scan = 0x31;
+                    break;
+                case SDLK_m:
+                    vKey = 'M';
+                    scan = 0x32;
+                    break;
+                case SDLK_COMMA:
+                    vKey = VK_OEM_COMMA;
+                    scan = 0x33;
+                    break;
+                case SDLK_PERIOD:
+                    vKey = VK_OEM_PERIOD;
+                    scan = 0x34;
+                    break;
+                case SDLK_SLASH:
+                    vKey = VK_OEM_2;
+                    scan = 0x35;
+                    break;
+                case SDLK_LALT:
+                    vKey = VK_LMENU;
+                    scan = 0x38;
+                    break;
+		        case SDLK_RALT:
+                    vKey = VK_RMENU;
+                    scan = 0x138;
+                    break;
+                case SDLK_SPACE:
+                    vKey = VK_SPACE;
+                    scan = 0x39;
+                    break;
+                case SDLK_CAPSLOCK:
+                    vKey = VK_CAPITAL;
+                    scan = 0x3a;
+                    break;
+                case SDLK_F1:
+                    vKey = VK_F1;
+                    scan = 0x3b;
+                    break;
+                case SDLK_F2:
+                    vKey = VK_F2;
+                    scan = 0x3c;
+                    break;
+                case SDLK_F3:
+                    vKey = VK_F3;
+                    scan = 0x3d;
+                    break;
+                case SDLK_F4:
+                    vKey = VK_F4;
+                    scan = 0x3e;
+                    break;
+                case SDLK_F5:
+                    vKey = VK_F5;
+                    scan = 0x3f;
+                    break;
+                case SDLK_F6:
+                    vKey = VK_F6;
+                    scan = 0x40;
+                    break;
+                case SDLK_F7:
+                    vKey = VK_F7;
+                    scan = 0x41;
+                    break;
+                case SDLK_F8:
+                    vKey = VK_F8;
+                    scan = 0x42;
+                    break;
+                case SDLK_F9:
+                    vKey = VK_F9;
+                    scan = 0x43;
+                    break;
+                case SDLK_F10:
+                    vKey = VK_F10;
+                    scan = 0x44;
+                    break;
+                case SDLK_NUMLOCK:
+                    vKey = VK_NUMLOCK;
+                    break;
+                case SDLK_SCROLLOCK:
+                    vKey = VK_SCROLL;
+                    break;
+                case SDLK_F11:
+                    vKey = VK_F11;
+                    scan = 0x57;
+                    break;
+                case SDLK_F12:
+                    vKey = VK_F12;
+                    scan = 0x58;
+                    break;
+                case SDLK_HOME:
+                    vKey = VK_HOME;
+                    scan = 0x147;
+                    break;
+                case SDLK_UP:
+                    vKey = VK_UP;
+                    scan = 0x148;
+                    break;
+                case SDLK_PAGEUP:
+                    vKey = VK_PRIOR;
+                    scan = 0x149;
+                    break;
+                case SDLK_LEFT:
+                    vKey = VK_LEFT;
+                    scan = 0x14b;
+                    break;
+                case SDLK_RIGHT:
+                    vKey = VK_RIGHT;
+                    scan = 0x148;
+                    break;
+                case SDLK_END:
+                    vKey = VK_END;
+                    scan = 0x14f;
+                    break;
+                case SDLK_DOWN:
+                    vKey = VK_DOWN;
+                    scan = 0x150;
+                    break;
+                case SDLK_PAGEDOWN:
+                    vKey = VK_NEXT;
+                    scan = 0x151;
+                    break;
+                case SDLK_INSERT:
+                    vKey = VK_INSERT;
+                    scan = 0x152;
+                    break;
+                case SDLK_DELETE:
+                    vKey = VK_DELETE;
+                    scan = 0x153;
+                    break;
+                case SDLK_PAUSE:
+                    vKey = VK_PAUSE;
+                    scan = 0x154; // :TODO: is this right?
+                    break;
+                default:
+                    kwarn("Unhandled key: %d", key);
+                    return 1;
+                }
+                if (scan & 0x100)               
+                    flags |= KEYEVENTF_EXTENDEDKEY;
+
+                writeLittleEndian_4(MMU_PARAM fd, 1); // INPUT_KEYBOARD
+                writeLittleEndian_2(MMU_PARAM fd, vKey); // wVk
+                writeLittleEndian_2(MMU_PARAM fd, scan); // wScan
+                writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
+                writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
+                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+                writeLittleEndian_4(MMU_PARAM fd, 0); // pad
+                writeLittleEndian_4(MMU_PARAM fd, 0); // padd
+            }
+        }
+    }
+    return 1;
+}
+
+U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, U32 bufW_size, U32 flags, U32 hkl) {
+    U32 ret = 0;
+    U8 c = 0;
+    U32 shift = readb(MMU_PARAM lpKeyState+VK_SHIFT) & 0x80;
+
+    if (!virtKey)
+        goto done;
+
+    /* UCKeyTranslate, below, terminates a dead-key sequence if passed a
+       modifier key press.  We want it to effectively ignore modifier key
+       presses.  I think that one isn't supposed to call it at all for modifier
+       events (e.g. NSFlagsChanged or kEventRawKeyModifiersChanged), since they
+       are different event types than key up/down events. */
+    switch (virtKey)
+    {
+        case VK_SHIFT:
+        case VK_CONTROL:
+        case VK_MENU:
+        case VK_CAPITAL:
+        case VK_LSHIFT:
+        case VK_RSHIFT:
+        case VK_LCONTROL:
+        case VK_RCONTROL:
+        case VK_LMENU:
+        case VK_RMENU:
+            goto done;
+    }
+
+    /* There are a number of key combinations for which Windows does not
+       produce characters, but Mac keyboard layouts may.  Eat them.  Do this
+       here to avoid the expense of UCKeyTranslate() but also because these
+       keys shouldn't terminate dead key sequences. */
+    if ((VK_PRIOR <= virtKey && virtKey <= VK_HELP) || (VK_F1 <= virtKey && virtKey <= VK_F24))
+        goto done;
+
+    /* Shift + <non-digit keypad keys>. */
+    if (shift && VK_MULTIPLY <= virtKey && virtKey <= VK_DIVIDE)
+        goto done;
+
+    if (readb(MMU_PARAM lpKeyState+VK_CONTROL) & 0x80)
+    {
+        /* Control-Tab, with or without other modifiers. */
+        if (virtKey == VK_TAB)
+            goto done;
+
+        /* Control-Shift-<key>, Control-Alt-<key>, and Control-Alt-Shift-<key>
+           for these keys. */
+        if (shift || (readb(MMU_PARAM lpKeyState+VK_MENU)))
+        {
+            switch (virtKey)
+            {
+                case VK_CANCEL:
+                case VK_BACK:
+                case VK_ESCAPE:
+                case VK_SPACE:
+                case VK_RETURN:
+                    goto done;
+            }
+        }
+    }
+
+    if (shift) {
+        if (virtKey>='A' && virtKey<='Z') {
+            c = virtKey;
+        } else {
+            switch (virtKey) {
+            case '1': c = '!'; break;
+            case '2': c = '@'; break;
+            case '3': c = '#'; break;
+            case '4': c = '$'; break;
+            case '5': c = '%'; break;
+            case '6': c = '^'; break;
+            case '7': c = '&'; break;
+            case '8': c = '*'; break;
+            case '9': c = '('; break;
+            case '0': c = ')'; break;
+            case VK_OEM_MINUS: c = '_'; break;
+            case VK_OEM_PLUS: c = '+'; break;
+            case VK_TAB: c = '\t'; break;
+            case VK_OEM_4: c = '{'; break;
+            case VK_OEM_6: c = '}'; break;
+            case VK_OEM_1: c = ':'; break;
+            case VK_OEM_7: c = '\"'; break;
+            case VK_OEM_3: c = '~'; break;
+            case VK_OEM_5: c = '|'; break;
+            case VK_OEM_COMMA: c = '<'; break;
+            case VK_OEM_PERIOD: c = '>'; break;
+            case VK_OEM_2: c = '?'; break;
+            case VK_SPACE: c = ' '; break;
+            case VK_RETURN: c = 13; break;
+            case VK_BACK: c = 8; break;
+            default:
+                kwarn("Unhandled key: %d", virtKey);
+                break;
+            }
+        }
+    } else {
+        if (virtKey>='0' && virtKey<='9') {
+            c = virtKey;
+        } else if (virtKey>='A' && virtKey<='Z') {
+            c = virtKey-'A'+'a';
+        } else {
+            switch (virtKey) {
+            case VK_OEM_MINUS: c = '-'; break;
+            case VK_OEM_PLUS: c = '='; break;
+            case VK_TAB: c = '\t'; break;
+            case VK_OEM_4: c = '['; break;
+            case VK_OEM_6: c = ']'; break;
+            case VK_OEM_1: c = ';'; break;
+            case VK_OEM_7: c = '\''; break;
+            case VK_OEM_3: c = '`'; break;
+            case VK_OEM_5: c = '\\'; break;
+            case VK_OEM_COMMA: c = ','; break;
+            case VK_OEM_PERIOD: c = '.'; break;
+            case VK_OEM_2: c = '/'; break;
+            case VK_SPACE: c = ' '; break;
+            case VK_RETURN: c = 13; break;
+            case VK_BACK: c = 8; break;
+            default:
+                kwarn("Unhandled key: %d", virtKey);
+                break;
+            }
+        }
+    }
+    if (c) {
+        writew(MMU_PARAM bufW, c);
+        ret=1;
+    }
+done:
+    /* Null-terminate the buffer, if there's room.  MSDN clearly states that the
+       caller must not assume this is done, but some programs (e.g. Audiosurf) do. */
+    if (1 <= ret && ret < bufW_size)
+        writew(MMU_PARAM bufW+ret*2, 0);
+
+    return ret;
 }

@@ -260,10 +260,12 @@ void mainloop() {
                         onMouseButtonUp(1);
                 }
             } else if (e.type == SDL_KEYDOWN) {
-                onKeyDown(translate(e.key.keysym.sym));
-            } else if (e.type == SDL_KEYUP) {
-                onKeyUp(translate(e.key.keysym.sym));
-            }
+                if (!sdlKey(e.key.keysym.sym, 1))
+					onKeyDown(translate(e.key.keysym.sym));
+			} else if (e.type == SDL_KEYUP) {
+                if (!sdlKey(e.key.keysym.sym, 0))
+					onKeyUp(translate(e.key.keysym.sym));
+			}
         };
         t = getMilliesSinceStart();
         if (lastTitleUpdate+1000 < t) {
@@ -380,7 +382,7 @@ int main(int argc, char **argv) {
 	//ppenv[envc++] = "LD_DEBUG=all";
 	//ppenv[envc++] = "LD_BIND_NOW=1";
 	ppenv[envc++] = "WINELOADERNOEXEC=1";
-	//ppenv[envc++] = "WINEDEBUG=+boxeddrv,+message,+event,+cursor,+menu,+msg";
+	//ppenv[envc++] = "WINEDEBUG=+file,+shell";
 
 	addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
 	addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -461,9 +463,11 @@ int main(int argc, char **argv) {
 						    onMouseButtonUp(1);
 					}
 				} else if (e.type == SDL_KEYDOWN) {
-					onKeyDown(translate(e.key.keysym.sym));
+                    if (!sdlKey(e.key.keysym.sym, 1))
+					    onKeyDown(translate(e.key.keysym.sym));
 				} else if (e.type == SDL_KEYUP) {
-					onKeyUp(translate(e.key.keysym.sym));
+                    if (!sdlKey(e.key.keysym.sym, 0))
+					    onKeyUp(translate(e.key.keysym.sym));
 				}
 #ifdef SDL2
 				else if (e.type == SDL_WINDOWEVENT) {

@@ -53,6 +53,9 @@
 # System tray
 @ cdecl wine_notify_icon(long ptr)
 
+# Desktop
+@ cdecl wine_create_desktop(long long) boxeddrv_create_desktop
+
 # IME
 @ stdcall ImeConfigure(long long long ptr)
 @ stdcall ImeConversionList(long wstr ptr long long)

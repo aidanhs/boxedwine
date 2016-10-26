@@ -637,7 +637,7 @@ void boxeddrv_SystemParametersInfo(struct CPU* cpu) {
 // INT CDECL drv_ToUnicodeEx(UINT virtKey, UINT scanCode, const BYTE *lpKeyState, LPWSTR bufW, int bufW_size, UINT flags, HKL hkl)
 void boxeddrv_ToUnicodeEx(struct CPU* cpu) {
 	notImplemented("boxeddrv_ToUnicodeEx not implemented");
-	EAX = 0;
+	EAX = sdlToUnicodeEx(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
 }
 
 // BOOL CDECL drv_UpdateLayeredWindow(HWND hwnd, const UPDATELAYEREDWINDOWINFO *info, const RECT *window_rect)

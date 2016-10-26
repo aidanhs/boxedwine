@@ -364,14 +364,52 @@ BOOL CDECL boxeddrv_GetCursorPos(LPPOINT pos) {
 	CALL_1(BOXED_GET_CURSOR_POS, pos);
 }
 
+static HKL get_locale_kbd_layout(void)
+{
+    ULONG_PTR layout;
+    LANGID langid;
+
+    /* FIXME:
+     *
+     * layout = main_key_tab[kbd_layout].lcid;
+     *
+     * Winword uses return value of GetKeyboardLayout as a codepage
+     * to translate ANSI keyboard messages to unicode. But we have
+     * a problem with it: for instance Polish keyboard layout is
+     * identical to the US one, and therefore instead of the Polish
+     * locale id we return the US one.
+     */
+
+    layout = GetUserDefaultLCID();
+
+    /*
+     * Microsoft Office expects this value to be something specific
+     * for Japanese and Korean Windows with an IME the value is 0xe001
+     * We should probably check to see if an IME exists and if so then
+     * set this word properly.
+     */
+    langid = PRIMARYLANGID(LANGIDFROMLCID(layout));
+    if (langid == LANG_CHINESE || langid == LANG_JAPANESE || langid == LANG_KOREAN)
+        layout |= 0xe001 << 16; /* IME */
+    else
+        layout |= layout << 16;
+
+    return (HKL)layout;
+}
+
 HKL CDECL boxeddrv_GetKeyboardLayout(DWORD thread_id) {
-	TRACE("thread_id=%d\n", thread_id);
-	CALL_1(BOXED_GET_KEYBOARD_LAYOUT, thread_id);
+	 return get_locale_kbd_layout();
 }
 
 BOOL CDECL boxeddrv_GetKeyboardLayoutName(LPWSTR name) {
-	TRACE("name=%s\n", debugstr_w(name));
-	CALL_1(BOXED_GET_KEYBOARD_LAYOUT_NAME, name);
+	static const WCHAR formatW[] = {'%','0','8','x',0};
+    DWORD layout;
+
+    layout = HandleToUlong( get_locale_kbd_layout() );
+    if (HIWORD(layout) == LOWORD(layout)) layout = LOWORD(layout);
+    sprintfW(name, formatW, layout);
+    TRACE("returning %s\n", debugstr_w(name));
+    return TRUE;
 }
 
 INT CDECL boxeddrv_GetKeyNameText(LONG lparam, LPWSTR buffer, INT size) {
@@ -465,6 +503,7 @@ void processEvents() {
         hwnd = GetAncestor(hwnd, GA_ROOT);
         TRACE("mouse hwnd=%p dx=%d dy=%d dwFlags=%X time=%X\n", hwnd, input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
     } else {
+        hwnd = GetForegroundWindow();
     }
     
     TRACE("hwnd=%p GetFocus()=%p GetForegroundWindow()=%p\n", hwnd, GetFocus(), GetForegroundWindow());
