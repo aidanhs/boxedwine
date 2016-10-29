@@ -19,7 +19,7 @@ void onCreateCPU(struct CPU* cpu) {
 	cpu->reg8[4] = &cpu->reg[0].h8;
 	cpu->reg8[5] = &cpu->reg[1].h8;
 	cpu->reg8[6] = &cpu->reg[2].h8;
-	cpu->reg8[7] = &cpu->reg[3].h8;
+	cpu->reg8[7] = &cpu->reg[3].h8;    
 }
 
 void initCPU(struct CPU* cpu, struct KProcess* process) {
@@ -34,6 +34,10 @@ void initCPU(struct CPU* cpu, struct KProcess* process) {
     cpu->stackMask = 0xFFFFFFFF;
     cpu->stackNotMask = 0;
     cpu->ldt = process->ldt;
+    cpu->segValue[CS] = 0xF; // index 1, LDT, rpl=3
+    cpu->segValue[SS] = 0x17; // index 2, LDT, rpl=3
+    cpu->segValue[DS] = 0x17; // index 2, LDT, rpl=3
+    cpu->cpl = 3; // user mode
 	FPU_FINIT(&cpu->fpu);
 }
 
@@ -57,46 +61,226 @@ struct Descriptor {
 	};
 };
 
-void cpu_ret(struct CPU* cpu, U32 big, U32 eip) {
-	U32 offset;
-	U32 selector;
-	U32 address;
+U32 CPU_CHECK_COND(struct CPU* cpu, U32 cond, const char* msg, int exc, int sel) {
+    if (cond) {
+        kwarn(msg);
+        cpu_exception(cpu, exc, sel);
+        return 1;
+    }
+    return 0;
+}
 
-	if (big) {
-		offset = pop32(cpu);
-		selector = pop32(cpu);
-	} else {
-		offset = pop16(cpu);
-		selector = pop16(cpu);
-	}
-	address = selector & ~7;
-	//desc.fill = readq(cpu->memory, cpu->thread->process->ldt[selector>>3].base_addr);
-	cpu->segAddress[CS] = cpu->thread->process->ldt[selector>>3].base_addr;
-	cpu->segValue[CS] = selector;
-	cpu->eip.u32 = offset;
-	cpu->big = cpu->thread->process->ldt[selector>>3].seg_32bit;
+
+void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
+    if (cpu->flags & VM) {
+        U32 new_ip;
+        U32 new_cs;
+        if (big) {
+            new_ip = pop32(cpu);
+            new_cs = pop32(cpu) & 0xffff;            
+        } else {
+            new_ip = pop16(cpu);
+            new_cs = pop16(cpu);
+        }
+        ESP = (ESP & cpu->stackNotMask) | ((ESP + bytes ) & cpu->stackMask);
+        cpu_setSegment(cpu, CS, new_cs);
+        cpu->eip.u32 = new_ip;
+        cpu->big = 0;
+    } else {
+        U32 offset,selector;
+        U32 rpl; // requested privilege level
+        struct user_desc* ldt;
+        U32 index;
+
+        if (big) 
+            selector = peek32(cpu, 1);
+        else 
+            selector = peek16(cpu, 1);
+
+        rpl=selector & 3;
+        if(rpl < cpu->cpl) {
+            // win setup
+            cpu_exception(cpu, EXCEPTION_GP, selector & 0xfffc);
+            return;
+        }        
+        index = selector >> 3;
+
+        if (CPU_CHECK_COND(cpu, (selector & 0xfffc)==0, "RET:CS selector zero", EXCEPTION_GP,0))
+            return;
+
+        if (index>=LDT_ENTRIES) {
+            CPU_CHECK_COND(cpu, 0, "RET:CS beyond limits", EXCEPTION_GP,selector & 0xfffc);
+            return;
+        }
+        ldt = &(cpu->ldt[index]);
+        if (ldt->seg_not_present) {
+            cpu_exception(cpu, EXCEPTION_NP, selector & 0xfffc);
+            return;
+        }
+        if (cpu->cpl==rpl) {
+            // Return to same level             
+            if (big) {
+                offset = pop32(cpu);
+                selector = pop32(cpu) & 0xffff;
+            } else {
+                offset = pop16(cpu);
+                selector = pop16(cpu);
+            }
+            cpu->segAddress[CS] = ldt->base_addr;
+            cpu->big = ldt->seg_32bit;
+            cpu->segValue[CS] = selector;
+            cpu->eip.u32 = offset;
+            ESP = (ESP & cpu->stackNotMask) | ((ESP + bytes ) & cpu->stackMask);
+        } else {
+            // Return to outer level
+            U32 n_esp;
+            U32 n_ss;
+            U32 ssIndex;
+            struct user_desc* ssLdt;
+
+            if (big) {
+                offset = pop32(cpu);
+                selector = pop32(cpu) & 0xffff;
+                ESP = (ESP & cpu->stackNotMask) | ((ESP + bytes ) & cpu->stackMask);
+                n_esp = pop32(cpu);
+                n_ss = pop32(cpu);
+            } else {
+                offset = pop16(cpu);
+                selector = pop16(cpu);
+                ESP = (ESP & cpu->stackNotMask) | ((ESP + bytes ) & cpu->stackMask);
+                n_esp = pop16(cpu);
+                n_ss = pop16(cpu);
+            }
+            ssIndex = n_ss >> 3;
+            if (CPU_CHECK_COND(cpu, (n_ss & 0xfffc)==0, "RET to outer level with SS selector zero", EXCEPTION_GP,0))
+                return;
+            
+            if (ssIndex>=LDT_ENTRIES) {
+                CPU_CHECK_COND(cpu, 0, "RET:SS beyond limits", EXCEPTION_GP,selector & 0xfffc);
+                return;
+            }
+            ssLdt = &(cpu->ldt[ssIndex]);
+
+            if (CPU_CHECK_COND(cpu, (n_ss & 3)!=rpl, "RET to outer segment with invalid SS privileges", EXCEPTION_GP,n_ss & 0xfffc))
+                return;
+
+            if (CPU_CHECK_COND(cpu, ssLdt->seg_not_present, "RET:Stack segment not present", EXCEPTION_SS,n_ss & 0xfffc))
+                return;
+
+            cpu->cpl = rpl; // don't think paging tables need to be messed with, this isn't 100% cpu emulator since we are assuming a user space program
+
+                
+            cpu->segAddress[CS] = ldt->base_addr;
+            cpu->big = ldt->seg_32bit;
+            cpu->segValue[CS] = (selector & 0xfffc) | cpu->cpl;
+            cpu->eip.u32 = offset;
+
+            cpu->segAddress[SS] = ssLdt->base_addr;
+            cpu->segValue[SS] = n_ss;
+
+            if (ssLdt->seg_32bit) {
+                cpu->stackMask = 0xFFFFFFFF;
+                cpu->stackNotMask = 0;
+                ESP+=bytes;
+            } else {
+                cpu->stackMask = 0x0000FFFF;
+                cpu->stackNotMask = 0xFFFF0000;
+                SP+=bytes;
+            }
+        }
+    }
 }
 
 void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
-	if (big) {
-		push32(cpu, cpu->segValue[CS]);
-		push32(cpu, oldEip);
-	} else {
-		push16(cpu, cpu->segValue[CS]);
-		push16(cpu, oldEip);
+    if (cpu->flags & VM) {
+        U32 esp = ESP; //  // don't set ESP until we are done with memory Writes / push so that we are reentrant
+        if (big) {
+            esp = push32_r(cpu, esp, cpu->segValue[CS]);
+            esp = push32_r(cpu, esp, oldEip);
+            cpu->eip.u32 = offset;
+        } else {
+            esp = push16_r(cpu, esp, cpu->segValue[CS]);
+            esp = push16_r(cpu, esp, oldEip & 0xFFFF);
+            cpu->eip.u32 = offset & 0xffff;
+        } 
+        ESP = esp;
+        cpu->big = 0;
+        cpu->segAddress[CS] = selector << 4;;
+	    cpu->segValue[CS] = selector;
+    } else {
+        U32 rpl=selector & 3;
+        U32 index = selector >> 3;
+        struct user_desc* ldt;
+        U32 esp;
+
+        if (CPU_CHECK_COND(cpu, (selector & 0xfffc)==0, "CALL:CS selector zero", EXCEPTION_GP,0))
+            return;
+            
+        if (index>=LDT_ENTRIES) {
+            CPU_CHECK_COND(cpu, 0, "CALL:CS beyond limits", EXCEPTION_GP,selector & 0xfffc);
+            return;
+        }
+        ldt = &(cpu->ldt[index]);
+
+        if (ldt->seg_not_present) {
+            cpu_exception(cpu, EXCEPTION_NP,selector & 0xfffc);
+            return;
+        }
+       
+        esp = ESP;
+        // commit point
+        if (big) {
+            esp = push32_r(cpu, esp, cpu->segValue[CS]);
+            esp = push32_r(cpu, esp, oldEip);
+            cpu->eip.u32=offset;
+        } else {
+            esp = push16_r(cpu, esp, cpu->segValue[CS]);
+            esp = push16_r(cpu, esp, oldEip);
+            cpu->eip.u32=offset & 0xffff;
+        }
+        ESP = esp; // don't set ESP until we are done with Memory Writes / CPU_Push so that we are reentrant
+        cpu->big = cpu->ldt[index].seg_32bit;
+        cpu->segAddress[CS] = ldt->base_addr;
+        cpu->segValue[CS] = (selector & 0xfffc) | cpu->cpl;
 	}
-	cpu->segAddress[CS] = cpu->thread->process->ldt[selector>>3].base_addr;
-	cpu->segValue[CS] = selector;
-	cpu->eip.u32 = offset;
-	cpu->big = cpu->thread->process->ldt[selector>>3].seg_32bit;
 }
 
  void setFlags(struct CPU* cpu, U32 word, U32 mask) {
+     if (word & VM) {
+         int ii= 0;
+     }
 	cpu->flags=(cpu->flags & ~mask)|(word & mask)|2;
 	cpu->df=1-((cpu->flags & DF) >> 9);
 } 
 
 #define GET_IOPL(cpu) ((cpu->flags & IOPL) >> 12)
+
+void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
+    value &= 0xffff;
+    if (seg==CS) {
+        int ii=0;
+    }
+    if (cpu->flags & VM) {
+        cpu->segAddress[seg] = value << 4;
+        cpu->segValue[seg] = value;
+    } else  if ((value & 0xfffc)==0) {
+        cpu->segValue[seg] = value;
+        cpu->segAddress[seg] = 0;	// ??
+    } else {
+        U32 index = value >> 3;
+        cpu->segValue[seg] = value;
+        cpu->segAddress[seg] = cpu->ldt[index].base_addr;
+        if (seg == SS) {
+            if (cpu->ldt[index].seg_32bit) {
+                cpu->stackMask = 0xffffffff;
+                cpu->stackNotMask = 0;
+            } else {
+                cpu->stackMask = 0xffff;
+                cpu->stackNotMask = 0xffff0000;
+            }
+        }
+    }
+}
 
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 	U32 n_cs_sel, n_flags;
@@ -118,8 +302,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 
 				ESP += 12;
 				cpu->eip.u32 = new_eip;
-				cpu->segAddress[CS] = cpu->thread->process->ldt[new_cs>>3].base_addr;
-				cpu->segValue[CS] = new_cs;
+                cpu_setSegment(cpu, CS, new_cs);
 
 				/* IOPL can not be modified in v86 mode by IRET */
 				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
@@ -130,8 +313,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 
 				ESP+=6;
 				cpu->eip.u32=new_eip;
-				cpu->segAddress[CS] = cpu->thread->process->ldt[new_cs>>3].base_addr;
-				cpu->segValue[CS] = new_cs;
+                cpu_setSegment(cpu, CS, new_cs);
 
 				/* IOPL can not be modified in v86 mode by IRET */
 				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
@@ -182,8 +364,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 
 			ESP=n_esp;
 			cpu->big = 0;
-			cpu->segAddress[CS] = cpu->thread->process->ldt[n_cs_sel>>3].base_addr;
-			cpu->segValue[CS] = n_cs_sel;
+            cpu_setSegment(cpu, CS, n_cs_sel);
 			return;
 		}
 		tempesp=ESP+12;
@@ -203,8 +384,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
 		
 		// commit point
 		ESP=tempesp;
-		cpu->segAddress[CS] = cpu->thread->process->ldt[n_cs_sel>>3].base_addr;
-		cpu->segValue[CS] = n_cs_sel;
+        cpu_setSegment(cpu, CS, n_cs_sel);
 		// :TODO: for some reason n_cs_sel is 0 when creating .wine directory for wine 1.0.1
 		//cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
 		cpu->eip.u32 = n_eip;
@@ -632,85 +812,56 @@ struct LazyFlags flagsSar32 = {getCF_sar32, getOF_sar32, getAF_sar32, getZF_32, 
 struct LazyFlags* FLAGS_SAR32 = &flagsSar32;
 
 void push16(struct CPU* cpu, U16 value) {
-	if (cpu->big) {
-        ESP-=2;
-		writew(MMU_PARAM_CPU ESP, value);
-    } else {
-        SP-=2;
-		writew(MMU_PARAM_CPU cpu->segAddress[SS] + SP, value);
-    }
+    U32 new_esp=(ESP & cpu->stackNotMask) | ((ESP - 2) & cpu->stackMask);
+    writew(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    ESP = new_esp;
+}
+
+U32 push16_r(struct CPU* cpu, U32 esp, U16 value) {
+    U32 new_esp=(esp & cpu->stackNotMask) | ((esp - 2) & cpu->stackMask);
+    writew(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    return new_esp;
 }
 
 void push32(struct CPU* cpu, U32 value) {
-#ifdef USE_MMU
-	int index;
+    U32 new_esp=(ESP & cpu->stackNotMask) | ((ESP - 4) & cpu->stackMask);
+    writed(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    ESP = new_esp;
+}
 
-    ESP-=4;
-	index = ESP >> 12;
-	// can't assume the RAM page is already allocated, thread stacks are on demand
-	// don't call writed since that version will check if the write will go across a page boundry
-	// this custom code here will save an if statement
-	if (cpu->memory->write[index]) {
-		host_writed(ESP-cpu->memory->write[index], value);
-	} else {
-		cpu->memory->mmu[index]->writed(cpu->memory, ESP, value);
-	}	
-#else
-	if (cpu->big) {
-		ESP -= 4;
-		writed(MMU_PARAM_CPU ESP, value);
-	}
-	else {
-		SP -= 4;
-		writed(MMU_PARAM_CPU cpu->segAddress[SS] + SP, value);
-	}
-#endif
+U32 push32_r(struct CPU* cpu, U32 esp, U32 value) {
+    U32 new_esp=(esp & cpu->stackNotMask) | ((esp - 4) & cpu->stackMask);
+    writed(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    return new_esp;
 }
 
 U16 pop16(struct CPU* cpu) {
-	if (cpu->big) {
-		int result = readw(MMU_PARAM_CPU ESP);
-        ESP+=2;
-        return result;
-    } else {
-		int result = readw(MMU_PARAM_CPU cpu->segAddress[SS] + SP);
-        SP+=2;
-        return result;
-    }
+    U16 val = readw(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP & cpu->stackMask));
+    ESP = (ESP & cpu->stackNotMask) | ((ESP + 2 ) & cpu->stackMask);
+    return val;
 }
 
 U32 pop32(struct CPU* cpu) {
-	// we can assume the RAM page is already there since this read shouldn't happen unless we already wrote to it
-#ifdef USE_MMU
-	U32 result = host_readd(ESP-cpu->memory->read[ESP >> 12]);
-    ESP+=4;
-    return result;
-#else
-	if (cpu->big) {
-		int result = readd(MMU_PARAM_CPU ESP);
-		ESP += 4;
-		return result;
-	}
-	else {
-		int result = readd(MMU_PARAM_CPU cpu->segAddress[SS] + SP);
-		SP += 4;
-		return result;
-	}
-#endif
+    U32 val = readd(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP & cpu->stackMask));
+    ESP = (ESP & cpu->stackNotMask) | ((ESP + 4 ) & cpu->stackMask);
+    return val;
+}
+
+U16 peek16(struct CPU* cpu, U32 index) {
+    return readw(MMU_PARAM_CPU cpu->segAddress[SS]+ (ESP+index*2 & cpu->stackMask));
 }
 
 U32 peek32(struct CPU* cpu, U32 index) {
-	if (cpu->big) {
-		return readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 4 * index);
-    } else {
-		return readd(MMU_PARAM_CPU cpu->segAddress[SS] + SP + 4 * index);
-    }
+    return readd(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP+index*4 & cpu->stackMask));
 }
 
 void exception(struct CPU* cpu, int code) {
 	kpanic("Exceptions not implements yet");
 }
 
+void cpu_exception(struct CPU* cpu, int code, int error) {
+    kpanic("Exceptions not implements yet");
+}
 void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op);
 
 struct Op emptyOperation = {emptyInstruction};

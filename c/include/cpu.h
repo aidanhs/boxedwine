@@ -18,7 +18,7 @@ struct LazyFlags {
 	U32 (*getPF)(struct CPU* cpu);
 };
 
-#define LDT_ENTRIES 1024
+#define LDT_ENTRIES 8192
 
 struct user_desc {
     U32  entry_number;
@@ -96,11 +96,12 @@ void fillFlagsNoCF(struct CPU* cpu);
 void fillFlagsNoZF(struct CPU* cpu);
 void fillFlags(struct CPU* cpu);
 void fillFlagsNoOF(struct CPU* cpu);
-void cpu_ret(struct CPU* cpu, U32 big, U32 eip);
+void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip);
 void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip);
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip);
 void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level);
 void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level);
+void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value);
 
 extern U8 parity_lookup[];
 
@@ -121,6 +122,15 @@ extern U8 parity_lookup[];
 #define VM		0x00020000
 #define AC		0x00040000
 #define ID		0x00200000
+
+#define EXCEPTION_UD 6
+#define EXCEPTION_NM 7
+#define EXCEPTION_TS 10
+#define EXCEPTION_NP 11
+#define EXCEPTION_SS 12
+#define EXCEPTION_GP 13
+#define EXCEPTION_PF 14
+#define EXCEPTION_MF 16
 
 extern struct CPU c;
 
@@ -160,11 +170,15 @@ extern struct CPU c;
 #define EDI cpu->reg[7].u32
 
 void push16(struct CPU* cpu, U16 value);
+U32 push16_r(struct CPU* cpu, U32 esp, U16 value);
 void push32(struct CPU* cpu, U32 value);
+U32 push32_r(struct CPU* cpu, U32 esp, U32 value);
 U16 pop16(struct CPU* cpu);
 U32 pop32(struct CPU* cpu);
+U16 peek16(struct CPU* cpu, U32 index);
 U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
+void cpu_exception(struct CPU* cpu, int code, int error);
 void initCPU(struct CPU* cpu, struct KProcess* process);
 void onCreateCPU(struct CPU* cpu);
 INLINE void runBlock(struct CPU* cpu, struct Block* block) {

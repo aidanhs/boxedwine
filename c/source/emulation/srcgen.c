@@ -4782,7 +4782,7 @@ void gen0cb(struct GenData* data, struct Op* op) {
     out(data, "fillFlags(cpu); cpu->eip.u32+=");
     data->lazyFlags = sFLAGS_NONE;
     out(data, tmp);
-    out(data, "; cpu_ret(cpu, 0, cpu->eip.u32); CYCLES(4); cpu->nextBlock = getBlock(cpu);");
+    out(data, "; cpu_ret(cpu, 0, 0, cpu->eip.u32); CYCLES(4); cpu->nextBlock = getBlock(cpu);");
 }
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op);

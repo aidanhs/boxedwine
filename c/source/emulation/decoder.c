@@ -441,6 +441,10 @@ const char* O32(struct Op* op) {
 	return tmp;
 }
 
+void logOpCsEip(char* buffer, const char* name, U32 cs, U32 eip) {
+    sprintf(buffer, "%s %04X:%04X", name, cs, eip);
+}
+
 #define regAX 0
 #define regCX 1
 #define regDX 2
@@ -1038,6 +1042,7 @@ void decode09a(struct DecodeData* data) {
 	data->op->func = callAp;
 	data->op->data1 = FETCH16(data);
 	data->op->eData = FETCH16(data);
+    LOG_OP_CS_EIP("CALL Ap", data->op->eData, data->op->data1);
     FINISH_OP(data);
 }
 
@@ -1172,6 +1177,7 @@ void decode0c8(struct DecodeData* data) {
     data->op->func = enter16;
     data->op->data1 = FETCH16(data);
     data->op->r1 = FETCH8(data) & 0x1f;
+    LOG("ENTER");
     NEXT_OP(data);
 }
 
@@ -1179,6 +1185,7 @@ void decode2c8(struct DecodeData* data) {
     data->op->func = enter32;
     data->op->data1 = FETCH16(data);
     data->op->r1 = FETCH8(data) & 0x1f;
+    LOG("ENTER");
     NEXT_OP(data);
 }
 
@@ -1219,6 +1226,7 @@ void decode0cd(struct DecodeData* data) {
 // IRET
 void decode2cf(struct DecodeData* data) {
 	data->op->func = iret32;
+    LOG_OP("IRET");
     FINISH_OP(data);
 }
 
@@ -1953,7 +1961,9 @@ void decode0ff(struct DecodeData* data) {
 			FINISH_OP(data);
 			return;
         case 0x03:										// CALL Ep 
-            kpanic("Call Ep (0xFF) not implemented");
+            DECODE_MEMORY(callEp16_mem16, callEp16_mem32);
+            LOG_E16("CALL", rm, data);
+			FINISH_OP(data);
             break;
         case 0x04:										// JMP Ev 
 			DECODE_E(jmpEv16_reg, jmpEv16_mem16, jmpEv16_mem32);
@@ -2014,6 +2024,79 @@ void decode2ff(struct DecodeData* data) {
 	NEXT_OP(data);
 }
 
+// LES
+void decode0c4(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm >= 0xc0) invalidOp(data);
+    if (data->ea16) {
+        data->op->func = loadSegment16_mem16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("LES", M16(data, rm, data->op),R16(data->op->r1));
+    } else {
+        data->op->func = loadSegment16_mem32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("LES", M16(data, rm, data->op),R16(data->op->r1));
+    }
+    data->op->data1 = ES;
+    NEXT_OP(data);
+}
+
+// LDS
+void decode0c5(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm >= 0xc0) invalidOp(data);
+    if (data->ea16) {
+        data->op->func = loadSegment16_mem16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("LDS", M16(data, rm, data->op),R16(data->op->r1));
+    } else {
+        data->op->func = loadSegment16_mem32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("LDS", M16(data, rm, data->op),R16(data->op->r1));
+    }
+    data->op->data1 = DS;
+    NEXT_OP(data);
+}
+
+// LSS
+void decode1b2(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm >= 0xc0) invalidOp(data);
+    if (data->ea16) {
+        data->op->func = loadSegment16_mem16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("LSS", M16(data, rm, data->op),R16(data->op->r1));
+    } else {
+        data->op->func = loadSegment16_mem32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("LSS", M16(data, rm, data->op),R16(data->op->r1));
+    }
+    data->op->data1 = SS;
+    NEXT_OP(data);
+}
+
+void decode29a(struct DecodeData* data) {
+    data->op->data1 = FETCH32(data);
+    data->op->eData = FETCH16(data);
+    data->op->func = callFar;
+    LOG_OP("CALL");
+    FINISH_OP(data);
+}
+
+// RETF Iw
+void decode2ca(struct DecodeData* data) {
+    data->op->data1 = FETCH16(data);
+    data->op->func = retf32;
+    LOG_OP("RETF");
+    FINISH_OP(data);
+}
+
 #define DECODE_BT(r, m16, m32) DECODE_E(r, m16, m32); data->op->data1 = 1 << (FETCH8(data) & 31)
 
 // GRP8 Ed,Ib
@@ -2068,7 +2151,7 @@ DECODER decoder[1024] = {
 	decode0a8, decode0a9, decode0aa, decode0ab, decode0ac, decode0ad, decode0ae, decode0af,
 	decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,
 	decode0b8, decode0b9, decode0ba, decode0bb, decode0bc, decode0bd, decode0be, decode0bf,
-	decode0c0, decode0c1, decode0c2, decode0c3, invalidOp, invalidOp, decode0c6, decode0c7,
+	decode0c0, decode0c1, decode0c2, decode0c3, decode0c4, decode0c5, decode0c6, decode0c7,
 	decode0c8, decode0c9, invalidOp, decode0cb, invalidOp, decode0cd, invalidOp, invalidOp,
 	decode0d0, decode0d1, decode0d2, decode0d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
@@ -2111,7 +2194,7 @@ DECODER decoder[1024] = {
 	decode1a0, decode1a1, decode1a2, decode1a3, decode1a4, decode1a5, invalidOp, invalidOp,
 	decode1a8, decode1a9, invalidOp, decode1ab, decode1ac, decode1ad, invalidOp, decode1af,
 	// 1b0
-	invalidOp, decode1b1, invalidOp, invalidOp, invalidOp, invalidOp, decode1b6, invalidOp,
+	invalidOp, decode1b1, decode1b2, invalidOp, invalidOp, invalidOp, decode1b6, invalidOp,
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode1bd, decode1be, invalidOp,
 	// 1c0
 	invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2145,13 +2228,13 @@ DECODER decoder[1024] = {
 	decode080, decode281, decode080, decode283, decode084, decode285, decode086, decode287,
 	decode088, decode289, decode08a, decode28b, decode28c, decode28d, decode08e, decode28f,
 	decode090, decode291, decode292, decode293, decode294, decode295, decode296, decode297,
-	decode298, decode299, invalidOp, decode09b, decode29c, decode29d, decode09e, decode09f,
+	decode298, decode299, decode29a, decode09b, decode29c, decode29d, decode09e, decode09f,
 	decode0a0, decode2a1, decode0a2, decode2a3, decode0a4, decode2a5, decode0a6, decode2a7,
 	decode0a8, decode2a9, decode0aa, decode2ab, decode0ac, decode2ad, decode0ae, decode2af,
 	decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,
 	decode2b8, decode2b9, decode2ba, decode2bb, decode2bc, decode2bd, decode2be, decode2bf,
 	decode0c0, decode2c1, decode2c2, decode2c3, invalidOp, invalidOp, decode0c6, decode2c7,
-	decode2c8, decode2c9, invalidOp, decode2cb, invalidOp, decode0cd, invalidOp, decode2cf,
+	decode2c8, decode2c9, decode2ca, decode2cb, invalidOp, decode0cd, invalidOp, decode2cf,
 	decode0d0, decode2d1, decode0d2, decode2d3, decode0d4, decode0d5, decode0d6, decode0d7,
 	decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
 	decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2313,7 +2396,7 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     data.op = allocOp();
     block->ops->next = data.op;
 
-	data.start = data.ip = eip + cpu->segAddress[CS];
+	data.start = data.ip = (cpu->big?eip:(eip & 0xFFFF)) + cpu->segAddress[CS];
 	if (cpu->big) {
 		data.opCode = 0x200;
 		data.ea16 = 0;

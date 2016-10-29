@@ -72,6 +72,19 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
 #else
 	process->mmapedMemory = pblListNewArrayList();
 #endif
+
+    for (i=0;i<LDT_ENTRIES;i++) {
+        process->ldt[i].seg_not_present = 1;
+    }
+    process->ldt[1].base_addr = 0;
+    process->ldt[1].entry_number = 1;
+    process->ldt[1].seg_32bit = 1;
+    process->ldt[1].seg_not_present = 0;
+
+    process->ldt[2].base_addr = 0;
+    process->ldt[2].entry_number = 2;
+    process->ldt[2].seg_32bit = 1;
+    process->ldt[2].seg_not_present = 0;
 }
 
 struct KProcess* freeProcesses;
@@ -714,9 +727,6 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 		if (vFork) {
 			waitThread(thread);
 			newProcess->wakeOnExitOrExec = thread;
-		}
-		if (newProcess->id == 103) {
-			newThread->cpu.log = TRUE;
 		}
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
@@ -1370,6 +1380,7 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
 		} else {
 			kpanic("syscall_modify_ldt invalid index: %d", index);
 		}
+        return 0;
 	} else if (func == 0) {
 		int index = readd(MMU_PARAM_THREAD ptr);
 		if (index>=0 && index<LDT_ENTRIES) {
@@ -1380,8 +1391,9 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
 		} else {
 			kpanic("syscall_modify_ldt invalid index: %d", index);
 		}
+        return 16;
 	} else {
 		kpanic("syscall_modify_ldt unknown func: %d", func);
+        return -1;
 	}
-	return 16;
 }

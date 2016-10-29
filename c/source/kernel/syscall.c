@@ -34,7 +34,7 @@ void logsyscall(const char* fmt, ...) {
 
 #define LOG logsyscall
 #define SOCKET_LOG logsyscall
-#elif defined LOG_SYSCALLS1
+#elif defined LOG_SYSCALLS
 #define LOG printf("%s %d/%d",process->name, thread->id, process->id); klog
 #define SOCKET_LOG printf("%s %d/%d",process->name, thread->id, process->id); klog
 #else
@@ -531,8 +531,9 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 		LOG("__NR_uname name=%.8X result=%d", ARG1, result);
 		break;
 	case __NR_modify_ldt:
+        LOG("__NR_modify_ldt func=%d ptr=%X(index=%d address=%X limit=%X flags=%X) count=%d", ARG1, ARG2, readd(MMU_PARAM_THREAD ARG2),  readd(MMU_PARAM_THREAD ARG2+4), readd(MMU_PARAM_THREAD ARG2+8), readd(MMU_PARAM_THREAD ARG2+12), ARG3);
 		result = syscall_modify_ldt(thread, ARG1, ARG2, ARG3);
-		LOG("__NR_modify_ldt func=%d ptr=%X count=%d result=%d", ARG1, ARG2, ARG3, result);
+		LOG("__NR_modify_ldt func=%d ptr=%X(index=%d address=%X limit=%X flags=%X) count=%d result=%d", ARG1, ARG2, readd(MMU_PARAM_THREAD ARG2),  readd(MMU_PARAM_THREAD ARG2+4), readd(MMU_PARAM_THREAD ARG2+8), readd(MMU_PARAM_THREAD ARG2+12), ARG3, result);
 		break;
 	case __NR_mprotect:
 		result = syscall_mprotect(thread, ARG1, ARG2, ARG3);
@@ -799,7 +800,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
         if (desc.entry_number==-1) {
 			U32 i;
 
-            for (i=1;i<LDT_ENTRIES;i++) {
+            for (i=3;i<LDT_ENTRIES;i++) {
 				if (thread->process->ldt[i].base_addr==0 && thread->process->ldt[i].limit==0) {
 					desc.entry_number=i;
 					break;

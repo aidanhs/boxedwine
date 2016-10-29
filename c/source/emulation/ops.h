@@ -19,15 +19,13 @@ void OPCALL pushSeg32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL popSeg16(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = pop16(cpu);
-	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
+    cpu_setSegment(cpu, op->r1, pop16(cpu));
 	CYCLES(3);
 	NEXT();
 }
 
 void OPCALL popSeg32(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = pop32(cpu);
-	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
+	cpu_setSegment(cpu, op->r1, pop32(cpu));
 	CYCLES(3);
 	NEXT();
 }
@@ -887,22 +885,19 @@ void OPCALL lear32_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movs16r16(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r2] = cpu->reg[op->r1].u16;
-	cpu->segAddress[op->r2] = cpu->thread->process->ldt[cpu->segValue[op->r2] >> 3].base_addr;
+    cpu_setSegment(cpu, op->r2, cpu->reg[op->r1].u16);
 	CYCLES(2);
 	NEXT();
 }
 
 void OPCALL movs16e16_16(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = readw(MMU_PARAM_CPU eaa16(cpu, op));
-	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
+    cpu_setSegment(cpu, op->r1, readw(MMU_PARAM_CPU eaa16(cpu, op)));
 	CYCLES(3);
 	NEXT();
 }
 
 void OPCALL movs16e16_32(struct CPU* cpu, struct Op* op) {
-	cpu->segValue[op->r1] = readw(MMU_PARAM_CPU eaa32(cpu, op));
-	cpu->segAddress[op->r1] = cpu->thread->process->ldt[cpu->segValue[op->r1] >> 3].base_addr;
+    cpu_setSegment(cpu, op->r1, readw(MMU_PARAM_CPU eaa32(cpu, op)));
 	CYCLES(3);
 	NEXT();
 }
@@ -1919,6 +1914,26 @@ void OPCALL callEv16_mem32(struct CPU* cpu, struct Op* op) {
 	DONE();
 	cpu->eip.u32 = neweip;
 	CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
+}
+
+void OPCALL callEp16_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 newip = readw(MMU_PARAM_CPU eaa);
+    U16 newcs = readw(MMU_PARAM_CPU eaa+2);
+    fillFlags(cpu);
+    cpu_call(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
+    CYCLES(4);
+    cpu->nextBlock = getBlock(cpu);
+}
+
+void OPCALL callEp16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U16 newip = readw(MMU_PARAM_CPU eaa);
+    U16 newcs = readw(MMU_PARAM_CPU eaa+2);
+    fillFlags(cpu);
+    cpu_call(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
+    CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
 }
 
@@ -3057,7 +3072,8 @@ void OPCALL int98(struct CPU* cpu, struct Op* op) {
 	else {
 		kpanic("Uknown int 98 call: %d", index);
 	}
-	cpu->eip.u32 += op->eipCount;
+    DONE();
+	cpu->eip.u32 += op->eipCount;    
 	cpu->nextBlock = getBlock(cpu);
 }
 
@@ -3069,30 +3085,34 @@ void OPCALL int99(struct CPU* cpu, struct Op* op) {
 	} else {
 		kpanic("Uknown int 99 call: %d", index);
 	}
-	cpu->eip.u32+=op->eipCount;
+    DONE();
+	cpu->eip.u32+=op->eipCount;    
     cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retf32(struct CPU* cpu, struct Op* op) {
 	fillFlags(cpu);
+    DONE();
 	cpu->eip.u32+=op->eipCount;
-	cpu_ret(cpu, 1, cpu->eip.u32);
-	CYCLES(4);
+	cpu_ret(cpu, 1, op->data1, cpu->eip.u32);
+	CYCLES(4);    
     cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL retf16(struct CPU* cpu, struct Op* op) {
 	fillFlags(cpu);
+    DONE();
 	cpu->eip.u32+=op->eipCount;
-	cpu_ret(cpu, 0, cpu->eip.u32);
-	CYCLES(4);
+	cpu_ret(cpu, 0, op->data1, cpu->eip.u32);
+	CYCLES(4);    
     cpu->nextBlock = getBlock(cpu);
 }
 
 void OPCALL callAp(struct CPU* cpu, struct Op* op) {
+    DONE();
 	cpu->eip.u32+=op->eipCount;
 	cpu_call(cpu, 0, op->eData, op->data1, cpu->eip.u32);
-	CYCLES(4);
+	CYCLES(4);    
     cpu->nextBlock = getBlock(cpu);
 }
 
@@ -3101,8 +3121,39 @@ void OPCALL emptyOp(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL iret32(struct CPU* cpu, struct Op* op) {
+    DONE();
 	cpu->eip.u32+=op->eipCount;
 	cpu_iret(cpu, 1, cpu->eip.u32);
 	CYCLES(10);
+    cpu->nextBlock = getBlock(cpu);
+}
+
+void OPCALL loadSegment16_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U32 val = readd(MMU_PARAM_CPU eaa); // make sure all reads are done before writing something in case of a PF
+    U32 selector = readw(MMU_PARAM_CPU eaa+2);
+
+    cpu_setSegment(cpu, op->data1, selector);
+    cpu->reg[op->r1].u16 = val;
+	CYCLES(4);
+    NEXT();
+}
+
+void OPCALL loadSegment16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U32 val = readd(MMU_PARAM_CPU eaa); // make sure all reads are done before writing something in case of a PF
+    U32 selector = readw(MMU_PARAM_CPU eaa+2);
+
+    cpu_setSegment(cpu, op->data1, selector);
+    cpu->reg[op->r1].u16 = val;
+	CYCLES(4);
+    NEXT();
+}
+
+void OPCALL callFar(struct CPU* cpu, struct Op* op) {
+    DONE();
+	cpu->eip.u32+=op->eipCount;
+	cpu_call(cpu, 1, op->eData, op->data1, cpu->eip.u32);
+	CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
 }
