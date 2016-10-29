@@ -42,10 +42,10 @@ U32 syscall_times(struct KThread* thread, U32 buf);
 
 #ifdef USE_MMU
 struct MappedFileCache {
-	U32* ramPages;
-	U32 pageCount;
-	U32 refCount;
-	char name[MAX_FILEPATH_LEN];
+    U32* ramPages;
+    U32 pageCount;
+    U32 refCount;
+    char name[MAX_FILEPATH_LEN];
 };
 
 struct MappedFileCache* getMappedFileInCache(const char* name);

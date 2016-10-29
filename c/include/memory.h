@@ -14,12 +14,12 @@ extern char tmp64k[];
 
 #ifdef USE_MMU
 struct Memory {
-	struct Page* mmu[NUMBER_OF_PAGES];
-	U8 flags[NUMBER_OF_PAGES];
-	U32 read[NUMBER_OF_PAGES];
-	U32 write[NUMBER_OF_PAGES];
-	U32 ramPage[NUMBER_OF_PAGES];
-	struct KProcess* process;
+    struct Page* mmu[NUMBER_OF_PAGES];
+    U8 flags[NUMBER_OF_PAGES];
+    U32 read[NUMBER_OF_PAGES];
+    U32 write[NUMBER_OF_PAGES];
+    U32 ramPage[NUMBER_OF_PAGES];
+    struct KProcess* process;
 };
 #endif
 
@@ -42,58 +42,58 @@ void writed(MMU_ARG U32 address, U32 value);
 #define MMU_PARAM_CPU
 
 INLINE U8 readb(MMU_ARG U32 address) {
-	return *(U8*)address;
+    return *(U8*)address;
 }
 
 INLINE void writeb(MMU_ARG U32 address, U8 value) {
-	*(U8*)address = value;
+    *(U8*)address = value;
 }
 
 INLINE U16 readw(MMU_ARG U32 address) {
 #ifdef UNALIGNED_MEMORY
-	return (*(U8*)address) | ((*(U8*)address + 1) << 8);
+    return (*(U8*)address) | ((*(U8*)address + 1) << 8);
 #else
-	return *(U16*)address;
+    return *(U16*)address;
 #endif
 }
 
 INLINE void writew(MMU_ARG U32 address, U16 value) {
 #ifdef UNALIGNED_MEMORY
-	*(U8*)address = (U8)value;
-	*(U8*)(address + 1) = (U8)(value >> 8);
+    *(U8*)address = (U8)value;
+    *(U8*)(address + 1) = (U8)(value >> 8);
 #else
-	*(U16*)address = value;
+    *(U16*)address = value;
 #endif
 }
 
 INLINE U32 readd(MMU_ARG U32 address) {
 #ifdef UNALIGNED_MEMORY
-	return (*(U8*)address) | ((*(U8*)address + 1) << 8) | ((*(U8*)address + 2) << 16) | ((*(U8*)address + 3) << 24);
+    return (*(U8*)address) | ((*(U8*)address + 1) << 8) | ((*(U8*)address + 2) << 16) | ((*(U8*)address + 3) << 24);
 #else
-	return *(U32*)address;
+    return *(U32*)address;
 #endif
 }
 
 INLINE void writed(MMU_ARG U32 address, U32 value) {
 #ifdef UNALIGNED_MEMORY
-	*(U8*)address = (U8)value;
-	*(U8*)(address + 1) = (U8)(value >> 8);
-	*(U8*)(address + 2) = (U8)(value >> 16);
-	*(U8*)(address + 3) = (U8)(value >> 24);
+    *(U8*)address = (U8)value;
+    *(U8*)(address + 1) = (U8)(value >> 8);
+    *(U8*)(address + 2) = (U8)(value >> 16);
+    *(U8*)(address + 3) = (U8)(value >> 24);
 #else
-	*(U32*)address = value;
+    *(U32*)address = value;
 #endif
 }
 
 #endif
 
 INLINE U64 readq(MMU_ARG U32 address) {
-	return readd(MMU_PARAM address) | ((U64)readd(MMU_PARAM address + 4) << 32);
+    return readd(MMU_PARAM address) | ((U64)readd(MMU_PARAM address + 4) << 32);
 }
 
 INLINE void writeq(MMU_ARG U32 address, U64 value) {
-	writed(MMU_PARAM address, (U32)value);
-	writed(MMU_PARAM address + 4, (U32)(value >> 32));
+    writed(MMU_PARAM address, (U32)value);
+    writed(MMU_PARAM address + 4, (U32)(value >> 32));
 }
 
 void zeroMemory(MMU_ARG U32 address, int len);

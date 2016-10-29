@@ -4,15 +4,15 @@
 #include "platform.h"
 
 struct KListNode {
-	struct KListNode* next;
-	struct KListNode* prev;
-	void* data;
+    struct KListNode* next;
+    struct KListNode* prev;
+    void* data;
 };
 
 struct KList {
-	struct KListNode* first;
-	struct KListNode* last;
-	U32 count;
+    struct KListNode* first;
+    struct KListNode* last;
+    U32 count;
 };
 
 struct KListNode* addItemToList(struct KList* list, void* data);

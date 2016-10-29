@@ -55,7 +55,7 @@ static const char *opengl_func_names[] = { ALL_WGL_FUNCS };
 
 typedef struct
 {
-	struct gdi_physdev  dev;
+    struct gdi_physdev  dev;
 } BOXEDDRV_PDEVICE;
 
 #define BOXED_BASE 0
@@ -203,33 +203,33 @@ static inline BOOL can_activate_window(HWND hwnd)
 }
 
 int CDECL boxeddrv_AcquireClipboard(HWND hwnd) {
-	TRACE("hwnd=%p\n", hwnd);
-	CALL_1(BOXED_ACQUIRE_CLIPBOARD, hwnd);
+    TRACE("hwnd=%p\n", hwnd);
+    CALL_1(BOXED_ACQUIRE_CLIPBOARD, hwnd);
 }
 
 HKL CDECL boxeddrv_ActivateKeyboardLayout(HKL hkl, UINT flags) {
-	TRACE("hkl=%p flags=0x%08x\n", hkl, flags);
-	CALL_2(BOXED_ACTIVATE_KEYBOARD_LAYOUT, hkl, flags);
+    TRACE("hkl=%p flags=0x%08x\n", hkl, flags);
+    CALL_2(BOXED_ACTIVATE_KEYBOARD_LAYOUT, hkl, flags);
 }
 
 void CDECL boxeddrv_Beep(void) {
-	TRACE("\n");
-	CALL_NORETURN_0(BOXED_BEEP);
+    TRACE("\n");
+    CALL_NORETURN_0(BOXED_BEEP);
 }
 
 LONG CDECL boxeddrv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode, HWND hwnd, DWORD flags, LPVOID lpvoid) {
-	TRACE("devname=%s devmode=%p hwnd=%p flags=0x%08x %p\n", debugstr_w(devname), devmode, hwnd, flags, lpvoid);
-	CALL_5(BOXED_CHANGE_DISPLAY_SETTINGS_EX, devname, devmode, hwnd, flags, lpvoid);
+    TRACE("devname=%s devmode=%p hwnd=%p flags=0x%08x %p\n", debugstr_w(devname), devmode, hwnd, flags, lpvoid);
+    CALL_5(BOXED_CHANGE_DISPLAY_SETTINGS_EX, devname, devmode, hwnd, flags, lpvoid);
 }
 
 BOOL CDECL boxeddrv_ClipCursor(LPCRECT clip) {
-	TRACE("clip=%s\n", wine_dbgstr_rect(clip));
-	CALL_1(BOXED_CLIP_CURSOR, clip);
+    TRACE("clip=%s\n", wine_dbgstr_rect(clip));
+    CALL_1(BOXED_CLIP_CURSOR, clip);
 }
 
 INT CDECL boxeddrv_CountClipboardFormats(void) {
-	TRACE("\n");
-	CALL_0(BOXED_COUNT_CLIPBOARD_FORMATS);
+    TRACE("\n");
+    CALL_0(BOXED_COUNT_CLIPBOARD_FORMATS);
 }
 
 void initDesktop(HWND hwnd) {
@@ -251,7 +251,7 @@ void initDesktop(HWND hwnd) {
     if (!width && !height)  /* not initialized yet */
     {
         width = boxeddrv_GetDeviceCaps(NULL, DESKTOPHORZRES); 
-		height = boxeddrv_GetDeviceCaps(NULL, DESKTOPVERTRES);
+        height = boxeddrv_GetDeviceCaps(NULL, DESKTOPVERTRES);
 
         SERVER_START_REQ(set_window_pos)
         {
@@ -269,24 +269,24 @@ void initDesktop(HWND hwnd) {
     }
 }
 BOOL CDECL boxeddrv_CreateDesktopWindow(HWND hwnd) {
-	CALL_1(BOXED_CREATE_DESKTOP_WINDOW, hwnd);
-	initDesktop(hwnd);
-	return TRUE;
+    CALL_1(BOXED_CREATE_DESKTOP_WINDOW, hwnd);
+    initDesktop(hwnd);
+    return TRUE;
 }
 
 BOOL CDECL boxeddrv_CreateWindow(HWND hwnd) {
-	TRACE("hwnd=%p\n", hwnd);
-	CALL_1(BOXED_CREATE_WINDOW, hwnd);
+    TRACE("hwnd=%p\n", hwnd);
+    CALL_1(BOXED_CREATE_WINDOW, hwnd);
 }
 
 void CDECL boxeddrv_DestroyCursorIcon(HCURSOR cursor) {
-	TRACE("cursor=%p\n", cursor);
-	CALL_NORETURN_1(BOXED_DESTROY_CURSOR_ICON, cursor);
+    TRACE("cursor=%p\n", cursor);
+    CALL_NORETURN_1(BOXED_DESTROY_CURSOR_ICON, cursor);
 }
 
 void CDECL boxeddrv_DestroyWindow(HWND hwnd) {
-	TRACE("hwnd=%p\n", hwnd);
-	CALL_NORETURN_1(BOXED_DESTROY_WINDOW, hwnd);
+    TRACE("hwnd=%p\n", hwnd);
+    CALL_NORETURN_1(BOXED_DESTROY_WINDOW, hwnd);
 
     if (hwnd == GetForegroundWindow())
     {
@@ -297,71 +297,71 @@ void CDECL boxeddrv_DestroyWindow(HWND hwnd) {
 }
 
 void CDECL boxeddrv_EmptyClipboard(BOOL keepunowned) {
-	TRACE("keepunowned=%d\n", keepunowned);
-	CALL_NORETURN_1(BOXED_EMPTY_CLIPBOARD, keepunowned);
+    TRACE("keepunowned=%d\n", keepunowned);
+    CALL_NORETURN_1(BOXED_EMPTY_CLIPBOARD, keepunowned);
 }
 
 void CDECL boxeddrv_EndClipboardUpdate(void) {
-	TRACE("\n");
-	CALL_NORETURN_0(BOXED_END_CLIPBOARD_UPDATE);
+    TRACE("\n");
+    CALL_NORETURN_0(BOXED_END_CLIPBOARD_UPDATE);
 }
 
 UINT CDECL boxeddrv_EnumClipboardFormats(UINT prev_format) {
-	TRACE("prev_format=%d\n", prev_format);
-	CALL_1(BOXED_ENUM_CLIPBOARD_FORMATS, prev_format);
+    TRACE("prev_format=%d\n", prev_format);
+    CALL_1(BOXED_ENUM_CLIPBOARD_FORMATS, prev_format);
 }
 
 INT boxeddrv_GetDeviceCaps(PHYSDEV dev, INT cap);
 BOOL CDECL boxeddrv_EnumDisplayMonitors(HDC hdc, LPRECT rect, MONITORENUMPROC proc, LPARAM lparam) {
-	RECT r;
-	r.left = 0;
-	r.right = boxeddrv_GetDeviceCaps(0, HORZRES);
-	r.top = 0;
-	r.bottom = boxeddrv_GetDeviceCaps(0, VERTRES);
+    RECT r;
+    r.left = 0;
+    r.right = boxeddrv_GetDeviceCaps(0, HORZRES);
+    r.top = 0;
+    r.bottom = boxeddrv_GetDeviceCaps(0, VERTRES);
 
-	TRACE("hdc=%p rect=%s proc=%p lparam=0x%08x\n", hdc, wine_dbgstr_rect(rect), proc, (int)lparam);
-	if (hdc) {
-		POINT origin;
-		RECT limit;
-		RECT monrect = r;
+    TRACE("hdc=%p rect=%s proc=%p lparam=0x%08x\n", hdc, wine_dbgstr_rect(rect), proc, (int)lparam);
+    if (hdc) {
+        POINT origin;
+        RECT limit;
+        RECT monrect = r;
 
-		if (!GetDCOrgEx(hdc, &origin)) return FALSE;
-		if (GetClipBox(hdc, &limit) == ERROR) return FALSE;
+        if (!GetDCOrgEx(hdc, &origin)) return FALSE;
+        if (GetClipBox(hdc, &limit) == ERROR) return FALSE;
 
-		if (rect && !IntersectRect(&limit, &limit, rect)) return TRUE;
+        if (rect && !IntersectRect(&limit, &limit, rect)) return TRUE;
 
-		if (IntersectRect(&monrect, &monrect, &limit)) {
-			if (!proc((HMONITOR)1, hdc, &monrect, lparam))
-				return FALSE;
-		}
-	}
-	else {
-		RECT monrect = r;
-		RECT unused;
+        if (IntersectRect(&monrect, &monrect, &limit)) {
+            if (!proc((HMONITOR)1, hdc, &monrect, lparam))
+                return FALSE;
+        }
+    }
+    else {
+        RECT monrect = r;
+        RECT unused;
 
-		if (!rect || IntersectRect(&unused, &monrect, rect)) {
+        if (!rect || IntersectRect(&unused, &monrect, rect)) {
             TRACE("calling proc hdc=%p monrect=%s proc=%p lparam=0x%08x\n", hdc, wine_dbgstr_rect(&monrect), proc, (int)lparam);
-			if (!proc((HMONITOR)1, hdc, &monrect, lparam))
-				return FALSE;
-		}
-	}
-	
-	return TRUE;
+            if (!proc((HMONITOR)1, hdc, &monrect, lparam))
+                return FALSE;
+        }
+    }
+    
+    return TRUE;
 }
 
 BOOL CDECL boxeddrv_EnumDisplaySettingsEx(LPCWSTR devname, DWORD mode, LPDEVMODEW devmode, DWORD flags) {
-	TRACE("devname=%s mode=%d devmode=%p flags=0x%08x\n", debugstr_w(devname), mode, devmode, flags);
-	CALL_4(BOXED_ENUM_DISPLAY_SETTINGS_EX, devname, mode, devmode, flags);
+    TRACE("devname=%s mode=%d devmode=%p flags=0x%08x\n", debugstr_w(devname), mode, devmode, flags);
+    CALL_4(BOXED_ENUM_DISPLAY_SETTINGS_EX, devname, mode, devmode, flags);
 }
 
 HANDLE CDECL boxeddrv_GetClipboardData(UINT desired_format) {
-	TRACE("desired_format=%d\n", desired_format);
-	CALL_1(BOXED_GET_CLIPBOARD_DATA, desired_format);
+    TRACE("desired_format=%d\n", desired_format);
+    CALL_1(BOXED_GET_CLIPBOARD_DATA, desired_format);
 }
 
 BOOL CDECL boxeddrv_GetCursorPos(LPPOINT pos) {
-	TRACE("pos=%p\n", pos);
-	CALL_1(BOXED_GET_CURSOR_POS, pos);
+    TRACE("pos=%p\n", pos);
+    CALL_1(BOXED_GET_CURSOR_POS, pos);
 }
 
 static HKL get_locale_kbd_layout(void)
@@ -398,11 +398,11 @@ static HKL get_locale_kbd_layout(void)
 }
 
 HKL CDECL boxeddrv_GetKeyboardLayout(DWORD thread_id) {
-	 return get_locale_kbd_layout();
+     return get_locale_kbd_layout();
 }
 
 BOOL CDECL boxeddrv_GetKeyboardLayoutName(LPWSTR name) {
-	static const WCHAR formatW[] = {'%','0','8','x',0};
+    static const WCHAR formatW[] = {'%','0','8','x',0};
     DWORD layout;
 
     layout = HandleToUlong( get_locale_kbd_layout() );
@@ -413,14 +413,14 @@ BOOL CDECL boxeddrv_GetKeyboardLayoutName(LPWSTR name) {
 }
 
 INT CDECL boxeddrv_GetKeyNameText(LONG lparam, LPWSTR buffer, INT size) {
-	TRACE("lparam=0x%08x buffer=%p size=%d\n", lparam, buffer, size);
-	CALL_3(BOXED_GET_KEY_NAME, lparam, buffer, size);
+    TRACE("lparam=0x%08x buffer=%p size=%d\n", lparam, buffer, size);
+    CALL_3(BOXED_GET_KEY_NAME, lparam, buffer, size);
 }
 
 BOOL CDECL boxeddrv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info) {
     static const WCHAR adapter_name[] = { '\\','\\','.','\\','D','I','S','P','L','A','Y','1',0 };
 
-	TRACE("monitor=%p info=%p\n", monitor, info);
+    TRACE("monitor=%p info=%p\n", monitor, info);
     SetRect(&info->rcMonitor, 0, 0, boxeddrv_GetDeviceCaps(NULL, DESKTOPHORZRES), boxeddrv_GetDeviceCaps(NULL, DESKTOPVERTRES));
     SetRect(&info->rcWork, 0, 0, boxeddrv_GetDeviceCaps(NULL, DESKTOPHORZRES), boxeddrv_GetDeviceCaps(NULL, DESKTOPVERTRES));
     info->dwFlags = MONITORINFOF_PRIMARY;
@@ -428,17 +428,17 @@ BOOL CDECL boxeddrv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info) {
     if (info->cbSize >= sizeof(MONITORINFOEXW))
         lstrcpyW(((MONITORINFOEXW*)info)->szDevice, adapter_name);
     return TRUE;
-	//CALL_2(BOXED_GET_MONITOR_INFO, monitor, info);
+    //CALL_2(BOXED_GET_MONITOR_INFO, monitor, info);
 }
 
 BOOL CDECL boxeddrv_IsClipboardFormatAvailable(UINT desired_format) {
-	TRACE("desired_format=%d\n", desired_format);
-	CALL_1(BOXED_IS_CLIPBOARD_FORMAT_AVAILABLE, desired_format);
+    TRACE("desired_format=%d\n", desired_format);
+    CALL_1(BOXED_IS_CLIPBOARD_FORMAT_AVAILABLE, desired_format);
 }
 
 UINT CDECL boxeddrv_MapVirtualKeyEx(UINT wCode, UINT wMapType, HKL hkl) {
-	TRACE("wCode=%d wMapType=%d hkl=%p\n", wCode, wMapType, hkl);
-	CALL_3(BOXED_MAP_VIRTUAL_KEY_EX, wCode, wMapType, hkl);
+    TRACE("wCode=%d wMapType=%d hkl=%p\n", wCode, wMapType, hkl);
+    CALL_3(BOXED_MAP_VIRTUAL_KEY_EX, wCode, wMapType, hkl);
 }
 
 int eventsInitialized = 0;
@@ -513,7 +513,7 @@ void processEvents() {
 DWORD CDECL boxeddrv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *handles, DWORD timeout, DWORD mask, DWORD flags) {
     DWORD result;
 
-	TRACE("count=%d handles=%p timeout=0x%08x mask=0x%08x flags=0x%08x\n", count, handles, timeout, mask, flags);
+    TRACE("count=%d handles=%p timeout=0x%08x mask=0x%08x flags=0x%08x\n", count, handles, timeout, mask, flags);
     initEvents();
     CALL_5(BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX, count, handles, timeout, mask, flags);
     if (!count && !timeout) 
@@ -525,20 +525,20 @@ DWORD CDECL boxeddrv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *hand
 }
 
 void CDECL boxeddrv_SetCapture(HWND hwnd, UINT flags) {
-	TRACE("hwnd=%p flags=0x%08x\n", hwnd, flags);
-	CALL_NORETURN_2(BOXED_SET_CAPTURE, hwnd, flags);
+    TRACE("hwnd=%p flags=0x%08x\n", hwnd, flags);
+    CALL_NORETURN_2(BOXED_SET_CAPTURE, hwnd, flags);
 }
 
 BOOL CDECL boxeddrv_SetClipboardData(UINT format_id, HANDLE data, BOOL owner) {
-	TRACE("format_id=%d data=%p owner=%d\n", format_id, data, owner);
-	CALL_3(BOXED_SET_CLIPBOARD_DATA, format_id, data, owner);
+    TRACE("format_id=%d data=%p owner=%d\n", format_id, data, owner);
+    CALL_3(BOXED_SET_CLIPBOARD_DATA, format_id, data, owner);
 }
 
 void CDECL boxeddrv_SetCursor(HCURSOR cursor) {
     ICONINFOEXW info;    
     DWORD found = 0;
 
-	TRACE("cursor=%p\n", cursor);
+    TRACE("cursor=%p\n", cursor);
 
     info.cbSize = sizeof(info);
     if (!GetIconInfoExW(cursor, &info)) {
@@ -547,7 +547,7 @@ void CDECL boxeddrv_SetCursor(HCURSOR cursor) {
     }        
 
     TRACE("info->szModName %s info->szResName %s info->wResID %hu\n", debugstr_w(info.szModName), debugstr_w(info.szResName), (DWORD)info.wResID);
-	CALL_NORETURN_5(BOXED_SET_CURSOR, cursor, info.szModName, info.szResName, (DWORD)info.wResID, &found);
+    CALL_NORETURN_5(BOXED_SET_CURSOR, cursor, info.szModName, info.szResName, (DWORD)info.wResID, &found);
 
     if (!found) {
         char buffer[FIELD_OFFSET(BITMAPINFO, bmiColors[256])];
@@ -591,14 +591,14 @@ void CDECL boxeddrv_SetCursor(HCURSOR cursor) {
 }
 
 BOOL CDECL boxeddrv_SetCursorPos(INT x, INT y) {
-	TRACE("x=%d y=%d\n", x, y);
-	CALL_2(BOXED_SET_CURSOR_POS, x, y);
+    TRACE("x=%d y=%d\n", x, y);
+    CALL_2(BOXED_SET_CURSOR_POS, x, y);
 }
 
 void CDECL boxeddrv_SetFocus(HWND hwnd) {
     LONG style = GetWindowLongW(hwnd, GWL_STYLE);    
 
-	TRACE("hwnd=%p\n", hwnd);	
+    TRACE("hwnd=%p\n", hwnd);	
     if (!(style & WS_MINIMIZE)) {
         BOOL shouldActivate = FALSE;
         HWND parent = GetAncestor(hwnd, GA_ROOT);
@@ -620,42 +620,42 @@ void CDECL boxeddrv_SetFocus(HWND hwnd) {
 }
 
 void CDECL boxeddrv_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWORD flags) {
-	TRACE("hwnd=%p key=0x%08x alpha=0x%02x flags=0x%08x\n", hwnd, key, alpha, flags);
-	CALL_NORETURN_4(BOXED_SET_LAYERED_WINDOW_ATTRIBUTES, hwnd, key, alpha, flags);
+    TRACE("hwnd=%p key=0x%08x alpha=0x%02x flags=0x%08x\n", hwnd, key, alpha, flags);
+    CALL_NORETURN_4(BOXED_SET_LAYERED_WINDOW_ATTRIBUTES, hwnd, key, alpha, flags);
 }
 
 void CDECL boxeddrv_SetParent(HWND hwnd, HWND parent, HWND old_parent) {
-	TRACE("hwnd=%p parent=%p old_parent=%p\n", hwnd, parent, old_parent);
-	CALL_NORETURN_3(BOXED_SET_PARENT, hwnd, parent, old_parent);
+    TRACE("hwnd=%p parent=%p old_parent=%p\n", hwnd, parent, old_parent);
+    CALL_NORETURN_3(BOXED_SET_PARENT, hwnd, parent, old_parent);
 }
 
 int CDECL boxeddrv_SetWindowRgn(HWND hwnd, HRGN hrgn, BOOL redraw) {
-	TRACE("hwnd=%p hrgn=%p redraw=%d\n", hwnd, hrgn, redraw);
-	CALL_3(BOXED_SET_WINDOW_RGN, hwnd, hrgn, redraw);
+    TRACE("hwnd=%p hrgn=%p redraw=%d\n", hwnd, hrgn, redraw);
+    CALL_3(BOXED_SET_WINDOW_RGN, hwnd, hrgn, redraw);
 }
 
 void CDECL boxeddrv_SetWindowStyle(HWND hwnd, INT offset, STYLESTRUCT *style) {
     HWND hwndFocus;
 
-	TRACE("hwnd=%p offset=%d style=%p\n", hwnd, offset, style);
-	CALL_NORETURN_3(BOXED_SET_WINDOW_STYLE, hwnd, offset, style);
+    TRACE("hwnd=%p offset=%d style=%p\n", hwnd, offset, style);
+    CALL_NORETURN_3(BOXED_SET_WINDOW_STYLE, hwnd, offset, style);
     hwndFocus = GetFocus();
     if (hwndFocus && (hwnd == hwndFocus || IsChild(hwnd, hwndFocus)))
         boxeddrv_SetFocus(hwnd);
 }
 
 void CDECL boxeddrv_SetWindowText(HWND hwnd, LPCWSTR text) {
-	TRACE("hwnd=%p text=%s\n", hwnd, debugstr_w(text));
-	CALL_NORETURN_2(BOXED_SET_WINDOW_TEXT, hwnd, text);
+    TRACE("hwnd=%p text=%s\n", hwnd, debugstr_w(text));
+    CALL_NORETURN_2(BOXED_SET_WINDOW_TEXT, hwnd, text);
 }
 
 UINT CDECL boxeddrv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp) {
     HWND hwndFocus;
     UINT result;
 
-	TRACE("hwnd=%p cmd=%d rect=%s swp=0x%08x\n", hwnd, cmd, wine_dbgstr_rect(rect), swp);
+    TRACE("hwnd=%p cmd=%d rect=%s swp=0x%08x\n", hwnd, cmd, wine_dbgstr_rect(rect), swp);
     if (IsRectEmpty(rect)) return swp;
-	CALL_NORETURN_5(BOXED_SHOW_WINDOW, hwnd, cmd, rect, swp, &result);    
+    CALL_NORETURN_5(BOXED_SHOW_WINDOW, hwnd, cmd, rect, swp, &result);    
     hwndFocus = GetFocus();
     if (hwndFocus && (hwnd == hwndFocus || IsChild(hwnd, hwndFocus)))
         boxeddrv_SetFocus(hwnd);
@@ -663,45 +663,45 @@ UINT CDECL boxeddrv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp) {
 }
 
 LRESULT CDECL boxeddrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam) {
-	TRACE("hwnd=%p wparam=0x%08x lparam=0x%08x\n", hwnd, (int)wparam, (int)lparam);
-	CALL_3(BOXED_SYS_COMMAND, hwnd, wparam, lparam);
+    TRACE("hwnd=%p wparam=0x%08x lparam=0x%08x\n", hwnd, (int)wparam, (int)lparam);
+    CALL_3(BOXED_SYS_COMMAND, hwnd, wparam, lparam);
 }
 
 BOOL CDECL boxeddrv_SystemParametersInfo(UINT action, UINT int_param, void *ptr_param, UINT flags) {
-	TRACE("action=%d int_param=%d ptr_param=%p flags=0x%08x\n", action, int_param, ptr_param, flags);
-	CALL_4(BOXED_SYSTEM_PARAMETERS_INFO, action, int_param, ptr_param, flags);
+    TRACE("action=%d int_param=%d ptr_param=%p flags=0x%08x\n", action, int_param, ptr_param, flags);
+    CALL_4(BOXED_SYSTEM_PARAMETERS_INFO, action, int_param, ptr_param, flags);
 }
 
 INT CDECL boxeddrv_ToUnicodeEx(UINT virtKey, UINT scanCode, const BYTE *lpKeyState, LPWSTR bufW, int bufW_size, UINT flags, HKL hkl) {
-	CALL_7(BOXED_TO_UNICODE_EX, virtKey, scanCode, lpKeyState, bufW, bufW_size, flags, hkl);
+    CALL_7(BOXED_TO_UNICODE_EX, virtKey, scanCode, lpKeyState, bufW, bufW_size, flags, hkl);
 }
 
 BOOL CDECL boxeddrv_UpdateLayeredWindow(HWND hwnd, const UPDATELAYEREDWINDOWINFO *info, const RECT *window_rect) {
-	CALL_3(BOXED_UPDATE_LAYERED_WINDOW, hwnd, info, window_rect);
+    CALL_3(BOXED_UPDATE_LAYERED_WINDOW, hwnd, info, window_rect);
 }
 
 SHORT CDECL boxeddrv_VkKeyScanEx(WCHAR wChar, HKL hkl) {
-	CALL_2(BOXED_VK_KEY_SCAN_EX, wChar, hkl);
+    CALL_2(BOXED_VK_KEY_SCAN_EX, wChar, hkl);
 }
 
 LRESULT CDECL boxeddrv_WindowMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
-	CALL_4(BOXED_WINDOW_MESSAGE, hwnd, msg, wp, lp);
+    CALL_4(BOXED_WINDOW_MESSAGE, hwnd, msg, wp, lp);
 }
 
 void boxeddrv_SetSurface(HWND hwnd, struct window_surface *surface) {
-	CALL_NORETURN_2(BOXED_SET_SURFACE, hwnd, surface);
+    CALL_NORETURN_2(BOXED_SET_SURFACE, hwnd, surface);
 }
 
 struct window_surface* boxeddrv_GetSurface(HWND hwnd) {
-	CALL_1(BOXED_GET_SURFACE, hwnd);
+    CALL_1(BOXED_GET_SURFACE, hwnd);
 }
 
 void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, struct window_surface *surface) {
-	DWORD new_style = GetWindowLongW(hwnd, GWL_STYLE);
+    DWORD new_style = GetWindowLongW(hwnd, GWL_STYLE);
     struct window_surface* oldSurface = boxeddrv_GetSurface(hwnd);
     RECT r;
     GetWindowRect(hwnd, &r);
-	TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x GetWindowRect()=%s\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style, wine_dbgstr_rect(&r));
+    TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x GetWindowRect()=%s\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style, wine_dbgstr_rect(&r));
     if (surface) {
         TRACE("     using new surface %p (ref=%d)\n", surface, surface->ref);
         window_surface_add_ref(surface);
@@ -710,8 +710,8 @@ void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flag
         TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
         window_surface_release(oldSurface);
     }
-	boxeddrv_SetSurface(hwnd, surface);	
-	CALL_NORETURN_8(BOXED_WINDOW_POS_CHANGED, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, valid_rects, new_style);
+    boxeddrv_SetSurface(hwnd, surface);	
+    CALL_NORETURN_8(BOXED_WINDOW_POS_CHANGED, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, valid_rects, new_style);
 }
 
 void surface_clip_to_visible_rect(struct window_surface *window_surface, const RECT *visible_rect);
@@ -722,7 +722,7 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
     HWND parent = GetAncestor(hwnd, GA_PARENT);
 
     initEvents();
-	TRACE("hwnd=%p (parent=%p) insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, parent, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);     
+    TRACE("hwnd=%p (parent=%p) insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s surface=%p\n", hwnd, parent, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), surface);     
 
     if (GetWindowThreadProcessId(hwnd, NULL) != GetCurrentThreadId()) return;
 
@@ -742,13 +742,13 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
     
     *visible_rect = *window_rect;
     if (swp_flags & SWP_HIDEWINDOW) return;        
-	CALL_NORETURN_7(BOXED_WINDOW_POS_CHANGING, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, surface);
+    CALL_NORETURN_7(BOXED_WINDOW_POS_CHANGING, hwnd, insert_after, swp_flags, window_rect, client_rect, visible_rect, surface);
 
     if (parent != GetDesktopWindow()) {
         return; // don't create surface
     }
     /*
-	if (*surface) {
+    if (*surface) {
         int surfaceWidth = (*surface)->rect.right - (*surface)->rect.left;
         int surfaceHeight = (*surface)->rect.bottom - (*surface)->rect.top;
         int windowWidth = window_rect->right - window_rect->left;
@@ -760,8 +760,8 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
         }
         TRACE("     checking existing surface %p (ref=%d)\n", *surface, (*surface)->ref);
         if (surfaceWidth==windowWidth && surfaceHeight==windowHeight) {
-		    // use existing surface
-		    surface_clip_to_visible_rect(*surface, visible_rect);
+            // use existing surface
+            surface_clip_to_visible_rect(*surface, visible_rect);
             window_surface_add_ref(*surface);
             return;
         }
@@ -771,17 +771,17 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
         TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
         window_surface_release(oldSurface);
     }
-	if (1) {
+    if (1) {
         RECT rc;
         rc.left = 0;
         rc.right = window_rect->right - window_rect->left;
         rc.top = 0;
         rc.bottom = window_rect->bottom - window_rect->top;
         if (rc.right && rc.bottom) {
-		    *surface = create_surface(hwnd, &rc, *surface, FALSE);
+            *surface = create_surface(hwnd, &rc, *surface, FALSE);
             TRACE("     created new surface %p (ref=%d)\n", *surface, (*surface)->ref);
         }
-	}
+    }
 }
 
 struct winZOrder {
@@ -803,119 +803,119 @@ void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width,
     zorder.count = 0;	
     EnumWindows((WNDENUMPROC)getZOrderCallback, (LPARAM)&zorder);
     TRACE("hwnd=%p bits=%p width=%d height=%d rects=%p rectCount=%d hWndCount=%d\n", hwnd, bits, width, height, rects, rectCount, zorder.count);
-	CALL_NORETURN_9(BOXED_FLUSH_SURFACE, hwnd, bits, xOrg, yOrg, width, height, &zorder, rects, rectCount);
+    CALL_NORETURN_9(BOXED_FLUSH_SURFACE, hwnd, bits, xOrg, yOrg, width, height, &zorder, rects, rectCount);
 }
 
 BOOL boxeddrv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {
-	TRACE("dev=%p ramp=%p\n", dev, ramp);
-	CALL_2(BOXED_GET_DEVICE_GAMMA_RAMP, dev, ramp);
+    TRACE("dev=%p ramp=%p\n", dev, ramp);
+    CALL_2(BOXED_GET_DEVICE_GAMMA_RAMP, dev, ramp);
 }
 
 BOOL boxeddrv_SetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {
-	TRACE("dev=%p ramp=%p\n", dev, ramp);
-	CALL_2(BOXED_SET_DEVICE_GAMMA_RAMP, dev, ramp);
+    TRACE("dev=%p ramp=%p\n", dev, ramp);
+    CALL_2(BOXED_SET_DEVICE_GAMMA_RAMP, dev, ramp);
 }
 
 INT boxeddrv_GetDeviceCaps(PHYSDEV dev, INT cap) {
-	TRACE("dev=%p cap=%d\n", dev, cap);
-	switch (cap) {
-	case PDEVICESIZE:
-		return sizeof(BOXEDDRV_PDEVICE);
-	}
-	CALL_2(BOXED_GET_DEVICE_CAPS, dev, cap);
+    TRACE("dev=%p cap=%d\n", dev, cap);
+    switch (cap) {
+    case PDEVICESIZE:
+        return sizeof(BOXEDDRV_PDEVICE);
+    }
+    CALL_2(BOXED_GET_DEVICE_CAPS, dev, cap);
 }
 
 int CDECL wine_notify_icon(DWORD msg, NOTIFYICONDATAW *data) {
-	CALL_2(BOXED_WINE_NOTIFY_ICON, msg, data);
+    CALL_2(BOXED_WINE_NOTIFY_ICON, msg, data);
 }
 
 BOOL WINAPI ImeConfigure(HKL hKL, HWND hWnd, DWORD dwMode, LPVOID lpData) {
-	CALL_4(BOXED_IME_CONFIGURE, hKL, hWnd, dwMode, lpData);
+    CALL_4(BOXED_IME_CONFIGURE, hKL, hWnd, dwMode, lpData);
 }
 
 DWORD WINAPI ImeConversionList(HIMC hIMC, LPCWSTR lpSource, LPCANDIDATELIST lpCandList, DWORD dwBufLen, UINT uFlag) {
-	CALL_5(BOXED_IME_CONVERSION_LIST, hIMC, lpSource, lpCandList, dwBufLen, uFlag);
+    CALL_5(BOXED_IME_CONVERSION_LIST, hIMC, lpSource, lpCandList, dwBufLen, uFlag);
 }
 
 BOOL WINAPI ImeDestroy(UINT uForce) {
-	CALL_1(BOXED_IME_DESTROY, uForce);
+    CALL_1(BOXED_IME_DESTROY, uForce);
 }
 
 UINT WINAPI ImeEnumRegisterWord(REGISTERWORDENUMPROCW lpfnEnumProc, LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszRegister, LPVOID lpData) {
-	CALL_5(BOXED_IME_ENUM_REGISTER_WORD, lpfnEnumProc, lpszReading, dwStyle, lpszRegister, lpData);
+    CALL_5(BOXED_IME_ENUM_REGISTER_WORD, lpfnEnumProc, lpszReading, dwStyle, lpszRegister, lpData);
 }
 
 LRESULT WINAPI ImeEscape(HIMC hIMC, UINT uSubFunc, LPVOID lpData) {
-	CALL_3(BOXED_IME_ESCAPE, hIMC, uSubFunc, lpData);
+    CALL_3(BOXED_IME_ESCAPE, hIMC, uSubFunc, lpData);
 }
 
 DWORD WINAPI ImeGetImeMenuItems(HIMC hIMC, DWORD dwFlags, DWORD dwType, LPIMEMENUITEMINFOW lpImeParentMenu, LPIMEMENUITEMINFOW lpImeMenu, DWORD dwSize) {
-	CALL_6(BOXED_IME_GET_IME_MENU_ITEMS, hIMC, dwFlags, dwType, lpImeParentMenu, lpImeMenu, dwSize);
+    CALL_6(BOXED_IME_GET_IME_MENU_ITEMS, hIMC, dwFlags, dwType, lpImeParentMenu, lpImeMenu, dwSize);
 }
 
 UINT WINAPI ImeGetRegisterWordStyle(UINT nItem, LPSTYLEBUFW lpStyleBuf) {
-	CALL_2(BOXED_IME_GET_REGISTER_WORD_STYLE, nItem, lpStyleBuf);
+    CALL_2(BOXED_IME_GET_REGISTER_WORD_STYLE, nItem, lpStyleBuf);
 }
 
 BOOL WINAPI ImeInquire(LPIMEINFO lpIMEInfo, LPWSTR lpszUIClass, LPCWSTR lpszOption) {
-	CALL_3(BOXED_IME_INQUIRE, lpIMEInfo, lpszUIClass, lpszOption);
+    CALL_3(BOXED_IME_INQUIRE, lpIMEInfo, lpszUIClass, lpszOption);
 }
 
 BOOL WINAPI ImeProcessKey(HIMC hIMC, UINT vKey, LPARAM lKeyData, const LPBYTE lpbKeyState) {
-	CALL_4(BOXED_IME_PROCESS_KEY, hIMC, vKey, lKeyData, lpbKeyState);
+    CALL_4(BOXED_IME_PROCESS_KEY, hIMC, vKey, lKeyData, lpbKeyState);
 }
 
 BOOL WINAPI ImeRegisterWord(LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszRegister) {
-	CALL_3(BOXED_IME_REGISTER_WORD, lpszReading, dwStyle, lpszRegister);
+    CALL_3(BOXED_IME_REGISTER_WORD, lpszReading, dwStyle, lpszRegister);
 }
 
 BOOL WINAPI ImeSelect(HIMC hIMC, BOOL fSelect) {
-	CALL_2(BOXED_IME_SELECT, hIMC, fSelect);
+    CALL_2(BOXED_IME_SELECT, hIMC, fSelect);
 }
 
 BOOL WINAPI ImeSetActiveContext(HIMC hIMC, BOOL fFlag) {
-	CALL_2(BOXED_IME_SET_ACTIVE_CONTEXT, hIMC, fFlag);
+    CALL_2(BOXED_IME_SET_ACTIVE_CONTEXT, hIMC, fFlag);
 }
 
 BOOL WINAPI ImeSetCompositionString(HIMC hIMC, DWORD dwIndex, LPCVOID lpComp, DWORD dwCompLen, LPCVOID lpRead, DWORD dwReadLen) {
-	CALL_6(BOXED_IME_SET_COMPOSITION_STRING, hIMC, dwIndex, lpComp, dwCompLen, lpRead, dwReadLen);
+    CALL_6(BOXED_IME_SET_COMPOSITION_STRING, hIMC, dwIndex, lpComp, dwCompLen, lpRead, dwReadLen);
 }
 
 UINT WINAPI ImeToAsciiEx(UINT uVKey, UINT uScanCode, const LPBYTE lpbKeyState, LPDWORD lpdwTransKey, UINT fuState, HIMC hIMC) {
-	CALL_6(BOXED_IME_TO_ASCII_EX, uVKey, uScanCode, lpbKeyState, lpdwTransKey, fuState, hIMC);
+    CALL_6(BOXED_IME_TO_ASCII_EX, uVKey, uScanCode, lpbKeyState, lpdwTransKey, fuState, hIMC);
 }
 
 BOOL WINAPI ImeUnregisterWord(LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszUnregister) {
-	CALL_3(BOXED_IME_UNREGISTER_WORD, lpszReading, dwStyle, lpszUnregister);
+    CALL_3(BOXED_IME_UNREGISTER_WORD, lpszReading, dwStyle, lpszUnregister);
 }
 
 BOOL WINAPI NotifyIME(HIMC hIMC, DWORD dwAction, DWORD dwIndex, DWORD dwValue) {
-	CALL_4(BOXED_NOTIFY_IME, hIMC, dwAction, dwIndex, dwValue);
+    CALL_4(BOXED_NOTIFY_IME, hIMC, dwAction, dwIndex, dwValue);
 }
 
 static BOOL boxeddrv_wglCopyContext(struct wgl_context *src, struct wgl_context *dst, UINT mask) {
     TRACE("boxeddrv_wglCopyContext src=%p dst=%p mask=%X\n", src, dst, mask);
-	CALL_3(BOXED_GL_COPY_CONTEXT, src, dst, mask);
+    CALL_3(BOXED_GL_COPY_CONTEXT, src, dst, mask);
 }
 
 static struct wgl_context *boxeddrv_wglCreateContext(HDC hdc) {
     TRACE("boxeddrv_wglCreateContext hdc=%X\n", (int)hdc);
-	CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), 0, 0, 0, 0);
+    CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), 0, 0, 0, 0);
 }
 
 static void boxeddrv_wglDeleteContext(struct wgl_context *context) {
     TRACE("boxeddrv_wglDeleteContext context=%p\n", context);
-	CALL_NORETURN_1(BOXED_GL_DELETE_CONTEXT, context);
+    CALL_NORETURN_1(BOXED_GL_DELETE_CONTEXT, context);
 }
 
 static int boxeddrv_wglDescribePixelFormat(HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr) {
     TRACE("boxeddrv_wglDescribePixelFormat hdc=%X fmt=%d size=%d descr=%p\n", (int)hdc, fmt, size, descr);
-	CALL_4(BOXED_GL_DESCRIBE_PIXEL_FORMAT, hdc, fmt, size, descr);
+    CALL_4(BOXED_GL_DESCRIBE_PIXEL_FORMAT, hdc, fmt, size, descr);
 }
 
 static int boxeddrv_wglGetPixelFormat(HDC hdc) {
     TRACE("boxeddrv_wglGetPixelFormat hdc=%X\n", (int)hdc);
-	CALL_1(BOXED_GL_GET_PIXEL_FORMAT, hdc);
+    CALL_1(BOXED_GL_GET_PIXEL_FORMAT, hdc);
 }
 
 static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct wgl_context *share_context, const int *attrib_list);
@@ -923,55 +923,55 @@ static PROC boxeddrv_wglGetProcAddress(const char *proc) {
     TRACE("boxeddrv_wglGetProcAddress %s\n", proc);
     //if (!strcmp(proc, "wglCreateContextAttribsARB"))
     //    return (PROC)boxeddrv_wglCreateContextAttribsARB;
-	//CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
+    //CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
     return NULL;
 }
 
 static BOOL boxeddrv_wglMakeCurrent(HDC hdc, struct wgl_context *context) {
     TRACE("boxeddrv_wglMakeCurrent hdc=%X context=%p\n",(int)hdc, context);
-	CALL_2(BOXED_GL_MAKE_CURRENT, WindowFromDC(hdc), context);
+    CALL_2(BOXED_GL_MAKE_CURRENT, WindowFromDC(hdc), context);
 }
 
 static BOOL boxeddrv_wglSetPixelFormat(HDC hdc, int fmt, const PIXELFORMATDESCRIPTOR *descr) {
     TRACE("boxeddrv_wglSetPixelFormat hdc=%X fmt=%d descr=%p\n", (int)hdc, fmt, descr);
-	CALL_3(BOXED_GL_SET_PIXEL_FORMAT, WindowFromDC(hdc), fmt, descr);
+    CALL_3(BOXED_GL_SET_PIXEL_FORMAT, WindowFromDC(hdc), fmt, descr);
 }
 
 static BOOL boxeddrv_wglShareLists(struct wgl_context *org, struct wgl_context *dest) {
     TRACE("boxeddrv_wglShareLists org=%p dest=%p\n", org, dest);
-	CALL_2(BOXED_GL_SHARE_LISTS, org, dest);
+    CALL_2(BOXED_GL_SHARE_LISTS, org, dest);
 }
 
 static BOOL boxeddrv_wglSwapBuffers(HDC hdc) {
-	CALL_1(BOXED_GL_SWAP_BUFFERS, hdc);
+    CALL_1(BOXED_GL_SWAP_BUFFERS, hdc);
 }
 
 UINT CDECL boxeddrv_GetKeyboardLayoutList(INT size, HKL *list) {
-	CALL_2(BOXED_GET_KEYBOARD_LAYOUT_LIST, size, list);
+    CALL_2(BOXED_GET_KEYBOARD_LAYOUT_LIST, size, list);
 }
 
 BOOL CDECL boxeddrv_RegisterHotKey(HWND hwnd, UINT mod_flags, UINT vkey) {
-	CALL_3(BOXED_REGISTER_HOT_KEY, hwnd, mod_flags, vkey);
+    CALL_3(BOXED_REGISTER_HOT_KEY, hwnd, mod_flags, vkey);
 }
 
 void CDECL boxeddrv_UnregisterHotKey(HWND hwnd, UINT modifiers, UINT vkey) {
-	CALL_NORETURN_3(BOXED_UNREGISTER_HOT_KEY, hwnd, modifiers, vkey);
+    CALL_NORETURN_3(BOXED_UNREGISTER_HOT_KEY, hwnd, modifiers, vkey);
 }
 
 static struct opengl_funcs opengl_funcs =
 {
-	{
-		boxeddrv_wglCopyContext,          /* p_wglCopyContext */
-		boxeddrv_wglCreateContext,        /* p_wglCreateContext */
-		boxeddrv_wglDeleteContext,        /* p_wglDeleteContext */
-		boxeddrv_wglDescribePixelFormat,  /* p_wglDescribePixelFormat */
-		boxeddrv_wglGetPixelFormat,       /* p_wglGetPixelFormat */
-		boxeddrv_wglGetProcAddress,       /* p_wglGetProcAddress */
-		boxeddrv_wglMakeCurrent,          /* p_wglMakeCurrent */
-		boxeddrv_wglSetPixelFormat,       /* p_wglSetPixelFormat */
-		boxeddrv_wglShareLists,           /* p_wglShareLists */
-		boxeddrv_wglSwapBuffers,          /* p_wglSwapBuffers */
-	}
+    {
+        boxeddrv_wglCopyContext,          /* p_wglCopyContext */
+        boxeddrv_wglCreateContext,        /* p_wglCreateContext */
+        boxeddrv_wglDeleteContext,        /* p_wglDeleteContext */
+        boxeddrv_wglDescribePixelFormat,  /* p_wglDescribePixelFormat */
+        boxeddrv_wglGetPixelFormat,       /* p_wglGetPixelFormat */
+        boxeddrv_wglGetProcAddress,       /* p_wglGetProcAddress */
+        boxeddrv_wglMakeCurrent,          /* p_wglMakeCurrent */
+        boxeddrv_wglSetPixelFormat,       /* p_wglSetPixelFormat */
+        boxeddrv_wglShareLists,           /* p_wglShareLists */
+        boxeddrv_wglSwapBuffers,          /* p_wglSwapBuffers */
+    }
 };
 
 int initOpengl() {
@@ -1015,25 +1015,25 @@ failed:
 */
 struct opengl_funcs *boxeddrv_wine_get_wgl_driver(PHYSDEV dev, UINT version)
 {
-	if (version != WINE_WGL_DRIVER_VERSION)
-	{
-		ERR("version mismatch, opengl32 wants %u but boxeddrv has %u\n", version, WINE_WGL_DRIVER_VERSION);
-		return NULL;
-	}
+    if (version != WINE_WGL_DRIVER_VERSION)
+    {
+        ERR("version mismatch, opengl32 wants %u but boxeddrv has %u\n", version, WINE_WGL_DRIVER_VERSION);
+        return NULL;
+    }
 
     if (initOpengl())
-	    return &opengl_funcs;
+        return &opengl_funcs;
     return NULL;
 }
 
 static inline BOXEDDRV_PDEVICE *get_boxeddrv_dev(PHYSDEV dev)
 {
-	return (BOXEDDRV_PDEVICE*)dev;
+    return (BOXEDDRV_PDEVICE*)dev;
 }
 
 static BOXEDDRV_PDEVICE *create_boxed_physdev(void)
 {
-	return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(BOXEDDRV_PDEVICE));
+    return HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, sizeof(BOXEDDRV_PDEVICE));
 }
 
 
@@ -1042,12 +1042,12 @@ static BOXEDDRV_PDEVICE *create_boxed_physdev(void)
 */
 static BOOL boxeddrv_DeleteDC(PHYSDEV dev)
 {
-	BOXEDDRV_PDEVICE *physDev = get_boxeddrv_dev(dev);
+    BOXEDDRV_PDEVICE *physDev = get_boxeddrv_dev(dev);
 
-	TRACE("hdc %p\n", dev->hdc);
+    TRACE("hdc %p\n", dev->hdc);
 
-	HeapFree(GetProcessHeap(), 0, physDev);
-	return TRUE;
+    HeapFree(GetProcessHeap(), 0, physDev);
+    return TRUE;
 }
 
 UINT boxeddrv_RealizePalette( PHYSDEV dev, HPALETTE hpal, BOOL primary ) {
@@ -1236,20 +1236,20 @@ static const struct gdi_dc_funcs boxeddrv_funcs =
 *              CreateDC (BOXEDDRV.@)
 */
 static BOOL boxeddrv_CreateDC(PHYSDEV *pdev, LPCWSTR driver, LPCWSTR device,
-	LPCWSTR output, const DEVMODEW* initData)
+    LPCWSTR output, const DEVMODEW* initData)
 {
-	BOXEDDRV_PDEVICE *physDev = create_boxed_physdev();
+    BOXEDDRV_PDEVICE *physDev = create_boxed_physdev();
 
-	TRACE("pdev %p hdc %p driver %s device %s output %s initData %p\n", pdev,
-		(*pdev)->hdc, debugstr_w(driver), debugstr_w(device), debugstr_w(output),
-		initData);
+    TRACE("pdev %p hdc %p driver %s device %s output %s initData %p\n", pdev,
+        (*pdev)->hdc, debugstr_w(driver), debugstr_w(device), debugstr_w(output),
+        initData);
 
-	if (!physDev) return FALSE;
+    if (!physDev) return FALSE;
 
-	push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
-	CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
-	TRACE("priority=%d\n", boxeddrv_funcs.priority);
-	return TRUE;
+    push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
+    CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
+    TRACE("priority=%d\n", boxeddrv_funcs.priority);
+    return TRUE;
 }
 
 
@@ -1258,16 +1258,16 @@ static BOOL boxeddrv_CreateDC(PHYSDEV *pdev, LPCWSTR driver, LPCWSTR device,
 */
 static BOOL boxeddrv_CreateCompatibleDC(PHYSDEV orig, PHYSDEV *pdev)
 {
-	BOXEDDRV_PDEVICE *physDev = create_boxed_physdev();
+    BOXEDDRV_PDEVICE *physDev = create_boxed_physdev();
 
-	TRACE("orig %p orig->hdc %p pdev %p pdev->hdc %p\n", orig, (orig ? orig->hdc : NULL), pdev,
-		((pdev && *pdev) ? (*pdev)->hdc : NULL));
+    TRACE("orig %p orig->hdc %p pdev %p pdev->hdc %p\n", orig, (orig ? orig->hdc : NULL), pdev,
+        ((pdev && *pdev) ? (*pdev)->hdc : NULL));
 
-	if (!physDev) return FALSE;
+    if (!physDev) return FALSE;
 
-	push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
+    push_dc_driver(pdev, &physDev->dev, &boxeddrv_funcs);
     CALL_NORETURN_1(BOXED_CREATE_DC, physDev);
-	return TRUE;
+    return TRUE;
 }
 
 /******************************************************************************

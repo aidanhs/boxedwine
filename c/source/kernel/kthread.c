@@ -14,93 +14,93 @@
 struct KThread* freeThreads;
 
 struct KThread* allocThread() {
-	if (freeThreads) {
-		struct KThread* result = freeThreads;
-		freeThreads = freeThreads->nextFreeThread;
-		memset(result, 0, sizeof(struct KThread));
-		return result;
-	}
-	return (struct KThread*)kalloc(sizeof(struct KThread));		
+    if (freeThreads) {
+        struct KThread* result = freeThreads;
+        freeThreads = freeThreads->nextFreeThread;
+        memset(result, 0, sizeof(struct KThread));
+        return result;
+    }
+    return (struct KThread*)kalloc(sizeof(struct KThread));		
 }
 
 void freeThread(struct KThread* thread) {
-	processRemoveThread(thread->process, thread);
-	if (thread->waitNode) {
-		wakeThread(thread);
-	}	
-	if (thread->waitingForSignalToEnd) {
-		wakeThread(thread->waitingForSignalToEnd);
-		thread->waitingForSignalToEnd = 0;
-	}
-	unscheduleThread(thread);	
-	threadClearFutexes(thread);
+    processRemoveThread(thread->process, thread);
+    if (thread->waitNode) {
+        wakeThread(thread);
+    }	
+    if (thread->waitingForSignalToEnd) {
+        wakeThread(thread->waitingForSignalToEnd);
+        thread->waitingForSignalToEnd = 0;
+    }
+    unscheduleThread(thread);	
+    threadClearFutexes(thread);
 #ifdef USE_MMU
-	releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
+    releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
 #else
-	kfree(thread->stackAddress);
+    kfree(thread->stackAddress);
 #endif
-	processOnExitThread(thread->process);
-	thread->nextFreeThread = freeThreads;	
-	freeThreads = thread;
+    processOnExitThread(thread->process);
+    thread->nextFreeThread = freeThreads;	
+    freeThreads = thread;
 }
 
 void setupStack(struct KThread* thread) {
 #ifdef USE_MMU
-	U32 page = 0;
-	U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
-	pageCount+=2; // guard pages
-	if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount, &page, 0))
-		kpanic("Failed to allocate stack for thread");
-	allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0);
-	// 1 page above (catch stack underrun)
-	reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
-	// 1 page below (catch stack overrun)
-	reservePages(thread->cpu.memory, page, 1, PAGE_RESERVED);
-	thread->stackPageCount = pageCount;
-	thread->stackPageStart = page;
-	thread->cpu.reg[4].u32 = (thread->stackPageStart + thread->stackPageCount - 1) << PAGE_SHIFT; // one page away from the top
+    U32 page = 0;
+    U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
+    pageCount+=2; // guard pages
+    if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount, &page, 0))
+        kpanic("Failed to allocate stack for thread");
+    allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0);
+    // 1 page above (catch stack underrun)
+    reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
+    // 1 page below (catch stack overrun)
+    reservePages(thread->cpu.memory, page, 1, PAGE_RESERVED);
+    thread->stackPageCount = pageCount;
+    thread->stackPageStart = page;
+    thread->cpu.reg[4].u32 = (thread->stackPageStart + thread->stackPageCount - 1) << PAGE_SHIFT; // one page away from the top
 #else
-	thread->stackAddress = kalloc(1024 * 1024);
-	thread->cpu.reg[4].u32 = (U32)(thread->stackAddress + 1024 * 1024 - 4096);
+    thread->stackAddress = kalloc(1024 * 1024);
+    thread->cpu.reg[4].u32 = (U32)(thread->stackAddress + 1024 * 1024 - 4096);
 #endif
-	thread->cpu.thread = thread;
+    thread->cpu.thread = thread;
 }
 
 void initThread(struct KThread* thread, struct KProcess* process) {
-	memset(thread, 0, sizeof(struct KThread));	
-	initCPU(&thread->cpu, process);	
-	thread->process = process;
-	thread->id = processAddThread(process, thread);
-	thread->sigMask = 0;
-	setupStack(thread);
+    memset(thread, 0, sizeof(struct KThread));	
+    initCPU(&thread->cpu, process);	
+    thread->process = process;
+    thread->id = processAddThread(process, thread);
+    thread->sigMask = 0;
+    setupStack(thread);
 }
 
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process) {
-	memset(thread, 0, sizeof(struct KThread));
-	memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
-	onCreateCPU(&thread->cpu); // sets up the 8-bit high low regs
+    memset(thread, 0, sizeof(struct KThread));
+    memcpy(&thread->cpu, &from->cpu, sizeof(struct CPU));
+    onCreateCPU(&thread->cpu); // sets up the 8-bit high low regs
     thread->cpu.nextBlock = 0;
-	thread->cpu.thread = thread;	
-	thread->cpu.blockCounter = 0;
-	thread->process = process;
-	thread->sigMask = from->sigMask;
+    thread->cpu.thread = thread;	
+    thread->cpu.blockCounter = 0;
+    thread->process = process;
+    thread->sigMask = from->sigMask;
 #ifdef USE_MMU
-	thread->cpu.memory = process->memory;
-	thread->stackPageStart = from->stackPageStart;
-	thread->stackPageCount = from->stackPageCount;
+    thread->cpu.memory = process->memory;
+    thread->stackPageStart = from->stackPageStart;
+    thread->stackPageCount = from->stackPageCount;
 #else
-	thread->stackAddress = from->stackAddress;
+    thread->stackAddress = from->stackAddress;
 #endif
-	thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
-	thread->id = processAddThread(process, thread);
+    thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
+    thread->id = processAddThread(process, thread);
 }
 
 void exitThread(struct KThread* thread, U32 status) {
-	if (thread->clear_child_tid) {
-		writed(MMU_PARAM_THREAD thread->clear_child_tid, 0);
-		syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
-	}
-	freeThread(thread);
+    if (thread->clear_child_tid) {
+        writed(MMU_PARAM_THREAD thread->clear_child_tid, 0);
+        syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
+    }
+    freeThread(thread);
 }
 
 #define FUTEX_WAIT 0
@@ -109,10 +109,10 @@ void exitThread(struct KThread* thread, U32 status) {
 #define FUTEX_WAKE_PRIVATE 129
 
 struct futex {
-	struct KThread* thread;
-	U8* address;
-	U32 expireTimeInMillies;
-	BOOL wake;
+    struct KThread* thread;
+    U8* address;
+    U32 expireTimeInMillies;
+    BOOL wake;
 };
 
 #define MAX_FUTEXES 128
@@ -120,102 +120,102 @@ struct futex {
 struct futex system_futex[MAX_FUTEXES];
 
 struct futex* getFutex(struct KThread* thread, U8* address) {
-	int i=0;
+    int i=0;
 
-	for (i=0;i<MAX_FUTEXES;i++) {
-		if (system_futex[i].address == address && system_futex[i].thread==thread)
-			return &system_futex[i];
-	}
-	return 0;
+    for (i=0;i<MAX_FUTEXES;i++) {
+        if (system_futex[i].address == address && system_futex[i].thread==thread)
+            return &system_futex[i];
+    }
+    return 0;
 }
 
 struct futex* allocFutex(struct KThread* thread, U8* address, U32 millies) {
-	int i=0;
+    int i=0;
 
-	for (i=0;i<MAX_FUTEXES;i++) {
-		if (system_futex[i].thread==0) {
-			system_futex[i].thread = thread;
-			system_futex[i].address = address;
-			system_futex[i].expireTimeInMillies = millies;
-			system_futex[i].wake = FALSE;
-			return &system_futex[i];
-		}
-	}
-	kpanic("ran out of futexes");
-	return 0;
+    for (i=0;i<MAX_FUTEXES;i++) {
+        if (system_futex[i].thread==0) {
+            system_futex[i].thread = thread;
+            system_futex[i].address = address;
+            system_futex[i].expireTimeInMillies = millies;
+            system_futex[i].wake = FALSE;
+            return &system_futex[i];
+        }
+    }
+    kpanic("ran out of futexes");
+    return 0;
 }
 
 void freeFutex(struct futex* f) {
-	f->thread = 0;
+    f->thread = 0;
 }
 
 void threadClearFutexes(struct KThread* thread) {
-	U32 i;
+    U32 i;
 
-	for (i=0;i<MAX_FUTEXES;i++) {
-		if (system_futex[i].thread == thread) {
-			system_futex[i].thread = 0;
-		}
-	}
+    for (i=0;i<MAX_FUTEXES;i++) {
+        if (system_futex[i].thread == thread) {
+            system_futex[i].thread = 0;
+        }
+    }
 }
 
 U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
 #ifdef USE_MMU
-	U8* ramAddress = getPhysicalAddress(MMU_PARAM_THREAD addr);
+    U8* ramAddress = getPhysicalAddress(MMU_PARAM_THREAD addr);
 #else
-	U8* ramAddress = (U8*)addr;
+    U8* ramAddress = (U8*)addr;
 #endif
 
-	if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
-		struct futex* f=getFutex(thread, ramAddress);
-		U32 millies;
+    if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
+        struct futex* f=getFutex(thread, ramAddress);
+        U32 millies;
 
-		if (f) {
-			if (f->wake) {
-				freeFutex(f);
-				return 0;
-			}
-			if (f->expireTimeInMillies<=getMilliesSinceStart()) {
-				freeFutex(f);
-				return -K_ETIMEDOUT;
-			}
-			thread->timer.process = thread->process;
-			thread->timer.thread = thread;
-			thread->timer.millies = f->expireTimeInMillies;
-			if (f->expireTimeInMillies<0xF0000000)
-				thread->timer.millies+=thread->waitStartTime;
-			addTimer(&thread->timer);
-			return -K_WAIT;
-		}
+        if (f) {
+            if (f->wake) {
+                freeFutex(f);
+                return 0;
+            }
+            if (f->expireTimeInMillies<=getMilliesSinceStart()) {
+                freeFutex(f);
+                return -K_ETIMEDOUT;
+            }
+            thread->timer.process = thread->process;
+            thread->timer.thread = thread;
+            thread->timer.millies = f->expireTimeInMillies;
+            if (f->expireTimeInMillies<0xF0000000)
+                thread->timer.millies+=thread->waitStartTime;
+            addTimer(&thread->timer);
+            return -K_WAIT;
+        }
         if (pTime == 0) {
             millies = 0xFFFFFFFF;
-		} else {
-			U32 seconds = readd(MMU_PARAM_THREAD pTime);
+        } else {
+            U32 seconds = readd(MMU_PARAM_THREAD pTime);
             U32 nano = readd(MMU_PARAM_THREAD pTime + 4);
             millies = seconds * 1000 + nano / 1000000 + getMilliesSinceStart();
         }
         if (readd(MMU_PARAM_THREAD addr) != value) {
-			return -K_EWOULDBLOCK;
+            return -K_EWOULDBLOCK;
         }
-		f = allocFutex(thread, ramAddress, millies);
-		thread->waitStartTime = getMilliesSinceStart();			
-		thread->timer.process = thread->process;
-		thread->timer.thread = thread;
-		thread->timer.millies = f->expireTimeInMillies;
-		if (f->expireTimeInMillies<0xF0000000)
-			thread->timer.millies+=thread->waitStartTime;
-		addTimer(&thread->timer);
+        f = allocFutex(thread, ramAddress, millies);
+        thread->waitStartTime = getMilliesSinceStart();			
+        thread->timer.process = thread->process;
+        thread->timer.thread = thread;
+        thread->timer.millies = f->expireTimeInMillies;
+        if (f->expireTimeInMillies<0xF0000000)
+            thread->timer.millies+=thread->waitStartTime;
+        addTimer(&thread->timer);
         return -K_WAIT;
     } else if (op==FUTEX_WAKE_PRIVATE || op==FUTEX_WAKE) {
-		int i;
-		U32 count = 0;
-		for (i=0;i<MAX_FUTEXES && count<value;i++) {
-			if (system_futex[i].address==ramAddress && !system_futex[i].wake) {
-				system_futex[i].wake = TRUE;
-				wakeThread(system_futex[i].thread);				
-				count++;
-			}
-		}
+        int i;
+        U32 count = 0;
+        for (i=0;i<MAX_FUTEXES && count<value;i++) {
+            if (system_futex[i].address==ramAddress && !system_futex[i].wake) {
+                system_futex[i].wake = TRUE;
+                wakeThread(system_futex[i].thread);				
+                count++;
+            }
+        }
         return count;
     } else {
         kwarn("syscall __NR_futex op %d not implemented", op);
@@ -226,17 +226,17 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
 BOOL runSignals(struct KThread* thread) {
     U32 todo = thread->process->pendingSignals & ~(thread->inSignal?thread->inSigMask:thread->sigMask);
 
-	if (todo!=0) {
-		U32 i;
+    if (todo!=0) {
+        U32 i;
 
         for (i=0;i<32;i++) {
             if ((todo & (1 << i))!=0) {
-				runSignal(thread, i+1, -1);
-				return 1;
+                runSignal(thread, i+1, -1);
+                return 1;
             }
         }
     }	
-	return 0;
+    return 0;
 }
 /*
 typedef union compat_sigval {
@@ -274,7 +274,7 @@ typedef struct compat_siginfo {
                         compat_sigval_t _sigval;
                 } _rt;
 
-				// SIGCHLD 
+                // SIGCHLD 
                 struct {
                         U32 _pid;      // which child 
                         U32 _uid;      // sender's uid
@@ -417,191 +417,191 @@ struct ucontext_ia32 {
 #define CONTEXT_SIZE 128
 
 void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack, U32 trapNo) {	
-	struct CPU* cpu = &thread->cpu;
+    struct CPU* cpu = &thread->cpu;
 
-	if (altStack) {
-		writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
-		writed(MMU_PARAM_THREAD context+0xC, K_SS_ONSTACK);
-		writed(MMU_PARAM_THREAD context+0x10, thread->alternateStackSize);
-	} else {
-		writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
-		writed(MMU_PARAM_THREAD context+0xC, K_SS_DISABLE);
-		writed(MMU_PARAM_THREAD context+0x10, 0);
-	}
-	writed(MMU_PARAM_THREAD context+0x14, cpu->segValue[GS]);
-	writed(MMU_PARAM_THREAD context+0x18, cpu->segValue[FS]);
-	writed(MMU_PARAM_THREAD context+0x1C, cpu->segValue[ES]);
-	writed(MMU_PARAM_THREAD context+0x20, cpu->segValue[DS]);
-	writed(MMU_PARAM_THREAD context+0x24, cpu->reg[7].u32); // EDI
-	writed(MMU_PARAM_THREAD context+0x28, cpu->reg[6].u32); // ESI
-	writed(MMU_PARAM_THREAD context+0x2C, cpu->reg[5].u32); // EBP
-	writed(MMU_PARAM_THREAD context+0x30, stack); // ESP
-	writed(MMU_PARAM_THREAD context+0x34, cpu->reg[3].u32); // EBX
-	writed(MMU_PARAM_THREAD context+0x38, cpu->reg[2].u32); // EDX
-	writed(MMU_PARAM_THREAD context+0x3C, cpu->reg[1].u32); // ECX
-	writed(MMU_PARAM_THREAD context+0x40, cpu->reg[0].u32); // EAX
-	writed(MMU_PARAM_THREAD context+0x44, trapNo); // REG_TRAPNO
-	writed(MMU_PARAM_THREAD context+0x48, 0); // REG_ERR
-	writed(MMU_PARAM_THREAD context+0x4C, cpu->eip.u32);
-	writed(MMU_PARAM_THREAD context+0x50, cpu->segValue[CS]);
-	writed(MMU_PARAM_THREAD context+0x54, cpu->flags);
-	writed(MMU_PARAM_THREAD context+0x54, 0); // REG_UESP
-	writed(MMU_PARAM_THREAD context+0x5C, cpu->segValue[SS]);	
-	writed(MMU_PARAM_THREAD context+0x60, 0); // fpu save state
+    if (altStack) {
+        writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
+        writed(MMU_PARAM_THREAD context+0xC, K_SS_ONSTACK);
+        writed(MMU_PARAM_THREAD context+0x10, thread->alternateStackSize);
+    } else {
+        writed(MMU_PARAM_THREAD context+0x8, thread->alternateStack);
+        writed(MMU_PARAM_THREAD context+0xC, K_SS_DISABLE);
+        writed(MMU_PARAM_THREAD context+0x10, 0);
+    }
+    writed(MMU_PARAM_THREAD context+0x14, cpu->segValue[GS]);
+    writed(MMU_PARAM_THREAD context+0x18, cpu->segValue[FS]);
+    writed(MMU_PARAM_THREAD context+0x1C, cpu->segValue[ES]);
+    writed(MMU_PARAM_THREAD context+0x20, cpu->segValue[DS]);
+    writed(MMU_PARAM_THREAD context+0x24, cpu->reg[7].u32); // EDI
+    writed(MMU_PARAM_THREAD context+0x28, cpu->reg[6].u32); // ESI
+    writed(MMU_PARAM_THREAD context+0x2C, cpu->reg[5].u32); // EBP
+    writed(MMU_PARAM_THREAD context+0x30, stack); // ESP
+    writed(MMU_PARAM_THREAD context+0x34, cpu->reg[3].u32); // EBX
+    writed(MMU_PARAM_THREAD context+0x38, cpu->reg[2].u32); // EDX
+    writed(MMU_PARAM_THREAD context+0x3C, cpu->reg[1].u32); // ECX
+    writed(MMU_PARAM_THREAD context+0x40, cpu->reg[0].u32); // EAX
+    writed(MMU_PARAM_THREAD context+0x44, trapNo); // REG_TRAPNO
+    writed(MMU_PARAM_THREAD context+0x48, 0); // REG_ERR
+    writed(MMU_PARAM_THREAD context+0x4C, cpu->eip.u32);
+    writed(MMU_PARAM_THREAD context+0x50, cpu->segValue[CS]);
+    writed(MMU_PARAM_THREAD context+0x54, cpu->flags);
+    writed(MMU_PARAM_THREAD context+0x54, 0); // REG_UESP
+    writed(MMU_PARAM_THREAD context+0x5C, cpu->segValue[SS]);	
+    writed(MMU_PARAM_THREAD context+0x60, 0); // fpu save state
 }
 
 void readFromContext(struct CPU* cpu, U32 context) {
-	cpu->segValue[GS] = readd(MMU_PARAM_CPU context+0x14);
-	cpu->segValue[FS] = readd(MMU_PARAM_CPU context+0x18);
-	cpu->segValue[ES] = readd(MMU_PARAM_CPU context+0x1C);
-	cpu->segValue[DS] = readd(MMU_PARAM_CPU context+0x20);
+    cpu->segValue[GS] = readd(MMU_PARAM_CPU context+0x14);
+    cpu->segValue[FS] = readd(MMU_PARAM_CPU context+0x18);
+    cpu->segValue[ES] = readd(MMU_PARAM_CPU context+0x1C);
+    cpu->segValue[DS] = readd(MMU_PARAM_CPU context+0x20);
 
-	cpu->reg[7].u32 = readd(MMU_PARAM_CPU context+0x24); // EDI
-	cpu->reg[6].u32 = readd(MMU_PARAM_CPU context+0x28); // ESI
-	cpu->reg[5].u32 = readd(MMU_PARAM_CPU context+0x2C); // EBP
-	cpu->reg[4].u32 = readd(MMU_PARAM_CPU context+0x30); // ESP
+    cpu->reg[7].u32 = readd(MMU_PARAM_CPU context+0x24); // EDI
+    cpu->reg[6].u32 = readd(MMU_PARAM_CPU context+0x28); // ESI
+    cpu->reg[5].u32 = readd(MMU_PARAM_CPU context+0x2C); // EBP
+    cpu->reg[4].u32 = readd(MMU_PARAM_CPU context+0x30); // ESP
 
-	cpu->reg[3].u32 = readd(MMU_PARAM_CPU context+0x34); // EBX
-	cpu->reg[2].u32 = readd(MMU_PARAM_CPU context+0x38); // EDX
-	cpu->reg[1].u32 = readd(MMU_PARAM_CPU context+0x3C); // ECX
-	cpu->reg[0].u32 = readd(MMU_PARAM_CPU context+0x40); // EAX
-	
-	cpu->eip.u32 = readd(MMU_PARAM_CPU context+0x4C);
-	cpu->segValue[CS] = readd(MMU_PARAM_CPU context+0x50);				
-	cpu->flags = readd(MMU_PARAM_CPU context+0x54);
-	cpu->segValue[SS] = readd(MMU_PARAM_CPU context+0x5C);		
+    cpu->reg[3].u32 = readd(MMU_PARAM_CPU context+0x34); // EBX
+    cpu->reg[2].u32 = readd(MMU_PARAM_CPU context+0x38); // EDX
+    cpu->reg[1].u32 = readd(MMU_PARAM_CPU context+0x3C); // ECX
+    cpu->reg[0].u32 = readd(MMU_PARAM_CPU context+0x40); // EAX
+    
+    cpu->eip.u32 = readd(MMU_PARAM_CPU context+0x4C);
+    cpu->segValue[CS] = readd(MMU_PARAM_CPU context+0x50);				
+    cpu->flags = readd(MMU_PARAM_CPU context+0x54);
+    cpu->segValue[SS] = readd(MMU_PARAM_CPU context+0x5C);		
 }
 
 U32 syscall_sigreturn(struct KThread* thread) {
-	memcopyToNative(MMU_PARAM_THREAD thread->cpu.reg[4].u32, (char*)&thread->cpu, sizeof(struct CPU));
-	//klog("signal return (threadId=%d)", thread->id);
-	return -K_CONTINUE;
+    memcopyToNative(MMU_PARAM_THREAD thread->cpu.reg[4].u32, (char*)&thread->cpu, sizeof(struct CPU));
+    //klog("signal return (threadId=%d)", thread->id);
+    return -K_CONTINUE;
 }
 
 void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
-	U32 context;	
-	U64 tsc = cpu->timeStampCounter;
-	U32 b = cpu->blockCounter;
-	U32 stackAddress;
+    U32 context;	
+    U64 tsc = cpu->timeStampCounter;
+    U32 b = cpu->blockCounter;
+    U32 stackAddress;
 
-	pop32(cpu); // signal
+    pop32(cpu); // signal
         pop32(cpu); // address
         context = pop32(cpu);
-	cpu->thread->waitStartTime = pop32(cpu);
-	cpu->thread->interrupted = pop32(cpu);
-	stackAddress=cpu->reg[4].u32;
+    cpu->thread->waitStartTime = pop32(cpu);
+    cpu->thread->interrupted = pop32(cpu);
+    stackAddress=cpu->reg[4].u32;
 
 #ifdef LOG_OPS
-	//klog("onExitSignal signal=%d info=%X context=%X stack=%X interrupted=%d", signal, address, context, cpu->reg[4].u32, cpu->thread->interrupted);
-	//klog("    before context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_CPU cpu->segAddress[4]+0x18):0);
+    //klog("onExitSignal signal=%d info=%X context=%X stack=%X interrupted=%d", signal, address, context, cpu->reg[4].u32, cpu->thread->interrupted);
+    //klog("    before context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_CPU cpu->segAddress[4]+0x18):0);
 #endif
-	readFromContext(cpu, context);
+    readFromContext(cpu, context);
 #ifdef LOG_OPS
-	klog("    after  context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4] ? readd(MMU_PARAM_CPU cpu->segAddress[4] + 0x18) : 0);
+    klog("    after  context %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4] ? readd(MMU_PARAM_CPU cpu->segAddress[4] + 0x18) : 0);
 #endif
-	cpu->timeStampCounter = tsc;
-	cpu->blockCounter = b;
-	cpu->thread->inSignal--;
-	
-	if (cpu->thread->waitingForSignalToEnd) {
-		wakeThread(cpu->thread->waitingForSignalToEnd);
-		cpu->thread->waitingForSignalToEnd = 0;		
-	}
-	if (cpu->thread->waitingForSignalToEndMaskToRestore & RESTORE_SIGNAL_MASK) {
-		cpu->thread->sigMask = (U32)cpu->thread->waitingForSignalToEndMaskToRestore;
-		cpu->thread->waitingForSignalToEndMaskToRestore = SIGSUSPEND_RETURN;
-	}
+    cpu->timeStampCounter = tsc;
+    cpu->blockCounter = b;
+    cpu->thread->inSignal--;
+    
+    if (cpu->thread->waitingForSignalToEnd) {
+        wakeThread(cpu->thread->waitingForSignalToEnd);
+        cpu->thread->waitingForSignalToEnd = 0;		
+    }
+    if (cpu->thread->waitingForSignalToEndMaskToRestore & RESTORE_SIGNAL_MASK) {
+        cpu->thread->sigMask = (U32)cpu->thread->waitingForSignalToEndMaskToRestore;
+        cpu->thread->waitingForSignalToEndMaskToRestore = SIGSUSPEND_RETURN;
+    }
 
-	cpu->nextBlock = getBlock(cpu);
-	/*
-	if (action->flags & K_SA_RESTORER) {
-		push32(&thread->cpu, thread->cpu.eip.u32);
-		thread->cpu.eip.u32 = action->restorer;
-		while (thread->cpu.eip.u32!=savedState.eip.u32) {
-			runCPU(&thread->cpu);
-		}
-	}
-	*/
+    cpu->nextBlock = getBlock(cpu);
+    /*
+    if (action->flags & K_SA_RESTORER) {
+        push32(&thread->cpu, thread->cpu.eip.u32);
+        thread->cpu.eip.u32 = action->restorer;
+        while (thread->cpu.eip.u32!=savedState.eip.u32) {
+            runCPU(&thread->cpu);
+        }
+    }
+    */
 }
 
 // interrupted and waitStartTime are pushed because syscall's during the signal will clobber them
 void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
-	struct KSigAction* action = &thread->process->sigActions[signal];
+    struct KSigAction* action = &thread->process->sigActions[signal];
     if (action->handlerAndSigAction==K_SIG_DFL) {
 
     } else if (action->handlerAndSigAction != K_SIG_IGN) {
-		U32 context;
-		U32 address = 0;
-		U32 stack = thread->cpu.reg[4].u32;
-		U32 interrupted = 0;
-		struct CPU* cpu = &thread->cpu;
-		BOOL altStack = (action->flags & K_SA_ONSTACK) != 0;
+        U32 context;
+        U32 address = 0;
+        U32 stack = thread->cpu.reg[4].u32;
+        U32 interrupted = 0;
+        struct CPU* cpu = &thread->cpu;
+        BOOL altStack = (action->flags & K_SA_ONSTACK) != 0;
 
-		fillFlags(cpu);
+        fillFlags(cpu);
 #ifdef LOG_OPS
-		klog("runSignal %d", signal);
-		klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_THREAD cpu->segAddress[4]+0x18):0);
+        klog("runSignal %d", signal);
+        klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_THREAD cpu->segAddress[4]+0x18):0);
 #endif
-		thread->inSigMask=action->mask | thread->sigMask;
-		if (action->flags & K_SA_RESETHAND) {
-			action->handlerAndSigAction=K_SIG_DFL;
-		} else if (!(action->flags & K_SA_NODEFER)) {
-			thread->inSigMask|= 1 << (signal-1);
-		}
-		if (thread->waitNode) {
-			if (!(action->flags & K_SA_RESTART))
-				interrupted = 1;
-			wakeThread(thread);
-		}		
-		        
-		context = thread->cpu.reg[4].u32 - CONTEXT_SIZE;
-		writeToContext(thread, stack, context, altStack, trapNo);
-		thread->cpu.reg[4].u32 = context;
+        thread->inSigMask=action->mask | thread->sigMask;
+        if (action->flags & K_SA_RESETHAND) {
+            action->handlerAndSigAction=K_SIG_DFL;
+        } else if (!(action->flags & K_SA_NODEFER)) {
+            thread->inSigMask|= 1 << (signal-1);
+        }
+        if (thread->waitNode) {
+            if (!(action->flags & K_SA_RESTART))
+                interrupted = 1;
+            wakeThread(thread);
+        }		
+                
+        context = thread->cpu.reg[4].u32 - CONTEXT_SIZE;
+        writeToContext(thread, stack, context, altStack, trapNo);
+        thread->cpu.reg[4].u32 = context;
 
-		if (altStack) {
-			thread->cpu.reg[4].u32 = thread->alternateStack+thread->alternateStackSize;
-			altStack = 1;
+        if (altStack) {
+            thread->cpu.reg[4].u32 = thread->alternateStack+thread->alternateStackSize;
+            altStack = 1;
 #ifdef LOG_OPS
-			klog("    alternateStack %X", thread->alternateStack+thread->alternateStackSize);
+            klog("    alternateStack %X", thread->alternateStack+thread->alternateStackSize);
 #endif
         }
-		thread->cpu.reg[4].u32 &= ~15;
-		push32(&thread->cpu, 0); // padding
-		if (action->flags & K_SA_SIGINFO) {
-			U32 i;
-			
-			thread->cpu.reg[4].u32-=INFO_SIZE;
-			address = thread->cpu.reg[4].u32;
-			for (i=0;i<K_SIG_INFO_SIZE;i++) {
-				writed(MMU_PARAM_THREAD address+i*4, thread->process->sigActions[signal].sigInfo[i]);
-			}
-						
-			push32(&thread->cpu, interrupted);
-			push32(&thread->cpu, thread->waitStartTime);
-			push32(&thread->cpu, context);
-			push32(&thread->cpu, address);			
-			push32(&thread->cpu, signal);
-			thread->cpu.reg[0].u32 = signal;
-			thread->cpu.reg[1].u32 = address;
-			thread->cpu.reg[2].u32 = context;	
-		} else {
-			thread->cpu.reg[0].u32 = signal;
-			thread->cpu.reg[1].u32 = 0;
-			thread->cpu.reg[2].u32 = 0;	
-			push32(&thread->cpu, interrupted);
-			push32(&thread->cpu, thread->waitStartTime);
-			push32(&thread->cpu, context);
-			push32(&thread->cpu, 0);			
-			push32(&thread->cpu, signal);
-		}
+        thread->cpu.reg[4].u32 &= ~15;
+        push32(&thread->cpu, 0); // padding
+        if (action->flags & K_SA_SIGINFO) {
+            U32 i;
+            
+            thread->cpu.reg[4].u32-=INFO_SIZE;
+            address = thread->cpu.reg[4].u32;
+            for (i=0;i<K_SIG_INFO_SIZE;i++) {
+                writed(MMU_PARAM_THREAD address+i*4, thread->process->sigActions[signal].sigInfo[i]);
+            }
+                        
+            push32(&thread->cpu, interrupted);
+            push32(&thread->cpu, thread->waitStartTime);
+            push32(&thread->cpu, context);
+            push32(&thread->cpu, address);			
+            push32(&thread->cpu, signal);
+            thread->cpu.reg[0].u32 = signal;
+            thread->cpu.reg[1].u32 = address;
+            thread->cpu.reg[2].u32 = context;	
+        } else {
+            thread->cpu.reg[0].u32 = signal;
+            thread->cpu.reg[1].u32 = 0;
+            thread->cpu.reg[2].u32 = 0;	
+            push32(&thread->cpu, interrupted);
+            push32(&thread->cpu, thread->waitStartTime);
+            push32(&thread->cpu, context);
+            push32(&thread->cpu, 0);			
+            push32(&thread->cpu, signal);
+        }
 #ifdef LOG_OPS
-		klog("    context %X interrupted %d", context, interrupted);
+        klog("    context %X interrupted %d", context, interrupted);
 #endif
-		push32(&thread->cpu, SIG_RETURN_ADDRESS);
-		thread->cpu.eip.u32 = action->handlerAndSigAction;
+        push32(&thread->cpu, SIG_RETURN_ADDRESS);
+        thread->cpu.eip.u32 = action->handlerAndSigAction;
 
-		thread->inSignal++;				
+        thread->inSignal++;				
     }    
-	thread->process->pendingSignals &= ~(1 << (signal - 1));		
-	threadDone(&thread->cpu);
+    thread->process->pendingSignals &= ~(1 << (signal - 1));		
+    threadDone(&thread->cpu);
 }

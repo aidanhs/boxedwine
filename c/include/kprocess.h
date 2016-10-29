@@ -20,20 +20,20 @@
 
 #ifdef USE_MMU
 struct MapedFiles {
-	struct MappedFileCache* systemCacheEntry;
-	struct KObject* file;
-	U32 refCount;
-	U32 address;
-	U64 len;
-	U64 offset;
+    struct MappedFileCache* systemCacheEntry;
+    struct KObject* file;
+    U32 refCount;
+    U32 address;
+    U64 len;
+    U64 offset;
 };
 #define MAX_MAPPED_FILE 1024
 #else
 struct MappedMemory {
-	U8* allocatedAddress;
-	U8* address;
-	U32 len;
-	char* name;
+    U8* allocatedAddress;
+    U8* address;
+    U32 len;
+    char* name;
 };
 #endif
 #define MAX_SIG_ACTIONS 64
@@ -42,11 +42,11 @@ struct MappedMemory {
 #define MAX_COMMANDLINE_LEN 65536
 
 struct KSigAction {
-	U32 handlerAndSigAction;
+    U32 handlerAndSigAction;
     U32 mask;
     U32 flags;
-	U32 restorer;
-	U32 sigInfo[K_SIG_INFO_SIZE];
+    U32 restorer;
+    U32 sigInfo[K_SIG_INFO_SIZE];
 };
 
 #define NUMBER_OF_STRINGS 5
@@ -57,53 +57,53 @@ struct KSigAction {
 #define STRING_GL_EXTENSIONS 4
 
 struct KProcess {
-	U32 id;
-	U32 parentId;
-	U32 groupId;
-	U32 userId;
-	U32 effectiveUserId;
-	U32 effectiveGroupId;
-	U32 pendingSignals;
-	U32 signaled;
-	U32 exitCode;
-	BOOL terminated;
+    U32 id;
+    U32 parentId;
+    U32 groupId;
+    U32 userId;
+    U32 effectiveUserId;
+    U32 effectiveGroupId;
+    U32 pendingSignals;
+    U32 signaled;
+    U32 exitCode;
+    BOOL terminated;
 #ifdef USE_MMU
-	struct Memory* memory;
-	struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
+    struct Memory* memory;
+    struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
 #else
-	PblList* mmapedMemory;
-	U32 reallocAddress;
-	U32 reallocLen;
-	U32 reallocOffset;
+    PblList* mmapedMemory;
+    U32 reallocAddress;
+    U32 reallocLen;
+    U32 reallocOffset;
 #endif
-	char currentDirectory[MAX_FILEPATH_LEN];
-	U32 brkEnd;
-	struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic	
-	struct KSigAction sigActions[MAX_SIG_ACTIONS];
-	struct KTimer timer;
-	char commandLine[MAX_COMMANDLINE_LEN];
-	char exe[MAX_FILEPATH_LEN];
-	char name[MAX_FILEPATH_LEN];
-	struct NodeAccess commandLineAccess;
-	struct Node* commandLineNode;
-	struct KArray threads;
-	char path[MAX_PATHS][MAX_FILEPATH_LEN];
-	U32 shms[MAX_SHM][MAX_SHM_ATTACH];
-	struct KProcess* next;
-	struct KThread* waitingThread;
+    char currentDirectory[MAX_FILEPATH_LEN];
+    U32 brkEnd;
+    struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic	
+    struct KSigAction sigActions[MAX_SIG_ACTIONS];
+    struct KTimer timer;
+    char commandLine[MAX_COMMANDLINE_LEN];
+    char exe[MAX_FILEPATH_LEN];
+    char name[MAX_FILEPATH_LEN];
+    struct NodeAccess commandLineAccess;
+    struct Node* commandLineNode;
+    struct KArray threads;
+    char path[MAX_PATHS][MAX_FILEPATH_LEN];
+    U32 shms[MAX_SHM][MAX_SHM_ATTACH];
+    struct KProcess* next;
+    struct KThread* waitingThread;
 #ifdef USE_MMU
-	U32 strings[NUMBER_OF_STRINGS];
-	U32 stringAddress;
-	U32 stringAddressIndex;
+    U32 strings[NUMBER_OF_STRINGS];
+    U32 stringAddress;
+    U32 stringAddressIndex;
 #endif
-	U32 loaderBaseAddress;
-	U32 phdr;
-	U32 phnum;
-	U32 phentsize;
-	U32 entry;
+    U32 loaderBaseAddress;
+    U32 phdr;
+    U32 phnum;
+    U32 phentsize;
+    U32 entry;
     U32 eventQueueFD;
-	struct user_desc ldt[LDT_ENTRIES];
-	struct KThread* wakeOnExitOrExec;
+    struct user_desc ldt[LDT_ENTRIES];
+    struct KThread* wakeOnExitOrExec;
 };
 
 void processOnExitThread(struct KProcess* process);

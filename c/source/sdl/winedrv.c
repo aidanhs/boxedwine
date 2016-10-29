@@ -14,7 +14,7 @@ extern int bits_per_pixel;
 extern int default_bits_per_pixel;
 
 void notImplemented(const char* s) {
-	kwarn(s);
+    kwarn(s);
 }
 
 #define ARG1 peek32(cpu, 1)
@@ -209,18 +209,18 @@ void notImplemented(const char* s) {
 #define SWP_STATECHANGED    0x8000
 
 void boxeddrv_AcquireClipboard(struct CPU* cpu) {
-	
+    
 }
 
 // HKL CDECL drv_ActivateKeyboardLayout(HKL hkl, UINT flags)
 void boxeddrv_ActivateKeyboardLayout(struct CPU* cpu) {
-	notImplemented("boxeddrv_ActivateKeyboardLayout not implemented");
-	EAX = ARG1;
+    notImplemented("boxeddrv_ActivateKeyboardLayout not implemented");
+    EAX = ARG1;
 }
 
 // void CDECL drv_Beep(void)
 void boxeddrv_Beep(struct CPU* cpu) {
-	notImplemented("boxeddrv_Beep not implemented");
+    notImplemented("boxeddrv_Beep not implemented");
 }
 
 #define DISP_CHANGE_SUCCESSFUL 0
@@ -266,98 +266,98 @@ void boxeddrv_Beep(struct CPU* cpu) {
 void displayChanged();
 // LONG CDECL drv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode, HWND hwnd, DWORD flags, LPVOID lpvoid)
 void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
-	U32 devmode = ARG2;
-	
-	if (devmode)
-	{
-		U32 dmFields;
-		U32 dmSize = readw(MMU_PARAM_CPU devmode + 68);
+    U32 devmode = ARG2;
+    
+    if (devmode)
+    {
+        U32 dmFields;
+        U32 dmSize = readw(MMU_PARAM_CPU devmode + 68);
 
-		/* this is the minimal dmSize that XP accepts */
-		if (dmSize < 44) {
-			EAX = DISP_CHANGE_FAILED;
-			return;
-		}
+        /* this is the minimal dmSize that XP accepts */
+        if (dmSize < 44) {
+            EAX = DISP_CHANGE_FAILED;
+            return;
+        }
 
-		dmFields = readd(MMU_PARAM_CPU devmode + 72);
+        dmFields = readd(MMU_PARAM_CPU devmode + 72);
 
-		if (dmFields & DM_BITSPERPEL) {
-			bits_per_pixel = readd(MMU_PARAM_CPU devmode + 168);
-		}
-		if (dmFields & DM_PELSWIDTH) {
-			horz_res = readd(MMU_PARAM_CPU devmode + 172);
-		}
-		if (dmFields & DM_PELSHEIGHT) {
-			vert_res = readd(MMU_PARAM_CPU devmode + 176);
-		}
-	}	
-	if (!horz_res || !vert_res) {
-		horz_res = default_horz_res;
-		vert_res = default_vert_res;
-	}
-	if (!bits_per_pixel) {
-		bits_per_pixel = default_bits_per_pixel;
-	}
-	displayChanged();
-	EAX = DISP_CHANGE_SUCCESSFUL;	
+        if (dmFields & DM_BITSPERPEL) {
+            bits_per_pixel = readd(MMU_PARAM_CPU devmode + 168);
+        }
+        if (dmFields & DM_PELSWIDTH) {
+            horz_res = readd(MMU_PARAM_CPU devmode + 172);
+        }
+        if (dmFields & DM_PELSHEIGHT) {
+            vert_res = readd(MMU_PARAM_CPU devmode + 176);
+        }
+    }	
+    if (!horz_res || !vert_res) {
+        horz_res = default_horz_res;
+        vert_res = default_vert_res;
+    }
+    if (!bits_per_pixel) {
+        bits_per_pixel = default_bits_per_pixel;
+    }
+    displayChanged();
+    EAX = DISP_CHANGE_SUCCESSFUL;	
 }
 
 // BOOL CDECL drv_ClipCursor(LPCRECT clip)
 void boxeddrv_ClipCursor(struct CPU* cpu) {
-	notImplemented("boxeddrv_ClipCursor not implemented");
-	EAX = 1;
+    notImplemented("boxeddrv_ClipCursor not implemented");
+    EAX = 1;
 }
 
 // INT CDECL drv_CountClipboardFormats(void)
 void boxeddrv_CountClipboardFormats(struct CPU* cpu) {
-	notImplemented("boxeddrv_CountClipboardFormats not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_CountClipboardFormats not implemented");
+    EAX = 0;
 }
 
 // BOOL CDECL drv_CreateDesktopWindow(HWND hwnd)
 void boxeddrv_CreateDesktopWindow(struct CPU* cpu) {
-	// setting up window pos was handled in driver
+    // setting up window pos was handled in driver
 }
 
 // BOOL CDECL drv_CreateWindow(HWND hwnd)
 void boxeddrv_CreateWindow(struct CPU* cpu) {
-	EAX = 1;
+    EAX = 1;
 }
 
 // void CDECL drv_DestroyCursorIcon(HCURSOR cursor)
 void boxeddrv_DestroyCursorIcon(struct CPU* cpu) {
-	
+    
 }
 
 // void CDECL drv_DestroyWindow(HWND hwnd)
 void boxeddrv_DestroyWindow(struct CPU* cpu) {
     struct Wnd* wnd = getWnd(ARG1);
-	if (wnd) {
+    if (wnd) {
         wndDestroy(ARG1);
     }
 }
 
 // void CDECL drv_EmptyClipboard(void)
 void boxeddrv_EmptyClipboard(struct CPU* cpu) {
-	notImplemented("boxeddrv_EmptyClipboard not implemented");
+    notImplemented("boxeddrv_EmptyClipboard not implemented");
 }
 
 //void CDECL drv_EndClipboardUpdate(void)
 void boxeddrv_EndClipboardUpdate(struct CPU* cpu) {
-	notImplemented("boxeddrv_EndClipboardUpdate not implemented");
+    notImplemented("boxeddrv_EndClipboardUpdate not implemented");
 }
 
 // UINT CDECL drv_EnumClipboardFormats(UINT prev_format)
 void boxeddrv_EnumClipboardFormats(struct CPU* cpu) {
-	notImplemented("boxeddrv_EnumClipboardFormats not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_EnumClipboardFormats not implemented");
+    EAX = 0;
 }
 
 // BOOL CDECL drv_EnumDisplayMonitors(HDC hdc, LPRECT rect, MONITORENUMPROC proc, LPARAM lparam)
 void boxeddrv_EnumDisplayMonitors(struct CPU* cpu) {
-	// handled in driver
-	notImplemented("drv_EnumDisplayMonitors not implemented");
-	EAX = 0;
+    // handled in driver
+    notImplemented("drv_EnumDisplayMonitors not implemented");
+    EAX = 0;
 }
 
 #define DMDFO_DEFAULT           0
@@ -369,7 +369,7 @@ void boxeddrv_EnumDisplayMonitors(struct CPU* cpu) {
 
 // BOOL CDECL macdrv_EnumDisplaySettingsEx(LPCWSTR devname, DWORD mode, LPDEVMODEW devmode, DWORD flags)
 void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
-	U32 devmode = ARG3;
+    U32 devmode = ARG3;
     static const U16 dev_name[32] = { 'B','o','x','e','d','W','i','n','e',' ','d','r','i','v','e','r',0 };
     int i;
 
@@ -381,153 +381,153 @@ void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
     for (i=0;i<17;i++) {
         writew(MMU_PARAM_CPU devmode+i*2, dev_name[i]);
     }
-	writed(MMU_PARAM_CPU devmode + 72, DM_POSITION | DM_DISPLAYORIENTATION | DM_DISPLAYFIXEDOUTPUT | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY);
+    writed(MMU_PARAM_CPU devmode + 72, DM_POSITION | DM_DISPLAYORIENTATION | DM_DISPLAYFIXEDOUTPUT | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY);
 
-	writed(MMU_PARAM_CPU devmode + 76, 0); // dmPosition.x
-	writed(MMU_PARAM_CPU devmode + 80, 0); // dmPosition.y
-	writed(MMU_PARAM_CPU devmode + 84, 0); // dmDisplayOrientation
-	writed(MMU_PARAM_CPU devmode + 88, DMDFO_CENTER); // dmDisplayFixedOutput
-	
+    writed(MMU_PARAM_CPU devmode + 76, 0); // dmPosition.x
+    writed(MMU_PARAM_CPU devmode + 80, 0); // dmPosition.y
+    writed(MMU_PARAM_CPU devmode + 84, 0); // dmDisplayOrientation
+    writed(MMU_PARAM_CPU devmode + 88, DMDFO_CENTER); // dmDisplayFixedOutput
+    
     switch (ARG2) {
     case 0:
         writed(MMU_PARAM_CPU devmode + 168, 32);
-		writed(MMU_PARAM_CPU devmode + 172, 1024);
-		writed(MMU_PARAM_CPU devmode + 176, 768);
+        writed(MMU_PARAM_CPU devmode + 172, 1024);
+        writed(MMU_PARAM_CPU devmode + 176, 768);
         break;
     case 1:
         writed(MMU_PARAM_CPU devmode + 168, 32);
-		writed(MMU_PARAM_CPU devmode + 172, 800);
-		writed(MMU_PARAM_CPU devmode + 176, 600);
+        writed(MMU_PARAM_CPU devmode + 172, 800);
+        writed(MMU_PARAM_CPU devmode + 176, 600);
         break;
     case 2:
         writed(MMU_PARAM_CPU devmode + 168, 32);
-		writed(MMU_PARAM_CPU devmode + 172, 640);
-		writed(MMU_PARAM_CPU devmode + 176, 480);
+        writed(MMU_PARAM_CPU devmode + 172, 640);
+        writed(MMU_PARAM_CPU devmode + 176, 480);
         break;
     case 3:
         writed(MMU_PARAM_CPU devmode + 168, 16);
-		writed(MMU_PARAM_CPU devmode + 172, 1024);
-		writed(MMU_PARAM_CPU devmode + 176, 768);
+        writed(MMU_PARAM_CPU devmode + 172, 1024);
+        writed(MMU_PARAM_CPU devmode + 176, 768);
         break;
     case 4:
         writed(MMU_PARAM_CPU devmode + 168, 16);
-		writed(MMU_PARAM_CPU devmode + 172, 800);
-		writed(MMU_PARAM_CPU devmode + 176, 600);
+        writed(MMU_PARAM_CPU devmode + 172, 800);
+        writed(MMU_PARAM_CPU devmode + 176, 600);
         break;
     case 5:
         writed(MMU_PARAM_CPU devmode + 168, 16);
-		writed(MMU_PARAM_CPU devmode + 172, 640);
-		writed(MMU_PARAM_CPU devmode + 176, 480);
+        writed(MMU_PARAM_CPU devmode + 172, 640);
+        writed(MMU_PARAM_CPU devmode + 176, 480);
         break;
     case 6:
         writed(MMU_PARAM_CPU devmode + 168, 8);
-		writed(MMU_PARAM_CPU devmode + 172, 1024);
-		writed(MMU_PARAM_CPU devmode + 176, 768);
+        writed(MMU_PARAM_CPU devmode + 172, 1024);
+        writed(MMU_PARAM_CPU devmode + 176, 768);
         break;
     case 7:
         writed(MMU_PARAM_CPU devmode + 168, 8);
-		writed(MMU_PARAM_CPU devmode + 172, 800);
-		writed(MMU_PARAM_CPU devmode + 176, 600);
+        writed(MMU_PARAM_CPU devmode + 172, 800);
+        writed(MMU_PARAM_CPU devmode + 176, 600);
         break;
     case 8:
         writed(MMU_PARAM_CPU devmode + 168, 8);
-		writed(MMU_PARAM_CPU devmode + 172, 640);
-		writed(MMU_PARAM_CPU devmode + 176, 480);
+        writed(MMU_PARAM_CPU devmode + 172, 640);
+        writed(MMU_PARAM_CPU devmode + 176, 480);
         break;
     default:
         if (ARG2 == ENUM_REGISTRY_SETTINGS) {
-		    writed(MMU_PARAM_CPU devmode + 168, default_bits_per_pixel);
-		    writed(MMU_PARAM_CPU devmode + 172, default_horz_res);
-		    writed(MMU_PARAM_CPU devmode + 176, default_vert_res);
-	    }
-	    else if (ARG2 == ENUM_CURRENT_SETTINGS) {
-		    writed(MMU_PARAM_CPU devmode + 168, bits_per_pixel);
-		    writed(MMU_PARAM_CPU devmode + 172, horz_res);
-		    writed(MMU_PARAM_CPU devmode + 176, vert_res);
-	    } else {
+            writed(MMU_PARAM_CPU devmode + 168, default_bits_per_pixel);
+            writed(MMU_PARAM_CPU devmode + 172, default_horz_res);
+            writed(MMU_PARAM_CPU devmode + 176, default_vert_res);
+        }
+        else if (ARG2 == ENUM_CURRENT_SETTINGS) {
+            writed(MMU_PARAM_CPU devmode + 168, bits_per_pixel);
+            writed(MMU_PARAM_CPU devmode + 172, horz_res);
+            writed(MMU_PARAM_CPU devmode + 176, vert_res);
+        } else {
             EAX = 0;
             return;
         }
     }
-	writed(MMU_PARAM_CPU devmode + 180, 0); // dmDisplayFlags
-	writed(MMU_PARAM_CPU devmode + 184, 60); // dmDisplayFrequency
-	EAX = 1;
+    writed(MMU_PARAM_CPU devmode + 180, 0); // dmDisplayFlags
+    writed(MMU_PARAM_CPU devmode + 184, 60); // dmDisplayFrequency
+    EAX = 1;
 }
 
 // HANDLE CDECL drv_GetClipboardData(UINT desired_format)
 void boxeddrv_GetClipboardData(struct CPU* cpu) {
-	notImplemented("boxeddrv_GetClipboardData not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_GetClipboardData not implemented");
+    EAX = 0;
 }
 
 // BOOL CDECL drv_GetCursorPos(LPPOINT pos)
 void boxeddrv_GetCursorPos(struct CPU* cpu) {
-	U32 pos = ARG1;
-	writed(MMU_PARAM_CPU pos, 0);
-	writed(MMU_PARAM_CPU pos+4, 0);
-	EAX = 1;
-	notImplemented("boxeddrv_GetCursorPos not implemented");
+    U32 pos = ARG1;
+    writed(MMU_PARAM_CPU pos, 0);
+    writed(MMU_PARAM_CPU pos+4, 0);
+    EAX = 1;
+    notImplemented("boxeddrv_GetCursorPos not implemented");
 }
 
 // HKL CDECL drv_GetKeyboardLayout(DWORD thread_id)
 void boxeddrv_GetKeyboardLayout(struct CPU* cpu) {
-	notImplemented("boxeddrv_GetKeyboardLayout not implemented");
-	EAX = 0x1409; 
+    notImplemented("boxeddrv_GetKeyboardLayout not implemented");
+    EAX = 0x1409; 
 }
 
 // BOOL CDECL drv_GetKeyboardLayoutName(LPWSTR name)
 void boxeddrv_GetKeyboardLayoutName(struct CPU* cpu) {
-	writeNativeString(MMU_PARAM_CPU ARG1, "Unknown");
-	EAX = 1;
-	notImplemented("boxeddrv_GetKeyboardLayoutName not implemented");
+    writeNativeString(MMU_PARAM_CPU ARG1, "Unknown");
+    EAX = 1;
+    notImplemented("boxeddrv_GetKeyboardLayoutName not implemented");
 }
 
 // INT CDECL drv_GetKeyNameText(LONG lparam, LPWSTR buffer, INT size)
 void boxeddrv_GetKeyNameText(struct CPU* cpu) {
-	notImplemented("boxeddrv_GetKeyNameText not implemented");
-	EAX = 6;
-	writeNativeString(MMU_PARAM_CPU ARG2, "bogus");
+    notImplemented("boxeddrv_GetKeyNameText not implemented");
+    EAX = 6;
+    writeNativeString(MMU_PARAM_CPU ARG2, "bogus");
 }
 
 // BOOL CDECL drv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info)
 void boxeddrv_GetMonitorInfo(struct CPU* cpu) {
-	notImplemented("boxeddrv_GetMonitorInfo not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_GetMonitorInfo not implemented");
+    EAX = 0;
 }
 
 // BOOL CDECL drv_IsClipboardFormatAvailable(UINT desired_format)
 void boxeddrv_IsClipboardFormatAvailable(struct CPU* cpu) {
-	notImplemented("boxeddrv_IsClipboardFormatAvailable not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_IsClipboardFormatAvailable not implemented");
+    EAX = 0;
 }
 
 // UINT CDECL drv_MapVirtualKeyEx(UINT wCode, UINT wMapType, HKL hkl)
 void boxeddrv_MapVirtualKeyEx(struct CPU* cpu) {
-	notImplemented("boxeddrv_MapVirtualKeyEx not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_MapVirtualKeyEx not implemented");
+    EAX = 0;
 }
 
 // DWORD CDECL drv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *handles, DWORD timeout, DWORD mask, DWORD flags)
 void boxeddrv_MsgWaitForMultipleObjectsEx(struct CPU* cpu) {
-	// notImplemented("boxeddrv_MsgWaitForMultipleObjectsEx not implemented");
+    // notImplemented("boxeddrv_MsgWaitForMultipleObjectsEx not implemented");
     updateScreen();
-	EAX = 0;
+    EAX = 0;
 }
 
 // void CDECL drv_SetCapture(HWND hwnd, UINT flags)
 void boxeddrv_SetCapture(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetCapture not implemented");
+    notImplemented("boxeddrv_SetCapture not implemented");
 }
 
 // BOOL CDECL drv_SetClipboardData(UINT format_id, HANDLE data, BOOL owner)
 void boxeddrv_SetClipboardData(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetClipboardData not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_SetClipboardData not implemented");
+    EAX = 0;
 }
 
 // void CDECL drv_SetCursor(HCURSOR cursor)
 void boxeddrv_SetCursor(struct CPU* cpu) {
-	U32 hCursor = ARG1;
+    U32 hCursor = ARG1;
     U32 wModuleName = ARG2;
     U32 wResName = ARG3;
     U32 resId = ARG4;
@@ -540,7 +540,7 @@ void boxeddrv_SetCursor(struct CPU* cpu) {
 }
 
 void boxeddrv_SetCursorBits(struct CPU* cpu) {
-	U32 hCursor = ARG1;
+    U32 hCursor = ARG1;
     U32 wModuleName = ARG2;
     U32 wResName = ARG3;
     U32 resId = ARG4;
@@ -564,8 +564,8 @@ void boxeddrv_SetCursorBits(struct CPU* cpu) {
 
 // BOOL CDECL drv_SetCursorPos(INT x, INT y)
 void boxeddrv_SetCursorPos(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetCursorPos not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_SetCursorPos not implemented");
+    EAX = 0;
 }
 
 // void CDECL drv_SetFocus(HWND hwnd, BOOL* canSetFocus)
@@ -579,41 +579,41 @@ void boxeddrv_SetFocus(struct CPU* cpu) {
 
 // void CDECL drv_SetLayeredWindowAttributes(HWND hwnd, COLORREF key, BYTE alpha, DWORD flags)
 void boxeddrv_SetLayeredWindowAttributes(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetLayeredWindowAttributes not implemented");
+    notImplemented("boxeddrv_SetLayeredWindowAttributes not implemented");
 }
 
 // void CDECL drv_SetParent(HWND hwnd, HWND parent, HWND old_parent)
 void boxeddrv_SetParent(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetParent not implemented");
+    notImplemented("boxeddrv_SetParent not implemented");
 }
 
 // void CDECL drv_SetWindowRgn(HWND hwnd, HRGN hrgn, BOOL redraw)
 void boxeddrv_SetWindowRgn(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetWindowRgn not implemented");	
+    notImplemented("boxeddrv_SetWindowRgn not implemented");	
 }
 
 // void CDECL drv_SetWindowStyle(HWND hwnd, INT offset, STYLESTRUCT *style)
 void boxeddrv_SetWindowStyle(struct CPU* cpu) {
-	notImplemented("boxeddrv_SetWindowStyle not implemented");
+    notImplemented("boxeddrv_SetWindowStyle not implemented");
 }
 
 // void CDECL drv_SetWindowText(HWND hwnd, LPCWSTR text)
 void boxeddrv_SetWindowText(struct CPU* cpu) {
-	struct Wnd* wnd = getWnd(ARG1);
-	if (wnd)
-		setWndText(wnd,  getNativeStringW(MMU_PARAM_CPU ARG2));
+    struct Wnd* wnd = getWnd(ARG1);
+    if (wnd)
+        setWndText(wnd,  getNativeStringW(MMU_PARAM_CPU ARG2));
 }
 
 // void CDECL drv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp, UINT* result)
 void boxeddrv_ShowWindow(struct CPU* cpu) {
-	U32 swp = ARG4;
-	notImplemented("boxeddrv_ShowWindow not implemented");
-	writed(MMU_PARAM_CPU ARG5, swp);
+    U32 swp = ARG4;
+    notImplemented("boxeddrv_ShowWindow not implemented");
+    writed(MMU_PARAM_CPU ARG5, swp);
 }
 
 // LRESULT CDECL macdrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
 void boxeddrv_SysCommand(struct CPU* cpu) {
-	EAX = -1;
+    EAX = -1;
 }
 
 #define SPI_GETSCREENSAVEACTIVE   16
@@ -621,107 +621,107 @@ void boxeddrv_SysCommand(struct CPU* cpu) {
 
 // BOOL CDECL SystemParametersInfo(UINT action, UINT int_param, void *ptr_param, UINT flags)
 void boxeddrv_SystemParametersInfo(struct CPU* cpu) {
-	switch (ARG1)
-	{
-	case SPI_GETSCREENSAVEACTIVE:
-		if (ARG3)
+    switch (ARG1)
+    {
+    case SPI_GETSCREENSAVEACTIVE:
+        if (ARG3)
             writed(MMU_PARAM_CPU ARG3, FALSE);
-		EAX = 1;
-		return;
-	case SPI_SETSCREENSAVEACTIVE:
-		break;
-	}
-	EAX = 0;
+        EAX = 1;
+        return;
+    case SPI_SETSCREENSAVEACTIVE:
+        break;
+    }
+    EAX = 0;
 }
 
 // INT CDECL drv_ToUnicodeEx(UINT virtKey, UINT scanCode, const BYTE *lpKeyState, LPWSTR bufW, int bufW_size, UINT flags, HKL hkl)
 void boxeddrv_ToUnicodeEx(struct CPU* cpu) {
-	notImplemented("boxeddrv_ToUnicodeEx not implemented");
-	EAX = sdlToUnicodeEx(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
+    notImplemented("boxeddrv_ToUnicodeEx not implemented");
+    EAX = sdlToUnicodeEx(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
 }
 
 // BOOL CDECL drv_UpdateLayeredWindow(HWND hwnd, const UPDATELAYEREDWINDOWINFO *info, const RECT *window_rect)
 void boxeddrv_UpdateLayeredWindow(struct CPU* cpu) {
-	notImplemented("boxeddrv_UpdateLayeredWindow not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_UpdateLayeredWindow not implemented");
+    EAX = 0;
 }
 
 // SHORT CDECL drv_VkKeyScanEx(WCHAR wChar, HKL hkl)
 void boxeddrv_VkKeyScanEx(struct CPU* cpu) {
-	notImplemented("boxeddrv_VkKeyScanEx not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_VkKeyScanEx not implemented");
+    EAX = 0;
 }
 
 // LRESULT CDECL drv_WindowMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
 void boxeddrv_WindowMessage(struct CPU* cpu) {
-	notImplemented("boxeddrv_WindowMessage not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_WindowMessage not implemented");
+    EAX = 0;
 }
 
 // void CDECL drv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, DWORD style)
 void boxeddrv_WindowPosChanged(struct CPU* cpu) {
-	struct Wnd* wnd = getWnd(ARG1);
-	U32 style = ARG8;
-	U32 swp_flags = ARG3;
+    struct Wnd* wnd = getWnd(ARG1);
+    U32 style = ARG8;
+    U32 swp_flags = ARG3;
 
-	if (!wnd)
-		return;
-	writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
-	writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
+    if (!wnd)
+        return;
+    writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
+    writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
     //wnd->surface = 0;
-	if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
-		showWnd(wnd, 0);
-	} else if (style & WS_VISIBLE) {
-		showWnd(wnd, 1);
-	}
+    if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
+        showWnd(wnd, 0);
+    } else if (style & WS_VISIBLE) {
+        showWnd(wnd, 1);
+    }
 }
 
 // void boxeddrv_SetSurface(HWND wnd, struct window_surface *surface) {
 void boxeddrv_SetSurface(struct CPU* cpu) {
-	struct Wnd* wnd = getWnd(ARG1);
-	if (wnd)
-		wnd->surface = ARG2;
+    struct Wnd* wnd = getWnd(ARG1);
+    if (wnd)
+        wnd->surface = ARG2;
 }
 
 // struct window_surface* boxeddrv_GetSurface(HWND wnd)
 void boxeddrv_GetSurface(struct CPU* cpu) {
-	struct Wnd* wnd = getWnd(ARG1);
-	if (wnd)
-		EAX = wnd->surface;
-	else
-		EAX = 0;
+    struct Wnd* wnd = getWnd(ARG1);
+    if (wnd)
+        EAX = wnd->surface;
+    else
+        EAX = 0;
 }
 
 // void CDECL drv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, RECT *visible_rect, struct window_surface **surface)
 void boxeddrv_WindowPosChanging(struct CPU* cpu) {
-	struct Wnd* wnd = getWnd(ARG1);
-	struct wRECT rect;
+    struct Wnd* wnd = getWnd(ARG1);
+    struct wRECT rect;
 
-	if (!wnd) {
-		wnd = wndCreate(MMU_PARAM_CPU cpu->thread->process->id, ARG1, ARG4, ARG5);
-	} else {
+    if (!wnd) {
+        wnd = wndCreate(MMU_PARAM_CPU cpu->thread->process->id, ARG1, ARG4, ARG5);
+    } else {
         readRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
         readRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
     }
 
-	// *visible_rect = *window_rect;
-	readRect(MMU_PARAM_CPU ARG4, &rect);
-	writeRect(MMU_PARAM_CPU ARG6, &rect);
+    // *visible_rect = *window_rect;
+    readRect(MMU_PARAM_CPU ARG4, &rect);
+    writeRect(MMU_PARAM_CPU ARG6, &rect);
 
-	// *surface = wnd->surface;
-	writed(MMU_PARAM_CPU ARG7, wnd->surface);
+    // *surface = wnd->surface;
+    writed(MMU_PARAM_CPU ARG7, wnd->surface);
 }
 
 U32 getGammaRamp(MMU_ARG U32 ramp);
 // BOOL drv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
 void boxeddrv_GetDeviceGammaRamp(struct CPU* cpu) {
-	EAX = getGammaRamp(MMU_PARAM_CPU ARG2);
+    EAX = getGammaRamp(MMU_PARAM_CPU ARG2);
 }
 
 // BOOL drv_SetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
 void boxeddrv_SetDeviceGammaRamp(struct CPU* cpu) {
-	//notImplemented("boxeddrv_SetDeviceGammaRamp not implemented");
-	EAX = 0;
+    //notImplemented("boxeddrv_SetDeviceGammaRamp not implemented");
+    EAX = 0;
 }
 
 /* CURVECAPS */
@@ -858,239 +858,239 @@ void boxeddrv_SetDeviceGammaRamp(struct CPU* cpu) {
 // Args: PHYSDEV dev, INT cap
 // return: INT
 void boxeddrv_GetDeviceCaps(struct CPU* cpu) {
-	S32 ret;
+    S32 ret;
 
-	switch (ARG2) {
-	case DRIVERVERSION:
-		ret = 0x300;
-		break;
-	case TECHNOLOGY:
-		ret = 1; // DT_RASDISPLAY;
-		break;
-	case HORZSIZE:
-		ret = 320; // 17 inch monitor?
-		break;
-	case VERTSIZE:
-		ret = 240; // 17 inch monitor?
-		break;
-	case HORZRES:
-		ret = horz_res;
-		break;
-	case VERTRES:
-		ret = vert_res;
-		break;
-	case DESKTOPHORZRES:
-		ret = horz_res;
-		break;
-	case DESKTOPVERTRES:
-		ret = vert_res;
-		break;
-	case BITSPIXEL:
-		ret = bits_per_pixel;
-		break;
-	case PLANES:
-		ret = 1;
-		break;
-	case NUMBRUSHES:
-		ret = -1;
-		break;
-	case NUMPENS:
-		ret = -1;
-		break;
-	case NUMMARKERS:
-		ret = 0;
-		break;
-	case NUMFONTS:
-		ret = 0;
-		break;
-	case NUMCOLORS:
-		/* MSDN: Number of entries in the device's color table, if the device has
-		* a color depth of no more than 8 bits per pixel.For devices with greater
-		* color depths, -1 is returned. */
-		ret = (bits_per_pixel > 8) ? -1 : (1 << bits_per_pixel);
-		break;
-	case CURVECAPS:
-		ret = (CC_CIRCLES | CC_PIE | CC_CHORD | CC_ELLIPSES | CC_WIDE |
-			CC_STYLED | CC_WIDESTYLED | CC_INTERIORS | CC_ROUNDRECT);
-		break;
-	case LINECAPS:
-		ret = (LC_POLYLINE | LC_MARKER | LC_POLYMARKER | LC_WIDE |
-			LC_STYLED | LC_WIDESTYLED | LC_INTERIORS);
-		break;
-	case POLYGONALCAPS:
-		ret = (PC_POLYGON | PC_RECTANGLE | PC_WINDPOLYGON | PC_SCANLINE |
-			PC_WIDE | PC_STYLED | PC_WIDESTYLED | PC_INTERIORS);
-		break;
-	case TEXTCAPS:
-		ret = (TC_OP_CHARACTER | TC_OP_STROKE | TC_CP_STROKE |
-			TC_CR_ANY | TC_SF_X_YINDEP | TC_SA_DOUBLE | TC_SA_INTEGER |
-			TC_SA_CONTIN | TC_UA_ABLE | TC_SO_ABLE | TC_RA_ABLE | TC_VA_ABLE);
-		break;
-	case CLIPCAPS:
-		ret = CP_REGION;
-		break;
-	case COLORRES:
-		/* The observed correspondence between BITSPIXEL and COLORRES is:
-		* BITSPIXEL: 8  -> COLORRES: 18
-		* BITSPIXEL: 16 -> COLORRES: 16
-		* BITSPIXEL: 24 -> COLORRES: 24
-		* (note that bits_per_pixel is never 24)
-		* BITSPIXEL: 32 -> COLORRES: 24 */
-		ret = (bits_per_pixel <= 8) ? 18 : (bits_per_pixel == 32) ? 24 : bits_per_pixel;
-		break;
-	case RASTERCAPS:
-		ret = (RC_BITBLT | RC_BANDING | RC_SCALING | RC_BITMAP64 | RC_DI_BITMAP |
-			RC_DIBTODEV | RC_BIGFONT | RC_STRETCHBLT | RC_STRETCHDIB | RC_DEVBITS |
-			(bits_per_pixel <= 8 ? RC_PALETTE : 0));
-		break;
-	case SHADEBLENDCAPS:
-		ret = (SB_GRAD_RECT | SB_GRAD_TRI | SB_CONST_ALPHA | SB_PIXEL_ALPHA);
-		break;
-	case ASPECTX:
-	case ASPECTY:
-		ret = 36;
-		break;
-	case ASPECTXY:
-		ret = 51;
-		break;
-	case LOGPIXELSX:
-		ret = 96;
-		break;
-	case LOGPIXELSY:
-		ret = 96;
-		break;
-	case CAPS1:
-		kwarn("CAPS1 is unimplemented, will return 0\n");
-		/* please see wingdi.h for the possible bit-flag values that need
-		to be returned. */
-		ret = 0;
-		break;
-	case SIZEPALETTE:
-		ret = bits_per_pixel <= 8 ? 1 << bits_per_pixel : 0;
-		break;
-	case NUMRESERVED:
-	case PHYSICALWIDTH:
-	case PHYSICALHEIGHT:
-	case PHYSICALOFFSETX:
-	case PHYSICALOFFSETY:
-	case SCALINGFACTORX:
-	case SCALINGFACTORY:
-	case VREFRESH:
-	case BLTALIGNMENT:
-		ret = 0;
-		break;
-	default:
-		kwarn("unsupported capability %d %d %d %d, will return 0\n", ARG1, ARG2, ARG3, ARG4);
-		ret = 0;
-		break;
-	}
-	EAX = ret;
+    switch (ARG2) {
+    case DRIVERVERSION:
+        ret = 0x300;
+        break;
+    case TECHNOLOGY:
+        ret = 1; // DT_RASDISPLAY;
+        break;
+    case HORZSIZE:
+        ret = 320; // 17 inch monitor?
+        break;
+    case VERTSIZE:
+        ret = 240; // 17 inch monitor?
+        break;
+    case HORZRES:
+        ret = horz_res;
+        break;
+    case VERTRES:
+        ret = vert_res;
+        break;
+    case DESKTOPHORZRES:
+        ret = horz_res;
+        break;
+    case DESKTOPVERTRES:
+        ret = vert_res;
+        break;
+    case BITSPIXEL:
+        ret = bits_per_pixel;
+        break;
+    case PLANES:
+        ret = 1;
+        break;
+    case NUMBRUSHES:
+        ret = -1;
+        break;
+    case NUMPENS:
+        ret = -1;
+        break;
+    case NUMMARKERS:
+        ret = 0;
+        break;
+    case NUMFONTS:
+        ret = 0;
+        break;
+    case NUMCOLORS:
+        /* MSDN: Number of entries in the device's color table, if the device has
+        * a color depth of no more than 8 bits per pixel.For devices with greater
+        * color depths, -1 is returned. */
+        ret = (bits_per_pixel > 8) ? -1 : (1 << bits_per_pixel);
+        break;
+    case CURVECAPS:
+        ret = (CC_CIRCLES | CC_PIE | CC_CHORD | CC_ELLIPSES | CC_WIDE |
+            CC_STYLED | CC_WIDESTYLED | CC_INTERIORS | CC_ROUNDRECT);
+        break;
+    case LINECAPS:
+        ret = (LC_POLYLINE | LC_MARKER | LC_POLYMARKER | LC_WIDE |
+            LC_STYLED | LC_WIDESTYLED | LC_INTERIORS);
+        break;
+    case POLYGONALCAPS:
+        ret = (PC_POLYGON | PC_RECTANGLE | PC_WINDPOLYGON | PC_SCANLINE |
+            PC_WIDE | PC_STYLED | PC_WIDESTYLED | PC_INTERIORS);
+        break;
+    case TEXTCAPS:
+        ret = (TC_OP_CHARACTER | TC_OP_STROKE | TC_CP_STROKE |
+            TC_CR_ANY | TC_SF_X_YINDEP | TC_SA_DOUBLE | TC_SA_INTEGER |
+            TC_SA_CONTIN | TC_UA_ABLE | TC_SO_ABLE | TC_RA_ABLE | TC_VA_ABLE);
+        break;
+    case CLIPCAPS:
+        ret = CP_REGION;
+        break;
+    case COLORRES:
+        /* The observed correspondence between BITSPIXEL and COLORRES is:
+        * BITSPIXEL: 8  -> COLORRES: 18
+        * BITSPIXEL: 16 -> COLORRES: 16
+        * BITSPIXEL: 24 -> COLORRES: 24
+        * (note that bits_per_pixel is never 24)
+        * BITSPIXEL: 32 -> COLORRES: 24 */
+        ret = (bits_per_pixel <= 8) ? 18 : (bits_per_pixel == 32) ? 24 : bits_per_pixel;
+        break;
+    case RASTERCAPS:
+        ret = (RC_BITBLT | RC_BANDING | RC_SCALING | RC_BITMAP64 | RC_DI_BITMAP |
+            RC_DIBTODEV | RC_BIGFONT | RC_STRETCHBLT | RC_STRETCHDIB | RC_DEVBITS |
+            (bits_per_pixel <= 8 ? RC_PALETTE : 0));
+        break;
+    case SHADEBLENDCAPS:
+        ret = (SB_GRAD_RECT | SB_GRAD_TRI | SB_CONST_ALPHA | SB_PIXEL_ALPHA);
+        break;
+    case ASPECTX:
+    case ASPECTY:
+        ret = 36;
+        break;
+    case ASPECTXY:
+        ret = 51;
+        break;
+    case LOGPIXELSX:
+        ret = 96;
+        break;
+    case LOGPIXELSY:
+        ret = 96;
+        break;
+    case CAPS1:
+        kwarn("CAPS1 is unimplemented, will return 0\n");
+        /* please see wingdi.h for the possible bit-flag values that need
+        to be returned. */
+        ret = 0;
+        break;
+    case SIZEPALETTE:
+        ret = bits_per_pixel <= 8 ? 1 << bits_per_pixel : 0;
+        break;
+    case NUMRESERVED:
+    case PHYSICALWIDTH:
+    case PHYSICALHEIGHT:
+    case PHYSICALOFFSETX:
+    case PHYSICALOFFSETY:
+    case SCALINGFACTORX:
+    case SCALINGFACTORY:
+    case VREFRESH:
+    case BLTALIGNMENT:
+        ret = 0;
+        break;
+    default:
+        kwarn("unsupported capability %d %d %d %d, will return 0\n", ARG1, ARG2, ARG3, ARG4);
+        ret = 0;
+        break;
+    }
+    EAX = ret;
 }
 
 // int CDECL wine_notify_icon(DWORD msg, NOTIFYICONDATAW *data)
 void wine_notify_icon(struct CPU* cpu) {
-	notImplemented("wine_notify_icon not implemented");
-	EAX = 0;
+    notImplemented("wine_notify_icon not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeConfigure(HKL hKL, HWND hWnd, DWORD dwMode, LPVOID lpData)
 void boxeddrv_ImeConfigure(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeConfigure not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeConfigure not implemented");
+    EAX = 0;
 }
 
 // DWORD WINAPI ImeConversionList(HIMC hIMC, LPCWSTR lpSource, LPCANDIDATELIST lpCandList, DWORD dwBufLen, UINT uFlag)
 void boxeddrv_ImeConversionList(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeConversionList not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeConversionList not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeDestroy(UINT uForce)
 void boxeddrv_ImeDestroy(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeDestroy not implemented");
-	EAX = 1;
+    notImplemented("boxeddrv_ImeDestroy not implemented");
+    EAX = 1;
 }
 
 // UINT WINAPI ImeEnumRegisterWord(REGISTERWORDENUMPROCW lpfnEnumProc, LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszRegister, LPVOID lpData)
 void boxeddrv_ImeEnumRegisterWord(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeEnumRegisterWord not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeEnumRegisterWord not implemented");
+    EAX = 0;
 }
 
 // LRESULT WINAPI ImeEscape(HIMC hIMC, UINT uSubFunc, LPVOID lpData)
 void boxeddrv_ImeEscape(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeEscape not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeEscape not implemented");
+    EAX = 0;
 }
 
 // DWORD WINAPI ImeGetImeMenuItems(HIMC hIMC, DWORD dwFlags, DWORD dwType, LPIMEMENUITEMINFOW lpImeParentMenu, LPIMEMENUITEMINFOW lpImeMenu, DWORD dwSize)
 void boxeddrv_ImeGetImeMenuItems(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeGetImeMenuItems not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeGetImeMenuItems not implemented");
+    EAX = 0;
 }
 
 // UINT WINAPI ImeGetRegisterWordStyle(UINT nItem, LPSTYLEBUFW lpStyleBuf)
 void boxeddrv_ImeGetRegisterWordStyle(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeGetRegisterWordStyle not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeGetRegisterWordStyle not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeInquire(LPIMEINFO lpIMEInfo, LPWSTR lpszUIClass, LPCWSTR lpszOption)
 void boxeddrv_ImeInquire(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeInquire not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeInquire not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeProcessKey(HIMC hIMC, UINT vKey, LPARAM lKeyData, const LPBYTE lpbKeyState)
 void boxeddrv_ImeProcessKey(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeProcessKey not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeProcessKey not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeRegisterWord(LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszRegister)
 void boxeddrv_ImeRegisterWord(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeRegisterWord not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeRegisterWord not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeSelect(HIMC hIMC, BOOL fSelect)
 void boxeddrv_ImeSelect(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeSelect not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeSelect not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeSetActiveContext(HIMC hIMC, BOOL fFlag)
 void boxeddrv_ImeSetActiveContext(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeSetActiveContext not implemented");
-	EAX = 1;
+    notImplemented("boxeddrv_ImeSetActiveContext not implemented");
+    EAX = 1;
 }
 
 // BOOL WINAPI ImeSetCompositionString(HIMC hIMC, DWORD dwIndex, LPCVOID lpComp, DWORD dwCompLen, LPCVOID lpRead, DWORD dwReadLen)
 void boxeddrv_ImeSetCompositionString(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeSetCompositionString not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeSetCompositionString not implemented");
+    EAX = 0;
 }
 
 // UINT WINAPI ImeToAsciiEx(UINT uVKey, UINT uScanCode, const LPBYTE lpbKeyState, LPDWORD lpdwTransKey, UINT fuState, HIMC hIMC)
 void boxeddrv_ImeToAsciiEx(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeToAsciiEx not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeToAsciiEx not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI ImeUnregisterWord(LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszUnregister)
 void boxeddrv_ImeUnregisterWord(struct CPU* cpu) {
-	notImplemented("boxeddrv_ImeUnregisterWord not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_ImeUnregisterWord not implemented");
+    EAX = 0;
 }
 
 // BOOL WINAPI NotifyIME(HIMC hIMC, DWORD dwAction, DWORD dwIndex, DWORD dwValue)
 void boxeddrv_NotifyIME(struct CPU* cpu) {
-	notImplemented("boxeddrv_NotifyIME not implemented");
-	EAX = 0;
+    notImplemented("boxeddrv_NotifyIME not implemented");
+    EAX = 0;
 }
 
 void boxeddrv_wglCopyContext(struct CPU* cpu) {
-	notImplemented("boxeddrv_wglCopyContext not implemented");
+    notImplemented("boxeddrv_wglCopyContext not implemented");
 }
 
 // HWND hwnd, int major, int minor, int profile, int flags
@@ -1104,7 +1104,7 @@ void boxeddrv_wglCreateContext(struct CPU* cpu) {
 }
 
 void boxeddrv_wglDeleteContext(struct CPU* cpu) {
-	notImplemented("boxeddrv_wglDeleteContext not implemented");
+    notImplemented("boxeddrv_wglDeleteContext not implemented");
 }
 
 // HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr
@@ -1113,12 +1113,12 @@ void boxeddrv_wglDescribePixelFormat(struct CPU* cpu) {
 }
 
 void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
-	notImplemented("boxeddrv_wglGetPixelFormat not implemented");
+    notImplemented("boxeddrv_wglGetPixelFormat not implemented");
 }
 
 void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
     const char* name = getNativeString(MMU_PARAM_CPU ARG1);
-	notImplemented("boxeddrv_wglGetProcAddress not implemented");    
+    notImplemented("boxeddrv_wglGetProcAddress not implemented");    
 }
 
 // HwND hwnd, void* context
@@ -1142,24 +1142,24 @@ void boxeddrv_wglSetPixelFormat(struct CPU* cpu) {
 }
 
 void boxeddrv_wglShareLists(struct CPU* cpu) {
-	notImplemented("boxeddrv_wglShareLists not implemented");
+    notImplemented("boxeddrv_wglShareLists not implemented");
 }
 
 void boxeddrv_wglSwapBuffers(struct CPU* cpu) {
-	sdlSwapBuffers();
+    sdlSwapBuffers();
     EAX = 1;
 }
 
 void boxeddrv_GetKeyboardLayoutList(struct CPU* cpu) {
-	
+    
 }
 
 void boxeddrv_RegisterHotKey(struct CPU* cpu) {
-	
+    
 }
 
 void boxeddrv_UnregisterHotKey(struct CPU* cpu) {
-	
+    
 }
 
 // void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, zOrder, RECT* rects, int rectCount)
@@ -1167,7 +1167,7 @@ void boxeddrv_FlushSurface(struct CPU* cpu) {
     U32 i;
 
     for (i=0;i<ARG9;i++) {
-	    wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG8+16*i);
+        wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG8+16*i);
     }
     drawAllWindows(MMU_PARAM_CPU ARG7+4, readd(MMU_PARAM_CPU ARG7));
 }
@@ -1233,86 +1233,86 @@ Int99Callback* wine_callback;
 int wine_callbackSize;
 
 void initWine() {
-	wine_callback = kalloc(sizeof(Int99Callback) * 87);
-	wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
-	wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
-	wine_callback[BOXED_BEEP] = boxeddrv_Beep;
-	wine_callback[BOXED_CHANGE_DISPLAY_SETTINGS_EX] = boxeddrv_ChangeDisplaySettingsEx;
-	wine_callback[BOXED_CLIP_CURSOR] = boxeddrv_ClipCursor;
-	wine_callback[BOXED_COUNT_CLIPBOARD_FORMATS] = boxeddrv_CountClipboardFormats;
-	wine_callback[BOXED_CREATE_DESKTOP_WINDOW] = boxeddrv_CreateDesktopWindow;
-	wine_callback[BOXED_CREATE_WINDOW] = boxeddrv_CreateWindow;
-	wine_callback[BOXED_DESTROY_CURSOR_ICON] = boxeddrv_DestroyCursorIcon;
-	wine_callback[BOXED_DESTROY_WINDOW] = boxeddrv_DestroyWindow;
-	wine_callback[BOXED_EMPTY_CLIPBOARD] = boxeddrv_EmptyClipboard;
-	wine_callback[BOXED_END_CLIPBOARD_UPDATE] = boxeddrv_EndClipboardUpdate;
-	wine_callback[BOXED_ENUM_CLIPBOARD_FORMATS] = boxeddrv_EnumClipboardFormats;
-	wine_callback[BOXED_ENUM_DISPLAY_MONITORS] = boxeddrv_EnumDisplayMonitors;
-	wine_callback[BOXED_ENUM_DISPLAY_SETTINGS_EX] = boxeddrv_EnumDisplaySettingsEx;
-	wine_callback[BOXED_GET_CLIPBOARD_DATA] = boxeddrv_GetClipboardData;
-	wine_callback[BOXED_GET_CURSOR_POS] = boxeddrv_GetCursorPos;
-	wine_callback[BOXED_GET_KEYBOARD_LAYOUT] = boxeddrv_GetKeyboardLayout;
-	wine_callback[BOXED_GET_KEYBOARD_LAYOUT_NAME] = boxeddrv_GetKeyboardLayoutName;
-	wine_callback[BOXED_GET_KEY_NAME] = boxeddrv_GetKeyNameText;
-	wine_callback[BOXED_GET_MONITOR_INFO] = boxeddrv_GetMonitorInfo;
-	wine_callback[BOXED_IS_CLIPBOARD_FORMAT_AVAILABLE] = boxeddrv_IsClipboardFormatAvailable;
-	wine_callback[BOXED_MAP_VIRTUAL_KEY_EX] = boxeddrv_MapVirtualKeyEx;
-	wine_callback[BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX] = boxeddrv_MsgWaitForMultipleObjectsEx;
-	wine_callback[BOXED_SET_CAPTURE] = boxeddrv_SetCapture;
-	wine_callback[BOXED_SET_CLIPBOARD_DATA] = boxeddrv_SetClipboardData;
-	wine_callback[BOXED_SET_CURSOR] = boxeddrv_SetCursor;
-	wine_callback[BOXED_SET_CURSOR_POS] = boxeddrv_SetCursorPos;
-	wine_callback[BOXED_SET_FOCUS] = boxeddrv_SetFocus;
-	wine_callback[BOXED_SET_LAYERED_WINDOW_ATTRIBUTES] = boxeddrv_SetLayeredWindowAttributes;
-	wine_callback[BOXED_SET_PARENT] = boxeddrv_SetParent;
-	wine_callback[BOXED_SET_WINDOW_RGN] = boxeddrv_SetWindowRgn;
-	wine_callback[BOXED_SET_WINDOW_STYLE] = boxeddrv_SetWindowStyle;
-	wine_callback[BOXED_SET_WINDOW_TEXT] = boxeddrv_SetWindowText;
-	wine_callback[BOXED_SHOW_WINDOW] = boxeddrv_ShowWindow;
-	wine_callback[BOXED_SYS_COMMAND] = boxeddrv_SysCommand;
-	wine_callback[BOXED_SYSTEM_PARAMETERS_INFO] = boxeddrv_SystemParametersInfo;
-	wine_callback[BOXED_TO_UNICODE_EX] = boxeddrv_ToUnicodeEx;
-	wine_callback[BOXED_UPDATE_LAYERED_WINDOW] = boxeddrv_UpdateLayeredWindow;
-	wine_callback[BOXED_VK_KEY_SCAN_EX] = boxeddrv_VkKeyScanEx;
-	wine_callback[BOXED_WINDOW_MESSAGE] = boxeddrv_WindowMessage;
-	wine_callback[BOXED_WINDOW_POS_CHANGED] = boxeddrv_WindowPosChanged;
-	wine_callback[BOXED_WINDOW_POS_CHANGING] = boxeddrv_WindowPosChanging;
-	wine_callback[BOXED_GET_DEVICE_GAMMA_RAMP] = boxeddrv_GetDeviceGammaRamp;
-	wine_callback[BOXED_SET_DEVICE_GAMMA_RAMP] = boxeddrv_SetDeviceGammaRamp;
-	wine_callback[BOXED_GET_DEVICE_CAPS] = boxeddrv_GetDeviceCaps;
-	wine_callback[BOXED_WINE_NOTIFY_ICON] = wine_notify_icon;
-	wine_callback[BOXED_IME_CONFIGURE] = boxeddrv_ImeConfigure;
-	wine_callback[BOXED_IME_CONVERSION_LIST] = boxeddrv_ImeConversionList;
-	wine_callback[BOXED_IME_DESTROY] = boxeddrv_ImeDestroy;
-	wine_callback[BOXED_IME_ENUM_REGISTER_WORD] = boxeddrv_ImeEnumRegisterWord;
-	wine_callback[BOXED_IME_ESCAPE] = boxeddrv_ImeEscape;
-	wine_callback[BOXED_IME_GET_IME_MENU_ITEMS] = boxeddrv_ImeGetImeMenuItems;
-	wine_callback[BOXED_IME_GET_REGISTER_WORD_STYLE] = boxeddrv_ImeGetRegisterWordStyle;
-	wine_callback[BOXED_IME_INQUIRE] = boxeddrv_ImeInquire;
-	wine_callback[BOXED_IME_PROCESS_KEY] = boxeddrv_ImeProcessKey;
-	wine_callback[BOXED_IME_REGISTER_WORD] = boxeddrv_ImeRegisterWord;
-	wine_callback[BOXED_IME_SELECT] = boxeddrv_ImeSelect;
-	wine_callback[BOXED_IME_SET_ACTIVE_CONTEXT] = boxeddrv_ImeSetActiveContext;
-	wine_callback[BOXED_IME_SET_COMPOSITION_STRING] = boxeddrv_ImeSetCompositionString;
-	wine_callback[BOXED_IME_TO_ASCII_EX] = boxeddrv_ImeToAsciiEx;
-	wine_callback[BOXED_IME_UNREGISTER_WORD] = boxeddrv_ImeUnregisterWord;
-	wine_callback[BOXED_NOTIFY_IME] = boxeddrv_NotifyIME;
-	wine_callback[BOXED_GL_COPY_CONTEXT] = boxeddrv_wglCopyContext;
-	wine_callback[BOXED_GL_CREATE_CONTEXT] = boxeddrv_wglCreateContext;
-	wine_callback[BOXED_GL_DELETE_CONTEXT] = boxeddrv_wglDeleteContext;
-	wine_callback[BOXED_GL_DESCRIBE_PIXEL_FORMAT] = boxeddrv_wglDescribePixelFormat;
-	wine_callback[BOXED_GL_GET_PIXEL_FORMAT] = boxeddrv_wglGetPixelFormat;
-	wine_callback[BOXED_GL_GET_PROC_ADDRESS] = boxeddrv_wglGetProcAddress;
-	wine_callback[BOXED_GL_MAKE_CURRENT] = boxeddrv_wglMakeCurrent;
-	wine_callback[BOXED_GL_SET_PIXEL_FORMAT] = boxeddrv_wglSetPixelFormat;
-	wine_callback[BOXED_GL_SHARE_LISTS] = boxeddrv_wglShareLists;
-	wine_callback[BOXED_GL_SWAP_BUFFERS] = boxeddrv_wglSwapBuffers;
-	wine_callback[BOXED_GET_KEYBOARD_LAYOUT_LIST] = boxeddrv_GetKeyboardLayoutList;
-	wine_callback[BOXED_REGISTER_HOT_KEY] = boxeddrv_RegisterHotKey;
-	wine_callback[BOXED_UNREGISTER_HOT_KEY] = boxeddrv_UnregisterHotKey;
-	wine_callback[BOXED_SET_SURFACE] = boxeddrv_SetSurface;
-	wine_callback[BOXED_GET_SURFACE] = boxeddrv_GetSurface;
-	wine_callback[BOXED_FLUSH_SURFACE] = boxeddrv_FlushSurface;
+    wine_callback = kalloc(sizeof(Int99Callback) * 87);
+    wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
+    wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
+    wine_callback[BOXED_BEEP] = boxeddrv_Beep;
+    wine_callback[BOXED_CHANGE_DISPLAY_SETTINGS_EX] = boxeddrv_ChangeDisplaySettingsEx;
+    wine_callback[BOXED_CLIP_CURSOR] = boxeddrv_ClipCursor;
+    wine_callback[BOXED_COUNT_CLIPBOARD_FORMATS] = boxeddrv_CountClipboardFormats;
+    wine_callback[BOXED_CREATE_DESKTOP_WINDOW] = boxeddrv_CreateDesktopWindow;
+    wine_callback[BOXED_CREATE_WINDOW] = boxeddrv_CreateWindow;
+    wine_callback[BOXED_DESTROY_CURSOR_ICON] = boxeddrv_DestroyCursorIcon;
+    wine_callback[BOXED_DESTROY_WINDOW] = boxeddrv_DestroyWindow;
+    wine_callback[BOXED_EMPTY_CLIPBOARD] = boxeddrv_EmptyClipboard;
+    wine_callback[BOXED_END_CLIPBOARD_UPDATE] = boxeddrv_EndClipboardUpdate;
+    wine_callback[BOXED_ENUM_CLIPBOARD_FORMATS] = boxeddrv_EnumClipboardFormats;
+    wine_callback[BOXED_ENUM_DISPLAY_MONITORS] = boxeddrv_EnumDisplayMonitors;
+    wine_callback[BOXED_ENUM_DISPLAY_SETTINGS_EX] = boxeddrv_EnumDisplaySettingsEx;
+    wine_callback[BOXED_GET_CLIPBOARD_DATA] = boxeddrv_GetClipboardData;
+    wine_callback[BOXED_GET_CURSOR_POS] = boxeddrv_GetCursorPos;
+    wine_callback[BOXED_GET_KEYBOARD_LAYOUT] = boxeddrv_GetKeyboardLayout;
+    wine_callback[BOXED_GET_KEYBOARD_LAYOUT_NAME] = boxeddrv_GetKeyboardLayoutName;
+    wine_callback[BOXED_GET_KEY_NAME] = boxeddrv_GetKeyNameText;
+    wine_callback[BOXED_GET_MONITOR_INFO] = boxeddrv_GetMonitorInfo;
+    wine_callback[BOXED_IS_CLIPBOARD_FORMAT_AVAILABLE] = boxeddrv_IsClipboardFormatAvailable;
+    wine_callback[BOXED_MAP_VIRTUAL_KEY_EX] = boxeddrv_MapVirtualKeyEx;
+    wine_callback[BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX] = boxeddrv_MsgWaitForMultipleObjectsEx;
+    wine_callback[BOXED_SET_CAPTURE] = boxeddrv_SetCapture;
+    wine_callback[BOXED_SET_CLIPBOARD_DATA] = boxeddrv_SetClipboardData;
+    wine_callback[BOXED_SET_CURSOR] = boxeddrv_SetCursor;
+    wine_callback[BOXED_SET_CURSOR_POS] = boxeddrv_SetCursorPos;
+    wine_callback[BOXED_SET_FOCUS] = boxeddrv_SetFocus;
+    wine_callback[BOXED_SET_LAYERED_WINDOW_ATTRIBUTES] = boxeddrv_SetLayeredWindowAttributes;
+    wine_callback[BOXED_SET_PARENT] = boxeddrv_SetParent;
+    wine_callback[BOXED_SET_WINDOW_RGN] = boxeddrv_SetWindowRgn;
+    wine_callback[BOXED_SET_WINDOW_STYLE] = boxeddrv_SetWindowStyle;
+    wine_callback[BOXED_SET_WINDOW_TEXT] = boxeddrv_SetWindowText;
+    wine_callback[BOXED_SHOW_WINDOW] = boxeddrv_ShowWindow;
+    wine_callback[BOXED_SYS_COMMAND] = boxeddrv_SysCommand;
+    wine_callback[BOXED_SYSTEM_PARAMETERS_INFO] = boxeddrv_SystemParametersInfo;
+    wine_callback[BOXED_TO_UNICODE_EX] = boxeddrv_ToUnicodeEx;
+    wine_callback[BOXED_UPDATE_LAYERED_WINDOW] = boxeddrv_UpdateLayeredWindow;
+    wine_callback[BOXED_VK_KEY_SCAN_EX] = boxeddrv_VkKeyScanEx;
+    wine_callback[BOXED_WINDOW_MESSAGE] = boxeddrv_WindowMessage;
+    wine_callback[BOXED_WINDOW_POS_CHANGED] = boxeddrv_WindowPosChanged;
+    wine_callback[BOXED_WINDOW_POS_CHANGING] = boxeddrv_WindowPosChanging;
+    wine_callback[BOXED_GET_DEVICE_GAMMA_RAMP] = boxeddrv_GetDeviceGammaRamp;
+    wine_callback[BOXED_SET_DEVICE_GAMMA_RAMP] = boxeddrv_SetDeviceGammaRamp;
+    wine_callback[BOXED_GET_DEVICE_CAPS] = boxeddrv_GetDeviceCaps;
+    wine_callback[BOXED_WINE_NOTIFY_ICON] = wine_notify_icon;
+    wine_callback[BOXED_IME_CONFIGURE] = boxeddrv_ImeConfigure;
+    wine_callback[BOXED_IME_CONVERSION_LIST] = boxeddrv_ImeConversionList;
+    wine_callback[BOXED_IME_DESTROY] = boxeddrv_ImeDestroy;
+    wine_callback[BOXED_IME_ENUM_REGISTER_WORD] = boxeddrv_ImeEnumRegisterWord;
+    wine_callback[BOXED_IME_ESCAPE] = boxeddrv_ImeEscape;
+    wine_callback[BOXED_IME_GET_IME_MENU_ITEMS] = boxeddrv_ImeGetImeMenuItems;
+    wine_callback[BOXED_IME_GET_REGISTER_WORD_STYLE] = boxeddrv_ImeGetRegisterWordStyle;
+    wine_callback[BOXED_IME_INQUIRE] = boxeddrv_ImeInquire;
+    wine_callback[BOXED_IME_PROCESS_KEY] = boxeddrv_ImeProcessKey;
+    wine_callback[BOXED_IME_REGISTER_WORD] = boxeddrv_ImeRegisterWord;
+    wine_callback[BOXED_IME_SELECT] = boxeddrv_ImeSelect;
+    wine_callback[BOXED_IME_SET_ACTIVE_CONTEXT] = boxeddrv_ImeSetActiveContext;
+    wine_callback[BOXED_IME_SET_COMPOSITION_STRING] = boxeddrv_ImeSetCompositionString;
+    wine_callback[BOXED_IME_TO_ASCII_EX] = boxeddrv_ImeToAsciiEx;
+    wine_callback[BOXED_IME_UNREGISTER_WORD] = boxeddrv_ImeUnregisterWord;
+    wine_callback[BOXED_NOTIFY_IME] = boxeddrv_NotifyIME;
+    wine_callback[BOXED_GL_COPY_CONTEXT] = boxeddrv_wglCopyContext;
+    wine_callback[BOXED_GL_CREATE_CONTEXT] = boxeddrv_wglCreateContext;
+    wine_callback[BOXED_GL_DELETE_CONTEXT] = boxeddrv_wglDeleteContext;
+    wine_callback[BOXED_GL_DESCRIBE_PIXEL_FORMAT] = boxeddrv_wglDescribePixelFormat;
+    wine_callback[BOXED_GL_GET_PIXEL_FORMAT] = boxeddrv_wglGetPixelFormat;
+    wine_callback[BOXED_GL_GET_PROC_ADDRESS] = boxeddrv_wglGetProcAddress;
+    wine_callback[BOXED_GL_MAKE_CURRENT] = boxeddrv_wglMakeCurrent;
+    wine_callback[BOXED_GL_SET_PIXEL_FORMAT] = boxeddrv_wglSetPixelFormat;
+    wine_callback[BOXED_GL_SHARE_LISTS] = boxeddrv_wglShareLists;
+    wine_callback[BOXED_GL_SWAP_BUFFERS] = boxeddrv_wglSwapBuffers;
+    wine_callback[BOXED_GET_KEYBOARD_LAYOUT_LIST] = boxeddrv_GetKeyboardLayoutList;
+    wine_callback[BOXED_REGISTER_HOT_KEY] = boxeddrv_RegisterHotKey;
+    wine_callback[BOXED_UNREGISTER_HOT_KEY] = boxeddrv_UnregisterHotKey;
+    wine_callback[BOXED_SET_SURFACE] = boxeddrv_SetSurface;
+    wine_callback[BOXED_GET_SURFACE] = boxeddrv_GetSurface;
+    wine_callback[BOXED_FLUSH_SURFACE] = boxeddrv_FlushSurface;
     wine_callback[BOXED_CREATE_DC] = boxeddrv_CreateDC;
     wine_callback[BOXED_GET_SYSTEM_PALETTE] = boxeddrv_GetSystemPalette;
     wine_callback[BOXED_GET_NEAREST_COLOR] = boxeddrv_GetNearestColor;
@@ -1321,5 +1321,5 @@ void initWine() {
     wine_callback[BOXED_SET_EVENT_FD] = boxeddrv_SetEventFD;
     wine_callback[BOXED_SET_CURSOR_BITS] = boxeddrv_SetCursorBits;
     wine_callback[BOXED_CREATE_DESKTOP] = boxeddrv_CreateDesktop;
-	wine_callbackSize = 87;
+    wine_callbackSize = 87;
 }

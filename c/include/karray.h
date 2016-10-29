@@ -4,10 +4,10 @@
 #include "platform.h"
 
 struct KArray {
-	void** objects;
-	U32 maxCount;
-	U32 count;
-	U32 startingIndex;
+    void** objects;
+    U32 maxCount;
+    U32 count;
+    U32 startingIndex;
 };
 
 void initArray(struct KArray* karray, int startingIndex);

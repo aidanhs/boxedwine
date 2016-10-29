@@ -5,12 +5,12 @@
 #include "platform.h"
 
 struct KFileLock {
-	U32 l_type;
+    U32 l_type;
     U32 l_whence;
     U64 l_start;
     U64 l_len;
     U32 l_pid;
-	struct KFileLock* next;
+    struct KFileLock* next;
 };
 
 void writeFileLock(MMU_ARG struct KFileLock* lock, U32 address, BOOL is64);

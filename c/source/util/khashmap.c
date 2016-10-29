@@ -6,32 +6,32 @@
 // :TODO: make the number of buckets dynamic
 
 void initHashmap(struct KHashmap* hashMap) {
-	hashMap->buckets = (struct KHashmapEntry**)calloc(1, sizeof(struct KHashmapEntry*)*4096);
-	hashMap->numberOfBuckets = 4096;
-	hashMap->numberOfEntries = 0;
+    hashMap->buckets = (struct KHashmapEntry**)calloc(1, sizeof(struct KHashmapEntry*)*4096);
+    hashMap->numberOfBuckets = 4096;
+    hashMap->numberOfEntries = 0;
 }
 
 void destroyHashmap(struct KHashmap* hashMap) {
-	U32 i;
+    U32 i;
 
-	for (i=0;i<hashMap->numberOfBuckets;i++) {
-		struct KHashmapEntry* entry = hashMap->buckets[i];
-		while (entry) {
-			struct KHashmapEntry* next = entry->next;
-			free(entry);
-			entry = next;
-		}
-	}
-	hashMap->buckets = 0;
-	hashMap->numberOfBuckets = 0;
-	hashMap->numberOfEntries = 0;
+    for (i=0;i<hashMap->numberOfBuckets;i++) {
+        struct KHashmapEntry* entry = hashMap->buckets[i];
+        while (entry) {
+            struct KHashmapEntry* next = entry->next;
+            free(entry);
+            entry = next;
+        }
+    }
+    hashMap->buckets = 0;
+    hashMap->numberOfBuckets = 0;
+    hashMap->numberOfEntries = 0;
 }
 
 // probably a better one out there, I just used one on wikipedia
 // http://en.wikipedia.org/wiki/Jenkins_hash_function
 static U32 calculateHash(const char* key) {
-	U32 hash, i;
-	U32 len = strlen(key);
+    U32 hash, i;
+    U32 len = strlen(key);
 
     for(hash = i = 0; i < len; ++i)
     {
@@ -46,67 +46,67 @@ static U32 calculateHash(const char* key) {
 }
 
 static U32 getIndexFromHash(struct KHashmap* hashMap, U32 hash) {
-	return hash & (hashMap->numberOfBuckets - 1);
+    return hash & (hashMap->numberOfBuckets - 1);
 }
 
 struct KHashmapEntry* getHashmapEntry(struct KHashmap* hashMap, const char* key) {
-	U32 hash = calculateHash(key);
-	U32 index = getIndexFromHash(hashMap, hash);
-	struct KHashmapEntry* entry = hashMap->buckets[index];
-	while (entry) {
-		if (!strcmp(key, entry->key)) {
-			return entry;
-		}
-		entry = entry->next;
-	}
-	return 0;
+    U32 hash = calculateHash(key);
+    U32 index = getIndexFromHash(hashMap, hash);
+    struct KHashmapEntry* entry = hashMap->buckets[index];
+    while (entry) {
+        if (!strcmp(key, entry->key)) {
+            return entry;
+        }
+        entry = entry->next;
+    }
+    return 0;
 }
 
 void putHashmapValue(struct KHashmap* hashMap, const char* key, void* value) {
-	struct KHashmapEntry* entry = getHashmapEntry(hashMap, key);
-	if (entry) {
-		entry->value = value;
-	} else {
-		struct KHashmapEntry* head;
-		U32 index;
+    struct KHashmapEntry* entry = getHashmapEntry(hashMap, key);
+    if (entry) {
+        entry->value = value;
+    } else {
+        struct KHashmapEntry* head;
+        U32 index;
 
-		entry = (struct KHashmapEntry*)malloc(sizeof(struct KHashmapEntry));
-		entry->key = key;
-		entry->value = value;
-		entry->hash = calculateHash(key);
-		entry->next = 0;
+        entry = (struct KHashmapEntry*)malloc(sizeof(struct KHashmapEntry));
+        entry->key = key;
+        entry->value = value;
+        entry->hash = calculateHash(key);
+        entry->next = 0;
 
-		index = getIndexFromHash(hashMap, entry->hash);
-		head = hashMap->buckets[index];
-		hashMap->buckets[index] = entry;
-		entry->next = head;
-	}
+        index = getIndexFromHash(hashMap, entry->hash);
+        head = hashMap->buckets[index];
+        hashMap->buckets[index] = entry;
+        entry->next = head;
+    }
 }
 
 void* getHashmapValue(struct KHashmap* hashMap, const char* key) {
-	struct KHashmapEntry* entry = getHashmapEntry(hashMap, key);
-	if (entry)
-		return entry->value;
-	return 0;
+    struct KHashmapEntry* entry = getHashmapEntry(hashMap, key);
+    if (entry)
+        return entry->value;
+    return 0;
 }
 
 void removeHashmapKey(struct KHashmap* hashMap, const char* key) {
-	U32 hash = calculateHash(key);
-	U32 index = getIndexFromHash(hashMap, hash);
-	struct KHashmapEntry* entry = hashMap->buckets[index];
-	struct KHashmapEntry* prev = 0;
+    U32 hash = calculateHash(key);
+    U32 index = getIndexFromHash(hashMap, hash);
+    struct KHashmapEntry* entry = hashMap->buckets[index];
+    struct KHashmapEntry* prev = 0;
 
-	while (entry) {
-		if (!strcmp(key, entry->key)) {
-			if (prev) {
-				prev->next = entry->next;
-			} else {
-				hashMap->buckets[index] = entry->next;
-			}
-			free(entry);
-			return;
-		}
-		prev = entry;
-		entry = entry->next;
-	}
+    while (entry) {
+        if (!strcmp(key, entry->key)) {
+            if (prev) {
+                prev->next = entry->next;
+            } else {
+                hashMap->buckets[index] = entry->next;
+            }
+            free(entry);
+            return;
+        }
+        prev = entry;
+        entry = entry->next;
+    }
 }

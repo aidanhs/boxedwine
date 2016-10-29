@@ -4,14 +4,14 @@
 #include "platform.h"
 
 struct FPU_Reg {
-	union {
-		double d;
-		U64 l;
-	};
+    union {
+        double d;
+        U64 l;
+    };
 };
 
 struct FPU {
-	struct FPU_Reg regs[9];
+    struct FPU_Reg regs[9];
     U32 tags[9];
     U32 cw;
     U32 cw_mask_all;

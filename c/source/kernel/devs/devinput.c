@@ -20,11 +20,11 @@ static U32 lastX;
 static U32 lastY;
 
 struct EventData {
-	U64 time;
-	U16 type;
-	U16 code;
-	S32 value;
-	struct EventData* next;
+    U64 time;
+    U16 type;
+    U16 code;
+    S32 value;
+    struct EventData* next;
 };
 
 #define MAX_NUMBER_OF_EVENTS 1024
@@ -34,17 +34,17 @@ static struct EventData eventData[MAX_NUMBER_OF_EVENTS];
 static struct EventData* freeEvents;
 
 struct InputEventQueue {	
-	struct EventData* firstQueuedEvent;
-	struct EventData* lastQueuedEvent;
-	U32 asyncProcessId;
-	U32 asyncProcessFd;
-	U16 bustype;
-	U16 vendor;
-	U16 product;
-	U16 version;
-	const char* name;
-	U32 mask;
-	struct KThread* waitingToReadThread;
+    struct EventData* firstQueuedEvent;
+    struct EventData* lastQueuedEvent;
+    U32 asyncProcessId;
+    U32 asyncProcessFd;
+    U16 bustype;
+    U16 vendor;
+    U16 product;
+    U16 version;
+    const char* name;
+    U32 mask;
+    struct KThread* waitingToReadThread;
 };
 
 static struct InputEventQueue touchEvents;
@@ -52,97 +52,97 @@ static struct InputEventQueue keyboardEvents;
 static struct InputEventQueue mouseEvents;
 
 struct EventData* allocEventData() {
-	if (freeEvents) {
-		struct EventData* result = freeEvents;
-		freeEvents = freeEvents->next;
-		return result;
-	}
-	return 0;
+    if (freeEvents) {
+        struct EventData* result = freeEvents;
+        freeEvents = freeEvents->next;
+        return result;
+    }
+    return 0;
 }
 
 void freeEventData(struct EventData* data) {
-	data->next = freeEvents;
-	freeEvents = data;
+    data->next = freeEvents;
+    freeEvents = data;
 }
 
 BOOL input_init(struct KProcess* process, struct OpenNode* node) {
-	if (!freeEventsInitialized) {
-		U32 i;
+    if (!freeEventsInitialized) {
+        U32 i;
 
-		for (i=0;i<MAX_NUMBER_OF_EVENTS;i++) {
-			eventData[i].next = freeEvents;
-			freeEvents = &eventData[i];
-		}
-		freeEventsInitialized = 1;
-	}
-	return TRUE;
+        for (i=0;i<MAX_NUMBER_OF_EVENTS;i++) {
+            eventData[i].next = freeEvents;
+            freeEvents = &eventData[i];
+        }
+        freeEventsInitialized = 1;
+    }
+    return TRUE;
 }
 
 S64 input_length(struct OpenNode* node) {
-	return 0;
+    return 0;
 }
 
 BOOL input_setLength(struct OpenNode* node, S64 len) {
-	return FALSE;
+    return FALSE;
 }
 
 S64 input_getFilePointer(struct OpenNode* node) {
-	return 0;
+    return 0;
 }
 
 S64 input_seek(struct OpenNode* node, S64 pos) {
-	return 0;
+    return 0;
 }
 
 // :TODO: can this be blocking
 U32 input_read(MMU_ARG struct InputEventQueue* queue, struct OpenNode* node, U32 address, U32 len) {
-	U32 result = 0;
+    U32 result = 0;
 
-	while (queue->firstQueuedEvent && result+16<=len) {
-		struct EventData* e = queue->firstQueuedEvent;
+    while (queue->firstQueuedEvent && result+16<=len) {
+        struct EventData* e = queue->firstQueuedEvent;
 
-		writed(MMU_PARAM address, (U32) (e->time / 1000000)); // seconds
+        writed(MMU_PARAM address, (U32) (e->time / 1000000)); // seconds
         writed(MMU_PARAM address+4, (U32) (e->time % 1000000)); // microseconds
         writew(MMU_PARAM address+8, e->type);
         writew(MMU_PARAM address+10, e->code);
         writed(MMU_PARAM address+12, e->value);
-		result+=16;
-		address+=16;
-		queue->firstQueuedEvent = e->next;
-		freeEventData(e);
-	}
-	if (!queue->firstQueuedEvent) {
-		queue->lastQueuedEvent = 0;
-	}
-	return result;
+        result+=16;
+        address+=16;
+        queue->firstQueuedEvent = e->next;
+        freeEventData(e);
+    }
+    if (!queue->firstQueuedEvent) {
+        queue->lastQueuedEvent = 0;
+    }
+    return result;
 }
 
 U32 input_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
-	return len;
+    return len;
 }
 
 void input_waitForEvents(struct InputEventQueue* queue, struct OpenNode* node, struct KThread* thread, U32 events) {
-	if (events & K_POLLIN) {
-		if (queue->waitingToReadThread)
-			kpanic("%d tried to wait on a input read, but %d is already waiting.", thread->id, queue->waitingToReadThread->id);
-		queue->waitingToReadThread = thread;
-		addClearOnWake(thread, &queue->waitingToReadThread);
-	}
+    if (events & K_POLLIN) {
+        if (queue->waitingToReadThread)
+            kpanic("%d tried to wait on a input read, but %d is already waiting.", thread->id, queue->waitingToReadThread->id);
+        queue->waitingToReadThread = thread;
+        addClearOnWake(thread, &queue->waitingToReadThread);
+    }
 }
 
 void input_close(struct InputEventQueue* queue, struct OpenNode* node) {
-	struct EventData* e = queue->firstQueuedEvent;
+    struct EventData* e = queue->firstQueuedEvent;
 
-	freeOpenNode(node);
-	while (e) {
-		struct EventData* next = e->next;
-		freeEventData(e);
-		e = next;
-	}
-	queue->firstQueuedEvent = 0;
-	queue->lastQueuedEvent = 0;
-	queue->asyncProcessId = 0;
-	queue->asyncProcessFd = 0;
+    freeOpenNode(node);
+    while (e) {
+        struct EventData* next = e->next;
+        freeEventData(e);
+        e = next;
+    }
+    queue->firstQueuedEvent = 0;
+    queue->lastQueuedEvent = 0;
+    queue->asyncProcessId = 0;
+    queue->asyncProcessFd = 0;
 }
 
 void writeBit(MMU_ARG U32 address, U32 bit) {
@@ -171,7 +171,7 @@ void writeAbs(MMU_ARG U32 address, U32 value, U32 min, U32 max) {
 }
 
 U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct OpenNode* node, U32 request) {
-	struct CPU* cpu = &thread->cpu;
+    struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
         case 0x4502: { // EVIOCGID
@@ -182,222 +182,126 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Op
 //                __u16 version;
 //                };
             U32 len = (request & 0x1fff0000) >> 16;
-			U32 buffer = IOCTL_ARG1;
+            U32 buffer = IOCTL_ARG1;
             if (len!=8)
                 kpanic("Bad length for EVIOCGID: %d",len);
-			writew(MMU_PARAM_THREAD buffer, queue->bustype);
-			writew(MMU_PARAM_THREAD buffer + 2, queue->vendor);
-			writew(MMU_PARAM_THREAD buffer + 4, queue->product);
-			writew(MMU_PARAM_THREAD buffer + 6, queue->version);
+            writew(MMU_PARAM_THREAD buffer, queue->bustype);
+            writew(MMU_PARAM_THREAD buffer + 2, queue->vendor);
+            writew(MMU_PARAM_THREAD buffer + 4, queue->product);
+            writew(MMU_PARAM_THREAD buffer + 6, queue->version);
             return 0;
         }
         case 0x4506: { // EVIOCGNAME
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-			return writeNativeString2(MMU_PARAM_THREAD buffer, queue->name, len);
+            return writeNativeString2(MMU_PARAM_THREAD buffer, queue->name, len);
         }
         case 0x4520: { // EVIOCGBIT
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
             if (len<4)
                 kpanic("Bad length for EVIOCGBIT: %d", len);
-			writed(MMU_PARAM_THREAD buffer, queue->mask);
+            writed(MMU_PARAM_THREAD buffer, queue->mask);
             return 4;
         }
         case 0x540B: // TCFLSH
             return 0;		
     }
-	return -1;
+    return -1;
 }
 
 void input_setAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
-	if (isAsync) {
-		if (queue->asyncProcessId && queue->asyncProcessId!=process->id) {
-			kpanic("touch_setAsync only supports one process: %d tried to attached but %d already has it", process->id, queue->asyncProcessId);
-		} else {
-			queue->asyncProcessId = process->id;
-			queue->asyncProcessFd = fd;
-		}
-	} else {
-		if (process->id == queue->asyncProcessId) {
-			queue->asyncProcessId = 0;
-			queue->asyncProcessFd = 0;
-		}
-	}
+    if (isAsync) {
+        if (queue->asyncProcessId && queue->asyncProcessId!=process->id) {
+            kpanic("touch_setAsync only supports one process: %d tried to attached but %d already has it", process->id, queue->asyncProcessId);
+        } else {
+            queue->asyncProcessId = process->id;
+            queue->asyncProcessFd = fd;
+        }
+    } else {
+        if (process->id == queue->asyncProcessId) {
+            queue->asyncProcessId = 0;
+            queue->asyncProcessFd = 0;
+        }
+    }
 }
 
 BOOL input_isAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process) {
-	return queue->asyncProcessId == process->id;
+    return queue->asyncProcessId == process->id;
 }
 
 BOOL input_isWriteReady(struct InputEventQueue* queue, struct OpenNode* node) {
-	return freeEvents!=0;
+    return freeEvents!=0;
 }
 
 BOOL input_isReadReady(struct InputEventQueue* queue, struct OpenNode* node) {
-	return queue->firstQueuedEvent!=0;
+    return queue->firstQueuedEvent!=0;
 }
 
 U32 input_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-	return 0;
+    return 0;
 }
 
 BOOL input_canMap(struct OpenNode* node) {
-	return FALSE;
+    return FALSE;
 }
 
 BOOL touch_init(struct KProcess* process, struct OpenNode* node) {
-	touchEvents.bustype = 3;
-	touchEvents.vendor = 0;
-	touchEvents.product = 0;
-	touchEvents.version = 0;
-	touchEvents.name = "BoxedWine touchpad";
-	touchEvents.mask = (1<<K_EV_SYN)|(1<<K_EV_KEY)|(1<<K_EV_ABS);
-	return input_init(process, node);
+    touchEvents.bustype = 3;
+    touchEvents.vendor = 0;
+    touchEvents.product = 0;
+    touchEvents.version = 0;
+    touchEvents.name = "BoxedWine touchpad";
+    touchEvents.mask = (1<<K_EV_SYN)|(1<<K_EV_KEY)|(1<<K_EV_ABS);
+    return input_init(process, node);
 }
 
 U32 touch_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
-	return input_read(MMU_PARAM &touchEvents, node, address, len);
+    return input_read(MMU_PARAM &touchEvents, node, address, len);
 }
 
 void touch_close(struct OpenNode* node) {
-	input_close(&touchEvents, node);
+    input_close(&touchEvents, node);
 }
 
 void touch_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
-	input_waitForEvents(&touchEvents, node, thread, events);
+    input_waitForEvents(&touchEvents, node, thread, events);
 }
 
 BOOL touch_isReadReady(struct OpenNode* node) {
-	return input_isReadReady(&touchEvents, node);
+    return input_isReadReady(&touchEvents, node);
 }
 
 BOOL touch_isWriteReady(struct OpenNode* node) {
-	return input_isWriteReady(&touchEvents, node);
+    return input_isWriteReady(&touchEvents, node);
 }
 
 U32 touch_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
-	struct CPU* cpu = &thread->cpu;
+    struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
-		case 0x4521: { // EVIOCGBIT, EV_KEY
+        case 0x4521: { // EVIOCGBIT, EV_KEY
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
             U32 result = K_BTN_MIDDLE;
             result = (result+7)/8;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
-			writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
-			writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
-			writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
             return result;
         }
         case 0x4522: { // EVIOCGBIT, EV_REL
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
             return 1;
         }
         case 0x4523: { // EVIOCGBIT, EV_ABS
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
-			writeb(MMU_PARAM_THREAD buffer, (1 << K_ABS_X) | (1 << K_ABS_Y));
-            return 1;
-        }
-        case 0x4531: { // EVIOCGBIT, EV_LED
-            U32 len = (request & 0x1fff0000) >> 16;
-            U32 buffer = IOCTL_ARG1;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
-            return 1;
-        }
-        case 0x4540: { // EVIOCGABS (ABS_X)
-            U32 len = (request & 0x1fff0000) >> 16;
-            U32 address = IOCTL_ARG1;
-            if (len<24)
-                kpanic("Bad length for EVIOCGABS (ABS_X)");
-			writeAbs(MMU_PARAM_THREAD address, lastX, 0, screenWidth);
-            return 0;
-        }
-        case 0x4541: { // EVIOCGABS (ABS_Y)
-            int len = (request & 0x1fff0000) >> 16;
-            int address = IOCTL_ARG1;
-            if (len<24)
-                kpanic("Bad length for EVIOCGABS (ABS_X)");
-			writeAbs(MMU_PARAM_THREAD address, lastY, 0, screenHeight);
-            return 0;
-        }
-		default:
-			return input_ioctl(&touchEvents, thread, node, request);
-    }
-	return -1;
-}
-
-void touch_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
-	input_setAsync(&touchEvents, node, process, fd, isAsync);
-}
-
-BOOL touch_isAsync(struct OpenNode* node, struct KProcess* process) {
-	return input_isAsync(&touchEvents, node, process);
-}
-
-struct NodeAccess touchInputAccess = {touch_init, input_length, input_setLength, input_getFilePointer, input_seek, touch_read, input_write, touch_close, input_map, input_canMap, touch_ioctl, touch_setAsync, touch_isAsync, touch_waitForEvents, touch_isWriteReady, touch_isReadReady};
-
-BOOL mouse_init(struct KProcess* process, struct OpenNode* node) {
-	mouseEvents.bustype = 3;
-	mouseEvents.vendor = 0x046d;
-	mouseEvents.product = 0xc52b;
-	mouseEvents.version = 0x0111;
-	mouseEvents.name = "BoxedWine mouse";
-	mouseEvents.mask = (1<<K_EV_SYN)|(1<<K_EV_KEY)|(1<<K_EV_REL);
-	return input_init(process, node);
-}
-
-U32 mouse_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
-	return input_read(MMU_PARAM &mouseEvents, node, address, len);
-}
-
-void mouse_close(struct OpenNode* node) {
-	input_close(&mouseEvents, node);
-}
-
-void mouse_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
-	input_waitForEvents(&mouseEvents, node, thread, events);
-}
-
-BOOL mouse_isReadReady(struct OpenNode* node) {
-	return input_isReadReady(&mouseEvents, node);
-}
-
-BOOL mouse_isWriteReady(struct OpenNode* node) {
-	return input_isWriteReady(&mouseEvents, node);
-}
-
-U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
-	struct CPU* cpu = &thread->cpu;
-
-    switch (request & 0xFFFF) {
-		case 0x4521: { // EVIOCGBIT, EV_KEY
-            U32 len = (request & 0x1fff0000) >> 16;
-            U32 buffer = IOCTL_ARG1;
-            U32 result = K_BTN_MIDDLE;
-            result = (result+7)/8;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
-			writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
-			writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
-			writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
-            return result;
-        }
-        case 0x4522: { // EVIOCGBIT, EV_REL
-            U32 len = (request & 0x1fff0000) >> 16;
-            U32 buffer = IOCTL_ARG1;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
-			writeb(MMU_PARAM_THREAD buffer, (1 << K_REL_X) | (1 << K_REL_Y));
-            return 1;
-        }
-        case 0x4523: { // EVIOCGBIT, EV_ABS
-            U32 len = (request & 0x1fff0000) >> 16;
-            U32 buffer = IOCTL_ARG1;
-			zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            writeb(MMU_PARAM_THREAD buffer, (1 << K_ABS_X) | (1 << K_ABS_Y));
             return 1;
         }
         case 0x4531: { // EVIOCGBIT, EV_LED
@@ -411,7 +315,7 @@ U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
             U32 address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-			writeAbs(MMU_PARAM_THREAD address, 0, 0, 0);
+            writeAbs(MMU_PARAM_THREAD address, lastX, 0, screenWidth);
             return 0;
         }
         case 0x4541: { // EVIOCGABS (ABS_Y)
@@ -419,57 +323,153 @@ U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
             int address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-			writeAbs(MMU_PARAM_THREAD address, 0, 0, 0);
+            writeAbs(MMU_PARAM_THREAD address, lastY, 0, screenHeight);
             return 0;
         }
-		default:
-			return input_ioctl(&mouseEvents, thread, node, request);
+        default:
+            return input_ioctl(&touchEvents, thread, node, request);
     }
-	return -1;
+    return -1;
+}
+
+void touch_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+    input_setAsync(&touchEvents, node, process, fd, isAsync);
+}
+
+BOOL touch_isAsync(struct OpenNode* node, struct KProcess* process) {
+    return input_isAsync(&touchEvents, node, process);
+}
+
+struct NodeAccess touchInputAccess = {touch_init, input_length, input_setLength, input_getFilePointer, input_seek, touch_read, input_write, touch_close, input_map, input_canMap, touch_ioctl, touch_setAsync, touch_isAsync, touch_waitForEvents, touch_isWriteReady, touch_isReadReady};
+
+BOOL mouse_init(struct KProcess* process, struct OpenNode* node) {
+    mouseEvents.bustype = 3;
+    mouseEvents.vendor = 0x046d;
+    mouseEvents.product = 0xc52b;
+    mouseEvents.version = 0x0111;
+    mouseEvents.name = "BoxedWine mouse";
+    mouseEvents.mask = (1<<K_EV_SYN)|(1<<K_EV_KEY)|(1<<K_EV_REL);
+    return input_init(process, node);
+}
+
+U32 mouse_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+    return input_read(MMU_PARAM &mouseEvents, node, address, len);
+}
+
+void mouse_close(struct OpenNode* node) {
+    input_close(&mouseEvents, node);
+}
+
+void mouse_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+    input_waitForEvents(&mouseEvents, node, thread, events);
+}
+
+BOOL mouse_isReadReady(struct OpenNode* node) {
+    return input_isReadReady(&mouseEvents, node);
+}
+
+BOOL mouse_isWriteReady(struct OpenNode* node) {
+    return input_isWriteReady(&mouseEvents, node);
+}
+
+U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+    struct CPU* cpu = &thread->cpu;
+
+    switch (request & 0xFFFF) {
+        case 0x4521: { // EVIOCGBIT, EV_KEY
+            U32 len = (request & 0x1fff0000) >> 16;
+            U32 buffer = IOCTL_ARG1;
+            U32 result = K_BTN_MIDDLE;
+            result = (result+7)/8;
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
+            return result;
+        }
+        case 0x4522: { // EVIOCGBIT, EV_REL
+            U32 len = (request & 0x1fff0000) >> 16;
+            U32 buffer = IOCTL_ARG1;
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            writeb(MMU_PARAM_THREAD buffer, (1 << K_REL_X) | (1 << K_REL_Y));
+            return 1;
+        }
+        case 0x4523: { // EVIOCGBIT, EV_ABS
+            U32 len = (request & 0x1fff0000) >> 16;
+            U32 buffer = IOCTL_ARG1;
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            return 1;
+        }
+        case 0x4531: { // EVIOCGBIT, EV_LED
+            U32 len = (request & 0x1fff0000) >> 16;
+            U32 buffer = IOCTL_ARG1;
+            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            return 1;
+        }
+        case 0x4540: { // EVIOCGABS (ABS_X)
+            U32 len = (request & 0x1fff0000) >> 16;
+            U32 address = IOCTL_ARG1;
+            if (len<24)
+                kpanic("Bad length for EVIOCGABS (ABS_X)");
+            writeAbs(MMU_PARAM_THREAD address, 0, 0, 0);
+            return 0;
+        }
+        case 0x4541: { // EVIOCGABS (ABS_Y)
+            int len = (request & 0x1fff0000) >> 16;
+            int address = IOCTL_ARG1;
+            if (len<24)
+                kpanic("Bad length for EVIOCGABS (ABS_X)");
+            writeAbs(MMU_PARAM_THREAD address, 0, 0, 0);
+            return 0;
+        }
+        default:
+            return input_ioctl(&mouseEvents, thread, node, request);
+    }
+    return -1;
 }
 
 void mouse_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
-	input_setAsync(&mouseEvents, node, process, fd, isAsync);
+    input_setAsync(&mouseEvents, node, process, fd, isAsync);
 }
 
 BOOL mouse_isAsync(struct OpenNode* node, struct KProcess* process) {
-	return input_isAsync(&mouseEvents, node, process);
+    return input_isAsync(&mouseEvents, node, process);
 }
 
 struct NodeAccess mouseInputAccess = {mouse_init, input_length, input_setLength, input_getFilePointer, input_seek, mouse_read, input_write, mouse_close, input_map, input_canMap, mouse_ioctl, mouse_setAsync, mouse_isAsync, mouse_waitForEvents, mouse_isWriteReady, mouse_isReadReady};
 
 BOOL keyboard_init(struct KProcess* process, struct OpenNode* node) {
-	keyboardEvents.bustype = 0x11;
-	keyboardEvents.vendor = 1;
-	keyboardEvents.product = 1;
-	keyboardEvents.version = 0xab41;
-	keyboardEvents.name = "BoxedWine Keyboard";
-	keyboardEvents.mask = (1<<K_EV_SYN)|(1<<K_EV_KEY);
-	return input_init(process, node);
+    keyboardEvents.bustype = 0x11;
+    keyboardEvents.vendor = 1;
+    keyboardEvents.product = 1;
+    keyboardEvents.version = 0xab41;
+    keyboardEvents.name = "BoxedWine Keyboard";
+    keyboardEvents.mask = (1<<K_EV_SYN)|(1<<K_EV_KEY);
+    return input_init(process, node);
 }
 
 U32 keyboard_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
-	return input_read(MMU_PARAM &keyboardEvents, node, address, len);
+    return input_read(MMU_PARAM &keyboardEvents, node, address, len);
 }
 
 void keyboard_close(struct OpenNode* node) {
-	input_close(&keyboardEvents, node);
+    input_close(&keyboardEvents, node);
 }
 
 void keyboard_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
-	input_waitForEvents(&keyboardEvents, node, thread, events);
+    input_waitForEvents(&keyboardEvents, node, thread, events);
 }
 
 BOOL keyboard_isReadReady(struct OpenNode* node) {
-	return input_isReadReady(&keyboardEvents, node);
+    return input_isReadReady(&keyboardEvents, node);
 }
 
 BOOL keyboard_isWriteReady(struct OpenNode* node) {
-	return input_isWriteReady(&keyboardEvents, node);
+    return input_isWriteReady(&keyboardEvents, node);
 }
 
 U32 keyboard_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
-	struct CPU* cpu = &thread->cpu;
+    struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
         case 0x4521: { // EVIOCGBIT, EV_KEY
@@ -583,43 +583,43 @@ U32 keyboard_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
             zeroMemory(MMU_PARAM_THREAD buffer, len);
             return 1;
         }
-		default:
-			return input_ioctl(&keyboardEvents, thread, node, request);
+        default:
+            return input_ioctl(&keyboardEvents, thread, node, request);
     }
-	return -1;
+    return -1;
 }
 
 void keyboard_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
-	input_setAsync(&keyboardEvents, node, process, fd, isAsync);
+    input_setAsync(&keyboardEvents, node, process, fd, isAsync);
 }
 
 BOOL keyboard_isAsync(struct OpenNode* node, struct KProcess* process) {
-	return input_isAsync(&keyboardEvents, node, process);
+    return input_isAsync(&keyboardEvents, node, process);
 }
 
 struct NodeAccess keyboardInputAccess = {keyboard_init, input_length, input_setLength, input_getFilePointer, input_seek, keyboard_read, input_write, keyboard_close, input_map, input_canMap, keyboard_ioctl, keyboard_setAsync, keyboard_isAsync, keyboard_waitForEvents, keyboard_isWriteReady, keyboard_isReadReady};
 
 void queueEvent(struct InputEventQueue* queue, U32 type, U32 code, U32 value, U64 time) {
-	struct EventData* data = allocEventData();
-	if (data) {
-		data->time = time;
-		data->type = type;
-		data->code = code;
-		data->value = value;
-		data->next = 0;
-		if (queue->lastQueuedEvent) {
-			queue->lastQueuedEvent->next = data;
-		}
-		if (!queue->firstQueuedEvent) {
-			queue->firstQueuedEvent = data;
-		}
-		queue->lastQueuedEvent = data;
-	}
+    struct EventData* data = allocEventData();
+    if (data) {
+        data->time = time;
+        data->type = type;
+        data->code = code;
+        data->value = value;
+        data->next = 0;
+        if (queue->lastQueuedEvent) {
+            queue->lastQueuedEvent->next = data;
+        }
+        if (!queue->firstQueuedEvent) {
+            queue->firstQueuedEvent = data;
+        }
+        queue->lastQueuedEvent = data;
+    }
 }
 
 /*
 void onMouseMove(U32 x, U32 y) {
-	U32 send = 0;
+    U32 send = 0;
 
     if (x!=lastX) {
         queueEvent(&mouseEvents, K_EV_REL, K_REL_X, x-lastX);
@@ -634,15 +634,15 @@ void onMouseMove(U32 x, U32 y) {
     if (send) {
         queueEvent(&mouseEvents, K_EV_SYN, K_SYN_REPORT, 0);
         if (mouseEvents.asyncProcessId) {
-			struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
-			if (process)
-				signalProcess(process, K_SIGIO);
+            struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
+            if (process)
+                signalProcess(process, K_SIGIO);
         }
     }
 }
 
 void onMouseButtonUp(U32 button) {
-	if (button == 0)
+    if (button == 0)
         queueEvent(&mouseEvents, K_EV_KEY, K_BTN_LEFT, 0);
     else if (button == 2)
         queueEvent(&mouseEvents, K_EV_KEY, K_BTN_MIDDLE, 0);
@@ -652,14 +652,14 @@ void onMouseButtonUp(U32 button) {
         return;
     queueEvent(&mouseEvents, K_EV_SYN, K_SYN_REPORT, 0);
     if (mouseEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
-		if (process)
-			signalProcess(process, K_SIGIO);
+        struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
+        if (process)
+            signalProcess(process, K_SIGIO);
     }
 }
 
 void onMouseButtonDown(U32 button) {
-	if (button == 0)
+    if (button == 0)
         queueEvent(&mouseEvents, K_EV_KEY, K_BTN_LEFT, 1);
     else if (button == 2)
         queueEvent(&mouseEvents, K_EV_KEY, K_BTN_MIDDLE, 1);
@@ -669,17 +669,17 @@ void onMouseButtonDown(U32 button) {
         return;
     queueEvent(&mouseEvents, K_EV_SYN, K_SYN_REPORT, 0);
     if (mouseEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
-		if (process)
-			signalProcess(process, K_SIGIO);
+        struct KProcess* process = getProcessById(mouseEvents.asyncProcessId);
+        if (process)
+            signalProcess(process, K_SIGIO);
     }
 }
 */
 
 void onMouseButtonUp(U32 button) {
-	U64 time = getSystemTimeAsMicroSeconds();
+    U64 time = getSystemTimeAsMicroSeconds();
 
-	if (button == 0)
+    if (button == 0)
         queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 0, time);
     else if (button == 2)
         queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 0, time);
@@ -689,18 +689,18 @@ void onMouseButtonUp(U32 button) {
         return;
     queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
     if (touchEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
-		if (process)
-			signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
+        struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+        if (process)
+            signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
-	if (touchEvents.waitingToReadThread)
-		wakeThread(touchEvents.waitingToReadThread);
+    if (touchEvents.waitingToReadThread)
+        wakeThread(touchEvents.waitingToReadThread);
 }
 
 void onMouseButtonDown(U32 button) {
-	U64 time = getSystemTimeAsMicroSeconds();
+    U64 time = getSystemTimeAsMicroSeconds();
 
-	if (button == 0)
+    if (button == 0)
         queueEvent(&touchEvents, K_EV_KEY, K_BTN_LEFT, 1, time);
     else if (button == 2)
         queueEvent(&touchEvents, K_EV_KEY, K_BTN_MIDDLE, 1, time);
@@ -710,17 +710,17 @@ void onMouseButtonDown(U32 button) {
         return;
     queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
     if (touchEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
-		if (process)
-			signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
+        struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+        if (process)
+            signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
-	if (touchEvents.waitingToReadThread)
-		wakeThread(touchEvents.waitingToReadThread);
+    if (touchEvents.waitingToReadThread)
+        wakeThread(touchEvents.waitingToReadThread);
 }
 
 void onMouseMove(U32 x, U32 y) {
-	U32 send = 0;
-	U64 time = getSystemTimeAsMicroSeconds();
+    U32 send = 0;
+    U64 time = getSystemTimeAsMicroSeconds();
 
     if (x!=lastX) {
         lastX = x;
@@ -735,43 +735,43 @@ void onMouseMove(U32 x, U32 y) {
     if (send) {
         queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
         if (touchEvents.asyncProcessId) {
-			struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
-			if (process)
-				signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
+            struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+            if (process)
+                signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
         }
-		if (touchEvents.waitingToReadThread)
-			wakeThread(touchEvents.waitingToReadThread);
+        if (touchEvents.waitingToReadThread)
+            wakeThread(touchEvents.waitingToReadThread);
     }
 }
 
 void onKeyDown(U32 code) {
-	U64 time = getSystemTimeAsMicroSeconds();
+    U64 time = getSystemTimeAsMicroSeconds();
 
     if (code == 0)
         return;
     queueEvent(&keyboardEvents, K_EV_KEY, code, 1, time);
     queueEvent(&keyboardEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
     if (keyboardEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
-		if (process)
-			signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
+        struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
+        if (process)
+            signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
-	if (keyboardEvents.waitingToReadThread)
-		wakeThread(keyboardEvents.waitingToReadThread);
+    if (keyboardEvents.waitingToReadThread)
+        wakeThread(keyboardEvents.waitingToReadThread);
 }
 
 void onKeyUp(U32 code) {
-	U64 time = getSystemTimeAsMicroSeconds();
+    U64 time = getSystemTimeAsMicroSeconds();
 
     if (code == 0)
         return;
     queueEvent(&keyboardEvents, K_EV_KEY, code, 0, time);
     queueEvent(&keyboardEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
     if (keyboardEvents.asyncProcessId) {
-		struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
-		if (process)
-			signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
+        struct KProcess* process = getProcessById(keyboardEvents.asyncProcessId);
+        if (process)
+            signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
-	if (keyboardEvents.waitingToReadThread)
-		wakeThread(keyboardEvents.waitingToReadThread);
+    if (keyboardEvents.waitingToReadThread)
+        wakeThread(keyboardEvents.waitingToReadThread);
 }

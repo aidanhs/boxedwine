@@ -29,13 +29,13 @@
 #define MAX_FDS_PER_PROCESS 256
 
 struct KFileDescriptor {
-	U32 accessFlags;
+    U32 accessFlags;
     U32 descriptorFlags;
     U32 handle;
-	union {
-		struct KObject* kobject;
-		struct KFileDescriptor* next; // used for free list
-	};
+    union {
+        struct KObject* kobject;
+        struct KFileDescriptor* next; // used for free list
+    };
     U32 refCount;
     struct KProcess* process;
 };

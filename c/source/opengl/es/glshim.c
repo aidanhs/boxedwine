@@ -349,8 +349,8 @@ void glLineStipple(GLint factor, GLushort pattern) {
 }
 
 void shim_glEnable(GLenum cap) {
-	switch (cap) {
-		case GL_BLEND:
+    switch (cap) {
+        case GL_BLEND:
             if (state.enable.blend != GL_TRUE) {
                 state.enable.blend = GL_TRUE;
                 glEnable(cap);
@@ -362,56 +362,56 @@ void shim_glEnable(GLenum cap) {
                 glEnable(cap);
             } 
             break;
-		case GL_TEXTURE_GEN_R:
-			state.enable.texgen_r[state.texture.active] = GL_TRUE;
-			break;
-		case GL_TEXTURE_GEN_Q:
-			state.enable.texgen_q[state.texture.active] = GL_TRUE;
-			break;
-		case GL_TEXTURE_GEN_S:
-			state.enable.texgen_s[state.texture.active] = GL_TRUE;
-			break;
-		case GL_TEXTURE_GEN_T:
-			state.enable.texgen_t[state.texture.active] = GL_TRUE;
-			break;
-		case GL_LINE_STIPPLE:
-			state.enable.line_stipple = GL_TRUE;
-			break;
+        case GL_TEXTURE_GEN_R:
+            state.enable.texgen_r[state.texture.active] = GL_TRUE;
+            break;
+        case GL_TEXTURE_GEN_Q:
+            state.enable.texgen_q[state.texture.active] = GL_TRUE;
+            break;
+        case GL_TEXTURE_GEN_S:
+            state.enable.texgen_s[state.texture.active] = GL_TRUE;
+            break;
+        case GL_TEXTURE_GEN_T:
+            state.enable.texgen_t[state.texture.active] = GL_TRUE;
+            break;
+        case GL_LINE_STIPPLE:
+            state.enable.line_stipple = GL_TRUE;
+            break;
 
         // for glDrawArrays
-		case GL_VERTEX_ARRAY:
+        case GL_VERTEX_ARRAY:
             if (state.enable.vertex_array != GL_TRUE) {
                 state.enable.vertex_array = GL_TRUE;
                 glEnable(cap);
             } 
             break;
-		case GL_NORMAL_ARRAY:
+        case GL_NORMAL_ARRAY:
             if (state.enable.normal_array != GL_TRUE) {
                 state.enable.normal_array = GL_TRUE;
                 glEnable(cap);
             } 
             break;
-		case GL_COLOR_ARRAY:
+        case GL_COLOR_ARRAY:
             if (state.enable.color_array != GL_TRUE) {
                 state.enable.color_array = GL_TRUE;
                 glEnable(cap);
             } 
             break;
-		case GL_TEXTURE_COORD_ARRAY:
+        case GL_TEXTURE_COORD_ARRAY:
             if (state.enable.tex_coord_array[state.texture.client] != GL_TRUE) {
                 state.enable.tex_coord_array[state.texture.client] = GL_TRUE;
                 glEnable(cap);
             } 
             break;
         default: 
-			glEnable(cap);
-			break;
+            glEnable(cap);
+            break;
     }
 }
 
 void shim_glDisable(GLenum cap) {
-	switch (cap) {
-		case GL_BLEND:
+    switch (cap) {
+        case GL_BLEND:
             if (state.enable.blend != GL_FALSE) {
                 state.enable.blend = GL_FALSE;
                 glDisable(cap);
@@ -423,50 +423,50 @@ void shim_glDisable(GLenum cap) {
                 glDisable(cap);
             } 
             break;
-		case GL_TEXTURE_GEN_R:
-			state.enable.texgen_r[state.texture.active] = GL_FALSE;
-			break;
-		case GL_TEXTURE_GEN_Q:
-			state.enable.texgen_q[state.texture.active] = GL_FALSE;
-			break;
-		case GL_TEXTURE_GEN_S:
-			state.enable.texgen_s[state.texture.active] = GL_FALSE;
-			break;
-		case GL_TEXTURE_GEN_T:
-			state.enable.texgen_t[state.texture.active] = GL_FALSE;
-			break;
-		case GL_LINE_STIPPLE:
-			state.enable.line_stipple = GL_FALSE;
-			break;
+        case GL_TEXTURE_GEN_R:
+            state.enable.texgen_r[state.texture.active] = GL_FALSE;
+            break;
+        case GL_TEXTURE_GEN_Q:
+            state.enable.texgen_q[state.texture.active] = GL_FALSE;
+            break;
+        case GL_TEXTURE_GEN_S:
+            state.enable.texgen_s[state.texture.active] = GL_FALSE;
+            break;
+        case GL_TEXTURE_GEN_T:
+            state.enable.texgen_t[state.texture.active] = GL_FALSE;
+            break;
+        case GL_LINE_STIPPLE:
+            state.enable.line_stipple = GL_FALSE;
+            break;
 
         // for glDrawArrays
-		case GL_VERTEX_ARRAY:
+        case GL_VERTEX_ARRAY:
             if (state.enable.vertex_array != GL_FALSE) {
                 state.enable.vertex_array = GL_FALSE;
                 glDisable(cap);
             } 
             break;
-		case GL_NORMAL_ARRAY:
+        case GL_NORMAL_ARRAY:
             if (state.enable.normal_array != GL_FALSE) {
                 state.enable.normal_array = GL_FALSE;
                 glDisable(cap);
             } 
             break;
-		case GL_COLOR_ARRAY:
+        case GL_COLOR_ARRAY:
             if (state.enable.color_array != GL_FALSE) {
                 state.enable.color_array = GL_FALSE;
                 glDisable(cap);
             } 
             break;
-		case GL_TEXTURE_COORD_ARRAY:
+        case GL_TEXTURE_COORD_ARRAY:
             if (state.enable.tex_coord_array[state.texture.client] != GL_FALSE) {
                 state.enable.tex_coord_array[state.texture.client] = GL_FALSE;
                 glDisable(cap);
             } 
             break;
         default: 
-			glDisable(cap);
-			break;
+            glDisable(cap);
+            break;
     }
 }
 #endif

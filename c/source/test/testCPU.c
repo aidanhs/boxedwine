@@ -9,7 +9,7 @@
 static int cseip;
 
 U32 getMilliesSinceStart() {
-	return 0;
+    return 0;
 }
 
 #define STACK_ADDRESS 0xE0001000
@@ -23,39 +23,39 @@ static struct CPU* cpu;
 static int didFail;
 
 void failed(const char* msg, ...) {
-	didFail = 1;
+    didFail = 1;
 }
 
 void assertTrue(int b) {
-	if (!b) {
-		failed("Assert failed");
-	}
+    if (!b) {
+        failed("Assert failed");
+    }
 }
 
 void setup() {
-	if (!memory) {
-		cpu = (struct CPU*)malloc(sizeof(struct CPU));
-		memory = (struct Memory*)malloc(sizeof(struct Memory));
-		initMemory(memory);
-		initRAM(10);
+    if (!memory) {
+        cpu = (struct CPU*)malloc(sizeof(struct CPU));
+        memory = (struct Memory*)malloc(sizeof(struct Memory));
+        initMemory(memory);
+        initRAM(10);
 
-		allocPages(memory, &ramPageWR, TRUE, (STACK_ADDRESS >> PAGE_SHIFT)-1, 1, PAGE_READ|PAGE_WRITE, 0);
-		allocPages(memory, &ramPageWR, TRUE, CODE_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE|PAGE_EXEC, 0);
-		allocPages(memory, &ramPageWR, TRUE, HEAP_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE, 0);
-	}
-	initCPU(cpu, memory);	
+        allocPages(memory, &ramPageWR, TRUE, (STACK_ADDRESS >> PAGE_SHIFT)-1, 1, PAGE_READ|PAGE_WRITE, 0);
+        allocPages(memory, &ramPageWR, TRUE, CODE_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE|PAGE_EXEC, 0);
+        allocPages(memory, &ramPageWR, TRUE, HEAP_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE, 0);
+    }
+    initCPU(cpu, memory);	
 
     cpu->segAddress[CS] = CODE_ADDRESS;
     cpu->segAddress[DS] = HEAP_ADDRESS;
     cpu->segAddress[SS] = STACK_ADDRESS-4096;
 
-	zeroMemory(memory, CODE_ADDRESS, 4096);
+    zeroMemory(memory, CODE_ADDRESS, 4096);
     zeroMemory(memory, STACK_ADDRESS-4096, 4096);
     zeroMemory(memory, HEAP_ADDRESS, 4096);
 }
 
 void pushCode8(int value) {
-	writeb(memory, cseip, value);
+    writeb(memory, cseip, value);
     cseip++;
 }
 
@@ -83,8 +83,8 @@ void newInstruction(int instruction, int flags) {
     ESI=0;
     EDI=0;
     cpu->eip.u32=0;   
-	if (instruction>0xFF)
-		pushCode8(0x0F);
+    if (instruction>0xFF)
+        pushCode8(0x0F);
     pushCode8(instruction & 0xFF);
 }
 
@@ -94,19 +94,19 @@ void newInstructionWithRM(int instruction, int rm, int flags) {
 }
 
 void runTestCPU() {
-	struct Block* block;
+    struct Block* block;
 
     pushCode8(0x70); // jump causes the decoder to stop building the block
     pushCode8(0);
     block = decodeBlock(cpu);
-	runBlock(cpu, block);
-	freeOp(block->ops);
-	freeBlock(block);
+    runBlock(cpu, block);
+    freeOp(block->ops);
+    freeBlock(block);
 }
 
 struct Data {
-	int valid;
-	U32 var1;
+    int valid;
+    U32 var1;
     U32 var2;
     U32 result;
     U32 resultvar2;
@@ -140,17 +140,17 @@ void pushConstant(struct Data* data) {
 
 void assertResult(struct Data* data, struct CPU* cpu, int instruction, U32 resultvar1, U32 resultvar2, int r1, int r2, U32 address, int bits) {
     if (data->useResultvar2 && data->resultvar2!=resultvar2) {
-		failed("instruction: %d var2: %d != %d", instruction, resultvar2, data->resultvar2);
+        failed("instruction: %d var2: %d != %d", instruction, resultvar2, data->resultvar2);
     }
     if (!data->dontUseResultAndCheckSFZF && data->result != resultvar1) {
         failed("instruction: %d var1: %d != %d", instruction, resultvar1, data->result);
     }
     if (getCF(cpu) != data->fCF) {
-		getCF(cpu);
+        getCF(cpu);
         failed("instruction: %d CF", instruction);
     }
     if ((getOF(cpu)!=0) != data->fOF) {
-		getOF(cpu);
+        getOF(cpu);
         failed("instruction: %d OF", instruction);
     }
     if (data->dontUseResultAndCheckSFZF) {
@@ -163,47 +163,47 @@ void assertResult(struct Data* data, struct CPU* cpu, int instruction, U32 resul
     }
     if (bits==8 || bits==16) {
         if (r1>=0) {
-			if ((cpu->reg[r1].u32 & 0xFFFF0000) != (DEFAULT & 0xFFFF0000)) {
-				failed("instruction: %d reg overwrite %d", instruction, r1);
-			}
+            if ((cpu->reg[r1].u32 & 0xFFFF0000) != (DEFAULT & 0xFFFF0000)) {
+                failed("instruction: %d reg overwrite %d", instruction, r1);
+            }
         }
-		if (r2>=0) {
-			if ((cpu->reg[r2].u32 & 0xFFFF0000) != (DEFAULT & 0xFFFF0000)) {
-				failed("instruction: %d reg overwrite %d", instruction, r2);
-			}
+        if (r2>=0) {
+            if ((cpu->reg[r2].u32 & 0xFFFF0000) != (DEFAULT & 0xFFFF0000)) {
+                failed("instruction: %d reg overwrite %d", instruction, r2);
+            }
         }
-	}
-	if (bits == 8) {
+    }
+    if (bits == 8) {
         if (address!=0) {
-			if ((readd(cpu->memory, address) & 0xFFFFFF00) != (DEFAULT & 0xFFFFFF00)) {
-				failed("instruction: %d memory overwrite %d", instruction, address);
-			}
+            if ((readd(cpu->memory, address) & 0xFFFFFF00) != (DEFAULT & 0xFFFFFF00)) {
+                failed("instruction: %d memory overwrite %d", instruction, address);
+            }
         }
     }
     if (bits==16) {
         if (address!=0) {
-			if ((readd(cpu->memory, address) & 0xFFFF0000) != (DEFAULT & 0xFFFF0000)) {
-				failed("instruction: %d memory overwrite %d", instruction, address);
-			}
+            if ((readd(cpu->memory, address) & 0xFFFF0000) != (DEFAULT & 0xFFFF0000)) {
+                failed("instruction: %d memory overwrite %d", instruction, address);
+            }
         }
-	}
+    }
 }
 #define E8(rm) (E(rm) % 4)
 #define G8(rm) (G(rm) % 4)
 
 void Eb(int instruction, int which, struct Data* data) {	
     while (data->valid) {
-		int eb;
-		int rm;
-		U32 result;
+        int eb;
+        int rm;
+        U32 result;
 
         for (eb = 0; eb < 8; eb++) {
-			U8* reg;
+            U8* reg;
 
             rm = eb | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
             reg = cpu->reg8[E(rm)];
-			cpu->reg[E8(rm)].u32 = DEFAULT;
+            cpu->reg[E8(rm)].u32 = DEFAULT;
             *reg = (U8)data->var1;
             runTestCPU();
             assertResult(data, cpu, instruction, *reg, 0, E8(rm), -1, 0, 8);
@@ -219,36 +219,36 @@ void Eb(int instruction, int which, struct Data* data) {
             pushCode32(200);
         else
             pushCode16(200);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-		writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
         result = readb(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 8);
-		data++;
+        data++;
     }
 }
 
 void EbAlAx(int instruction, int which, struct Data* data, int useAX) {
     while (data->valid) {
-		int eb;
-		int rm;
+        int eb;
+        int rm;
 
         for (eb = 0; eb < 8; eb++) {            
-			U8* reg;
+            U8* reg;
 
-			if (eb==0 || eb==4)
+            if (eb==0 || eb==4)
                 continue;
 
             rm = eb | (which << 3) | 0xC0;
-			reg = cpu->reg8[E(rm)];			
+            reg = cpu->reg8[E(rm)];			
             newInstructionWithRM(instruction, rm, data->flags);			
-			cpu->reg[E8(rm)].u32 = DEFAULT;
-			EAX = DEFAULT;
+            cpu->reg[E8(rm)].u32 = DEFAULT;
+            EAX = DEFAULT;
             *reg = (U8)data->var2;
-			if (useAX)
-				AX = data->var1;
-			else
-				AL = data->var1;
+            if (useAX)
+                AX = data->var1;
+            else
+                AL = data->var1;
             runTestCPU();
             assertResult(data, cpu, instruction, AX, 0, 0, -1, 0, 8);
         }
@@ -268,21 +268,21 @@ void EbAlAx(int instruction, int which, struct Data* data, int useAX) {
             AX = data->var1;
         else
             AL = data->var1;
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var2);
         runTestCPU();
         assertResult(data, cpu, instruction, AX, 0, 0, -1, 0, 16);
-		data++;
+        data++;
     }
 }
 
 void EwAxDx(int instruction, int which, struct Data* data, int useDX) {
     while (data->valid) {
-		int rm;
-		int ew;
+        int rm;
+        int ew;
 
         for (ew = 0; ew < 8; ew++) {
-			struct Reg* reg;
+            struct Reg* reg;
 
             if (ew==0)
                 continue;
@@ -293,7 +293,7 @@ void EwAxDx(int instruction, int which, struct Data* data, int useDX) {
             reg = &cpu->reg[E(rm)];
             EAX = DEFAULT;
             EDX = DEFAULT;
-			reg->u32 = DEFAULT;
+            reg->u32 = DEFAULT;
             AX = data->var2;
             DX = data->var1;
             reg->u16=data->constant;
@@ -315,21 +315,21 @@ void EwAxDx(int instruction, int which, struct Data* data, int useDX) {
         EDX = DEFAULT;
         AX = data->var2;
         DX = data->var1;
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writew(cpu->memory, cpu->segAddress[DS] + 200, data->constant);
         runTestCPU();
         assertResult(data, cpu, instruction, AX, DX, 0, 2, 0, 16);
-		data++;
+        data++;
     }
 }
 
 void EdEaxEdx(int instruction, int which, struct Data* data, int useEdx) {
     while (data->valid) {
-		int ed;
-		int rm;
+        int ed;
+        int rm;
 
         for (ed = 0; ed < 8; ed++) {
-			struct Reg* reg;
+            struct Reg* reg;
 
             if (ed==0)
                 continue;
@@ -358,29 +358,29 @@ void EdEaxEdx(int instruction, int which, struct Data* data, int useEdx) {
             pushCode16(200);
         EAX=data->var2;
         EDX=data->var1;
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writed(cpu->memory, cpu->segAddress[DS] + 200, data->constant);
         runTestCPU();
         assertResult(data, cpu, instruction, EAX, EDX, 0, 2, 0, 32);
-		data++;
+        data++;
     }
 }
 
 void EbCl(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int rm;
-		U32 result;
-		int eb;
+        int rm;
+        U32 result;
+        int eb;
 
         for (eb = 0; eb < 8; eb++) {			
-			U8* reg;
+            U8* reg;
 
             if (eb==1)
                 continue;
             rm = eb | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
             reg = cpu->reg8[E(rm)];
-			cpu->reg[E8(rm)].u32 = DEFAULT;
+            cpu->reg[E8(rm)].u32 = DEFAULT;
             ECX = DEFAULT;
             *reg=data->var1;
             CL = data->var2;
@@ -400,29 +400,29 @@ void EbCl(int instruction, int which, struct Data* data) {
             pushCode32(200);
         else
             pushCode16(200);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-		writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
-		result = readb(cpu->memory, cpu->segAddress[DS] + 200);
+        result = readb(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 8);
-		data++;
+        data++;
     }
 }
 
 void EbIb(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int eb;
-		int rm;
-		U32 result;
+        int eb;
+        int rm;
+        U32 result;
 
         for (eb = 0; eb < 8; eb++) {
-			U8* e;
+            U8* e;
 
             rm = eb | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
             pushCode8(data->var2);
             e = cpu->reg8[E(rm)];
-			cpu->reg[E8(rm)].u32 = DEFAULT;
+            cpu->reg[E8(rm)].u32 = DEFAULT;
             *e=data->var1;
             runTestCPU();
             assertResult(data, cpu, instruction, *e, 0, E8(rm), -1, 0, 8);
@@ -439,12 +439,12 @@ void EbIb(int instruction, int which, struct Data* data) {
         else
             pushCode16(200);
         pushCode8(data->var2);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
-		result = readb(cpu->memory, cpu->segAddress[DS] + 200);
+        result = readb(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 8);
-		data++;
+        data++;
     }
 }
 
@@ -452,24 +452,24 @@ void EbRegIb(int instruction, U8* e, int rm, struct Data* data) {
     while (data->valid) {
         newInstruction(instruction, 0);
         pushCode8(data->var2);
-		cpu->reg[E8(rm)].u32 = DEFAULT;
+        cpu->reg[E8(rm)].u32 = DEFAULT;
         *e=data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, *e, 0, E8(rm), -1, 0, 8);
-		data++;
+        data++;
     }
 }
 
 void EbGb(int instruction, struct Data* data) {
     while (data->valid) {
-		int eb;
-		int gb;
-		int rm;
+        int eb;
+        int gb;
+        int rm;
 
         for (eb = 0; eb < 8; eb++) {
             for (gb = 0; gb < 8; gb++) {
-				U8* e;
-				U8* g;
+                U8* e;
+                U8* g;
 
                 if (eb == gb)
                     continue;
@@ -478,8 +478,8 @@ void EbGb(int instruction, struct Data* data) {
                 pushConstant(data);
                 e = cpu->reg8[E(rm)];
                 g = cpu->reg8[G(rm)];
-				cpu->reg[E8(rm)].u32 = DEFAULT;
-				cpu->reg[G8(rm)].u32 = DEFAULT;
+                cpu->reg[E8(rm)].u32 = DEFAULT;
+                cpu->reg[G8(rm)].u32 = DEFAULT;
                 *e=data->var1;
                 *g=data->var2;
                 runTestCPU();
@@ -488,8 +488,8 @@ void EbGb(int instruction, struct Data* data) {
         }
 
         for (gb = 0; gb < 8; gb++) {
-			U8* g;
-			U32 result;
+            U8* g;
+            U32 result;
 
             rm = (gb << 3);
             if (cpu->big)
@@ -502,29 +502,29 @@ void EbGb(int instruction, struct Data* data) {
             else
                 pushCode16(200);
             pushConstant(data);
-			writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-			writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+            writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+            writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
             g = cpu->reg8[G(rm)];
-			cpu->reg[G8(rm)].u32 = DEFAULT;
+            cpu->reg[G8(rm)].u32 = DEFAULT;
             *g=data->var2;
             runTestCPU();
-			result = readb(cpu->memory, cpu->segAddress[DS] + 200);
+            result = readb(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, *g, G8(rm), -1, cpu->segAddress[DS] + 200, 8);
         }
-		data++;
+        data++;
     }
 }
 
 void GbEb(int instruction, struct Data* data) {
     while (data->valid) {
-		int eb;
-		int gb;
-		int rm;
+        int eb;
+        int gb;
+        int rm;
 
         for (eb = 0; eb < 8; eb++) {
             for (gb = 0; gb < 8; gb++) {
-				U8* e;
-				U8* g;
+                U8* e;
+                U8* g;
 
                 if (eb == gb)
                     continue;
@@ -533,8 +533,8 @@ void GbEb(int instruction, struct Data* data) {
                 pushConstant(data);
                 e = cpu->reg8[E(rm)];
                 g = cpu->reg8[G(rm)];
-				cpu->reg[E8(rm)].u32 = DEFAULT;
-				cpu->reg[G8(rm)].u32 = DEFAULT;
+                cpu->reg[E8(rm)].u32 = DEFAULT;
+                cpu->reg[G8(rm)].u32 = DEFAULT;
                 *e=data->var2;
                 *g=data->var1;
                 runTestCPU();
@@ -543,7 +543,7 @@ void GbEb(int instruction, struct Data* data) {
         }
 
         for (gb = 0; gb < 8; gb++) {
-			U8* g;
+            U8* g;
 
             rm = (gb << 3);
             if (cpu->big)
@@ -556,26 +556,26 @@ void GbEb(int instruction, struct Data* data) {
             else
                 pushCode16(200);
             pushConstant(data);
-			writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-			writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var2);
+            writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+            writeb(cpu->memory, cpu->segAddress[DS] + 200, data->var2);
             g = cpu->reg8[G(rm)];
-			cpu->reg[G8(rm)].u32 = DEFAULT;
+            cpu->reg[G8(rm)].u32 = DEFAULT;
             *g=data->var1;
             runTestCPU();
-			assertResult(data, cpu, instruction, *g, readb(cpu->memory, cpu->segAddress[DS] + 200), G8(rm), -1, cpu->segAddress[DS] + 200, 8);
+            assertResult(data, cpu, instruction, *g, readb(cpu->memory, cpu->segAddress[DS] + 200), G8(rm), -1, cpu->segAddress[DS] + 200, 8);
         }
-		data++;
+        data++;
     }
 }
 
 void Ew(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int rm;
-		U32 result;
+        int ew;
+        int rm;
+        U32 result;
 
         for (ew = 0; ew < 8; ew++) {
-			struct Reg* reg;
+            struct Reg* reg;
 
             rm = ew | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
@@ -596,35 +596,35 @@ void Ew(int instruction, int which, struct Data* data) {
             pushCode32(200);
         else
             pushCode16(200);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-		writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
-		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
+        result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
-		data++;
+        data++;
     }
 }
 
 void EwCl(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int rm;
-		U32 result;
+        int ew;
+        int rm;
+        U32 result;
 
         for (ew = 0; ew < 8; ew++) {
-			struct Reg* reg;
+            struct Reg* reg;
 
             if (ew==1)
                 continue;
             rm = ew | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
             reg = &cpu->reg[E(rm)];
-			reg->u32 = DEFAULT;
+            reg->u32 = DEFAULT;
             ECX = DEFAULT;
-			reg->u16=data->var1;
+            reg->u16=data->var1;
             CL = data->var2;
             runTestCPU();
-			assertResult(data, cpu, instruction, reg->u16, 0, E(rm), -1, 0, 16);
+            assertResult(data, cpu, instruction, reg->u16, 0, E(rm), -1, 0, 16);
         }
 
         rm = (which << 3);
@@ -639,33 +639,33 @@ void EwCl(int instruction, int which, struct Data* data) {
             pushCode32(200);
         else
             pushCode16(200);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
         writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
-		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
+        result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
-		data++;
+        data++;
     }
 }
 
 void EwIx(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int rm;
-		U32 result;
+        int ew;
+        int rm;
+        U32 result;
 
         if ((S8)(data->var2 & 0xFF) != (S16)data->var2) {
-			data++;
+            data++;
             continue;
         }
         for (ew = 0; ew < 8; ew++) {
-			struct Reg* e;
+            struct Reg* e;
 
             rm = ew | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
             pushCode8(data->var2);
             e = &cpu->reg[E(rm)];
-			e->u32 = DEFAULT;
+            e->u32 = DEFAULT;
             e->u16 = data->var1;
             runTestCPU();
             assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
@@ -682,12 +682,12 @@ void EwIx(int instruction, int which, struct Data* data) {
         else
             pushCode16(200);
         pushCode8(data->var2);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-		writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
-		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
+        result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
-		data++;
+        data++;
     }
 }
 
@@ -699,24 +699,24 @@ void EwRegIw(int instruction, struct Reg* e, int rm, struct Data* data) {
         e->u16 = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
-		data++;
+        data++;
     }
 }
 
 void EwIb(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int rm;
-		U32 result;
+        int ew;
+        int rm;
+        U32 result;
 
         for (ew = 0; ew < 8; ew++) {
-			struct Reg* e;
+            struct Reg* e;
 
             rm = ew | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
             pushCode8(data->var2);
             e = &cpu->reg[E(rm)];
-			e->u32 = DEFAULT;
+            e->u32 = DEFAULT;
             e->u16 = data->var1;
             runTestCPU();
             assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
@@ -733,23 +733,23 @@ void EwIb(int instruction, int which, struct Data* data) {
         else
             pushCode16(200);
         pushCode8(data->var2);
-		writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
-		writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
+        writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
+        writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
         runTestCPU();
-		result = readw(cpu->memory, cpu->segAddress[DS] + 200);
+        result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
-		data++;
+        data++;
     }
 }
 
 void EwIw(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int rm;
-		U32 result;
+        int ew;
+        int rm;
+        U32 result;
 
         for (ew = 0; ew < 8; ew++) {
-			struct Reg* e;
+            struct Reg* e;
 
             rm = ew | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
@@ -777,20 +777,20 @@ void EwIw(int instruction, int which, struct Data* data) {
         runTestCPU();
         result = readw(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 16);
-		data++;
+        data++;
     }
 }
 
 void EwGw(int instruction, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int gw;
-		int rm;
+        int ew;
+        int gw;
+        int rm;
 
         for (ew = 0; ew < 8; ew++) {
             for (gw = 0; gw < 8; gw++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ew == gw)
                     continue;
@@ -809,8 +809,8 @@ void EwGw(int instruction, struct Data* data) {
         }
 
         for (gw = 0; gw < 8; gw++) {
-			struct Reg* g;
-			U32 result;
+            struct Reg* g;
+            U32 result;
 
             rm = (gw << 3);
             if (cpu->big)
@@ -832,27 +832,27 @@ void EwGw(int instruction, struct Data* data) {
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200, 16);
         }
-		data++;
+        data++;
     }
 }
 
 void EwGwCl(int instruction, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int gw;
-		int rm;
+        int ew;
+        int gw;
+        int rm;
 
         for (ew = 0; ew < 8; ew++) {
             for (gw = 0; gw < 8; gw++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ew == gw || ew==1 || gw==1)
                     continue;
                 rm = ew | (gw << 3) | 0xC0;
                 newInstructionWithRM(instruction, rm, data->flags);
-				ECX=DEFAULT;
-				CL=data->constant;
+                ECX=DEFAULT;
+                CL=data->constant;
                 e = &cpu->reg[E(rm)];
                 g = &cpu->reg[G(rm)];
                 e->u32 = DEFAULT;
@@ -865,11 +865,11 @@ void EwGwCl(int instruction, struct Data* data) {
         }
 
         for (gw = 0; gw < 8; gw++) {
-			struct Reg* g;
-			U32 result;
+            struct Reg* g;
+            U32 result;
 
-			if (gw==1)
-				continue;
+            if (gw==1)
+                continue;
             rm = (gw << 3);
             if (cpu->big)
                 rm += 5;
@@ -881,7 +881,7 @@ void EwGwCl(int instruction, struct Data* data) {
             else
                 pushCode16(200);
             ECX=DEFAULT;
-			CL=data->constant;
+            CL=data->constant;
             writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
             writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
             g = &cpu->reg[G(rm)];
@@ -891,20 +891,20 @@ void EwGwCl(int instruction, struct Data* data) {
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200, 16);
         }
-		data++;
+        data++;
     }
 }
 
 void EwGwEffective(int instruction, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int gw;
-		int rm;
+        int ew;
+        int gw;
+        int rm;
 
         for (ew = 0; ew < 8; ew++) {
             for (gw = 0; gw < 8; gw++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ew == gw)
                     continue;
@@ -923,18 +923,18 @@ void EwGwEffective(int instruction, struct Data* data) {
         }
 
         for (gw = 0; gw < 8; gw++) {
-			struct Reg* g;
-			U32 result;
-			int offset = 0;
+            struct Reg* g;
+            U32 result;
+            int offset = 0;
 
             rm = (gw << 3);
             if (cpu->big) {
-				offset = (data->var2 >> 5)*4;
+                offset = (data->var2 >> 5)*4;
                 rm += 5; 
-			} else {
-				offset = (data->var2 >> 4)*2;
+            } else {
+                offset = (data->var2 >> 4)*2;
                 rm += 6;
-			}
+            }
             newInstructionWithRM(instruction, rm, data->flags);
             if (cpu->big)
                 pushCode32(200);
@@ -950,20 +950,20 @@ void EwGwEffective(int instruction, struct Data* data) {
             result = readw(cpu->memory, cpu->segAddress[DS] + 200 + offset);
             assertResult(data, cpu, instruction, result, g->u16, G(rm), -1, cpu->segAddress[DS] + 200 + offset, 16);
         }
-		data++;
+        data++;
     }
 }
 
 void EdGdEffective(int instruction, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int gd;
-		int rm;
+        int ed;
+        int gd;
+        int rm;
 
         for (ed = 0; ed < 8; ed++) {
             for (gd = 0; gd < 8; gd++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ed == gd)
                     continue;
@@ -980,18 +980,18 @@ void EdGdEffective(int instruction, struct Data* data) {
         }
 
         for (gd = 0; gd < 8; gd++) {
-			struct Reg* g;
-			U32 result;
-			int offset = 0;
+            struct Reg* g;
+            U32 result;
+            int offset = 0;
 
             rm = (gd << 3);
             if (cpu->big) {
-				offset = (data->var2 >> 5)*4;
+                offset = (data->var2 >> 5)*4;
                 rm += 5; 
-			} else {
-				offset = (data->var2 >> 4)*2;
+            } else {
+                offset = (data->var2 >> 4)*2;
                 rm += 6;
-			}
+            }
             newInstructionWithRM(instruction, rm, data->flags);
             if (cpu->big)
                 pushCode32(200);
@@ -1005,26 +1005,26 @@ void EdGdEffective(int instruction, struct Data* data) {
             result = readd(cpu->memory, cpu->segAddress[DS] + 200 + offset);
             assertResult(data, cpu, instruction, result, g->u32, G(rm), -1, cpu->segAddress[DS] + 200 + offset, 32);
         }
-		data++;
+        data++;
     }
 }
 
 void EwSw(int instruction, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int gw;
-		int rm;
+        int ew;
+        int gw;
+        int rm;
 
         for (ew = 0; ew < 8; ew++) {
             for (gw = 0; gw < 6; gw++) {
-				struct Reg* e;
-				U32* g;
+                struct Reg* e;
+                U32* g;
 
                 rm = ew | (gw << 3) | 0xC0;
                 newInstructionWithRM(instruction, rm, data->flags);
                 pushConstant(data);
                 e = &cpu->reg[ew];
-				g = &cpu->segValue[gw];
+                g = &cpu->segValue[gw];
                 e->u32 = DEFAULT;
                 e->u16 = data->var1;
                 *g = data->var2;
@@ -1034,8 +1034,8 @@ void EwSw(int instruction, struct Data* data) {
         }
 
         for (gw = 0; gw < 6; gw++) {
-			U32* g;
-			U32 result;
+            U32* g;
+            U32 result;
 
             rm = (gw << 3);
             if (cpu->big)
@@ -1050,32 +1050,32 @@ void EwSw(int instruction, struct Data* data) {
             pushConstant(data);
             writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
             writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-			g = &cpu->segValue[gw];
+            g = &cpu->segValue[gw];
             *g = data->var2;
             runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, *g, -1, -1, cpu->segAddress[DS] + 200, 16);
         }
-		data++;
+        data++;
     }
 }
 
 void EdSw(int instruction, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int gw;
-		int rm;
+        int ew;
+        int gw;
+        int rm;
 
         for (ew = 0; ew < 8; ew++) {
             for (gw = 0; gw < 6; gw++) {
-				struct Reg* e;
-				U32* g;
+                struct Reg* e;
+                U32* g;
 
                 rm = ew | (gw << 3) | 0xC0;
                 newInstructionWithRM(instruction, rm, data->flags);
                 pushConstant(data);
                 e = &cpu->reg[ew];
-				g = &cpu->segValue[gw];
+                g = &cpu->segValue[gw];
                 e->u32 = data->var1;
                 *g = data->var2;
                 runTestCPU();
@@ -1084,8 +1084,8 @@ void EdSw(int instruction, struct Data* data) {
         }
 
         for (gw = 0; gw < 6; gw++) {
-			U32* g;
-			U32 result;
+            U32* g;
+            U32 result;
 
             rm = (gw << 3);
             if (cpu->big)
@@ -1100,26 +1100,26 @@ void EdSw(int instruction, struct Data* data) {
             pushConstant(data);
             writed(cpu->memory, cpu->segAddress[DS] + 200, DEFAULT);
             writew(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
-			g = &cpu->segValue[gw];
+            g = &cpu->segValue[gw];
             *g = data->var2;
             runTestCPU();
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, *g, -1, -1, cpu->segAddress[DS] + 200, 32);
         }
-		data++;
+        data++;
     }
 }
 
 void GwEw(int instruction, struct Data* data) {
     while (data->valid) {
-		int ew;
-		int gw;
-		int rm;
+        int ew;
+        int gw;
+        int rm;
 
         for (ew = 0; ew < 8; ew++) {
             for (gw = 0; gw < 8; gw++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ew == gw)
                     continue;
@@ -1138,8 +1138,8 @@ void GwEw(int instruction, struct Data* data) {
         }
 
         for (gw = 0; gw < 8; gw++) {
-			U32 result;
-			struct Reg* g;
+            U32 result;
+            struct Reg* g;
 
             rm = (gw << 3);
             if (cpu->big)
@@ -1161,18 +1161,18 @@ void GwEw(int instruction, struct Data* data) {
             result = readw(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, g->u16, result, gw, -1, cpu->segAddress[DS] + 200, 16);
         }
-		data++;
+        data++;
     }
 }
 
 void Ed(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int rm;
-		U32 result;
+        int ed;
+        int rm;
+        U32 result;
 
         for (ed = 0; ed < 8; ed++) {
-			struct Reg* reg;
+            struct Reg* reg;
 
             rm = ed | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
@@ -1196,18 +1196,18 @@ void Ed(int instruction, int which, struct Data* data) {
         runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 32);
-		data++;
+        data++;
     }
 }
 
 void EdCl(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int rm;
-		U32 result;
+        int ed;
+        int rm;
+        U32 result;
 
         for (ed = 0; ed < 8; ed++) {
-			struct Reg* reg;
+            struct Reg* reg;
 
             if (ed==1)
                 continue;
@@ -1237,22 +1237,22 @@ void EdCl(int instruction, int which, struct Data* data) {
         runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 32);
-		data++;
+        data++;
     }
 }
 
 void EdIx(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int rm;
-		U32 result;
+        int ed;
+        int rm;
+        U32 result;
 
         if ((S8)(data->var2 & 0xFF) != (S32)data->var2) {
-			data++;
+            data++;
             continue;
         }
         for (ed = 0; ed < 8; ed++) {
-			struct Reg* e;
+            struct Reg* e;
 
             rm = ed | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
@@ -1278,18 +1278,18 @@ void EdIx(int instruction, int which, struct Data* data) {
         runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, 0, 0);
-		data++;
+        data++;
     }
 }
 
 void EdIb(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int rm;
-		U32 result;
+        int ed;
+        int rm;
+        U32 result;
 
         for (ed = 0; ed < 8; ed++) {
-			struct Reg* e;
+            struct Reg* e;
 
             rm = ed | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
@@ -1316,7 +1316,7 @@ void EdIb(int instruction, int which, struct Data* data) {
         runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, cpu->segAddress[DS] + 200, 32);
-		data++;
+        data++;
     }
 }
 
@@ -1327,18 +1327,18 @@ void EdRegId(int instruction, struct Reg* e, int ed, struct Data* data) {
         e->u32=data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, e->u32, 0, ed, -1, 0, 32);
-		data++;
+        data++;
     }
 }
 
 void EdId(int instruction, int which, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int rm;
-		U32 result;
+        int ed;
+        int rm;
+        U32 result;
 
         for (ed = 0; ed < 8; ed++) {
-			struct Reg* e;
+            struct Reg* e;
 
             rm = ed | (which << 3) | 0xC0;
             newInstructionWithRM(instruction, rm, data->flags);
@@ -1364,20 +1364,20 @@ void EdId(int instruction, int which, struct Data* data) {
         runTestCPU();
         result = readd(cpu->memory, cpu->segAddress[DS] + 200);
         assertResult(data, cpu, instruction, result, 0, -1, -1, 0, 0);
-		data++;
+        data++;
     }
 }
 
 void EdGd(int instruction, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int gd;
-		int rm;
+        int ed;
+        int gd;
+        int rm;
 
         for (ed = 0; ed < 8; ed++) {
             for (gd = 0; gd < 8; gd++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ed == gd)
                     continue;
@@ -1394,8 +1394,8 @@ void EdGd(int instruction, struct Data* data) {
         }
 
         for (gd = 0; gd < 8; gd++) {
-			struct Reg* g;
-			U32 result;
+            struct Reg* g;
+            U32 result;
 
             rm = (gd << 3);
             if (cpu->big)
@@ -1415,27 +1415,27 @@ void EdGd(int instruction, struct Data* data) {
             result = readd(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u32, -1, -1, 0, 0);
         }
-		data++;
+        data++;
     }
 }
 
 void EdGdCl(int instruction, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int gd;
-		int rm;
+        int ed;
+        int gd;
+        int rm;
 
         for (ed = 0; ed < 8; ed++) {
             for (gd = 0; gd < 8; gd++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ed == gd || ed==1 || gd==1)
                     continue;
                 rm = ed | (gd << 3) | 0xC0;
                 newInstructionWithRM(instruction, rm, data->flags);
                 ECX = DEFAULT;
-				CL = data->constant;
+                CL = data->constant;
                 e = &cpu->reg[ed];
                 g = &cpu->reg[gd];
                 e->u32 = data->var1;
@@ -1446,11 +1446,11 @@ void EdGdCl(int instruction, struct Data* data) {
         }
 
         for (gd = 0; gd < 8; gd++) {
-			struct Reg* g;
-			U32 result;
+            struct Reg* g;
+            U32 result;
 
-			if (gd==1)
-				continue;
+            if (gd==1)
+                continue;
             rm = (gd << 3);
             if (cpu->big)
                 rm += 5;
@@ -1462,7 +1462,7 @@ void EdGdCl(int instruction, struct Data* data) {
             else
                 pushCode16(200);
             ECX = DEFAULT;
-			CL = data->constant;
+            CL = data->constant;
             writed(cpu->memory, cpu->segAddress[DS] + 200, data->var1);
             g = &cpu->reg[gd];
             g->u32 = data->var2;
@@ -1470,20 +1470,20 @@ void EdGdCl(int instruction, struct Data* data) {
             result = readd(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, result, g->u32, -1, -1, 0, 0);
         }
-		data++;
+        data++;
     }
 }
 
 void GdEd(int instruction, struct Data* data) {
     while (data->valid) {
-		int ed;
-		int gd;
-		int rm;
+        int ed;
+        int gd;
+        int rm;
 
         for (ed = 0; ed < 8; ed++) {
             for (gd = 0; gd < 8; gd++) {
-				struct Reg* e;
-				struct Reg* g;
+                struct Reg* e;
+                struct Reg* g;
 
                 if (ed == gd)
                     continue;
@@ -1500,8 +1500,8 @@ void GdEd(int instruction, struct Data* data) {
         }
 
         for (gd = 0; gd < 8; gd++) {
-			struct Reg* g;
-			U32 result;
+            struct Reg* g;
+            U32 result;
 
             rm = (gd << 3);
             if (cpu->big)
@@ -1521,7 +1521,7 @@ void GdEd(int instruction, struct Data* data) {
             result = readd(cpu->memory, cpu->segAddress[DS] + 200);
             assertResult(data, cpu, instruction, g->u32, result, -1, -1, 0, 0);
         }
-		data++;
+        data++;
     }
 }
 
@@ -1533,7 +1533,7 @@ void AlIb(int instruction, struct Data* data) {
         AL = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, AL, 0, 0, -1, 0, 8);
-		data++;
+        data++;
     }
 }
 
@@ -1545,7 +1545,7 @@ void AxIw(int instruction, struct Data* data) {
         AX = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, AX, 0, 0, -1, 0, 16);
-		data++;
+        data++;
     }
 }
 
@@ -1556,40 +1556,40 @@ void EaxId(int instruction, struct Data* data) {
         EAX = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, EAX, 0, -1, -1, 0, 0);
-		data++;
+        data++;
     }
 }
 
 void EwReg(int instruction, int ew, struct Data* data) {
     while (data->valid) {
-		struct Reg* reg = &cpu->reg[ew];
+        struct Reg* reg = &cpu->reg[ew];
         newInstruction(instruction, data->flags);
         reg->u32 = DEFAULT;
         reg->u16 = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, reg->u16, 0, ew, -1, 0, 16);
-		data++;
+        data++;
     }
 }
 
 void EbReg(int instruction, int eb, struct Data* data) {
     while (data->valid) {
-		struct Reg* reg = &cpu->reg[E8(eb)];
-		U8* e = cpu->reg8[E(eb)];
+        struct Reg* reg = &cpu->reg[E8(eb)];
+        U8* e = cpu->reg8[E(eb)];
 
         newInstruction(instruction, data->flags);
         reg->u32 = DEFAULT;
         *e = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, reg->u8, 0, eb, -1, 0, 8);
-		data++;
+        data++;
     }
 }
 
 void LeaGw() {
-	int i;
-	int rm;
-	struct Reg* reg;
+    int i;
+    int rm;
+    struct Reg* reg;
 
     for (i=0;i<8;i++) {
         if (i==6) {
@@ -1610,9 +1610,9 @@ void LeaGw() {
 }
 
 void LeaGd() {
-	int i;
-	int rm;
-	struct Reg* reg;
+    int i;
+    int rm;
+    struct Reg* reg;
 
     for (i=0;i<8;i++) {
         if (i==3) {
@@ -1631,12 +1631,12 @@ void LeaGd() {
 
 void EdReg(int instruction, int ed, struct Data* data) {
     while (data->valid) {
-		struct Reg* reg = &cpu->reg[ed];
+        struct Reg* reg = &cpu->reg[ed];
         newInstruction(instruction, data->flags);
         reg->u32 = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, reg->u32, 0, -1, -1, 0, 0);
-		data++;
+        data++;
     }
 }
 
@@ -1649,7 +1649,7 @@ void Reg16Reg16(int instruction, struct Data* data, struct Reg* r1, struct Reg* 
         r2->u16 = data->var2;
         runTestCPU();
         assertResult(data, cpu, instruction, r1->u16, r2->u16, -1, -1, 0, 16);
-		data++;
+        data++;
     }
 }
 
@@ -1660,7 +1660,7 @@ void Reg32Reg32(int instruction, struct Data* data, struct Reg* r1, struct Reg* 
         r2->u32 = data->var2;
         runTestCPU();
         assertResult(data, cpu, instruction, r1->u32, r2->u32, -1, -1, 0, 0);
-		data++;
+        data++;
     }
 }
 
@@ -1668,7 +1668,7 @@ void Push16Reg(int instruction, struct Reg* reg) {
     newInstruction(instruction, 0);
     reg->u32 = 0xDDDD1234;
     ESP-=2;
-	writew(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAA);
+    writew(cpu->memory, cpu->segAddress[SS]+ESP, 0xAAAA);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-2, 0xCCCC);
     writew(cpu->memory, cpu->segAddress[SS]+ESP-4, 0xBBBB);
     runTestCPU();
@@ -1786,13 +1786,13 @@ void flags(int instruction, struct Data* data, struct Reg* reg) {
         runTestCPU();
         assertTrue(reg->u32 == data->resultvar2);
         assertTrue(cpu->flags == data->result);
-		data++;
+        data++;
     }
 }
 
 void PopEw() {
-	int i;
-	struct Reg* reg;
+    int i;
+    struct Reg* reg;
 
     for (i=0;i<8;i++) {
         if (i==4)
@@ -1832,8 +1832,8 @@ void PopEw() {
 }
 
 void PopEd() {
-	int i;
-	struct Reg* reg;
+    int i;
+    struct Reg* reg;
 
     for (i=0;i<8;i++) {
         if (i==4)
@@ -1938,7 +1938,7 @@ static struct Data addb[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFF, 0xFF, 0xFE, 0, true, false),
         allocData(64, 64, 128, 0, false, true), // overflow indicates that the sign changed
-		endData()
+        endData()
 };
 
 static struct Data addw[] = {
@@ -1948,7 +1948,7 @@ static struct Data addw[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFFFF, 0xFFFF, 0xFFFE, 0, true, false),
         allocData(16384, 16384, 32768, 0, false, true), // overflow indicates that the sign changed
-		endData()
+        endData()
 };
 
 static struct Data addd[] = {
@@ -1958,7 +1958,7 @@ static struct Data addd[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFE, 0, true, false),
         allocData(0x40000000, 0x40000000, 0x80000000, 0, false, true), // overflow indicates that the sign changed
-		endData()
+        endData()
 };
 
 static struct Data orb[] = {
@@ -1967,7 +1967,7 @@ static struct Data orb[] = {
         allocData(0, 0xFF, 0xFF, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0xF0, 0x0F, 0xFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data orw[] = {
@@ -1976,7 +1976,7 @@ static struct Data orw[] = {
         allocData(0, 0xFFFF, 0xFFFF, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0xF00F, 0x0FF0, 0xFFFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data ord[] = {
@@ -1985,7 +1985,7 @@ static struct Data ord[] = {
         allocData(0, 0xFFFFFFFF, 0xFFFFFFFF, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0xF0F0F0F0, 0x0F0F0F0F, 0xFFFFFFFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data adcb[] = {
@@ -2001,7 +2001,7 @@ static struct Data adcb[] = {
         allocData(0, 0, 1, CF, false, false),
         allocData(0xFF, 0xFF, 0xFF, CF, true, false),
         allocData(64, 64, 129, CF, false, true), // overflow indicates that the sign changed
-		endData()
+        endData()
 };
 
 static struct Data adcw[] = {
@@ -2017,7 +2017,7 @@ static struct Data adcw[] = {
         allocData(0, 0, 1, CF, false, false),
         allocData(0xFFFF, 0xFFFF, 0xFFFF, CF, true, false),
         allocData(16384, 16384, 32769, CF, false, true), // overflow indicates that the sign changed
-		endData()
+        endData()
 };
 
 static struct Data adcd[] = {
@@ -2033,7 +2033,7 @@ static struct Data adcd[] = {
         allocData(0, 0, 1, CF, false, false),
         allocData(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, CF, true, false),
         allocData(0x40000000, 0x40000000, 0x80000001, CF, false, true), // overflow indicates that the sign changed
-		endData()
+        endData()
 };
 
 static struct Data sbbb[] = {
@@ -2049,7 +2049,7 @@ static struct Data sbbb[] = {
         allocData(0, 0xFF, 0, CF, true, false),
         allocData(0, 0, 0xFF, CF, true, false),
         allocData(0x80, 0x10, 0x6F, CF, false, true),
-		endData()
+        endData()
 };
 
 static struct Data sbbw[] = {
@@ -2065,7 +2065,7 @@ static struct Data sbbw[] = {
         allocData(0, 0xFFFF, 0, CF, true, false),
         allocData(0, 0, 0xFFFF, CF, true, false),
         allocData(0x8000, 0x1000, 0x6FFF, CF, false, true),
-		endData()
+        endData()
 };
 
 static struct Data sbbd[] = {
@@ -2081,7 +2081,7 @@ static struct Data sbbd[] = {
         allocData(0, 0xFFFFFFFF, 0, CF, true, false),
         allocData(0, 0, 0xFFFFFFFF, CF, true, false),
         allocData(0x80000000, 0x10000000, 0x6FFFFFFF, CF, false, true),
-		endData()
+        endData()
 };
 
 static struct Data andb[] = {
@@ -2091,7 +2091,7 @@ static struct Data andb[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFF, 0xFF, 0xFF, 0, false, false),
         allocData(0xF0, 0x0F, 0, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data andw[] = {
@@ -2101,7 +2101,7 @@ static struct Data andw[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFFFF, 0xFFFF, 0xFFFF, 0, false, false),
         allocData(0xFF00, 0x00FF, 0, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data andd[] = {
@@ -2111,7 +2111,7 @@ static struct Data andd[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, false, false),
         allocData(0xFF00FF00, 0x00FF00FF, 0, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data subb[] = {
@@ -2121,7 +2121,7 @@ static struct Data subb[] = {
         allocData(0, 0xFF, 1, 0, true, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0x80, 0x10, 0x70, 0, false, true),
-		endData()
+        endData()
 };
 
 static struct Data subw[] = {
@@ -2131,7 +2131,7 @@ static struct Data subw[] = {
         allocData(0, 0xFFFF, 1, 0, true, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0x8000, 0x1000, 0x7000, 0, false, true),
-		endData()
+        endData()
 };
 
 static struct Data subd[] = {
@@ -2141,7 +2141,7 @@ static struct Data subd[] = {
         allocData(0, 0xFFFFFFFF, 1, 0, true, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0x80000000, 0x10000000, 0x70000000, 0, false, true),
-		endData()
+        endData()
 };
 
 static struct Data xorb[] = {
@@ -2150,7 +2150,7 @@ static struct Data xorb[] = {
         allocData(0, 0xFF, 0xFF, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0xF0, 0xFF, 0x0F, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data xorw[] = {
@@ -2159,7 +2159,7 @@ static struct Data xorw[] = {
         allocData(0, 0xFFFF, 0xFFFF, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0xF00F, 0xFFFF, 0x0FF0, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data xord[] = {
@@ -2168,7 +2168,7 @@ static struct Data xord[] = {
         allocData(0, 0xFFFFFFFF, 0xFFFFFFFF, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0xFF00FF00, 0x00FFFFFF, 0xFFFF00FF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data cmpb[] = {
@@ -2182,7 +2182,7 @@ static struct Data cmpb[] = {
         allocDataFlags(0xB0, 1, false, false, true, false),
         allocDataFlags(0x90, 0x30, false, true, false, false),
         allocDataFlags(0x30, 0x90, true, true, true, false),
-		endData()
+        endData()
 };
 
 static struct Data cmpw[] = {
@@ -2196,7 +2196,7 @@ static struct Data cmpw[] = {
         allocDataFlags(0xB000, 1, false, false, true, false),
         allocDataFlags(0x9000, 0x3000, false, true, false, false),
         allocDataFlags(0x3000, 0x9000, true, true, true, false),
-		endData()
+        endData()
 };
 
 static struct Data cmpd[] = {
@@ -2210,7 +2210,7 @@ static struct Data cmpd[] = {
         allocDataFlags(0xB0000000, 1, false, false, true, false),
         allocDataFlags(0x90000000, 0x30000000, false, true, false, false),
         allocDataFlags(0x30000000, 0x90000000, true, true, true, false),
-		endData()
+        endData()
 };
 
 static struct Data testb[] = {
@@ -2224,7 +2224,7 @@ static struct Data testb[] = {
         allocDataFlags(0xB0, 1, false, false, false, true),
         allocDataFlags(0x90, 0x30, false, false, false, false),
         allocDataFlags(0x30, 0x90, false, false, false, false),
-		endData()
+        endData()
 };
 
 static struct Data testw[] = {
@@ -2238,7 +2238,7 @@ static struct Data testw[] = {
         allocDataFlags(0xB000, 1, false, false, false, true),
         allocDataFlags(0x9000, 0x3000, false, false, false, false),
         allocDataFlags(0x3000, 0x9000, false, false, false, false),
-		endData()
+        endData()
 };
 
 static struct Data testd[] = {
@@ -2252,7 +2252,7 @@ static struct Data testd[] = {
         allocDataFlags(0xB0000000, 1, false, false, false, true),
         allocDataFlags(0x90000000, 0x30000000, false, false, false, false),
         allocDataFlags(0x30000000, 0x90000000, false, false, false, false),
-		endData()
+        endData()
 };
 
 static struct Data incb[] = {
@@ -2260,7 +2260,7 @@ static struct Data incb[] = {
         allocData(0, 0, 1, CF, true, false), // it should keep the previous carry flag
         allocData(0x80, 0, 0x81, 0, false, false),
         allocData(0x7F, 0, 0x80, 0, false, true),
-		endData()
+        endData()
 };
 
 static struct Data incw[] = {
@@ -2269,7 +2269,7 @@ static struct Data incw[] = {
         allocData(0x8000, 0, 0x8001, 0, false, false),
         allocData(0x7FFF, 0, 0x8000, 0, false, true),
         allocData(0xFFFF, 0, 0, 0, false, false), // carry flag is not set
-		endData()
+        endData()
 };
 
 static struct Data incd[] = {
@@ -2278,7 +2278,7 @@ static struct Data incd[] = {
         allocData(0x80000000, 0, 0x80000001, 0, false, false),
         allocData(0x7FFFFFFF, 0, 0x80000000, 0, false, true),
         allocData(0xFFFFFFFF, 0, 0, 0, false, false), // carry flag is not set
-		endData()
+        endData()
 };
 
 static struct Data decb[] = {
@@ -2286,7 +2286,7 @@ static struct Data decb[] = {
         allocData(1, 0, 0, CF, true, false), // it should keep the previous carry flag
         allocData(0x80, 0, 0x7F, 0, false, true),
         allocData(0, 0, 0xFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data decw[] = {
@@ -2294,7 +2294,7 @@ static struct Data decw[] = {
         allocData(1, 0, 0, CF, true, false), // it should keep the previous carry flag
         allocData(0x8000, 0, 0x7FFF, 0, false, true),
         allocData(0, 0, 0xFFFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data decd[] = {
@@ -2302,7 +2302,7 @@ static struct Data decd[] = {
         allocData(1, 0, 0, CF, true, false), // it should keep the previous carry flag
         allocData(0x80000000, 0, 0x7FFFFFFF, 0, false, true),
         allocData(0, 0, 0xFFFFFFFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data imulw[] = {
@@ -2311,7 +2311,7 @@ static struct Data imulw[] = {
         allocDataConst(0, 0xFFFE, 4, 0xFFFE, 16, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
         allocDataConst(0, 300, 0x5F90, 300, 16, 0, true, true), // 300 x 300 = 0x15F90
         allocDataConst(0, -300, 0xA070, 300, 16, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data imuld[] = {
@@ -2320,7 +2320,7 @@ static struct Data imuld[] = {
         allocDataConst(0, 0xFFFFFFFE, 4, 0xFFFFFFFE, 32, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
         allocDataConst(0, 300000, 0xF08EB000, 400000, 32, 0, true, true), // = 1BF08EB000
         allocDataConst(0, -300000, 0x0F715000, 400000, 32, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data imulw_s8[] = {
@@ -2329,7 +2329,7 @@ static struct Data imulw_s8[] = {
         allocDataConst(0, 0xFFFE, 4, 0xFE, 8, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
         allocDataConst(0, 3000, 0xD048, 127, 8, 0, true, true), // 3000 x 127 = 0x5D048
         allocDataConst(0, -3000, 0x2FB8, 127, 8, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data imuld_s8[] = {
@@ -2338,28 +2338,28 @@ static struct Data imuld_s8[] = {
         allocDataConst(0, 0xFFFFFFFE, 4, 0xFE, 8, CF|OF, false, false), // -2 * -2 = 4 (also, make sure it clears the flags)
         allocDataConst(0, 300000000, 0xDEEFDD00, 127, 8, 0, true, true), // = 8DEEFDD00
         allocDataConst(0, -300000000, 0x21102300, 127, 8, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data xchgb[] = {
         allocDatavar2(2, 1, 1, 2),
         allocDatavar2(0, 0, 0, 0),
         allocDatavar2(0xAB, 0xFC, 0xFC, 0xAB),
-		endData()
+        endData()
 };
 
 static struct Data xchgw[] = {
         allocDatavar2(2, 1, 1, 2),
         allocDatavar2(0, 0, 0, 0),
         allocDatavar2(0xAB38, 0xFC15, 0xFC15, 0xAB38),
-		endData()
+        endData()
 };
 
 static struct Data xchgd[] = {
         allocDatavar2(2, 1, 1, 2),
         allocDatavar2(0, 0, 0, 0),
         allocDatavar2(0xAB38, 0xFC150146, 0xFC150146, 0xAB38),
-		endData()
+        endData()
 };
 
 static struct Data movb[] = {
@@ -2367,7 +2367,7 @@ static struct Data movb[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0, 0xFF, 0xFF, 0, false, false),
         allocData(0, 0x7F, 0x7F, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data movw[] = {
@@ -2375,7 +2375,7 @@ static struct Data movw[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0, 0xFFFF, 0xFFFF, 0, false, false),
         allocData(0, 0x7FFF, 0x7FFF, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data movd[] = {
@@ -2386,43 +2386,43 @@ static struct Data movd[] = {
         allocData(0, 0xFFFFFFFF, 0xFFFFFFFF, 0, false, false),
         allocData(0, 0x7FFFFFFF, 0x7FFFFFFF, 0, false, false),
         allocData(0, 0x08080808, 0x08080808, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data cbw[] = {
         allocData(0x1234, 0, 0x0034, 0, false, false),
         allocData(0x12FE, 0, 0xFFFE, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data cwde[] = {
         allocData(0x12345678, 0, 0x5678, 0, false, false),
         allocData(0x1234FFFE, 0, 0xFFFFFFFE, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data cwd[] = {
         allocDatavar2(0x1234, 0x1234, 0x1234, 0),
         allocDatavar2(0xFFFE, 0x1234, 0xFFFE, 0xFFFF),
-		endData()
+        endData()
 };
 
 static struct Data cdq[] = {
         allocDatavar2(0x12345678, 0x12345678, 0x12345678, 0),
         allocDatavar2(0xFFFFFFFE, 0x12345678, 0xFFFFFFFE, 0xFFFFFFFF),
-		endData()
+        endData()
 };
 
 static struct Data sahf[] = {
         allocDatavar2(0x12345600, 0x0000FF00, 0x123456D5, 0x0000FF00),
         allocDatavar2(0xFFFFFFFF, 0x00000000, 0xFFFFFF2A, 0x00000000),
-		endData()
+        endData()
 };
 
 static struct Data lahf[] = {
         allocDatavar2(0x123456FF, 0x00000000, 0x123456FF, 0x0000D500),
         allocDatavar2(0xFFFFFF00, 0xFFFFFFFF, 0xFFFFFF00, 0xFFFF00FF),
-		endData()
+        endData()
 };
 
 static struct Data rolb[] = {
@@ -2436,14 +2436,14 @@ static struct Data rolb[] = {
         allocData(0x80, 8, 0x80, 0, false, true),
         allocData(0x01, 9, 0x02, 0, false, false),
         allocData(0x01, 32, 0x01, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rolb_1[] = {
         allocData(0x40, 1, 0x80, 0, false, true),
         allocData(0x01, 1, 0x02, 0, false, false),
         allocData(0x80, 1, 0x01, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data rorb[] = {
@@ -2457,14 +2457,14 @@ static struct Data rorb[] = {
         allocData(0x80, 8, 0x80, 0, true, true),
         allocData(0x80, 9, 0x40, 0, false, true),
         allocData(0x80, 32, 0x80, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rorb_1[] = {
         allocData(0x02, 1, 0x01, 0, false, false),
         allocData(0x80, 1, 0x40, 0, false, true),
         allocData(0x01, 1, 0x80, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data rclb[] = {
@@ -2480,7 +2480,7 @@ static struct Data rclb[] = {
         allocData(0x01, 32, 0x01, 0, false, false),
         allocData(0x00, 1, 0x01, CF, false, false),
         allocData(0x80, 2, 0x03, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rclb_1[] = {
@@ -2488,7 +2488,7 @@ static struct Data rclb_1[] = {
         allocData(0x01, 1, 0x02, 0, false, false),
         allocData(0x80, 1, 0x00, 0, true, true),
         allocData(0x00, 1, 0x01, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcrb[] = {
@@ -2504,7 +2504,7 @@ static struct Data rcrb[] = {
         allocData(0x80, 32, 0x80, 0, false, false),
         allocData(0x00, 1, 0x80, CF, false, true),
         allocData(0x01, 2, 0xC0, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcrb_1[] = {
@@ -2512,7 +2512,7 @@ static struct Data rcrb_1[] = {
         allocData(0x80, 1, 0x40, 0, false, true),
         allocData(0x01, 1, 0x00, 0, true, false),
         allocData(0x00, 1, 0x80, CF, false, true),
-		endData()
+        endData()
 };
 
 static struct Data shlb[] = {
@@ -2523,14 +2523,14 @@ static struct Data shlb[] = {
         allocData(0x03, 12, 0x00, 0, false, false),
         allocData(0x01, 0, 0x01, 0, false, false),
         allocData(0x01, 32, 0x01, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data shlb_1[] = {
         allocData(0x40, 1, 0x80, 0, false, true),
         allocData(0x01, 1, 0x02, 0, false, false),
         allocData(0x80, 1, 0x00, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data shrb[] = {
@@ -2542,7 +2542,7 @@ static struct Data shrb[] = {
         allocData(0x03, 12, 0x00, 0, false, false),
         allocData(0x01, 0, 0x01, 0, false, false),
         allocData(0x01, 32, 0x01, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data shrb_1[] = {
@@ -2550,7 +2550,7 @@ static struct Data shrb_1[] = {
         allocData(0x02, 1, 0x01, 0, false, false),
         allocData(0x80, 1, 0x40, 0, false, true),
         allocData(0x01, 1, 0x00, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data sarb[] = {
@@ -2563,14 +2563,14 @@ static struct Data sarb[] = {
         allocData(0x03, 12, 0x00, 0, false, false),
         allocData(0x01, 0, 0x01, 0, false, false),
         allocData(0x01, 32, 0x01, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data sarb_1[] = {
         allocData(0x40, 1, 0x20, 0, false, false),
         allocData(0x02, 1, 0x01, 0, false, false),
         allocData(0x80, 1, 0xC0, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rolw[] = {
@@ -2584,14 +2584,14 @@ static struct Data rolw[] = {
         allocData(0x8080, 16, 0x8080, 0, false, true),
         allocData(0x0101, 17, 0x0202, 0, false, false),
         allocData(0x0101, 32, 0x0101, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rolw_1[] = {
         allocData(0x4000, 1, 0x8000, 0, false, true),
         allocData(0x0001, 1, 0x0002, 0, false, false),
         allocData(0x8000, 1, 0x0001, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data rorw[] = {
@@ -2605,14 +2605,14 @@ static struct Data rorw[] = {
         allocData(0x8000, 16, 0x8000, 0, true, true),
         allocData(0x8080, 17, 0x4040, 0, false, true),
         allocData(0x8080, 32, 0x8080, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rorw_1[] = {
         allocData(0x0002, 1, 0x0001, 0, false, false),
         allocData(0x8000, 1, 0x4000, 0, false, true),
         allocData(0x0001, 1, 0x8000, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data rclw[] = {
@@ -2628,7 +2628,7 @@ static struct Data rclw[] = {
         allocData(0x0102, 32, 0x0102, 0, false, false),
         allocData(0x0000, 1, 0x0001, CF, false, false),
         allocData(0x8000, 2, 0x0003, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rclw_1[] = {
@@ -2636,7 +2636,7 @@ static struct Data rclw_1[] = {
         allocData(0x0101, 1, 0x0202, 0, false, false),
         allocData(0x8000, 1, 0x0000, 0, true, true),
         allocData(0x0000, 1, 0x0001, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcrw[] = {
@@ -2652,7 +2652,7 @@ static struct Data rcrw[] = {
         allocData(0x8070, 32, 0x8070, 0, false, false),
         allocData(0x0000, 1, 0x8000, CF, false, true),
         allocData(0x0001, 2, 0xC000, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcrw_1[] = {
@@ -2660,7 +2660,7 @@ static struct Data rcrw_1[] = {
         allocData(0x8080, 1, 0x4040, 0, false, true),
         allocData(0x0001, 1, 0x0000, 0, true, false),
         allocData(0x0000, 1, 0x8000, CF, false, true),
-		endData()
+        endData()
 };
 
 static struct Data shlw[] = {
@@ -2671,14 +2671,14 @@ static struct Data shlw[] = {
         allocData(0x0003, 20, 0x00, 0, false, false),
         allocData(0x0102, 0, 0x0102, 0, false, false),
         allocData(0x0102, 32, 0x0102, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data shlw_1[] = {
         allocData(0x4040, 1, 0x8080, 0, false, true),
         allocData(0x0101, 1, 0x0202, 0, false, false),
         allocData(0x8000, 1, 0x00, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data shrw[] = {
@@ -2690,7 +2690,7 @@ static struct Data shrw[] = {
         allocData(0x0300, 20, 0x0000, 0, false, false),
         allocData(0x0102, 0, 0x0102, 0, false, false),
         allocData(0x0102, 32, 0x0102, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data shrw_1[] = {
@@ -2698,7 +2698,7 @@ static struct Data shrw_1[] = {
         allocData(0x0802, 1, 0x0401, 0, false, false),
         allocData(0x8000, 1, 0x4000, 0, false, true),
         allocData(0x0001, 1, 0x0000, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data sarw[] = {
@@ -2711,7 +2711,7 @@ static struct Data sarw[] = {
         allocData(0x3000, 28, 0x0000, 0, false, false),
         allocData(0x0102, 0, 0x0102, 0, false, false),
         allocData(0x0102, 32, 0x0102, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data sarw_1[] = {
@@ -2719,7 +2719,7 @@ static struct Data sarw_1[] = {
         allocData(0x0204, 1, 0x0102, 0, false, false),
         allocData(0x8000, 1, 0xC000, 0, false, false),
         allocData(0x0001, 1, 0x0000, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data rold[] = {
@@ -2731,14 +2731,14 @@ static struct Data rold[] = {
         allocData(0x01010101, 32, 0x01010101, 0, false, false),
         allocData(0x80808080, 32, 0x80808080, 0, false, false),
         allocData(0x01010101, 33, 0x02020202, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rold_1[] = {
         allocData(0x40000000, 1, 0x80000000, 0, false, true),
         allocData(0x00000001, 1, 0x00000002, 0, false, false),
         allocData(0x80000000, 1, 0x00000001, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data rord[] = {
@@ -2751,14 +2751,14 @@ static struct Data rord[] = {
         allocData(0x01020304, 32, 0x01020304, 0, false, false),
         allocData(0x80000000, 32, 0x80000000, 0, false, false),
         allocData(0x80808080, 33, 0x40404040, 0, false, true),
-		endData()
+        endData()
 };
 
 static struct Data rord_1[] = {
         allocData(0x00020000, 1, 0x00010000, 0, false, false),
         allocData(0x80000000, 1, 0x40000000, 0, false, true),
         allocData(0x00000001, 1, 0x80000000, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data rcld[] = {
@@ -2771,7 +2771,7 @@ static struct Data rcld[] = {
         allocData(0x01010101, 33, 0x02020202, 0, false, false),
         allocData(0x00000000, 1, 0x00000001, CF, false, false),
         allocData(0x80000000, 2, 0x00000003, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcld_1[] = {
@@ -2779,7 +2779,7 @@ static struct Data rcld_1[] = {
         allocData(0x01010101, 1, 0x02020202, 0, false, false),
         allocData(0x80000000, 1, 0x00000000, 0, true, true),
         allocData(0x00000000, 1, 0x00000001, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcrd[] = {
@@ -2791,7 +2791,7 @@ static struct Data rcrd[] = {
         allocData(0x01020304, 0, 0x01020304, 0, false, false),
         allocData(0x00000000, 1, 0x80000000, CF, false, true),
         allocData(0x00000001, 2, 0xC0000000, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data rcrd_1[] = {
@@ -2799,7 +2799,7 @@ static struct Data rcrd_1[] = {
         allocData(0x80808080, 1, 0x40404040, 0, false, true),
         allocData(0x00000001, 1, 0x00000000, 0, true, false),
         allocData(0x00000000, 1, 0x80000000, CF, false, true),
-		endData()
+        endData()
     };
 
 static struct Data shld[] = {
@@ -2810,14 +2810,14 @@ static struct Data shld[] = {
         allocData(0x00030000, 20, 0x00000000, 0, false, false),
         allocData(0x01020304, 0, 0x01020304, 0, false, false),
         allocData(0x01020304, 32, 0x01020304, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data shld_1[] = {
         allocData(0x40404040, 1, 0x80808080, 0, false, true),
         allocData(0x01010101, 1, 0x02020202, 0, false, false),
         allocData(0x80000000, 1, 0x00000000, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data shrd[] = {
@@ -2828,14 +2828,14 @@ static struct Data shrd[] = {
         allocData(0x30000000, 30, 0x00000000, 0, true, false),
         allocData(0x01020304, 0, 0x01020304, 0, false, false),
         allocData(0x01020304, 32, 0x01020304, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data shrd_1[] = {
         allocData(0x00804020, 1, 0x00402010, 0, false, false),
         allocData(0x80000000, 1, 0x40000000, 0, false, true),
         allocData(0x00000001, 1, 0x00000000, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data sard[] = {
@@ -2848,72 +2848,72 @@ static struct Data sard[] = {
         allocData(0x30000000, 30, 0x00000000, 0, true, false),
         allocData(0x01020304, 0, 0x01020304, 0, false, false),
         allocData(0x01020304, 32, 0x01020304, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data sard_1[] = {
         allocData(0x00804020, 1, 0x00402010, 0, false, false),
         allocData(0x80000000, 1, 0xC0000000, 0, false, false),
         allocData(0x00000001, 1, 0x00000000, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data salc[] = {
         allocData(10, 0, 0, 0, false, false),
         allocData(10, 0, 0xFF, CF, true, false),
-		endData()
+        endData()
 };
 
 static struct Data cmc[] = {
         allocData(0, 0, 0, 0, true, false),
         allocData(0, 0, 0, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data notb[] = {
         allocData(0, 0, 0xFF, 0, false, false),
         allocData(0x0F, 0, 0xF0, 0, false, false),
         allocData(0xF0, 0, 0x0F, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data notw[] = {
         allocData(0, 0, 0xFFFF, 0, false, false),
         allocData(0xF0F, 0, 0xF0F0, 0, false, false),
         allocData(0xF0F0, 0, 0x0F0F, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data notd[] = {
         allocData(0, 0, 0xFFFFFFFF, 0, false, false),
         allocData(0x0F0F0F0F, 0, 0xF0F0F0F0, 0, false, false),
         allocData(0xF0F0F0F0, 0, 0x0F0F0F0F, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data negb[] = {
         allocData(0, 0, 0x0, 0, false, false),
         allocData(4, 0, ((S8)-4) & 0xFF, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data negw[] = {
         allocData(0, 0, 0x0, 0, false, false),
         allocData(2045, 0, ((S16)-2045) & 0xFFFF, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data negd[] = {
         allocData(0, 0, 0x0, 0, false, false),
         allocData(20458512, 0, -20458512, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data mulAl[] = {
         allocData(2, 2, 4, 0, false, false),
         allocData(0, 0, 0, 0, false, false),
         allocData(0x20, 0x10, 0x200, 0, true, true),
-		endData()
+        endData()
 };
 
 static struct Data mulAx[] = {
@@ -2921,7 +2921,7 @@ static struct Data mulAx[] = {
         allocDataConstvar2(0, 0, 0, 0, false, false, 0, 0),
         allocDataConstvar2(0, 0x2001, 0x0010, 0, true, true, 0x10, 0x0002),
         allocDataConstvar2(0, 0x2001, 0x1000, 0, true, true, 0x1000, 0x0200),
-		endData()
+        endData()
 };
 
 static struct Data mulEax[] = {
@@ -2929,7 +2929,7 @@ static struct Data mulEax[] = {
         allocDataConstvar2(0, 0, 0, 0, false, false, 0, 0),
         allocDataConstvar2(0, 0x20000001, 0x00000010, 0, true, true, 0x10, 0x00000002),
         allocDataConstvar2(0, 0x20000001, 0x00010000, 0, true, true, 0x00010000, 0x00002000),
-		endData()
+        endData()
 };
 
 static struct Data imulAl[] = {
@@ -2937,7 +2937,7 @@ static struct Data imulAl[] = {
         allocData(0xFA, 2, 0xFFF4, 0, false, false), // -6 x 2 = -12
         allocData(0xFA, 0x9C, 600, 0, true, true), // -6 x -100 = 600
         allocData(0, 0xFF, 0, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data imulAx[] = {
@@ -2945,141 +2945,141 @@ static struct Data imulAx[] = {
         allocDataConstvar2(0, 0xFFFA, 0xFFF4, 0, false, false, 2, 0xFFFF), // -6 x 2 = -12
         allocDataConstvar2(0, ((S16)-600) & 0xFFFF, 0x5780, 0, true, true, 30000, 0xFEED), // -600 x 30000 = -18000000
         allocDataConstvar2(0, 0xFFFA, 600, 0, false, false, 0xFF9C, 0), // -6 x -100 = 600
-		endData()
+        endData()
 };
 
 static struct Data imulEax[] = {
         allocDataConstvar2(0, 2, 4, 0, false, false, 2, 0),
         allocDataConstvar2(0, 0xFFFFFFFA, 0xFFFFFFF4, 0, false, false, 2, 0xFFFFFFFF), // -6 x 2 = -12
         allocDataConstvar2(0, -60000, 0x1729f800, 0, true, true, 3000000, 0xFFFFFFD6), // -60000 x 3000000 = -180000000000
-		endData()
+        endData()
 };
 
 static struct Data divAl[] = {
         allocData(10, 3, 0x0103, 0, false, false),
         allocData(1003, 200, 0x0305, 0, false, false),
-		endData()
+        endData()
 };
 
 static struct Data divAx[] = {
         allocDataConstvar2(0, 10, 0x0003, 0, false, false, 3, 0x0001),
         allocDataConstvar2(0xCB, 0x8512, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
-		endData()
+        endData()
 };
 
 static struct Data divEax[] = {
         allocDataConstvar2(0, 10, 0x0003, 0, false, false, 3, 0x0001),
         allocDataConstvar2(0xCB, 0x85121234, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
-		endData()
+        endData()
 };
 
 static struct Data idivAl[] = {
         allocData(10, 3, 0x0103, 0, false, false),
         allocData(10, ((S8)-3) & 0xFF, 0x01FD, 0, false, false),
         allocData(((S16)-1003) & 0xFFFF, ((S8)-100) & 0xFF, 0xFD0A, 0, false, false), // -3 rem, 10 quo
-		endData()
+        endData()
 };
 
 static struct Data idivAx[] = {
         allocDataConstvar2(0, 10, 3, 0, false, false, 3, 1),
         allocDataConstvar2(0xCB, 0x8512, 4445, 0, false, false, 3000, 2874), // 13337874 / 3000 = 4445 r 2874
         allocDataConstvar2(0xFF34, 0x7AEE, ((S16)-4445) & 0xFFFF, 0, false, false, 3000, ((S16)-2874) & 0xFFFF), // -13337874 / 3000 = -4445 r -2874
-		endData()
+        endData()
 };
 
 static struct Data idivEax[] = {
         allocDataConstvar2(0, 10, 3, 0, false, false, 3, 1),
         allocDataConstvar2(0xCB, 0x85121234, 0xB2D, 0, false, false, 0x12345678, 0x1227B71C), // 874110915124 / 305419896 = 2861 r 304592668
         allocDataConstvar2(0xFFFFFF34, 0x7AEDEDCC, 0xFFFFF4D3, 0, false, false, 0x12345678, 0xEDD848E4), // -874110915124 / 305419896 = -2861 r -304592668
-		endData()
+        endData()
 };
 
 static struct Data clc[] = {
         allocData(0, 0, 0, 0, false, false),
         allocData(0, 0, 0, CF, false, false),
-		endData()
+        endData()
 };
 
 static struct Data stc[] = {
         allocData(0, 0, 0, 0, true, false),
         allocData(0, 0, 0, CF, true, false),
-		endData()
+        endData()
 };
 
 static struct Data btw[] = {
         allocData(0xFFFD, 1, 0xFFFD, CF, false, false),
         allocData(0x10, 4, 0x10, 0, true, false),
-		allocData(0xFFFD, 33, 0xFFFD, CF, false, false),
+        allocData(0xFFFD, 33, 0xFFFD, CF, false, false),
         allocData(0x10, 36, 0x10, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data btd[] = {
         allocData(0xFFFDFFFF, 17, 0xFFFDFFFF, CF, false, false),
         allocData(0x100000, 20, 0x100000, 0, true, false),
-		allocData(0xFFFDFFFF, 81, 0xFFFDFFFF, CF, false, false),
+        allocData(0xFFFDFFFF, 81, 0xFFFDFFFF, CF, false, false),
         allocData(0x100000, 84, 0x100000, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data btsw[] = {
         allocData(0xFFFD, 1, 0xFFFF, CF, false, false),
         allocData(0x10, 4, 0x10, 0, true, false),
-		allocData(0xFFFD, 33, 0xFFFF, CF, false, false),
+        allocData(0xFFFD, 33, 0xFFFF, CF, false, false),
         allocData(0x10, 36, 0x10, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data btsd[] = {
         allocData(0xFFFDFFFF, 17, 0xFFFFFFFF, CF, false, false),
         allocData(0x100000, 20, 0x100000, 0, true, false),
-		allocData(0xFFFDFFFF, 81, 0xFFFFFFFF, CF, false, false),
+        allocData(0xFFFDFFFF, 81, 0xFFFFFFFF, CF, false, false),
         allocData(0x100000, 84, 0x100000, 0, true, false),
-		endData()
+        endData()
 };
 
 static struct Data shld16[] = {
-		allocDataConst(0x1234, 0x5678, 0x2345, 4, 8, 0, true, false),
-		allocDataConst(0x8080, 0x8000, 0x0101, 1, 8, 0, true, true),
-		allocDataConst(0x4080, 0x8000, 0x8101, 1, 8, 0, false, true),
-		allocDataConst(0x2080, 0x8000, 0x4101, 1, 8, 0, false, false),
-		allocDataConst(0x4080, 0x8000, 0x0202, 2, 8, 0, true, false),
-		allocDataConst(0x1234, 0x5678, 0x6785, 20, 8, 0, true, false),
-		allocDataConst(0x8080, 0x8000, 0x0001, 17, 8, 0, true, true),
-		allocDataConst(0x4080, 0x4000, 0x8000, 17, 8, 0, false, true),
-		allocDataConst(0x2080, 0x2000, 0x4000, 17, 8, 0, false, false),
-		endData()
+        allocDataConst(0x1234, 0x5678, 0x2345, 4, 8, 0, true, false),
+        allocDataConst(0x8080, 0x8000, 0x0101, 1, 8, 0, true, true),
+        allocDataConst(0x4080, 0x8000, 0x8101, 1, 8, 0, false, true),
+        allocDataConst(0x2080, 0x8000, 0x4101, 1, 8, 0, false, false),
+        allocDataConst(0x4080, 0x8000, 0x0202, 2, 8, 0, true, false),
+        allocDataConst(0x1234, 0x5678, 0x6785, 20, 8, 0, true, false),
+        allocDataConst(0x8080, 0x8000, 0x0001, 17, 8, 0, true, true),
+        allocDataConst(0x4080, 0x4000, 0x8000, 17, 8, 0, false, true),
+        allocDataConst(0x2080, 0x2000, 0x4000, 17, 8, 0, false, false),
+        endData()
 };
 
 static struct Data shld32[] = {
-		allocDataConst(0x12345678, 0x90abcdef, 0x4567890a, 12, 8, 0, true, false),
-		allocDataConst(0x80808080, 0x80000000, 0x01010101, 1, 8, 0, true, true),
-		allocDataConst(0x40808080, 0x80000000, 0x81010101, 1, 8, 0, false, true),
-		allocDataConst(0x20808080, 0x80000000, 0x41010101, 1, 8, 0, false, false),
-		allocDataConst(0x40808080, 0x80000000, 0x02020202, 2, 8, 0, true, false),
-		allocDataConst(0x12345678, 0x90abcdef, 0x34567890, 40, 8, 0, false, false),
-		endData()
+        allocDataConst(0x12345678, 0x90abcdef, 0x4567890a, 12, 8, 0, true, false),
+        allocDataConst(0x80808080, 0x80000000, 0x01010101, 1, 8, 0, true, true),
+        allocDataConst(0x40808080, 0x80000000, 0x81010101, 1, 8, 0, false, true),
+        allocDataConst(0x20808080, 0x80000000, 0x41010101, 1, 8, 0, false, false),
+        allocDataConst(0x40808080, 0x80000000, 0x02020202, 2, 8, 0, true, false),
+        allocDataConst(0x12345678, 0x90abcdef, 0x34567890, 40, 8, 0, false, false),
+        endData()
 };
 
 static struct Data shrd16[] = {
-		allocDataConst(0x1234, 0x5678, 0x8123, 4, 8, 0, false, true),
-		allocDataConst(0x0101, 0x0001, 0x8080, 1, 8, 0, true, true),
-		allocDataConst(0x0102, 0x0001, 0x8081, 1, 8, 0, false, true),
-		allocDataConst(0x0101, 0x0002, 0x0080, 1, 8, 0, true, false),
-		allocDataConst(0x8080, 0x0001, 0x6020, 2, 8, 0, false, true),
-		allocDataConst(0x1234, 0x5678, 0x8567, 20, 8, 0, true, true),
-		allocDataConst(0x0101, 0x0001, 0x8000, 17, 8, 0, true, true),
-		allocDataConst(0x0102, 0x0002, 0x0001, 17, 8, 0, false, false),
-		endData()
+        allocDataConst(0x1234, 0x5678, 0x8123, 4, 8, 0, false, true),
+        allocDataConst(0x0101, 0x0001, 0x8080, 1, 8, 0, true, true),
+        allocDataConst(0x0102, 0x0001, 0x8081, 1, 8, 0, false, true),
+        allocDataConst(0x0101, 0x0002, 0x0080, 1, 8, 0, true, false),
+        allocDataConst(0x8080, 0x0001, 0x6020, 2, 8, 0, false, true),
+        allocDataConst(0x1234, 0x5678, 0x8567, 20, 8, 0, true, true),
+        allocDataConst(0x0101, 0x0001, 0x8000, 17, 8, 0, true, true),
+        allocDataConst(0x0102, 0x0002, 0x0001, 17, 8, 0, false, false),
+        endData()
 };
 
 static struct Data shrd32[] = {
-		allocDataConst(0x12345678, 0x90abcdef, 0xbcdef123, 20, 8, 0, false, true),
-		allocDataConst(0x01010101, 0x00000001, 0x80808080, 1, 8, 0, true, true),
-		allocDataConst(0x01010102, 0x00000001, 0x80808081, 1, 8, 0, false, true),
-		allocDataConst(0x01010101, 0x00000002, 0x00808080, 1, 8, 0, true, false),
-		allocDataConst(0x80808080, 0x00000001, 0x60202020, 2, 8, 0, false, true),
-		endData()
+        allocDataConst(0x12345678, 0x90abcdef, 0xbcdef123, 20, 8, 0, false, true),
+        allocDataConst(0x01010101, 0x00000001, 0x80808080, 1, 8, 0, true, true),
+        allocDataConst(0x01010102, 0x00000001, 0x80808081, 1, 8, 0, false, true),
+        allocDataConst(0x01010101, 0x00000002, 0x00808080, 1, 8, 0, true, false),
+        allocDataConst(0x80808080, 0x00000001, 0x60202020, 2, 8, 0, false, true),
+        endData()
 };
 
 void testAdd0x000() {cpu->big = false;EbGb(0x00, addb);}
@@ -3588,7 +3588,7 @@ void testSalc0x0d6() {cpu->big=false; EbReg(0xd6, 0, salc);}
 void testSalc0x2d6() {cpu->big=true; EbReg(0xd6, 0, salc);}
 
 void testXlat0x0d7() {
-	U32 result;
+    U32 result;
 
     cpu->big=false;
     newInstruction(0xd7, 0);
@@ -3608,7 +3608,7 @@ void testXlat0x0d7() {
 }
 
 void testXlat0x2d7() {
-	U32 result;
+    U32 result;
 
     cpu->big=true;
     newInstruction(0xd7, 0);
@@ -3618,7 +3618,7 @@ void testXlat0x2d7() {
     writed(cpu->memory, cpu->segAddress[DS] + 2008, DEFAULT);
     EBX=2000;
     AL=4;
-	writeb(cpu->memory, cpu->segAddress[DS] + 2004, 0x08);
+    writeb(cpu->memory, cpu->segAddress[DS] + 2004, 0x08);
     runTestCPU();
     result = DEFAULT;
     result&=~0xFF;
@@ -3657,36 +3657,36 @@ int getStackPos() {
 }
 
 struct FPU_Float {
-	union {
-		float f;
-		U32   i;
-	};
+    union {
+        float f;
+        U32   i;
+    };
 };
 
 float getTopFloat() {
-	struct FPU_Float result;
+    struct FPU_Float result;
     newInstruction(0xd9, 0);	
-	pushCode8(rm(true, 2, cpu->big?5:6));
-	if (cpu->big)
+    pushCode8(rm(true, 2, cpu->big?5:6));
+    if (cpu->big)
         pushCode32(4);
     else
         pushCode16(4);
     runTestCPU();
     result.i = readd(cpu->memory, HEAP_ADDRESS+4);
-	return result.f;
+    return result.f;
 }
 
 void writeF(float f) {
-	struct FPU_Float value;
-	value.f = f;    
+    struct FPU_Float value;
+    value.f = f;    
     writed(cpu->memory, HEAP_ADDRESS, 0xCDCDCDCD);
-	writed(cpu->memory, HEAP_ADDRESS+4, value.i);
-	writed(cpu->memory, HEAP_ADDRESS+8, 0xCDCDCDCD);
+    writed(cpu->memory, HEAP_ADDRESS+4, value.i);
+    writed(cpu->memory, HEAP_ADDRESS+8, 0xCDCDCDCD);
 }
 
 void fldf32(float f) {
-	int rm = 0;    
-	if (cpu->big)
+    int rm = 0;    
+    if (cpu->big)
         rm += 5;
     else
         rm += 6;
@@ -3706,7 +3706,7 @@ void fpu_init() {
 }
 
 void doF32Instruction(int op1, int group1, int op2, int group2, float x, float y, float r) {
-	float result; 
+    float result; 
 
     fpu_init();
 
@@ -4080,31 +4080,31 @@ void testF32ComP() {
 }
 
 void testFPUD8() {
-	testF32Add();
-	testF32Sub();
-	testF32SubR();
-	testF32Mul();
-	testF32Div();
-	testF32DivR();
-	testF32Com();
-	testF32ComP();
+    testF32Add();
+    testF32Sub();
+    testF32SubR();
+    testF32Mul();
+    testF32Div();
+    testF32DivR();
+    testF32Com();
+    testF32ComP();
 }
 
 void FSTFloat(int op, int group, float f, int pop) {
-	struct FPU_Float result;
+    struct FPU_Float result;
     fpu_init();
 
     fldf32(f);
-	writed(cpu->memory, HEAP_ADDRESS+4, 0xCDCDCDCD);
+    writed(cpu->memory, HEAP_ADDRESS+4, 0xCDCDCDCD);
 
     newInstruction(op, 0);
-	pushCode8(rm(true, group, cpu->big?5:6));
-	if (cpu->big)
+    pushCode8(rm(true, group, cpu->big?5:6));
+    if (cpu->big)
         pushCode32(4);
     else
         pushCode16(4);
     runTestCPU();
-	result.i = readd(cpu->memory, HEAP_ADDRESS+4);
+    result.i = readd(cpu->memory, HEAP_ADDRESS+4);
     assertTrue(result.f==f || (isnan(result.f) && isnan(f)));
     assertTrue(getStackPos()==(pop?0:7));
 }
@@ -4590,40 +4590,40 @@ void testFSQRT() {
 }
 
 void testFPUD9() {
-	// 0
-	testFLDSTi();
-	// 1
-	testFXCHSTi();
-	// 2 NOP
+    // 0
+    testFLDSTi();
+    // 1
+    testFXCHSTi();
+    // 2 NOP
 
-	// 3
-	testFSTPSTi();
+    // 3
+    testFSTPSTi();
 
-	// 4
-	testFCHS();
-	testFABS();
-	testFTST();
-	testFXAM();
+    // 4
+    testFCHS();
+    testFABS();
+    testFTST();
+    testFXAM();
 
-	// 5
-	testFLD1();
-	testFLDL2T();
-	testFLDL2E();
-	testFLDPI();
-	testFLDLG2();
-	testFLDLN2();
-	testFLDZ();
+    // 5
+    testFLD1();
+    testFLDL2T();
+    testFLDL2E();
+    testFLDPI();
+    testFLDLG2();
+    testFLDLN2();
+    testFLDZ();
 
-	// 6
-	testF2XM1();
-	testFYL2X();
+    // 6
+    testF2XM1();
+    testFYL2X();
 
-	// 7
-	testFSQRT();
+    // 7
+    testFSQRT();
 
-	// ea
-	testFSTFloat();
-	testFSTPFloat();
+    // ea
+    testFSTFloat();
+    testFSTPFloat();
 }
 
 void testFPU0x0d8() {cpu->big=false;testFPUD8();}
@@ -4689,453 +4689,453 @@ void testStc0x0f8() {cpu->big=false;EbReg(0xf9, 0, stc);}
 void testStc0x2f8() {cpu->big=true;EbReg(0xf9, 0, stc);}
 
 void testGrp40x0fe() {
-	cpu->big=false;
-	Eb(0xfe, 0, incb);
-	Eb(0xfe, 1, decb);
+    cpu->big=false;
+    Eb(0xfe, 0, incb);
+    Eb(0xfe, 1, decb);
 }
 
 void testGrp40x2fe() {
-	cpu->big=true;
-	Eb(0xfe, 0, incb);
-	Eb(0xfe, 1, decb);
+    cpu->big=true;
+    Eb(0xfe, 0, incb);
+    Eb(0xfe, 1, decb);
 }
 
 void testGrp50x0ff() {
-	cpu->big=false;
-	Ew(0xff, 0, incw);
-	Ew(0xff, 1, decw);
+    cpu->big=false;
+    Ew(0xff, 0, incw);
+    Ew(0xff, 1, decw);
 }
 
 void testGrp50x2ff() {
-	cpu->big=true;
-	Ed(0xff, 0, incd);
-	Ed(0xff, 1, decd);
+    cpu->big=true;
+    Ed(0xff, 0, incd);
+    Ed(0xff, 1, decd);
 }
 
 void testBt0x1a3() {
-	cpu->big=false;
-	EwGwEffective(0x1a3, btw);
+    cpu->big=false;
+    EwGwEffective(0x1a3, btw);
 }
 
 void testBt0x3a3() {
-	cpu->big=true;
-	EdGdEffective(0x1a3, btd);
+    cpu->big=true;
+    EdGdEffective(0x1a3, btd);
 }
 
 void testShld0x1a4() {
-	cpu->big=false;
-	EwGw(0x1a4, shld16);
+    cpu->big=false;
+    EwGw(0x1a4, shld16);
 }
 
 void testShld0x3a4() {
-	cpu->big=true;
-	EdGd(0x1a4, shld32);
+    cpu->big=true;
+    EdGd(0x1a4, shld32);
 }
 
 void testShld0x1a5() {
-	cpu->big=false;
-	EwGwCl(0x1a5, shld16);
+    cpu->big=false;
+    EwGwCl(0x1a5, shld16);
 }
 
 void testShld0x3a5() {
-	cpu->big=true;
-	EdGdCl(0x1a5, shld32);
+    cpu->big=true;
+    EdGdCl(0x1a5, shld32);
 }
 
 void testBts0x1ab() {
-	cpu->big=false;
-	EwGwEffective(0x1ab, btsw);
+    cpu->big=false;
+    EwGwEffective(0x1ab, btsw);
 }
 
 void testBts0x3ab() {
-	cpu->big=true;
-	EdGdEffective(0x1ab, btsd);
+    cpu->big=true;
+    EdGdEffective(0x1ab, btsd);
 }
 
 void testShrd0x1ac() {
-	cpu->big=false;
-	EwGw(0x1ac, shrd16);
+    cpu->big=false;
+    EwGw(0x1ac, shrd16);
 }
 
 void testShrd0x3ac() {
-	cpu->big=true;
-	EdGd(0x1ac, shrd32);
+    cpu->big=true;
+    EdGd(0x1ac, shrd32);
 }
 
 void testShrd0x1ad() {
-	cpu->big=false;
-	EwGwCl(0x1ad, shrd16);
+    cpu->big=false;
+    EwGwCl(0x1ad, shrd16);
 }
 
 void testShrd0x3ad() {
-	cpu->big=true;
-	EdGdCl(0x1ad, shrd32);
+    cpu->big=true;
+    EdGdCl(0x1ad, shrd32);
 }
 
 void run(void (*functionPtr)(), char* name) {
-	didFail = 0;
-	setup();
-	functionPtr();
-	printf("%s", name);
-	printf(" ... ");
-	if (didFail) {
-		printf("FAILED\n");
-	} else {
-		printf("OK\n");
-	}
+    didFail = 0;
+    setup();
+    functionPtr();
+    printf("%s", name);
+    printf(" ... ");
+    if (didFail) {
+        printf("FAILED\n");
+    } else {
+        printf("OK\n");
+    }
 }
 
 int main(int argc, char **argv) {	
-	run(testAdd0x000, "Add 000");
-	run(testAdd0x200, "Add 200");
-	run(testAdd0x001, "Add 001");
-	run(testAdd0x201, "Add 201");
-	run(testAdd0x002, "Add 002");
-	run(testAdd0x202, "Add 202");
-	run(testAdd0x003, "Add 003");
-	run(testAdd0x203, "Add 203");
-	run(testAdd0x004, "Add 004");
-	run(testAdd0x204, "Add 204");
-	run(testAdd0x005, "Add 005");
-	run(testAdd0x205, "Add 205");
+    run(testAdd0x000, "Add 000");
+    run(testAdd0x200, "Add 200");
+    run(testAdd0x001, "Add 001");
+    run(testAdd0x201, "Add 201");
+    run(testAdd0x002, "Add 002");
+    run(testAdd0x202, "Add 202");
+    run(testAdd0x003, "Add 003");
+    run(testAdd0x203, "Add 203");
+    run(testAdd0x004, "Add 004");
+    run(testAdd0x204, "Add 204");
+    run(testAdd0x005, "Add 005");
+    run(testAdd0x205, "Add 205");
 
-	run(testOr0x008, "Or  008");
-	run(testOr0x208, "Or  208");
-	run(testOr0x009, "Or  009");
-	run(testOr0x209, "Or  209");
-	run(testOr0x00a, "Or  00a");
-	run(testOr0x20a, "Or  20a");
-	run(testOr0x00b, "Or  00b");
-	run(testOr0x20b, "Or  20b");
-	run(testOr0x00c, "Or  00c");
-	run(testOr0x20c, "Or  20c");
-	run(testOr0x00d, "Or  00d");
-	run(testOr0x20d, "Or  20d");
+    run(testOr0x008, "Or  008");
+    run(testOr0x208, "Or  208");
+    run(testOr0x009, "Or  009");
+    run(testOr0x209, "Or  209");
+    run(testOr0x00a, "Or  00a");
+    run(testOr0x20a, "Or  20a");
+    run(testOr0x00b, "Or  00b");
+    run(testOr0x20b, "Or  20b");
+    run(testOr0x00c, "Or  00c");
+    run(testOr0x20c, "Or  20c");
+    run(testOr0x00d, "Or  00d");
+    run(testOr0x20d, "Or  20d");
 
-	run(testAdc0x010, "Adc 010");
-	run(testAdc0x210, "Adc 210");
-	run(testAdc0x011, "Adc 011");
-	run(testAdc0x211, "Adc 211");
-	run(testAdc0x012, "Adc 012");
-	run(testAdc0x212, "Adc 212");
-	run(testAdc0x013, "Adc 013");
-	run(testAdc0x213, "Adc 213");
-	run(testAdc0x014, "Adc 014");
-	run(testAdc0x214, "Adc 214");
-	run(testAdc0x015, "Adc 015");
-	run(testAdc0x215, "Adc 215");
+    run(testAdc0x010, "Adc 010");
+    run(testAdc0x210, "Adc 210");
+    run(testAdc0x011, "Adc 011");
+    run(testAdc0x211, "Adc 211");
+    run(testAdc0x012, "Adc 012");
+    run(testAdc0x212, "Adc 212");
+    run(testAdc0x013, "Adc 013");
+    run(testAdc0x213, "Adc 213");
+    run(testAdc0x014, "Adc 014");
+    run(testAdc0x214, "Adc 214");
+    run(testAdc0x015, "Adc 015");
+    run(testAdc0x215, "Adc 215");
 
-	run(testSbb0x018, "Sbb 018");
-	run(testSbb0x218, "Sbb 218");
-	run(testSbb0x019, "Sbb 019");
-	run(testSbb0x219, "Sbb 219");
-	run(testSbb0x01a, "Sbb 01a");
-	run(testSbb0x21a, "Sbb 21a");
-	run(testSbb0x01b, "Sbb 01b");
-	run(testSbb0x21b, "Sbb 21b");
-	run(testSbb0x01c, "Sbb 01c");
-	run(testSbb0x21c, "Sbb 21c");
-	run(testSbb0x01d, "Sbb 01d");
-	run(testSbb0x21d, "Sbb 21d");
+    run(testSbb0x018, "Sbb 018");
+    run(testSbb0x218, "Sbb 218");
+    run(testSbb0x019, "Sbb 019");
+    run(testSbb0x219, "Sbb 219");
+    run(testSbb0x01a, "Sbb 01a");
+    run(testSbb0x21a, "Sbb 21a");
+    run(testSbb0x01b, "Sbb 01b");
+    run(testSbb0x21b, "Sbb 21b");
+    run(testSbb0x01c, "Sbb 01c");
+    run(testSbb0x21c, "Sbb 21c");
+    run(testSbb0x01d, "Sbb 01d");
+    run(testSbb0x21d, "Sbb 21d");
 
-	run(testAnd0x020, "And 020");
-	run(testAnd0x220, "And 220");
-	run(testAnd0x021, "And 021");
-	run(testAnd0x221, "And 221");
-	run(testAnd0x022, "And 022");
-	run(testAnd0x222, "And 222");
-	run(testAnd0x023, "And 023");
-	run(testAnd0x223, "And 223");
-	run(testAnd0x024, "And 024");
-	run(testAnd0x224, "And 224");
-	run(testAnd0x025, "And 025");
-	run(testAnd0x225, "And 225");
+    run(testAnd0x020, "And 020");
+    run(testAnd0x220, "And 220");
+    run(testAnd0x021, "And 021");
+    run(testAnd0x221, "And 221");
+    run(testAnd0x022, "And 022");
+    run(testAnd0x222, "And 222");
+    run(testAnd0x023, "And 023");
+    run(testAnd0x223, "And 223");
+    run(testAnd0x024, "And 024");
+    run(testAnd0x224, "And 224");
+    run(testAnd0x025, "And 025");
+    run(testAnd0x225, "And 225");
 
-	run(testSub0x028, "Sub 028");
-	run(testSub0x228, "Sub 228");
-	run(testSub0x029, "Sub 029");
-	run(testSub0x229, "Sub 229");
-	run(testSub0x02a, "Sub 02a");
-	run(testSub0x22a, "Sub 22a");
-	run(testSub0x02b, "Sub 02b");
-	run(testSub0x22b, "Sub 22b");
-	run(testSub0x02c, "Sub 02c");
-	run(testSub0x22c, "Sub 22c");
-	run(testSub0x02d, "Sub 02d");
-	run(testSub0x22d, "Sub 22d");
+    run(testSub0x028, "Sub 028");
+    run(testSub0x228, "Sub 228");
+    run(testSub0x029, "Sub 029");
+    run(testSub0x229, "Sub 229");
+    run(testSub0x02a, "Sub 02a");
+    run(testSub0x22a, "Sub 22a");
+    run(testSub0x02b, "Sub 02b");
+    run(testSub0x22b, "Sub 22b");
+    run(testSub0x02c, "Sub 02c");
+    run(testSub0x22c, "Sub 22c");
+    run(testSub0x02d, "Sub 02d");
+    run(testSub0x22d, "Sub 22d");
 
-	run(testXor0x030, "Xor 030");
-	run(testXor0x230, "Xor 230");
-	run(testXor0x031, "Xor 031");
-	run(testXor0x231, "Xor 231");
-	run(testXor0x032, "Xor 032");
-	run(testXor0x232, "Xor 232");
-	run(testXor0x033, "Xor 033");
-	run(testXor0x233, "Xor 233");
-	run(testXor0x034, "Xor 034");
-	run(testXor0x234, "Xor 234");
-	run(testXor0x035, "Xor 035");
-	run(testXor0x235, "Xor 235");
+    run(testXor0x030, "Xor 030");
+    run(testXor0x230, "Xor 230");
+    run(testXor0x031, "Xor 031");
+    run(testXor0x231, "Xor 231");
+    run(testXor0x032, "Xor 032");
+    run(testXor0x232, "Xor 232");
+    run(testXor0x033, "Xor 033");
+    run(testXor0x233, "Xor 233");
+    run(testXor0x034, "Xor 034");
+    run(testXor0x234, "Xor 234");
+    run(testXor0x035, "Xor 035");
+    run(testXor0x235, "Xor 235");
 
-	run(testCmp0x038, "Cmp 038");
-	run(testCmp0x238, "Cmp 238");
-	run(testCmp0x039, "Cmp 039");
-	run(testCmp0x239, "Cmp 239");
-	run(testCmp0x03a, "Cmp 03a");
-	run(testCmp0x23a, "Cmp 23a");
-	run(testCmp0x03b, "Cmp 03b");
-	run(testCmp0x23b, "Cmp 23b");
-	run(testCmp0x03c, "Cmp 03c");
-	run(testCmp0x23c, "Cmp 23c");
-	run(testCmp0x03d, "Cmp 03d");
-	run(testCmp0x23d, "Cmp 23d");
+    run(testCmp0x038, "Cmp 038");
+    run(testCmp0x238, "Cmp 238");
+    run(testCmp0x039, "Cmp 039");
+    run(testCmp0x239, "Cmp 239");
+    run(testCmp0x03a, "Cmp 03a");
+    run(testCmp0x23a, "Cmp 23a");
+    run(testCmp0x03b, "Cmp 03b");
+    run(testCmp0x23b, "Cmp 23b");
+    run(testCmp0x03c, "Cmp 03c");
+    run(testCmp0x23c, "Cmp 23c");
+    run(testCmp0x03d, "Cmp 03d");
+    run(testCmp0x23d, "Cmp 23d");
 
-	run(testIncAx0x040,  "Inc AX  040");
-	run(testIncEax0x240, "Inc EAX 240");
-	run(testIncCx0x041,  "Inc CX  041");
-	run(testIncEcx0x241, "Inc ECX 241");
-	run(testIncDx0x042,  "Inc DX  042");
-	run(testIncEdx0x242, "Inc EDX 242");
-	run(testIncBx0x043,  "Inc BX  043");
-	run(testIncEbx0x243, "Inc EBX 243");
-	run(testIncSp0x044,  "Inc SP  044");
-	run(testIncEsp0x244, "Inc ESP 244");
-	run(testIncBp0x045,  "Inc BP  045");
-	run(testIncEbp0x245, "Inc EBP 245");
-	run(testIncSi0x046,  "Inc SI  046");
-	run(testIncEsi0x246, "Inc ESI 246");
-	run(testIncDi0x047,  "Inc DI  047");
-	run(testIncEdi0x247, "Inc EDI 247");
+    run(testIncAx0x040,  "Inc AX  040");
+    run(testIncEax0x240, "Inc EAX 240");
+    run(testIncCx0x041,  "Inc CX  041");
+    run(testIncEcx0x241, "Inc ECX 241");
+    run(testIncDx0x042,  "Inc DX  042");
+    run(testIncEdx0x242, "Inc EDX 242");
+    run(testIncBx0x043,  "Inc BX  043");
+    run(testIncEbx0x243, "Inc EBX 243");
+    run(testIncSp0x044,  "Inc SP  044");
+    run(testIncEsp0x244, "Inc ESP 244");
+    run(testIncBp0x045,  "Inc BP  045");
+    run(testIncEbp0x245, "Inc EBP 245");
+    run(testIncSi0x046,  "Inc SI  046");
+    run(testIncEsi0x246, "Inc ESI 246");
+    run(testIncDi0x047,  "Inc DI  047");
+    run(testIncEdi0x247, "Inc EDI 247");
 
-	run(testDecAx0x048,  "Dec AX  048");
-	run(testDecEax0x248, "Dec EAX 248");
-	run(testDecCx0x049,  "Dec CX  049");
-	run(testDecEcx0x249, "Dec ECX 249");
-	run(testDecDx0x04a,  "Dec DX  04a");
-	run(testDecEdx0x24a, "Dec EDX 24a");
-	run(testDecBx0x04b,  "Dec BX  04b");
-	run(testDecEbx0x24b, "Dec EBX 24b");
-	run(testDecSp0x04c,  "Dec SP  04c");
-	run(testDecEsp0x24c, "Dec ESP 24c");
-	run(testDecBp0x04d,  "Dec BP  04d");
-	run(testDecEbp0x24d, "Dec EBP 24d");
-	run(testDecSi0x04e,  "Dec SI  04e");
-	run(testDecEsi0x24e, "Dec ESI 24e");
-	run(testDecDi0x04f,  "Dec DI  04f");
-	run(testDecEdi0x24f, "Dec EDI 24f");
+    run(testDecAx0x048,  "Dec AX  048");
+    run(testDecEax0x248, "Dec EAX 248");
+    run(testDecCx0x049,  "Dec CX  049");
+    run(testDecEcx0x249, "Dec ECX 249");
+    run(testDecDx0x04a,  "Dec DX  04a");
+    run(testDecEdx0x24a, "Dec EDX 24a");
+    run(testDecBx0x04b,  "Dec BX  04b");
+    run(testDecEbx0x24b, "Dec EBX 24b");
+    run(testDecSp0x04c,  "Dec SP  04c");
+    run(testDecEsp0x24c, "Dec ESP 24c");
+    run(testDecBp0x04d,  "Dec BP  04d");
+    run(testDecEbp0x24d, "Dec EBP 24d");
+    run(testDecSi0x04e,  "Dec SI  04e");
+    run(testDecEsi0x24e, "Dec ESI 24e");
+    run(testDecDi0x04f,  "Dec DI  04f");
+    run(testDecEdi0x24f, "Dec EDI 24f");
 
-	
-	run(testPushAx0x050,  "Push Ax  050");
-	run(testPushEax0x250, "Push Eax 250");
-	run(testPushCx0x051,  "Push Cx  051");
-	run(testPushEcx0x251, "Push Ecx 251");
-	run(testPushDx0x052,  "Push Dx  052");
-	run(testPushEdx0x252, "Push Edx 252");
-	run(testPushBx0x053,  "Push Bx  053");
-	run(testPushEbx0x253, "Push Ebx 253");
-	//run(testPushSp0x054,  "Push Sp  054");
-	//run(testPushEsp0x254, "Push Esp 254");
-	run(testPushBp0x055,  "Push Bp  055");
-	run(testPushEbp0x255, "Push Ebp 255");
-	run(testPushSi0x056,  "Push Si  056");
-	run(testPushEsi0x256, "Push Esi 256");
-	run(testPushDi0x057,  "Push Di  057");
-	run(testPushEdi0x257, "Push Edi 257");
+    
+    run(testPushAx0x050,  "Push Ax  050");
+    run(testPushEax0x250, "Push Eax 250");
+    run(testPushCx0x051,  "Push Cx  051");
+    run(testPushEcx0x251, "Push Ecx 251");
+    run(testPushDx0x052,  "Push Dx  052");
+    run(testPushEdx0x252, "Push Edx 252");
+    run(testPushBx0x053,  "Push Bx  053");
+    run(testPushEbx0x253, "Push Ebx 253");
+    //run(testPushSp0x054,  "Push Sp  054");
+    //run(testPushEsp0x254, "Push Esp 254");
+    run(testPushBp0x055,  "Push Bp  055");
+    run(testPushEbp0x255, "Push Ebp 255");
+    run(testPushSi0x056,  "Push Si  056");
+    run(testPushEsi0x256, "Push Esi 256");
+    run(testPushDi0x057,  "Push Di  057");
+    run(testPushEdi0x257, "Push Edi 257");
 
-	run(testPopAx0x058,  "Pop Ax  058");
-	run(testPopEax0x258, "Pop Eax 258");
-	run(testPopCx0x059,  "Pop Cx  059");
-	run(testPopEcx0x259, "Pop Ecx 259");
-	run(testPopDx0x05a,  "Pop Dx  05a");
-	run(testPopEdx0x25a, "Pop Edx 25a");
-	run(testPopBx0x05b,  "Pop Bx  05b");
-	run(testPopEbx0x25b, "Pop Ebx 25b");
-	//run(testPopSp0x05c,  "Pop Sp  05c");
-	//run(testPopEsp0x25c, "Pop Esp 25c");
-	run(testPopBp0x05d,  "Pop Bp  05d");
-	run(testPopEbp0x25d, "Pop Ebp 25d");
-	run(testPopSi0x05e,  "Pop Si  05e");
-	run(testPopEsi0x25e, "Pop Esi 25e");
-	run(testPopDi0x05f,  "Pop Di  05f");
-	run(testPopEdi0x25f, "Pop Edi 25f");
+    run(testPopAx0x058,  "Pop Ax  058");
+    run(testPopEax0x258, "Pop Eax 258");
+    run(testPopCx0x059,  "Pop Cx  059");
+    run(testPopEcx0x259, "Pop Ecx 259");
+    run(testPopDx0x05a,  "Pop Dx  05a");
+    run(testPopEdx0x25a, "Pop Edx 25a");
+    run(testPopBx0x05b,  "Pop Bx  05b");
+    run(testPopEbx0x25b, "Pop Ebx 25b");
+    //run(testPopSp0x05c,  "Pop Sp  05c");
+    //run(testPopEsp0x25c, "Pop Esp 25c");
+    run(testPopBp0x05d,  "Pop Bp  05d");
+    run(testPopEbp0x25d, "Pop Ebp 25d");
+    run(testPopSi0x05e,  "Pop Si  05e");
+    run(testPopEsi0x25e, "Pop Esi 25e");
+    run(testPopDi0x05f,  "Pop Di  05f");
+    run(testPopEdi0x25f, "Pop Edi 25f");
 
-	run(testPush0x068, "Push 068");
-	run(testPush0x268, "Push 268");
+    run(testPush0x068, "Push 068");
+    run(testPush0x268, "Push 268");
 
-	run(testIMul0x069, "IMul 069");
-	run(testIMul0x269, "IMul 269");
+    run(testIMul0x069, "IMul 069");
+    run(testIMul0x269, "IMul 269");
 
-	run(testPush0x06a, "Push 06a");
-	run(testPush0x26a, "Push 26a");
+    run(testPush0x06a, "Push 06a");
+    run(testPush0x26a, "Push 26a");
 
-	run(testIMul0x06b, "IMul 06b");
-	run(testIMul0x26b, "IMul 26b");
+    run(testIMul0x06b, "IMul 06b");
+    run(testIMul0x26b, "IMul 26b");
 
-	run(testGrp10x080, "Grp1 080");
-	run(testGrp10x280, "Grp1 280");
-	run(testGrp10x081, "Grp1 081");
-	run(testGrp10x281, "Grp1 281");
-	run(testGrp10x083, "Grp1 083");
-	run(testGrp10x283, "Grp1 283");
+    run(testGrp10x080, "Grp1 080");
+    run(testGrp10x280, "Grp1 280");
+    run(testGrp10x081, "Grp1 081");
+    run(testGrp10x281, "Grp1 281");
+    run(testGrp10x083, "Grp1 083");
+    run(testGrp10x283, "Grp1 283");
 
-	run(testTest0x084, "Test 084");
-	run(testTest0x284, "Test 284");
-	run(testTest0x085, "Test 085");
-	run(testTest0x285, "Test 285");
-	
-	run(testXchg0x086, "Xchg 086");
-	run(testXchg0x286, "Xchg 286");
-	run(testXchg0x087, "Xchg 087");
-	run(testXchg0x287, "Xchg 287");
+    run(testTest0x084, "Test 084");
+    run(testTest0x284, "Test 284");
+    run(testTest0x085, "Test 085");
+    run(testTest0x285, "Test 285");
+    
+    run(testXchg0x086, "Xchg 086");
+    run(testXchg0x286, "Xchg 286");
+    run(testXchg0x087, "Xchg 087");
+    run(testXchg0x287, "Xchg 287");
 
-	run(testMovEbGb0x088, "Mov 088");
-	run(testMovEbGb0x288, "Mov 288");
-	run(testMovEwGw0x089, "Mov 089");
-	run(testMovEdGd0x289, "Mov 289");
+    run(testMovEbGb0x088, "Mov 088");
+    run(testMovEbGb0x288, "Mov 288");
+    run(testMovEwGw0x089, "Mov 089");
+    run(testMovEdGd0x289, "Mov 289");
 
-	run(testMovEbGb0x08a, "Mov 08a");
-	run(testMovEbGb0x28a, "Mov 28a");
-	run(testMovEwGw0x08b, "Mov 08b");
-	run(testMovEdGd0x28b, "Mov 28b");
+    run(testMovEbGb0x08a, "Mov 08a");
+    run(testMovEbGb0x28a, "Mov 28a");
+    run(testMovEwGw0x08b, "Mov 08b");
+    run(testMovEdGd0x28b, "Mov 28b");
 
-	run(testMovEwWw0x08c, "Mov 08c");
-	run(testMovEwWw0x28c, "Mov 28c");
+    run(testMovEwWw0x08c, "Mov 08c");
+    run(testMovEwWw0x28c, "Mov 28c");
 
-	run(testLeaGw0x08d, "Lea 08d");
-	run(testLeaGd0x28d, "Lea 28d");
+    run(testLeaGw0x08d, "Lea 08d");
+    run(testLeaGd0x28d, "Lea 28d");
 
-	// :TODO: 0x08e
-	// :TODO: 0x28e
+    // :TODO: 0x08e
+    // :TODO: 0x28e
 
-	run(testPopEw0x08f, "Pop 08f");
-	run(testPopEd0x28f, "Pop 28f");
+    run(testPopEw0x08f, "Pop 08f");
+    run(testPopEd0x28f, "Pop 28f");
 
-	run(testXchgCxAx0x091,   "Xchg 091");
-	run(testXchgEcxEax0x291, "Xchg 291");
-	run(testXchgDxAx0x092,   "Xchg 092");
-	run(testXchgEdxEax0x292, "Xchg 292");
-	run(testXchgBxAx0x093,   "Xchg 093");
-	run(testXchgEbxEax0x293, "Xchg 293");
-	run(testXchgSpAx0x094,   "Xchg 094");
-	run(testXchgEspEax0x294, "Xchg 294");
-	run(testXchgBpAx0x095,   "Xchg 095");
-	run(testXchgEbpEax0x295, "Xchg 295");
-	run(testXchgSiAx0x096,   "Xchg 096");
-	run(testXchgEsiEax0x296, "Xchg 296");
-	run(testXchgDiAx0x097,   "Xchg 097");
-	run(testXchgEdiEax0x297, "Xchg 297");
-	
-	run(testCbw0x098, "Cbw  098");
-	run(testCwde0x298, "Cwde 298");
-	run(testCwd0x099, "Cwd  099");
-	run(testCdq0x299, "Cdq  299");
-	
-	run(testPushf0x09c, "Pushf 09c");
-	run(testPushf0x29c, "Pushf 29c");
-	run(testPopf0x09d,  "Popf  09d");
-	run(testPopf0x29d,  "Popf  29d");
+    run(testXchgCxAx0x091,   "Xchg 091");
+    run(testXchgEcxEax0x291, "Xchg 291");
+    run(testXchgDxAx0x092,   "Xchg 092");
+    run(testXchgEdxEax0x292, "Xchg 292");
+    run(testXchgBxAx0x093,   "Xchg 093");
+    run(testXchgEbxEax0x293, "Xchg 293");
+    run(testXchgSpAx0x094,   "Xchg 094");
+    run(testXchgEspEax0x294, "Xchg 294");
+    run(testXchgBpAx0x095,   "Xchg 095");
+    run(testXchgEbpEax0x295, "Xchg 295");
+    run(testXchgSiAx0x096,   "Xchg 096");
+    run(testXchgEsiEax0x296, "Xchg 296");
+    run(testXchgDiAx0x097,   "Xchg 097");
+    run(testXchgEdiEax0x297, "Xchg 297");
+    
+    run(testCbw0x098, "Cbw  098");
+    run(testCwde0x298, "Cwde 298");
+    run(testCwd0x099, "Cwd  099");
+    run(testCdq0x299, "Cdq  299");
+    
+    run(testPushf0x09c, "Pushf 09c");
+    run(testPushf0x29c, "Pushf 29c");
+    run(testPopf0x09d,  "Popf  09d");
+    run(testPopf0x29d,  "Popf  29d");
 
-	run(testSahf0x09e, "Sahf 09e");
-	run(testSahf0x29e, "Sahf 29e");
-	run(testLahf0x09f, "Lahf 09f");
-	run(testLahf0x29f, "Lahf 29f");
+    run(testSahf0x09e, "Sahf 09e");
+    run(testSahf0x29e, "Sahf 29e");
+    run(testLahf0x09f, "Lahf 09f");
+    run(testLahf0x29f, "Lahf 29f");
 
-	// :TODO: 0xa0 - 0xaf
+    // :TODO: 0xa0 - 0xaf
 
-	run(testMovAlIb0x0b0, "Mov 0b0");
-	run(testMovAlIb0x2b0, "Mov 2b0");
-	run(testMovClIb0x0b1, "Mov 0b1");
-	run(testMovClIb0x2b1, "Mov 2b1");
-	run(testMovDlIb0x0b2, "Mov 0b2");
-	run(testMovDlIb0x2b2, "Mov 2b2");
-	run(testMovBlIb0x0b3, "Mov 0b3");
-	run(testMovBlIb0x2b3, "Mov 2b3");
-	run(testMovAhIb0x0b4, "Mov 0b4");
-	run(testMovAhIb0x2b4, "Mov 2b4");
-	run(testMovChIb0x0b5, "Mov 0b5");
-	run(testMovChIb0x2b5, "Mov 2b5");
-	run(testMovDhIb0x0b6, "Mov 0b6");
-	run(testMovDhIb0x2b6, "Mov 2b6");
-	run(testMovBhIb0x0b7, "Mov 0b7");
-	run(testMovBhIb0x2b7, "Mov 2b7");
-	run(testMovAxIw0x0b8, "Mov 0b8");
-	run(testMovEaxId0x2b8, "Mov 2b8");
-	run(testMovCxIw0x0b9, "Mov 0b9");
-	run(testMovEcxId0x2b9, "Mov 2b9");
-	run(testMovDxIw0x0ba, "Mov 0ba");
-	run(testMovEdxId0x2ba, "Mov 2ba");
-	run(testMovBxIw0x0bb, "Mov 0bb");
-	run(testMovEbxId0x2bb, "Mov 2bb");
-	run(testMovSpIw0x0bc, "Mov 0bc");
-	run(testMovEspId0x2bc, "Mov 2bc");
-	run(testMovBpIw0x0bd, "Mov 0bd");
-	run(testMovEbpId0x2bd, "Mov 2bd");
-	run(testMovSiIw0x0be, "Mov 0be");
-	run(testMovEsiId0x2be, "Mov 2be");
-	run(testMovDiIw0x0bf, "Mov 0bf");
-	run(testMovEdiId0x2bf, "Mov 2bf");
+    run(testMovAlIb0x0b0, "Mov 0b0");
+    run(testMovAlIb0x2b0, "Mov 2b0");
+    run(testMovClIb0x0b1, "Mov 0b1");
+    run(testMovClIb0x2b1, "Mov 2b1");
+    run(testMovDlIb0x0b2, "Mov 0b2");
+    run(testMovDlIb0x2b2, "Mov 2b2");
+    run(testMovBlIb0x0b3, "Mov 0b3");
+    run(testMovBlIb0x2b3, "Mov 2b3");
+    run(testMovAhIb0x0b4, "Mov 0b4");
+    run(testMovAhIb0x2b4, "Mov 2b4");
+    run(testMovChIb0x0b5, "Mov 0b5");
+    run(testMovChIb0x2b5, "Mov 2b5");
+    run(testMovDhIb0x0b6, "Mov 0b6");
+    run(testMovDhIb0x2b6, "Mov 2b6");
+    run(testMovBhIb0x0b7, "Mov 0b7");
+    run(testMovBhIb0x2b7, "Mov 2b7");
+    run(testMovAxIw0x0b8, "Mov 0b8");
+    run(testMovEaxId0x2b8, "Mov 2b8");
+    run(testMovCxIw0x0b9, "Mov 0b9");
+    run(testMovEcxId0x2b9, "Mov 2b9");
+    run(testMovDxIw0x0ba, "Mov 0ba");
+    run(testMovEdxId0x2ba, "Mov 2ba");
+    run(testMovBxIw0x0bb, "Mov 0bb");
+    run(testMovEbxId0x2bb, "Mov 2bb");
+    run(testMovSpIw0x0bc, "Mov 0bc");
+    run(testMovEspId0x2bc, "Mov 2bc");
+    run(testMovBpIw0x0bd, "Mov 0bd");
+    run(testMovEbpId0x2bd, "Mov 2bd");
+    run(testMovSiIw0x0be, "Mov 0be");
+    run(testMovEsiId0x2be, "Mov 2be");
+    run(testMovDiIw0x0bf, "Mov 0bf");
+    run(testMovEdiId0x2bf, "Mov 2bf");
 
-	run(testGrp20x0c0, "Grp2 0c0");
-	run(testGrp20x2c0, "Grp2 2c0");
-	run(testGrp20x0c1, "Grp2 0c1");
-	run(testGrp20x2c1, "Grp2 2c1");
-	
-	run(testMovEbIb0x0c6, "Mov 0c6");
-	run(testMovEbIb0x2c6, "Mov 2c6");
-	run(testMovEwIw0x0c7, "Mov 0c7");
-	run(testMovEdId0x2c7, "Mov 2c7");
-	
-	run(testGrp20x0d0, "Grp2 0d0");
-	run(testGrp20x2d0, "Grp2 2d0");
-	run(testGrp20x0d1, "Grp2 0d1");
-	run(testGrp20x2d1, "Grp2 2d1");
-	run(testGrp20x0d2, "Grp2 0d2");
-	run(testGrp20x2d2, "Grp2 2d2");
-	run(testGrp20x0d3, "Grp2 0d3");
-	run(testGrp20x2d3, "Grp2 2d3");
+    run(testGrp20x0c0, "Grp2 0c0");
+    run(testGrp20x2c0, "Grp2 2c0");
+    run(testGrp20x0c1, "Grp2 0c1");
+    run(testGrp20x2c1, "Grp2 2c1");
+    
+    run(testMovEbIb0x0c6, "Mov 0c6");
+    run(testMovEbIb0x2c6, "Mov 2c6");
+    run(testMovEwIw0x0c7, "Mov 0c7");
+    run(testMovEdId0x2c7, "Mov 2c7");
+    
+    run(testGrp20x0d0, "Grp2 0d0");
+    run(testGrp20x2d0, "Grp2 2d0");
+    run(testGrp20x0d1, "Grp2 0d1");
+    run(testGrp20x2d1, "Grp2 2d1");
+    run(testGrp20x0d2, "Grp2 0d2");
+    run(testGrp20x2d2, "Grp2 2d2");
+    run(testGrp20x0d3, "Grp2 0d3");
+    run(testGrp20x2d3, "Grp2 2d3");
 
-	run(testSalc0x0d6, "Salc 0d6");
-	run(testSalc0x2d6, "Salc 2d6");
+    run(testSalc0x0d6, "Salc 0d6");
+    run(testSalc0x2d6, "Salc 2d6");
 
-	run(testXlat0x0d7, "Xlat 0d7");
-	run(testXlat0x2d7, "Xlat 2d7");
+    run(testXlat0x0d7, "Xlat 0d7");
+    run(testXlat0x2d7, "Xlat 2d7");
 
-	run(testFPU0x0d8, "FPU 0d8");
-	run(testFPU0x2d8, "FPU 2d8");
+    run(testFPU0x0d8, "FPU 0d8");
+    run(testFPU0x2d8, "FPU 2d8");
 
-	run(testFPU0x0d9, "FPU 0d9");
-	run(testFPU0x2d9, "FPU 2d9");
-	
-	run(testCmc0x0f5, "Cmc 0f5");
-	run(testCmc0x2f5, "Cmc 2f5");
-	
-	run(testGrp30x0f6, "Grp3 0f6");
-	run(testGrp30x2f6, "Grp3 2f6");
-	run(testGrp30x0f7, "Grp3 0f7");
-	run(testGrp30x2f7, "Grp3 2f7");
+    run(testFPU0x0d9, "FPU 0d9");
+    run(testFPU0x2d9, "FPU 2d9");
+    
+    run(testCmc0x0f5, "Cmc 0f5");
+    run(testCmc0x2f5, "Cmc 2f5");
+    
+    run(testGrp30x0f6, "Grp3 0f6");
+    run(testGrp30x2f6, "Grp3 2f6");
+    run(testGrp30x0f7, "Grp3 0f7");
+    run(testGrp30x2f7, "Grp3 2f7");
 
-	run(testClc0x0f8, "Clc 0f8");
-	run(testClc0x2f8, "Clc 2f8");
-	run(testStc0x0f8, "Stc 0f9");
-	run(testStc0x2f8, "Stc 2f9");
+    run(testClc0x0f8, "Clc 0f8");
+    run(testClc0x2f8, "Clc 2f8");
+    run(testStc0x0f8, "Stc 0f9");
+    run(testStc0x2f8, "Stc 2f9");
 
-	run(testGrp40x0fe, "Grp4 0fe");
-	run(testGrp40x2fe, "Grp4 2fe");
-	run(testGrp50x0ff, "Grp5 0ff");
-	run(testGrp50x2ff, "Grp5 2ff");
-	run(testBt0x1a3, "BT 1a3");
-	run(testBt0x3a3, "BT 3a3");
-	run(testShld0x1a4, "SHLD 1a4");
-	run(testShld0x3a4, "SHLD 3a4");
-	run(testShld0x1a5, "SHLD 1a5");
-	run(testShld0x3a5, "SHLD 3a5");
-	run(testBts0x1ab, "BTS 1ab");
-	run(testBts0x3ab, "BTS 3ab");
-	run(testShrd0x1ac, "SHRD 1ac");
-	run(testShrd0x3ac, "SHRD 3ac");
-	run(testShrd0x1ad, "SHRD 1ad");
-	run(testShrd0x3ad, "SHRD 3ad");
-	return 0;
+    run(testGrp40x0fe, "Grp4 0fe");
+    run(testGrp40x2fe, "Grp4 2fe");
+    run(testGrp50x0ff, "Grp5 0ff");
+    run(testGrp50x2ff, "Grp5 2ff");
+    run(testBt0x1a3, "BT 1a3");
+    run(testBt0x3a3, "BT 3a3");
+    run(testShld0x1a4, "SHLD 1a4");
+    run(testShld0x3a4, "SHLD 3a4");
+    run(testShld0x1a5, "SHLD 1a5");
+    run(testShld0x3a5, "SHLD 3a5");
+    run(testBts0x1ab, "BTS 1ab");
+    run(testBts0x3ab, "BTS 3ab");
+    run(testShrd0x1ac, "SHRD 1ac");
+    run(testShrd0x3ac, "SHRD 3ac");
+    run(testShrd0x1ad, "SHRD 1ad");
+    run(testShrd0x3ad, "SHRD 3ad");
+    return 0;
 }
 
 #endif

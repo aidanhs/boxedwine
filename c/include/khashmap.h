@@ -4,16 +4,16 @@
 #include "platform.h"
 
 struct KHashmapEntry {
-	const char* key;
-	void* value;
-	struct KHashmapEntry* next;
-	U32 hash;
+    const char* key;
+    void* value;
+    struct KHashmapEntry* next;
+    U32 hash;
 };
 
 struct KHashmap {
-	struct KHashmapEntry** buckets;
-	U32 numberOfBuckets;
-	U32 numberOfEntries;
+    struct KHashmapEntry** buckets;
+    U32 numberOfBuckets;
+    U32 numberOfEntries;
 };
 
 void initHashmap(struct KHashmap* hashMap);

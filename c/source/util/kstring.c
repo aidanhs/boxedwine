@@ -2,7 +2,7 @@
 
 int endsWith(const char *str, const char *suffix)
 {
-	int lenstr;
+    int lenstr;
     int lensuffix;
 
     if (!str || !suffix)

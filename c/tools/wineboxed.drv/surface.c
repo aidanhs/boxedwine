@@ -92,40 +92,40 @@ static struct boxeddrv_window_surface *get_boxed_surface(struct window_surface *
 
 RGNDATA *get_region_data(HRGN hrgn, HDC hdc_lptodp)
 {
-	RGNDATA *data;
-	DWORD size;
-	int i;
-	RECT *rect;
+    RGNDATA *data;
+    DWORD size;
+    int i;
+    RECT *rect;
 
-	if (!hrgn || !(size = GetRegionData(hrgn, 0, NULL))) return NULL;
-	if (!(data = HeapAlloc(GetProcessHeap(), 0, size))) return NULL;
-	if (!GetRegionData(hrgn, size, data))
-	{
-		HeapFree(GetProcessHeap(), 0, data);
-		return NULL;
-	}
+    if (!hrgn || !(size = GetRegionData(hrgn, 0, NULL))) return NULL;
+    if (!(data = HeapAlloc(GetProcessHeap(), 0, size))) return NULL;
+    if (!GetRegionData(hrgn, size, data))
+    {
+        HeapFree(GetProcessHeap(), 0, data);
+        return NULL;
+    }
 
-	rect = (RECT *)data->Buffer;
-	if (hdc_lptodp)  /* map to device coordinates */
-	{
-		LPtoDP(hdc_lptodp, (POINT *)rect, data->rdh.nCount * 2);
-		for (i = 0; i < data->rdh.nCount; i++)
-		{
-			if (rect[i].right < rect[i].left)
-			{
-				INT tmp = rect[i].right;
-				rect[i].right = rect[i].left;
-				rect[i].left = tmp;
-			}
-			if (rect[i].bottom < rect[i].top)
-			{
-				INT tmp = rect[i].bottom;
-				rect[i].bottom = rect[i].top;
-				rect[i].top = tmp;
-			}
-		}
-	}
-	return data;
+    rect = (RECT *)data->Buffer;
+    if (hdc_lptodp)  /* map to device coordinates */
+    {
+        LPtoDP(hdc_lptodp, (POINT *)rect, data->rdh.nCount * 2);
+        for (i = 0; i < data->rdh.nCount; i++)
+        {
+            if (rect[i].right < rect[i].left)
+            {
+                INT tmp = rect[i].right;
+                rect[i].right = rect[i].left;
+                rect[i].left = tmp;
+            }
+            if (rect[i].bottom < rect[i].top)
+            {
+                INT tmp = rect[i].bottom;
+                rect[i].bottom = rect[i].top;
+                rect[i].top = tmp;
+            }
+        }
+    }
+    return data;
 }
 
 /***********************************************************************
@@ -407,26 +407,26 @@ failed:
 */
 void surface_clip_to_visible_rect(struct window_surface *window_surface, const RECT *visible_rect)
 {
-	struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
+    struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
 
-	window_surface->funcs->lock(window_surface);
+    window_surface->funcs->lock(window_surface);
 
-	if (surface->drawn)
-	{
-		RECT rect;
-		HRGN region;
+    if (surface->drawn)
+    {
+        RECT rect;
+        HRGN region;
 
-		rect = *visible_rect;
-		OffsetRect(&rect, -rect.left, -rect.top);
+        rect = *visible_rect;
+        OffsetRect(&rect, -rect.left, -rect.top);
 
-		if ((region = CreateRectRgnIndirect(&rect)))
-		{
-			CombineRgn(surface->drawn, surface->drawn, region, RGN_AND);
-			DeleteObject(region);
+        if ((region = CreateRectRgnIndirect(&rect)))
+        {
+            CombineRgn(surface->drawn, surface->drawn, region, RGN_AND);
+            DeleteObject(region);
 
-			update_blit_data(surface);
-		}
-	}
+            update_blit_data(surface);
+        }
+    }
 
-	window_surface->funcs->unlock(window_surface);
+    window_surface->funcs->unlock(window_surface);
 }

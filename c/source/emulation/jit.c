@@ -1859,71 +1859,71 @@ void decode248_noflags(struct Op* op) {
 }
 
 void OPCALL neg32_reg_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 =  0-cpu->reg[op->r1].u32;
-	CYCLES(1);
-	NEXT();
+    cpu->reg[op->r1].u32 =  0-cpu->reg[op->r1].u32;
+    CYCLES(1);
+    NEXT();
 }
 
 void OPCALL neg32_mem16_noflags(struct CPU* cpu, struct Op* op) {
-	U32 eaa = eaa16(cpu, op);
-	writed(MMU_PARAM_CPU eaa, 0-readd(MMU_PARAM_CPU eaa));
-	CYCLES(3);
-	NEXT();
+    U32 eaa = eaa16(cpu, op);
+    writed(MMU_PARAM_CPU eaa, 0-readd(MMU_PARAM_CPU eaa));
+    CYCLES(3);
+    NEXT();
 }
 
 void OPCALL neg32_mem32_noflags(struct CPU* cpu, struct Op* op) {
-	U32 eaa = eaa32(cpu, op);
-	writed(MMU_PARAM_CPU eaa, 0-readd(MMU_PARAM_CPU eaa));
-	CYCLES(3);
-	NEXT();
+    U32 eaa = eaa32(cpu, op);
+    writed(MMU_PARAM_CPU eaa, 0-readd(MMU_PARAM_CPU eaa));
+    CYCLES(3);
+    NEXT();
 }
 
 void OPCALL mul32_reg_noflags(struct CPU* cpu, struct Op* op) {
-	U64 result = (U64)EAX * cpu->reg[op->r1].u32;
-	EAX = (U32)result;
-	EDX = (U32)(result >> 32);
-	CYCLES(10);
-	NEXT();
+    U64 result = (U64)EAX * cpu->reg[op->r1].u32;
+    EAX = (U32)result;
+    EDX = (U32)(result >> 32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL mul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U64 result = (U64)EAX * readd(MMU_PARAM_CPU eaa16(cpu, op));
-	EAX = (U32)result;
-	EDX = (U32)(result >> 32);
-	CYCLES(10);
-	NEXT();
+    EAX = (U32)result;
+    EDX = (U32)(result >> 32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL mul32_mem32_noflags(struct CPU* cpu, struct Op* op) {
-	U64 result = (U64)EAX * readd(MMU_PARAM_CPU eaa32(cpu, op));
-	EAX = (U32)result;
-	EDX = (U32)(result >> 32);
-	CYCLES(10);
-	NEXT();
+    U64 result = (U64)EAX * readd(MMU_PARAM_CPU eaa32(cpu, op));
+    EAX = (U32)result;
+    EDX = (U32)(result >> 32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL imul32_reg_noflags(struct CPU* cpu, struct Op* op) {
-	S64 result = (S64)((S32)EAX) * (S32)cpu->reg[op->r1].u32;
-	EAX = (S32)result;
-	EDX = (S32)(result >> 32);
-	CYCLES(10);
-	NEXT();
+    S64 result = (S64)((S32)EAX) * (S32)cpu->reg[op->r1].u32;
+    EAX = (S32)result;
+    EDX = (S32)(result >> 32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL imul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     S64 result = (S64)((S32)EAX) * (S32)readd(MMU_PARAM_CPU eaa16(cpu, op));
-	EAX = (S32)result;
-	EDX = (S32)(result >> 32);
-	CYCLES(10);
-	NEXT();
+    EAX = (S32)result;
+    EDX = (S32)(result >> 32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL imul32_mem32_noflags(struct CPU* cpu, struct Op* op) {
-	S64 result = (S64)((S32)EAX) * (S32)readd(MMU_PARAM_CPU eaa32(cpu, op));
-	EAX = (S32)result;
-	EDX = (S32)(result >> 32);
-	CYCLES(10);
-	NEXT();
+    S64 result = (S64)((S32)EAX) * (S32)readd(MMU_PARAM_CPU eaa32(cpu, op));
+    EAX = (S32)result;
+    EDX = (S32)(result >> 32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL test32_reg(struct CPU* cpu, struct Op* op);
@@ -2015,21 +2015,21 @@ void decode2ff_noflags(struct Op* op) {
 }
 
 void OPCALL dimulr32r32_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S32)(cpu->reg[op->r2].u32) * ((S32)cpu->reg[op->r1].u32);
-	CYCLES(10);
-	NEXT();
+    cpu->reg[op->r1].u32 = (S32)(cpu->reg[op->r2].u32) * ((S32)cpu->reg[op->r1].u32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL dimulr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa16(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
-	CYCLES(10);
-	NEXT();
+    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa16(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL dimulr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa32(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
-	CYCLES(10);
-	NEXT();
+    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa32(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL dimulr32r32(struct CPU* cpu, struct Op* op);
@@ -2048,21 +2048,21 @@ void decode3af_noflags(struct Op* op) {
 }
 
 void OPCALL dimulcr32r32_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S32)(cpu->reg[op->r2].u32) * ((S32)op->data1);
-	CYCLES(10);
-	NEXT();
+    cpu->reg[op->r1].u32 = (S32)(cpu->reg[op->r2].u32) * ((S32)op->data1);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL dimulcr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa16(cpu, op))) * ((S32)op->data1);
-	CYCLES(10);
-	NEXT();
+    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa16(cpu, op))) * ((S32)op->data1);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL dimulcr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa32(cpu, op))) * ((S32)op->data1);
-	CYCLES(10);
-	NEXT();
+    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa32(cpu, op))) * ((S32)op->data1);
+    CYCLES(10);
+    NEXT();
 }
 
 void OPCALL dimulcr32r32(struct CPU* cpu, struct Op* op);
@@ -2081,37 +2081,37 @@ void decode269_noflags(struct Op* op) {
 }
 
 void OPCALL cmpxchgr32r32_noflags(struct CPU* cpu, struct Op* op) {
-	if (EAX == cpu->reg[op->r1].u32) {
+    if (EAX == cpu->reg[op->r1].u32) {
         cpu->reg[op->r1].u32 = cpu->reg[op->r2].u32;
     } else {
         EAX = cpu->reg[op->r1].u32;
     }
-	CYCLES(5);
-	NEXT();
+    CYCLES(5);
+    NEXT();
 }
 
 void OPCALL cmpxchge32r32_16_noflags(struct CPU* cpu, struct Op* op) {
-	U32 address = eaa16(cpu, op);
-	U32 dst = readd(MMU_PARAM_CPU address);
-	if (EAX == dst) {
+    U32 address = eaa16(cpu, op);
+    U32 dst = readd(MMU_PARAM_CPU address);
+    if (EAX == dst) {
         writed(MMU_PARAM_CPU address, cpu->reg[op->r1].u32);
     } else {
         EAX = dst;
     }
-	CYCLES(6);
-	NEXT();
+    CYCLES(6);
+    NEXT();
 }
 
 void OPCALL cmpxchge32r32_32_noflags(struct CPU* cpu, struct Op* op) {
-	U32 address = eaa32(cpu, op);
-	U32 dst = readd(MMU_PARAM_CPU address);
-	if (EAX == dst) {
+    U32 address = eaa32(cpu, op);
+    U32 dst = readd(MMU_PARAM_CPU address);
+    if (EAX == dst) {
         writed(MMU_PARAM_CPU address, cpu->reg[op->r1].u32);
     } else {
         EAX = dst;
     }
-	CYCLES(6);
-	NEXT();
+    CYCLES(6);
+    NEXT();
 }
 
 void OPCALL cmpxchgr32r32(struct CPU* cpu, struct Op* op);
@@ -2130,23 +2130,23 @@ void decode3b1_noflags(struct Op* op) {
 }
 
 void OPCALL dshrr32r32_noflags(struct CPU* cpu, struct Op* op) {
-	cpu->reg[op->r1].u32 = (cpu->reg[op->r1].u32 >> op->data1) | (cpu->reg[op->r2].u32 << (32-op->data1));	
-	CYCLES(4);
-	NEXT();
+    cpu->reg[op->r1].u32 = (cpu->reg[op->r1].u32 >> op->data1) | (cpu->reg[op->r2].u32 << (32-op->data1));	
+    CYCLES(4);
+    NEXT();
 }
 
 void OPCALL dshre32r32_16_noflags(struct CPU* cpu, struct Op* op) {
-	U32 address = eaa16(cpu, op);
-	writed(MMU_PARAM_CPU address, (readd(MMU_PARAM_CPU address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
-	CYCLES(4);
-	NEXT();
+    U32 address = eaa16(cpu, op);
+    writed(MMU_PARAM_CPU address, (readd(MMU_PARAM_CPU address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
+    CYCLES(4);
+    NEXT();
 }
 
 void OPCALL dshre32r32_32_noflags(struct CPU* cpu, struct Op* op) {
-	U32 address = eaa32(cpu, op);
-	writed(MMU_PARAM_CPU address, (readd(MMU_PARAM_CPU address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
-	CYCLES(4);
-	NEXT();
+    U32 address = eaa32(cpu, op);
+    writed(MMU_PARAM_CPU address, (readd(MMU_PARAM_CPU address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
+    CYCLES(4);
+    NEXT();
 }
 
 void OPCALL dshrr32r32(struct CPU* cpu, struct Op* op);
@@ -2173,18 +2173,18 @@ void OPCALL xadd32r32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL xadd32r32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-	U32 eaa = eaa16(cpu, op);
+    U32 eaa = eaa16(cpu, op);
     U32 tmp = readd(MMU_PARAM_CPU eaa);
-	writed(MMU_PARAM_CPU eaa, tmp + cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, tmp + cpu->reg[op->r1].u32);
     cpu->reg[op->r1].u32 = tmp;
     CYCLES(4);
     NEXT();
 }
 
 void OPCALL xadd32r32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-	U32 eaa = eaa32(cpu, op);
+    U32 eaa = eaa32(cpu, op);
     U32 tmp = readd(MMU_PARAM_CPU eaa);
-	writed(MMU_PARAM_CPU eaa, tmp + cpu->reg[op->r1].u32);
+    writed(MMU_PARAM_CPU eaa, tmp + cpu->reg[op->r1].u32);
     cpu->reg[op->r1].u32 = tmp;
     CYCLES(4);
     NEXT();
@@ -2208,141 +2208,141 @@ void decode3c1_noflags(struct Op* op) {
 typedef void (*FAST_DECODER)(struct Op* op);
 
 FAST_DECODER fastDecoder[1024] = {
-	decode000_noflags, decode001_noflags, decode002_noflags, decode003_noflags, decode004_noflags, decode005_noflags, 0, 0,
-	decode008_noflags, decode009_noflags, decode00a_noflags, decode00b_noflags, decode00c_noflags, decode00d_noflags, 0, 0,
-	decode010_noflags, decode011_noflags, decode012_noflags, decode013_noflags, decode014_noflags, decode015_noflags, 0, 0,
-	decode018_noflags, decode019_noflags, decode01a_noflags, decode01b_noflags, decode01c_noflags, decode01d_noflags, 0, 0,
-	decode020_noflags, decode021_noflags, decode022_noflags, decode023_noflags, decode024_noflags, decode025_noflags, 0, 0,
-	decode028_noflags, decode029_noflags, decode02a_noflags, decode02b_noflags, decode02c_noflags, decode02d_noflags, 0, 0,
-	decode030_noflags, decode031_noflags, decode032_noflags, decode033_noflags, decode034_noflags, decode035_noflags, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags,
-	decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+    decode000_noflags, decode001_noflags, decode002_noflags, decode003_noflags, decode004_noflags, decode005_noflags, 0, 0,
+    decode008_noflags, decode009_noflags, decode00a_noflags, decode00b_noflags, decode00c_noflags, decode00d_noflags, 0, 0,
+    decode010_noflags, decode011_noflags, decode012_noflags, decode013_noflags, decode014_noflags, decode015_noflags, 0, 0,
+    decode018_noflags, decode019_noflags, decode01a_noflags, decode01b_noflags, decode01c_noflags, decode01d_noflags, 0, 0,
+    decode020_noflags, decode021_noflags, decode022_noflags, decode023_noflags, decode024_noflags, decode025_noflags, 0, 0,
+    decode028_noflags, decode029_noflags, decode02a_noflags, decode02b_noflags, decode02c_noflags, decode02d_noflags, 0, 0,
+    decode030_noflags, decode031_noflags, decode032_noflags, decode033_noflags, decode034_noflags, decode035_noflags, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags, decode040_noflags,
+    decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags, decode048_noflags,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     // 0x080
-	decode080_noflags, decode081_noflags, decode080_noflags, decode081_noflags, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	decode0c0_noflags, decode0c1_noflags, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	decode0c0_noflags, decode0c1_noflags, decode0d2_noflags, decode0d3_noflags, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, decode0fe_noflags, 0,
+    decode080_noflags, decode081_noflags, decode080_noflags, decode081_noflags, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    decode0c0_noflags, decode0c1_noflags, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    decode0c0_noflags, decode0c1_noflags, decode0d2_noflags, decode0d3_noflags, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, decode0fe_noflags, 0,
     // 0x100
     0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     // 0x180
     0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     // 0x200
     decode000_noflags, decode201_noflags, decode002_noflags, decode203_noflags, decode004_noflags, decode205_noflags, 0, 0,
-	decode008_noflags, decode209_noflags, decode00a_noflags, decode20b_noflags, decode00c_noflags, decode20d_noflags, 0, 0,
-	decode010_noflags, decode211_noflags, decode012_noflags, decode213_noflags, decode014_noflags, decode215_noflags, 0, 0,
-	decode018_noflags, decode219_noflags, decode01a_noflags, decode21b_noflags, decode01c_noflags, decode21d_noflags, 0, 0,
-	decode020_noflags, decode221_noflags, decode022_noflags, decode223_noflags, decode024_noflags, decode225_noflags, 0, 0,
-	decode028_noflags, decode229_noflags, decode02a_noflags, decode22b_noflags, decode02c_noflags, decode22d_noflags, 0, 0,
-	decode030_noflags, decode231_noflags, decode032_noflags, decode233_noflags, decode034_noflags, decode235_noflags, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags,
-	decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, decode269_noflags, 0, decode269_noflags, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+    decode008_noflags, decode209_noflags, decode00a_noflags, decode20b_noflags, decode00c_noflags, decode20d_noflags, 0, 0,
+    decode010_noflags, decode211_noflags, decode012_noflags, decode213_noflags, decode014_noflags, decode215_noflags, 0, 0,
+    decode018_noflags, decode219_noflags, decode01a_noflags, decode21b_noflags, decode01c_noflags, decode21d_noflags, 0, 0,
+    decode020_noflags, decode221_noflags, decode022_noflags, decode223_noflags, decode024_noflags, decode225_noflags, 0, 0,
+    decode028_noflags, decode229_noflags, decode02a_noflags, decode22b_noflags, decode02c_noflags, decode22d_noflags, 0, 0,
+    decode030_noflags, decode231_noflags, decode032_noflags, decode233_noflags, decode034_noflags, decode235_noflags, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags, decode240_noflags,
+    decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags, decode248_noflags,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, decode269_noflags, 0, decode269_noflags, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     // 0x280
     decode080_noflags, decode281_noflags, decode080_noflags, decode281_noflags, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	decode0c0_noflags, decode2c1_noflags, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	decode0c0_noflags, decode2c1_noflags, decode0d2_noflags, decode2d3_noflags, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, decode2f7_noflags,
-	0, 0, 0, 0, 0, 0, decode0fe_noflags, decode2ff_noflags,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    decode0c0_noflags, decode2c1_noflags, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    decode0c0_noflags, decode2c1_noflags, decode0d2_noflags, decode2d3_noflags, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, decode2f7_noflags,
+    0, 0, 0, 0, 0, 0, decode0fe_noflags, decode2ff_noflags,
     // 0x300
     0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
     // 0x380
     0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, decode3ac_noflags, 0, 0, decode3af_noflags,
-	0, decode3b1_noflags, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, decode3c1_noflags, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, decode3ac_noflags, 0, 0, decode3af_noflags,
+    0, decode3b1_noflags, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, decode3c1_noflags, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
 };
 
 void OPCALL pushReg32(struct CPU* cpu, struct Op* op);

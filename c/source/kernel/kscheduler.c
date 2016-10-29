@@ -18,130 +18,130 @@ struct KList timers;
 
 void addTimer(struct KTimer* timer) {
 #ifdef LOG_SCHEDULER
-	klog("add timer");
-	if (timer->thread)
-		klog("    %d", timer->thread->id);
+    klog("add timer");
+    if (timer->thread)
+        klog("    %d", timer->thread->id);
 #endif
-	timer->node = addItemToList(&timers, timer);
-	timer->active = 1;
+    timer->node = addItemToList(&timers, timer);
+    timer->active = 1;
 }
 
 void removeTimer(struct KTimer* timer) {
 #ifdef LOG_SCHEDULER
-	klog("remove timer");
-	if (timer->thread)
-		klog("    %d", timer->thread->id);
+    klog("remove timer");
+    if (timer->thread)
+        klog("    %d", timer->thread->id);
 #endif
-	removeItemFromList(&timers, timer->node);
-	timer->node = 0;
-	timer->active = 0;
+    removeItemFromList(&timers, timer->node);
+    timer->node = 0;
+    timer->active = 0;
 }
 
 void wakeThread(struct KThread* thread) {
-	U32 i;
+    U32 i;
     if (!thread->waitNode) {
         kpanic("wakeThread: tried to wake a thread that is not asleep");
     }
-	removeItemFromList(&waitingThreads, thread->waitNode);
-	thread->waitNode = 0;
-	for (i=0; i<thread->clearOnWakeCount; i++) {
-		*thread->clearOnWake[i] = 0;
-		thread->clearOnWake[i] = 0;
-	}
-	thread->clearOnWakeCount = 0;
-	scheduleThread(thread);
+    removeItemFromList(&waitingThreads, thread->waitNode);
+    thread->waitNode = 0;
+    for (i=0; i<thread->clearOnWakeCount; i++) {
+        *thread->clearOnWake[i] = 0;
+        thread->clearOnWake[i] = 0;
+    }
+    thread->clearOnWakeCount = 0;
+    scheduleThread(thread);
 }
 
 void wakeThreads(U32 wakeType) {
-	struct KListNode* node = waitingThreads.first;
+    struct KListNode* node = waitingThreads.first;
 #ifdef LOG_SCHEDULER
-	klog("wakeThreads %d", wakeType);
+    klog("wakeThreads %d", wakeType);
 #endif
-	while (node) {
-		struct KListNode* next = node->next;
-		struct KThread* thread = (struct KThread*)node->data;
+    while (node) {
+        struct KListNode* next = node->next;
+        struct KThread* thread = (struct KThread*)node->data;
 
-		if (thread->waitType == wakeType) {
-			wakeThread(thread);
-		}
-		node = next;
-	}
+        if (thread->waitType == wakeType) {
+            wakeThread(thread);
+        }
+        node = next;
+    }
 }
 
 void scheduleThread(struct KThread* thread) {
-	if (thread->timer.node) {
-		removeTimer(&thread->timer);
-	}	
-	thread->scheduledNode = addItemToCircularList(&scheduledThreads, thread);
-	if (scheduledThreads.count == 1) {
-		nextThread = thread->scheduledNode;
-	}
+    if (thread->timer.node) {
+        removeTimer(&thread->timer);
+    }	
+    thread->scheduledNode = addItemToCircularList(&scheduledThreads, thread);
+    if (scheduledThreads.count == 1) {
+        nextThread = thread->scheduledNode;
+    }
 #ifdef LOG_SCHEDULER
-	klog("schedule %d(%X)", thread->id, thread->scheduledNode);
-	if (scheduledThreads.node)
-	{
-		struct KCNode* head=scheduledThreads.node;
-		struct KCNode* node = head;		
+    klog("schedule %d(%X)", thread->id, thread->scheduledNode);
+    if (scheduledThreads.node)
+    {
+        struct KCNode* head=scheduledThreads.node;
+        struct KCNode* node = head;		
 
-		do {
-			U32 id = ((struct KThread*)node->data)->id;
-			klog("    %d(%X)",id, node);
-			node = node->next;
-		} while (node!=head);
-	}
-	{
-		struct KListNode* node = timers.first;
-		klog("timers");
-		while (node) {
-			struct KTimer* timer = (struct KTimer*)node->data;
-			if (timer->thread) {
-				klog("    thread %d", timer->thread->id);
-			} else {
-				klog("    process %d", timer->process->id);
-			}		
-			node = node->next;
-		}
-	}
+        do {
+            U32 id = ((struct KThread*)node->data)->id;
+            klog("    %d(%X)",id, node);
+            node = node->next;
+        } while (node!=head);
+    }
+    {
+        struct KListNode* node = timers.first;
+        klog("timers");
+        while (node) {
+            struct KTimer* timer = (struct KTimer*)node->data;
+            if (timer->thread) {
+                klog("    thread %d", timer->thread->id);
+            } else {
+                klog("    process %d", timer->process->id);
+            }		
+            node = node->next;
+        }
+    }
 #endif
 }
 
 void unscheduleThread(struct KThread* thread) {	
-	removeItemFromCircularList(&scheduledThreads, thread->scheduledNode);
-	thread->scheduledNode = 0;
-	threadDone(&thread->cpu);
-	if (nextThread->data == thread) {
-		nextThread = scheduledThreads.node;
-	}
+    removeItemFromCircularList(&scheduledThreads, thread->scheduledNode);
+    thread->scheduledNode = 0;
+    threadDone(&thread->cpu);
+    if (nextThread->data == thread) {
+        nextThread = scheduledThreads.node;
+    }
 #ifdef LOG_SCHEDULER
-	klog("unschedule %d(%X)", thread->id, thread->scheduledNode);	
-	if (scheduledThreads.node)
-	{
-		struct KCNode* head=scheduledThreads.node;
-		struct KCNode* node = head;
-		do {
-			klog("    %d(%X)", ((struct KThread*)node->data)->id, node);
-			node = node->next;
-		} while (node!=head);
-	}
-	{
-		struct KListNode* node = timers.first;
-		klog("timers");
-		while (node) {
-			struct KTimer* timer = (struct KTimer*)node->data;
-			if (timer->thread) {
-				klog("    thread %d", timer->thread->id);
-			} else {
-				klog("    process %d", timer->process->id);
-			}	
-			node = node->next;
-		}
-	}
+    klog("unschedule %d(%X)", thread->id, thread->scheduledNode);	
+    if (scheduledThreads.node)
+    {
+        struct KCNode* head=scheduledThreads.node;
+        struct KCNode* node = head;
+        do {
+            klog("    %d(%X)", ((struct KThread*)node->data)->id, node);
+            node = node->next;
+        } while (node!=head);
+    }
+    {
+        struct KListNode* node = timers.first;
+        klog("timers");
+        while (node) {
+            struct KTimer* timer = (struct KTimer*)node->data;
+            if (timer->thread) {
+                klog("    thread %d", timer->thread->id);
+            } else {
+                klog("    process %d", timer->process->id);
+            }	
+            node = node->next;
+        }
+    }
 #endif
 }
 
 void waitThread(struct KThread* thread) {
-	unscheduleThread(thread);
-	thread->waitNode = addItemToList(&waitingThreads, thread);
+    unscheduleThread(thread);
+    thread->waitNode = addItemToList(&waitingThreads, thread);
 }
 
 U32 contextTime = 100000;
@@ -150,18 +150,17 @@ int count;
 extern struct Block emptyBlock;
 
 void runThreadSlice(struct KThread* thread) {
-	struct CPU* cpu;
+    struct CPU* cpu;
 
-	cpu = &thread->cpu;
-	cpu->blockCounter = 0;
+    cpu = &thread->cpu;
+    cpu->blockCounter = 0;
     cpu->blockInstructionCount = 0;
 
     if (!cpu->nextBlock || cpu->nextBlock == &emptyBlock) {
         cpu->nextBlock = getBlock(cpu);
     }
-	if (setjmp(runBlockJump)==0) {
-		do {
-			runBlock(cpu, cpu->nextBlock);
+    if (setjmp(runBlockJump)==0) {
+        do {
             runBlock(cpu, cpu->nextBlock);
             runBlock(cpu, cpu->nextBlock);
             runBlock(cpu, cpu->nextBlock);
@@ -169,32 +168,33 @@ void runThreadSlice(struct KThread* thread) {
             runBlock(cpu, cpu->nextBlock);
             runBlock(cpu, cpu->nextBlock);
             runBlock(cpu, cpu->nextBlock);
-		} while (cpu->blockCounter < contextTime);	
-	} else {
+            runBlock(cpu, cpu->nextBlock);
+        } while (cpu->blockCounter < contextTime);	
+    } else {
         cpu->nextBlock = 0;
     }
-	cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
+    cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
 }
 
 void runTimers() {
-	struct KListNode* node = timers.first;
+    struct KListNode* node = timers.first;
 
-	if (node) {		
-		U32 millies = getMilliesSinceStart();
-		while (node) {
-			struct KTimer* timer = (struct KTimer*)node->data;
-			struct KListNode* next = node->next;
-			if (timer->millies<=millies) {
-				if (timer->thread) {
-					removeTimer(timer);
-					wakeThread(timer->thread);
-				} else {
-					runProcessTimer(timer);
-				}
-			}
-			node = next;
-		}
-	}
+    if (node) {		
+        U32 millies = getMilliesSinceStart();
+        while (node) {
+            struct KTimer* timer = (struct KTimer*)node->data;
+            struct KListNode* next = node->next;
+            if (timer->millies<=millies) {
+                if (timer->thread) {
+                    removeTimer(timer);
+                    wakeThread(timer->thread);
+                } else {
+                    runProcessTimer(timer);
+                }
+            }
+            node = next;
+        }
+    }
 }
 
 struct KThread* currentThread;
@@ -204,31 +204,31 @@ U64 cpuTotalCycles;
 U64 cpuTotalInstructionCount;
 
 BOOL runSlice() {
-	runTimers();
-	flipFB();
-	if (nextThread) {		
-		U64 startTime = getSystemTimeAsMicroSeconds();
-		U64 diff;
+    runTimers();
+    flipFB();
+    if (nextThread) {		
+        U64 startTime = getSystemTimeAsMicroSeconds();
+        U64 diff;
 
-		currentThread = (struct KThread*)nextThread->data;
-		nextThread = nextThread->next;						
-		runThreadSlice(currentThread);
-		diff = getSystemTimeAsMicroSeconds()-startTime;
+        currentThread = (struct KThread*)nextThread->data;
+        nextThread = nextThread->next;						
+        runThreadSlice(currentThread);
+        diff = getSystemTimeAsMicroSeconds()-startTime;
 
-		if (!(currentThread->cpu.blockCounter & 0x80000000)) {			
-			if (diff>150000) {
-				contextTime-=10000;
-			} else if (diff<10000) {
-				contextTime+=10000;
-			}
-		}
-		cpuTotalTime+=diff;
-		cpuTotalCycles+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
+        if (!(currentThread->cpu.blockCounter & 0x80000000)) {			
+            if (diff>150000) {
+                contextTime-=10000;
+            } else if (diff<10000) {
+                contextTime+=10000;
+            }
+        }
+        cpuTotalTime+=diff;
+        cpuTotalCycles+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
         cpuTotalInstructionCount+=currentThread->cpu.blockInstructionCount;
-		currentThread->threadTime+=diff;
-		return TRUE;
-	}
-	return FALSE;
+        currentThread->threadTime+=diff;
+        return TRUE;
+    }
+    return FALSE;
 }
 
 U64 lastCycleCount;
@@ -239,7 +239,7 @@ U32 getMHz() {
     if (lastTime) {
         U64 diff = getSystemTimeAsMicroSeconds()-lastTime;    
         if (diff)
-	        result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
+            result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
         lastCycleCount = cpuTotalCycles;        
     }
     lastTime = getSystemTimeAsMicroSeconds();
@@ -254,7 +254,7 @@ U32 getMIPS() {
     if (lastIPSTime) {
         U64 diff = getSystemTimeAsMicroSeconds()-lastIPSTime;        
         if (diff)
-	        result = (U32)((cpuTotalInstructionCount-lastIPScount)/diff);
+            result = (U32)((cpuTotalInstructionCount-lastIPScount)/diff);
         lastIPScount = cpuTotalInstructionCount;
     }
     lastIPSTime = getSystemTimeAsMicroSeconds();

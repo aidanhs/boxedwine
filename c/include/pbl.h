@@ -95,7 +95,7 @@ extern "C" {
 #ifdef _WIN32
     #include <direct.h>
     #include <io.h>
-	#include <string.h>
+    #include <string.h>
 #else
 #ifndef __CYGWIN__
     #include <sys/dir.h>
@@ -559,7 +559,7 @@ typedef struct PblLinkedNode_s
  */
 typedef struct PblLinkedList_s
 {
-	PblCollection collection;   /* The collection part of the linked list    */
+    PblCollection collection;   /* The collection part of the linked list    */
 
     PblLinkedNode * head;       /* The head of list of all nodes             */
     PblLinkedNode * tail;       /* The tail of list of all nodes             */
@@ -571,7 +571,7 @@ typedef struct PblLinkedList_s
  */
 typedef struct PblArrayList_s
 {
-	PblCollection collection;  /* The collection part of the array list      */
+    PblCollection collection;  /* The collection part of the array list      */
 
     /* The array of all pointers known                                       */
     unsigned char ** pointerArray;
@@ -682,8 +682,8 @@ typedef PblList PblPriorityQueue;
  */
 struct PblStringBuilder_s
 {
-	PblList * list;
-	size_t    length;
+    PblList * list;
+    size_t    length;
 };
 
 /**
@@ -1778,47 +1778,47 @@ extern int pblPriorityQueueJoin( /*                       */
 extern PblStringBuilder * pblStringBuilderNew( void );
 
 extern void pblStringBuilderClear(       /*                                 */
-		PblStringBuilder * stringBuilder /** The string builder to clear    */
-		);
+        PblStringBuilder * stringBuilder /** The string builder to clear    */
+        );
 
 extern void pblStringBuilderFree(        /*                                 */
-		PblStringBuilder * stringBuilder /** The string builder to free     */
-		);
+        PblStringBuilder * stringBuilder /** The string builder to free     */
+        );
 
 extern int pblStringBuilderSize(         /*                                 */
-		PblStringBuilder * stringBuilder /** The string builder to use      */
-		);
+        PblStringBuilder * stringBuilder /** The string builder to use      */
+        );
 
 extern size_t pblStringBuilderLength(    /*                                 */
-		PblStringBuilder * stringBuilder /** The string builder to use      */
-		);
+        PblStringBuilder * stringBuilder /** The string builder to use      */
+        );
 
 extern size_t pblStringBuilderAppendStr(   /*                               */
-		PblStringBuilder * stringBuilder,  /** The string builder to use    */
-		const char * data /** The data to be added to the string builde     */
-		);
+        PblStringBuilder * stringBuilder,  /** The string builder to use    */
+        const char * data /** The data to be added to the string builde     */
+        );
 
 extern size_t pblStringBuilderAppendStrN(  /*                               */
-		PblStringBuilder * stringBuilder,  /** The string builder to use    */
-		size_t n,         /** The maximum number of bytes to append         */
-		const char * data /** The data to be added to the string builder    */
-		);
+        PblStringBuilder * stringBuilder,  /** The string builder to use    */
+        size_t n,         /** The maximum number of bytes to append         */
+        const char * data /** The data to be added to the string builder    */
+        );
 
 extern size_t pblStringBuilderAppend(     /*                                */
-		PblStringBuilder * stringBuilder, /** The string builder to use     */
-		const char *format,/** The format of the arguments to append        */
-		...                /** The variable arguments to append             */
-		);
+        PblStringBuilder * stringBuilder, /** The string builder to use     */
+        const char *format,/** The format of the arguments to append        */
+        ...                /** The variable arguments to append             */
+        );
 
 extern size_t pblStringBuilderAppendN(    /*                                */
-		PblStringBuilder * stringBuilder, /** The string builder to use     */
-		size_t n,          /** The maximum number of bytes to append        */
-		const char *format,/** The format of the arguments to append        */
-		... );             /** The variable arguments to append             */
+        PblStringBuilder * stringBuilder, /** The string builder to use     */
+        size_t n,          /** The maximum number of bytes to append        */
+        const char *format,/** The format of the arguments to append        */
+        ... );             /** The variable arguments to append             */
 
 extern char * pblStringBuilderToString(   /*                                */
-		PblStringBuilder * stringBuilder  /** The string builder to use     */
-		);
+        PblStringBuilder * stringBuilder  /** The string builder to use     */
+        );
 
 /*
  * FUNCTIONS ON KEY FILES

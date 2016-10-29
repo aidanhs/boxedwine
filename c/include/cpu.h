@@ -10,12 +10,12 @@
 struct CPU;
 
 struct LazyFlags {
-	U32 (*getCF)(struct CPU* cpu);
-	U32 (*getOF)(struct CPU* cpu);
-	U32 (*getAF)(struct CPU* cpu);
-	U32 (*getZF)(struct CPU* cpu);
-	U32 (*getSF)(struct CPU* cpu);
-	U32 (*getPF)(struct CPU* cpu);
+    U32 (*getCF)(struct CPU* cpu);
+    U32 (*getOF)(struct CPU* cpu);
+    U32 (*getAF)(struct CPU* cpu);
+    U32 (*getZF)(struct CPU* cpu);
+    U32 (*getSF)(struct CPU* cpu);
+    U32 (*getPF)(struct CPU* cpu);
 };
 
 #define LDT_ENTRIES 8192
@@ -24,46 +24,46 @@ struct user_desc {
     U32  entry_number;
     U32 base_addr;
     U32  limit;
-	union {
-		struct {
-			U32  seg_32bit:1;
-			U32  contents:2;
-			U32  read_exec_only:1;
-			U32  limit_in_pages:1;
-			U32  seg_not_present:1;
-			U32  useable:1;
-		};
-		U32 flags;
-	};
+    union {
+        struct {
+            U32  seg_32bit:1;
+            U32  contents:2;
+            U32  read_exec_only:1;
+            U32  limit_in_pages:1;
+            U32  seg_not_present:1;
+            U32  useable:1;
+        };
+        U32 flags;
+    };
 };
 
 struct CPU {
-	struct Reg		reg[9]; // index 8 is 0
-	U8*		reg8[8];
-	U32		segAddress[6];
-	U32		segValue[7]; // index 6 is for 0, used in LEA instruction	
-	U32		flags;
-	struct Reg		eip;	
+    struct Reg		reg[9]; // index 8 is 0
+    U8*		reg8[8];
+    U32		segAddress[6];
+    U32		segValue[7]; // index 6 is for 0, used in LEA instruction	
+    U32		flags;
+    struct Reg		eip;	
 #ifdef USE_MMU
-	struct Memory* memory;
+    struct Memory* memory;
 #endif
-	struct KThread* thread;
-	struct Reg     src;
-	struct Reg     dst;
-	struct Reg     dst2;
-	struct Reg     result;
-	struct LazyFlags* lazyFlags;
-	int	    df;
-	U32     oldcf;
-	U32		big;
-	struct FPU     fpu;
-	struct Block* nextBlock;
-	struct Block* currentBlock;
-	U64		timeStampCounter;
-	U32     blockCounter; // number of clocks since the start of the block	
+    struct KThread* thread;
+    struct Reg     src;
+    struct Reg     dst;
+    struct Reg     dst2;
+    struct Reg     result;
+    struct LazyFlags* lazyFlags;
+    int	    df;
+    U32     oldcf;
+    U32		big;
+    struct FPU     fpu;
+    struct Block* nextBlock;
+    struct Block* currentBlock;
+    U64		timeStampCounter;
+    U32     blockCounter; // number of clocks since the start of the block	
     U32     blockInstructionCount;
-	BOOL log;
-	U32 cpl;
+    BOOL log;
+    U32 cpl;
     U32 stackMask;
     U32 stackNotMask;
     struct user_desc* ldt;
@@ -182,9 +182,9 @@ void cpu_exception(struct CPU* cpu, int code, int error);
 void initCPU(struct CPU* cpu, struct KProcess* process);
 void onCreateCPU(struct CPU* cpu);
 INLINE void runBlock(struct CPU* cpu, struct Block* block) {
-	cpu->currentBlock = block;
-	block->count++;	
-	block->ops->func(cpu, block->ops);
+    cpu->currentBlock = block;
+    block->count++;	
+    block->ops->func(cpu, block->ops);
 }
 struct Block* getBlock(struct CPU* cpu);
 #ifdef __TEST

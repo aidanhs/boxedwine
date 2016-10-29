@@ -28,18 +28,18 @@
 #define K_F_UNLCK	   2
 
 struct NodeType {
-	BOOL (*isDirectory)(struct Node* node);
-	BOOL (*exists)(struct Node* node);
-	U32 (*rename)(struct Node* oldNode, struct Node* newNode);
-	BOOL (*remove)(struct Node* node);
-	U64 (*lastModified)(struct Node* node);
+    BOOL (*isDirectory)(struct Node* node);
+    BOOL (*exists)(struct Node* node);
+    U32 (*rename)(struct Node* oldNode, struct Node* newNode);
+    BOOL (*remove)(struct Node* node);
+    U64 (*lastModified)(struct Node* node);
     U64 (*length)(struct Node* node);
     struct OpenNode* (*open)(struct KProcess* process, struct Node* node, U32 flags);
-	BOOL (*setLastModifiedTime)(struct Node* node, U32 time);
-	BOOL (*canRead)(struct KProcess* process, struct Node* node);
-	BOOL (*canWrite)(struct KProcess* process, struct Node* node);
-	U32 (*getType)(struct Node* node, U32 checkForLink);
-	U32 (*getMode)(struct KProcess* process, struct Node* node);
+    BOOL (*setLastModifiedTime)(struct Node* node, U32 time);
+    BOOL (*canRead)(struct KProcess* process, struct Node* node);
+    BOOL (*canWrite)(struct KProcess* process, struct Node* node);
+    U32 (*getType)(struct Node* node, U32 checkForLink);
+    U32 (*getMode)(struct KProcess* process, struct Node* node);
 };
 
 #endif

@@ -9,13 +9,13 @@
 #define KTYPE_EPOLL 2
 
 struct KObject {
-	struct KObjectAccess* access;
-	U32 refCount;
-	U32 type;
-	union {
-		void* data;
-		struct KObject* next; // used for free list
-	};
+    struct KObjectAccess* access;
+    U32 refCount;
+    U32 type;
+    union {
+        void* data;
+        struct KObject* next; // used for free list
+    };
 };
 
 struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data);

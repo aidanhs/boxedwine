@@ -4,11 +4,11 @@
 #include "platform.h"
 
 struct KPollData {
-	U32 address;
+    U32 address;
     FD fd;
     U32 events;
     U32 revents;
-	U64 data;
+    U64 data;
 };
 
 struct KThread;

@@ -11,153 +11,153 @@
 struct DisplayList* activeList;
 
 void es_glClearIndex( GLfloat c ) {
-	kpanic("glClearIndex not implemeented");
+    kpanic("glClearIndex not implemeented");
 }
 
 #define COMPILE_OR_RUN_1(func, arg1, arg1Type)	\
 if (activeList) {								\
-	struct ListOp* op = allocListOp(activeList);\
-	op->op = list_##func;						\
-	op->a1.arg1Type = arg1;					\
+    struct ListOp* op = allocListOp(activeList);\
+    op->op = list_##func;						\
+    op->a1.arg1Type = arg1;					\
 } else {										\
-	func(arg1);									\
+    func(arg1);									\
 }
 
 #define COMPILE_OR_RUN_2(func, arg1, arg1Type, arg2, arg2Type) \
 if (activeList) {								\
-	struct ListOp* op = allocListOp(activeList);\
-	 op->op = list_##func;						\
-	 op->a1.arg1Type = arg1;					\
-	op->a2.arg2Type = arg2;					\
+    struct ListOp* op = allocListOp(activeList);\
+     op->op = list_##func;						\
+     op->a1.arg1Type = arg1;					\
+    op->a2.arg2Type = arg2;					\
 } else {										\
-	func(arg1, arg2);							\
+    func(arg1, arg2);							\
 }													
 
 #define COMPILE_OR_RUN_3(func, arg1, arg1Type, arg2, arg2Type, arg3, arg3Type) \
 if (activeList) {								\
-	struct ListOp* op = allocListOp(activeList);\
-	op->op = list_##func;						\
-	op->a1.arg1Type = arg1;					\
-	op->a2.arg2Type = arg2;					\
-	op->a3.arg3Type = arg3;					\
+    struct ListOp* op = allocListOp(activeList);\
+    op->op = list_##func;						\
+    op->a1.arg1Type = arg1;					\
+    op->a2.arg2Type = arg2;					\
+    op->a3.arg3Type = arg3;					\
 } else {										\
-	func(arg1, arg2, arg3);						\
+    func(arg1, arg2, arg3);						\
 }	
 
 #define COMPILE_OR_RUN_4(func, arg1, arg1Type, arg2, arg2Type, arg3, arg3Type, arg4, arg4Type) \
 if (activeList) {								\
-	struct ListOp* op = allocListOp(activeList);\
-	op->op = list_##func;						\
-	op->a1.arg1Type = arg1;					\
-	op->a2.arg2Type = arg2;					\
-	op->a3.arg3Type = arg3;					\
-	op->a4.arg4Type = arg4;					\
+    struct ListOp* op = allocListOp(activeList);\
+    op->op = list_##func;						\
+    op->a1.arg1Type = arg1;					\
+    op->a2.arg2Type = arg2;					\
+    op->a3.arg3Type = arg3;					\
+    op->a4.arg4Type = arg4;					\
 } else {										\
-	func(arg1, arg2, arg3, arg4);				\
+    func(arg1, arg2, arg3, arg4);				\
 }	
 
 void es_glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha ) {
-	COMPILE_OR_RUN_4(glClearColor, red, f, green, f, blue, f, alpha, f);
+    COMPILE_OR_RUN_4(glClearColor, red, f, green, f, blue, f, alpha, f);
 }
 
 void es_glClear( GLbitfield mask ) {
-	COMPILE_OR_RUN_1(glClear, mask, i);
+    COMPILE_OR_RUN_1(glClear, mask, i);
 }
 
 void es_glIndexMask( GLuint mask ) {
-	kpanic("glIndexMask not implemented");
+    kpanic("glIndexMask not implemented");
 }
 
 void es_glColorMask( GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha ) {
-	COMPILE_OR_RUN_4(glColorMask, red, i, green, i, blue, i, alpha, i);
+    COMPILE_OR_RUN_4(glColorMask, red, i, green, i, blue, i, alpha, i);
 }
 
 void es_glAlphaFunc( GLenum func, GLclampf ref ) {
-	kpanic("glAlphaFunc not implemented");
+    kpanic("glAlphaFunc not implemented");
 }
 
 void es_glBlendFunc( GLenum sfactor, GLenum dfactor ) {
-	COMPILE_OR_RUN_2(glBlendFunc, sfactor, i, dfactor, i);
+    COMPILE_OR_RUN_2(glBlendFunc, sfactor, i, dfactor, i);
 }
 
 void es_glLogicOp( GLenum opcode ) {
-	kpanic("glLogicOp not implemented");
+    kpanic("glLogicOp not implemented");
 }
 
 void es_glCullFace( GLenum mode ) {
-	COMPILE_OR_RUN_1(glCullFace, mode, i);
+    COMPILE_OR_RUN_1(glCullFace, mode, i);
 }
 
 void es_glFrontFace( GLenum mode ) {
-	COMPILE_OR_RUN_1(glFrontFace, mode, i);
+    COMPILE_OR_RUN_1(glFrontFace, mode, i);
 }
 
 void es_glPointSize( GLfloat size ) {
-	kpanic("glPointSize not implemented");
+    kpanic("glPointSize not implemented");
 }
 
 void es_glLineWidth( GLfloat width ) {
-	COMPILE_OR_RUN_1(glLineWidth, width, f);
+    COMPILE_OR_RUN_1(glLineWidth, width, f);
 }
 
 void es_glLineStipple( GLint factor, GLushort pattern ) {
-	COMPILE_OR_RUN_2(glLineStipple, factor, i, pattern, i);
+    COMPILE_OR_RUN_2(glLineStipple, factor, i, pattern, i);
 }
 
 void es_glPolygonMode( GLenum face, GLenum mode ) {
-	kpanic("glPolygonMode not implemented");
+    kpanic("glPolygonMode not implemented");
 }
 
 void es_glPolygonOffset( GLfloat factor, GLfloat units ) {
-	COMPILE_OR_RUN_2(glPolygonOffset, factor, f, units, f);
+    COMPILE_OR_RUN_2(glPolygonOffset, factor, f, units, f);
 }
 
 void es_glPolygonStipple( const GLubyte *mask ) {
-	kpanic("glPolygonStipple not implemented");
+    kpanic("glPolygonStipple not implemented");
 }
 
 void es_glGetPolygonStipple( GLubyte *mask ) {
-	kpanic("glGetPolygonStipple not implemented");
+    kpanic("glGetPolygonStipple not implemented");
 }
 
 void es_glEdgeFlag( GLboolean flag ) {
-	kpanic("glEdgeFlag not implemented");
+    kpanic("glEdgeFlag not implemented");
 }
 
 void es_glEdgeFlagv( const GLboolean *flag ) {
-	kpanic("glEdgeFlagv not implemented");
+    kpanic("glEdgeFlagv not implemented");
 }
 
 void es_glScissor( GLint x, GLint y, GLsizei width, GLsizei height) {
-	COMPILE_OR_RUN_4(glScissor, x, i, y, i, width, i, height, i);
+    COMPILE_OR_RUN_4(glScissor, x, i, y, i, width, i, height, i);
 }
 
 void es_glClipPlane( GLenum plane, const GLdouble *equation ) {
-	kpanic("glClipPlane not implemented");
+    kpanic("glClipPlane not implemented");
 }
 
 void es_glGetClipPlane( GLenum plane, GLdouble *equation ) {
-	kpanic("glGetClipPlane not implemented");
+    kpanic("glGetClipPlane not implemented");
 }
 
 void es_glDrawBuffer( GLenum mode ) {
-	kpanic("glDrawBuffer not implemented");
+    kpanic("glDrawBuffer not implemented");
 }
 
 void es_glReadBuffer( GLenum mode ) {
-	kpanic("glReadBuffer not implemented");
+    kpanic("glReadBuffer not implemented");
 }
 
 void es_glEnable( GLenum cap ) {
-	COMPILE_OR_RUN_1(shim_glEnable, cap, i);
+    COMPILE_OR_RUN_1(shim_glEnable, cap, i);
 }
 
 void es_glDisable( GLenum cap ) {
-	COMPILE_OR_RUN_1(shim_glDisable, cap, i);
+    COMPILE_OR_RUN_1(shim_glDisable, cap, i);
 }
 
 GLboolean es_glIsEnabled( GLenum cap ) {
-	return 0;
+    return 0;
 }
 
 void es_glEnableClientState( GLenum cap ) {
@@ -191,34 +191,34 @@ void es_glPopClientAttrib( void ) {
 }
 
 GLint es_glRenderMode( GLenum mode ) {
-	return 0;
+    return 0;
 }
 
 GLenum es_glGetError( void ) {
-	return 0;
+    return 0;
 }
 
 const GLubyte* es_glGetString( GLenum name ) {
-	if (name == GL_VERSION) {
-		return (GLubyte*)"1.2";
-	} else if (name == GL_EXTENSIONS) {
-		return (GLubyte*)"";
-	}
-	printf("glGetString name=%d result=%s", name, glGetString(name));
-	return glGetString(name);
+    if (name == GL_VERSION) {
+        return (GLubyte*)"1.2";
+    } else if (name == GL_EXTENSIONS) {
+        return (GLubyte*)"";
+    }
+    printf("glGetString name=%d result=%s", name, glGetString(name));
+    return glGetString(name);
 }
 
 void es_glHint( GLenum target, GLenum mode ) {
 }
 
 void es_glClearDepth( GLclampd depth ) {
-	if (activeList) {
-		struct ListOp* op = allocListOp(activeList);
-		op->op = list_glClearDepth;
-		op->a1.f = (float)depth;
-	} else {
-		glClearDepthf((float)depth);
-	}
+    if (activeList) {
+        struct ListOp* op = allocListOp(activeList);
+        op->op = list_glClearDepth;
+        op->a1.f = (float)depth;
+    } else {
+        glClearDepthf((float)depth);
+    }
 }
 
 void es_glDepthFunc( GLenum func ) {
@@ -288,14 +288,14 @@ void es_glTranslatef( GLfloat x, GLfloat y, GLfloat z ) {
 }
 
 GLboolean es_glIsList( GLuint list ) {
-	return 0;
+    return 0;
 }
 
 void es_glDeleteLists( GLuint list, GLsizei range ) {
 }
 
 GLuint es_glGenLists( GLsizei range ) {
-	return 0;
+    return 0;
 }
 
 void es_glNewList( GLuint list, GLenum mode ) {
@@ -848,13 +848,13 @@ void es_glStencilOp( GLenum fail, GLenum zfail, GLenum zpass ) {
 }
 
 void es_glClearStencil( GLint s ) {
-	if (activeList) {
-		struct ListOp* op = allocListOp(activeList);
-		op->op = list_glClearStencil;
-		op->a1.i = s;
-	} else {
-		glClearStencil(s);
-	}
+    if (activeList) {
+        struct ListOp* op = allocListOp(activeList);
+        op->op = list_glClearStencil;
+        op->a1.i = s;
+    } else {
+        glClearStencil(s);
+    }
 }
 
 void es_glTexGend( GLenum coord, GLenum pname, GLdouble param ) {
@@ -1050,11 +1050,11 @@ void es_glPrioritizeTextures( GLsizei n, const GLuint *textures, const GLclampf 
 }
 
 GLboolean es_glAreTexturesResident( GLsizei n, const GLuint *textures, GLboolean *residences ) {
-	return 0;
+    return 0;
 }
 
 GLboolean es_glIsTexture( GLuint texture ) {
-	return 0;
+    return 0;
 }
 
 /* texture mapping */
@@ -1128,20 +1128,20 @@ void es_glTexImage3D( GLenum target, GLint level, GLenum internalFormat, GLsizei
 int extLoaded = 0;
 
 void loadExtensions() {
-	if (!extLoaded) {
-		extLoaded = 1;
-		ext_glTexImage3D = (glTexImage3D_func)SDL_GL_GetProcAddress("glTexImage3D");
-	}
+    if (!extLoaded) {
+        extLoaded = 1;
+        ext_glTexImage3D = (glTexImage3D_func)SDL_GL_GetProcAddress("glTexImage3D");
+    }
 }
 
 // GLAPI void APIENTRY glFinish( void ) {
 void es_glFinish(struct CPU* cpu) {	
-	glFinish();
+    glFinish();
 }
 
 // GLAPI void APIENTRY glFlush( void ) {
 void es_glFlush(struct CPU* cpu) {	
-	glFlush();	
+    glFlush();	
 }
 
 void fbSetupScreenForOpenGL(int width, int height, int depth);
@@ -1149,29 +1149,29 @@ void fbSetupScreen();
 
 // GLXContext glXCreateContext(Display *dpy, XVisualInfo *vis, GLXContext share_list, Bool direct)
 void es_glXCreateContext(struct CPU* cpu) {
-	U32 doubleBuffered = ARG6;
-	U32 format = ARG5;
-	//U32 share = ARG4;
-	U32 accum = ARG3;
-	U32 stencil = ARG2;
-	U32 depth = ARG1;	
+    U32 doubleBuffered = ARG6;
+    U32 format = ARG5;
+    //U32 share = ARG4;
+    U32 accum = ARG3;
+    U32 stencil = ARG2;
+    U32 depth = ARG1;	
 
-	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
+    SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
     SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
     SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
     SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, depth );
-	SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, stencil);
-	SDL_GL_SetAttribute( SDL_GL_ACCUM_RED_SIZE, accum);
-	SDL_GL_SetAttribute( SDL_GL_ACCUM_BLUE_SIZE, accum);
-	SDL_GL_SetAttribute( SDL_GL_ACCUM_GREEN_SIZE, accum);
-	SDL_GL_SetAttribute( SDL_GL_ACCUM_ALPHA_SIZE, accum);
+    SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, stencil);
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_RED_SIZE, accum);
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_BLUE_SIZE, accum);
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_GREEN_SIZE, accum);
+    SDL_GL_SetAttribute( SDL_GL_ACCUM_ALPHA_SIZE, accum);
     SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, doubleBuffered?1:0 );
-	SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, format==0x1907?24:32);
+    SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, format==0x1907?24:32);
 
-	//SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES); 
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 2 ); 
-	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 0 );
-	EAX = 0x1000;	
+    //SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES); 
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 2 ); 
+    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 0 );
+    EAX = 0x1000;	
 }
 
 // void glXDestroyContext(Display *dpy, GLXContext ctx)
@@ -1181,30 +1181,30 @@ void es_glXDestroyContext(struct CPU* cpu) {
 
 // Bool glXMakeCurrent(Display *dpy, GLXDrawable drawable, GLXContext ctx) 
 void es_glXMakeCurrent(struct CPU* cpu) {
-	//U32 isWindow = ARG5;
-	U32 depth = ARG4;
-	U32 height = ARG3;
-	U32 width = ARG2;
+    //U32 isWindow = ARG5;
+    U32 depth = ARG4;
+    U32 height = ARG3;
+    U32 width = ARG2;
 
-	if (width) {
-		loadExtensions();
-		fbSetupScreenForOpenGL(width, height, depth);
-	} else {
-		fbSetupScreen();
-	}
+    if (width) {
+        loadExtensions();
+        fbSetupScreenForOpenGL(width, height, depth);
+    } else {
+        fbSetupScreen();
+    }
 }
 
 // void glXSwapBuffers(Display *dpy, GLXDrawable drawable)
 void es_glXSwapBuffers(struct CPU* cpu) {
-	fbSwapOpenGL();
+    fbSwapOpenGL();
 }
 
 void esgl_init() {	
-	int99Callback[Finish] = es_glFinish;
-	int99Callback[Flush] = es_glFlush;
-	int99Callback[XCreateContext] = es_glXCreateContext;
-	int99Callback[XMakeCurrent] = es_glXMakeCurrent;
-	int99Callback[XDestroyContext] = es_glXDestroyContext;	
-	int99Callback[XSwapBuffer] = es_glXSwapBuffers;
+    int99Callback[Finish] = es_glFinish;
+    int99Callback[Flush] = es_glFlush;
+    int99Callback[XCreateContext] = es_glXCreateContext;
+    int99Callback[XMakeCurrent] = es_glXMakeCurrent;
+    int99Callback[XDestroyContext] = es_glXDestroyContext;	
+    int99Callback[XSwapBuffer] = es_glXSwapBuffers;
 }
 #endif

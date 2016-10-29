@@ -12,25 +12,25 @@ Int99Callback* int99Callback;
 U32 int99CallbackSize;
 
 void onCreateCPU(struct CPU* cpu) {
-	cpu->reg8[0] = &cpu->reg[0].u8;
-	cpu->reg8[1] = &cpu->reg[1].u8;
-	cpu->reg8[2] = &cpu->reg[2].u8;
-	cpu->reg8[3] = &cpu->reg[3].u8;
-	cpu->reg8[4] = &cpu->reg[0].h8;
-	cpu->reg8[5] = &cpu->reg[1].h8;
-	cpu->reg8[6] = &cpu->reg[2].h8;
-	cpu->reg8[7] = &cpu->reg[3].h8;    
+    cpu->reg8[0] = &cpu->reg[0].u8;
+    cpu->reg8[1] = &cpu->reg[1].u8;
+    cpu->reg8[2] = &cpu->reg[2].u8;
+    cpu->reg8[3] = &cpu->reg[3].u8;
+    cpu->reg8[4] = &cpu->reg[0].h8;
+    cpu->reg8[5] = &cpu->reg[1].h8;
+    cpu->reg8[6] = &cpu->reg[2].h8;
+    cpu->reg8[7] = &cpu->reg[3].h8;    
 }
 
 void initCPU(struct CPU* cpu, struct KProcess* process) {
-	memset(cpu, 0, sizeof(struct CPU));
-	onCreateCPU(cpu);
+    memset(cpu, 0, sizeof(struct CPU));
+    onCreateCPU(cpu);
 #ifdef USE_MMU
-	cpu->memory = process->memory;
+    cpu->memory = process->memory;
 #endif
-	cpu->lazyFlags = FLAGS_NONE;
-	cpu->big = 1;
-	cpu->df = 1;
+    cpu->lazyFlags = FLAGS_NONE;
+    cpu->big = 1;
+    cpu->df = 1;
     cpu->stackMask = 0xFFFFFFFF;
     cpu->stackNotMask = 0;
     cpu->ldt = process->ldt;
@@ -38,27 +38,27 @@ void initCPU(struct CPU* cpu, struct KProcess* process) {
     cpu->segValue[SS] = 0x17; // index 2, LDT, rpl=3
     cpu->segValue[DS] = 0x17; // index 2, LDT, rpl=3
     cpu->cpl = 3; // user mode
-	FPU_FINIT(&cpu->fpu);
+    FPU_FINIT(&cpu->fpu);
 }
 
 struct Descriptor {
-	union {
-		struct {
-			U32 limit_0_15 :16;
-			U32 base_0_15 :16;
-			U32 base_16_23 :8;
-			U32 type :5;
-			U32 dpl :2;
-			U32 p :1;
-			U32 limit_16_19 :4;
-			U32 avl :1;
-			U32 r :1;
-			U32 big :1;
-			U32 g :1;
-			U32 base_24_31 :8; 
-		};
-		U64 fill;
-	};
+    union {
+        struct {
+            U32 limit_0_15 :16;
+            U32 base_0_15 :16;
+            U32 base_16_23 :8;
+            U32 type :5;
+            U32 dpl :2;
+            U32 p :1;
+            U32 limit_16_19 :4;
+            U32 avl :1;
+            U32 r :1;
+            U32 big :1;
+            U32 g :1;
+            U32 base_24_31 :8; 
+        };
+        U64 fill;
+    };
 };
 
 U32 CPU_CHECK_COND(struct CPU* cpu, U32 cond, const char* msg, int exc, int sel) {
@@ -206,7 +206,7 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
         ESP = esp;
         cpu->big = 0;
         cpu->segAddress[CS] = selector << 4;;
-	    cpu->segValue[CS] = selector;
+        cpu->segValue[CS] = selector;
     } else {
         U32 rpl=selector & 3;
         U32 index = selector >> 3;
@@ -242,15 +242,15 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
         cpu->big = cpu->ldt[index].seg_32bit;
         cpu->segAddress[CS] = ldt->base_addr;
         cpu->segValue[CS] = (selector & 0xfffc) | cpu->cpl;
-	}
+    }
 }
 
  void setFlags(struct CPU* cpu, U32 word, U32 mask) {
      if (word & VM) {
          int ii= 0;
      }
-	cpu->flags=(cpu->flags & ~mask)|(word & mask)|2;
-	cpu->df=1-((cpu->flags & DF) >> 9);
+    cpu->flags=(cpu->flags & ~mask)|(word & mask)|2;
+    cpu->df=1-((cpu->flags & DF) >> 9);
 } 
 
 #define GET_IOPL(cpu) ((cpu->flags & IOPL) >> 12)
@@ -283,119 +283,119 @@ void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
 }
 
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
-	U32 n_cs_sel, n_flags;
-	U32 n_eip;
-	U32 tempesp;
-	U32 n_cs_rpl;
+    U32 n_cs_sel, n_flags;
+    U32 n_eip;
+    U32 tempesp;
+    U32 n_cs_rpl;
 
-	// protected mode IRET
-	if (cpu->flags & VM) {
-		if ((cpu->flags & IOPL)!=IOPL) {
-			// win3.x e
-			exception(cpu, 13);
-			return;
-		} else {
-			if (big) {
-				U32 new_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-				U32 new_cs=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only first 16-bits are read
-				U32 new_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
+    // protected mode IRET
+    if (cpu->flags & VM) {
+        if ((cpu->flags & IOPL)!=IOPL) {
+            // win3.x e
+            exception(cpu, 13);
+            return;
+        } else {
+            if (big) {
+                U32 new_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+                U32 new_cs=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only first 16-bits are read
+                U32 new_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
 
-				ESP += 12;
-				cpu->eip.u32 = new_eip;
+                ESP += 12;
+                cpu->eip.u32 = new_eip;
                 cpu_setSegment(cpu, CS, new_cs);
 
-				/* IOPL can not be modified in v86 mode by IRET */
-				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
-			} else {
-				U16 new_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-				U16 new_cs=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+2);
-				U16 new_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4);
+                /* IOPL can not be modified in v86 mode by IRET */
+                setFlags(cpu, new_flags, FMASK_NORMAL|NT);
+            } else {
+                U16 new_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+                U16 new_cs=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+2);
+                U16 new_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4);
 
-				ESP+=6;
-				cpu->eip.u32=new_eip;
+                ESP+=6;
+                cpu->eip.u32=new_eip;
                 cpu_setSegment(cpu, CS, new_cs);
 
-				/* IOPL can not be modified in v86 mode by IRET */
-				setFlags(cpu, new_flags, FMASK_NORMAL|NT);
-			}
-			cpu->big = 0;
-			cpu->lazyFlags = FLAGS_NONE;
-			return;
-		}
-	}
-	/* Check if this is task IRET */
-	if (cpu->flags & NT) {
-		if (cpu->flags & VM) kpanic("Pmode IRET with VM bit set");
-		kpanic("IRET task not implemented");
-		return;
-	}
-	
-	if (big) {
-		n_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-		n_cs_sel=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only read first 16-bits
-		n_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
-		if ((n_flags & VM) && cpu->cpl==0) {
-			U32 n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
+                /* IOPL can not be modified in v86 mode by IRET */
+                setFlags(cpu, new_flags, FMASK_NORMAL|NT);
+            }
+            cpu->big = 0;
+            cpu->lazyFlags = FLAGS_NONE;
+            return;
+        }
+    }
+    /* Check if this is task IRET */
+    if (cpu->flags & NT) {
+        if (cpu->flags & VM) kpanic("Pmode IRET with VM bit set");
+        kpanic("IRET task not implemented");
+        return;
+    }
+    
+    if (big) {
+        n_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+        n_cs_sel=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only read first 16-bits
+        n_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
+        if ((n_flags & VM) && cpu->cpl==0) {
+            U32 n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
 
-			// commit point
-			ESP+=12;
-			cpu->eip.u32=n_eip & 0xffff;
-			
-			n_esp=pop32(cpu);
-			n_ss=pop32(cpu) & 0xffff;
-			n_es=pop32(cpu) & 0xffff;
-			n_ds=pop32(cpu) & 0xffff;
-			n_fs=pop32(cpu) & 0xffff;
-			n_gs=pop32(cpu) & 0xffff;
-			setFlags(cpu, n_flags,FMASK_ALL | VM);
-			cpu->lazyFlags = FLAGS_NONE;
-			cpu->cpl = 3;
+            // commit point
+            ESP+=12;
+            cpu->eip.u32=n_eip & 0xffff;
+            
+            n_esp=pop32(cpu);
+            n_ss=pop32(cpu) & 0xffff;
+            n_es=pop32(cpu) & 0xffff;
+            n_ds=pop32(cpu) & 0xffff;
+            n_fs=pop32(cpu) & 0xffff;
+            n_gs=pop32(cpu) & 0xffff;
+            setFlags(cpu, n_flags,FMASK_ALL | VM);
+            cpu->lazyFlags = FLAGS_NONE;
+            cpu->cpl = 3;
 
-			cpu->segAddress[SS] = cpu->thread->process->ldt[n_ss>>3].base_addr;
-			cpu->segValue[SS] = n_ss;
-			cpu->segAddress[ES] = cpu->thread->process->ldt[n_es>>3].base_addr;
-			cpu->segValue[ES] = n_es;
-			cpu->segAddress[DS] = cpu->thread->process->ldt[n_ds>>3].base_addr;
-			cpu->segValue[DS] = n_ds;
-			cpu->segAddress[FS] = cpu->thread->process->ldt[n_fs>>3].base_addr;
-			cpu->segValue[FS] = n_fs;
-			cpu->segAddress[GS] = cpu->thread->process->ldt[n_gs>>3].base_addr;
-			cpu->segValue[GS] = n_gs;
+            cpu->segAddress[SS] = cpu->thread->process->ldt[n_ss>>3].base_addr;
+            cpu->segValue[SS] = n_ss;
+            cpu->segAddress[ES] = cpu->thread->process->ldt[n_es>>3].base_addr;
+            cpu->segValue[ES] = n_es;
+            cpu->segAddress[DS] = cpu->thread->process->ldt[n_ds>>3].base_addr;
+            cpu->segValue[DS] = n_ds;
+            cpu->segAddress[FS] = cpu->thread->process->ldt[n_fs>>3].base_addr;
+            cpu->segValue[FS] = n_fs;
+            cpu->segAddress[GS] = cpu->thread->process->ldt[n_gs>>3].base_addr;
+            cpu->segValue[GS] = n_gs;
 
-			ESP=n_esp;
-			cpu->big = 0;
+            ESP=n_esp;
+            cpu->big = 0;
             cpu_setSegment(cpu, CS, n_cs_sel);
-			return;
-		}
-		tempesp=ESP+12;
-		if ((n_flags & VM)!=0) kpanic("IRET from pmode to v86 with CPL!=0");
-	} else {
-		n_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-		n_cs_sel=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 2);
-		n_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 4);
-		n_flags|=(cpu->flags & 0xffff0000);
-		tempesp=ESP+6;
-		if (n_flags & VM) kpanic("VM Flag in 16-bit iret");
-	}
-	n_cs_rpl=n_cs_sel & 3;
-	
-	if (n_cs_rpl==cpu->cpl) { /* Return to same level */
-		U32 mask=cpu->cpl ? (FMASK_NORMAL | NT) : FMASK_ALL;
-		
-		// commit point
-		ESP=tempesp;
+            return;
+        }
+        tempesp=ESP+12;
+        if ((n_flags & VM)!=0) kpanic("IRET from pmode to v86 with CPL!=0");
+    } else {
+        n_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
+        n_cs_sel=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 2);
+        n_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 4);
+        n_flags|=(cpu->flags & 0xffff0000);
+        tempesp=ESP+6;
+        if (n_flags & VM) kpanic("VM Flag in 16-bit iret");
+    }
+    n_cs_rpl=n_cs_sel & 3;
+    
+    if (n_cs_rpl==cpu->cpl) { /* Return to same level */
+        U32 mask=cpu->cpl ? (FMASK_NORMAL | NT) : FMASK_ALL;
+        
+        // commit point
+        ESP=tempesp;
         cpu_setSegment(cpu, CS, n_cs_sel);
-		// :TODO: for some reason n_cs_sel is 0 when creating .wine directory for wine 1.0.1
-		//cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
-		cpu->eip.u32 = n_eip;
+        // :TODO: for some reason n_cs_sel is 0 when creating .wine directory for wine 1.0.1
+        //cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
+        cpu->eip.u32 = n_eip;
 
-		
-		if (GET_IOPL(cpu)<cpu->cpl) mask &= ~IF;
-		setFlags(cpu, n_flags,mask);
-		cpu->lazyFlags = FLAGS_NONE;
-	} else { /* Return to outer level */
-		kpanic("IRET to outer level not implemented");
-	}
+        
+        if (GET_IOPL(cpu)<cpu->cpl) mask &= ~IF;
+        setFlags(cpu, n_flags,mask);
+        cpu->lazyFlags = FLAGS_NONE;
+    } else { /* Return to outer level */
+        kpanic("IRET to outer level not implemented");
+    }
 } 
 
 void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
@@ -403,7 +403,7 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
     U32 bp_index=EBP & cpu->stackMask;
 
     sp_index-=4;
-	writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
+    writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
     EBP = ESP - 4;
     if (level!=0) {
         U32 i;
@@ -411,10 +411,10 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
         for (i=1;i<level;i++) {
             sp_index-=4;
             bp_index-=4;
-			writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readd(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
+            writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readd(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
         }
         sp_index-=4;
-		writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
+        writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
     }
     sp_index-=bytes;
     ESP = (ESP & cpu->stackNotMask) | (sp_index & cpu->stackMask);
@@ -425,17 +425,17 @@ void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level) {
     U32 bp_index=EBP & cpu->stackMask;
 
     sp_index-=2;
-	writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
+    writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
     BP = SP - 2;
     if (level!=0) {
         U32 i;
 
         for (i=1;i<level;i++) {
             sp_index-=2;bp_index-=2;
-			writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readw(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
+            writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readw(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
         }
         sp_index-=2;
-		writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
+        writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
     }
 
     sp_index-=bytes;
@@ -443,73 +443,73 @@ void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level) {
 }
 
 void fillFlagsNoCFOF(struct CPU* cpu) {
-	if (cpu->lazyFlags!=FLAGS_NONE) {
-		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
-		
-		if (cpu->lazyFlags->getAF(cpu)) newFlags |= AF;
-		if (cpu->lazyFlags->getZF(cpu)) newFlags |= ZF;
-		if (cpu->lazyFlags->getPF(cpu)) newFlags |= PF;
-		if (cpu->lazyFlags->getSF(cpu)) newFlags |= SF;
-		cpu->flags = newFlags;
-		cpu->lazyFlags = FLAGS_NONE;		 
-	}
+    if (cpu->lazyFlags!=FLAGS_NONE) {
+        int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+        
+        if (cpu->lazyFlags->getAF(cpu)) newFlags |= AF;
+        if (cpu->lazyFlags->getZF(cpu)) newFlags |= ZF;
+        if (cpu->lazyFlags->getPF(cpu)) newFlags |= PF;
+        if (cpu->lazyFlags->getSF(cpu)) newFlags |= SF;
+        cpu->flags = newFlags;
+        cpu->lazyFlags = FLAGS_NONE;		 
+    }
 }
 
 void fillFlags(struct CPU* cpu) {
-	if (cpu->lazyFlags!=FLAGS_NONE) {
-		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
-			 
+    if (cpu->lazyFlags!=FLAGS_NONE) {
+        int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+             
         if (cpu->lazyFlags->getAF(cpu)) newFlags |= AF;
         if (cpu->lazyFlags->getZF(cpu)) newFlags |= ZF;
         if (cpu->lazyFlags->getPF(cpu)) newFlags |= PF;
         if (cpu->lazyFlags->getSF(cpu)) newFlags |= SF;
-		if (cpu->lazyFlags->getCF(cpu)) newFlags |= CF;
-		if (cpu->lazyFlags->getOF(cpu)) newFlags |= OF;
+        if (cpu->lazyFlags->getCF(cpu)) newFlags |= CF;
+        if (cpu->lazyFlags->getOF(cpu)) newFlags |= OF;
         cpu->flags = newFlags;
-		cpu->lazyFlags = FLAGS_NONE;	
-	}
+        cpu->lazyFlags = FLAGS_NONE;	
+    }
 }
 
 void fillFlagsNoCF(struct CPU* cpu) {
-	if (cpu->lazyFlags!=FLAGS_NONE) {
-		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
-		
+    if (cpu->lazyFlags!=FLAGS_NONE) {
+        int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+        
         if (cpu->lazyFlags->getAF(cpu)) newFlags |= AF;
         if (cpu->lazyFlags->getZF(cpu)) newFlags |= ZF;
         if (cpu->lazyFlags->getPF(cpu)) newFlags |= PF;
         if (cpu->lazyFlags->getSF(cpu)) newFlags |= SF;
-		if (cpu->lazyFlags->getOF(cpu)) newFlags |= OF;
+        if (cpu->lazyFlags->getOF(cpu)) newFlags |= OF;
         cpu->flags = newFlags;
-		cpu->lazyFlags = FLAGS_NONE;		 
-	}
+        cpu->lazyFlags = FLAGS_NONE;		 
+    }
 }
 
 void fillFlagsNoZF(struct CPU* cpu) {
-	if (cpu->lazyFlags!=FLAGS_NONE) {
-		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
-		
+    if (cpu->lazyFlags!=FLAGS_NONE) {
+        int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+        
         if (cpu->lazyFlags->getAF(cpu)) newFlags |= AF;
         if (cpu->lazyFlags->getCF(cpu)) newFlags |= CF;
         if (cpu->lazyFlags->getPF(cpu)) newFlags |= PF;
         if (cpu->lazyFlags->getSF(cpu)) newFlags |= SF;
-		if (cpu->lazyFlags->getOF(cpu)) newFlags |= OF;
+        if (cpu->lazyFlags->getOF(cpu)) newFlags |= OF;
         cpu->flags = newFlags;
-		cpu->lazyFlags = FLAGS_NONE;		 
-	}
+        cpu->lazyFlags = FLAGS_NONE;		 
+    }
 }
 
 void fillFlagsNoOF(struct CPU* cpu) {
-	if (cpu->lazyFlags!=FLAGS_NONE) {
-		int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
-		
+    if (cpu->lazyFlags!=FLAGS_NONE) {
+        int newFlags = cpu->flags & ~(CF|AF|OF|SF|ZF|PF);
+        
         if (cpu->lazyFlags->getAF(cpu)) newFlags |= AF;
         if (cpu->lazyFlags->getZF(cpu)) newFlags |= ZF;
         if (cpu->lazyFlags->getPF(cpu)) newFlags |= PF;
         if (cpu->lazyFlags->getSF(cpu)) newFlags |= SF;
-		if (cpu->lazyFlags->getCF(cpu)) newFlags |= CF;
-		cpu->lazyFlags = FLAGS_NONE;		 
+        if (cpu->lazyFlags->getCF(cpu)) newFlags |= CF;
+        cpu->lazyFlags = FLAGS_NONE;		 
         cpu->flags = newFlags;
-	}
+    }
 }
 
 U8 parity_lookup[256] = {
@@ -856,7 +856,7 @@ U32 peek32(struct CPU* cpu, U32 index) {
 }
 
 void exception(struct CPU* cpu, int code) {
-	kpanic("Exceptions not implements yet");
+    kpanic("Exceptions not implements yet");
 }
 
 void cpu_exception(struct CPU* cpu, int code, int error) {
@@ -881,55 +881,55 @@ void initBlockCache() {
 }
 
 struct Block* getBlock(struct CPU* cpu) {
-	struct Block* block;	
-	U32 page = cpu->eip.u32 >> PAGE_SHIFT;
-	U32 flags = cpu->memory->flags[page];
-	if (IS_PAGE_IN_RAM(flags)) {
-		block = getCode(cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
-		if (!block) {
-			block = decodeBlock(cpu, cpu->eip.u32);
-			addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
-		}
-	} else {		
-		block = decodeBlock(cpu, cpu->eip.u32);
-		addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
-	}
-	return block;
+    struct Block* block;	
+    U32 page = cpu->eip.u32 >> PAGE_SHIFT;
+    U32 flags = cpu->memory->flags[page];
+    if (IS_PAGE_IN_RAM(flags)) {
+        block = getCode(cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
+        if (!block) {
+            block = decodeBlock(cpu, cpu->eip.u32);
+            addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
+        }
+    } else {		
+        block = decodeBlock(cpu, cpu->eip.u32);
+        addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
+    }
+    return block;
 }
 #else
 PblMap* blockCache;
 
 void initBlockCache() {
-	blockCache = pblMapNewHashMap();
+    blockCache = pblMapNewHashMap();
 }
 
 struct Block* getBlock(struct CPU* cpu) {
-	fflush(logFile);
-	{
-		struct Block** result = pblMapGet(blockCache, &cpu->eip.u32, 4, NULL);
-		if (!result) {
-			struct Block* block = decodeBlock(cpu, cpu->eip.u32);
-			pblMapAdd(blockCache, &cpu->eip.u32, 4, &block, 4);
-			return block;
-		}
-		return *result;
-	}
+    fflush(logFile);
+    {
+        struct Block** result = pblMapGet(blockCache, &cpu->eip.u32, 4, NULL);
+        if (!result) {
+            struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+            pblMapAdd(blockCache, &cpu->eip.u32, 4, &block, 4);
+            return block;
+        }
+        return *result;
+    }
 }
 #endif
 void runCPU(struct CPU* cpu) {	
-	runBlock(cpu, getBlock(cpu));
+    runBlock(cpu, getBlock(cpu));
 }
 
 #ifndef __TEST
 struct Block* getBlock1(struct CPU* cpu) {
-	if (!cpu->currentBlock->block1)
-		cpu->currentBlock->block1 = getBlock(cpu);
-	return cpu->currentBlock->block1; 
+    if (!cpu->currentBlock->block1)
+        cpu->currentBlock->block1 = getBlock(cpu);
+    return cpu->currentBlock->block1; 
 }
 
 struct Block* getBlock2(struct CPU* cpu) {
-	if (!cpu->currentBlock->block2)
-		cpu->currentBlock->block2 = getBlock(cpu);
-	return cpu->currentBlock->block2;
+    if (!cpu->currentBlock->block2)
+        cpu->currentBlock->block2 = getBlock(cpu);
+    return cpu->currentBlock->block2;
 }
 #endif

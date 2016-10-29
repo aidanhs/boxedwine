@@ -281,21 +281,21 @@ SDL_Color sdlSystemPalette[256] = {
 void displayChanged();
 
 static void init() {
-	if (!initialized) {
-		initialized = 1;
-		hwndToWnd = pblMapNewHashMap();
-	}
+    if (!initialized) {
+        initialized = 1;
+        hwndToWnd = pblMapNewHashMap();
+    }
 }
 
 struct Wnd* getWnd(U32 hwnd) {
-	struct Wnd** result;
-	if (!hwndToWnd) {
-		init();
-	}
-	result = pblMapGet(hwndToWnd, &hwnd, sizeof(U32), NULL);
-	if (result)
-		return *result;
-	return NULL;
+    struct Wnd** result;
+    if (!hwndToWnd) {
+        init();
+    }
+    result = pblMapGet(hwndToWnd, &hwnd, sizeof(U32), NULL);
+    if (result)
+        return *result;
+    return NULL;
 }
 
 struct Wnd* getWndFromPoint(int x, int y) {
@@ -356,18 +356,18 @@ static void destroySDL2() {
     }
     pblIteratorFree(it);
 
-	if (sdlRenderer) {
-		SDL_DestroyRenderer(sdlRenderer);
-		sdlRenderer = 0;
-	}
-	if (sdlContext) {
-		SDL_GL_DeleteContext(sdlContext);
-		sdlContext = 0;
-	}
-	if (sdlWindow) {
-		SDL_DestroyWindow(sdlWindow);
-		sdlWindow = 0;
-	}
+    if (sdlRenderer) {
+        SDL_DestroyRenderer(sdlRenderer);
+        sdlRenderer = 0;
+    }
+    if (sdlContext) {
+        SDL_GL_DeleteContext(sdlContext);
+        sdlContext = 0;
+    }
+    if (sdlWindow) {
+        SDL_DestroyWindow(sdlWindow);
+        sdlWindow = 0;
+    }
 }
 #else
 SDL_Surface* surface;
@@ -433,20 +433,20 @@ void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, 
 }
 
 void displayChanged() {
-	U32 flags;
+    U32 flags;
 
     firstWindowCreated = 1;
 #ifdef SDL2
-	destroySDL2();
-	sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
-	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);	
+    destroySDL2();
+    sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
+    sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);	
 #else
-	flags = SDL_HWSURFACE;
-	if (surface && SDL_MUSTLOCK(surface)) {
-		SDL_UnlockSurface(surface);
-	}
-	printf("Switching to %dx%d@%d\n", horz_res, vert_res, bits_per_pixel);
-	surface = SDL_SetVideoMode(horz_res, vert_res, 32, flags);
+    flags = SDL_HWSURFACE;
+    if (surface && SDL_MUSTLOCK(surface)) {
+        SDL_UnlockSurface(surface);
+    }
+    printf("Switching to %dx%d@%d\n", horz_res, vert_res, bits_per_pixel);
+    surface = SDL_SetVideoMode(horz_res, vert_res, 32, flags);
 #endif
 }
 
@@ -463,14 +463,14 @@ U8 b[1024*1024*4];
 #endif
 
 void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
-	struct Wnd* wnd = getWnd(hwnd);
-	struct wRECT r;
-	U32 y;    
+    struct Wnd* wnd = getWnd(hwnd);
+    struct wRECT r;
+    U32 y;    
     SDL_Rect srcRect;
     SDL_Rect dstRect;
     int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
     char tmp[256];
-	static int i;
+    static int i;
 
     readRect(MMU_PARAM rect, &r);
 
@@ -490,8 +490,8 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
     if (!surface)
         return;
 #endif
-	if (!wnd)
-		return;    
+    if (!wnd)
+        return;    
 #ifdef SDL2
     {
         SDL_Texture *sdlTexture = NULL;
@@ -535,14 +535,14 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
             wnd->sdlSurface = s;
         }
         if (SDL_MUSTLOCK(s)) {
-		    SDL_LockSurface(s);
-	    }
+            SDL_LockSurface(s);
+        }
         for (y = 0; y < height; y++) {
             memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
         }   
         if (SDL_MUSTLOCK(s)) {
-		    SDL_UnlockSurface(s);
-	    }      
+            SDL_UnlockSurface(s);
+        }      
         //sprintf(tmp, "test%d.bmp", i++);
         //SDL_SaveBMP(s, tmp);
 
@@ -588,13 +588,13 @@ void drawAllWindows(MMU_ARG U32 hWnd, int count) {
 }
 
 struct Wnd* wndCreate(MMU_ARG U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
-	struct Wnd* wnd = kalloc(sizeof(struct Wnd));
-	readRect(MMU_PARAM windowRect, &wnd->windowRect);
-	readRect(MMU_PARAM clientRect, &wnd->clientRect);
+    struct Wnd* wnd = kalloc(sizeof(struct Wnd));
+    readRect(MMU_PARAM windowRect, &wnd->windowRect);
+    readRect(MMU_PARAM clientRect, &wnd->clientRect);
     wnd->processId = processId;
     wnd->hwnd = hwnd;
-	pblMapAdd(hwndToWnd, &hwnd, sizeof(U32), &wnd, sizeof(void*));
-	return wnd;
+    pblMapAdd(hwndToWnd, &hwnd, sizeof(U32), &wnd, sizeof(void*));
+    return wnd;
 }
 
 void wndDestroy(U32 hwnd) {
@@ -603,19 +603,19 @@ void wndDestroy(U32 hwnd) {
 
 void writeRect(MMU_ARG U32 address, struct wRECT* rect) {
     if (address) {
-	    writed(MMU_PARAM address, rect->left);
-	    writed(MMU_PARAM address+4, rect->top);
-	    writed(MMU_PARAM address+8, rect->right);
-	    writed(MMU_PARAM address+12, rect->bottom);
+        writed(MMU_PARAM address, rect->left);
+        writed(MMU_PARAM address+4, rect->top);
+        writed(MMU_PARAM address+8, rect->right);
+        writed(MMU_PARAM address+12, rect->bottom);
     }
 }
 
 void readRect(MMU_ARG U32 address, struct wRECT* rect) {
     if (address) {
-	    rect->left = readd(MMU_PARAM address);
-	    rect->top = readd(MMU_PARAM address+4);
-	    rect->right = readd(MMU_PARAM address+8);
-	    rect->bottom = readd(MMU_PARAM address+12);
+        rect->left = readd(MMU_PARAM address);
+        rect->top = readd(MMU_PARAM address+4);
+        rect->right = readd(MMU_PARAM address+8);
+        rect->bottom = readd(MMU_PARAM address+12);
     }
 }
 
@@ -634,14 +634,14 @@ void showWnd(struct Wnd* wnd, U32 bShow) {
 }
 
 void setWndText(struct Wnd* wnd, const char* text) {
-	int len = strlen(text);
-	char* buf;
+    int len = strlen(text);
+    char* buf;
 
-	if (wnd->text)
-		kfree((void*)wnd->text);
-	buf = kalloc(len + 1);
-	strcpy(buf, text);
-	wnd->text = buf;
+    if (wnd->text)
+        kfree((void*)wnd->text);
+    buf = kalloc(len + 1);
+    strcpy(buf, text);
+    wnd->text = buf;
 }
 
 void updateScreen() {
@@ -1156,7 +1156,7 @@ int sdlKey(U32 key, U32 down) {
                     vKey = VK_LCONTROL;
                     scan = 0x1d;
                     break;
-		        case SDLK_RCTRL:
+                case SDLK_RCTRL:
                     vKey = VK_RCONTROL;
                     scan = 0x11d;
                     break;
@@ -1212,7 +1212,7 @@ int sdlKey(U32 key, U32 down) {
                     vKey = VK_LSHIFT;
                     scan = 0x2a;
                     break;
-		        case SDLK_RSHIFT:
+                case SDLK_RSHIFT:
                     vKey = VK_RSHIFT;
                     scan = 0x36;
                     break;
@@ -1264,7 +1264,7 @@ int sdlKey(U32 key, U32 down) {
                     vKey = VK_LMENU;
                     scan = 0x38;
                     break;
-		        case SDLK_RALT:
+                case SDLK_RALT:
                     vKey = VK_RMENU;
                     scan = 0x138;
                     break;

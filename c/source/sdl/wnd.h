@@ -5,10 +5,10 @@
 #include "memory.h"
 
 struct wRECT {
-	S32 left;
-	S32 top;
-	S32 right;
-	S32 bottom;
+    S32 left;
+    S32 top;
+    S32 right;
+    S32 bottom;
 };
 
 typedef struct tagPixelFormat {
@@ -41,10 +41,10 @@ typedef struct tagPixelFormat {
 } PixelFormat;
 
 struct Wnd {
-	U32 surface;
-	struct wRECT windowRect;
-	struct wRECT clientRect;
-	const char* text;
+    U32 surface;
+    struct wRECT windowRect;
+    struct wRECT clientRect;
+    const char* text;
     PixelFormat* pixelFormat;
     void* openGlContext;
     U32 activated;
