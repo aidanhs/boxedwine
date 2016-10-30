@@ -20,6 +20,9 @@ struct Memory {
     U32 write[NUMBER_OF_PAGES];
     U32 ramPage[NUMBER_OF_PAGES];
     struct KProcess* process;
+#ifdef LOG_OPS
+    U32 log;
+#endif LOG_OPS
 };
 #endif
 

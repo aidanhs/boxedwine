@@ -984,12 +984,12 @@ void decode08e(struct DecodeData* data) {
         data->op->func = movs16e16_16;
         data->op->r1 = G(rm);
         decodeEa16(data, rm);
-        LOG_OP2("MOV", EABASE(data->op->r2), M16(data, rm, data->op));
+        LOG_OP2("MOV", EABASE(data->op->r1), M16(data, rm, data->op));
     } else {
         data->op->func = movs16e16_32;
         data->op->r1 = G(rm);
         decodeEa32(data, rm);
-        LOG_OP2("MOV", EABASE(data->op->r2), M16(data, rm, data->op));
+        LOG_OP2("MOV", EABASE(data->op->r1), M16(data, rm, data->op));
     }
     NEXT_OP(data);
 }

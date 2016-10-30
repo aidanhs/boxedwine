@@ -11,7 +11,7 @@
 #include <string.h>
 #include <setjmp.h>
 
-#undef LOG_OPS
+//#undef LOG_OPS
 
 char tmp64k[1024*64];
 
@@ -146,7 +146,8 @@ U8 readb(MMU_ARG U32 address) {
         result = host_readb(address-memory->read[index]);
     else
         result = memory->mmu[index]->readb(memory, address);
-    fprintf(logFile, "readb %X @%X\n", result, address);
+    if (memory->log)
+        fprintf(logFile, "readb %X @%X\n", result, address);
     return result;
 #else
     if (memory->read[index])
@@ -158,7 +159,8 @@ U8 readb(MMU_ARG U32 address) {
 void writeb(MMU_ARG U32 address, U8 value) {
     int index = address >> 12;
 #ifdef LOG_OPS
-    fprintf(logFile, "writeb %X @%X\n", value, address);
+    if (memory->log)
+        fprintf(logFile, "writeb %X @%X\n", value, address);
 #endif
     if (memory->write[index]) {
         host_writeb(address-memory->write[index], value);
@@ -180,7 +182,8 @@ U16 readw(MMU_ARG U32 address) {
     } else {
         result = readb(memory, address) | (readb(memory, address+1) << 8);
     }
-    fprintf(logFile, "readw %X @%X\n", result, address);
+    if (memory->log)
+        fprintf(logFile, "readw %X @%X\n", result, address);
     return result;
 #else
     if ((address & 0xFFF) < 0xFFF) {
@@ -195,7 +198,8 @@ U16 readw(MMU_ARG U32 address) {
 
 void writew(MMU_ARG U32 address, U16 value) {
 #ifdef LOG_OPS
-    fprintf(logFile, "writew %X @%X\n", value, address);
+    if (memory->log)
+        fprintf(logFile, "writew %X @%X\n", value, address);
 #endif
     if ((address & 0xFFF) < 0xFFF) {
         int index = address >> 12;
@@ -223,7 +227,8 @@ U32 readd(MMU_ARG U32 address) {
     } else {
         result = readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
     }
-    fprintf(logFile, "readd %X @%X\n", result, address);
+    if (memory->log)
+        fprintf(logFile, "readd %X @%X\n", result, address);
     return result;
 #else
     if ((address & 0xFFF) < 0xFFD) {
@@ -239,7 +244,8 @@ U32 readd(MMU_ARG U32 address) {
 
 void writed(MMU_ARG U32 address, U32 value) {
 #ifdef LOG_OPS
-    fprintf(logFile, "writed %X @%X\n", value, address);
+    if (memory->log)
+        fprintf(logFile, "writed %X @%X\n", value, address);
 #endif
     if ((address & 0xFFF) < 0xFFD) {
         int index = address >> 12;
