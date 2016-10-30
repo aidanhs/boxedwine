@@ -2097,6 +2097,14 @@ void decode2ca(struct DecodeData* data) {
     FINISH_OP(data);
 }
 
+// RETF Iw
+void decode0ca(struct DecodeData* data) {
+    data->op->data1 = FETCH16(data);
+    data->op->func = retf16;
+    LOG_OP("RETF");
+    FINISH_OP(data);
+}
+
 #define DECODE_BT(r, m16, m32) DECODE_E(r, m16, m32); data->op->data1 = 1 << (FETCH8(data) & 31)
 
 // GRP8 Ed,Ib
@@ -2152,7 +2160,7 @@ DECODER decoder[1024] = {
     decode0b0, decode0b1, decode0b2, decode0b3, decode0b4, decode0b5, decode0b6, decode0b7,
     decode0b8, decode0b9, decode0ba, decode0bb, decode0bc, decode0bd, decode0be, decode0bf,
     decode0c0, decode0c1, decode0c2, decode0c3, decode0c4, decode0c5, decode0c6, decode0c7,
-    decode0c8, decode0c9, invalidOp, decode0cb, invalidOp, decode0cd, invalidOp, invalidOp,
+    decode0c8, decode0c9, decode0ca, decode0cb, invalidOp, decode0cd, invalidOp, invalidOp,
     decode0d0, decode0d1, decode0d2, decode0d3, decode0d4, decode0d5, decode0d6, decode0d7,
     decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
     decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
