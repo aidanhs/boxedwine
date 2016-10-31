@@ -1109,6 +1109,17 @@ void signalALRM(struct KProcess* process) {
     signalProcess(process, K_SIGALRM);
 }
 
+void signalIllegalInstruction(struct KThread* thread, int code) {
+    struct KProcess* process = thread->process;
+
+    memset(process->sigActions[K_SIGILL].sigInfo, 0, sizeof(process->sigActions[K_SIGILL].sigInfo));
+    process->sigActions[K_SIGILL].sigInfo[0] = K_SIGILL;
+    process->sigActions[K_SIGILL].sigInfo[2] = code;
+    process->sigActions[K_SIGILL].sigInfo[3] = process->id;
+    process->sigActions[K_SIGILL].sigInfo[4] = process->userId;
+    runSignal(thread, K_SIGILL, -1); // TRAP_x86_PRIVINFLT = 6
+}
+
 #define K_RLIM_INFINITY 0xFFFFFFFF
 
 U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimit, U32 oldlimit) {

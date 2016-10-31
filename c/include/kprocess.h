@@ -121,6 +121,7 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
 void signalIO(struct KProcess* process, U32 code, S32 band, FD fd);
 void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode);
 void signalALRM(struct KProcess* process);
+void signalIllegalInstruction(struct KThread* thread, int code);
 void closeMemoryMapped(struct MapedFiles* mapped);
 
 // returns tid

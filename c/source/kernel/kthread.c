@@ -451,10 +451,10 @@ void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStac
 }
 
 void readFromContext(struct CPU* cpu, U32 context) {
-    cpu->segValue[GS] = readd(MMU_PARAM_CPU context+0x14);
-    cpu->segValue[FS] = readd(MMU_PARAM_CPU context+0x18);
-    cpu->segValue[ES] = readd(MMU_PARAM_CPU context+0x1C);
-    cpu->segValue[DS] = readd(MMU_PARAM_CPU context+0x20);
+    cpu_setSegment(cpu, GS, readd(MMU_PARAM_CPU context+0x14));
+    cpu_setSegment(cpu, FS, readd(MMU_PARAM_CPU context+0x18));
+    cpu_setSegment(cpu, ES, readd(MMU_PARAM_CPU context+0x1C));
+    cpu_setSegment(cpu, DS, readd(MMU_PARAM_CPU context+0x20));
 
     cpu->reg[7].u32 = readd(MMU_PARAM_CPU context+0x24); // EDI
     cpu->reg[6].u32 = readd(MMU_PARAM_CPU context+0x28); // ESI
@@ -467,9 +467,9 @@ void readFromContext(struct CPU* cpu, U32 context) {
     cpu->reg[0].u32 = readd(MMU_PARAM_CPU context+0x40); // EAX
     
     cpu->eip.u32 = readd(MMU_PARAM_CPU context+0x4C);
-    cpu->segValue[CS] = readd(MMU_PARAM_CPU context+0x50);				
+    cpu_setSegment(cpu, CS, readd(MMU_PARAM_CPU context+0x50));
     cpu->flags = readd(MMU_PARAM_CPU context+0x54);
-    cpu->segValue[SS] = readd(MMU_PARAM_CPU context+0x5C);		
+    cpu_setSegment(cpu, SS, readd(MMU_PARAM_CPU context+0x5C));
 }
 
 U32 syscall_sigreturn(struct KThread* thread) {
@@ -485,8 +485,8 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
     U32 stackAddress;
 
     pop32(cpu); // signal
-        pop32(cpu); // address
-        context = pop32(cpu);
+    pop32(cpu); // address
+    context = pop32(cpu);
     cpu->thread->waitStartTime = pop32(cpu);
     cpu->thread->interrupted = pop32(cpu);
     stackAddress=cpu->reg[4].u32;
@@ -537,7 +537,8 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
         struct CPU* cpu = &thread->cpu;
         BOOL altStack = (action->flags & K_SA_ONSTACK) != 0;
 
-        fillFlags(cpu);
+        fillFlags(cpu);        
+
 #ifdef LOG_OPS
         klog("runSignal %d", signal);
         klog("    before signal %.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%d(%X) fs18=%X", cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[4], cpu->segAddress[4], cpu->segAddress[4]?readd(MMU_PARAM_THREAD cpu->segAddress[4]+0x18):0);
@@ -554,8 +555,12 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
             wakeThread(thread);
         }		
                 
-        context = thread->cpu.reg[4].u32 - CONTEXT_SIZE;
+        context = cpu->segAddress[SS] + (ESP & cpu->stackMask) - CONTEXT_SIZE;
         writeToContext(thread, stack, context, altStack, trapNo);
+        
+        cpu->stackMask = 0xFFFFFFFF;
+        cpu->stackNotMask = 0;
+        cpu->segAddress[SS] = 0;
         thread->cpu.reg[4].u32 = context;
 
         if (altStack) {
@@ -601,6 +606,12 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
         thread->cpu.eip.u32 = action->handlerAndSigAction;
 
         thread->inSignal++;				
+
+        cpu_setSegment(cpu, CS, 0xf);        
+        cpu_setSegment(cpu, SS, 0x17);
+        cpu_setSegment(cpu, DS, 0x17);
+        cpu_setSegment(cpu, ES, 0x17);
+        cpu->big = 1;
     }    
     thread->process->pendingSignals &= ~(1 << (signal - 1));		
     threadDone(&thread->cpu);

@@ -1219,7 +1219,10 @@ void decode0cd(struct DecodeData* data) {
         NEXT_OP(data);
     }
     else {
-        kpanic("Unhandled interrupt %d", i);
+        data->op->func = intOp;
+        data->op->data1 = i;
+        LOG_OP("INT");
+        FINISH_OP(data);
     }
 }
 

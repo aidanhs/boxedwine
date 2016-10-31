@@ -37,6 +37,7 @@ void initCPU(struct CPU* cpu, struct KProcess* process) {
     cpu->segValue[CS] = 0xF; // index 1, LDT, rpl=3
     cpu->segValue[SS] = 0x17; // index 2, LDT, rpl=3
     cpu->segValue[DS] = 0x17; // index 2, LDT, rpl=3
+    cpu->segValue[ES] = 0x17; // index 2, LDT, rpl=3
     cpu->cpl = 3; // user mode
     FPU_FINIT(&cpu->fpu);
 }
@@ -69,7 +70,6 @@ U32 CPU_CHECK_COND(struct CPU* cpu, U32 cond, const char* msg, int exc, int sel)
     }
     return 0;
 }
-
 
 void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
     if (cpu->flags & VM) {
@@ -246,9 +246,6 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
 }
 
  void setFlags(struct CPU* cpu, U32 word, U32 mask) {
-     if (word & VM) {
-         int ii= 0;
-     }
     cpu->flags=(cpu->flags & ~mask)|(word & mask)|2;
     cpu->df=1-((cpu->flags & DF) >> 9);
 } 
@@ -257,9 +254,6 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
 
 void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
     value &= 0xffff;
-    if (seg==CS) {
-        int ii=0;
-    }
     if (cpu->flags & VM) {
         cpu->segAddress[seg] = value << 4;
         cpu->segValue[seg] = value;
@@ -385,8 +379,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
         // commit point
         ESP=tempesp;
         cpu_setSegment(cpu, CS, n_cs_sel);
-        // :TODO: for some reason n_cs_sel is 0 when creating .wine directory for wine 1.0.1
-        //cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
+        cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
         cpu->eip.u32 = n_eip;
 
         

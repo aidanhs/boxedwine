@@ -3157,3 +3157,9 @@ void OPCALL callFar(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
 }
+
+void OPCALL intOp(struct CPU* cpu, struct Op* op) {
+    DONE();
+    signalIllegalInstruction(cpu->thread, 5);// 5=ILL_PRVOPC  // :TODO: just a guess
+    cpu->nextBlock = getBlock(cpu);
+}
