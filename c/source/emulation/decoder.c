@@ -2108,6 +2108,28 @@ void decode0ca(struct DecodeData* data) {
     FINISH_OP(data);
 }
 
+// LAR
+void decode102(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm>=0xC0) {
+        data->op->func = larr16r16;
+        data->op->r1 = E(rm);
+        data->op->r2 = G(rm);
+        LOG_OP2("LAR", R16(data->op->r1),R16(data->op->r2));
+    } else if (data->ea16) {
+        data->op->func = lare16r16_16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("LAR", M16(data, rm, data->op),R16(data->op->r1));
+    } else {
+        data->op->func = lare16r16_32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("LAR", M16(data, rm, data->op),R16(data->op->r1));
+    }
+    NEXT_OP(data);
+}
+
 #define DECODE_BT(r, m16, m32) DECODE_E(r, m16, m32); data->op->data1 = 1 << (FETCH8(data) & 31)
 
 // GRP8 Ed,Ib
@@ -2172,7 +2194,7 @@ DECODER decoder[1024] = {
     decode0f8, decode0f9, invalidOp, invalidOp, decode0fc, decode0fd, decode0fe, decode0ff,
 
     // 100
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, invalidOp, decode102, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 110
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

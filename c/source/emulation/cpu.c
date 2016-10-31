@@ -71,6 +71,26 @@ U32 CPU_CHECK_COND(struct CPU* cpu, U32 cond, const char* msg, int exc, int sel)
     return 0;
 }
 
+U32 cpu_lar(struct CPU* cpu, U32 selector, U32 ar) {
+    struct user_desc* ldt;
+
+    fillFlags(cpu);
+    if (selector == 0 || selector>=LDT_ENTRIES) {
+        cpu->flags &=~ZF;
+        return ar;
+    }    
+    ldt = &cpu->thread->process->ldt[selector >> 3];
+    cpu->flags |= ZF;
+    ar = 0;
+    if (!ldt->seg_not_present)
+        ar|=0x0100;
+    ar|=0x0600; // ring 3 (dpl)
+    ar|=0x0800; // not system
+    // bits 5,6,7 = type, hopefully not used
+    ar|=0x8000; // accessed;
+    return ar;
+}
+
 void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
     if (cpu->flags & VM) {
         U32 new_ip;

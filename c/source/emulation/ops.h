@@ -3163,3 +3163,21 @@ void OPCALL intOp(struct CPU* cpu, struct Op* op) {
     signalIllegalInstruction(cpu->thread, 5);// 5=ILL_PRVOPC  // :TODO: just a guess
     cpu->nextBlock = getBlock(cpu);
 }
+
+void OPCALL larr16r16(struct CPU* cpu, struct Op* op) {
+    cpu->reg[op->r1].u16 = cpu_lar(cpu, cpu->reg[op->r2].u16, cpu->reg[op->r1].u16);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL lare16r16_16(struct CPU* cpu, struct Op* op) {
+    cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(MMU_PARAM_CPU eaa16(cpu, op)), cpu->reg[op->r1].u16);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL lare16r16_32(struct CPU* cpu, struct Op* op) {
+    cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(MMU_PARAM_CPU eaa32(cpu, op)), cpu->reg[op->r1].u16);
+    CYCLES(8);
+    NEXT();
+}

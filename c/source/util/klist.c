@@ -48,5 +48,6 @@ void removeItemFromList(struct KList* list, struct KListNode* node) {
         list->first = list->first->next;
     if (node == list->last)
         list->last = list->last->prev;
+    freeListNode(node);
     list->count--;
 }
