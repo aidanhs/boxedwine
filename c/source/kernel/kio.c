@@ -304,9 +304,22 @@ U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length) {
 U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
     struct Node* node = getNode(thread, path);
     U64 len;
-
     if (node==0 || !node->nodeType->exists(node)) {
         return -K_ENOENT;
+    }
+
+    if (node->path.isLink) {
+        char tmp[MAX_FILEPATH_LEN];
+
+        safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
+        safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
+        node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
+        if (node && kreadLink(node->path.nativePath, tmp, MAX_FILEPATH_LEN, FALSE)) {
+            node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);            
+        }
+        if (node==0 || !node->nodeType->exists(node)) {
+            return -K_ENOENT;
+        }
     }
     len = node->nodeType->length(node);
     writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, node->id, node->nodeType->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->nodeType->lastModified(node), getHardLinkCount(node));

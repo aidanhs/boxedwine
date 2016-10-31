@@ -372,6 +372,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "LOGNAME=username";
     ppenv[envc++] = "USERNAME=username";
     ppenv[envc++] = "USER=username";
+    ppenv[envc++] = "PWD=/home/username";
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
     if (userId==0)
@@ -382,7 +383,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    //ppenv[envc++] = "WINEDEBUG=+relay";
+    //ppenv[envc++] = "WINEDEBUG=+int21,+int,+int31,+task,+process,+file";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg

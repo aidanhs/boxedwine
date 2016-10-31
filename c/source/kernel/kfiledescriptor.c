@@ -158,106 +158,94 @@ U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout) {
 }
 
 U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, U32 errorfds, U32 timeout) {
-    if (nfds>0) {
-        S32 result = 0;
-        U32 i;
-        int count = 0;
+    S32 result = 0;
+    U32 i;
+    int count = 0;
 
-        thread->pollCount = 0;
-        for (i=0;i<nfds;) {
-            U32 readbits = 0;
-            U32 writebits = 0;
-            U32 errorbits = 0;
-            U32 b;
+    thread->pollCount = 0;
+    for (i=0;i<nfds;) {
+        U32 readbits = 0;
+        U32 writebits = 0;
+        U32 errorbits = 0;
+        U32 b;
 
-            if (readfds!=0) {
-                readbits = readb(MMU_PARAM_THREAD readfds + i / 8);
-            }
-            if (writefds!=0) {
-                writebits = readb(MMU_PARAM_THREAD writefds + i / 8);
-            }
-            if (errorfds!=0) {
-                errorbits = readb(MMU_PARAM_THREAD errorfds + i / 8);
-            }
-            for (b = 0; b < 8 && i < nfds; b++, i++) {
-                U32 mask = 1 << b;
-                U32 r = readbits & mask;
-                U32 w = writebits & mask;
-                U32 e = errorbits & mask;
-                if (r || w || e) {
-                    U32 events = 0;
-                    if (r)
-                        events |= K_POLLIN;
-                    if (w)
-                        events |= K_POLLHUP|K_POLLOUT;
-                    if (e)
-                        events |= K_POLLERR;
-                    if (thread->pollCount>=MAX_POLL_DATA) {
-                        kpanic("%d fd limit reached in poll", MAX_POLL_DATA);
-                    }
-                    thread->pollData[thread->pollCount].events = events;
-                    thread->pollData[thread->pollCount].fd = i;
-                    thread->pollCount++;
+        if (readfds!=0) {
+            readbits = readb(MMU_PARAM_THREAD readfds + i / 8);
+        }
+        if (writefds!=0) {
+            writebits = readb(MMU_PARAM_THREAD writefds + i / 8);
+        }
+        if (errorfds!=0) {
+            errorbits = readb(MMU_PARAM_THREAD errorfds + i / 8);
+        }
+        for (b = 0; b < 8 && i < nfds; b++, i++) {
+            U32 mask = 1 << b;
+            U32 r = readbits & mask;
+            U32 w = writebits & mask;
+            U32 e = errorbits & mask;
+            if (r || w || e) {
+                U32 events = 0;
+                if (r)
+                    events |= K_POLLIN;
+                if (w)
+                    events |= K_POLLHUP|K_POLLOUT;
+                if (e)
+                    events |= K_POLLERR;
+                if (thread->pollCount>=MAX_POLL_DATA) {
+                    kpanic("%d fd limit reached in poll", MAX_POLL_DATA);
                 }
+                thread->pollData[thread->pollCount].events = events;
+                thread->pollData[thread->pollCount].fd = i;
+                thread->pollCount++;
             }
         }
-        if (timeout==0)
-            timeout = 0xFFFFFFFF;
-        else {
-            timeout = readd(MMU_PARAM_THREAD timeout) * 1000 + readd(MMU_PARAM_THREAD timeout + 4) / 1000;
-        }
-
-        result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
-        if (result == -K_WAIT)
-            return result;
-
-        if (readfds)
-            zeroMemory(MMU_PARAM_THREAD readfds, (nfds + 7) / 8);
-        if (writefds)
-            zeroMemory(MMU_PARAM_THREAD writefds, (nfds + 7) / 8);
-        if (errorfds)
-            zeroMemory(MMU_PARAM_THREAD errorfds, (nfds + 7) / 8);
-
-        if (result <= 0)
-            return result;
-        
-        for (i=0;i<thread->pollCount;i++) {
-            U32 found = 0;
-            FD fd = thread->pollData[i].fd;
-            U32 revent = thread->pollData[i].revents;
-
-            if (readfds!=0 && ((revent & K_POLLIN) || (revent & K_POLLHUP))) {
-                U8 v = readb(MMU_PARAM_THREAD readfds + fd / 8);
-                v |= 1 << (fd % 8);
-                writeb(MMU_PARAM_THREAD readfds + fd / 8, v);
-                found = 1;
-            }
-            if (writefds!=0 && (revent & K_POLLOUT)) {
-                U8 v = readb(MMU_PARAM_THREAD writefds + fd / 8);
-                v |= 1 << (fd % 8);
-                writeb(MMU_PARAM_THREAD writefds + fd / 8, v);
-                found = 1;
-            }
-            if (errorfds!=0 && (revent & K_POLLERR)) {
-                U8 v = readb(MMU_PARAM_THREAD errorfds + fd / 8);
-                v |= 1 << (fd % 8);
-                writeb(MMU_PARAM_THREAD errorfds + fd / 8, v);
-                found = 1;
-            }
-            if (found) {
-                count++;
-            }
-        }
-        return count;
-    } else {
-        if (timeout == 0) {
-            timeout = 0xFFFFFFFF;
-        }
-        thread->timer.process = thread->process;
-        thread->timer.thread = thread;
-        thread->timer.millies = thread->waitStartTime+timeout;			
-        // :TODO: if signaled return EINTR
-        addTimer(&thread->timer);
-        return -K_WAIT;
     }
+    if (timeout==0)
+        timeout = 0x7FFFFFFF;
+    else {
+        timeout = readd(MMU_PARAM_THREAD timeout) * 1000 + readd(MMU_PARAM_THREAD timeout + 4) / 1000;
+    }
+
+    result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
+    if (result == -K_WAIT)
+        return result;
+
+    if (readfds)
+        zeroMemory(MMU_PARAM_THREAD readfds, (nfds + 7) / 8);
+    if (writefds)
+        zeroMemory(MMU_PARAM_THREAD writefds, (nfds + 7) / 8);
+    if (errorfds)
+        zeroMemory(MMU_PARAM_THREAD errorfds, (nfds + 7) / 8);
+
+    if (result <= 0)
+        return result;
+        
+    for (i=0;i<thread->pollCount;i++) {
+        U32 found = 0;
+        FD fd = thread->pollData[i].fd;
+        U32 revent = thread->pollData[i].revents;
+
+        if (readfds!=0 && ((revent & K_POLLIN) || (revent & K_POLLHUP))) {
+            U8 v = readb(MMU_PARAM_THREAD readfds + fd / 8);
+            v |= 1 << (fd % 8);
+            writeb(MMU_PARAM_THREAD readfds + fd / 8, v);
+            found = 1;
+        }
+        if (writefds!=0 && (revent & K_POLLOUT)) {
+            U8 v = readb(MMU_PARAM_THREAD writefds + fd / 8);
+            v |= 1 << (fd % 8);
+            writeb(MMU_PARAM_THREAD writefds + fd / 8, v);
+            found = 1;
+        }
+        if (errorfds!=0 && (revent & K_POLLERR)) {
+            U8 v = readb(MMU_PARAM_THREAD errorfds + fd / 8);
+            v |= 1 << (fd % 8);
+            writeb(MMU_PARAM_THREAD errorfds + fd / 8, v);
+            found = 1;
+        }
+        if (found) {
+            count++;
+        }
+    }
+    return count;
 }

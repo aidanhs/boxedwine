@@ -1974,7 +1974,11 @@ void decode0ff(struct DecodeData* data) {
             FINISH_OP(data);
             return;
         case 0x05:										// JMP Ep 
-            kpanic("Jmp Ep (0xFF) not implemented");
+            if (rm>=0xC0) {
+                kpanic("Jmp Ep (0xFF) illegal RM");
+            } else {
+                DECODE_MEMORY(jmpEp16_mem16, jmpEp16_mem32);
+            }            
             break;
         case 0x06:										// PUSH Ev 
             DECODE_E(pushEv16_reg, pushEv16_mem16, pushEv16_mem32);

@@ -103,6 +103,7 @@ void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level);
 void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level);
 void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value);
 U32 cpu_lar(struct CPU* cpu, U32 selector, U32 ar);
+void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip);
 
 extern U8 parity_lookup[];
 

@@ -265,6 +265,47 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
     }
 }
 
+void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip) {
+    if (cpu->flags & VM) {
+        if (!big) {
+            cpu->eip.u32 = offset & 0xffff;
+        } else {
+            cpu->eip.u32 = offset;
+        }
+        cpu->segAddress[CS] = selector << 4;;
+        cpu->segValue[CS] = selector;
+        cpu->big = 0;
+    } else {
+        U32 rpl=selector & 3;
+        U32 index = selector >> 3;
+        struct user_desc* ldt;
+
+        if (CPU_CHECK_COND(cpu, (selector & 0xfffc)==0, "JMP:CS selector zero", EXCEPTION_GP,0))
+            return;
+            
+        if (index>=LDT_ENTRIES) {
+            if (CPU_CHECK_COND(cpu, 0, "JMP:CS beyond limits", EXCEPTION_GP,selector & 0xfffc))
+                return;
+        }
+        ldt = &(cpu->ldt[index]);
+
+        if (ldt->seg_not_present) {
+            cpu_exception(cpu, EXCEPTION_NP,selector & 0xfffc);
+            return;
+        }
+
+        cpu->big = ldt->seg_32bit;
+        cpu->segAddress[CS] = ldt->base_addr;
+        cpu->segValue[CS] = (selector & 0xfffc) | cpu->cpl;
+
+        if (!big) {
+            cpu->eip.u32 = offset & 0xffff;
+        } else {
+            cpu->eip.u32 = offset;
+        }
+    }
+}
+
  void setFlags(struct CPU* cpu, U32 word, U32 mask) {
     cpu->flags=(cpu->flags & ~mask)|(word & mask)|2;
     cpu->df=1-((cpu->flags & DF) >> 9);

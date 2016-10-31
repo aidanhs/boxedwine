@@ -1922,6 +1922,7 @@ void OPCALL callEp16_mem16(struct CPU* cpu, struct Op* op) {
     U16 newip = readw(MMU_PARAM_CPU eaa);
     U16 newcs = readw(MMU_PARAM_CPU eaa+2);
     fillFlags(cpu);
+    DONE();
     cpu_call(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
     CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
@@ -1932,6 +1933,7 @@ void OPCALL callEp16_mem32(struct CPU* cpu, struct Op* op) {
     U16 newip = readw(MMU_PARAM_CPU eaa);
     U16 newcs = readw(MMU_PARAM_CPU eaa+2);
     fillFlags(cpu);
+    DONE();
     cpu_call(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
     CYCLES(4);
     cpu->nextBlock = getBlock(cpu);
@@ -3180,4 +3182,23 @@ void OPCALL lare16r16_32(struct CPU* cpu, struct Op* op) {
     cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(MMU_PARAM_CPU eaa32(cpu, op)), cpu->reg[op->r1].u16);
     CYCLES(8);
     NEXT();
+}
+
+void OPCALL jmpEp16_mem16(struct CPU* cpu, struct Op* op) {
+    DONE();
+    cpu->eip.u32 = readw(MMU_PARAM_CPU eaa16(cpu, op));
+    CYCLES(2);
+    cpu->nextBlock = getBlock(cpu);
+}
+
+void OPCALL jmpEp16_mem32(struct CPU* cpu, struct Op* op) {
+    DONE();
+    U32 eaa = eaa16(cpu, op);
+    U16 newip = readw(MMU_PARAM_CPU eaa);
+    U16 newcs = readw(MMU_PARAM_CPU eaa+2);
+    fillFlags(cpu);
+    DONE();
+    cpu_jmp(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
+    CYCLES(4); // just a guess
+    cpu->nextBlock = getBlock(cpu);
 }
