@@ -644,7 +644,9 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
         localEntry.isLink = tmp32;
         pblMapAdd(localSkipLinksMap, fullLocalPath, strlen(fullLocalPath+1), &localEntry, sizeof(struct LocalPath));
     }
-
+    return (struct Node*)getHashmapValue(&nodeMap, localPath);
+    /* why was this necessary?  it is not compatible with localSkipLinksMap since the link isn't rechecked.  If a
+    file was removed shouldn't it just be removed from nodeMap
     result = (struct Node*)getHashmapValue(&nodeMap, localPath);
     if (result) {
         // might have changed from link to file or visa versa
@@ -652,8 +654,9 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
             safe_strcpy((char*)result->path.nativePath, nativePath, result->path.nativePathSize);
         result->path.isLink = tmp32;
         return result;
-    }
+    }    
     return 0;
+    */
 }
 
 struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing) {
@@ -662,7 +665,7 @@ struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path
     U32 isLink = 0;
     struct Node* result = getLocalAndNativePaths(currentDirectory, path, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, &isLink);
         
-    if (result) {		
+    if (result) {
         return result;		
     }
     

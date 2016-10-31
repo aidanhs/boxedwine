@@ -849,7 +849,7 @@ struct KSocket* allocSocket() {
     result->sendLen = 1048576;
     result->blocking = 1;
     if (!result->recvBuffer)
-        result->recvBuffer = ringbuf_new(1024 * 1024 * 4);
+        result->recvBuffer = ringbuf_new(1024 * 1024);
     return result;
 }
 
