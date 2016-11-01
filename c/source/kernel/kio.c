@@ -315,6 +315,13 @@ U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
         safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
         node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
         if (node && kreadLink(node->path.nativePath, tmp, MAX_FILEPATH_LEN, FALSE)) {
+            if (tmp[0]!='/') {
+                char tmp2[MAX_FILEPATH_LEN];
+
+                strcpy(tmp2, node->path.localPath);
+                strcpy(strrchr(tmp2, '/')+1, tmp);
+                strcpy(tmp, tmp2);
+            }
             node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);            
         }
         if (node==0 || !node->nodeType->exists(node)) {
