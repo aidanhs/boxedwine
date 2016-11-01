@@ -338,40 +338,34 @@ void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
 }
 
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
-    U32 n_cs_sel, n_flags;
-    U32 n_eip;
-    U32 tempesp;
-    U32 n_cs_rpl;
-
-    // protected mode IRET
     if (cpu->flags & VM) {
         if ((cpu->flags & IOPL)!=IOPL) {
-            // win3.x e
-            exception(cpu, 13);
+            cpu_exception(cpu, EXCEPTION_GP, 0);
             return;
         } else {
             if (big) {
-                U32 new_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-                U32 new_cs=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only first 16-bits are read
-                U32 new_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
+                U32 new_eip = peek32(cpu, 0);
+                U32 new_cs = peek32(cpu, 1);
+                U32 new_flags = peek32(cpu, 2);
 
-                ESP += 12;
+                ESP = (ESP & cpu->stackNotMask) | ((ESP + 12) & cpu->stackMask);
+
+                cpu->eip.u32 = new_eip;
+                cpu_setSegment(cpu, CS, new_cs & 0xFFFF);
+
+                /* IOPL can not be modified in v86 mode by IRET */
+                setFlags(cpu, new_flags, FMASK_NORMAL | NT);
+            } else {
+                U32 new_eip = peek16(cpu, 0);
+                U32 new_cs = peek16(cpu, 1);
+                U32 new_flags = peek16(cpu, 2);
+
+                ESP = (ESP & cpu->stackNotMask) | ((ESP + 6) & cpu->stackMask);
+
                 cpu->eip.u32 = new_eip;
                 cpu_setSegment(cpu, CS, new_cs);
-
                 /* IOPL can not be modified in v86 mode by IRET */
-                setFlags(cpu, new_flags, FMASK_NORMAL|NT);
-            } else {
-                U16 new_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-                U16 new_cs=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+2);
-                U16 new_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4);
-
-                ESP+=6;
-                cpu->eip.u32=new_eip;
-                cpu_setSegment(cpu, CS, new_cs);
-
-                /* IOPL can not be modified in v86 mode by IRET */
-                setFlags(cpu, new_flags, FMASK_NORMAL|NT);
+                setFlags(cpu, new_flags, FMASK_NORMAL | NT);
             }
             cpu->big = 0;
             cpu->lazyFlags = FLAGS_NONE;
@@ -380,75 +374,146 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
     }
     /* Check if this is task IRET */
     if (cpu->flags & NT) {
-        if (cpu->flags & VM) kpanic("Pmode IRET with VM bit set");
-        kpanic("IRET task not implemented");
+        kpanic("cpu tasks not implemented");
         return;
-    }
-    
-    if (big) {
-        n_eip=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-        n_cs_sel=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+4); // only read first 16-bits
-        n_flags=readd(MMU_PARAM_CPU cpu->segAddress[SS] + ESP+8);
-        if ((n_flags & VM) && cpu->cpl==0) {
-            U32 n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
+    } else {
+        U32 n_cs_sel, n_flags;
+        U32 n_eip;
+        U32 tempesp;
+        U32 n_cs_rpl;
+        U32 csIndex;
+        struct user_desc* ldt;
 
-            // commit point
-            ESP+=12;
-            cpu->eip.u32=n_eip & 0xffff;
-            
-            n_esp=pop32(cpu);
-            n_ss=pop32(cpu) & 0xffff;
-            n_es=pop32(cpu) & 0xffff;
-            n_ds=pop32(cpu) & 0xffff;
-            n_fs=pop32(cpu) & 0xffff;
-            n_gs=pop32(cpu) & 0xffff;
-            setFlags(cpu, n_flags,FMASK_ALL | VM);
-            cpu->lazyFlags = FLAGS_NONE;
-            cpu->cpl = 3;
+        if (big) {
+            n_eip = peek32(cpu, 0);
+            n_cs_sel = peek32(cpu, 1);
+            n_flags = peek32(cpu, 2);
 
-            cpu->segAddress[SS] = cpu->thread->process->ldt[n_ss>>3].base_addr;
-            cpu->segValue[SS] = n_ss;
-            cpu->segAddress[ES] = cpu->thread->process->ldt[n_es>>3].base_addr;
-            cpu->segValue[ES] = n_es;
-            cpu->segAddress[DS] = cpu->thread->process->ldt[n_ds>>3].base_addr;
-            cpu->segValue[DS] = n_ds;
-            cpu->segAddress[FS] = cpu->thread->process->ldt[n_fs>>3].base_addr;
-            cpu->segValue[FS] = n_fs;
-            cpu->segAddress[GS] = cpu->thread->process->ldt[n_gs>>3].base_addr;
-            cpu->segValue[GS] = n_gs;
+            if ((n_flags & VM) && (cpu->cpl==0)) {
+                U32 n_ss,n_esp,n_es,n_ds,n_fs,n_gs;
 
-            ESP=n_esp;
-            cpu->big = 0;
-            cpu_setSegment(cpu, CS, n_cs_sel);
+                // commit point
+                ESP = (ESP & cpu->stackNotMask) | ((ESP + 12) & cpu->stackMask);
+                cpu->eip.u32 = n_eip & 0xffff;
+                n_esp=pop32(cpu);
+                n_ss=pop32(cpu) & 0xffff;
+                n_es=pop32(cpu) & 0xffff;
+                n_ds=pop32(cpu) & 0xffff;
+                n_fs=pop32(cpu) & 0xffff;
+                n_gs=pop32(cpu) & 0xffff;
+
+                setFlags(cpu, n_flags, FMASK_NORMAL | VM);
+                cpu->lazyFlags = FLAGS_NONE;
+                cpu->cpl = 3;
+
+                cpu_setSegment(cpu, SS, n_ss);
+                cpu_setSegment(cpu, ES, n_es);
+                cpu_setSegment(cpu, DS, n_ds);
+                cpu_setSegment(cpu, FS, n_fs);
+                cpu_setSegment(cpu, GS, n_gs);
+                ESP = n_esp;
+                cpu->big = 0;
+                cpu_setSegment(cpu, CS, n_cs_sel);
+                return;
+            }
+            if (n_flags & VM) kpanic("IRET from pmode to v86 with CPL!=0");
+        } else {
+            n_eip = peek16(cpu, 0);
+            n_cs_sel = peek16(cpu, 1);
+            n_flags = peek16(cpu, 2);
+
+            n_flags |= (cpu->flags & 0xffff0000);
+            if (n_flags & VM) kpanic("VM Flag in 16-bit iret");
+        }
+        if (CPU_CHECK_COND(cpu, (n_cs_sel & 0xfffc)==0, "IRET:CS selector zero", EXCEPTION_GP, 0))
+            return;
+        n_cs_rpl=n_cs_sel & 3;
+        csIndex = n_cs_sel >> 3;
+
+        if (CPU_CHECK_COND(cpu, csIndex>=LDT_ENTRIES, "IRET:CS selector beyond limits", EXCEPTION_GP,(n_cs_sel & 0xfffc))) {
             return;
         }
-        tempesp=ESP+12;
-        if ((n_flags & VM)!=0) kpanic("IRET from pmode to v86 with CPL!=0");
-    } else {
-        n_eip=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP);
-        n_cs_sel=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 2);
-        n_flags=readw(MMU_PARAM_CPU cpu->segAddress[SS] + ESP + 4);
-        n_flags|=(cpu->flags & 0xffff0000);
-        tempesp=ESP+6;
-        if (n_flags & VM) kpanic("VM Flag in 16-bit iret");
-    }
-    n_cs_rpl=n_cs_sel & 3;
-    
-    if (n_cs_rpl==cpu->cpl) { /* Return to same level */
-        U32 mask=cpu->cpl ? (FMASK_NORMAL | NT) : FMASK_ALL;
-        
-        // commit point
-        ESP=tempesp;
-        cpu_setSegment(cpu, CS, n_cs_sel);
-        cpu->big = cpu->thread->process->ldt[n_cs_sel>>3].seg_32bit;
-        cpu->eip.u32 = n_eip;
+        if (CPU_CHECK_COND(cpu, n_cs_rpl<cpu->cpl, "IRET to lower privilege", EXCEPTION_GP,(n_cs_sel & 0xfffc))) {
+            return;
+        }
+        ldt = &cpu->thread->process->ldt[csIndex];
 
-        
-        if (GET_IOPL(cpu)<cpu->cpl) mask &= ~IF;
-        setFlags(cpu, n_flags,mask);
-        cpu->lazyFlags = FLAGS_NONE;
-    } else { /* Return to outer level */
-        kpanic("IRET to outer level not implemented");
+        if (CPU_CHECK_COND(cpu, ldt->seg_not_present, "IRET with nonpresent code segment",EXCEPTION_NP,(n_cs_sel & 0xfffc)))
+            return;
+
+        /* Return to same level */
+        if (n_cs_rpl==cpu->cpl) {
+            U32 mask;
+
+            // commit point
+            ESP = (ESP & cpu->stackNotMask) | ((ESP + (big?12:6)) & cpu->stackMask);
+            cpu->segAddress[CS] = ldt->base_addr;
+            cpu->big = ldt->seg_32bit;
+            cpu->segValue[CS] = n_cs_sel;
+            cpu->eip.u32 = n_eip;            
+
+            mask = cpu->cpl !=0 ? (FMASK_NORMAL | NT) : FMASK_ALL;
+            if (((cpu->flags & IOPL) >> 12) < cpu->cpl) mask &= ~IF;
+            setFlags(cpu, n_flags,mask);
+            cpu->lazyFlags = FLAGS_NONE;
+        } else {
+            /* Return to outer level */
+            U32 n_ss;
+            U32 n_esp;
+            U32 ssIndex;
+            struct user_desc* ssLdt;
+            U32 mask;
+
+            if (big) {
+                n_esp = peek32(cpu, 3);
+                n_ss = peek32(cpu, 4);
+            } else {
+                n_esp = peek16(cpu, 3);
+                n_ss = peek16(cpu, 4);
+            }
+            if (CPU_CHECK_COND(cpu, (n_ss & 0xfffc)==0, "IRET:Outer level:SS selector zero", EXCEPTION_GP,0))
+                return;
+            if (CPU_CHECK_COND(cpu, (n_ss & 3)!=n_cs_rpl, "IRET:Outer level:SS rpl!=CS rpl", EXCEPTION_GP,n_ss & 0xfffc))
+                return;
+
+            ssIndex = n_ss >> 3;
+            if (CPU_CHECK_COND(cpu, ssIndex>=LDT_ENTRIES, "IRET:Outer level:SS beyond limit", EXCEPTION_GP,n_ss & 0xfffc))
+                return;
+            //if (CPU_CHECK_COND(n_ss_desc_2.DPL()!=n_cs_rpl, "IRET:Outer level:SS dpl!=CS rpl", EXCEPTION_GP,n_ss & 0xfffc))
+            //    return;
+
+            ssLdt = &cpu->thread->process->ldt[ssIndex];
+
+            if (CPU_CHECK_COND(cpu, ssLdt->seg_not_present, "IRET:Outer level:Stack segment not present", EXCEPTION_NP,n_ss & 0xfffc))
+                return;
+
+            // commit point
+            cpu->segAddress[CS] = ldt->base_addr;
+            cpu->big = ldt->seg_32bit;
+            cpu->segValue[CS] = n_cs_sel;
+            
+
+            mask = cpu->cpl !=0 ? (FMASK_NORMAL | NT) : FMASK_ALL;
+            if (((cpu->flags & IOPL) >> 12) < cpu->cpl) mask &= ~IF;
+            setFlags(cpu, n_flags, mask);
+            cpu->lazyFlags = FLAGS_NONE;
+
+            cpu->cpl = n_cs_rpl;
+            cpu->eip.u32 = n_eip;
+
+            cpu->segAddress[SS] = ssLdt->base_addr;
+            cpu->segValue[SS] = n_ss;
+
+            if (ssLdt->seg_32bit) {
+                cpu->stackMask = 0xffffffff;
+                cpu->stackNotMask = 0;
+                ESP = n_esp;
+            } else {
+                cpu->stackMask = 0xffff;
+                cpu->stackNotMask = 0xffff0000;
+                SP = (U16)n_esp;
+            }
+        }
     }
 } 
 
