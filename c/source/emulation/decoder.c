@@ -2088,6 +2088,44 @@ void decode1b2(struct DecodeData* data) {
     NEXT_OP(data);
 }
 
+// LFS
+void decode1b4(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm >= 0xc0) invalidOp(data);
+    if (data->ea16) {
+        data->op->func = loadSegment16_mem16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("LGS", M16(data, rm, data->op),R16(data->op->r1));
+    } else {
+        data->op->func = loadSegment16_mem32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("LGS", M16(data, rm, data->op),R16(data->op->r1));
+    }
+    data->op->data1 = FS;
+    NEXT_OP(data);
+}
+
+// LGS
+void decode1b5(struct DecodeData* data) {
+    U8 rm = FETCH8(data);
+    if (rm >= 0xc0) invalidOp(data);
+    if (data->ea16) {
+        data->op->func = loadSegment16_mem16;
+        data->op->r1 = G(rm);
+        decodeEa16(data, rm);
+        LOG_OP2("LGS", M16(data, rm, data->op),R16(data->op->r1));
+    } else {
+        data->op->func = loadSegment16_mem32;
+        data->op->r1 = G(rm);
+        decodeEa32(data, rm);
+        LOG_OP2("LGS", M16(data, rm, data->op),R16(data->op->r1));
+    }
+    data->op->data1 = GS;
+    NEXT_OP(data);
+}
+
 void decode29a(struct DecodeData* data) {
     data->op->data1 = FETCH32(data);
     data->op->eData = FETCH16(data);
@@ -2231,7 +2269,7 @@ DECODER decoder[1024] = {
     decode1a0, decode1a1, decode1a2, decode1a3, decode1a4, decode1a5, invalidOp, invalidOp,
     decode1a8, decode1a9, invalidOp, decode1ab, decode1ac, decode1ad, invalidOp, decode1af,
     // 1b0
-    invalidOp, decode1b1, decode1b2, invalidOp, invalidOp, invalidOp, decode1b6, invalidOp,
+    invalidOp, decode1b1, decode1b2, invalidOp, decode1b4, decode1b5, decode1b6, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode1bd, decode1be, invalidOp,
     // 1c0
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
