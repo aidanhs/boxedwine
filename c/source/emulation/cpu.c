@@ -936,7 +936,7 @@ void initBlockCache() {
 
 struct Block* getBlock(struct CPU* cpu) {
     struct Block* block;	
-    U32 page = cpu->eip.u32 >> PAGE_SHIFT;
+    U32 page = (cpu->segAddress[CS] + cpu->eip.u32) >> PAGE_SHIFT;
     U32 flags = cpu->memory->flags[page];
     if (IS_PAGE_IN_RAM(flags)) {
         block = getCode(cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
