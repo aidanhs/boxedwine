@@ -975,8 +975,10 @@ void sdlCreateAndSetCursor(char* moduleName, char* resourceName, int resource, U
 #define VK_DELETE              0x2E
 #define VK_HELP                0x2F
 
-#define VK_DIVIDE              0x6F
 #define VK_MULTIPLY            0x6A
+#define VK_ADD                 0x6B
+#define VK_DECIMAL             0x6E
+#define VK_DIVIDE              0x6F
 
 #define VK_F1                  0x70
 #define VK_F2                  0x71
@@ -1017,6 +1019,16 @@ void sdlCreateAndSetCursor(char* moduleName, char* resourceName, int resource, U
 #ifdef SDL2
 #define SDLK_NUMLOCK SDL_SCANCODE_NUMLOCKCLEAR
 #define SDLK_SCROLLOCK SDLK_SCROLLLOCK
+#define SDLK_KP0 SDLK_KP_0
+#define SDLK_KP1 SDLK_KP_1
+#define SDLK_KP2 SDLK_KP_2
+#define SDLK_KP3 SDLK_KP_3
+#define SDLK_KP4 SDLK_KP_4
+#define SDLK_KP5 SDLK_KP_5
+#define SDLK_KP6 SDLK_KP_6
+#define SDLK_KP7 SDLK_KP_7
+#define SDLK_KP8 SDLK_KP_8
+#define SDLK_KP9 SDLK_KP_9
 #endif
 
 int sdlKey(U32 key, U32 down) {
@@ -1348,7 +1360,7 @@ int sdlKey(U32 key, U32 down) {
                     break;
                 case SDLK_RIGHT:
                     vKey = VK_RIGHT;
-                    scan = 0x148;
+                    scan = 0x14d;
                     break;
                 case SDLK_END:
                     vKey = VK_END;
@@ -1374,6 +1386,68 @@ int sdlKey(U32 key, U32 down) {
                     vKey = VK_PAUSE;
                     scan = 0x154; // :TODO: is this right?
                     break;
+                case SDLK_KP0:
+                    scan = 0x52;
+                    break;
+                case SDLK_KP1:
+                    vKey = VK_END;
+                    scan = 0x4F;
+                    break;
+                case SDLK_KP2:
+                    vKey = VK_DOWN;
+                    scan = 0x50;
+                    break;
+                case SDLK_KP3:
+                    vKey = VK_NEXT;
+                    scan = 0x51;
+                    break;
+                case SDLK_KP4:
+                    vKey = VK_LEFT;
+                    scan = 0x4B;
+                    break;
+                case SDLK_KP5:
+                    scan = 0x4C;
+                    break;
+                case SDLK_KP6:
+                    vKey = VK_RIGHT;
+                    scan = 0x4D;
+                    break;
+                case SDLK_KP7:
+                    vKey = VK_HOME;
+                    scan = 0x47;
+                    break;
+                case SDLK_KP8:
+                    vKey = VK_UP;
+                    scan = 0x48;
+                    break;
+                case SDLK_KP9:
+                    vKey = VK_PRIOR;
+                    scan = 0x49;
+                    break;
+                case SDLK_KP_PERIOD:
+                    vKey = VK_DECIMAL;
+                    scan = 0x53;
+                    break;
+                case SDLK_KP_DIVIDE:
+                    vKey = VK_DIVIDE;
+                    scan = 0x135;
+                    break;
+                case SDLK_KP_MULTIPLY:
+                    vKey = VK_MULTIPLY;
+                    scan = 0x137;
+                    break;
+                case SDLK_KP_MINUS:
+                    scan = 0x4A;
+                    break;
+                case SDLK_KP_PLUS:
+                    vKey = VK_ADD;
+                    scan = 0x4E;
+                    break;
+                case SDLK_KP_ENTER:
+                    vKey = VK_RETURN;
+                    scan = 0x11C;
+                    break;
+
                 default:
                     kwarn("Unhandled key: %d", key);
                     return 1;
@@ -1383,12 +1457,12 @@ int sdlKey(U32 key, U32 down) {
 
                 writeLittleEndian_4(MMU_PARAM fd, 1); // INPUT_KEYBOARD
                 writeLittleEndian_2(MMU_PARAM fd, vKey); // wVk
-                writeLittleEndian_2(MMU_PARAM fd, scan); // wScan
+                writeLittleEndian_2(MMU_PARAM fd, scan & 0xFF); // wScan
                 writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
                 writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
                 writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
                 writeLittleEndian_4(MMU_PARAM fd, 0); // pad
-                writeLittleEndian_4(MMU_PARAM fd, 0); // padd
+                writeLittleEndian_4(MMU_PARAM fd, 0); // pad
             }
         }
     }
@@ -1486,6 +1560,7 @@ U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, 
             case VK_SPACE: c = ' '; break;
             case VK_RETURN: c = 13; break;
             case VK_BACK: c = 8; break;
+            case VK_ADD: c = '+'; break;
             default:
                 kwarn("Unhandled key: %d", virtKey);
                 break;
@@ -1513,6 +1588,7 @@ U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, 
             case VK_SPACE: c = ' '; break;
             case VK_RETURN: c = 13; break;
             case VK_BACK: c = 8; break;
+            case VK_ADD: c = '+'; break;
             default:
                 kwarn("Unhandled key: %d", virtKey);
                 break;
