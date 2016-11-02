@@ -3118,6 +3118,14 @@ void OPCALL callAp(struct CPU* cpu, struct Op* op) {
     cpu->nextBlock = getBlock(cpu);
 }
 
+void OPCALL jmpAp(struct CPU* cpu, struct Op* op) {
+    DONE();
+    cpu->eip.u32+=op->eipCount;
+    cpu_jmp(cpu, 0, op->eData, op->data1, cpu->eip.u32);
+    CYCLES(4);    
+    cpu->nextBlock = getBlock(cpu);
+}
+
 void OPCALL emptyOp(struct CPU* cpu, struct Op* op) {
     cpu->nextBlock = getBlock1(cpu);
 }

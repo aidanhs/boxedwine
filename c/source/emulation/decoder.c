@@ -2201,6 +2201,15 @@ void decode3ba(struct DecodeData* data) {
     NEXT_OP(data);
 }
 
+/* JMP Ap */
+void decode0ea(struct DecodeData* data) {
+    data->op->func = jmpAp;
+    data->op->data1 = FETCH16(data);
+    data->op->eData = FETCH16(data);
+    LOG_OP_CS_EIP("JMP Ap", data->op->eData, data->op->data1);
+    FINISH_OP(data);
+};
+
 DECODER decoder[1024] = {
     decode000, decode001, decode002, decode003, decode004, decode005, decode006, decode007,
     decode008, decode009, decode00a, decode00b, decode00c, decode00d, decode00e, decode00f,
@@ -2231,7 +2240,7 @@ DECODER decoder[1024] = {
     decode0d0, decode0d1, decode0d2, decode0d3, decode0d4, decode0d5, decode0d6, decode0d7,
     decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
     decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
-    decode0e8, decode0e9, invalidOp, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
+    decode0e8, decode0e9, decode0ea, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
     decode0f0, invalidOp, decode0f2, decode0f3, decode0f4, decode0f5, decode0f6, decode0f7,
     decode0f8, decode0f9, invalidOp, invalidOp, decode0fc, decode0fd, decode0fe, decode0ff,
 
@@ -2479,6 +2488,7 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
         data.opCode = 0;
         data.ea16 = 1;
     }
+
     data.ds = DS;
     data.ss = SS;
     data.rep = 0;
