@@ -1,12 +1,13 @@
 CURRENT
-1) MMUless with ahead of time compiling
-2) remove X11 dependency by implementing a new version of winex11.drv
+1) Almost done: remove X11 dependency by implementing a new version of winex11.drv
+2) Almost done: 16-bit code (win16 in wine), currently it hangs early in an app while waiting for input
 
 FUTURE
-1) Get emscripten with webgl working
-2) tcp sockets
-3) 16-bit code (win16 in wine)
+1) Find a spec or unit test for mmap, I think I have a bug in my implementation, older versions of Wine don't work with it.
+2) Get emscripten with webgl working, perhaps with glshim
+3) tcp sockets
 4) BUG: Age of Empires will cause XOrg to stop responding when entering a user name for a new game
 5) Research using less memory for the MMU (per process), perhaps a 2 index approach like the new JPC
 6) add MMX instructions
-7) oss sound is done, researching making alsa work with it
+7) oss sound is done, researching making alsa work with it, or implement oss v4
+8) MMUless with ahead of time compiling
