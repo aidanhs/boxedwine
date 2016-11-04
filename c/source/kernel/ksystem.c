@@ -225,7 +225,7 @@ U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec) {
 const char* getFunctionName(const char* name, U32 moduleEip) {
     struct KThread* thread;
     struct KProcess* process;
-    char* args[5];
+    const char* args[5];
     char tmp[16];
     struct NodeAccess out;
     struct Node* node;

@@ -459,7 +459,7 @@ void sdlSwapBuffers() {
 }
 
 #ifdef SDL2
-U8 b[1024*1024*4];
+S8 b[1024*1024*4];
 #endif
 
 void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
@@ -469,7 +469,6 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
     SDL_Rect srcRect;
     SDL_Rect dstRect;
     int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
-    char tmp[256];
     static int i;
 
     readRect(MMU_PARAM rect, &r);
@@ -543,9 +542,6 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
         if (SDL_MUSTLOCK(s)) {
             SDL_UnlockSurface(s);
         }      
-        //sprintf(tmp, "test%d.bmp", i++);
-        //SDL_SaveBMP(s, tmp);
-
     }	
 #endif
 }

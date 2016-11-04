@@ -600,7 +600,6 @@ struct LocalPath {
 };
 
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, int localPathSize, char* nativePath, int nativePathSize, U32* isLink) {
-    struct Node* result;
     U32 tmp32=0;
     struct LocalPath localEntry;
     struct LocalPath* found;

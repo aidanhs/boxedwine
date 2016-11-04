@@ -162,7 +162,7 @@ ringbuf_findchr(const struct ringbuf* rb, int c, size_t offset)
     const uint8_t *start = rb->buf +
         (((rb->tail - rb->buf) + offset) % ringbuf_buffer_size(rb));
     assert(bufend > start);
-    size_t n = MIN(bufend - start, bytes_used - offset);
+    size_t n = MIN((size_t)(bufend - start), bytes_used - offset);
     const uint8_t *found = memchr(start, c, n);
     if (found)
         return offset + (found - start);
@@ -182,7 +182,7 @@ ringbuf_memset(struct ringbuf* dst, int c, size_t len)
 
         /* don't copy beyond the end of the buffer */
         assert(bufend > dst->head);
-        size_t n = MIN(bufend - dst->head, count - nwritten);
+        size_t n = MIN((size_t)(bufend - dst->head), count - nwritten);
         memset(dst->head, c, n);
         dst->head += n;
         nwritten += n;
@@ -211,7 +211,7 @@ ringbuf_memcpy_into(struct ringbuf* dst, const void *src, size_t count)
     while (nread != count) {
         /* don't copy beyond the end of the buffer */
         assert(bufend > dst->head);
-        size_t n = MIN(bufend - dst->head, count - nread);
+        size_t n = MIN((size_t)(bufend - dst->head), count - nread);
         memcpy(dst->head, u8src + nread, n);
         dst->head += n;
         nread += n;
@@ -241,7 +241,7 @@ ringbuf_memcpy_from(void *dst, struct ringbuf* src, size_t count)
     size_t nwritten = 0;
     while (nwritten != count) {
         assert(bufend > src->tail);
-        size_t n = MIN(bufend - src->tail, count - nwritten);
+        size_t n = MIN((size_t)(bufend - src->tail), count - nwritten);
         memcpy(u8dst + nwritten, src->tail, n);
         src->tail += n;
         nwritten += n;
@@ -268,9 +268,9 @@ ringbuf_copy(struct ringbuf* dst, struct ringbuf* src, size_t count)
     size_t ncopied = 0;
     while (ncopied != count) {
         assert(src_bufend > src->tail);
-        size_t nsrc = MIN(src_bufend - src->tail, count - ncopied);
+        size_t nsrc = MIN((size_t)(src_bufend - src->tail), count - ncopied);
         assert(dst_bufend > dst->head);
-        size_t n = MIN(dst_bufend - dst->head, nsrc);
+        size_t n = MIN((size_t)(dst_bufend - dst->head), nsrc);
         memcpy(dst->head, src->tail, n);
         src->tail += n;
         dst->head += n;

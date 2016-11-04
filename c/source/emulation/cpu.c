@@ -379,7 +379,6 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
     } else {
         U32 n_cs_sel, n_flags;
         U32 n_eip;
-        U32 tempesp;
         U32 n_cs_rpl;
         U32 csIndex;
         struct user_desc* ldt;

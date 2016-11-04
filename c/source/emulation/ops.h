@@ -3063,7 +3063,7 @@ void OPCALL xadd32r32e32_32(struct CPU* cpu, struct Op* op) {
 }
 
 extern Int99Callback* wine_callback;
-extern int wine_callbackSize;
+extern U32 wine_callbackSize;
 
 void OPCALL int98(struct CPU* cpu, struct Op* op) {
     U32 index = peek32(cpu, 0);

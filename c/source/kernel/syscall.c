@@ -904,7 +904,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
             case 5: sprintf(buffer, "SYS_ACCEPT: socket=%d address=%X(%s) len=%d", SARG2, SARG3, socketAddressName(thread, SARG3, SARG4), SARG4); break;			
             case 6: sprintf(buffer, "SYS_GETSOCKNAME: socket=%d address=%X len=%d", SARG2, SARG3, SARG4); break;			
             case 7: sprintf(buffer, "SYS_GETPEERNAME: socket=%d address=%X len=%d", SARG2, SARG3, SARG4); break;		
-            case 8: sprintf(buffer, "SYS_SOCKETPAIR: af=%d(%s) type=%d(%s) socks=%X(%d,%d)", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", readd(MMU_PARAM_THREAD SARG5), readd(MMU_PARAM_THREAD SARG5+4)); break;
+            case 8: sprintf(buffer, "SYS_SOCKETPAIR: af=%d(%s) type=%d(%s) socks=%X", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", SARG3, SARG3==K_SOCK_STREAM?"SOCK_STREAM":(SARG3==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", SARG5); break;
             case 9: sprintf(buffer, "SYS_SEND: socket=%d buffer=%X len=%d flags=%X", SARG2, SARG3, SARG4, SARG5); break;
             case 10: sprintf(buffer, "SYS_RECV: socket=%d buffer=%X len=%d flags=%X", SARG2, SARG3, SARG4, SARG5); break;
             case 11: sprintf(buffer, "SYS_SENDTO: socket=%d buffer=%X len=%d flags=%X dest=%s", SARG2, SARG3, SARG4, SARG5, socketAddressName(thread, SARG6, SARG7)); break;
@@ -993,8 +993,8 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_fgetxattr: sprintf(buffer, "fgetxattr:"); break;
     case __NR_flistxattr: sprintf(buffer, "flistxattr:"); break;
     case __NR_futex: sprintf(buffer, "futex: address=%X op=%d", ARG1, ARG2); break;
-    case __NR_sched_getaffinity: sprintf(buffer, "sched_getaffinity: pid=% cpusetsize=%d mask=%X", ARG1, ARG2, ARG3);
-    case __NR_set_thread_area: sprintf(buffer, "set_thread_area: u_info=%X"); break;        
+    case __NR_sched_getaffinity: sprintf(buffer, "sched_getaffinity: pid=%d cpusetsize=%d mask=%X", ARG1, ARG2, ARG3);
+    case __NR_set_thread_area: sprintf(buffer, "set_thread_area: u_info=%X", ARG1); break;        
     case __NR_exit_group: sprintf(buffer, "exit_group: code=%d", ARG1); break;
     case __NR_epoll_create: sprintf(buffer, "epoll_create: size=%d", ARG1); break;
     case __NR_epoll_ctl: sprintf(buffer, "epoll_ctl: epfd=%d op=%d fd=%d events=%X", ARG1, ARG2, ARG3, ARG4); break;
