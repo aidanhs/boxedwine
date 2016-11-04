@@ -22,7 +22,7 @@ struct Memory {
     struct KProcess* process;
 #ifdef LOG_OPS
     U32 log;
-#endif LOG_OPS
+#endif
 };
 #endif
 
