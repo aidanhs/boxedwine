@@ -4,11 +4,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BoxedWine", "BoxedWine\BoxedWine.vcxproj", "{AB172CEA-C4FE-4F1B-821E-2886B90344CB}"
-	ProjectSection(ProjectDependencies) = postProject
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9} = {F8B950EA-F503-4B82-9BB1-B4D19613D3F9}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Mesa", "Mesa\Mesa.vcxproj", "{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,21 +39,6 @@ Global
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release|Win32.Build.0 = SDL Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.ActiveCfg = Test|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.Build.0 = Test|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Debug Log|Win32.ActiveCfg = Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Debug Log|Win32.Build.0 = Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Debug|Win32.ActiveCfg = Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Debug|Win32.Build.0 = Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.ES Debug|Win32.ActiveCfg = Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Release|Win32.ActiveCfg = Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Release|Win32.Build.0 = Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Debug|Win32.ActiveCfg = Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL MMU Debug|Win32.ActiveCfg = SDL MMU Debug|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL MMU Release|Win32.ActiveCfg = SDL MMU Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Release Source Generator|Win32.ActiveCfg = Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Release Source Generator|Win32.Build.0 = Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.SDL Release|Win32.ActiveCfg = Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Test|Win32.ActiveCfg = Release|Win32
-		{F8B950EA-F503-4B82-9BB1-B4D19613D3F9}.Test|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

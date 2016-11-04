@@ -214,7 +214,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SDL2;LOG_SYSCALLS;AOT;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SDL2;LOG_SYSCALLS;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -239,7 +239,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>USE_MMU;AOT;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;BOXEDWINE_SDL;_NO_DEBUG_HEAP=1;LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>UNALIGNED_MEMORY;USE_MMU;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;_NO_DEBUG_HEAP=0;LOG_SYSCALLS;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -412,7 +412,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>SDL2;USE_MMU;AOT;GENERATE_SOURCE;GLH=&lt;GL/gl.h&gt;;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);BOXEDWINE_SDL</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SDL2;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <UndefinePreprocessorDefinitions>
@@ -506,6 +506,8 @@
     <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
+    <ClInclude Include="..\..\..\..\source\sdl\sdlopengl.h" />
+    <ClInclude Include="..\..\..\..\source\sdl\sdlwindow.h" />
     <ClInclude Include="..\..\..\..\source\sdl\wnd.h" />
   </ItemGroup>
   <ItemGroup>

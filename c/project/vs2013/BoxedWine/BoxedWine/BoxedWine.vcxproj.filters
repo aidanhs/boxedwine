@@ -435,6 +435,12 @@
     <ClInclude Include="..\..\..\..\source\sdl\wnd.h">
       <Filter>source\sdl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\sdl\sdlwindow.h">
+      <Filter>source\sdl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\sdl\sdlopengl.h">
+      <Filter>source\sdl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
