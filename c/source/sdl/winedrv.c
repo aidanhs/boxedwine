@@ -1229,7 +1229,7 @@ void boxeddrv_CreateDesktop(struct CPU* cpu) {
 #include "kalloc.h"
 
 Int99Callback* wine_callback;
-int wine_callbackSize;
+U32 wine_callbackSize;
 
 void initWine() {
     wine_callback = kalloc(sizeof(Int99Callback) * 87);
