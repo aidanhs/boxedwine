@@ -270,7 +270,7 @@ void mainloop() {
                     onKeyUp(translate(e.key.keysym.sym));
             }
         };
-        t = getMilliesSinceStart();
+        t = getMilliesSinceStart();                
         if (lastTitleUpdate+1000 < t) {
             lastTitleUpdate = t;
             EM_ASM_INT({
@@ -404,7 +404,7 @@ int main(int argc, char **argv) {
     argc = argc-i;
     if (argc==0) {
         argv[0]="/usr/bin/wine";
-            argv[1]="notepad";
+            argv[1]="/home/username/chomp/CHOMP.EXE";
         argc=2;
         //argv[0]="/init.sh";
         //argc=1;

@@ -550,15 +550,15 @@ void boxeddrv_SetCursorBits(struct CPU* cpu) {
     U32 hotX = ARG8;
     U32 hotY = ARG9;
     int pitch = (width+31) / 32 *4;
-    S8 data[64*64/8];
-    S8 mask[64*64/8];
+    U8 data[64*64/8];
+    U8 mask[64*64/8];
     int size = pitch*height;
     if (size>sizeof(data)) {
         klog("boxeddrv_SetCursorBits too large of cursor\n");
         return;
     }
-    memcopyToNative(MMU_PARAM_CPU bits, data, size);
-    memcopyToNative(MMU_PARAM_CPU bits+size, mask, size);
+    memcopyToNative(MMU_PARAM_CPU bits, (S8*)data, size);
+    memcopyToNative(MMU_PARAM_CPU bits+size, (S8*)mask, size);
     sdlCreateAndSetCursor(getNativeStringW(MMU_PARAM_CPU wModuleName), getNativeStringW2(MMU_PARAM_CPU wResName), resId, data, mask, width, height, hotX, hotY);
 }
 

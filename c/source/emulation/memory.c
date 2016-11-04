@@ -461,7 +461,12 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address) {
 }
 #endif
 void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
-#ifdef USE_MMU
+#ifdef UNALIGNED_MEMORY
+    U32 i;
+    for (i=0;i<len;i++) {
+        writeb(memory, address+i, p[i]);
+    }
+#elif defined(USE_MMU)
     U32 i;
 
     if (len>4) {
@@ -499,7 +504,13 @@ void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
 }
 
 void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
-#ifdef USE_MMU
+#ifdef UNALIGNED_MEMORY
+    U32 i;
+
+    for (i=0;i<len;i++) {
+        p[i] = readb(memory, address+i);
+    }
+#elif defined(USE_MMU)
     U32 i;
 
     if (len>4) {

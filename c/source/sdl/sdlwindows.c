@@ -3,9 +3,9 @@
 #include "pbl.h"
 #include "platform.h"
 #include "memory.h"
-#include "wnd.h"
 #include "kprocess.h"
 #include "ksystem.h"
+#include "sdlwindow.h"
 
 int horz_res = 800;
 int vert_res = 600;
