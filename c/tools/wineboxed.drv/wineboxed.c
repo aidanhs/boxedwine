@@ -516,9 +516,9 @@ DWORD CDECL boxeddrv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *hand
     TRACE("count=%d handles=%p timeout=0x%08x mask=0x%08x flags=0x%08x\n", count, handles, timeout, mask, flags);
     initEvents();
     CALL_5(BOXED_MSG_WAIT_FOR_MULTIPLE_OBJECTS_EX, count, handles, timeout, mask, flags);
-    if (!count && !timeout) 
-        return WAIT_TIMEOUT;
     processEvents();
+    if (!count && !timeout) 
+        return WAIT_TIMEOUT;    
     result = WaitForMultipleObjectsEx(count, handles, flags & MWMO_WAITALL, timeout, flags & MWMO_ALERTABLE);	
     processEvents();
     return result;
