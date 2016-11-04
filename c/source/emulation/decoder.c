@@ -1177,7 +1177,7 @@ void decode0c8(struct DecodeData* data) {
     data->op->func = enter16;
     data->op->data1 = FETCH16(data);
     data->op->r1 = FETCH8(data) & 0x1f;
-    LOG("ENTER");
+    LOG_OP("ENTER");
     NEXT_OP(data);
 }
 
@@ -1185,7 +1185,7 @@ void decode2c8(struct DecodeData* data) {
     data->op->func = enter32;
     data->op->data1 = FETCH16(data);
     data->op->r1 = FETCH8(data) & 0x1f;
-    LOG("ENTER");
+    LOG_OP("ENTER");
     NEXT_OP(data);
 }
 
