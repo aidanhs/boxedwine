@@ -17,7 +17,7 @@
 
 #include <stdarg.h>
 
-extern U64 cpuTotalTime;
+U64 sysCallTime;
 extern struct Block emptyBlock;
 //#undef LOG_SYSCALLS
 //#undef LOG_OPS
@@ -837,7 +837,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
             cpu->nextBlock = getBlock(cpu);
     }	
     thread->inSysCall = 0;
-    cpuTotalTime-=(getSystemTimeAsMicroSeconds()-startTime);        
+    sysCallTime+=(getSystemTimeAsMicroSeconds()-startTime);        
 }
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op) {

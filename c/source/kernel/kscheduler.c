@@ -199,21 +199,30 @@ void runTimers() {
 
 struct KThread* currentThread;
 
-U64 cpuTotalTime;
-U64 cpuTotalCycles;
-U64 cpuTotalInstructionCount;
+U64 elapsedTimeMHz;
+U64 elapsedCyclesMHz;
+extern U64 sysCallTime;
+U64 elapsedTimeMIPS;
+U64 elapsedInstructionsMIPS;
 
 BOOL runSlice() {
     runTimers();
     flipFB();
     if (nextThread) {		
         U64 startTime = getSystemTimeAsMicroSeconds();
+        U64 endTime;
         U64 diff;
 
         currentThread = (struct KThread*)nextThread->data;
         nextThread = nextThread->next;						
+        sysCallTime = 0;
+
         runThreadSlice(currentThread);
-        diff = getSystemTimeAsMicroSeconds()-startTime;
+        endTime = getSystemTimeAsMicroSeconds();
+        diff = endTime-startTime;
+        
+        elapsedTimeMHz+=diff-sysCallTime;
+        elapsedTimeMIPS+=diff-sysCallTime;
 
         if (!(currentThread->cpu.blockCounter & 0x80000000)) {			
             if (diff>150000) {
@@ -222,41 +231,35 @@ BOOL runSlice() {
                 contextTime+=10000;
             }
         }
-        cpuTotalTime+=diff;
-        cpuTotalCycles+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
-        cpuTotalInstructionCount+=currentThread->cpu.blockInstructionCount;
-        currentThread->threadTime+=diff;
+
+        elapsedCyclesMHz+=currentThread->cpu.blockCounter & 0x7FFFFFFF;
+        elapsedInstructionsMIPS+=currentThread->cpu.blockInstructionCount;
+
+        currentThread->userTime+=diff;
+        currentThread->kernelTime+=sysCallTime;
         return TRUE;
     }
     return FALSE;
 }
 
-U64 lastCycleCount;
-U64 lastTime;
-
 U32 getMHz() {
     U32 result = 0;
-    if (lastTime) {
-        U64 diff = getSystemTimeAsMicroSeconds()-lastTime;    
-        if (diff)
-            result = (U32)((cpuTotalCycles-lastCycleCount)/diff);
-        lastCycleCount = cpuTotalCycles;        
+
+    if (elapsedTimeMHz) {
+        result = (U32)(elapsedCyclesMHz/elapsedTimeMHz);
+        elapsedTimeMHz = 0;
+        elapsedCyclesMHz = 0;
     }
-    lastTime = getSystemTimeAsMicroSeconds();
+
     return result;
 }
 
-U64 lastIPScount;
-U64 lastIPSTime;
-
 U32 getMIPS() {
     U32 result = 0;
-    if (lastIPSTime) {
-        U64 diff = getSystemTimeAsMicroSeconds()-lastIPSTime;        
-        if (diff)
-            result = (U32)((cpuTotalInstructionCount-lastIPScount)/diff);
-        lastIPScount = cpuTotalInstructionCount;
+    if (elapsedTimeMIPS) {
+        result = (U32)(elapsedInstructionsMIPS/elapsedTimeMIPS);
+        elapsedTimeMIPS = 0;
+        elapsedInstructionsMIPS = 0;
     }
-    lastIPSTime = getSystemTimeAsMicroSeconds();
     return result;
 }

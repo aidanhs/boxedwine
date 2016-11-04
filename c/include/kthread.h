@@ -39,7 +39,8 @@ struct KThread {
     U32     waitData1;
     U32     waitData2;
     U32     clear_child_tid;
-    U64     threadTime;
+    U64     userTime;
+    U64     kernelTime;
     U32     inSysCall;
     struct KPollData pollData[MAX_POLL_DATA];
     U32 pollCount;

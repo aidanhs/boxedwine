@@ -165,11 +165,11 @@ U64 startTime;
 U32 syscall_getrusuage(struct KThread* thread, U32 who, U32 usuage) {
     if (who==0) { // RUSAGE_SELF
         // user time
-        writed(MMU_PARAM_THREAD usuage, (U32)(thread->threadTime / 1000000l));
-        writed(MMU_PARAM_THREAD usuage + 4, (U32)(thread->threadTime % 1000000l));
+        writed(MMU_PARAM_THREAD usuage, (U32)(thread->userTime / 1000000l));
+        writed(MMU_PARAM_THREAD usuage + 4, (U32)(thread->userTime % 1000000l));
         // system time
-        writed(MMU_PARAM_THREAD usuage + 8, 0);
-        writed(MMU_PARAM_THREAD usuage + 12, 0);
+        writed(MMU_PARAM_THREAD usuage + 8, (U32)(thread->kernelTime / 1000000l));
+        writed(MMU_PARAM_THREAD usuage + 12, (U32)(thread->kernelTime % 1000000l));
     }
     return 0;
 }
@@ -177,8 +177,8 @@ U32 syscall_getrusuage(struct KThread* thread, U32 who, U32 usuage) {
 U32 syscall_times(struct KThread* thread, U32 buf) {
     U64 m = getSystemTimeAsMicroSeconds();
     if (buf) {
-        writed(MMU_PARAM_THREAD buf, (U32)thread->threadTime * 10); // user time
-        writed(MMU_PARAM_THREAD buf + 4, 0); // system time
+        writed(MMU_PARAM_THREAD buf, (U32)thread->userTime * 10); // user time
+        writed(MMU_PARAM_THREAD buf + 4, (U32)thread->kernelTime * 10); // system time
         writed(MMU_PARAM_THREAD buf + 8, 0); // user time of children
         writed(MMU_PARAM_THREAD buf + 12, 0); // system time of children
     }
