@@ -1,8 +1,0 @@
-Currently I'm trying to get the build to link.  There were a lot more 
-dependencies when porting WINE files into this project
-
-TODO LIST
-1) Get the project to build: 3 weeks
-2) port winex11.drv to SDL: 3 weeks
-3) Get notepad to run
-4) Get MDK performance app to run

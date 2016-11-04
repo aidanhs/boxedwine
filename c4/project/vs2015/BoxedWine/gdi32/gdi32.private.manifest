@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-    <file name="ntdll.dll" />
-    <file name="kernel32.dll" />
-    <file name="advapi32.dll" />
-</assembly>

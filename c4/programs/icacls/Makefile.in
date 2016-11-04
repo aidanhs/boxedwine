@@ -1,5 +1,0 @@
-MODULE    = icacls.exe
-APPMODE   = -mconsole
-
-C_SRCS = \
-	icacls_main.c
