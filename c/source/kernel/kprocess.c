@@ -452,7 +452,7 @@ void initStdio(struct KProcess* process) {
     }
 }
 
-BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId) {
+struct KThread* startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId) {
     struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
     const char* interpreter = 0;
     const char* loader = 0;
@@ -472,7 +472,7 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
     initStdio(process);
 
     if (!inspectNode(process, currentDirectory, node, &loader, &interpreter, pArgs, &argIndex, &openNode)) {
-        return FALSE;
+        return 0;
     }
     
     if (loadProgram(process, thread, openNode, &thread->cpu.eip.u32)) {
@@ -493,12 +493,11 @@ BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32
         safe_strcpy(process->currentDirectory, currentDirectory, MAX_FILEPATH_LEN);
 
         scheduleThread(thread);
-        result = TRUE;
     }
     if (openNode) {
         openNode->access->close(openNode);
     }
-    return result;
+    return thread;
 }
 
 void processOnExitThread(struct KProcess* process) {
@@ -1138,45 +1137,55 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
                 writeq(MMU_PARAM_THREAD oldlimit, MAX_STACK_SIZE);
                 writeq(MMU_PARAM_THREAD oldlimit + 8, MAX_STACK_SIZE);
             }
+#ifdef _DEBUG
             if (newlimit!=0) {
                 klog("prlimit64 RLIMIT_STACK set=%d ignored", (U32)readq(MMU_PARAM_THREAD newlimit));
             }
+#endif
             break;
         case 4: // RLIMIT_CORE
             if (oldlimit!=0) {
                 writeq(MMU_PARAM_THREAD oldlimit, K_RLIM_INFINITY);
                 writeq(MMU_PARAM_THREAD oldlimit + 8, K_RLIM_INFINITY);
             }
+#ifdef _DEBUG
             if (newlimit!=0) {
                 klog("prlimit64 RLIMIT_CORE set=%d ignored", (U32)readq(MMU_PARAM_THREAD newlimit));
             }
+#endif
             break;
         case 7: // RLIMIT_NOFILE
             if (oldlimit!=0) {
                 writeq(MMU_PARAM_THREAD oldlimit, 603590);
                 writeq(MMU_PARAM_THREAD oldlimit + 8, 603590);
             }
+#ifdef _DEBUG
             if (newlimit!=0) {
                 klog("prlimit64 RLIMIT_NOFILE set=%d ignored", (U32)readq(MMU_PARAM_THREAD newlimit));
             }
+#endif
             break;
         case 9: // RLIMIT_AS
             if (oldlimit!=0) {
                 writeq(MMU_PARAM_THREAD oldlimit, K_RLIM_INFINITY);
                 writeq(MMU_PARAM_THREAD oldlimit + 8, K_RLIM_INFINITY);
             }
+#ifdef _DEBUG
             if (newlimit!=0) {
                 klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(MMU_PARAM_THREAD newlimit));
             }
+#endif
             break;
         case 15: // RLIMIT_RTTIME
             if (oldlimit!=0) {
                 writeq(MMU_PARAM_THREAD oldlimit, 200);
                 writeq(MMU_PARAM_THREAD oldlimit + 8, 200);
             }
+#ifdef _DEBUG
             if (newlimit!=0) {
                 klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(MMU_PARAM_THREAD newlimit));
             }
+#endif
             break;
         default:
             kpanic("prlimit64 resource %d not handled", resource);

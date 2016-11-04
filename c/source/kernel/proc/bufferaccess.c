@@ -40,7 +40,11 @@ U32 buffer_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 }
 
 U32 buffer_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
-    return 0;
+    U32 pos = node->idata;
+    if (pos+len>node->access->dataLen)
+        len = node->access->dataLen-pos;
+    memcopyToNative(MMU_PARAM address, ((char*)node->access->data)+pos, len);
+    return len;
 }
 
 void buffer_close(struct OpenNode* node) {

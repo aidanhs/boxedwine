@@ -614,7 +614,7 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
     }	
     trimTrailingSpaces(localPath);
 
-    found = pblMapGet(localSkipLinksMap, localPath, strlen(localPath+1), NULL);
+    found = pblMapGet(localSkipLinksMap, localPath, strlen(localPath)+1, NULL);
     if (found) {
         if (isLink)
             *isLink = found->isLink;
@@ -642,7 +642,7 @@ struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* pa
         safe_strcpy(localEntry.nativePath, nativePath, MAX_FILEPATH_LEN);
         safe_strcpy(localEntry.localPath, localPath, MAX_FILEPATH_LEN);
         localEntry.isLink = tmp32;
-        pblMapAdd(localSkipLinksMap, fullLocalPath, strlen(fullLocalPath+1), &localEntry, sizeof(struct LocalPath));
+        pblMapAdd(localSkipLinksMap, fullLocalPath, strlen(fullLocalPath)+1, &localEntry, sizeof(struct LocalPath));
     }
     return (struct Node*)getHashmapValue(&nodeMap, localPath);
     /* why was this necessary?  it is not compatible with localSkipLinksMap since the link isn't rechecked.  If a
@@ -746,6 +746,10 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
     result->name = strrchr(result->path.localPath, '/')+1;
     putHashmapValue(&nodeMap, result->path.localPath, result);	
     return result;
+}
+
+void removeNode(struct Node* node) {
+    removeHashmapKey(&nodeMap, node->path.localPath);
 }
 
 // home/. dir should return the same node as /home/ dirs which should be the same as /home, so remove trailing . and /

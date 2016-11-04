@@ -45,6 +45,7 @@ struct NodeAccess {
     BOOL (*isWriteReady)(struct OpenNode* node);
     BOOL (*isReadReady)(struct OpenNode* node);
     void* data;
+    U32 dataLen;
 };
 
 #endif

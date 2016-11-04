@@ -5,6 +5,13 @@
 #include "kalloc.h"
 //#include "pbl.h"
 #include "khashmap.h"
+#include "kprocess.h"
+#include "bufferaccess.h"
+#include "kstat.h"
+#include "kio.h"
+#include "nodetype.h"
+#include "virtualfile.h"
+#include "filesystem.h"
 
 #include <time.h>
 
@@ -213,4 +220,104 @@ U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec) {
         vec++;
     }
     return 0;
+}
+
+const char* getFunctionName(const char* name, U32 moduleEip) {
+    struct KThread* thread;
+    struct KProcess* process;
+    char* args[5];
+    char tmp[16];
+    struct NodeAccess out;
+    struct Node* node;
+    static char buffer[1024];
+    struct KFileDescriptor* fd;
+    int i;
+
+    memset(buffer, 0, 1024);
+    if (!name)
+        return "Unknown";
+    sprintf(tmp, "%X", moduleEip);
+    args[0] = "/usr/bin/addr2line";
+    args[1] = "-e";
+    args[2] = name;
+    args[3] = "-f";
+    args[4] = tmp;
+    thread = startProcess("/usr/bin", 5, args, 0, NULL, UID);
+    if (!thread)
+        return "";
+    makeBufferAccess(&out);
+    out.data = buffer;
+    out.dataLen = 1024;
+    node = addVirtualFile("/dev/tty9", &out, K__S_IWRITE);
+    process = thread->process;
+    fd = openFile(process, "", "/dev/tty9", K_O_WRONLY); 
+    if (fd) {
+        syscall_dup2(thread, fd->handle, 1); // replace stdout without tty9    
+        while (!process->terminated) {
+            runThreadSlice(thread);
+        }
+    }
+    removeProcess(process);
+    freeProcess(process);
+    removeNode(node);
+    kfree(node);
+    for (i=0;i<sizeof(buffer);i++) {
+        if (buffer[i]==10 || buffer[i]==13) {
+            buffer[i]=0;
+            break;
+        }
+    }
+    return buffer;
+}
+void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent) {
+    U32 prevEbp;
+    U32 returnEip;
+    U32 moduleEip = getModuleEip(cpu, cpu->segAddress[CS]+eip);
+    const char* name = getModuleName(cpu, cpu->segAddress[CS]+eip);
+    const char* functionName = getFunctionName(name, moduleEip);
+    const char* n = name;
+    
+    if (n)
+        n = strrchr(n, '/');
+    if (n)
+        name = n+1;
+
+    klog("%*s %-20s %-40s %08x / %08x", indent, "", name?name:"Unknown", functionName, eip, moduleEip);
+    
+    prevEbp = readd(MMU_PARAM_CPU ebp); 
+    returnEip = readd(MMU_PARAM_CPU ebp+4); 
+    if (prevEbp==0)
+        return;
+    walkStack(cpu, returnEip, prevEbp, indent);
+}
+
+void printStacks() {
+    U32 index=0;
+    struct KProcess* process=0;
+
+    while (getNextProcess(&index, &process)) {
+        U32 threadIndex = 0;
+        struct KThread* thread = 0;
+
+        if (process) {
+            klog("process %X %s%s", process->id, process->terminated?"TERMINATED ":"", process->commandLine);
+            while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&thread)) {
+                if (thread) {
+                    struct CPU* cpu=&thread->cpu;
+
+                    klog("  thread %X %s", thread->id, (thread->waitNode?"WAITING":"RUNNING"));
+                    if (thread->waitNode) {
+                        char buffer[1024];
+                        syscallToString(&thread->cpu, buffer);
+                        klog("    %s", buffer);                        
+                    } else {
+                        const char* name = getModuleName(cpu, cpu->segAddress[CS]+cpu->eip.u32);
+
+                        klog("    0x%08d %s", getModuleEip(cpu, cpu->segAddress[CS]+cpu->eip.u32), name?name:"Unknown");
+                    }
+                    walkStack(cpu, cpu->eip.u32, EBP, 6);
+                }
+            }
+        }
+    }
 }

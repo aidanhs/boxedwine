@@ -107,7 +107,8 @@ struct KProcess {
 };
 
 void processOnExitThread(struct KProcess* process);
-BOOL startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId);
+struct KThread* startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId);
+void freeProcess(struct KProcess* process);
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
 struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags);
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);

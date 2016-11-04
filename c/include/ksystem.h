@@ -39,6 +39,9 @@ U64 getMonotonicClock();
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz);
 U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec);
 U32 syscall_times(struct KThread* thread, U32 buf);
+void printStacks();
+void syscallToString(struct CPU* cpu, char* buffer);
+void runThreadSlice(struct KThread* thread);
 
 #ifdef USE_MMU
 struct MappedFileCache {
