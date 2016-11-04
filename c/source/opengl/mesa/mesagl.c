@@ -1,4 +1,4 @@
-#ifdef MESA
+#if defined(MESA) && defined(BOXEDWINE_GL)
 #include "../../../mesa/include/GL/osmesa.h"
 #include "../glcommon.h"
 #include "kalloc.h"

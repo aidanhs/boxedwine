@@ -1,3 +1,4 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 #include <GL/gl.h>
 #include "glcommon.h"
 #include "kalloc.h"
@@ -4208,3 +4209,9 @@ void gl_init() {
     gl_callback[SampleCoverage] = glcommon_glSampleCoverage;
     gl_callback[SamplePass] = glcommon_glSamplePass;
 }
+#else
+#include "cpu.h"
+void gl_init() {
+    int99CallbackSize=0;
+}
+#endif
