@@ -96,7 +96,7 @@ struct KProcess* allocProcess() {
         memset(result, 0, sizeof(struct KProcess));
         return result;
     }
-    return (struct KProcess*)kalloc(sizeof(struct KProcess));		
+    return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
 }
 
 #ifdef USE_MMU
@@ -112,9 +112,9 @@ void closeMemoryMapped(struct MapedFiles* mapped) {
                 if (mapped->systemCacheEntry->ramPages[i])
                     freeRamPage(mapped->systemCacheEntry->ramPages[i]);
             }
-            kfree(mapped->systemCacheEntry->ramPages);
+            kfree(mapped->systemCacheEntry->ramPages, KALLOC_MMAP_CACHE_RAMPAGE);
             removeMappedFileInCache(mapped->systemCacheEntry);
-            kfree(mapped->systemCacheEntry);
+            kfree(mapped->systemCacheEntry, KALLOC_MAPPEDFILECACHE);
         }
     }
 }
@@ -729,7 +729,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         }
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
-        struct KThread* newThread = (struct KThread*)kalloc(sizeof(struct KThread));
+        struct KThread* newThread = allocThread();
         struct user_desc desc;
 
         readMemory(MMU_PARAM_THREAD (U8*)&desc, tls, sizeof(struct user_desc));

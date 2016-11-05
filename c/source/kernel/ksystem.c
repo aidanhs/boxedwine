@@ -260,7 +260,7 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
     removeProcess(process);
     freeProcess(process);
     removeNode(node);
-    kfree(node);
+    kfree(node, KALLOC_NODE);
     for (i=0;i<sizeof(buffer);i++) {
         if (buffer[i]==10 || buffer[i]==13) {
             buffer[i]=0;

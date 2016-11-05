@@ -21,6 +21,7 @@
 #include "devinput.h"
 #include "devdsp.h"
 #include "sdlwindow.h"
+#include "kalloc.h"
 
 void mesa_init();
 void gl_init();
@@ -386,7 +387,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    //ppenv[envc++] = "WINEDEBUG=+boxeddrv";
+    //ppenv[envc++] = "WINEDEBUG=+relay";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -468,7 +469,10 @@ int main(int argc, char **argv) {
                     }
                 } else if (e.type == SDL_KEYDOWN) {
                     if (e.key.keysym.sym==SDLK_SCROLLOCK) {
-                        printStacks();
+                        if (e.key.keysym.mod & KMOD_CTRL)
+                            printMemUsage();
+                        else
+                            printStacks();
                     } else if (!sdlKey(e.key.keysym.sym, 1))
                         onKeyDown(translate(e.key.keysym.sym));
                 } else if (e.type == SDL_KEYUP) {

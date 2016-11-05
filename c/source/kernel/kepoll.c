@@ -129,7 +129,7 @@ struct KEpoll* allocEpoll() {
         freeEpolls = result->next;		
         memset(result, 0, sizeof(struct KEpoll));
     } else {
-        result = (struct KEpoll*)kalloc(sizeof(struct KEpoll));
+        result = (struct KEpoll*)kalloc(sizeof(struct KEpoll), KALLOC_KEPOLL);
     }	
     return result;
 }

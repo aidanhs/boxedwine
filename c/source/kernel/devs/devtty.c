@@ -67,7 +67,7 @@ void writeTermios(MMU_ARG U32 address, struct TTYData* data) {
 }
 
 BOOL tty_init(struct KProcess* process, struct OpenNode* node) {
-    struct TTYData* data = (struct TTYData*)kalloc(sizeof(struct TTYData));
+    struct TTYData* data = (struct TTYData*)kalloc(sizeof(struct TTYData), KALLOC_TTYDATA);
     data->mode = VT_AUTO;
     data->kbMode = K_UNICODE;
     node->data = data;

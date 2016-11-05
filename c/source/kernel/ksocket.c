@@ -36,7 +36,7 @@ void closesocket(int socket) { close(socket); }
 #include <string.h>
 #include <stdio.h>
 
-#define MAX_BUFFER_SIZE 4*1024*1024
+#define MAX_BUFFER_SIZE 4*1024
 
 #define MAX_PENDING_CONNECTIONS 10
 
@@ -68,7 +68,7 @@ struct KSocketMsg* allocSocketMsg() {
         memset(result, 0, sizeof(struct KSocketMsg));
         return result;
     }
-    return (struct KSocketMsg*)kalloc(sizeof(struct KSocketMsg));		
+    return (struct KSocketMsg*)kalloc(sizeof(struct KSocketMsg), KALLOC_KSOCKETMSG);		
 }
 
 void freeSocketMsg(struct KSocketMsg* msg) {
@@ -536,8 +536,9 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
         count+=todo;
     }
 #endif
-    if (s->connection)
+    if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
+    }
     return count;
 }
 
@@ -843,7 +844,7 @@ struct KSocket* allocSocket() {
         freeSockets = result->next;		
         memset(result, 0, sizeof(struct KSocket));
     } else {
-        result = (struct KSocket*)kalloc(sizeof(struct KSocket));
+        result = (struct KSocket*)kalloc(sizeof(struct KSocket), KALLOC_KSOCKET);
     }	
     result->recvLen = 1048576;
     result->sendLen = 1048576;

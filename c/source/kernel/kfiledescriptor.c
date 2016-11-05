@@ -33,7 +33,7 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle
         freeFileDescriptors = freeFileDescriptors->next;
         memset(result, 0, sizeof(struct KFileDescriptor));
     } else {
-        result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor));
+        result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor), KALLOC_KFILEDESCRIPTOR);
     }
     result->process = process;
     result->refCount = 1;

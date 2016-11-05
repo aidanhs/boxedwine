@@ -380,7 +380,7 @@ void fbSetupScreen() {
     fb_var_screeninfo.green.length = 8;		
     fb_var_screeninfo.blue.length = 8;
     fb_fix_screeninfo.line_length = 4 * fb_var_screeninfo.xres;
-    screenPixels = kalloc(fb_fix_screeninfo.line_length*fb_var_screeninfo.yres);
+    screenPixels = kalloc(fb_fix_screeninfo.line_length*fb_var_screeninfo.yres, KALLOC_FRAMEBUFFER);
     updateAvailable = 1;
 #else
     fb_var_screeninfo.red.offset = GET_SHIFT(surface->format->Rmask);

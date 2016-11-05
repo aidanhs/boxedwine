@@ -7,13 +7,12 @@
 #include "kfmmap.h"
 #include "node.h"
 #include "ksignal.h"
+#include "ksystem.h"
 
 #include <string.h>
 #include <setjmp.h>
 
 //#undef LOG_OPS
-
-char tmp64k[1024*64];
 
 extern jmp_buf runBlockJump;
 
@@ -45,6 +44,7 @@ void log_pf(struct KProcess* process, U32 address) {
             printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+(int)process->mappedFiles[i].len, ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath);
     }
 #endif
+    walkStack(cpu, cpu->eip.u32, EBP, 2);
     kpanic("pf");
 }
 #ifdef USE_MMU
@@ -263,7 +263,7 @@ void writed(MMU_ARG U32 address, U32 value) {
 }
 
 struct Memory* allocMemory() {
-    struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory));
+    struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory), KALLOC_MEMORY);
     initMemory(memory);
     return memory;
 }
@@ -336,7 +336,7 @@ void freeMemory(struct Memory* memory) {
     for (i=0;i<0x100000;i++) {
         memory->mmu[i]->clear(memory, i);
     }
-    kfree(memory);
+    kfree(memory, KALLOC_MEMORY);
 }
 
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 ramPage) {

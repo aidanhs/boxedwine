@@ -20,7 +20,7 @@ struct KThread* allocThread() {
         memset(result, 0, sizeof(struct KThread));
         return result;
     }
-    return (struct KThread*)kalloc(sizeof(struct KThread));		
+    return (struct KThread*)kalloc(sizeof(struct KThread), KALLOC_KTHREAD);		
 }
 
 void freeThread(struct KThread* thread) {

@@ -1232,7 +1232,7 @@ Int99Callback* wine_callback;
 U32 wine_callbackSize;
 
 void initWine() {
-    wine_callback = kalloc(sizeof(Int99Callback) * 87);
+    wine_callback = malloc(sizeof(Int99Callback) * 87);
     wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
     wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
     wine_callback[BOXED_BEEP] = boxeddrv_Beep;

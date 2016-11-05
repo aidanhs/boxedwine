@@ -244,7 +244,7 @@ struct DirData* allocDirData() {
         freeDirDatas = result->next;
         memset(result, 0, sizeof(struct DirData));
     } else {
-        result = (struct DirData*)kalloc(sizeof(struct DirData));
+        result = (struct DirData*)kalloc(sizeof(struct DirData), KALLOC_DIRDATA);
     }	
     return result;
 }
@@ -691,7 +691,7 @@ struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 
         freeOpenNodes = result->next;
         memset(result, 0, sizeof(struct OpenNode));
     } else {
-        result = (struct OpenNode*)kalloc(sizeof(struct OpenNode));
+        result = (struct OpenNode*)kalloc(sizeof(struct OpenNode), KALLOC_OPENNODE);
     }	
     result->handle = handle;
     result->flags = flags;
@@ -724,7 +724,7 @@ struct Node* allocNode(const char* localPath, const char* nativePath, struct Nod
         localLen=strlen(localPath)+40;
     if (nativePath)
         nativeLen=strlen(nativePath)+40;
-    result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen);
+    result = (struct Node*)kalloc(sizeof(struct Node)+localLen+nativeLen, KALLOC_NODE);
     result->id = nodeId++;
     result->nodeType = nodeType;
     result->rdev = rdev;

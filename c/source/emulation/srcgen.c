@@ -91,9 +91,9 @@ void outfp(FILE* fp, const char* str) {
 void out(struct GenData* data, const char* str) {
     U32 len = strlen(str);
     if (data->sourceBufferPos+len>data->sourceBufferLen) {
-        char* tmp = kalloc(data->sourceBufferLen*2);
+        char* tmp = kalloc(data->sourceBufferLen*2, KALLOC_SRCGENBUFFER);
         strcpy(tmp, data->sourceBuffer);
-        kfree(data->sourceBuffer);
+        kfree(data->sourceBuffer, KALLOC_SRCGENBUFFER);
         data->sourceBuffer = tmp;
         data->sourceBufferLen*=2;
     }
@@ -8723,7 +8723,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     op = block->ops;
     if (!data->sourceBuffer) {
         data->sourceBufferLen = 1024*1024*10;
-        data->sourceBuffer = kalloc(data->sourceBufferLen);
+        data->sourceBuffer = kalloc(data->sourceBufferLen, KALLOC_SRCGENBUFFER);
         data->sourceBufferPos = 0;
         out(data, "struct Op;\n");
         OUT_DEFINE(U8);
@@ -9124,7 +9124,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
     out(data, "}\n\n");    
 
     {
-        char* bytes = (char*)kalloc(data->opPos);
+        char* bytes = (char*)kalloc(data->opPos, KALLOC_SRCGENBYTES);
         memcpy(bytes, data->ops, data->opPos);
         addBlock(name, crc, bytes, data->opPos);
     }

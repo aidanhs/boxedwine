@@ -38,7 +38,7 @@ void freeShm(int index) {
     for (i=0;i<shm[index].pageCount;i++) {
         freeRamPage(shm[index].pages[i]);
     }
-    kfree(shm[index].pages);
+    kfree(shm[index].pages, KALLOC_SHM_PAGE);
 #else
     kfree(shm[index].address);
 #endif
@@ -93,7 +93,7 @@ U32 syscall_shmget(struct KThread* thread, U32 key, U32 size, U32 flags) {
     shm[index].ctime = getSystemTimeAsMicroSeconds();
 #ifdef USE_MMU
     shm[index].pageCount = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-    shm[index].pages = (U32*)kalloc(shm[index].pageCount*4);
+    shm[index].pages = (U32*)kalloc(shm[index].pageCount*4, KALLOC_SHM_PAGE);
     for (i=0;i<shm[index].pageCount;i++) {
         shm[index].pages[i] = allocRamPage();
     }

@@ -584,7 +584,7 @@ void drawAllWindows(MMU_ARG U32 hWnd, int count) {
 }
 
 struct Wnd* wndCreate(MMU_ARG U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
-    struct Wnd* wnd = kalloc(sizeof(struct Wnd));
+    struct Wnd* wnd = kalloc(sizeof(struct Wnd), KALLOC_WND);
     readRect(MMU_PARAM windowRect, &wnd->windowRect);
     readRect(MMU_PARAM clientRect, &wnd->clientRect);
     wnd->processId = processId;
@@ -634,8 +634,8 @@ void setWndText(struct Wnd* wnd, const char* text) {
     char* buf;
 
     if (wnd->text)
-        kfree((void*)wnd->text);
-    buf = kalloc(len + 1);
+        kfree((void*)wnd->text, KALLOC_SDLWNDTEXT);
+    buf = kalloc(len + 1, KALLOC_SDLWNDTEXT);
     strcpy(buf, text);
     wnd->text = buf;
 }

@@ -14,7 +14,7 @@ struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data)
         freeKObjects = freeKObjects->next;
         memset(result, 0, sizeof(struct KObject));
     } else {
-        result = (struct KObject*)kalloc(sizeof(struct KObject));
+        result = (struct KObject*)kalloc(sizeof(struct KObject), KALLOC_KOBJECT);
     }
     result->access = access;
     result->refCount = 1;

@@ -10,7 +10,7 @@ struct KListNode* allocListNode() {
         result = freeListNodes;
         freeListNodes = freeListNodes->next;
     } else {
-        result = (struct KListNode*)kalloc(sizeof(struct KListNode));
+        result = (struct KListNode*)kalloc(sizeof(struct KListNode), KALLOC_KLISTNODE);
     }
     return result;
 }

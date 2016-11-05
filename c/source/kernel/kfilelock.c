@@ -44,7 +44,7 @@ struct KFileLock* allocFileLock() {
         memset(result, 0, sizeof(struct KFileLock));
         return result;
     }
-    return (struct KFileLock*)kalloc(sizeof(struct KFileLock));		
+    return (struct KFileLock*)kalloc(sizeof(struct KFileLock), KALLOC_KFILELOCK);		
 }
 
 void freeFileLock(struct KFileLock* lock) {

@@ -18,6 +18,7 @@ U32 getFreePageCount() {
 #include "block.h"
 #include "op.h"
 #include "ram.h"
+#include "kalloc.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -44,10 +45,10 @@ static struct CodePage* codePages;
 void addCode(struct Block* block, int ramPage, int offset) {
     struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> 5]);
     if (!*entry) {
-        *entry = (struct CodePageEntry*)malloc(sizeof(struct CodePageEntry));
+        *entry = (struct CodePageEntry*)kalloc(sizeof(struct CodePageEntry), KALLOC_CODEPAGE_ENTRY);
         (*entry)->next = 0;
     } else {
-        struct CodePageEntry* add = (struct CodePageEntry*)malloc(sizeof(struct CodePageEntry));
+        struct CodePageEntry* add = (struct CodePageEntry*)kalloc(sizeof(struct CodePageEntry), KALLOC_CODEPAGE_ENTRY);
         add->next = *entry;
         *entry = add;
     }
@@ -73,15 +74,15 @@ void initRAM(U32 pages) {
     U32 i;
 
     pageCount = pages;
-    ram = (U8*)malloc(PAGE_SIZE*pages);
-    ramRefCount = (U8*)malloc(pages);
-    freePages = (U32*)malloc(pages*sizeof(U32));
+    ram = (U8*)kalloc(PAGE_SIZE*pages, KALLOC_RAM);
+    ramRefCount = (U8*)kalloc(pages, KALLOC_RAMREFCOUNT);
+    freePages = (U32*)kalloc(pages*sizeof(U32), KALLOC_FREEPAGES);
     freePageCount = pages;
     for (i=0;i<pages;i++) {
         freePages[i] = i;
         ramRefCount[i] = 0;
     }
-    codePages = (struct CodePage*)malloc(pages*sizeof(struct CodePage));
+    codePages = (struct CodePage*)kalloc(pages*sizeof(struct CodePage), KALLOC_CODEPAGE);
     memset(codePages, 0, sizeof(struct CodePage)*pages);
 }
 

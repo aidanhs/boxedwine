@@ -12,7 +12,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root Z:\TV\boxedwine\c\project\linux\root -m 192 /usr/bin/wine /home/username/chomp/CHOMP.EXE</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 /usr/bin/wine /home/username/s/SPHEJONG.EXE</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ES Debug|Win32'">
@@ -28,7 +28,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|Win32'">
-    <LocalDebuggerCommandArguments>-root Z:\TV\boxedwine\c\project\linux\root -m 192 /usr/bin/wine /home/username/chomp/CHOMP.EXE</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 /usr/bin/wine /home/username/chomp/CHOMP.EXE</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">

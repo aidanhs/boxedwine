@@ -10,7 +10,7 @@ struct KCNode* allocCNode() {
         result = freeCNodes;
         freeCNodes = freeCNodes->next;
     } else {
-        result = (struct KCNode*)kalloc(sizeof(struct KCNode));
+        result = (struct KCNode*)kalloc(sizeof(struct KCNode), KALLOC_KCNODE);
     }
     return result;
 }

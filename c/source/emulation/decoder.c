@@ -131,7 +131,7 @@ struct Op* allocOp() {
         U32 count = 1024*1023/sizeof(struct Op);
         U32 i;
 
-        result = (struct Op*)kalloc(1024*1023);
+        result = (struct Op*)kalloc(1024*1023, KALLOC_OP);
         for (i=0;i<count;i++) {
             result->next = freeOps;
             freeOps = result;
@@ -169,7 +169,7 @@ struct Block* allocBlock() {
         U32 count = 1024*1023/sizeof(struct Block);
         U32 i;
 
-        result = (struct Block*)kalloc(1024*1023);
+        result = (struct Block*)kalloc(1024*1023, KALLOC_BLOCK);
         for (i=0;i<count;i++) {
             result->block1 = freeBlocks;
             freeBlocks = result;

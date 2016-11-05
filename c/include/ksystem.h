@@ -42,6 +42,7 @@ U32 syscall_times(struct KThread* thread, U32 buf);
 void printStacks();
 void syscallToString(struct CPU* cpu, char* buffer);
 void runThreadSlice(struct KThread* thread);
+void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent);
 
 #ifdef USE_MMU
 struct MappedFileCache {

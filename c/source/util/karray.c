@@ -6,7 +6,7 @@
 void initArray(struct KArray* karray, int startingIndex) {
     karray->count = 0;
     karray->maxCount = 10;
-    karray->objects = (void**)kalloc(sizeof(void*)*karray->maxCount);
+    karray->objects = (void**)kalloc(sizeof(void*)*karray->maxCount, KALLOC_KARRAYOBJECTS);
     karray->startingIndex = startingIndex;
 }
 
@@ -29,10 +29,10 @@ U32 addObjecToArray(struct KArray* karray, void* object) {
     }
     index = karray->maxCount;
     newSize=karray->maxCount*2;
-    pObjects = (void**)kalloc(sizeof(void*)*newSize);
+    pObjects = (void**)kalloc(sizeof(void*)*newSize, KALLOC_KARRAYOBJECTS);
     memcpy(pObjects, karray->objects, karray->maxCount*sizeof(void*));
     karray->count++;
-    free(karray->objects);
+    kfree(karray->objects, KALLOC_KARRAYOBJECTS);
     karray->objects = pObjects;
     karray->objects[karray->maxCount] = object;
     karray->maxCount = newSize;
