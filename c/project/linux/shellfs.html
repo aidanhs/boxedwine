@@ -1,10 +1,7 @@
 <!doctype html>
 <html lang="en-us">
   <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>BoxedWine</title>
     <meta name="description" content="boxedwine emulator">
     <meta name="keywords" content="emulator,wine,windows,x86,PC,emscripten,boxedwine">
@@ -109,10 +106,10 @@
         <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple="" />
         <button id="downloadbtn" style="display: none" onclick="buildTree();">Get File(s)</button>
 		<a style="display: none" id="modalLink" href="#openModal">Open</a>
-      <input type="checkbox" id="resize">Resize canvas
       <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer
-      <input type="checkbox" id="showConsole" onclick="toggleConsole();">Show console
+      <input type="checkbox" id="showConsole" onclick="toggleConsole();" checked>Show console
       &nbsp;&nbsp;&nbsp;
+      <input type="checkbox" id="resize">Resize canvas
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
     </div>
     <div id="filedrag">
@@ -143,11 +140,15 @@
         <script type="text/javascript" src="browserfs.min.js"></script>
         <script type="text/javascript" src="jszip.min.js"></script>
         <script type='text/javascript'>
+        var AUTO_RUN = false;//doesn't work yet
+        var ALLOW_PARAM_OVERRIDE_FROM_URL = false;
+        var DEFAULT_MEMORY_ALLOCATION_MB = 64;
+        var HOME_DIRECTORY = "/root/home/username/files/";
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
-        var dirPrefix = "/root/home/username/.wine/drive_c/files/";
+        var dirPrefix = setFileDirectory();
         console.log("setting file directory to: "+dirPrefix);
         var STORAGE_DROPBOX = "DROPBOX";
         var STORAGE_LOCAL_STORAGE = "LOCAL_STORAGE";
@@ -156,7 +157,7 @@
         var DROPBOX_APP_KEY = 'put key in here';
         var RECEIVE_URL = "http://put url in here/oauth_receiver.html";
         var client = null;
-        var storageMode = STORAGE_DROPBOX;
+        var storageMode = STORAGE_MEMORY;
         console.log("Use Storage mode: "+storageMode);
         var DATA = null;
         var alreadyBuiltFileSystem = false;
@@ -179,6 +180,20 @@
         pathExistsAction: function() { return 0; },
         pathNotExistsAction: function() { return 1; }
     };
+        function setFileDirectory(){
+            
+            var dir =  getParameter("dir");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
+                dir = HOME_DIRECTORY;
+            }else{
+                if(!dir.endsWith("/")){
+                    dir = dir + "/";
+                }
+            }
+            console.log("setting file directory to: "+dir);
+            return dir;
+        }
+        
         function setGlobalArrayBuffer(arrayBuffer){
             DATA = arrayBuffer;
         }
@@ -346,14 +361,16 @@
             if(storageMode === STORAGE_DROPBOX){
                 startBtn.textContent = "Login";
             }
-            startBtn.disabled = false;
-            startBtn.style.display = "";
+            if(!AUTO_RUN){ 
+                startBtn.disabled = false;
+                startBtn.style.display = "";
+            }
         }
         function getMemoryAllocation()
         {
             var mmemoryInMB =  getParameter("m");
-            if(mmemoryInMB===""){
-                mmemoryInMB = "64";
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || mmemoryInMB==="" || mmemoryInMB < 16){
+                mmemoryInMB = "" + DEFAULT_MEMORY_ALLOCATION_MB;
             }
             console.log("setting allocated memory (Mbytes) to: "+mmemoryInMB);
             return mmemoryInMB;
@@ -410,10 +427,6 @@
           canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
           canvas.width  = 800;
           canvas.height = 600;
-          var ctx=canvas.getContext("2d");
-          ctx.fillStyle="#000000";
-          ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height);
-          ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
           return canvas;
         })(),
         setStatus: function(text) {

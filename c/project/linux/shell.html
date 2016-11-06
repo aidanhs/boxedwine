@@ -1,10 +1,7 @@
 <!doctype html>
 <html lang="en-us">
   <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-                    
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>BoxedWine</title>
     <meta name="description" content="boxedwine emulator">
     <meta name="keywords" content="emulator,wine,windows,x86,PC,emscripten,boxedwine">
@@ -109,10 +106,10 @@
         <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple="" />        
         <button id="downloadbtn" style="display: none" onclick="buildTree();">Get File(s)</button>
 		<a style="display: none" id="modalLink" href="#openModal">Open</a>
-      <input type="checkbox" id="resize">Resize canvas
       <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer
-      <input type="checkbox" id="showConsole" onclick="toggleConsole();">Show console
+      <input type="checkbox" id="showConsole" onclick="toggleConsole();" checked>Show console
       &nbsp;&nbsp;&nbsp;
+      <input type="checkbox" id="resize">Resize canvas
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
     </div>
     <div id="filedrag">
@@ -140,6 +137,10 @@
     <hr>
     <script type="text/javascript" src="jszip.min.js"></script>
     <script type='text/javascript'>
+        var AUTO_RUN = true;
+        var ALLOW_PARAM_OVERRIDE_FROM_URL = false;
+        var DEFAULT_MEMORY_ALLOCATION_MB = 64;
+        var HOME_DIRECTORY = "/root/home/username/files/";
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
@@ -158,9 +159,8 @@
         function setFileDirectory(){
             
             var dir =  getParameter("dir");
-            if(dir===""){
-                //dir = "/root/user/files/";
-                dir = "/root/home/username/.wine/drive_c/files/";
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
+                dir = HOME_DIRECTORY;
             }else{
                 if(!dir.endsWith("/")){
                     dir = dir + "/";
@@ -172,7 +172,9 @@
         var initialSetup = function(){
             console.log("running initial setup");
             spinnerElement.style.display = 'none';
-            Module['addRunDependency']('uploadFiles');
+            if(!AUTO_RUN){
+                Module['addRunDependency']('uploadFiles');
+            }
             toggleConsole();
 
             var folders = dirPrefix.split("/");
@@ -196,16 +198,18 @@
                     }
                 }
             }
-            document.getElementById('startbtn').disabled = false;
-            document.getElementById('startbtn').style.display = "";
             document.getElementById('uploadbtn').style.display = "";
             document.getElementById('downloadbtn').style.display = "";
+            if(!AUTO_RUN){
+                document.getElementById('startbtn').disabled = false;
+                document.getElementById('startbtn').style.display = "";
+            }
         }
         function getMemoryAllocation()
         {
             var mmemoryInMB =  getParameter("m");
-            if(mmemoryInMB===""){
-                mmemoryInMB = "64";
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || mmemoryInMB==="" || mmemoryInMB < 16){
+                mmemoryInMB = "" + DEFAULT_MEMORY_ALLOCATION_MB;
             }
             console.log("setting allocated memory (Mbytes) to: "+mmemoryInMB);
             return mmemoryInMB;
@@ -224,6 +228,7 @@
         filedrag.addEventListener("dragleave", dragHandler, false);
         filedrag.addEventListener("drop", selectHandler, false);
       var Module = {
+        logReadFiles : false, //enable if you want to prune with Reduce utility
         preRun: [initialSetup],
         arguments: ["-m", getMemoryAllocation()],
         postRun: [],
@@ -261,10 +266,10 @@
           canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
           canvas.width  = 800;
           canvas.height = 600;
-          var ctx=canvas.getContext("2d");
-          ctx.fillStyle="#000000";
-          ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height);
-          ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          //var ctx=canvas.getContext("2d");
+          //ctx.fillStyle="#000000";
+          //ctx.clearRect( 0, 0, ctx.canvas.width, ctx.canvas.height);
+          //ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
           return canvas;
         })(),
         setStatus: function(text) {
@@ -303,8 +308,9 @@
       };
         function start(){
             document.getElementById('startbtn').disabled = true;
-            Module['removeRunDependency']('uploadFiles');
-
+            if(!AUTO_RUN){      
+                Module['removeRunDependency']('uploadFiles');
+            }
         }
         function startWithFiles(files){
             for (var i = 0; i < files.length; i++) {
@@ -430,16 +436,8 @@ function toggleConsole() {
         console.style.display = 'none';
     }
 }
-function toggleConsole2() {
-    var el = document.getElementById('showConsole');
-    var console = document.getElementById('output');
-    if(el.checked){
-        console.style.display = '';
-    }else{
-        console.style.display = 'none';
-    }
-}
-        //get files functions
+
+//get files functions
 function toggleDirectory(item){
 	var itemWidget =document.getElementById(item); 
 	if(itemWidget!=null){
@@ -596,7 +594,7 @@ function readFiles(currentDir, files)
 	entries.forEach(function(entry) {
         var fileEntry = FS.lookupPath(currentDir + entry, { follow: true });
         var contentNode = fileEntry.node.contents;
-        if (contentNode instanceof Uint8Array) {
+        if (contentNode instanceof Uint8Array  || contentNode instanceof Array || contentNode == null) {
             console.log("adding file: " + currentDir + entry);
             files.push({dir : currentDir, filename : entry});
 		}else{

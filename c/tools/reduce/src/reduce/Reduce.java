@@ -12,6 +12,11 @@ public class Reduce {
 
     private static final String LOG_START_TOKEN = "running initial setup";
     private static final String READ_FILE = "read file:";
+    private static final String  FILENAME_END_MARKER = "printErr @ ";
+
+    private int deleteFileCount = 0;
+    private int deleteDirectoryCount = 0;
+    
     Set<String> filesKept = new HashSet<>();
 
     private Reduce(ArrayList<String> logContents, String rootDir,Set<String> keepRules)
@@ -20,6 +25,9 @@ public class Reduce {
             Set<String> usedFiles = getFilesTouched(logContents);
             File directoryFile = new File(rootDir);
             deleteFiles(directoryFile,usedFiles,keepRules);
+            
+            System.out.println("Number of directories deleted:" + deleteDirectoryCount);
+            System.out.println("Number of files deleted:" + deleteFileCount);
             System.out.println("The following list contains files expecting to keep but couldn't find: (lock files, cache etc.)");
 
             for(String file : usedFiles){
@@ -74,6 +82,11 @@ public class Reduce {
         return false;
     }
     private void deleteFile(File directoryFile){
+    	deleteFileCount++;
+    	directoryFile.delete();
+    }
+    private void deleteDirectory(File directoryFile){
+    	deleteDirectoryCount++;
         directoryFile.delete();
     }
     private boolean inKeepList(File directoryFile, Set<String> keepItems)
@@ -131,6 +144,10 @@ public class Reduce {
                 for(File file : files){
                     deleteFiles(file, filesToKeep, keepRules); //recurse
                 }
+                File[] afterFiles = directoryFile.listFiles();        
+                if(afterFiles == null || afterFiles.length == 0){
+                	deleteDirectory(directoryFile);
+                }
             }
         }catch(Exception e){
             e.printStackTrace();
@@ -142,13 +159,18 @@ public class Reduce {
         HashSet<String> files = new HashSet<>();
         boolean validFile = false;
         for(String line : contents){
-            if(!validFile && line.equals(LOG_START_TOKEN)){
+            if(!validFile && line.endsWith(LOG_START_TOKEN)){
                 validFile = true;
             }else{
                 int index = line.indexOf(READ_FILE);
                 if(index > -1){
                     String file = line.substring(index + READ_FILE.length() + 1);
-                    file = file.substring(0).trim();
+                    int markerIndex = file.indexOf(FILENAME_END_MARKER);
+                    if(markerIndex > 0){
+                        file = file.substring(0, markerIndex).trim();
+                    }else{
+                        file = file.substring(0).trim();                    	
+                    }
                     //System.out.println(file);
                     files.add(file);
                 }
@@ -164,6 +186,8 @@ public class Reduce {
         if(extractList.length>2){
             for(int i=2;i<extractList.length;i++){
                 list.add(extractList[i]);
+                System.out.println("keeping:"+extractList[i]);
+
             }
         }
         return list;
@@ -171,14 +195,13 @@ public class Reduce {
     public static void main(String[] args) {
         if(args.length < 2){
             System.out.println("Reduce is used to prune a file system so it only contains files that are needed.");
-            System.out.println("Usage: Reduce usagelogfile.txt c:\temp\root bin gamedir");
+            System.out.println("Usage: Reduce usagelogfile.txt c:\temp\root bin gamedir tmp");
             System.out.println("Where: 	usagelogfile.txt is the chrome console log (use save as right mouse context menu option)");
             System.out.println("c:\temp\root is the location of the root file system to be pruned");
             System.out.println("bin gamedir is the list of files, dirs, regexp(s) to use to indicate additional files to keep");
             System.exit(-1);
         }
-        Set<String> keepRulesList = extractList(args);
-        new Reduce(readLog(args[0]), rootDir(args[1]), keepRulesList);
+        new Reduce(readLog(args[0]), rootDir(args[1]), extractList(args));
 		/*
 		String logfile = "log.txt";
 		String root = "root";
