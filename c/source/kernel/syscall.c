@@ -699,24 +699,31 @@ void syscall(struct CPU* cpu, U32 eipCount) {
         break;
     case __NR_set_thread_area: {
         struct user_desc desc;
+
         readMemory(MMU_PARAM_THREAD (U8*)&desc, ARG1, sizeof(struct user_desc));
         if (desc.entry_number==-1) {
             U32 i;
 
-            for (i=3;i<LDT_ENTRIES;i++) {
-                if (thread->process->ldt[i].base_addr==0 && thread->process->ldt[i].limit==0) {
-                    desc.entry_number=i;
+            for (i=0;i<TLS_ENTRIES;i++) {
+                if (thread->process->usedTLS[i]==0) {
+                    desc.entry_number=i+TLS_ENTRY_START_INDEX;
                     break;
                 }
             }
             if (desc.entry_number==-1) {
+                kwarn("__NR_set_thread_area ran out of TLS slots");
                 result = -K_ESRCH;
                 break;
             }
             writeMemory(MMU_PARAM_THREAD ARG1, (U8*)&desc, sizeof(struct user_desc));
         }
         if (desc.base_addr!=0) {
-            thread->process->ldt[desc.entry_number] = desc;
+            if (desc.entry_number<TLS_ENTRY_START_INDEX || desc.entry_number>=TLS_ENTRIES+TLS_ENTRY_START_INDEX) {
+                result = -K_ESRCH;
+                break;
+            }
+            thread->process->usedTLS[desc.entry_number-TLS_ENTRY_START_INDEX]=1;
+            thread->tls[desc.entry_number-TLS_ENTRY_START_INDEX] = desc;            
         }
         result=0;		
         break;

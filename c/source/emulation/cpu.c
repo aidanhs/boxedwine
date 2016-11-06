@@ -32,8 +32,7 @@ void initCPU(struct CPU* cpu, struct KProcess* process) {
     cpu->big = 1;
     cpu->df = 1;
     cpu->stackMask = 0xFFFFFFFF;
-    cpu->stackNotMask = 0;
-    cpu->ldt = process->ldt;
+    cpu->stackNotMask = 0;    
     cpu->segValue[CS] = 0xF; // index 1, LDT, rpl=3
     cpu->segValue[SS] = 0x17; // index 2, LDT, rpl=3
     cpu->segValue[DS] = 0x17; // index 2, LDT, rpl=3
@@ -79,7 +78,7 @@ U32 cpu_lar(struct CPU* cpu, U32 selector, U32 ar) {
         cpu->flags &=~ZF;
         return ar;
     }    
-    ldt = &cpu->thread->process->ldt[selector >> 3];
+    ldt = getLDT(cpu->thread, selector >> 3);
     cpu->flags |= ZF;
     ar = 0;
     if (!ldt->seg_not_present)
@@ -132,7 +131,7 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
             CPU_CHECK_COND(cpu, 0, "RET:CS beyond limits", EXCEPTION_GP,selector & 0xfffc);
             return;
         }
-        ldt = &(cpu->ldt[index]);
+        ldt = getLDT(cpu->thread, index);
         if (ldt->seg_not_present) {
             cpu_exception(cpu, EXCEPTION_NP, selector & 0xfffc);
             return;
@@ -179,7 +178,7 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
                 CPU_CHECK_COND(cpu, 0, "RET:SS beyond limits", EXCEPTION_GP,selector & 0xfffc);
                 return;
             }
-            ssLdt = &(cpu->ldt[ssIndex]);
+            ssLdt = getLDT(cpu->thread, ssIndex);
 
             if (CPU_CHECK_COND(cpu, (n_ss & 3)!=rpl, "RET to outer segment with invalid SS privileges", EXCEPTION_GP,n_ss & 0xfffc))
                 return;
@@ -240,7 +239,7 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
             CPU_CHECK_COND(cpu, 0, "CALL:CS beyond limits", EXCEPTION_GP,selector & 0xfffc);
             return;
         }
-        ldt = &(cpu->ldt[index]);
+        ldt = getLDT(cpu->thread, index);
 
         if (ldt->seg_not_present) {
             cpu_exception(cpu, EXCEPTION_NP,selector & 0xfffc);
@@ -259,7 +258,7 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
             cpu->eip.u32=offset & 0xffff;
         }
         ESP = esp; // don't set ESP until we are done with Memory Writes / CPU_Push so that we are reentrant
-        cpu->big = cpu->ldt[index].seg_32bit;
+        cpu->big = ldt->seg_32bit;
         cpu->segAddress[CS] = ldt->base_addr;
         cpu->segValue[CS] = (selector & 0xfffc) | cpu->cpl;
     }
@@ -287,7 +286,7 @@ void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip) {
             if (CPU_CHECK_COND(cpu, 0, "JMP:CS beyond limits", EXCEPTION_GP,selector & 0xfffc))
                 return;
         }
-        ldt = &(cpu->ldt[index]);
+        ldt = getLDT(cpu->thread, index);
 
         if (ldt->seg_not_present) {
             cpu_exception(cpu, EXCEPTION_NP,selector & 0xfffc);
@@ -323,10 +322,12 @@ void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
         cpu->segAddress[seg] = 0;	// ??
     } else {
         U32 index = value >> 3;
+        struct user_desc* ldt = getLDT(cpu->thread, index);
+
         cpu->segValue[seg] = value;
-        cpu->segAddress[seg] = cpu->ldt[index].base_addr;
+        cpu->segAddress[seg] = ldt->base_addr;
         if (seg == SS) {
-            if (cpu->ldt[index].seg_32bit) {
+            if (ldt->seg_32bit) {
                 cpu->stackMask = 0xffffffff;
                 cpu->stackNotMask = 0;
             } else {
@@ -435,7 +436,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
         if (CPU_CHECK_COND(cpu, n_cs_rpl<cpu->cpl, "IRET to lower privilege", EXCEPTION_GP,(n_cs_sel & 0xfffc))) {
             return;
         }
-        ldt = &cpu->thread->process->ldt[csIndex];
+        ldt = getLDT(cpu->thread, csIndex);
 
         if (CPU_CHECK_COND(cpu, ldt->seg_not_present, "IRET with nonpresent code segment",EXCEPTION_NP,(n_cs_sel & 0xfffc)))
             return;
@@ -481,7 +482,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
             //if (CPU_CHECK_COND(n_ss_desc_2.DPL()!=n_cs_rpl, "IRET:Outer level:SS dpl!=CS rpl", EXCEPTION_GP,n_ss & 0xfffc))
             //    return;
 
-            ssLdt = &cpu->thread->process->ldt[ssIndex];
+            ssLdt = getLDT(cpu->thread, ssIndex);;
 
             if (CPU_CHECK_COND(cpu, ssLdt->seg_not_present, "IRET:Outer level:Stack segment not present", EXCEPTION_NP,n_ss & 0xfffc))
                 return;
@@ -1034,6 +1035,7 @@ struct Block* getBlock(struct CPU* cpu) {
     }
 }
 #endif
+
 void runCPU(struct CPU* cpu) {	
     runBlock(cpu, getBlock(cpu));
 }

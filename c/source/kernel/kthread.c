@@ -67,11 +67,16 @@ void setupStack(struct KThread* thread) {
 }
 
 void initThread(struct KThread* thread, struct KProcess* process) {
+    int i;
+
     memset(thread, 0, sizeof(struct KThread));	
     initCPU(&thread->cpu, process);	
     thread->process = process;
     thread->id = processAddThread(process, thread);
     thread->sigMask = 0;
+    for (i=0;i<TLS_ENTRIES;i++) {
+        thread->tls[i].seg_not_present = 1;
+    }
     setupStack(thread);
 }
 

@@ -13,6 +13,9 @@
 
 #define MAX_POLL_DATA 128
 
+#define TLS_ENTRIES 10
+#define TLS_ENTRY_START_INDEX 10
+
 struct KThread {
     U32 id;
     U32 sigMask; // :TODO: what happens when this is changed while in a signal
@@ -48,6 +51,7 @@ struct KThread {
     struct KThread* waitingForSignalToEnd;
     U64 waitingForSignalToEndMaskToRestore;
     U32     waitType;
+    struct user_desc tls[TLS_ENTRIES];
 };
 
 #define RESTORE_SIGNAL_MASK 0xF000000000000000l

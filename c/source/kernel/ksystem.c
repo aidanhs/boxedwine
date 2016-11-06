@@ -284,11 +284,13 @@ void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent) {
 
     klog("%*s %-20s %-40s %08x / %08x", indent, "", name?name:"Unknown", functionName, eip, moduleEip);
     
-    prevEbp = readd(MMU_PARAM_CPU ebp); 
-    returnEip = readd(MMU_PARAM_CPU ebp+4); 
-    if (prevEbp==0)
-        return;
-    walkStack(cpu, returnEip, prevEbp, indent);
+    if (cpu->memory->read[ebp >> 12]) {
+        prevEbp = readd(MMU_PARAM_CPU ebp); 
+        returnEip = readd(MMU_PARAM_CPU ebp+4); 
+        if (prevEbp==0)
+            return;
+        walkStack(cpu, returnEip, prevEbp, indent);
+    }
 }
 
 void printStacks() {

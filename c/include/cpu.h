@@ -66,7 +66,6 @@ struct CPU {
     U32 cpl;
     U32 stackMask;
     U32 stackNotMask;
-    struct user_desc* ldt;
 };
 
 void threadDone(struct CPU* cpu);

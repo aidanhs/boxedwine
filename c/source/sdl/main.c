@@ -387,7 +387,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    //ppenv[envc++] = "WINEDEBUG=+relay";
+   // ppenv[envc++] = "WINEDEBUG=+relay";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -418,7 +418,7 @@ int main(int argc, char **argv) {
     }
 
     klog("Launching %s", argv[0]);
-    if (startProcess("/home/username", argc, (const char**)argv, envc, ppenv, userId)) {
+    if (startProcess("/home/username/civnet", argc, (const char**)argv, envc, ppenv, userId)) {
 #ifdef __EMSCRIPTEN__
                 EM_ASM(
 #ifndef SDL2

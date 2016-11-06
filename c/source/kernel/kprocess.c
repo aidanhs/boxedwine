@@ -736,10 +736,10 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 
         initThread(newThread, thread->process);		
 
-        if (desc.base_addr!=0) {
-            newThread->process->ldt[desc.entry_number] = desc;
-            newThread->cpu.segAddress[GS] = desc.base_addr;
-            newThread->cpu.segValue[GS] = desc.entry_number << 3;
+        if (desc.base_addr!=0 && desc.entry_number>=0) {
+            struct user_desc* ldt = getLDT(newThread, desc.entry_number);
+            *ldt = desc;
+            cpu_setSegment(&newThread->cpu, GS, desc.entry_number << 3);
         }
         newThread->clear_child_tid = ctid;
         writed(MMU_PARAM_THREAD ptid, newThread->id);
@@ -1392,7 +1392,8 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
         U32 flags = readd(MMU_PARAM_THREAD ptr + 12);
 
         if (index>=0 && index<LDT_ENTRIES) {
-            struct user_desc* ldt = &thread->process->ldt[index];
+            struct user_desc* ldt = getLDT(thread, index);;            
+
             ldt->entry_number = index;
             ldt->limit = limit;
             ldt->base_addr = address;
@@ -1404,7 +1405,8 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
     } else if (func == 0) {
         int index = readd(MMU_PARAM_THREAD ptr);
         if (index>=0 && index<LDT_ENTRIES) {
-            struct user_desc* ldt = &thread->process->ldt[index];
+            struct user_desc* ldt = getLDT(thread, index);
+
             writed(MMU_PARAM_THREAD ptr + 4, ldt->base_addr);
             writed(MMU_PARAM_THREAD ptr + 8, ldt->limit);
             writed(MMU_PARAM_THREAD ptr + 12, ldt->flags);
@@ -1416,4 +1418,13 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
         kpanic("syscall_modify_ldt unknown func: %d", func);
         return -1;
     }
+}
+
+struct user_desc* getLDT(struct KThread* thread, U32 index) {
+    if (index>=TLS_ENTRY_START_INDEX && index<TLS_ENTRIES+TLS_ENTRY_START_INDEX) {
+        return &thread->tls[index-TLS_ENTRY_START_INDEX];
+    } else if (index<LDT_ENTRIES) {
+        return &thread->process->ldt[index];
+    }
+    return NULL;
 }

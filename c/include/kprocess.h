@@ -103,6 +103,7 @@ struct KProcess {
     U32 entry;
     U32 eventQueueFD;
     struct user_desc ldt[LDT_ENTRIES];
+    U32 usedTLS[TLS_ENTRIES];
     struct KThread* wakeOnExitOrExec;
 };
 
@@ -130,6 +131,7 @@ U32 processAddThread(struct KProcess* process, struct KThread* thread);
 void processRemoveThread(struct KProcess* process, struct KThread* thread);
 struct KThread* processGetThreadById(struct KProcess* process, U32 tid);
 U32 processGetThreadCount(struct KProcess* process);
+struct user_desc* getLDT(struct KThread* thread, U32 index);
 
 U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size);
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid);
