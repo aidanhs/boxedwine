@@ -153,6 +153,7 @@ typedef struct
 #define BOXED_SET_EVENT_FD                          (BOXED_BASE+84)
 #define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
 #define BOXED_CREATE_DESKTOP                        (BOXED_BASE+86)
+#define BOXED_HAS_WND                               (BOXED_BASE+87)
 
 #define CALL_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index):"%eax"); 
 #define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
@@ -696,10 +697,19 @@ struct window_surface* boxeddrv_GetSurface(HWND hwnd) {
     CALL_1(BOXED_GET_SURFACE, hwnd);
 }
 
+BOOL boxeddrv_HasWnd(HWND hwnd) {
+    CALL_1(BOXED_HAS_WND, hwnd);
+}
+
 void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, struct window_surface *surface) {
     DWORD new_style = GetWindowLongW(hwnd, GWL_STYLE);
     struct window_surface* oldSurface = boxeddrv_GetSurface(hwnd);
     RECT r;
+    HWND parent = GetAncestor(hwnd, GA_PARENT);
+
+    if (!boxeddrv_HasWnd(hwnd))
+        return;
+
     GetWindowRect(hwnd, &r);
     TRACE("hwnd=%p insert_after=%p swp_flags=0x%08x window_rect=%s client_rect=%s visible_rect=%s valid_rects=%s surface=%p style=0x%08x GetWindowRect()=%s\n", hwnd, insert_after, swp_flags, wine_dbgstr_rect(window_rect), wine_dbgstr_rect(client_rect), wine_dbgstr_rect(visible_rect), wine_dbgstr_rect(valid_rects), surface, new_style, wine_dbgstr_rect(&r));
     if (surface) {
@@ -770,8 +780,9 @@ void CDECL boxeddrv_WindowPosChanging(HWND hwnd, HWND insert_after, UINT swp_fla
     if (oldSurface)  {
         TRACE("     releasing old surface %p (ref=%d)\n", oldSurface, oldSurface->ref);
         window_surface_release(oldSurface);
+        *surface = NULL;
     }
-    if (1) {
+    if ((swp_flags & SWP_SHOWWINDOW) || (style & WS_VISIBLE)) {
         RECT rc;
         rc.left = 0;
         rc.right = window_rect->right - window_rect->left;
