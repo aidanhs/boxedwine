@@ -34,8 +34,9 @@
 #define KALLOC_SRCGENBYTES 29
 #define KALLOC_FRAMEBUFFER 30
 #define KALLOC_RAM 31
+#define KALLOC_OPENGL 32
 
-#define KALLOC_COUNT 32
+#define KALLOC_COUNT 33
 
 void* kalloc(U32 len, U32 type);
 void kfree(void* p, U32 type);

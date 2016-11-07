@@ -1,5 +1,5 @@
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
-#include <GL/gl.h>
+#include GLH
 #include "glcommon.h"
 #include "kalloc.h"
 #include "kprocess.h"
@@ -33,11 +33,11 @@ GLdouble* marshald(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (bufferd && bufferd_len<count) {
-        kfree(bufferd);
+        kfree(bufferd, KALLOC_OPENGL);
         bufferd=0;
     }
     if (!bufferd) {
-        bufferd = (GLdouble*)kalloc(sizeof(GLdouble)*count);
+        bufferd = (GLdouble*)kalloc(sizeof(GLdouble)*count, KALLOC_OPENGL);
         bufferd_len = count;
     }
     for (i=0;i<count;i++) {
@@ -56,11 +56,11 @@ GLfloat* marshalf(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (bufferf && bufferf_len<count) {
-        kfree(bufferf);
+        kfree(bufferf, KALLOC_OPENGL);
         bufferf=0;
     }
     if (!bufferf) {
-        bufferf = (GLfloat*)kalloc(sizeof(GLfloat)*count);
+        bufferf = (GLfloat*)kalloc(sizeof(GLfloat)*count, KALLOC_OPENGL);
         bufferf_len = count;
     }
     for (i=0;i<count;i++) {
@@ -79,11 +79,11 @@ GLint* marshali(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (bufferi && bufferi_len<count) {
-        kfree(bufferi);
+        kfree(bufferi, KALLOC_OPENGL);
         bufferi=0;
     }
     if (!bufferi) {
-        bufferi = (GLint*)kalloc(sizeof(GLint)*count);
+        bufferi = (GLint*)kalloc(sizeof(GLint)*count, KALLOC_OPENGL);
         bufferi_len = count;
     }
     for (i=0;i<count;i++) {
@@ -104,11 +104,11 @@ GLshort* marshals(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (buffers && buffers_len<count) {
-        kfree(buffers);
+        kfree(buffers, KALLOC_OPENGL);
         buffers=0;
     }
     if (!buffers) {
-        buffers = (GLshort*)kalloc(sizeof(GLshort)*count);
+        buffers = (GLshort*)kalloc(sizeof(GLshort)*count, KALLOC_OPENGL);
         buffers_len = count;
     }
     for (i=0;i<count;i++) {
@@ -129,11 +129,11 @@ GLbyte* marshalb(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (bufferb && bufferb_len<count) {
-        kfree(bufferb);
+        kfree(bufferb, KALLOC_OPENGL);
         bufferb=0;
     }
     if (!bufferb) {
-        bufferb = (GLbyte*)kalloc(sizeof(GLbyte)*count);
+        bufferb = (GLbyte*)kalloc(sizeof(GLbyte)*count, KALLOC_OPENGL);
         bufferb_len = count;
     }
     for (i=0;i<count;i++) {
@@ -157,11 +157,11 @@ GLdouble* marshal2d(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (buffer2d && buffer2d_len<count) {
-        kfree(buffer2d);
+        kfree(buffer2d, KALLOC_OPENGL);
         buffer2d=0;
     }
     if (!buffer2d) {
-        buffer2d = (GLdouble*)kalloc(sizeof(GLdouble)*count);
+        buffer2d = (GLdouble*)kalloc(sizeof(GLdouble)*count, KALLOC_OPENGL);
         buffer2d_len = count;
     }
     for (i=0;i<count;i++) {
@@ -180,11 +180,11 @@ GLfloat* marshal2f(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (buffer2f && buffer2f_len<count) {
-        kfree(buffer2f);
+        kfree(buffer2f, KALLOC_OPENGL);
         buffer2f=0;
     }
     if (!buffer2f) {
-        buffer2f = (GLfloat*)kalloc(sizeof(GLfloat)*count);
+        buffer2f = (GLfloat*)kalloc(sizeof(GLfloat)*count, KALLOC_OPENGL);
         buffer2f_len = count;
     }
     for (i=0;i<count;i++) {
@@ -203,11 +203,11 @@ GLint* marshal2i(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (buffer2i && buffer2i_len<count) {
-        kfree(buffer2i);
+        kfree(buffer2i, KALLOC_OPENGL);
         buffer2i=0;
     }
     if (!buffer2i) {
-        buffer2i = (GLint*)kalloc(sizeof(GLint)*count);
+        buffer2i = (GLint*)kalloc(sizeof(GLint)*count, KALLOC_OPENGL);
         buffer2i_len = count;
     }
     for (i=0;i<count;i++) {
@@ -228,11 +228,11 @@ GLshort* marshal2s(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (buffer2s && buffer2s_len<count) {
-        kfree(buffer2s);
+        kfree(buffer2s, KALLOC_OPENGL);
         buffer2s=0;
     }
     if (!buffer2s) {
-        buffer2s = (GLshort*)kalloc(sizeof(GLshort)*count);
+        buffer2s = (GLshort*)kalloc(sizeof(GLshort)*count, KALLOC_OPENGL);
         buffer2s_len = count;
     }
     for (i=0;i<count;i++) {
@@ -254,11 +254,11 @@ GLbyte* marshal2b(struct CPU* cpu, U32 address, U32 count) {
     U32 i;
 
     if (buffer2b && buffer2b_len<count) {
-        kfree(buffer2b);
+        kfree(buffer2b, KALLOC_OPENGL);
         buffer2b=0;
     }
     if (!buffer2b) {
-        buffer2b = (GLbyte*)kalloc(sizeof(GLbyte)*count);
+        buffer2b = (GLbyte*)kalloc(sizeof(GLbyte)*count, KALLOC_OPENGL);
         buffer2b_len = count;
     }
     for (i=0;i<count;i++) {
@@ -685,13 +685,21 @@ int getSize(GLenum pname) {
       case GL_TEXTURE_1D:
       case GL_TEXTURE_2D:
       case GL_TEXTURE_3D:
+#ifdef GL_TEXTURE_1D_ARRAY_EXT
       case GL_TEXTURE_1D_ARRAY_EXT:
+#endif
+#ifdef GL_TEXTURE_2D_ARRAY_EXT
       case GL_TEXTURE_2D_ARRAY_EXT:
+#endif
       case GL_TEXTURE_BINDING_1D:
       case GL_TEXTURE_BINDING_2D:
       case GL_TEXTURE_BINDING_3D:
+#ifdef GL_TEXTURE_BINDING_1D_ARRAY_EXT
       case GL_TEXTURE_BINDING_1D_ARRAY_EXT:
+#endif
+#ifdef GL_TEXTURE_BINDING_2D_ARRAY_EXT
       case GL_TEXTURE_BINDING_2D_ARRAY_EXT:
+#endif
       case GL_TEXTURE_GEN_S:
       case GL_TEXTURE_GEN_T:
       case GL_TEXTURE_GEN_R:
@@ -863,7 +871,9 @@ int getSize(GLenum pname) {
       case GL_MAX_TEXTURE_COORDS_ARB:
       case GL_MAX_TEXTURE_IMAGE_UNITS_ARB:
       case GL_DEPTH_BOUNDS_TEST_EXT:
+#ifdef GL_DEPTH_CLAMP
       case GL_DEPTH_CLAMP:
+#endif
       case GL_MAX_DRAW_BUFFERS_ARB:
       case GL_DRAW_BUFFER0_ARB:
       case GL_DRAW_BUFFER1_ARB:
@@ -890,9 +900,15 @@ int getSize(GLenum pname) {
       case GL_RENDERBUFFER_BINDING_EXT:
       case GL_MAX_COLOR_ATTACHMENTS_EXT:
       case GL_MAX_RENDERBUFFER_SIZE_EXT:
+#ifdef GL_READ_FRAMEBUFFER_BINDING_EXT
       case GL_READ_FRAMEBUFFER_BINDING_EXT:
+#endif
+#ifdef GL_PROVOKING_VERTEX_EXT
       case GL_PROVOKING_VERTEX_EXT:
+#endif
+#ifdef GL_QUADS_FOLLOW_PROVOKING_VERTEX_CONVENTION_EXT
       case GL_QUADS_FOLLOW_PROVOKING_VERTEX_CONVENTION_EXT:
+#endif
       case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS_ARB:
       case GL_FRAGMENT_SHADER_DERIVATIVE_HINT_ARB:
       case GL_MAX_VERTEX_UNIFORM_COMPONENTS_ARB:
@@ -900,13 +916,25 @@ int getSize(GLenum pname) {
       case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS_ARB:
       case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS_ARB:
       case GL_CURRENT_PROGRAM:
+#ifdef GL_MAX_SAMPLES
       case GL_MAX_SAMPLES:
+#endif
       case GL_VERTEX_ARRAY_BINDING_APPLE:
+#ifdef GL_TEXTURE_CUBE_MAP_SEAMLESS
       case GL_TEXTURE_CUBE_MAP_SEAMLESS:
+#endif
+#ifdef GL_MAX_SERVER_WAIT_TIMEOUT
       case GL_MAX_SERVER_WAIT_TIMEOUT:
+#endif
+#ifdef GL_NUM_EXTENSIONS
       case GL_NUM_EXTENSIONS:
+#endif
+#ifdef GL_MAJOR_VERSION
       case GL_MAJOR_VERSION:
+#endif
+#ifdef GL_MINOR_VERSION
       case GL_MINOR_VERSION:
+#endif
         return 1;
       case GL_DEPTH_BOUNDS_EXT:
       case GL_DEPTH_RANGE:
@@ -929,7 +957,9 @@ int getSize(GLenum pname) {
         case GL_CURRENT_COLOR:
         case GL_CURRENT_RASTER_COLOR:
         case GL_CURRENT_RASTER_POSITION:
+#ifdef GL_CURRENT_RASTER_SECONDARY_COLOR
         case GL_CURRENT_RASTER_SECONDARY_COLOR:
+#endif
         case GL_CURRENT_RASTER_TEXTURE_COORDS:
         case GL_CURRENT_TEXTURE_COORDS:
         case GL_FOG_COLOR:
@@ -2236,8 +2266,10 @@ GLint components_in_format( GLenum format )
          return 4;
       case GL_YCBCR_MESA:
          return 2;
+#ifdef GL_DEPTH_STENCIL_EXT
       case GL_DEPTH_STENCIL_EXT:
          return 2;
+#endif
       case GL_DUDV_ATI:
       case GL_DU8DV8_ATI:
          return 2;
@@ -2303,11 +2335,13 @@ GLint get_bytes_per_pixel( GLenum format, GLenum type )
             return sizeof(GLushort);
          else
             return -1;
+#ifdef GL_UNSIGNED_INT_24_8_EXT
       case GL_UNSIGNED_INT_24_8_EXT:
          if (format == GL_DEPTH_STENCIL_EXT)
             return sizeof(GLuint);
          else
             return -1;
+#endif
       default:
          return -1;
    }

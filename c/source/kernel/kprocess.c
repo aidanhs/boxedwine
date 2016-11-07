@@ -38,6 +38,22 @@ void setupCommandlineNode(struct KProcess* process) {
     process->commandLineNode = addVirtualFile(tmp, &process->commandLineAccess, K__S_IREAD);
 }
 
+void initLDT(struct KProcess* process) {
+    U32 i;
+
+    for (i=0;i<LDT_ENTRIES;i++) {
+        process->ldt[i].seg_not_present = 1;
+    }
+    process->ldt[1].base_addr = 0;
+    process->ldt[1].entry_number = 1;
+    process->ldt[1].seg_32bit = 1;
+    process->ldt[1].seg_not_present = 0;
+
+    process->ldt[2].base_addr = 0;
+    process->ldt[2].entry_number = 2;
+    process->ldt[2].seg_32bit = 1;
+    process->ldt[2].seg_not_present = 0;
+}
 void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, int userId) {	
     U32 i;
     char* name;
@@ -73,18 +89,7 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
     process->mmapedMemory = pblListNewArrayList();
 #endif
 
-    for (i=0;i<LDT_ENTRIES;i++) {
-        process->ldt[i].seg_not_present = 1;
-    }
-    process->ldt[1].base_addr = 0;
-    process->ldt[1].entry_number = 1;
-    process->ldt[1].seg_32bit = 1;
-    process->ldt[1].seg_not_present = 0;
-
-    process->ldt[2].base_addr = 0;
-    process->ldt[2].entry_number = 2;
-    process->ldt[2].seg_32bit = 1;
-    process->ldt[2].seg_not_present = 0;
+    initLDT(process);
 }
 
 struct KProcess* freeProcesses;
@@ -245,6 +250,9 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
     process->stringAddress = from->stringAddress;
     process->stringAddressIndex = from->stringAddressIndex;
 #endif
+    for (i=0;i<LDT_ENTRIES;i++) {
+        process->ldt[i] = from->ldt[i];
+    }
     process->loaderBaseAddress = from->loaderBaseAddress;
     process->phdr = from->phdr;
     process->phnum = from->phnum;
@@ -1006,6 +1014,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         }
     }
     initStdio(process);
+    initLDT(process);
     for (i=0;i<MAX_SHM;i++) {
         U32 j;
 

@@ -66,6 +66,7 @@ void printMemUsage() {
     printf("%8dkb / %5d KALLOC_SRCGENBUFFER\n", usage[KALLOC_SRCGENBUFFER]/1024, count[KALLOC_SRCGENBUFFER]);
     printf("%8dkb / %5d KALLOC_SRCGENBYTES\n", usage[KALLOC_SRCGENBYTES]/1024, count[KALLOC_SRCGENBYTES]);
     printf("%8dkb / %5d KALLOC_FRAMEBUFFER\n", usage[KALLOC_FRAMEBUFFER]/1024, count[KALLOC_FRAMEBUFFER]);
+    printf("%8dkb / %5d KALLOC_OPENGL\n", usage[KALLOC_OPENGL]/1024, count[KALLOC_OPENGL]);
     printf("%8dMB /%6d total\n", totalUsage/1024/1024, totalCount);
     printf("%8dMB /%6d max\n", maxUsage/1024/1024, maxCount);
 }

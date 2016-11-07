@@ -1,5 +1,5 @@
 #ifdef BOXEDWINE_SDL
-#include <gl/GL.h>
+#include <SDL_opengl.h>
 #include "../glcommon.h"
 #include "kalloc.h"
 #include "kprocess.h"
@@ -9,6 +9,7 @@
 #include <SDL.h>
 
 int extLoaded = 0;
+extern glTexImage3D_func ext_glTexImage3D;
 
 void loadExtensions() {
     if (!extLoaded) {
