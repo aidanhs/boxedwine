@@ -138,9 +138,10 @@
     <script type="text/javascript" src="jszip.min.js"></script>
     <script type='text/javascript'>
         var AUTO_RUN = true;
-        var ALLOW_PARAM_OVERRIDE_FROM_URL = false;
+        var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
         var DEFAULT_MEMORY_ALLOCATION_MB = 64;
         var HOME_DIRECTORY = "/root/home/username/files/";
+        var program = getExecutable();
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
@@ -214,6 +215,21 @@
             console.log("setting allocated memory (Mbytes) to: "+mmemoryInMB);
             return mmemoryInMB;
         }
+        function getExecutable()
+        {
+            var program =  getParameter("p");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || program===""){
+                program = "";
+            }else{
+                if(program.startsWith("%22") && program.endsWith("%22")){
+                    program = program.substring(3, program.length - 3);
+                }else if(program.startsWith('%27') && program.endsWith('%27')){
+                    program = program.substring(3, program.length - 3);
+                }
+            }
+            console.log("setting program to execute to: "+program);
+            return program;
+        }
         function dragHandler(e) {
             e.stopPropagation();
             e.preventDefault();
@@ -227,10 +243,17 @@
         filedrag.addEventListener("dragover", dragHandler, false);
         filedrag.addEventListener("dragleave", dragHandler, false);
         filedrag.addEventListener("drop", selectHandler, false);
+        
+        var params = ["-m", getMemoryAllocation()];
+        if(program.length > 0){
+            params.push("/usr/bin/wine");
+            params.push(program);
+        }  
+    
       var Module = {
         logReadFiles : false, //enable if you want to prune with Reduce utility
         preRun: [initialSetup],
-        arguments: ["-m", getMemoryAllocation()],
+        arguments: params,
         postRun: [],
         print: (function() {
           var element = document.getElementById('output');

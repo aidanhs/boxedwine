@@ -17,10 +17,12 @@ The contents of the root directory is gzipped up and merged into the emscripten 
 settings:
 By default uploading/downloading occurs inside the directory /root/home/username/files/.
 It is possible to modify this by appending a ?dir=somedir to the url, else change HOME_DIRECTORY in shell.html
-also possible to change memory allocated to boxedwine via DEFAULT_MEMORY_ALLOCATION_MB or ?m=32 on url. Default is 64
+also possible to:
+ - change memory allocated to boxedwine via DEFAULT_MEMORY_ALLOCATION_MB or ?m=32 on url. Default is 64
+ - change the program to execute via ?p=/home/username/chomp/CHOMP.EXE. surround in quotes if path includes spaces.
 Other configuration options:
 AUTO_RUN - indicates if start button is shown. default false
-ALLOW_PARAM_OVERRIDE_FROM_URL - indicates if url can be appended with params as above for dir & m.
+ALLOW_PARAM_OVERRIDE_FROM_URL - indicates if url can be appended with params as above for dir, m & p.
 
 buildjsfs.sh/shellfs.sh
 This build script integrates the browserfs library [https://github.com/jvilk/BrowserFS].
