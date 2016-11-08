@@ -5,6 +5,8 @@
 #include "platform.h"
 #include "jit.h"
 #include "pbl.h"
+#include "ksignal.h"
+#include "ksystem.h"
 
 #include <string.h>
 
@@ -38,6 +40,7 @@ void initCPU(struct CPU* cpu, struct KProcess* process) {
     cpu->segValue[DS] = 0x17; // index 2, LDT, rpl=3
     cpu->segValue[ES] = 0x17; // index 2, LDT, rpl=3
     cpu->cpl = 3; // user mode
+    cpu->flags|=IF;
     FPU_FINIT(&cpu->fpu);
 }
 
@@ -132,7 +135,7 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
             return;
         }
         ldt = getLDT(cpu->thread, index);
-        if (ldt->seg_not_present) {
+        if (isLdtEmpty(ldt)) {
             cpu_exception(cpu, EXCEPTION_NP, selector & 0xfffc);
             return;
         }
@@ -183,7 +186,7 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
             if (CPU_CHECK_COND(cpu, (n_ss & 3)!=rpl, "RET to outer segment with invalid SS privileges", EXCEPTION_GP,n_ss & 0xfffc))
                 return;
 
-            if (CPU_CHECK_COND(cpu, ssLdt->seg_not_present, "RET:Stack segment not present", EXCEPTION_SS,n_ss & 0xfffc))
+            if (CPU_CHECK_COND(cpu, isLdtEmpty(ldt), "RET:Stack segment not present", EXCEPTION_SS,n_ss & 0xfffc))
                 return;
 
             cpu->cpl = rpl; // don't think paging tables need to be messed with, this isn't 100% cpu emulator since we are assuming a user space program
@@ -241,7 +244,7 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip) {
         }
         ldt = getLDT(cpu->thread, index);
 
-        if (ldt->seg_not_present) {
+        if (isLdtEmpty(ldt)) {
             cpu_exception(cpu, EXCEPTION_NP,selector & 0xfffc);
             return;
         }
@@ -288,7 +291,7 @@ void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip) {
         }
         ldt = getLDT(cpu->thread, index);
 
-        if (ldt->seg_not_present) {
+        if (isLdtEmpty(ldt)) {
             cpu_exception(cpu, EXCEPTION_NP,selector & 0xfffc);
             return;
         }
@@ -312,7 +315,7 @@ void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip) {
 
 #define GET_IOPL(cpu) ((cpu->flags & IOPL) >> 12)
 
-void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
+U32 cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
     value &= 0xffff;
     if (cpu->flags & VM) {
         cpu->segAddress[seg] = value << 4;
@@ -324,6 +327,10 @@ void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
         U32 index = value >> 3;
         struct user_desc* ldt = getLDT(cpu->thread, index);
 
+        if (isLdtEmpty(ldt)) {
+            cpu_exception(cpu, EXCEPTION_GP,value & 0xfffc);
+            return 0;
+        }
         cpu->segValue[seg] = value;
         cpu->segAddress[seg] = ldt->base_addr;
         if (seg == SS) {
@@ -336,6 +343,7 @@ void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value) {
             }
         }
     }
+    return 1;
 }
 
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
@@ -438,7 +446,7 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
         }
         ldt = getLDT(cpu->thread, csIndex);
 
-        if (CPU_CHECK_COND(cpu, ldt->seg_not_present, "IRET with nonpresent code segment",EXCEPTION_NP,(n_cs_sel & 0xfffc)))
+        if (CPU_CHECK_COND(cpu, isLdtEmpty(ldt), "IRET with nonpresent code segment",EXCEPTION_NP,(n_cs_sel & 0xfffc)))
             return;
 
         /* Return to same level */
@@ -482,9 +490,9 @@ void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip) {
             //if (CPU_CHECK_COND(n_ss_desc_2.DPL()!=n_cs_rpl, "IRET:Outer level:SS dpl!=CS rpl", EXCEPTION_GP,n_ss & 0xfffc))
             //    return;
 
-            ssLdt = getLDT(cpu->thread, ssIndex);;
+            ssLdt = getLDT(cpu->thread, ssIndex);
 
-            if (CPU_CHECK_COND(cpu, ssLdt->seg_not_present, "IRET:Outer level:Stack segment not present", EXCEPTION_NP,n_ss & 0xfffc))
+            if (CPU_CHECK_COND(cpu, isLdtEmpty(ssLdt), "IRET:Outer level:Stack segment not present", EXCEPTION_NP,n_ss & 0xfffc))
                 return;
 
             // commit point
@@ -974,13 +982,26 @@ U32 peek32(struct CPU* cpu, U32 index) {
     return readd(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP+index*4 & cpu->stackMask));
 }
 
-void exception(struct CPU* cpu, int code) {
-    kpanic("Exceptions not implements yet");
+void cpu_exception(struct CPU* cpu, int code, int error) {
+    struct KProcess* process = cpu->thread->process;
+
+    if (code==EXCEPTION_GP && (process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL)) {
+        process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
+        process->sigActions[K_SIGSEGV].sigInfo[1] = error;
+        process->sigActions[K_SIGSEGV].sigInfo[2] = 0;
+        process->sigActions[K_SIGSEGV].sigInfo[3] = 0; // address
+        process->sigActions[K_SIGSEGV].sigInfo[4] = 13; // trap #, TRAP_x86_PROTFLT
+        runSignal(cpu->thread, K_SIGSEGV, 13, error);
+    } else {        
+        walkStack(cpu, cpu->eip.u32, EBP, 2);
+        kpanic("unhandled exception: code=%d error=%d", code, error);        
+    }
 }
 
-void cpu_exception(struct CPU* cpu, int code, int error) {
-    kpanic("Exceptions not implements yet");
+void exception(struct CPU* cpu, int code) {
+    cpu_exception(cpu, code, 0);
 }
+
 void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op);
 
 struct Op emptyOperation = {emptyInstruction};

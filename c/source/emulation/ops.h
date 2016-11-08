@@ -19,13 +19,17 @@ void OPCALL pushSeg32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL popSeg16(struct CPU* cpu, struct Op* op) {
-    cpu_setSegment(cpu, op->r1, pop16(cpu));
+    if (!cpu_setSegment(cpu, op->r1, peek16(cpu, 0)))
+        return;
+    ESP = (ESP & cpu->stackNotMask) | ((ESP + 2 ) & cpu->stackMask);
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL popSeg32(struct CPU* cpu, struct Op* op) {
-    cpu_setSegment(cpu, op->r1, pop32(cpu));
+    if (!cpu_setSegment(cpu, op->r1, peek32(cpu, 0)))
+        return;
+    ESP = (ESP & cpu->stackNotMask) | ((ESP + 4 ) & cpu->stackMask);
     CYCLES(3);
     NEXT();
 }
@@ -885,19 +889,22 @@ void OPCALL lear32_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movs16r16(struct CPU* cpu, struct Op* op) {
-    cpu_setSegment(cpu, op->r2, cpu->reg[op->r1].u16);
+    if (!cpu_setSegment(cpu, op->r2, cpu->reg[op->r1].u16))
+        return;
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL movs16e16_16(struct CPU* cpu, struct Op* op) {
-    cpu_setSegment(cpu, op->r1, readw(MMU_PARAM_CPU eaa16(cpu, op)));
+    if (!cpu_setSegment(cpu, op->r1, readw(MMU_PARAM_CPU eaa16(cpu, op))))
+        return;
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movs16e16_32(struct CPU* cpu, struct Op* op) {
-    cpu_setSegment(cpu, op->r1, readw(MMU_PARAM_CPU eaa32(cpu, op)));
+    if (!cpu_setSegment(cpu, op->r1, readw(MMU_PARAM_CPU eaa32(cpu, op))))
+        return;
     CYCLES(3);
     NEXT();
 }
@@ -3140,10 +3147,11 @@ void OPCALL iret32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL loadSegment16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U32 val = readd(MMU_PARAM_CPU eaa); // make sure all reads are done before writing something in case of a PF
+    U32 val = readw(MMU_PARAM_CPU eaa); // make sure all reads are done before writing something in case of a PF
     U32 selector = readw(MMU_PARAM_CPU eaa+2);
 
-    cpu_setSegment(cpu, op->data1, selector);
+    if (!cpu_setSegment(cpu, op->data1, selector))
+        return;
     cpu->reg[op->r1].u16 = val;
     CYCLES(4);
     NEXT();
@@ -3151,10 +3159,11 @@ void OPCALL loadSegment16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL loadSegment16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U32 val = readd(MMU_PARAM_CPU eaa); // make sure all reads are done before writing something in case of a PF
+    U32 val = readw(MMU_PARAM_CPU eaa); // make sure all reads are done before writing something in case of a PF
     U32 selector = readw(MMU_PARAM_CPU eaa+2);
 
-    cpu_setSegment(cpu, op->data1, selector);
+    if (!cpu_setSegment(cpu, op->data1, selector))
+        return;
     cpu->reg[op->r1].u16 = val;
     CYCLES(4);
     NEXT();

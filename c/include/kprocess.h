@@ -132,6 +132,7 @@ void processRemoveThread(struct KProcess* process, struct KThread* thread);
 struct KThread* processGetThreadById(struct KProcess* process, U32 tid);
 U32 processGetThreadCount(struct KProcess* process);
 struct user_desc* getLDT(struct KThread* thread, U32 index);
+U32 isLdtEmpty(struct user_desc* desc);
 
 U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size);
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid);

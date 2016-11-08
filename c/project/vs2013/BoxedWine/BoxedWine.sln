@@ -7,6 +7,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BoxedWine", "BoxedWine\Boxe
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Chomp|Win32 = Chomp|Win32
+		Civ2|Win32 = Civ2|Win32
+		CivNet|Win32 = CivNet|Win32
 		Debug Log|Win32 = Debug Log|Win32
 		Debug|Win32 = Debug|Win32
 		ES Debug|Win32 = ES Debug|Win32
@@ -16,9 +19,16 @@ Global
 		SDL MMU Release|Win32 = SDL MMU Release|Win32
 		SDL Release Source Generator|Win32 = SDL Release Source Generator|Win32
 		SDL Release|Win32 = SDL Release|Win32
+		Sphere|Win32 = Sphere|Win32
 		Test|Win32 = Test|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Chomp|Win32.ActiveCfg = Chomp|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Chomp|Win32.Build.0 = Chomp|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Civ2|Win32.ActiveCfg = Civ2|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Civ2|Win32.Build.0 = Civ2|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.CivNet|Win32.ActiveCfg = CivNet|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.CivNet|Win32.Build.0 = CivNet|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug Log|Win32.ActiveCfg = Debug Log|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug Log|Win32.Build.0 = Debug Log|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Debug|Win32.ActiveCfg = Debug|Win32
@@ -37,6 +47,8 @@ Global
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release Source Generator|Win32.Build.0 = SDL Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release|Win32.ActiveCfg = SDL Release|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.SDL Release|Win32.Build.0 = SDL Release|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Sphere|Win32.ActiveCfg = Sphere|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Sphere|Win32.Build.0 = Sphere|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.ActiveCfg = Test|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Test|Win32.Build.0 = Test|Win32
 	EndGlobalSection

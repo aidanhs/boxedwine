@@ -43,16 +43,19 @@ void initLDT(struct KProcess* process) {
 
     for (i=0;i<LDT_ENTRIES;i++) {
         process->ldt[i].seg_not_present = 1;
+        process->ldt[i].read_exec_only = 1;
     }
     process->ldt[1].base_addr = 0;
     process->ldt[1].entry_number = 1;
     process->ldt[1].seg_32bit = 1;
     process->ldt[1].seg_not_present = 0;
+    process->ldt[1].read_exec_only = 0;
 
     process->ldt[2].base_addr = 0;
     process->ldt[2].entry_number = 2;
     process->ldt[2].seg_32bit = 1;
     process->ldt[2].seg_not_present = 0;
+    process->ldt[2].read_exec_only = 0;
 }
 void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, int userId) {	
     U32 i;
@@ -1125,7 +1128,7 @@ void signalIllegalInstruction(struct KThread* thread, int code) {
     process->sigActions[K_SIGILL].sigInfo[2] = code;
     process->sigActions[K_SIGILL].sigInfo[3] = process->id;
     process->sigActions[K_SIGILL].sigInfo[4] = process->userId;
-    runSignal(thread, K_SIGILL, -1); // TRAP_x86_PRIVINFLT = 6
+    runSignal(thread, K_SIGILL, -1, 0);
 }
 
 #define K_RLIM_INFINITY 0xFFFFFFFF
@@ -1347,7 +1350,7 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
         // must set CPU state before runSignal since it will be stored
         thread->cpu.reg[0].u32 = 0; 
         thread->cpu.eip.u32+=2;
-        runSignal(target, signal, -1);
+        runSignal(target, signal, -1, 0);
         target->waitingForSignalToEnd = thread;
         waitThread(thread);			
         return -K_CONTINUE;
@@ -1402,7 +1405,7 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
 
         if (index>=0 && index<LDT_ENTRIES) {
             struct user_desc* ldt = getLDT(thread, index);;            
-
+            
             ldt->entry_number = index;
             ldt->limit = limit;
             ldt->base_addr = address;
@@ -1436,4 +1439,8 @@ struct user_desc* getLDT(struct KThread* thread, U32 index) {
         return &thread->process->ldt[index];
     }
     return NULL;
+}
+
+U32 isLdtEmpty(struct user_desc* desc) {
+    return (!desc || (desc->seg_not_present==1 && desc->read_exec_only==1));
 }

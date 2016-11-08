@@ -309,6 +309,8 @@ int main(int argc, char **argv) {
     int bpp = 24;
     int fullscreen = 0;
     int userId = UID;
+    char* workingDir = "/home/username";
+    char pwd[MAX_FILEPATH_LEN];
 
     klog("Starting ...");
 
@@ -325,6 +327,9 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-uid") && i+1<argc) {
             userId = atoi(argv[i+1]);
+            i++;
+        } else if (!strcmp(argv[i], "-w") && i+1<argc) {
+            workingDir = argv[i+1];
             i++;
         } else if (!strcmp(argv[i], "-gensrc")) {
             gensrc = 1;
@@ -372,11 +377,14 @@ int main(int argc, char **argv) {
 #ifdef BOXEDWINE_ES
     esgl_init();
 #endif
+    strcpy(pwd, "PWD=");
+    strcat(pwd, workingDir);
+
     ppenv[envc++] = "HOME=/home/username";
     ppenv[envc++] = "LOGNAME=username";
     ppenv[envc++] = "USERNAME=username";
     ppenv[envc++] = "USER=username";
-    ppenv[envc++] = "PWD=/home/username";
+    ppenv[envc++] = pwd;
     ppenv[envc++] = "DISPLAY=:0";
     ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib";
     if (userId==0)
@@ -387,7 +395,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-   // ppenv[envc++] = "WINEDEBUG=+relay";
+    ppenv[envc++] = "WINEDEBUG=+seh";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -418,7 +426,7 @@ int main(int argc, char **argv) {
     }
 
     klog("Launching %s", argv[0]);
-    if (startProcess("/home/username/civnet", argc, (const char**)argv, envc, ppenv, userId)) {
+    if (startProcess(workingDir, argc, (const char**)argv, envc, ppenv, userId)) {
 #ifdef __EMSCRIPTEN__
                 EM_ASM(
 #ifndef SDL2

@@ -76,6 +76,7 @@ void initThread(struct KThread* thread, struct KProcess* process) {
     thread->sigMask = 0;
     for (i=0;i<TLS_ENTRIES;i++) {
         thread->tls[i].seg_not_present = 1;
+        thread->tls[i].read_exec_only = 1;
     }
     setupStack(thread);
 }
@@ -236,7 +237,7 @@ BOOL runSignals(struct KThread* thread) {
 
         for (i=0;i<32;i++) {
             if ((todo & (1 << i))!=0) {
-                runSignal(thread, i+1, -1);
+                runSignal(thread, i+1, -1, 0);
                 return 1;
             }
         }
@@ -421,7 +422,7 @@ struct ucontext_ia32 {
 #define INFO_SIZE 128
 #define CONTEXT_SIZE 128
 
-void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack, U32 trapNo) {	
+void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStack, U32 trapNo, U32 errorNo) {	
     struct CPU* cpu = &thread->cpu;
 
     if (altStack) {
@@ -446,7 +447,7 @@ void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStac
     writed(MMU_PARAM_THREAD context+0x3C, cpu->reg[1].u32); // ECX
     writed(MMU_PARAM_THREAD context+0x40, cpu->reg[0].u32); // EAX
     writed(MMU_PARAM_THREAD context+0x44, trapNo); // REG_TRAPNO
-    writed(MMU_PARAM_THREAD context+0x48, 0); // REG_ERR
+    writed(MMU_PARAM_THREAD context+0x48, errorNo); // REG_ERR
     writed(MMU_PARAM_THREAD context+0x4C, cpu->eip.u32);
     writed(MMU_PARAM_THREAD context+0x50, cpu->segValue[CS]);
     writed(MMU_PARAM_THREAD context+0x54, cpu->flags);
@@ -530,7 +531,7 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
 }
 
 // interrupted and waitStartTime are pushed because syscall's during the signal will clobber them
-void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
+void runSignal(struct KThread* thread, U32 signal, U32 trapNo, U32 errorNo) {
     struct KSigAction* action = &thread->process->sigActions[signal];
     if (action->handlerAndSigAction==K_SIG_DFL) {
 
@@ -561,7 +562,7 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo) {
         }		
                 
         context = cpu->segAddress[SS] + (ESP & cpu->stackMask) - CONTEXT_SIZE;
-        writeToContext(thread, stack, context, altStack, trapNo);
+        writeToContext(thread, stack, context, altStack, trapNo, errorNo);
         
         cpu->stackMask = 0xFFFFFFFF;
         cpu->stackNotMask = 0;

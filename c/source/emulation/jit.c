@@ -2500,8 +2500,7 @@ void jit(struct CPU* cpu, struct Block* block, U32 blockEIP) {
             if (!needsToSetFlag(cpu, block, blockEIP, op, sFlags)) {
                 if (fastDecoder[op->inst]) {
                     fastDecoder[op->inst](op);
-                } else
-                    klog("Found op that doesn't need flags: %x", op->inst);
+                }
             }
         }
         op = op->next;

@@ -16,7 +16,7 @@ void freeBlock(struct Block* op);
 #define G(rm) ((rm >> 3) & 7)
 #define E(rm) (rm & 7)
 #ifdef LOG_OPS
-#define DONE() if (logFile && cpu->log) {fprintf(logFile, "%d %.8X %-40s EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X fs=%X(%X) %s at %.8X\n", cpu->thread->id, cpu->segAddress[CS]+cpu->eip.u32, op->str, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[FS], cpu->segAddress[FS], getModuleName(cpu, cpu->segAddress[CS]+cpu->eip.u32), getModuleEip(cpu, cpu->segAddress[CS]+cpu->eip.u32));fflush(logFile);}
+#define DONE() if (logFile && cpu->log) {fprintf(logFile, "%d %.8X %-40s EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X es=%X(%X) cs=%X(%X) ss=%X(%X) ds=%X(%X) fs=%X(%X) gs=%X(%X) %s at %.8X\n", cpu->thread->id, cpu->segAddress[CS]+cpu->eip.u32, op->str, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, cpu->segValue[ES], cpu->segAddress[ES], cpu->segValue[CS], cpu->segAddress[CS], cpu->segValue[SS], cpu->segAddress[SS], cpu->segValue[DS], cpu->segAddress[DS], cpu->segValue[FS], cpu->segValue[GS], cpu->segAddress[GS], cpu->segAddress[FS], getModuleName(cpu, cpu->segAddress[CS]+cpu->eip.u32), getModuleEip(cpu, cpu->segAddress[CS]+cpu->eip.u32));fflush(logFile);}
 #define NEXT()  DONE() cpu->eip.u32+=op->eipCount; op->next->func(cpu, op->next)
 #define LOG_OP2(name, s1, s2) sprintf(data->op->str, "%s %s,%s", name, s1, s2);
 #define LOG_OP1(name, s1) sprintf(data->op->str, "%s %s", name, s1);

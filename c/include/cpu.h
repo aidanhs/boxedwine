@@ -58,7 +58,7 @@ struct CPU {
     U32		big;
     struct FPU     fpu;
     struct Block* nextBlock;
-    struct Block* currentBlock;
+    struct Block* currentBlock;    
     U64		timeStampCounter;
     U32     blockCounter; // number of clocks since the start of the block	
     U32     blockInstructionCount;
@@ -100,7 +100,7 @@ void cpu_call(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldEip);
 void cpu_iret(struct CPU* cpu, U32 big, U32 oldeip);
 void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level);
 void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level);
-void cpu_setSegment(struct CPU* cpu, U32 seg, U32 value);
+U32 cpu_setSegment(struct CPU* cpu, U32 seg, U32 value);
 U32 cpu_lar(struct CPU* cpu, U32 selector, U32 ar);
 void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip);
 
