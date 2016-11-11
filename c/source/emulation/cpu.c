@@ -40,6 +40,7 @@ void initCPU(struct CPU* cpu, struct KProcess* process) {
     cpu->segValue[DS] = 0x17; // index 2, LDT, rpl=3
     cpu->segValue[ES] = 0x17; // index 2, LDT, rpl=3
     cpu->cpl = 3; // user mode
+    cpu->cr0 = CR0_PROTECTION | CR0_FPUPRESENT | CR0_PAGING;
     cpu->flags|=IF;
     FPU_FINIT(&cpu->fpu);
 }
@@ -1000,6 +1001,21 @@ void cpu_exception(struct CPU* cpu, int code, int error) {
 
 void exception(struct CPU* cpu, int code) {
     cpu_exception(cpu, code, 0);
+}
+
+U32 cpu_lmsw(struct CPU* cpu, U32 word) {
+    if (cpu->cpl>0) {
+        cpu_exception(cpu, EXCEPTION_GP, 0);
+        return 0;
+    }
+    word&=0xf;
+    if (cpu->cr0 & 1) word|=1;
+    word|=(cpu->cr0 & 0xfffffff0l);
+    cpu->cr0 = word | CR0_FPUPRESENT;
+    if(cpu->cr0 ^ word) {
+        kpanic("CR0 changed, this isn't supported");
+    }
+    return 1;
 }
 
 void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op);

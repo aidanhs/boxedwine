@@ -687,7 +687,7 @@ U32 sdlGetNearestColor(U32 color) {
 U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries) {
     U32 i;
     int result = 0;
-
+    return result;
     if (numberOfEntries>256)
         numberOfEntries=256;
     for (i=0;i<numberOfEntries;i++) {

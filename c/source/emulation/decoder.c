@@ -1984,6 +1984,8 @@ void decode0ff(struct DecodeData* data) {
                 kpanic("Jmp Ep (0xFF) illegal RM");
             } else {
                 DECODE_MEMORY(jmpEp16_mem16, jmpEp16_mem32);
+                LOG_E16("JMP Ep", rm, data);
+                FINISH_OP(data);
             }            
             break;
         case 0x06:										// PUSH Ev 
@@ -2216,6 +2218,51 @@ void decode0ea(struct DecodeData* data) {
     FINISH_OP(data);
 };
 
+void decode301(struct DecodeData* data) {
+    U8 rm=FETCH8(data);
+    U32 which=(rm>>3)&7;
+
+    if (rm < 0xc0)	{
+        switch (which) {
+        case 0x00:										/* SGDT */
+            DECODE_MEMORY(sgdt_mem16, sgdt_mem32);
+            NEXT_OP(data);
+            break;
+        case 0x01:										/* SIDT */
+            DECODE_MEMORY(sidt_mem16, sidt_mem32);
+            NEXT_OP(data);
+            break;
+        case 0x04:										/* SMSW */
+            DECODE_MEMORY(smsw_mem16, smsw_mem32);
+            NEXT_OP(data);
+            break;
+        case 0x06:										/* LMSW */
+            DECODE_MEMORY(lmsw_mem16, lmsw_mem32);
+            NEXT_OP(data);
+            break;
+        default:
+            invalidOp(data);
+            break;
+        }
+    } else {
+        switch (which) {
+        case 0x04: // SMSW
+            data->op->func = smsw_reg;
+            data->op->r1 = E(rm);
+            NEXT_OP(data);
+            break;
+        case 0x06: // LMSW
+            data->op->func = lmsw_reg;
+            data->op->r1 = E(rm);
+            NEXT_OP(data);
+            break;
+        default:
+            invalidOp(data);
+            break;
+        }
+    }
+}
+
 DECODER decoder[1024] = {
     decode000, decode001, decode002, decode003, decode004, decode005, decode006, decode007,
     decode008, decode009, decode00a, decode00b, decode00c, decode00d, decode00e, decode00f,
@@ -2333,7 +2380,7 @@ DECODER decoder[1024] = {
     decode0f8, decode0f9, invalidOp, invalidOp, decode0fc, decode0fd, decode0fe, decode2ff,
 
     // 300
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, decode301, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 310
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

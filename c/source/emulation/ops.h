@@ -3202,14 +3202,6 @@ void OPCALL lare16r16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL jmpEp16_mem16(struct CPU* cpu, struct Op* op) {
-    DONE();
-    cpu->eip.u32 = readw(MMU_PARAM_CPU eaa16(cpu, op));
-    CYCLES(2);
-    cpu->nextBlock = getBlock(cpu);
-}
-
-void OPCALL jmpEp16_mem32(struct CPU* cpu, struct Op* op) {
-    DONE();
     U32 eaa = eaa16(cpu, op);
     U16 newip = readw(MMU_PARAM_CPU eaa);
     U16 newcs = readw(MMU_PARAM_CPU eaa+2);
@@ -3218,4 +3210,107 @@ void OPCALL jmpEp16_mem32(struct CPU* cpu, struct Op* op) {
     cpu_jmp(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
     CYCLES(4); // just a guess
     cpu->nextBlock = getBlock(cpu);
+}
+
+void OPCALL jmpEp16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U16 newip = readw(MMU_PARAM_CPU eaa);
+    U16 newcs = readw(MMU_PARAM_CPU eaa+2);
+    fillFlags(cpu);
+    DONE();
+    cpu_jmp(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
+    CYCLES(4); // just a guess
+    cpu->nextBlock = getBlock(cpu);
+}
+
+void OPCALL lmsw_reg(struct CPU* cpu, struct Op* op) {
+    CYCLES(8);
+    if (!cpu_lmsw(cpu, cpu->reg[op->r1].u16)) {
+        DONE();
+        cpu->nextBlock = getBlock(cpu);
+    } else {
+        NEXT();
+    }
+}
+
+void OPCALL lmsw_mem16(struct CPU* cpu, struct Op* op) {
+    CYCLES(8);
+    if (!cpu_lmsw(cpu, readw(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        DONE();
+        cpu->nextBlock = getBlock(cpu);
+    } else {
+        NEXT();
+    }
+}
+
+void OPCALL lmsw_mem32(struct CPU* cpu, struct Op* op) {
+    CYCLES(8);
+    if (!cpu_lmsw(cpu, readw(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        DONE();
+        cpu->nextBlock = getBlock(cpu);
+    } else {
+        NEXT();
+    }
+}
+
+void OPCALL smsw_reg(struct CPU* cpu, struct Op* op) {
+    CYCLES(4);
+    cpu->reg[op->r1].u16 = cpu->cr0;
+    NEXT();
+}
+
+void OPCALL smsw_mem16(struct CPU* cpu, struct Op* op) {
+    CYCLES(4);
+    writew(MMU_PARAM_CPU eaa16(cpu, op), cpu->cr0);
+    NEXT();
+}
+
+void OPCALL smsw_mem32(struct CPU* cpu, struct Op* op) {
+    CYCLES(4);
+    writew(MMU_PARAM_CPU eaa32(cpu, op), cpu->cr0);
+    NEXT();
+}
+
+void OPCALL sidt_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    CYCLES(4);
+    writew(MMU_PARAM_CPU eaa, 0); // limit
+    writed(MMU_PARAM_CPU eaa+2, 0); // base
+#ifdef _DEBUG
+    klog("sidt not implemented");
+#endif
+    NEXT();
+}
+
+void OPCALL sidt_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    CYCLES(4);
+    writew(MMU_PARAM_CPU eaa, 0); // limit
+    writed(MMU_PARAM_CPU eaa+2, 0); // base
+#ifdef _DEBUG
+    klog("sidt not implemented");
+#endif
+    NEXT();
+}
+
+void OPCALL sgdt_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    CYCLES(4);
+    writew(MMU_PARAM_CPU eaa, 0); // limit
+    writed(MMU_PARAM_CPU eaa+2, 0); // base
+#ifdef _DEBUG
+    klog("sgdt not implemented");
+#endif
+    NEXT();
+}
+
+void OPCALL sgdt_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    CYCLES(4);
+    writew(MMU_PARAM_CPU eaa, 0); // limit
+    writed(MMU_PARAM_CPU eaa+2, 0); // base
+#ifdef _DEBUG
+    klog("sgdt not implemented");
+#endif
+    NEXT();
 }

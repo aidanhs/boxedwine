@@ -66,9 +66,19 @@ struct CPU {
     U32 cpl;
     U32 stackMask;
     U32 stackNotMask;
+    U32 cr0;
 };
 
 void threadDone(struct CPU* cpu);
+
+#define CR0_PROTECTION          0x00000001
+#define CR0_MONITORPROCESSOR    0x00000002
+#define CR0_FPUEMULATION        0x00000004
+#define CR0_TASKSWITCH          0x00000008
+#define CR0_FPUPRESENT          0x00000010
+#define CR0_NUMERICERROR        0x00000020
+#define CR0_WRITEPROTECT        0x00010000
+#define CR0_PAGING              0x80000000
 
 #define EXCEPTION_DIVIDE 0
 #define EXCEPTION_BOUND 5
@@ -103,6 +113,7 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level);
 U32 cpu_setSegment(struct CPU* cpu, U32 seg, U32 value);
 U32 cpu_lar(struct CPU* cpu, U32 selector, U32 ar);
 void cpu_jmp(struct CPU* cpu, U32 big, U32 selector, U32 offset, U32 oldeip);
+U32 cpu_lmsw(struct CPU* cpu, U32 word);
 
 extern U8 parity_lookup[];
 

@@ -395,7 +395,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    ppenv[envc++] = "WINEDEBUG=+seh";
+    //ppenv[envc++] = "WINEDEBUG=+boxeddrv";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
