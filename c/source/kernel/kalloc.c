@@ -11,6 +11,11 @@ static U32 maxUsage;
 static U32 maxCount;
 
 void* kalloc(U32 len, U32 type) {
+#ifdef __EMSCRIPTEN__
+    void* result = malloc(len);
+    memset(result, 0, len);
+    return result;
+#else
     void* result = malloc(len+4);
     memset((char*)result+4, 0, len);
     *(U32*)result = len;
@@ -23,15 +28,20 @@ void* kalloc(U32 len, U32 type) {
     if (totalUsage>maxUsage)
         maxUsage=totalUsage;
     return (void*)((char*)result+4);
+#endif
 }
 
 void kfree(void* p, U32 type) {
+#ifdef __EMSCRIPTEN__
+    free(p);
+#else
     U32 len = *(U32*)((char*)p-4);
     usage[type]-=len;
     count[type]--;
     totalCount--;
     totalUsage-=len;
     free((char*)p-4);
+#endif
 }
 
 void printMemUsage() {
