@@ -1022,17 +1022,24 @@ void initBlockCache() {
 
 struct Block* getBlock(struct CPU* cpu) {
     struct Block* block;	
-    U32 page = (cpu->segAddress[CS] + cpu->eip.u32) >> PAGE_SHIFT;
+    U32 ip;
+
+    if (cpu->big)
+        ip = cpu->segAddress[CS] + cpu->eip.u32;
+    else
+        ip = cpu->segAddress[CS] + cpu->eip.u16;
+
+    U32 page = ip >> PAGE_SHIFT;
     U32 flags = cpu->memory->flags[page];
     if (IS_PAGE_IN_RAM(flags)) {
-        block = getCode(cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
+        block = getCode(cpu->memory->ramPage[page], ip & 0xFFF);
         if (!block) {
             block = decodeBlock(cpu, cpu->eip.u32);
-            addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
+            addCode(block, cpu->memory->ramPage[page], ip & 0xFFF);
         }
     } else {		
         block = decodeBlock(cpu, cpu->eip.u32);
-        addCode(block, cpu->memory->ramPage[page], cpu->eip.u32 & 0xFFF);
+        addCode(block, cpu->memory->ramPage[page], ip & 0xFFF);
     }
     return block;
 }

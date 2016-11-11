@@ -42,9 +42,15 @@ struct DecodeData {
 extern U8* ram;
 
 void fillFetchPage(struct DecodeData* data) {
-    data->pagePos = data->ip & 0xFFF;
-    readb(data->memory, data->ip);
-    data->page = &ram[(data->ip & 0xFFFFF000) - data->memory->read[data->ip>>12]];
+    U32 address;
+
+    if (data->cpu->big)
+        address = data->ip + data->cpu->segAddress[CS];
+    else
+        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
+    data->pagePos = address & 0xFFF;
+    readb(data->memory, address);
+    data->page = &ram[(address & 0xFFFFF000) - data->memory->read[address>>12]];
 }
 #endif
 
@@ -2456,7 +2462,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
 
 #ifdef GENERATE_SOURCE
         if (gensrc) {
-            jit(cpu, block, eip);
+            //jit(cpu, block, eip);
             generateSource(cpu, eip, block);
             return; // uncompiled block are necessary for source generation, so don't use AOT			
         }
@@ -2467,7 +2473,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
 #endif
 
         if (needJIT) {
-            jit(cpu, block, eip);
+            //jit(cpu, block, eip);
         }
     }
 }
@@ -2480,7 +2486,7 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     data.op = allocOp();
     block->ops->next = data.op;
 
-    data.start = data.ip = (cpu->big?eip:(eip & 0xFFFF)) + cpu->segAddress[CS];
+    data.start = data.ip = eip;
     if (cpu->big) {
         data.opCode = 0x200;
         data.ea16 = 0;
