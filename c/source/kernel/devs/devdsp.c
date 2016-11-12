@@ -22,17 +22,38 @@
 #define AFMT_U16_BE              0x00000100      /* Big endian U16 */
 #define AFMT_MPEG                0x00000200      /* MPEG (2) audio */
 
+#define PCM_ENABLE_INPUT         0x00000001
+#define PCM_ENABLE_OUTPUT        0x00000002
+
+#define DSP_CAP_REVISION         0x000000ff      /* Bits for revision level (0 to 255) */
+#define DSP_CAP_DUPLEX           0x00000100      /* Full duplex record/playback */
+#define DSP_CAP_REALTIME         0x00000200      /* Real time capability */
+#define DSP_CAP_BATCH            0x00000400      /* Device has some kind of */
+                                                 /* internal buffers which may */
+                                                 /* cause some delays and */
+                                                 /* decrease precision of timing */
+#define DSP_CAP_COPROC           0x00000800      /* Has a coprocessor */
+                                                 /* Sometimes it's a DSP */
+                                                 /* but usually not */
+#define DSP_CAP_TRIGGER          0x00001000      /* Supports SETTRIGGER */
+#define DSP_CAP_MMAP             0x00002000      /* Supports mmap() */
+#define DSP_CAP_MULTI            0x00004000      /* support multiple open */
+#define DSP_CAP_BIND             0x00008000      /* channel binding to front/rear/cneter/lfe */
+
 BOOL isDspOpen = 0;
-U32 dspFmt = AFMT_U8;
-U32 sdlFmt = AUDIO_U8;
-U32 dspChannels = 1;
-U32 dspFragSize = 1024;
-U32 dspFreq = 8000;
+static U32 dspFmt = AFMT_U8;
+static U32 sdlFmt = AUDIO_U8;
+static U32 dspChannels = 1;
+static U32 dspFragSize = 1024;
+static U32 dspFreq = 8000;
 #define DSP_BUFFER_SIZE 1024*64
-U8 dspBuffer[DSP_BUFFER_SIZE];
-S32 dspBufferLen;
-U32 dspBufferPos;
-struct KThread* dspWaitingToWriteThread;
+static U8 dspBuffer[DSP_BUFFER_SIZE];
+static S32 dspBufferLen;
+static U32 dspBufferPos;
+static struct KThread* dspWaitingToWriteThread;
+static U32 pauseAtLen;
+
+#define pauseEnabled() (pauseAtLen!=0xFFFFFFFF)
 
 void closeAudio() {
     if (isDspOpen) {
@@ -52,24 +73,19 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
         available = dspBufferLen;
     if (available > len)
         available = len;
+    if (pauseEnabled()  && available > pauseAtLen) {
+        available = pauseAtLen;
+    }
     memcpy(stream, dspBuffer+dspBufferPos, available);
     result=available;
-    dspBufferPos += available;
-    dspBufferLen -= available;
+    dspBufferPos += result;
+    dspBufferLen -= result;
+    if (pauseEnabled())
+        pauseAtLen -= result;
     if (dspBufferPos==DSP_BUFFER_SIZE) {
         dspBufferPos = 0;
-        if (dspBufferLen) {
-            len-=available;
-            available = dspBufferLen;
-            if (available>len) {
-                available = len;
-            }
-            SDL_MixAudio(stream+result, dspBuffer+dspBufferPos, available, SDL_MIX_MAXVOLUME);
-            //memcpy(stream+result, dspBuffer+dspBufferPos, available);
-            result+=available;
-            dspBufferPos += available;
-            dspBufferLen -= available;
-        }
+        audioCallback(userdata, stream+result, len-result);
+        return;
     }
     if (dspWaitingToWriteThread)
         wakeThread(dspWaitingToWriteThread);
@@ -86,7 +102,7 @@ void openAudio() {
     want.freq = dspFreq;
     want.format = sdlFmt;
     want.channels = dspChannels;
-    want.samples = 2048;
+    want.samples = 512;
     want.callback = audioCallback;  // you wrote this function elsewhere.
 
     if (SDL_OpenAudio(&want, &got) < 0) {
@@ -223,7 +239,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
             kpanic("SNDCTL_DSP_SETFMT was expecting a len of 4");
         }
         fmt = readd(MMU_PARAM_THREAD IOCTL_ARG1);
-        if (fmt!=0 && fmt!=dspFmt) {
+        if (fmt!=AFMT_QUERY && fmt!=dspFmt) {
             closeAudio();
         }
         switch (fmt) {
@@ -290,6 +306,9 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     case 0x500A: // SNDCTL_DSP_SETFRAGMENT
         dspFragSize = 1 << (readd(MMU_PARAM_THREAD IOCTL_ARG1) & 0xFFFF);
         return 0;
+    case 0x500B: // SNDCTL_DSP_GETFMTS
+        writed(MMU_PARAM_THREAD IOCTL_ARG1, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE);
+        return 0;
     case 0x500C: // SNDCTL_DSP_GETOSPACE
         writed(MMU_PARAM_THREAD IOCTL_ARG1, (DSP_BUFFER_SIZE - dspBufferLen) / dspFragSize); // fragments
         writed(MMU_PARAM_THREAD IOCTL_ARG1 + 4, DSP_BUFFER_SIZE / dspFragSize);
@@ -297,6 +316,30 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
         writed(MMU_PARAM_THREAD IOCTL_ARG1 + 12, DSP_BUFFER_SIZE - dspBufferLen);
         return 0;
     case 0x500F: // SNDCTL_DSP_GETCAPS
+        writed(MMU_PARAM_THREAD IOCTL_ARG1, DSP_CAP_TRIGGER);
+        return 0;
+    case 0x5010: // SNDCTL_DSP_SETTRIGGER
+        if (readd(MMU_PARAM_THREAD IOCTL_ARG1) & PCM_ENABLE_OUTPUT) {
+            SDL_PauseAudio(0);
+            pauseAtLen = 0xFFFFFFFF;
+        } else {            
+            pauseAtLen = dspBufferLen;
+            if (pauseAtLen==0) {
+                SDL_PauseAudio(0);
+            }
+        }
+        return 0;
+    case 0x5012: // SNDCTL_DSP_GETOPTR
+        writed(MMU_PARAM_THREAD IOCTL_ARG1, 0); // Total # of bytes processed
+        writed(MMU_PARAM_THREAD IOCTL_ARG1 + 4, 0); // # of fragment transitions since last time
+        if (pauseEnabled()) {
+            writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, pauseAtLen); // Current DMA pointer value
+            if (pauseAtLen==0) {
+                SDL_PauseAudio(0);
+            }
+        } else {
+            writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, dspBufferLen); // Current DMA pointer value
+        }
         return 0;
     case 0x5016: // SNDCTL_DSP_SETDUPLEX
         return -K_EINVAL;

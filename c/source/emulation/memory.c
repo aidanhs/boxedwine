@@ -55,7 +55,6 @@ void seg_mapper(struct Memory* memory, U32 address) {
         memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 1; // SEGV_MAPERR
         memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
         runSignal(currentThread, K_SIGSEGV, EXCEPTION_PAGE_FAULT, 0);
-        printf("seg fault %X\n", address);
         longjmp(runBlockJump, 1);		
     } else {
         log_pf(memory->process, address);

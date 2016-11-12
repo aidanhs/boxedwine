@@ -33,7 +33,7 @@ void logsyscall(const char* fmt, ...) {
 }
 
 #define LOGSYS logsyscall
-#elif defined LOG_SYSCALLS1
+#elif defined LOG_SYSCALLS
 #define LOGSYS klog
 #else
 #define LOGSYS if (0) klog
