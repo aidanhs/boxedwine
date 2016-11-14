@@ -144,13 +144,13 @@
         var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
         var DEFAULT_MEMORY_ALLOCATION_MB = 64;
         var HOME_DIRECTORY = "/root/home/username/files/";
+        var appZipFile = getAppZipFile();
         var program = getExecutable();
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
-        var dirPrefix = setFileDirectory();
-        console.log("setting file directory to: "+dirPrefix);
+        var dirPrefix = getFileDirectory();
         var STORAGE_DROPBOX = "DROPBOX";
         var STORAGE_LOCAL_STORAGE = "LOCAL_STORAGE";
         var STORAGE_MEMORY = "MEMORY";
@@ -181,7 +181,7 @@
         pathExistsAction: function() { return 0; },
         pathNotExistsAction: function() { return 1; }
     };
-        function setFileDirectory(){
+        function getFileDirectory(){
             
             var dir =  getParameter("dir");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
@@ -194,7 +194,20 @@
             console.log("setting file directory to: "+dir);
             return dir;
         }
-        
+        function getAppZipFile(){
+            
+            var filename =  getParameter("app");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || filename===""){
+                filename = "";
+                console.log("not setting app zip file");
+            }else{
+                if(!filename.endsWith(".zip")){
+                    filename = filename + ".zip";
+                }
+                console.log("setting app zip file to: "+filename);
+            }
+            return filename;
+        }
         function setGlobalArrayBuffer(arrayBuffer){
             DATA = arrayBuffer;
         }
@@ -249,14 +262,37 @@
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
             var data = new Buffer(DATA);
 
-            var BFS = new BrowserFS.EmscriptenFS();
             var zipfs = new BrowserFS.FileSystem.ZipFS(data);
 
+            var homeAdapter = null;
+            if(appZipFile.length > 0){
+                var listingObject = {};
+                listingObject[appZipFile] =  null;
+                var httpfs = new BrowserFS.FileSystem.XmlHttpRequest(listingObject, "");
+
+                var mfs = new BrowserFS.FileSystem.MountableFileSystem();
+                mfs.mount('/temp', httpfs);
+
+                mfs.readFile('/temp/' + appZipFile, null, flag_r, function callback(e, contents){
+                    if(e){
+                        console.log(e);
+                    }
+                    var additionalZipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
+                    homeAdapter = new BrowserFS.FileSystem.FolderAdapter("/", additionalZipfs);
+                    buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter);
+                });
+            }else{
+                var dirPrefixParentDir = parentDir(dirPrefix);
+                dirPrefixParentDir = dirPrefixParentDir.substring(0, dirPrefixParentDir.length - 1);
+                homeAdapter = new BrowserFS.FileSystem.FolderAdapter(dirPrefixParentDir, zipfs);
+                buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter)
+            }
+        }
+        function buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter)
+        {
             FS.createFolder(FS.root, 'root', true, true);
             var rootOverlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), zipfs);
-            var dirPrefixParentDir = parentDir(dirPrefix);
-            dirPrefixParentDir = dirPrefixParentDir.substring(0, dirPrefixParentDir.length - 1);
-            var homeAdapter = new BrowserFS.FileSystem.FolderAdapter(dirPrefixParentDir, zipfs);
+
             rootOverlay.initialize(function callback(e3){
                 if(e3){
                     console.log(e3);
@@ -276,83 +312,30 @@
                                 if(e4){
                                     console.log(e4);
                                 }
-                                postBuildFileSystem(BFS, rootOverlay, mirrorFS);
+                                postBuildFileSystem(rootOverlay, mirrorFS);
                             });
                         }else{
-                            postBuildFileSystem(BFS, rootOverlay, homeOverlay);
+                            postBuildFileSystem(rootOverlay, homeOverlay);
                         }
                     });
                 });
             });
         }
-    function postBuildFileSystem(BFS, rootFS, homeFS)
-    {
-        var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
-        var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-        mfs.mount('/', rootFS);
-        mfs.mount(dirPrefixWithoutEndSlash, homeFS);
+        function postBuildFileSystem(rootFS, homeFS)
+        {
+            var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
+            var mfs = new BrowserFS.FileSystem.MountableFileSystem();
+            mfs.mount('/', rootFS);
+            mfs.mount(dirPrefixWithoutEndSlash, homeFS);
+            var BFS = new BrowserFS.EmscriptenFS();
 
-        BrowserFS.initialize(mfs);
-        FS.mount(BFS, {root: '/root'}, '/root');
+            BrowserFS.initialize(mfs);
+            FS.mount(BFS, {root: '/root'}, '/root');
 
-        document.getElementById('uploadbtn').style.display = "";
-        document.getElementById('downloadbtn').style.display = "";
-        Module["removeRunDependency"]("datafile_boxedwine.data");
-    }
-
-    function recursiveCopy(fs, filename, isDropBox) {
-        var path = BrowserFS.BFSRequire('path');
-        copyDirectory(filename);
-        function copyDirectory(filename) {
-            var parent =  extractFirstPartOfPath(filename);
-            if(isDropBox && isHomeDirectory(parent)){
-                //skipping home directory
-                //console.log("skipping home dir");
-            }else{
-                createFolderFromZip(filename);
-                fs.readdirSync(filename).forEach(function(item) {
-                    var file = path.resolve(filename, item);
-                    if (fs.statSync(file).isDirectory()) {
-                        copyDirectory(file);
-                    } else {
-                        copyFile(file);
-                    }
-                });
-            }
+            document.getElementById('uploadbtn').style.display = "";
+            document.getElementById('downloadbtn').style.display = "";
+            Module["removeRunDependency"]("datafile_boxedwine.data");
         }
-        function copyFile(filename) {
-            var contents = fs.readFileSync(filename, null, flag_r);
-            createFileFromZip(filename, contents.data.buff.buffer);
-        }
-    }
-    function createFileFromZip(filename, contents)
-    {
-        var parent =  extractFirstPartOfPath(filename) ;
-        var filename = extractLastPartOfPath(filename);
-        var buf = new Uint8Array(contents);
-        try{
-            Module.FS_createDataFile(parent, filename, buf, true, true);
-        }catch(ef){
-            if(ef.message != "File exists"){
-                console.log("file creation error:" + ef.message + " for: " + parent + "/" + filename);
-            }
-        }
-    }
-    function createFolderFromZip(fullPath)
-    {
-        var parent = extractFirstPartOfPath(fullPath);
-        var dir = extractLastPartOfPath(fullPath);
-        if(parent.length > 0 && parent != "root"){
-            try{
-                FS.createFolder("/" + parent, dir, true, true);
-            }catch(ef){
-                if(ef.message != "File exists"){
-                    console.log("Directory creation error:" + ef.message+" for: " + parent + "/" +  dir);
-                }
-            }
-        }
-    }
-
 
         var initialSetup = function(){
             console.log("running initial setup");
@@ -381,14 +364,15 @@
             var program =  getParameter("p");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || program===""){
                 program = "";
+                console.log("not setting program to execute");
             }else{
                 if(program.startsWith("%22") && program.endsWith("%22")){
                     program = program.substring(3, program.length - 3);
                 }else if(program.startsWith('%27') && program.endsWith('%27')){
                     program = program.substring(3, program.length - 3);
                 }
+                console.log("setting program to execute to: "+program);
             }
-            console.log("setting program to execute to: "+program);
             return program;
         }
         function dragHandler(e) {
@@ -820,6 +804,6 @@ function getFile(file, isDirectory)
 	}
 }
     </script>
-    {{{ SCRIPT }}}
+        {{{ SCRIPT }}}
   </body>
 </html>
