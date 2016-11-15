@@ -813,7 +813,7 @@ void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width,
     struct winZOrder zorder;
     zorder.count = 0;	
     EnumWindows((WNDENUMPROC)getZOrderCallback, (LPARAM)&zorder);
-    TRACE("hwnd=%p bits=%p width=%d height=%d rects=%p rectCount=%d hWndCount=%d\n", hwnd, bits, width, height, rects, rectCount, zorder.count);
+    TRACE("hwnd=%p bits=%p width=%d height=%d rects=%p rectCount=%d hWndCount=%d\n", hwnd, bits, width, height, rects, rectCount, zorder.count); 
     CALL_NORETURN_9(BOXED_FLUSH_SURFACE, hwnd, bits, xOrg, yOrg, width, height, &zorder, rects, rectCount);
 }
 
@@ -1074,7 +1074,8 @@ UINT boxeddrv_RealizePalette( PHYSDEV dev, HPALETTE hpal, BOOL primary ) {
         num_entries = 256;
     }
     if (!(num_entries = GetPaletteEntries( hpal, 0, num_entries, entries ))) return 0;
-    CALL_2(BOXED_REALIZE_PALETTE, num_entries, entries);
+    TRACE("num_entries=%d entries=%p\n", num_entries, entries);
+    CALL_2(BOXED_REALIZE_PALETTE, (DWORD)num_entries, entries);
 }
 
 BOOL boxeddrv_UnrealizePalette( HPALETTE hpal )
