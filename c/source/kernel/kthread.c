@@ -451,7 +451,7 @@ void writeToContext(struct KThread* thread, U32 stack, U32 context, BOOL altStac
     writed(MMU_PARAM_THREAD context+0x4C, cpu->eip.u32);
     writed(MMU_PARAM_THREAD context+0x50, cpu->segValue[CS]);
     writed(MMU_PARAM_THREAD context+0x54, cpu->flags);
-    writed(MMU_PARAM_THREAD context+0x54, 0); // REG_UESP
+    writed(MMU_PARAM_THREAD context+0x58, 0); // REG_UESP
     writed(MMU_PARAM_THREAD context+0x5C, cpu->segValue[SS]);	
     writed(MMU_PARAM_THREAD context+0x60, 0); // fpu save state
 }
