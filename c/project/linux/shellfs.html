@@ -160,7 +160,6 @@
         var client = null;
         var storageMode = STORAGE_MEMORY;
         console.log("Use Storage mode: "+storageMode);
-        var DATA = null;
         var alreadyBuiltFileSystem = false;
 
 		var ae = document.createElement("a");
@@ -207,9 +206,6 @@
                 console.log("setting app zip file to: "+filename);
             }
             return filename;
-        }
-        function setGlobalArrayBuffer(arrayBuffer){
-            DATA = arrayBuffer;
         }
         function auth_callback(error) {
             if (error) {
@@ -260,33 +256,37 @@
             document.getElementById('startbtn').textContent = "Running...";
 
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
-            var data = new Buffer(DATA);
 
-            var zipfs = new BrowserFS.FileSystem.ZipFS(data);
+            var rootMfs = new BrowserFS.FileSystem.MountableFileSystem();
+            rootMfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest({ "boxedwine.zip" : null}, ""));
+            rootMfs.readFile('/temp/boxedwine.zip', null, flag_r, function callback(e, contents){
+                if(e){
+                    console.log(e);
+                }
+                var zipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
+                var homeAdapter = null;
+                if(appZipFile.length > 0){
+                    var listingObject = {};
+                    listingObject[appZipFile] =  null;
+                    var httpfs = new BrowserFS.FileSystem.XmlHttpRequest(listingObject, "");
 
-            var homeAdapter = null;
-            if(appZipFile.length > 0){
-                var listingObject = {};
-                listingObject[appZipFile] =  null;
-                var httpfs = new BrowserFS.FileSystem.XmlHttpRequest(listingObject, "");
-
-                var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-                mfs.mount('/temp', httpfs);
-
-                mfs.readFile('/temp/' + appZipFile, null, flag_r, function callback(e, contents){
-                    if(e){
-                        console.log(e);
-                    }
-                    var additionalZipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
-                    homeAdapter = new BrowserFS.FileSystem.FolderAdapter("/", additionalZipfs);
-                    buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter);
-                });
-            }else{
-                var dirPrefixParentDir = parentDir(dirPrefix);
-                dirPrefixParentDir = dirPrefixParentDir.substring(0, dirPrefixParentDir.length - 1);
-                homeAdapter = new BrowserFS.FileSystem.FolderAdapter(dirPrefixParentDir, zipfs);
-                buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter)
-            }
+                    var mfs = new BrowserFS.FileSystem.MountableFileSystem();
+                    mfs.mount('/temp', httpfs);
+                    mfs.readFile('/temp/' + appZipFile, null, flag_r, function callback(e, contents){
+                        if(e){
+                            console.log(e);
+                        }
+                        var additionalZipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
+                        homeAdapter = new BrowserFS.FileSystem.FolderAdapter("/", additionalZipfs);
+                        buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter);
+                    });
+                }else{
+                    var dirPrefixParentDir = parentDir(dirPrefix);
+                    dirPrefixParentDir = dirPrefixParentDir.substring(0, dirPrefixParentDir.length - 1);
+                    homeAdapter = new BrowserFS.FileSystem.FolderAdapter(dirPrefixParentDir, zipfs);
+                    buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter)
+                }
+            });
         }
         function buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter)
         {
@@ -334,11 +334,13 @@
 
             document.getElementById('uploadbtn').style.display = "";
             document.getElementById('downloadbtn').style.display = "";
-            Module["removeRunDependency"]("datafile_boxedwine.data");
+            spinnerElement.style.display = 'none';
+            Module["removeRunDependency"]("setupBoxedWine");
         }
 
         var initialSetup = function(){
             console.log("running initial setup");
+            Module["addRunDependency"]("setupBoxedWine");
             spinnerElement.style.display = 'none';
             toggleConsole();
             var startBtn = document.getElementById('startbtn');
@@ -472,6 +474,8 @@
         };
       };
         function start(){
+            spinnerElement.style.display = '';
+            spinnerElement.hidden = false;
             if(storageMode === STORAGE_DROPBOX){
                 if(client == null || !client.isAuthenticated()){
                     dropboxLogin();
@@ -804,6 +808,6 @@ function getFile(file, isDirectory)
 	}
 }
     </script>
-        {{{ SCRIPT }}}
+{{{ SCRIPT }}}
   </body>
 </html>
