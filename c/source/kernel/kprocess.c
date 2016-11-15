@@ -747,7 +747,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 
         initThread(newThread, thread->process);		
 
-        if (desc.base_addr!=0 && desc.entry_number>=0) {
+        if (desc.base_addr!=0 && desc.entry_number!=0) {
             struct user_desc* ldt = getLDT(newThread, desc.entry_number);
             *ldt = desc;
             cpu_setSegment(&newThread->cpu, GS, desc.entry_number << 3);
