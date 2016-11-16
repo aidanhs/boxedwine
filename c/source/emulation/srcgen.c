@@ -6095,29 +6095,29 @@ void gen0f6(struct GenData* data, struct Op* op) {
         out(data, "); fillFlagsNoCFOF(cpu); if ((S16)AX<-128 || (S16)AX>127) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF);} CYCLES(11);");
         data->lazyFlags = sFLAGS_NONE;
     } else if (op->func == div8_reg) {
-        out(data, "div8(cpu, ");
+        out(data, "if (!div8(cpu, ");
         out(data, r8(op->r1));
-        out(data, "); CYCLES(17);");
+        out(data, ")) return; CYCLES(17);");
     } else if (op->func == div8_mem16) {
-        out(data, "div8(cpu, readb(MMU_PARAM_CPU ");
+        out(data, "if (!div8(cpu, readb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ")); CYCLES(17);");
+        out(data, "))) return; CYCLES(17);");
     } else if (op->func == div8_mem32) {
-        out(data, "div8(cpu, readb(MMU_PARAM_CPU ");
+        out(data, "if (!div8(cpu, readb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ")); CYCLES(17);");
+        out(data, "))) return; CYCLES(17);");
     } else if (op->func == idiv8_reg) {
-        out(data, "idiv8(cpu, (S8)");
+        out(data, "if (!idiv8(cpu, (S8)");
         out(data, r8(op->r1));
-        out(data, "); CYCLES(22);");
+        out(data, ")) return; CYCLES(22);");
     } else if (op->func == idiv8_mem16) {
-        out(data, "idiv8(cpu, (S8)readb(MMU_PARAM_CPU ");
+        out(data, "if (!idiv8(cpu, (S8)readb(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ")); CYCLES(22);");
+        out(data, "))) return; CYCLES(22);");
     } else if (op->func == idiv8_mem32) {
-        out(data, "idiv8(cpu, (S8)readb(MMU_PARAM_CPU ");
+        out(data, "if (!idiv8(cpu, (S8)readb(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ")); CYCLES(22);");
+        out(data, "))) return; CYCLES(22);");
     } else {
         kpanic("gen0f6");
     }
@@ -6237,29 +6237,29 @@ void gen0f7(struct GenData* data, struct Op* op) {
         out(data, "); AX = (S16)tmps32; DX = (S16)(tmps32 >> 16); fillFlagsNoCFOF(cpu); if (tmps32>32767 || tmps32<-32768) {cpu->flags|=CF|OF;} else {cpu->flags&=~(CF|OF); } CYCLES(11);");
         data->lazyFlags = sFLAGS_NONE;
     } else if (op->func == div16_reg) {
-        out(data, "div16(cpu, ");
+        out(data, "if (!div16(cpu, ");
         out(data, r16(op->r1));
-        out(data, "); CYCLES(25);");
+        out(data, ")) return; CYCLES(25);");
     } else if (op->func == div16_mem16) {
-        out(data, "div16(cpu, readw(MMU_PARAM_CPU ");
+        out(data, "if (!div16(cpu, readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ")); CYCLES(25);");
+        out(data, "))) return; CYCLES(25);");
     } else if (op->func == div16_mem32) {
-        out(data, "div16(cpu, readw(MMU_PARAM_CPU ");
+        out(data, "if (!div16(cpu, readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ")); CYCLES(25);");
+        out(data, "))) return; CYCLES(25);");
     } else if (op->func == idiv16_reg) {
-        out(data, "idiv16(cpu, (S16)");
+        out(data, "if (!idiv16(cpu, (S16)");
         out(data, r16(op->r1));
-        out(data, "); CYCLES(30);");
+        out(data, ")) return; CYCLES(30);");
     } else if (op->func == idiv16_mem16) {
-        out(data, "idiv16(cpu, (S16)readw(MMU_PARAM_CPU ");
+        out(data, "if (!idiv16(cpu, (S16)readw(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ")); CYCLES(30);");
+        out(data, "))) return; CYCLES(30);");
     } else if (op->func == idiv16_mem32) {
-        out(data, "idiv16(cpu, (S16)readw(MMU_PARAM_CPU ");
+        out(data, "if (!idiv16(cpu, (S16)readw(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ")); CYCLES(30);");
+        out(data, "))) return; CYCLES(30);");
     } else {
         kpanic("gen0f7");
     }
@@ -6426,29 +6426,29 @@ void gen2f7(struct GenData* data, struct Op* op) {
         out(data, getEaa32(op));
         out(data, "); EAX = (S32)tmps64; EDX = (S32)(tmps64 >> 32); CYCLES(10);");
     } else if (op->func == div32_reg) {
-        out(data, "div32(cpu, ");
+        out(data, "if (!div32(cpu, ");
         out(data, r32(op->r1));
-        out(data, "); CYCLES(41);");
+        out(data, ")) return; CYCLES(41);");
     } else if (op->func == div32_mem16) {
-        out(data, "div32(cpu, readd(MMU_PARAM_CPU ");
+        out(data, "if (!div32(cpu, readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ")); CYCLES(41);");
+        out(data, "))) return; CYCLES(41);");
     } else if (op->func == div32_mem32) {
-        out(data, "div32(cpu, readd(MMU_PARAM_CPU ");
+        out(data, "if (!div32(cpu, readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ")); CYCLES(41);");
+        out(data, "))) return; CYCLES(41);");
     } else if (op->func == idiv32_reg) {
-        out(data, "idiv32(cpu, (S32)");
+        out(data, "if (!idiv32(cpu, (S32)");
         out(data, r32(op->r1));
-        out(data, "); CYCLES(46);");
+        out(data, ")) return; CYCLES(46);");
     } else if (op->func == idiv32_mem16) {
-        out(data, "idiv32(cpu, (S32)readd(MMU_PARAM_CPU ");
+        out(data, "if (!idiv32(cpu, (S32)readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-        out(data, ")); CYCLES(46);");
+        out(data, "))) return; CYCLES(46);");
     } else if (op->func == idiv32_mem32) {
-        out(data, "idiv32(cpu, (S32)readd(MMU_PARAM_CPU ");
+        out(data, "if (!idiv32(cpu, (S32)readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-        out(data, ")); CYCLES(46);");
+        out(data, "))) return; CYCLES(46);");
     } else {
         kpanic("gen2f7");
     }

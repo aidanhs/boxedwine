@@ -116,37 +116,45 @@ void OPCALL popad(struct CPU* cpu, struct Op* op) {
 
 void OPCALL bound_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
+
+    CYCLES(8);
     if (cpu->reg[op->r1].u16<readw(MMU_PARAM_CPU eaa) || cpu->reg[op->r1].u16>readw(MMU_PARAM_CPU eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
-    }
-    CYCLES(8);
+        return;
+    }    
     NEXT();
 }
 
 void OPCALL bound_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
+
+    CYCLES(8);
     if (cpu->reg[op->r1].u16<readw(MMU_PARAM_CPU eaa) || cpu->reg[op->r1].u16>readw(MMU_PARAM_CPU eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
-    }
-    CYCLES(8);
+        return;
+    }    
     NEXT();
 }
 
 void OPCALL boundd_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
+
+    CYCLES(8);
     if (cpu->reg[op->r1].u32<readd(MMU_PARAM_CPU eaa) || cpu->reg[op->r1].u32>readd(MMU_PARAM_CPU eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
-    }
-    CYCLES(8);
+        return;
+    }    
     NEXT();
 }
 
 void OPCALL boundd_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
+
+    CYCLES(8);
     if (cpu->reg[op->r1].u32<readd(MMU_PARAM_CPU eaa) || cpu->reg[op->r1].u32>readd(MMU_PARAM_CPU eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
-    }
-    CYCLES(8);
+        return;
+    }    
     NEXT();
 }
 
@@ -1368,74 +1376,90 @@ void OPCALL imul8_mem32(struct CPU* cpu, struct Op* op) {
     NEXT();
 }
 
-void div8(struct CPU* cpu, U8 src) {
+U32 div8(struct CPU* cpu, U8 src) {
     U16 quo;
     U8 rem;
 
-    if (src==0)
+    if (src==0) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
 
     quo = AX / src;
     rem = AX % src;
 
-    if (quo > 255)
+    if (quo > 255) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
     AL = (U8)quo;
     AH = rem;
+    return 1;
 }
 
 void OPCALL div8_reg(struct CPU* cpu, struct Op* op) {
-    div8(cpu, *cpu->reg8[op->r1]);
     CYCLES(17);
-    NEXT();
+    if (div8(cpu, *cpu->reg8[op->r1])) {
+        NEXT();
+    }
 }
 
 void OPCALL div8_mem16(struct CPU* cpu, struct Op* op) {
-    div8(cpu, readb(MMU_PARAM_CPU eaa16(cpu, op)));
     CYCLES(17);
-    NEXT();
+    if (div8(cpu, readb(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL div8_mem32(struct CPU* cpu, struct Op* op) {
-    div8(cpu, readb(MMU_PARAM_CPU eaa32(cpu, op)));
     CYCLES(17);
-    NEXT();
+    if (div8(cpu, readb(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        NEXT();
+    }
 }
 
-void idiv8(struct CPU* cpu, S8 src) {
+U32 idiv8(struct CPU* cpu, S8 src) {
     S16 quo;
     S8 quo8;
     S8 rem;
 
-    if (src==0)
+    if (src==0) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
 
     quo = (S16)AX / src;
     quo8 = (S8)quo;
     rem = (S16)AX % src;
 
-    if (quo != quo8)
+    if (quo != quo8) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
     AL = quo8;
     AH = rem;
+    return 1;
 }
 
 void OPCALL idiv8_reg(struct CPU* cpu, struct Op* op) {
-    idiv8(cpu, (S8)(*cpu->reg8[op->r1]));
     CYCLES(22);
-    NEXT();
+    if (idiv8(cpu, (S8)(*cpu->reg8[op->r1]))) {
+        NEXT();
+    }
 }
 
 void OPCALL idiv8_mem16(struct CPU* cpu, struct Op* op) {
-    idiv8(cpu, (S8)readb(MMU_PARAM_CPU eaa16(cpu, op)));
     CYCLES(22);
-    NEXT();
+    if (idiv8(cpu, (S8)readb(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL idiv8_mem32(struct CPU* cpu, struct Op* op) {
-    idiv8(cpu, (S8)readb(MMU_PARAM_CPU eaa32(cpu, op)));
     CYCLES(22);
-    NEXT();
+    if (idiv8(cpu, (S8)readb(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL not8_reg(struct CPU* cpu, struct Op* op) {
@@ -1571,76 +1595,90 @@ void OPCALL imul16_mem32(struct CPU* cpu, struct Op* op) {
     NEXT();
 }
 
-void div16(struct CPU* cpu, U16 src) {	
+U32 div16(struct CPU* cpu, U16 src) {	
     U32 num = ((U32)DX << 16) | AX;
     U32 quo;
     U16 rem;
     U16 quo16;
 
-    if (src==0)	
+    if (src==0) {	
         exception(cpu, EXCEPTION_DIVIDE);
-
+        return 0;
+    }
     quo=num/src;
     rem=(U16)(num % src);
     quo16=(U16)quo;
-    if (quo!=(U32)quo16)
+    if (quo!=(U32)quo16) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
     DX=rem;
     AX=quo16;
+    return 1;
 }
 
 void OPCALL div16_reg(struct CPU* cpu, struct Op* op) {
-    div16(cpu, cpu->reg[op->r1].u16);
     CYCLES(25);
-    NEXT();
+    if (div16(cpu, cpu->reg[op->r1].u16)) {
+        NEXT();
+    }
 }
 
 void OPCALL div16_mem16(struct CPU* cpu, struct Op* op) {
-    div16(cpu, readw(MMU_PARAM_CPU eaa16(cpu, op)));
     CYCLES(25);
-    NEXT();
+    if (div16(cpu, readw(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL div16_mem32(struct CPU* cpu, struct Op* op) {
-    div16(cpu, readw(MMU_PARAM_CPU eaa32(cpu, op)));
     CYCLES(25);
-    NEXT();
+    if (div16(cpu, readw(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        NEXT();
+    }
 }
 
-void idiv16(struct CPU* cpu, S16 src) {
+U32 idiv16(struct CPU* cpu, S16 src) {
     S32 num = (S32)(((U32)DX << 16) | AX);
     S32 quo;
     S16 rem;
     S16 quo16s;
 
-    if (src==0)
+    if (src==0) {
         exception(cpu, EXCEPTION_DIVIDE);
-
+        return 0;
+    }
     quo=num/src;
     rem=(S16)(num % src);
     quo16s=(S16)quo;
-    if (quo!=(S32)quo16s) 
+    if (quo!=(S32)quo16s) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
     DX=rem;
     AX=quo16s;
+    return 1;
 }
 
 void OPCALL idiv16_reg(struct CPU* cpu, struct Op* op) {
-    idiv16(cpu, (S16)cpu->reg[op->r1].u16);
     CYCLES(30);
-    NEXT();
+    if (idiv16(cpu, (S16)cpu->reg[op->r1].u16)) {
+        NEXT();
+    }
 }
 
 void OPCALL idiv16_mem16(struct CPU* cpu, struct Op* op) {
-    idiv16(cpu, (S16)readw(MMU_PARAM_CPU eaa16(cpu, op)));
     CYCLES(30);
-    NEXT();
+    if (idiv16(cpu, (S16)readw(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL idiv16_mem32(struct CPU* cpu, struct Op* op) {
-    idiv16(cpu, (S16)readw(MMU_PARAM_CPU eaa32(cpu, op)));
     CYCLES(30);
-    NEXT();
+    if (idiv16(cpu, (S16)readw(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL not16_reg(struct CPU* cpu, struct Op* op) {
@@ -1776,76 +1814,92 @@ void OPCALL imul32_mem32(struct CPU* cpu, struct Op* op) {
     NEXT();
 }
 
-void div32(struct CPU* cpu, U32 src) {	
+U32 div32(struct CPU* cpu, U32 src) {	
     U64 num = ((U64)EDX << 32) | EAX;
     U64 quo;
     U32 rem;
     U32 quo32;
 
-    if (src==0)	
+    if (src==0)	{
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
 
     quo=num/src;
     rem=(U32)(num % src);
     quo32=(U32)quo;
-    if (quo!=(U64)quo32)
+    if (quo!=(U64)quo32) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
     EDX=rem;
     EAX=quo32;
+    return 1;
 }
 
 void OPCALL div32_reg(struct CPU* cpu, struct Op* op) {
-    div32(cpu, cpu->reg[op->r1].u32);
     CYCLES(41);
-    NEXT();
+    if (div32(cpu, cpu->reg[op->r1].u32)) {
+        NEXT();
+    }
 }
 
 void OPCALL div32_mem16(struct CPU* cpu, struct Op* op) {
-    div32(cpu, readd(MMU_PARAM_CPU eaa16(cpu, op)));
     CYCLES(41);
-    NEXT();
+    if (div32(cpu, readd(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL div32_mem32(struct CPU* cpu, struct Op* op) {
-    div32(cpu, readd(MMU_PARAM_CPU eaa32(cpu, op)));
     CYCLES(41);
-    NEXT();
+    if (div32(cpu, readd(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        NEXT();
+    }
 }
 
-void idiv32(struct CPU* cpu, S32 src) {
+U32 idiv32(struct CPU* cpu, S32 src) {
     S64 num = (S64)(((U64)EDX << 32) | EAX);
     S64 quo;
     S32 rem;
     S32 quo32s;
 
-    if (src==0)
+    if (src==0) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
 
     quo=num/src;
     rem=(S32)(num % src);
     quo32s=(S32)quo;
-    if (quo!=(S64)quo32s) 
+    if (quo!=(S64)quo32s) {
         exception(cpu, EXCEPTION_DIVIDE);
+        return 0;
+    }
     EDX=rem;
     EAX=quo32s;
+    return 1;
 }
 
 void OPCALL idiv32_reg(struct CPU* cpu, struct Op* op) {
-    idiv32(cpu, (S32)cpu->reg[op->r1].u32);
     CYCLES(46);
-    NEXT();
+    if (idiv32(cpu, (S32)cpu->reg[op->r1].u32)) {
+        NEXT();
+    }
 }
 
 void OPCALL idiv32_mem16(struct CPU* cpu, struct Op* op) {
-    idiv32(cpu, (S32)readd(MMU_PARAM_CPU eaa16(cpu, op)));
     CYCLES(46);
-    NEXT();
+    if (idiv32(cpu, (S32)readd(MMU_PARAM_CPU eaa16(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL idiv32_mem32(struct CPU* cpu, struct Op* op) {
-    idiv32(cpu, (S32)readd(MMU_PARAM_CPU eaa32(cpu, op)));
     CYCLES(46);
-    NEXT();
+    if (idiv32(cpu, (S32)readd(MMU_PARAM_CPU eaa32(cpu, op)))) {
+        NEXT();
+    }
 }
 
 void OPCALL not32_reg(struct CPU* cpu, struct Op* op) {
