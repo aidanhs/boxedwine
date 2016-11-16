@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en-us">
   <head>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -395,6 +395,10 @@
         var params = ["-root", "/root", "-m", getMemoryAllocation()];
         if(program.length > 0){
             params.push("/usr/bin/wine");
+            if (program.endsWith('.bat')) {
+                params.push("cmd");
+                params.push("/c");
+            }
             params.push(program);
         }   
         
