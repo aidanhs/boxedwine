@@ -1381,7 +1381,7 @@ U32 div8(struct CPU* cpu, U8 src) {
     U8 rem;
 
     if (src==0) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 0);
         return 0;
     }
 
@@ -1389,7 +1389,7 @@ U32 div8(struct CPU* cpu, U8 src) {
     rem = AX % src;
 
     if (quo > 255) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 1);
         return 0;
     }
     AL = (U8)quo;
@@ -1424,7 +1424,7 @@ U32 idiv8(struct CPU* cpu, S8 src) {
     S8 rem;
 
     if (src==0) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 0);
         return 0;
     }
 
@@ -1433,7 +1433,7 @@ U32 idiv8(struct CPU* cpu, S8 src) {
     rem = (S16)AX % src;
 
     if (quo != quo8) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 1);
         return 0;
     }
     AL = quo8;
@@ -1602,14 +1602,14 @@ U32 div16(struct CPU* cpu, U16 src) {
     U16 quo16;
 
     if (src==0) {	
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 0);
         return 0;
     }
     quo=num/src;
     rem=(U16)(num % src);
     quo16=(U16)quo;
     if (quo!=(U32)quo16) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 1);
         return 0;
     }
     DX=rem;
@@ -1645,14 +1645,14 @@ U32 idiv16(struct CPU* cpu, S16 src) {
     S16 quo16s;
 
     if (src==0) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 0);
         return 0;
     }
     quo=num/src;
     rem=(S16)(num % src);
     quo16s=(S16)quo;
     if (quo!=(S32)quo16s) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 1);
         return 0;
     }
     DX=rem;
@@ -1821,7 +1821,7 @@ U32 div32(struct CPU* cpu, U32 src) {
     U32 quo32;
 
     if (src==0)	{
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 0);
         return 0;
     }
 
@@ -1829,7 +1829,7 @@ U32 div32(struct CPU* cpu, U32 src) {
     rem=(U32)(num % src);
     quo32=(U32)quo;
     if (quo!=(U64)quo32) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 1);
         return 0;
     }
     EDX=rem;
@@ -1865,7 +1865,7 @@ U32 idiv32(struct CPU* cpu, S32 src) {
     S32 quo32s;
 
     if (src==0) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 0);
         return 0;
     }
 
@@ -1873,7 +1873,7 @@ U32 idiv32(struct CPU* cpu, S32 src) {
     rem=(S32)(num % src);
     quo32s=(S32)quo;
     if (quo!=(S64)quo32s) {
-        exception(cpu, EXCEPTION_DIVIDE);
+        cpu_exception(cpu, EXCEPTION_DIVIDE, 1);
         return 0;
     }
     EDX=rem;

@@ -993,15 +993,20 @@ void cpu_exception(struct CPU* cpu, int code, int error) {
         process->sigActions[K_SIGSEGV].sigInfo[3] = 0; // address
         process->sigActions[K_SIGSEGV].sigInfo[4] = 13; // trap #, TRAP_x86_PROTFLT
         runSignal(cpu->thread, K_SIGSEGV, 13, error);
-    } if (code==EXCEPTION_DIVIDE && (process->sigActions[K_SIGFPE].handlerAndSigAction!=K_SIG_IGN && process->sigActions[K_SIGFPE].handlerAndSigAction!=K_SIG_DFL)) {
-        walkStack(cpu, cpu->eip.u32, EBP, 2);
-
+    } else if (code==EXCEPTION_DIVIDE && error == 0 && (process->sigActions[K_SIGFPE].handlerAndSigAction!=K_SIG_IGN && process->sigActions[K_SIGFPE].handlerAndSigAction!=K_SIG_DFL)) {
         process->sigActions[K_SIGFPE].sigInfo[0] = K_SIGFPE;		
         process->sigActions[K_SIGFPE].sigInfo[1] = error;
         process->sigActions[K_SIGFPE].sigInfo[2] = 0;
         process->sigActions[K_SIGFPE].sigInfo[3] = cpu->eip.u32; // address
         process->sigActions[K_SIGFPE].sigInfo[4] = 0; // trap #, TRAP_x86_DIVIDE
         runSignal(cpu->thread, K_SIGFPE, 0, error);
+    } else if (code==EXCEPTION_DIVIDE && error == 1 && (process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL)) {
+        process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
+        process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
+        process->sigActions[K_SIGSEGV].sigInfo[2] = 0;
+        process->sigActions[K_SIGSEGV].sigInfo[3] = cpu->eip.u32; // address
+        process->sigActions[K_SIGSEGV].sigInfo[4] = 4; // trap #, TRAP_x86_OFLOW
+        runSignal(cpu->thread, K_SIGSEGV, 4, error);
     } else {        
         walkStack(cpu, cpu->eip.u32, EBP, 2);
         kpanic("unhandled exception: code=%d error=%d", code, error);        
