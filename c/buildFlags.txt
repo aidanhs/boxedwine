@@ -18,12 +18,21 @@ settings:
 By default uploading/downloading occurs inside the directory /root/home/username/files/.
 It is possible to modify this by appending a ?dir=somedir to the url, else change HOME_DIRECTORY in shell.html
 also possible to:
+ - specify an alternate root zip file system.
+ i.e. root=win32.zip. If not set it is assumed the root fs is boxedwine.zip
  - specify a zip file to appear uncompressed underneath the HOME_DIRECTORY.
- i.e. app=chomp.zip would appear as /root/home/username/chomp/. zip -r9qdgds 10m chomp.zip ./chomp/*
+ i.e. app=chomp.zip would appear as /root/home/username/chomp/. Use: zip -r9qdgds 10m chomp.zip ./chomp/*
  - change memory allocated to boxedwine via DEFAULT_MEMORY_ALLOCATION_MB or ?m=32 on url. Default is 64
  - change the program to execute via ?p=/home/username/files/chomp/CHOMP.EXE. surround in quotes if path includes spaces.
+ - set the working directory via ?work=chomp. This simplifies p as it can then be relative to the working directory.
+
+Some simplifications are possible:
+boxedwine.html?p=notepad - run notepad in the root fs
+boxedwine.html?root=win32&app=chomp&work=chomp&p=CHOMP.EXE - no need to add .zip for root and app zip file name
+boxedwine.html?app=chomp&p=CHOMP.EXE - if p does not start with a ‘/‘ and app is set, then the working directory is set to dir + app, i.e. /home/username/files/chomp
+
 Other configuration options:
-AUTO_RUN - indicates if start button is shown. default false
+AUTO_RUN - indicates if start button is shown. default true
 ALLOW_PARAM_OVERRIDE_FROM_URL - indicates if url can be appended with params as above for dir, app, m & p.
 
 buildjsfs.sh/shellfs.sh

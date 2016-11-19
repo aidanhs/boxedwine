@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en-us">
   <head>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -140,17 +140,21 @@
         <script type="text/javascript" src="browserfs.min.js"></script>
         <script type="text/javascript" src="jszip.min.js"></script>
         <script type='text/javascript'>
-        var AUTO_RUN = false;//doesn't work yet
+        var AUTO_RUN = true;
         var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
         var DEFAULT_MEMORY_ALLOCATION_MB = 64;
-        var HOME_DIRECTORY = "/root/home/username/files/";
-        var appZipFile = getAppZipFile();
-        var program = getExecutable();
+        var ROOT = "/root";
+        var HOME_DIRECTORY = ROOT + "/home/username/files/";
+        var dirPrefix = getFileDirectory();
+        var appZipFile = getZipFile("app"); //MANUAL:"chomp.zip";
+        var rootZipFile = getZipFile("root"); //MANUAL:"base.zip";
+        var program = getExecutable(); //MANUAL:"CHOMP.EXE";
+        var workingDir = getWorkingDirectory(); //MANUAL:"";
+
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
 		var files = []; //used for constructing tree and for retrieving files when zipping
-        var dirPrefix = getFileDirectory();
         var STORAGE_DROPBOX = "DROPBOX";
         var STORAGE_LOCAL_STORAGE = "LOCAL_STORAGE";
         var STORAGE_MEMORY = "MEMORY";
@@ -193,17 +197,28 @@
             console.log("setting file directory to: "+dir);
             return dir;
         }
-        function getAppZipFile(){
+        function getWorkingDirectory(){
             
-            var filename =  getParameter("app");
+            var dir =  getParameter("work");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
+                dir = "";
+            }else{
+                dir = dirPrefix.substring(ROOT.length) + dir;
+                console.log("setting working directory to: "+dir);
+            }
+            return dir;
+        }
+        function getZipFile(param){
+            
+            var filename =  getParameter(param);
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || filename===""){
                 filename = "";
-                console.log("not setting app zip file");
+                console.log("not setting " + param + " zip file");
             }else{
                 if(!filename.endsWith(".zip")){
                     filename = filename + ".zip";
                 }
-                console.log("setting app zip file to: "+filename);
+                console.log("setting " + param + " zip file to: "+filename);
             }
             return filename;
         }
@@ -258,8 +273,15 @@
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
 
             var rootMfs = new BrowserFS.FileSystem.MountableFileSystem();
-            rootMfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest({ "boxedwine.zip" : null}, ""));
-            rootMfs.readFile('/temp/boxedwine.zip', null, flag_r, function callback(e, contents){
+            
+            var rootListingObject = {};
+            if(rootZipFile.length == 0){
+                rootZipFile="boxedwine.zip";
+            }
+            rootListingObject[rootZipFile] =  null;
+                
+            rootMfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest(rootListingObject, ""));
+            rootMfs.readFile('/temp/' + rootZipFile, null, flag_r, function callback(e, contents){
                 if(e){
                     console.log(e);
                 }
@@ -341,13 +363,15 @@
         var initialSetup = function(){
             console.log("running initial setup");
             Module["addRunDependency"]("setupBoxedWine");
-            spinnerElement.style.display = 'none';
-            toggleConsole();
-            var startBtn = document.getElementById('startbtn');
-            if(storageMode === STORAGE_DROPBOX){
-                startBtn.textContent = "Login";
-            }
-            if(!AUTO_RUN){ 
+            if(AUTO_RUN){ 
+                initFileSystem();
+            }else{
+                spinnerElement.style.display = 'none';
+                toggleConsole();
+                var startBtn = document.getElementById('startbtn');
+                if(storageMode === STORAGE_DROPBOX){
+                    startBtn.textContent = "Login";
+                }
                 startBtn.disabled = false;
                 startBtn.style.display = "";
             }
@@ -393,6 +417,14 @@
         filedrag.addEventListener("drop", selectHandler, false);
         
         var params = ["-root", "/root", "-m", getMemoryAllocation()];
+        if(workingDir.length > 0){
+            params.push("-w");
+            params.push(workingDir);
+        }else if(appZipFile.length > 0 && program.length > 0 && program.substring(0 ,1) != "/"){
+            var programDir = HOME_DIRECTORY.substring(ROOT.length) + appZipFile.substring(0, appZipFile.lastIndexOf("."));
+            params.push("-w");
+            params.push(programDir);
+        }
         if(program.length > 0){
             params.push("/usr/bin/wine");
             if (program.endsWith('.bat')) {
