@@ -103,16 +103,17 @@
     <div class="emscripten">
         <button id="startbtn" style="display: none" onclick="start()">Start</button>
         <button id="uploadbtn" style="display: none" onclick="document.getElementById('upload').click()" >Add File(s)</button>
-        <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple="" />
+        <input style="display: none" id="upload" name="upload" onclick="document.getElementById('uploadbtn').click();" onchange="startWithFiles(event.target.files);"  type="file" multiple />
         <button id="downloadbtn" style="display: none" onclick="buildTree();">Get File(s)</button>
 		<a style="display: none" id="modalLink" href="#openModal">Open</a>
+        <a style="display: none" id="modalLinkExe" href="#openModalExe">Open</a>
       <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer
       <input type="checkbox" id="showConsole" onclick="toggleConsole();" checked>Show console
       &nbsp;&nbsp;&nbsp;
       <input type="checkbox" id="resize">Resize canvas
       <input type="button" value="Fullscreen" onclick="Module.requestFullScreen(document.getElementById('pointerLock').checked, document.getElementById('resize').checked)">
     </div>
-    <div id="filedrag">
+    <div id="dropzone">
         <div class="emscripten_border">
             <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
         </div>
@@ -134,6 +135,15 @@
 			</div>
 		</div>
 	</div>
+    <div id="openModalExe" class="modalDialog">
+        <div> <a id="openModalExeClick" href="#close" title="Close" class="close">X</a>
+            <div>
+                <h3>Execute</h3>
+                <div id="message"></div>
+                <div id="items"></div>
+            </div>
+        </div>
+    </div>
     <hr>
 
     <script type="text/javascript" src="dropbox.min.js"></script>
@@ -146,11 +156,15 @@
         var ROOT = "/root";
         var HOME_DIRECTORY = ROOT + "/home/username/files/";
         var dirPrefix = getFileDirectory();
+        var isAutoRunSet = getAutoRun();
         var appZipFile = getZipFile("app"); //MANUAL:"chomp.zip";
         var rootZipFile = getZipFile("root"); //MANUAL:"base.zip";
-        var program = getExecutable(); //MANUAL:"CHOMP.EXE";
-        var workingDir = getWorkingDirectory(); //MANUAL:"";
+        var Program = getExecutable(); //MANUAL:"CHOMP.EXE";
+        var WorkingDir = getWorkingDirectory(); //MANUAL:"";
 
+        var isRunning = false;
+        var uniqueDirs = {};
+        var timer = null;
     	var index = 0;
 		var selectedItem;
 		var selectedFilename;
@@ -173,7 +187,9 @@
       	var statusElement = document.getElementById('status');
       	var progressElement = document.getElementById('progress');
       	var spinnerElement = document.getElementById('spinner');
-
+        var dropzone = document.getElementById("dropzone");  
+        
+        
     //recursive copy based on code in emularity github project
     var flag_r = { isReadable: function() { return true; },
         isWriteable: function() { return false; },
@@ -184,6 +200,21 @@
         pathExistsAction: function() { return 0; },
         pathNotExistsAction: function() { return 1; }
     };
+        function getAutoRun(){
+            
+            var auto =  getParameter("auto");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
+                auto = AUTO_RUN;
+            }else if(auto == "true") {
+                auto = true;
+            }else if(auto == "false"){
+                auto = false;
+            }else{
+                auto = AUTO_RUN;
+            }
+            console.log("setting auto run to: "+auto);
+            return auto;
+        }
         function getFileDirectory(){
             
             var dir =  getParameter("dir");
@@ -268,8 +299,8 @@
 
         function buildFileSystem(writableStorage, isDropBox)
         {
-            document.getElementById('startbtn').textContent = "Running...";
-
+            spinnerElement.style.display = '';
+            spinnerElement.hidden = false;
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
 
             var rootMfs = new BrowserFS.FileSystem.MountableFileSystem();
@@ -357,23 +388,48 @@
             document.getElementById('uploadbtn').style.display = "";
             document.getElementById('downloadbtn').style.display = "";
             spinnerElement.style.display = 'none';
+            if(storageMode === STORAGE_DROPBOX){
+                startEmulator();
+            }else{
+                toggleConsole();
+                if(isAutoRunSet){
+                    start();
+                }else{
+                    var startBtn = document.getElementById('startbtn');
+                    startBtn.disabled = false;
+                    startBtn.style.display = "";
+                }
+            }        
+        }
+        function start(){
+            if(isRunning){
+                return;
+            }
+            if(storageMode === STORAGE_DROPBOX){
+                if(client == null || !client.isAuthenticated()){
+                    dropboxLogin();
+                }else{
+                    initFileSystem();
+                }
+            }else{
+                startEmulator();
+            }
+        }
+        function startEmulator()
+        {
+            isRunning = true;
+            document.getElementById('startbtn').textContent = "Running...";
             Module["removeRunDependency"]("setupBoxedWine");
         }
-
         var initialSetup = function(){
             console.log("running initial setup");
             Module["addRunDependency"]("setupBoxedWine");
-            if(AUTO_RUN){ 
-                initFileSystem();
-            }else{
-                spinnerElement.style.display = 'none';
-                toggleConsole();
-                var startBtn = document.getElementById('startbtn');
-                if(storageMode === STORAGE_DROPBOX){
-                    startBtn.textContent = "Login";
-                }
+            if(storageMode === STORAGE_DROPBOX){
+                startBtn.textContent = "Login";
                 startBtn.disabled = false;
                 startBtn.style.display = "";
+            }else{
+                initFileSystem();
             }
         }
         function getMemoryAllocation()
@@ -387,53 +443,144 @@
         }
         function getExecutable()
         {
-            var program =  getParameter("p");
-            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || program===""){
-                program = "";
+            var prog =  getParameter("p");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || prog===""){
+                prog = "";
                 console.log("not setting program to execute");
             }else{
-                if(program.startsWith("%22") && program.endsWith("%22")){
-                    program = program.substring(3, program.length - 3);
-                }else if(program.startsWith('%27') && program.endsWith('%27')){
-                    program = program.substring(3, program.length - 3);
+                if(prog.startsWith("%22") && prog.endsWith("%22")){
+                    prog = prog.substring(3, prog.length - 3);
+                }else if(prog.startsWith('%27') && prog.endsWith('%27')){
+                    prog = prog.substring(3, prog.length - 3);
                 }
-                console.log("setting program to execute to: "+program);
+                console.log("setting program to execute to: "+prog);
             }
-            return program;
+            return prog;
         }
-        function dragHandler(e) {
-            e.stopPropagation();
-            e.preventDefault();
+        var errorCallback = function(e){
+            console.log(e);
         }
-        function selectHandler(e) {
-            dragHandler(e);
-            var files = e.target.files || e.dataTransfer.files;
-            startWithFiles(files);
+        function getEntriesAsPromise(item, exeFiles, allFiles) {
+            return new Promise((resolve, reject) => {
+                if(item.isDirectory){
+                    let reader = item.createReader();
+                    let doBatch = () => {
+                        reader.readEntries(entries => {
+                            if (entries.length > 0) {
+                                entries.forEach(function(entry){
+                                    getEntriesAsPromise(entry, exeFiles, allFiles);
+                                });
+                                doBatch();
+                            } else {
+                                resolve();
+                            }
+                        }, reject);
+                    };
+                    doBatch();
+                }else{
+                    let fullPath = item.fullPath;
+                    let uppercase = fullPath.toUpperCase();
+                    allFiles.push(fullPath);
+                    if(uppercase.endsWith(".EXE") || uppercase.endsWith(".BAT")){
+                        exeFiles.push(fullPath);
+                    }
+                    item.file(function(item){uploadFile(item, fullPath, allFiles);}, errorCallback);
+                }
+            });
         }
-        
-        var filedrag = document.getElementById("filedrag");
-        filedrag.addEventListener("dragover", dragHandler, false);
-        filedrag.addEventListener("dragleave", dragHandler, false);
-        filedrag.addEventListener("drop", selectHandler, false);
-        
-        var params = ["-root", "/root", "-m", getMemoryAllocation()];
-        if(workingDir.length > 0){
-            params.push("-w");
-            params.push(workingDir);
-        }else if(appZipFile.length > 0 && program.length > 0 && program.substring(0 ,1) != "/"){
-            var programDir = HOME_DIRECTORY.substring(ROOT.length) + appZipFile.substring(0, appZipFile.lastIndexOf("."));
-            params.push("-w");
-            params.push(programDir);
+        function loadExeModal(exeFiles, allFiles)
+        {
+            document.getElementById('modalLinkExe').click();
+            var message = document.getElementById('message');   
+            message.innerHTML = "<p>Uploading files...</p>";
+            timer = setInterval(function(){readyCheck(exeFiles, allFiles);}, 100);
         }
-        if(program.length > 0){
-            params.push("/usr/bin/wine");
-            if (program.endsWith('.bat')) {
-                params.push("cmd");
-                params.push("/c");
+        function populateModalExe(exeFiles)
+        {
+            var root = document.getElementById('items');   
+            root.innerHTML = '';
+            let listElement = document.createElement("lu");    
+            for(let i = 0; i < exeFiles.length; i++) {
+                let fullPath = exeFiles[i];
+                let element = document.createElement("li");
+                element.addEventListener("click", function(event){
+                                         execute(fullPath);
+                                         }, false);
+                                         element.innerHTML = fullPath;
+                                         listElement.appendChild(element);
             }
-            params.push(program);
-        }   
-        
+            root.appendChild(listElement);
+        }
+        function execute(filename)
+        {
+            var root = document.getElementById('items'); 
+            document.getElementById('openModalExeClick').click();
+            
+            var file = extractLastPartOfPath(filename);
+            var path = extractFirstPartOfPath(filename);
+            
+            WorkingDir = HOME_DIRECTORY.substring(ROOT.length) + path.substring(1);
+            Program = file;
+            
+            var params = getEmulatorParams();
+            Module["arguments"] = params;
+            startEmulator();
+        }
+        function readyCheck(exeFiles, allFiles)
+        {
+            if(allFiles.length==0){
+                clearInterval(timer);
+                var message = document.getElementById('message');   
+                message.innerHTML = '';
+                populateModalExe(exeFiles);
+            }
+        } 
+        dropzone.addEventListener("dragover", function(event){
+            event.preventDefault();
+        }, false);
+        dropzone.addEventListener("drop", function(event){
+            event.preventDefault();
+            //if only i know something about async
+            let items = event.dataTransfer.items;
+            let firstItem = items[0];
+            let exeFiles = [];
+            let allFiles = [];
+            let counter = 0;
+            let expecting = items.length;
+            let entries = [];
+            for(let i =0; i < items.length; i++){
+                entries.push(items[i].webkitGetAsEntry());
+            }
+            entries.forEach(entry => { 
+                getEntriesAsPromise(entry, exeFiles, allFiles).then(function(){
+                    counter = counter + 1;
+                    if(counter == expecting && exeFiles.length >0 && !isAutoRunSet && !isRunning){
+                        loadExeModal(exeFiles, allFiles);              
+                    }
+                });
+            });
+        }, false);
+        function getEmulatorParams() {
+            var params = ["-root", "/root", "-m", getMemoryAllocation()];
+            if(WorkingDir.length > 0){
+                params.push("-w");
+                params.push(WorkingDir);
+            }else if(appZipFile.length > 0 && Program.length > 0 && Program.substring(0 ,1) != "/"){
+                var programDir = HOME_DIRECTORY.substring(ROOT.length) + appZipFile.substring(0, appZipFile.lastIndexOf("."));
+                params.push("-w");
+                params.push(programDir);
+            }
+            if(Program.length > 0){
+                params.push("/usr/bin/wine");
+                if (Program.endsWith('.bat')) {
+                    params.push("cmd");
+                    params.push("/c");
+                }
+                params.push(Program);
+            } 
+            return params;
+        }
+        var params = getEmulatorParams();
       var Module = {
         logReadFiles : false, //enable if you want to prune with Reduce utility
         preRun: [initialSetup],
@@ -509,19 +656,7 @@
           if (text) Module.printErr('[post-exception status] ' + text);
         };
       };
-        function start(){
-            spinnerElement.style.display = '';
-            spinnerElement.hidden = false;
-            if(storageMode === STORAGE_DROPBOX){
-                if(client == null || !client.isAuthenticated()){
-                    dropboxLogin();
-                }else{
-                    initFileSystem();
-                }
-            }else{
-                initFileSystem();
-            }
-        }
+
         function isHomeDirectory(str){
             if(str.length >= 10){
                 if(str.substring(0,10) === '/root/home'){
@@ -531,12 +666,23 @@
             return false;
         }
         function startWithFiles(files){
-            for (var i = 0; i < files.length; i++) {
-                filereader = new FileReader();
-                filereader.file_name = files[i].name;
-                filereader.onload = function(){readFile(this.result, this.file_name)};
-                filereader.readAsArrayBuffer(files[i]);
+            for (let i = 0; i < files.length; i++) {
+                uploadFile(files[i]);
             }
+        }
+        function uploadFile(file, fullPath, allFiles)
+        {
+            let filename = null;
+            if(fullPath){
+                filename = fullPath;
+            }else{
+                filename = file.webkitRelativePath.length == 0 ? file.name : file.webkitRelativePath;
+                filename = "/" + filename;
+            }
+            var filereader = new FileReader();
+            filereader.file_name = file.name;
+            filereader.onload = function(){readFile(this.result, filename, allFiles)};
+            filereader.readAsArrayBuffer(file);
         }
         function extractLastPartOfPath(str){
                 return str.substring(str.lastIndexOf("/")+1,str.length);
@@ -550,38 +696,62 @@
         function extractFilenameWithoutExtension(str){
                 return str.substring(0, str.lastIndexOf("."));
         }
-        function readFile(data, name){
-                var fileExt = extractFilenameExtension(name);
-                if(fileExt.toLowerCase() === 'zip'){
-		    		var filenameNoExt = extractFilenameWithoutExtension(name);
-                    if(!createFolder(dirPrefix, filenameNoExt)){//If dir exists and user says no to replace existing dir, then stop here
-                        return;
-                    }
-	                var zipDirPrefix = dirPrefix + filenameNoExt;
-	                var zip = new JSZip(data);
-    	            for(var entry in zip.files)
-        	        {
-            	        var data = zip.file(entry);
-                	    if(data != null){
-                            var buf = data.asUint8Array();
-                            var parent = zipDirPrefix + "/" + extractFirstPartOfPath(entry) ;
-                            var filename = extractLastPartOfPath(entry);
-                            createFile(parent, filename, buf);
-        	            }else{ //directory
-                            var fullPath = entry.substring(0,entry.length-1);
-                            var parent = extractFirstPartOfPath(fullPath);
-                            var dir = extractLastPartOfPath(fullPath);
-                            if(parent.length == 0){
-                                parent = zipDirPrefix;
-                            }else{
-                                parent = zipDirPrefix + "/" + parent;
-                            }
-                            createFolder(parent, dir);
-                    	}
-                	}
-                }else{
-                    createFile(dirPrefix, name, new Uint8Array(data));
+        function readFile(data, name, allFiles){
+            var fileExt = extractFilenameExtension(name);
+            if(fileExt.toLowerCase() === 'zip'){
+                var filenameNoExt = extractFilenameWithoutExtension(name);
+                if(!createFolder(dirPrefix, filenameNoExt)){//If dir exists and user says no to replace existing dir, then stop here
+                    return;
                 }
+                var zipDirPrefix = dirPrefix + filenameNoExt;
+                var zip = new JSZip(data);
+                for(var entry in zip.files)
+                {
+                    var data = zip.file(entry);
+                    if(data != null){
+                        var buf = data.asUint8Array();
+                        var parent = zipDirPrefix + "/" + extractFirstPartOfPath(entry) ;
+                        var filename = extractLastPartOfPath(entry);
+                        createFile(parent, filename, buf);
+                    }else{ //directory
+                        var fullPath = entry.substring(0,entry.length-1);
+                        var parent = extractFirstPartOfPath(fullPath);
+                        var dir = extractLastPartOfPath(fullPath);
+                        if(parent.length == 0){
+                            parent = zipDirPrefix;
+                        }else{
+                            parent = zipDirPrefix + "/" + parent;
+                        }
+                        createFolder(parent, dir);
+                    }
+                }
+            }else{
+                var done = false;
+                var startIndex = 0;
+                var base = dirPrefix;
+                var filename = extractLastPartOfPath(name);
+                while(!done){
+                    var dirIndex = name.indexOf("/", startIndex);
+                    if(dirIndex == -1){
+                        done =true;
+                    }else{
+                        var dirName = name.substring(startIndex, dirIndex);
+                        var key = base + dirName;
+                        if(dirName.length > 0) {
+                            if(uniqueDirs[key] == null && dirName.length > 0){
+                                createFolder(base, dirName);
+                                uniqueDirs[key] = "";
+                            }
+                            base = base + dirName + "/";
+                        }
+                        startIndex = dirIndex + 1;
+                    }
+                }                             
+                createFile(base.substring(0,base.length-1), filename, new Uint8Array(data));
+                if(allFiles){
+                    allFiles.pop(name);
+                }
+            }
         }
 function calcBackupFilename()
 {
@@ -668,8 +838,7 @@ function toggleDirectory(item){
 		}
 	}
 }
-function getParameter(inputKey)
-{
+function getParameter(inputKey){
     var retVal="";
     var url = window.location.href;
     var index = url.indexOf("?")+1;
@@ -685,6 +854,9 @@ function getParameter(inputKey)
                 break;
             }
         }
+    }
+    if(retVal.length > 0 && retVal.endsWith("#close")){
+        retVal = retVal.substring(0,retVal.length-6);
     }
     return retVal;
 }
