@@ -467,10 +467,14 @@ void boxeddrv_GetClipboardData(struct CPU* cpu) {
 // BOOL CDECL drv_GetCursorPos(LPPOINT pos)
 void boxeddrv_GetCursorPos(struct CPU* cpu) {
     U32 pos = ARG1;
-    writed(MMU_PARAM_CPU pos, 0);
-    writed(MMU_PARAM_CPU pos+4, 0);
+    int x = 0;
+    int y = 00;
+
+    SDL_GetMouseState(&x, &y);
+
+    writed(MMU_PARAM_CPU pos, x);
+    writed(MMU_PARAM_CPU pos+4, y);
     EAX = 1;
-    notImplemented("boxeddrv_GetCursorPos not implemented");
 }
 
 // HKL CDECL drv_GetKeyboardLayout(DWORD thread_id)
