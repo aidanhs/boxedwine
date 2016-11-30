@@ -268,7 +268,7 @@ void displayChanged();
 // LONG CDECL drv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode, HWND hwnd, DWORD flags, LPVOID lpvoid)
 void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
     U32 devmode = ARG2;
-    
+
     if (devmode)
     {
         U32 dmFields;
@@ -276,7 +276,7 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
 
         /* this is the minimal dmSize that XP accepts */
         if (dmSize < 44) {
-            EAX = DISP_CHANGE_FAILED;
+            writed(MMU_PARAM_CPU ARG6, DISP_CHANGE_FAILED);	
             return;
         }
 
@@ -300,7 +300,10 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
         bits_per_pixel = default_bits_per_pixel;
     }
     displayChanged();
-    EAX = DISP_CHANGE_SUCCESSFUL;	
+    writed(MMU_PARAM_CPU ARG6, DISP_CHANGE_SUCCESSFUL);	
+    writed(MMU_PARAM_CPU ARG7, horz_res);	
+    writed(MMU_PARAM_CPU ARG8, vert_res);	
+    writed(MMU_PARAM_CPU ARG9, bits_per_pixel);	
 }
 
 // BOOL CDECL drv_ClipCursor(LPCRECT clip)
@@ -566,7 +569,7 @@ void boxeddrv_SetCursorBits(struct CPU* cpu) {
 // BOOL CDECL drv_SetCursorPos(INT x, INT y)
 void boxeddrv_SetCursorPos(struct CPU* cpu) {
     notImplemented("boxeddrv_SetCursorPos not implemented");
-    EAX = 0;
+    EAX = 1;
 }
 
 // void CDECL drv_SetFocus(HWND hwnd, BOOL* canSetFocus)
@@ -1210,7 +1213,10 @@ void boxeddrv_GetNearestColor(struct CPU* cpu) {
 void boxeddrv_RealizePalette(struct CPU* cpu) {
     int numberOfEntries = ARG1;
     U32 entries = ARG2;
-    EAX = sdlRealizePalette(MMU_PARAM_CPU 0, numberOfEntries, entries);
+    U32 start = 0;
+    if (numberOfEntries<=240)
+        start=16;
+    EAX = sdlRealizePalette(MMU_PARAM_CPU start, numberOfEntries, entries);
 }
 
 void boxeddrv_RealizeDefaultPalette(struct CPU* cpu) {

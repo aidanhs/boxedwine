@@ -50,6 +50,7 @@ static inline int get_dib_info_size(const BITMAPINFO *info, UINT coloruse)
         return sizeof(BITMAPINFOHEADER) + 3 * sizeof(DWORD);
     if (coloruse == DIB_PAL_COLORS)
         return sizeof(BITMAPINFOHEADER) + info->bmiHeader.biClrUsed * sizeof(WORD);
+    TRACE("biClrUsed=%d\n", info->bmiHeader.biClrUsed);
     return FIELD_OFFSET(BITMAPINFO, bmiColors[info->bmiHeader.biClrUsed]);
 }
 
@@ -177,6 +178,7 @@ static void *boxeddrv_surface_get_bitmap_info(struct window_surface *window_surf
 {
     struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
 
+    TRACE("sizeof(BITMAPINFO)=%d get_dib_info_size(&surface->info, DIB_RGB_COLORS)=%d\n", sizeof(BITMAPINFO), get_dib_info_size(&surface->info, DIB_RGB_COLORS));
     memcpy(info, &surface->info, get_dib_info_size(&surface->info, DIB_RGB_COLORS));
     return surface->bits;
 }
@@ -222,6 +224,7 @@ static void boxeddrv_surface_set_region(struct window_surface *window_surface, H
  *              boxeddrv_surface_flush
  */
 void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rects, int rectCount);
+UINT boxeddrv_RealizePaletteEntries(DWORD num_entries, PALETTEENTRY* entries);
 static void boxeddrv_surface_flush(struct window_surface *window_surface)
 {
     struct boxeddrv_window_surface *surface = get_boxed_surface(window_surface);
@@ -386,7 +389,7 @@ struct window_surface *create_surface(HWND window, const RECT *rect, struct wind
     surface->use_alpha = use_alpha;
     surface->bits = HeapAlloc(GetProcessHeap(), 0, surface->info.bmiHeader.biSizeImage);
     if (!surface->bits) goto failed;
-    memset(surface->bits, 0x80, surface->info.bmiHeader.biSizeImage);
+    memset(surface->bits, 0x00, surface->info.bmiHeader.biSizeImage);
 
     TRACE("created %p for %p %s bits %p-%p\n", surface, window, wine_dbgstr_rect(rect),
           surface->bits, surface->bits + surface->info.bmiHeader.biSizeImage);

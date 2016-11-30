@@ -504,7 +504,13 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
             }
         }
         if (!sdlTexture) {
-            sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height);
+            U32 format = SDL_PIXELFORMAT_ARGB8888;
+            if (bits_per_pixel == 16) {
+                format = SDL_PIXELFORMAT_RGB565;
+            } else if (bits_per_pixel == 15) {
+                format = SDL_PIXELFORMAT_RGB555;
+            }
+            sdlTexture = SDL_CreateTexture(sdlRenderer, format, SDL_TEXTUREACCESS_STREAMING, width, height);
             wnd->sdlTexture = sdlTexture;
             wnd->sdlTextureHeight = height;
             wnd->sdlTextureWidth = width;
@@ -530,7 +536,20 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
             }
         }
         if (!s) {
-            s = SDL_CreateRGBSurface(0, width, height, bits_per_pixel, 0x00FF0000, 0x0000FF00, 0x000000FF, 0);
+            U32 rMask = 0x00FF0000;
+            U32 gMask = 0x0000FF00;
+            U32 bMask = 0x000000FF;
+
+            if (bits_per_pixel==15) {
+                rMask = 0x7C00;
+                gMask = 0x03E0;
+                bMask = 0x001F;
+            } else if (bits_per_pixel == 16) {
+                rMask = 0xF800;
+                gMask = 0x07E0;
+                bMask = 0x001F;
+            }
+            s = SDL_CreateRGBSurface(0, width, height, bits_per_pixel, rMask, gMask, bMask, 0);
             wnd->sdlSurface = s;
         }
         if (SDL_MUSTLOCK(s)) {
@@ -687,7 +706,7 @@ U32 sdlGetNearestColor(U32 color) {
 U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries) {
     U32 i;
     int result = 0;
-    return result;
+
     if (numberOfEntries>256)
         numberOfEntries=256;
     for (i=0;i<numberOfEntries;i++) {
