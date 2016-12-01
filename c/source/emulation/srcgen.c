@@ -4798,13 +4798,9 @@ void gen0cd(struct GenData* data, struct Op* op) {
         out(data, ");");
         // syscall will set nextBlock
     } else if (op->func == int99) {
-        out(data, "int99Callback[peek32(cpu, 0)](cpu); cpu->eip.u32+=");
-        out(data, tmp);
-        out(data, "; cpu->nextBlock = getBlock(cpu);");
+        out(data, "int99Callback[peek32(cpu, 0)](cpu);");
     } else if (op->func == int98) {
-        out(data, "wine_callback[peek32(cpu, 0)](cpu); cpu->eip.u32+=");
-        out(data, tmp);
-        out(data, "; cpu->nextBlock = getBlock(cpu);");
+        out(data, "wine_callback[peek32(cpu, 0)](cpu);");
     } else {
         kpanic("gen0cd");
     }
@@ -8856,11 +8852,11 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "struct FPU {struct FPU_Reg regs[9];U32 tags[9];U32 cw;U32 cw_mask_all;U32 sw;U32 top;U32 round;};\n");
         out(data, "struct user_desc {U32  entry_number;U32 base_addr;U32  limit;union {struct {U32  seg_32bit:1;U32  contents:2;U32  read_exec_only:1;U32  limit_in_pages:1;U32  seg_not_present:1;U32  useable:1;};U32 flags;};};\n");
 
-        out(data, "struct CPU { struct Reg reg[9]; U8* reg8[8]; U32 segAddress[6]; U32 segValue[7]; U32 flags; struct Reg eip;");
+        out(data, "struct CPU {struct Reg reg[9]; U8* reg8[8]; U32 segAddress[7]; U32 segValue[7]; U32 flags; struct Reg eip;");
 #ifdef USE_MMU
         out(data, "struct Memory* memory;");
 #endif
-        out(data, "struct KThread* thread; struct Reg src; struct Reg dst; struct Reg dst2; struct Reg result; struct LazyFlags* lazyFlags; int df; U32 oldcf; U32 big; struct FPU fpu; struct Block* nextBlock; struct Block* currentBlock; U64 timeStampCounter; U32 blockCounter; U32 blockInstructionCount; BOOL log; U32 cpl; U32 stackMask; U32 stackNotMask; struct user_desc* ldt; };\n");
+        out(data, "struct KThread* thread; struct Reg src; struct Reg dst; struct Reg dst2; struct Reg result; struct LazyFlags* lazyFlags; int df; U32 oldcf; U32 big; struct FPU fpu; struct Block* nextBlock; struct Block* currentBlock; U64 timeStampCounter; U32 blockCounter; U32 blockInstructionCount; BOOL log; U32 cpl; U32 stackMask; U32 stackNotMask; U32 cr0;};\n");
 
         out(data, "struct LazyFlags {U32 (*getCF)(struct CPU* cpu);U32 (*getOF)(struct CPU* cpu);U32 (*getAF)(struct CPU* cpu);U32 (*getZF)(struct CPU* cpu);U32 (*getSF)(struct CPU* cpu);U32 (*getPF)(struct CPU* cpu);};\n");
         out(data, "U8 readb(MMU_ARG U32 address);\n");
@@ -9075,12 +9071,12 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "void FBLD_PACKED_BCD(struct CPU* cpu, U32 address);\n");
         out(data, "void FPU_FBST(struct CPU* cpu, int addr);\n");
         out(data, "void FPU_FST_I64(struct CPU* cpu, int addr);\n");
-        out(data, "void div8(struct CPU* cpu, U8 src);\n");
-        out(data, "void idiv8(struct CPU* cpu, S8 src);\n");
-        out(data, "void div16(struct CPU* cpu, U16 src);\n");
-        out(data, "void idiv16(struct CPU* cpu, S16 src);\n");
-        out(data, "void div32(struct CPU* cpu, U32 src);\n");
-        out(data, "void idiv32(struct CPU* cpu, S32 src);\n");
+        out(data, "U32 div8(struct CPU* cpu, U8 src);\n");
+        out(data, "U32 idiv8(struct CPU* cpu, S8 src);\n");
+        out(data, "U32 div16(struct CPU* cpu, U16 src);\n");
+        out(data, "U32 idiv16(struct CPU* cpu, S16 src);\n");
+        out(data, "U32 div32(struct CPU* cpu, U32 src);\n");
+        out(data, "U32 idiv32(struct CPU* cpu, S32 src);\n");
         out(data, "void syscall(struct CPU* cpu, U32 eipCount);\n");
         out(data, "void cpuid(struct CPU* cpu);\n");
         out(data, "typedef void (*Int99Callback)(struct CPU* cpu);\n");

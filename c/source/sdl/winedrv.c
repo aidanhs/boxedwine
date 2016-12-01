@@ -470,7 +470,7 @@ void boxeddrv_GetCursorPos(struct CPU* cpu) {
     int x = 0;
     int y = 00;
 
-    SDL_GetMouseState(&x, &y);
+    sdlGetMouseState(&x, &y);
 
     writed(MMU_PARAM_CPU pos, x);
     writed(MMU_PARAM_CPU pos+4, y);

@@ -12,6 +12,7 @@
 #include "setcc.h"
 #include "block.h"
 #include "jit.h"
+#include "ksystem.h"
 
 #define FETCH_S8(data) (S8)FETCH8(data)
 #define FETCH_S16(data) (S16)FETCH16(data)
@@ -2033,6 +2034,7 @@ void decode2ff(struct DecodeData* data) {
             LOG_E32("PUSH", rm, data);
             break;
         default:
+            walkStack(data->cpu, data->cpu->eip.u32, data->cpu->reg[5].u32, 2);
             kpanic("CPU:66:GRP5:Illegal call %d", (rm>>3)&7);
             break;
     }
@@ -2509,7 +2511,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
 
 #ifdef GENERATE_SOURCE
         if (gensrc) {
-            //jit(cpu, block, eip);
+            jit(cpu, block, eip);
             generateSource(cpu, eip, block);
             return; // uncompiled block are necessary for source generation, so don't use AOT			
         }
@@ -2520,7 +2522,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
 #endif
 
         if (needJIT) {
-            //jit(cpu, block, eip);
+            jit(cpu, block, eip);
         }
     }
 }

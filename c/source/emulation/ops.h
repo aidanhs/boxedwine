@@ -3125,9 +3125,11 @@ void OPCALL xadd32r32e32_32(struct CPU* cpu, struct Op* op) {
 
 extern Int99Callback* wine_callback;
 extern U32 wine_callbackSize;
+extern U64 sysCallTime;
 
 void OPCALL int98(struct CPU* cpu, struct Op* op) {
     U32 index = peek32(cpu, 0);
+    U64 startTime = getSystemTimeAsMicroSeconds();
 
     if (index<wine_callbackSize && wine_callback[index]) {
         wine_callback[index](cpu);
@@ -3135,22 +3137,21 @@ void OPCALL int98(struct CPU* cpu, struct Op* op) {
     else {
         kpanic("Uknown int 98 call: %d", index);
     }
-    DONE();
-    cpu->eip.u32 += op->eipCount;    
-    cpu->nextBlock = getBlock(cpu);
+    sysCallTime+=(getSystemTimeAsMicroSeconds()-startTime);  
+    NEXT();
 }
 
 void OPCALL int99(struct CPU* cpu, struct Op* op) {
     U32 index = peek32(cpu, 0);
+    U64 startTime = getSystemTimeAsMicroSeconds();
 
     if (index<int99CallbackSize && int99Callback[index]) {
         int99Callback[index](cpu);
     } else {
         kpanic("Uknown int 99 call: %d", index);
     }
-    DONE();
-    cpu->eip.u32+=op->eipCount;    
-    cpu->nextBlock = getBlock(cpu);
+    sysCallTime+=(getSystemTimeAsMicroSeconds()-startTime);  
+    NEXT();
 }
 
 void OPCALL retf32(struct CPU* cpu, struct Op* op) {

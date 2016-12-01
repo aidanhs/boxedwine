@@ -1622,3 +1622,7 @@ done:
 
     return ret;
 }
+
+unsigned int sdlGetMouseState(int* x, int* y) {
+    return SDL_GetMouseState(x, y);
+}
