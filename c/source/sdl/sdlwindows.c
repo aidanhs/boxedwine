@@ -823,7 +823,7 @@ int sdlMouseMouse(int x, int y) {
                 writeLittleEndian_4(MMU_PARAM fd, y); // dy
                 writeLittleEndian_4(MMU_PARAM fd, 0); // mouseData
                 writeLittleEndian_4(MMU_PARAM fd, MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
+                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
                 writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
             }
         }
@@ -867,7 +867,7 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
                 writeLittleEndian_4(MMU_PARAM fd, y); // dy
                 writeLittleEndian_4(MMU_PARAM fd, 0); // mouseData
                 writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
+                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
                 writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
             }
         }
@@ -1474,7 +1474,7 @@ int sdlKey(U32 key, U32 down) {
                 writeLittleEndian_2(MMU_PARAM fd, vKey); // wVk
                 writeLittleEndian_2(MMU_PARAM fd, scan & 0xFF); // wScan
                 writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, (U32)(getMonotonicClock()/1000)); // time
+                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
                 writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
                 writeLittleEndian_4(MMU_PARAM fd, 0); // pad
                 writeLittleEndian_4(MMU_PARAM fd, 0); // pad

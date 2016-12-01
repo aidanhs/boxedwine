@@ -3,6 +3,28 @@
 #include "node.h"
 #include "filesystem.h"
 
+LONGLONG PCFreq;
+LONGLONG CounterStart;
+
+void startMicroCounter()
+{
+    LARGE_INTEGER li;
+
+    QueryPerformanceFrequency(&li);
+
+    PCFreq = li.QuadPart;
+
+    QueryPerformanceCounter(&li);
+    CounterStart = li.QuadPart;
+}
+
+ULONGLONG getMicroCounter()
+{
+    LARGE_INTEGER li;
+    QueryPerformanceCounter(&li);
+    return (li.QuadPart-CounterStart)*1000000/PCFreq;
+}
+
 ULONGLONG getSystemTimeAsMicroSeconds() {
     FILETIME tm;
     ULONGLONG t;

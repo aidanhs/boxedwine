@@ -160,8 +160,6 @@ U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim) {
     return 0;
 }
 
-U64 startTime;
-
 U32 syscall_getrusuage(struct KThread* thread, U32 who, U32 usuage) {
     if (who==0) { // RUSAGE_SELF
         // user time
@@ -175,33 +173,28 @@ U32 syscall_getrusuage(struct KThread* thread, U32 who, U32 usuage) {
 }
 
 U32 syscall_times(struct KThread* thread, U32 buf) {
-    U64 m = getSystemTimeAsMicroSeconds();
     if (buf) {
         writed(MMU_PARAM_THREAD buf, (U32)thread->userTime * 10); // user time
         writed(MMU_PARAM_THREAD buf + 4, (U32)thread->kernelTime * 10); // system time
         writed(MMU_PARAM_THREAD buf + 8, 0); // user time of children
         writed(MMU_PARAM_THREAD buf + 12, 0); // system time of children
     }
-    return (U32)(m-startTime)*10;
+    return (U32)getMicroCounter()*10;
 }
 
-U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {
-    U64 m = getSystemTimeAsMicroSeconds();
+U32 syscall_clock_gettime(struct KThread* thread, U32 clock_id, U32 tp) {    
     if (clock_id==0) { // CLOCK_REALTIME
+        U64 m = getSystemTimeAsMicroSeconds();
         writed(MMU_PARAM_THREAD tp, (U32)(m / 1000000l));
         writed(MMU_PARAM_THREAD tp + 4, (U32)(m % 1000000l) * 1000);
     } else if (clock_id==1 || clock_id==2 || clock_id==4 || clock_id==6) { // CLOCK_MONOTONIC_RAW, CLOCK_PROCESS_CPUTIME_ID , CLOCK_MONOTONIC_COARSE
-        U64 diff = m - startTime;
+        U64 diff = getMicroCounter();
         writed(MMU_PARAM_THREAD tp, (U32)(diff / 1000000l));
         writed(MMU_PARAM_THREAD tp + 4, (U32)(diff % 1000000l) * 1000);
     } else {
         kpanic("Unknown clock id for clock_gettime: %d",clock_id);
     }
     return 0;
-}
-
-U64 getMonotonicClock() {
-    return getSystemTimeAsMicroSeconds()-startTime;
 }
 
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz) {

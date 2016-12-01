@@ -60,6 +60,8 @@
 struct Node;
 int listNodes(struct Node* dir, struct Node** nodes, int maxCount);
 U64 getSystemTimeAsMicroSeconds();
+U64 getMicroCounter();
+void startMicroCounter();
 
 #include <string.h>
 #include "log.h"

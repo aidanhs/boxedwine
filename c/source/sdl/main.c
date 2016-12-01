@@ -314,7 +314,7 @@ int main(int argc, char **argv) {
 
     klog("Starting ...");
 
-    startTime = getSystemTimeAsMicroSeconds();
+    startMicroCounter();
 #ifdef LOG_OPS
     logFile = fopen("log.txt", "w");
 #endif

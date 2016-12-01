@@ -209,7 +209,7 @@ BOOL runSlice() {
     runTimers();
     flipFB();
     if (nextThread) {		
-        U64 startTime = getSystemTimeAsMicroSeconds();
+        U64 startTime = getMicroCounter();
         U64 endTime;
         U64 diff;
 
@@ -218,7 +218,7 @@ BOOL runSlice() {
         sysCallTime = 0;
 
         runThreadSlice(currentThread);
-        endTime = getSystemTimeAsMicroSeconds();
+        endTime = getMicroCounter();
         diff = endTime-startTime;
         
         elapsedTimeMHz+=diff-sysCallTime;

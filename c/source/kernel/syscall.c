@@ -199,7 +199,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
     struct KThread* thread = cpu->thread;
     struct KProcess* process = thread->process;
     S32 result=0;
-    U64 startTime = getSystemTimeAsMicroSeconds();
+    U64 startTime = getMicroCounter();
 
 #ifdef LOG_SYSCALLS
     char buffer[1024];
@@ -844,7 +844,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
             cpu->nextBlock = getBlock(cpu);
     }	
     thread->inSysCall = 0;
-    sysCallTime+=(getSystemTimeAsMicroSeconds()-startTime);        
+    sysCallTime+=(getMicroCounter()-startTime);        
 }
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op) {

@@ -12,6 +12,27 @@ unsigned long long int getSystemTimeAsMicroSeconds() {
 	return (tv.tv_sec) * 1000000l + (tv.tv_usec);
 }
 
+#ifdef __EMSCRIPTEN__
+void startMicroCounter()
+{    
+}
+
+unsigned long long int getMicroCounter()
+{
+    return (unsigned long long int)(emscripten_get_now()*1000000l);
+}
+#else
+long long int CounterStart;
+void startMicroCounter()
+{
+    CounterStart = getSystemTimeAsMicroSeconds();
+}
+
+unsigned long long int getMicroCounter()
+{
+    return getSystemTimeAsMicroSeconds()-CounterStart;
+}
+#endif
 
 int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
 	DIR *dp = NULL;

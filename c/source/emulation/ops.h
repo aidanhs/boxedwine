@@ -3129,7 +3129,7 @@ extern U64 sysCallTime;
 
 void OPCALL int98(struct CPU* cpu, struct Op* op) {
     U32 index = peek32(cpu, 0);
-    U64 startTime = getSystemTimeAsMicroSeconds();
+    U64 startTime = getMicroCounter();
 
     if (index<wine_callbackSize && wine_callback[index]) {
         wine_callback[index](cpu);
@@ -3137,20 +3137,20 @@ void OPCALL int98(struct CPU* cpu, struct Op* op) {
     else {
         kpanic("Uknown int 98 call: %d", index);
     }
-    sysCallTime+=(getSystemTimeAsMicroSeconds()-startTime);  
+    sysCallTime+=(getMicroCounter()-startTime);  
     NEXT();
 }
 
 void OPCALL int99(struct CPU* cpu, struct Op* op) {
     U32 index = peek32(cpu, 0);
-    U64 startTime = getSystemTimeAsMicroSeconds();
+    U64 startTime = getMicroCounter();
 
     if (index<int99CallbackSize && int99Callback[index]) {
         int99Callback[index](cpu);
     } else {
         kpanic("Uknown int 99 call: %d", index);
     }
-    sysCallTime+=(getSystemTimeAsMicroSeconds()-startTime);  
+    sysCallTime+=(getMicroCounter()-startTime);  
     NEXT();
 }
 
