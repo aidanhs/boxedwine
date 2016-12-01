@@ -9,17 +9,20 @@
 unsigned long long int getSystemTimeAsMicroSeconds() {
 	struct timeval  tv;
 	gettimeofday(&tv, NULL);
-	return (tv.tv_sec) * 1000000l + (tv.tv_usec);
+	return ((unsigned long long int)tv.tv_sec) * 1000000l + (tv.tv_usec);
 }
 
-#ifdef __EMSCRIPTEN__
+//#ifdef __EMSCRIPTEN__
+#ifdef __THIS_HANGS__
+// error TypeError: asm.js type error: missing definition of function _testSetjmp
+#include <emscripten.h>
 void startMicroCounter()
 {    
 }
 
 unsigned long long int getMicroCounter()
 {
-    return (unsigned long long int)(emscripten_get_now()*1000000l);
+    return (unsigned long long int)(emscripten_get_now()*1000000.0);
 }
 #else
 long long int CounterStart;
