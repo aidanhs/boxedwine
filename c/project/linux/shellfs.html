@@ -232,7 +232,7 @@
             
             var dir =  getParameter("work");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
-                dir = "";
+                dir = "/home/username/files";
             }else{
                 dir = dirPrefix.substring(ROOT.length) + dir;
                 console.log("setting working directory to: "+dir);
