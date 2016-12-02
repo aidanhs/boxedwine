@@ -500,27 +500,30 @@ void processEvents() {
     HWND hwnd;
     INPUT input;
     POINT p;
+    int r;
 
-    if (read(eventQueueFD, &input, sizeof(INPUT))==-1) {
-        return;
-    }
-    TRACE("read event: type=");
-    if (input.type == 0) {
-        POINT p;
-        p.x = input.mi.dx;
-        p.y = input.mi.dy;
-        hwnd = WindowFromPoint(p);
-        if (!hwnd) {
+    while (1) {
+        if ((r=read(eventQueueFD, &input, sizeof(INPUT)))==-1) {
             return;
         }
-        hwnd = GetAncestor(hwnd, GA_ROOT);
-        TRACE("mouse hwnd=%p dx=%d dy=%d dwFlags=%X time=%X\n", hwnd, input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
-    } else {
-        hwnd = GetForegroundWindow();
-    }
+        TRACE("read event: type=");
+        if (input.type == 0) {
+            POINT p;
+            p.x = input.mi.dx;
+            p.y = input.mi.dy;
+            hwnd = WindowFromPoint(p);
+            if (!hwnd) {
+                continue;
+            }
+            hwnd = GetAncestor(hwnd, GA_ROOT);
+            TRACE("mouse hwnd=%p dx=%d dy=%d dwFlags=%X time=%X\n", hwnd, input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
+        } else {
+            hwnd = GetForegroundWindow();
+        }
     
-    TRACE("hwnd=%p GetFocus()=%p GetForegroundWindow()=%p\n", hwnd, GetFocus(), GetForegroundWindow());
-    __wine_send_input(hwnd, &input);
+        TRACE("hwnd=%p GetFocus()=%p GetForegroundWindow()=%p\n", hwnd, GetFocus(), GetForegroundWindow());
+        __wine_send_input(hwnd, &input);
+    }
 }
 
 DWORD CDECL boxeddrv_MsgWaitForMultipleObjectsEx(DWORD count, const HANDLE *handles, DWORD timeout, DWORD mask, DWORD flags) {
