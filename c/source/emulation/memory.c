@@ -50,12 +50,18 @@ void log_pf(struct KProcess* process, U32 address) {
 #ifdef USE_MMU
 void seg_mapper(struct Memory* memory, U32 address) {
     if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
+        U32 eip = currentThread->cpu.eip.u32;
+
         memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
         memory->process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
         memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 1; // SEGV_MAPERR
         memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
         runSignal(currentThread, K_SIGSEGV, EXCEPTION_PAGE_FAULT, 0);
+#ifdef SUPPORTS_SETJMP
         longjmp(runBlockJump, 1);		
+#else
+        runUntil(currentThread, eip);
+#endif
     } else {
         log_pf(memory->process, address);
     }
@@ -63,13 +69,19 @@ void seg_mapper(struct Memory* memory, U32 address) {
 
 void seg_access(struct Memory* memory, U32 address) {
     if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
+        U32 eip = currentThread->cpu.eip.u32;
+
         memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
         memory->process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
         memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 2; // SEGV_ACCERR
         memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
         runSignal(currentThread, K_SIGSEGV, EXCEPTION_PERMISSION, 0);
         printf("seg fault %X\n", address);
+#ifdef SUPPORTS_SETJMP
         longjmp(runBlockJump, 1);		
+#else 
+        runUntil(currentThread, eip);
+#endif
     } else {
         log_pf(memory->process, address);
     }

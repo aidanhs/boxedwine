@@ -13,6 +13,7 @@ void waitThread(struct KThread* thread);
 void wakeThread(struct KThread* thread);
 void wakeThreads(U32 wakeType);
 BOOL runSlice();
+void runUntil(struct KThread* thread, U32 eip);
 void runThreadSlice(struct KThread* thread);
 void addTimer(struct KTimer* timer);
 void removeTimer(struct KTimer* timer);

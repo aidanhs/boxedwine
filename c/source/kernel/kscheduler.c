@@ -159,7 +159,9 @@ void runThreadSlice(struct KThread* thread) {
     if (!cpu->nextBlock || cpu->nextBlock == &emptyBlock) {
         cpu->nextBlock = getBlock(cpu);
     }
+#ifdef SUPPORTS_SETJMP
     if (setjmp(runBlockJump)==0) {
+#endif
         do {
             runBlock(cpu, cpu->nextBlock);
             runBlock(cpu, cpu->nextBlock);
@@ -170,10 +172,17 @@ void runThreadSlice(struct KThread* thread) {
             runBlock(cpu, cpu->nextBlock);
             runBlock(cpu, cpu->nextBlock);
         } while (cpu->blockCounter < contextTime);	
+#ifdef SUPPORTS_SETJMP
     } else {
         cpu->nextBlock = 0;
     }
+#endif
     cpu->timeStampCounter+=cpu->blockCounter & 0x7FFFFFFF;
+}
+
+void runUntil(struct KThread* thread, U32 eip) {
+    // :TODO: what about switching threads in case we send a message to wineserver?
+    kpanic("memory access exceptions not support without setjmp yet");
 }
 
 void runTimers() {
@@ -225,10 +234,10 @@ BOOL runSlice() {
         elapsedTimeMIPS+=diff-sysCallTime;
 
         if (!(currentThread->cpu.blockCounter & 0x80000000)) {			
-            if (diff>150000) {
-                contextTime-=10000;
+            if (diff>20000) {
+                contextTime-=1000;
             } else if (diff<10000) {
-                contextTime+=10000;
+                contextTime+=1000;
             }
         }
 
