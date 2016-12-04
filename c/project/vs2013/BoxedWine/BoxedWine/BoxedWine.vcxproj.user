@@ -35,6 +35,10 @@
     <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/aoe /usr/bin/wine /home/username/aoe/EMPIRES.EXE</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Caesar 3|Win32'">
+    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/c3 /usr/bin/wine /home/username/c3/c3</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Diablo|Win32'">
     <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/diablo /usr/bin/wine /home/username/diablo/diablo_s.exe</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
@@ -88,7 +92,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/c3 /usr/bin/wine /home/username/c3/c3</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-gensrc -root c:\boxedwine_unmodified -m 64 -w /home/username/c3 /usr/bin/wine /home/username/c3/c3</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">

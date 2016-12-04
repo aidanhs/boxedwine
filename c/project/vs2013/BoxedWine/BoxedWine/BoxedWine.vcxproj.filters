@@ -133,9 +133,6 @@
     <ClCompile Include="..\..\..\..\source\emulation\ram.c">
       <Filter>source\emulation</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\opengl\mesa\mesagl.c">
-      <Filter>opengl\mesa</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\opengl\glcommon.c">
       <Filter>opengl</Filter>
     </ClCompile>
@@ -441,6 +438,9 @@
     <ClInclude Include="..\..\..\..\source\sdl\sdlopengl.h">
       <Filter>source\sdl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\ktimer.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -484,9 +484,6 @@
     </Filter>
     <Filter Include="opengl">
       <UniqueIdentifier>{e54df08a-a4a1-4839-a6e6-d58ee8102ea6}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="opengl\mesa">
-      <UniqueIdentifier>{1a869f5b-ed23-450a-b30f-cb7e0fe22d40}</UniqueIdentifier>
     </Filter>
     <Filter Include="opengl\sdl">
       <UniqueIdentifier>{8e8c72e1-51c4-424b-bfcf-ad07de7342b6}</UniqueIdentifier>

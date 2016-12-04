@@ -10,6 +10,7 @@ Global
 		Age of Empires|Win32 = Age of Empires|Win32
 		Astroids|Win32 = Astroids|Win32
 		Break|Win32 = Break|Win32
+		Caesar 3|Win32 = Caesar 3|Win32
 		Castle1|Win32 = Castle1|Win32
 		Chomp|Win32 = Chomp|Win32
 		Civ2|Win32 = Civ2|Win32
@@ -40,6 +41,8 @@ Global
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Astroids|Win32.Build.0 = Astroids|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Break|Win32.ActiveCfg = Break|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Break|Win32.Build.0 = Break|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Caesar 3|Win32.ActiveCfg = Caesar 3|Win32
+		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Caesar 3|Win32.Build.0 = Caesar 3|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Castle1|Win32.ActiveCfg = Castle1|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Castle1|Win32.Build.0 = Castle1|Win32
 		{AB172CEA-C4FE-4F1B-821E-2886B90344CB}.Chomp|Win32.ActiveCfg = Chomp|Win32
