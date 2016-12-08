@@ -313,7 +313,7 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
                 memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
                 memory->write[i] = 0;
             }
-        } else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage) {
+        } else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage || page==&codePage) {
         } else {
             kpanic("syscall_mprotect unknown page type");
         }

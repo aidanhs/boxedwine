@@ -181,6 +181,47 @@ void freeOp(struct Op* op) {
     }
 }
 
+struct BlockNode {
+    struct Block* block;
+    struct BlockNode* next;
+};
+
+struct BlockNode* freeBlockNodes;
+
+struct BlockNode* allocBlockNode() {
+    struct BlockNode* result;
+
+    if (freeBlockNodes) {
+        result = freeBlockNodes;
+        freeBlockNodes = result->next;
+        memset(result, 0, sizeof(struct BlockNode));
+    } else {
+        U32 count = 1024*1023/sizeof(struct BlockNode);
+        U32 i;
+
+        result = (struct BlockNode*)kalloc(1024*1023, KALLOC_BLOCK);
+        for (i=0;i<count;i++) {
+            result->next = freeBlockNodes;
+            freeBlockNodes = result;
+            result++;
+        }
+        return allocBlockNode();
+    }	
+    return result;
+}
+
+void freeBlockNode(struct BlockNode* node) {
+    node->next = freeBlockNodes;
+    freeBlockNodes = node;
+}
+
+void addBlockNode(struct BlockNode** node, struct Block* block) {
+    struct BlockNode* n = allocBlockNode();
+    n->block = block;
+    n->next = *node;
+    *node = n;
+}
+
 struct Block* freeBlocks;
 
 struct Block* allocBlock() {
@@ -206,6 +247,17 @@ struct Block* allocBlock() {
 }
 
 void freeBlock(struct Block* block) {
+    while (block->referencedFrom) {
+        struct BlockNode* next = block->referencedFrom->next;
+
+        // if any blocks reference this block, set that reference to NULL
+        if (block->referencedFrom->block->block1 == block)
+            block->referencedFrom->block->block1 = NULL;
+        if (block->referencedFrom->block->block2 == block)
+            block->referencedFrom->block->block2 = NULL;
+        freeBlockNode(block->referencedFrom);
+        block->referencedFrom = next;
+    }
     block->block1 = freeBlocks;
     freeBlocks = block;
 }
@@ -2548,6 +2600,8 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
 void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {	
     struct DecodeData data;
     struct DecodeData* pData = &data;
+    struct Op* op;
+
     block->ops = allocOp();
     block->ops->func = firstOp;
     data.op = allocOp();
@@ -2574,4 +2628,10 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
 #endif
     data.op->inst = FETCH8(pData)+data.opCode;
     decoder[data.op->inst](pData);
+    block->eipCount = 0;
+    op = block->ops;
+    while (op) {
+        block->eipCount+=op->eipCount;
+        op = op->next;
+    }
 }

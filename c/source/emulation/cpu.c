@@ -1089,6 +1089,8 @@ struct Block* getBlock(struct CPU* cpu) {
         block = decodeBlock(cpu, cpu->eip.u32);
         addCode(block, cpu->memory->ramPage[page], ip & 0xFFF);
     }
+    cpu->memory->write[page]=0;
+    cpu->memory->mmu[page] = &codePage;
     return block;
 }
 #else
@@ -1118,14 +1120,18 @@ void runCPU(struct CPU* cpu) {
 
 #ifndef __TEST
 struct Block* getBlock1(struct CPU* cpu) {
-    if (!cpu->currentBlock->block1)
+    if (!cpu->currentBlock->block1) {
         cpu->currentBlock->block1 = getBlock(cpu);
+        addBlockNode(&cpu->currentBlock->block1->referencedFrom, cpu->currentBlock);
+    }
     return cpu->currentBlock->block1; 
 }
 
 struct Block* getBlock2(struct CPU* cpu) {
-    if (!cpu->currentBlock->block2)
+    if (!cpu->currentBlock->block2) {
         cpu->currentBlock->block2 = getBlock(cpu);
+        addBlockNode(&cpu->currentBlock->block2->referencedFrom, cpu->currentBlock);
+    }
     return cpu->currentBlock->block2;
 }
 #endif

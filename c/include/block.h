@@ -25,10 +25,12 @@
 struct Block{	
     struct Op* ops;
     U32 count;    
+    U32 eipCount;
     struct Block* block1;
     struct Block* block2;
     U32 startFunction;
     U32 jit;
+    struct BlockNode* referencedFrom;
 };
 
 #endif

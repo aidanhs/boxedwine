@@ -32,6 +32,7 @@ extern struct Page ramPageWO;
 extern struct Page ramPageWR;
 extern struct Page ramOnDemandPage;
 extern struct Page ramCopyOnWritePage;
+extern struct Page codePage;
 
 U32 allocRamPage();
 void freeRamPage(int page);

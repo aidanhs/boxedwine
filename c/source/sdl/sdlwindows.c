@@ -602,21 +602,23 @@ void drawAllWindows(MMU_ARG U32 hWnd, int count) {
     } 
     SDL_RenderPresent(sdlRenderer);
 #else
-    SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 58, 110, 165));
-    for (i=count-1;i>=0;i--) {
-        struct Wnd* wnd = getWnd(readd(MMU_PARAM hWnd+i*4));
-        if (wnd && wnd->sdlSurface) {
-            SDL_Rect dstrect;
-            dstrect.x = wnd->windowRect.left;
-            dstrect.y = wnd->windowRect.top;
-            dstrect.w = ((SDL_Surface*)(wnd->sdlSurface))->w;
-            dstrect.h = ((SDL_Surface*)(wnd->sdlSurface))->h;
-            if (bits_per_pixel==8)
-                SDL_SetPalette(wnd->sdlSurface, SDL_LOGPAL, sdlPalette, 0, 256);
-            SDL_BlitSurface(wnd->sdlSurface, NULL, surface, &dstrect);
-        }        	
-    }    
-    SDL_UpdateRect(surface, 0, 0, 0, 0);
+    if (surface) {
+        SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 58, 110, 165));
+        for (i=count-1;i>=0;i--) {
+            struct Wnd* wnd = getWnd(readd(MMU_PARAM hWnd+i*4));
+            if (wnd && wnd->sdlSurface) {
+                SDL_Rect dstrect;
+                dstrect.x = wnd->windowRect.left;
+                dstrect.y = wnd->windowRect.top;
+                dstrect.w = ((SDL_Surface*)(wnd->sdlSurface))->w;
+                dstrect.h = ((SDL_Surface*)(wnd->sdlSurface))->h;
+                if (bits_per_pixel==8)
+                    SDL_SetPalette(wnd->sdlSurface, SDL_LOGPAL, sdlPalette, 0, 256);
+                SDL_BlitSurface(wnd->sdlSurface, NULL, surface, &dstrect);
+            }        	
+        }    
+        SDL_UpdateRect(surface, 0, 0, 0, 0);
+    }
 #endif
 }
 

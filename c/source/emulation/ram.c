@@ -37,6 +37,7 @@ U32 getFreePageCount() {
 #include "op.h"
 #include "ram.h"
 #include "kalloc.h"
+#include "kthread.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -60,13 +61,42 @@ static U32 freePageCount;
 static U32* freePages;
 static struct CodePage* codePages;
 
+struct CodePageEntry* freeCodePageEntries;
+
+struct CodePageEntry* allocCodePageEntry() {
+    struct CodePageEntry* result;
+
+    if (freeCodePageEntries) {
+        result = freeCodePageEntries;
+        freeCodePageEntries = result->next;
+        memset(result, 0, sizeof(struct CodePageEntry));
+    } else {
+        U32 count = 1024*1023/sizeof(struct CodePageEntry);
+        U32 i;
+
+        result = (struct CodePageEntry*)kalloc(1024*1023, KALLOC_CODEPAGE_ENTRY);
+        for (i=0;i<count;i++) {
+            result->next = freeCodePageEntries;
+            freeCodePageEntries = result;
+            result++;
+        }
+        return allocCodePageEntry();
+    }	
+    return result;
+}
+
+void freeCodePageEntry(struct CodePageEntry* entry) {
+    entry->next = freeCodePageEntries;
+    freeCodePageEntries = entry;
+}
+
 void addCode(struct Block* block, int ramPage, int offset) {
     struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> 5]);
     if (!*entry) {
-        *entry = (struct CodePageEntry*)kalloc(sizeof(struct CodePageEntry), KALLOC_CODEPAGE_ENTRY);
+        *entry = allocCodePageEntry();
         (*entry)->next = 0;
     } else {
-        struct CodePageEntry* add = (struct CodePageEntry*)kalloc(sizeof(struct CodePageEntry), KALLOC_CODEPAGE_ENTRY);
+        struct CodePageEntry* add = allocCodePageEntry();
         add->next = *entry;
         *entry = add;
     }
@@ -82,6 +112,57 @@ struct Block* getCode(int ramPage, int offset) {
         entry = entry->next;
     }
     return 0;
+}
+
+struct Block* getBlockAt(struct Memory* memory, U32 address, U32 freeEntry) {
+    int i;
+    U32 page = address >> PAGE_SHIFT;
+    U32 ram = memory->ramPage[page];
+    struct CodePageEntry** entries = codePages[ram].entries;
+    U32 offset = address & PAGE_MASK;
+    U32 hasCode = 0;
+
+    for (i=0;i<CODE_ENTRIES;i++) {
+        struct CodePageEntry* entry = entries[i];
+        struct CodePageEntry* prev = NULL;
+
+        while (entry) {                            
+            if (offset>=entry->offset && offset<entry->offset+entry->block->eipCount) {
+                struct Block* result = entry->block;
+
+                if (freeEntry) {
+                    if (prev)
+                        prev->next = entry->next;
+                    else
+                        entries[i] = entry->next;
+                    freeCodePageEntry(entry);
+                }
+                return result;
+            }
+            hasCode = 1;
+            prev = entry;
+            entry = entry->next;
+        }
+    }
+    if (!hasCode) {
+        U32 flags = memory->flags[page];
+        BOOL read = IS_PAGE_READ(flags) | IS_PAGE_EXEC(flags);
+        BOOL write = IS_PAGE_WRITE(flags);
+
+        memory->flags[page] |= PAGE_IN_RAM;
+        if (read && write) {
+            memory->mmu[page] = &ramPageWR;
+            memory->read[page] = TO_TLB(ram,  address);
+            memory->write[page] = TO_TLB(ram,  address);
+        } else if (write) {
+            memory->mmu[page] = &ramPageWO;
+            memory->write[page] = TO_TLB(ram,  address);
+        } else {
+            memory->mmu[page] = &ramPageRO;
+            memory->read[page] = TO_TLB(ram,  address);
+        }
+    }
+    return NULL;
 }
 
 U8* getAddressOfRamPage(U32 page) {
@@ -137,10 +218,13 @@ void freeRamPage(int page) {
         for (i=0;i<CODE_ENTRIES;i++) {
             struct CodePageEntry* entry = entries[i];
             while (entry) {
-                freeBlock(entry->block);
+                struct CodePageEntry* next = entry->next;
+
                 if (entry->block->ops)
                     freeOp(entry->block->ops);
-                entry = entry->next;
+                freeBlock(entry->block);
+                freeCodePageEntry(entry);
+                entry = next;
             }
         }
         freePages[freePageCount++]=page;
@@ -263,11 +347,65 @@ static U8* copyonwrite_physicalAddress(struct Memory* memory, U32 address) {
     return physicalAddress(memory, address);
 }
 
+extern struct KThread* currentThread;
+static void code_writeb(struct Memory* memory, U32 address, U8 value) {
+    if (value!=readb(memory, address)) {
+        struct Block* block = getBlockAt(memory, address, 1);
+        int index = address >> PAGE_SHIFT;
+        U32 ram = memory->ramPage[index];
+
+        if (block) {
+            if (block==currentThread->cpu.currentBlock) {
+                klog("self modifying code was not handled properly");
+            } 
+            freeBlock(block);
+        }
+        host_writeb(address-TO_TLB(ram,  address), value);
+    }
+}
+
+static void code_writew(struct Memory* memory, U32 address, U16 value) {
+    if (value!=readw(memory, address)) {
+        struct Block* block = getBlockAt(memory, address, 1);
+        int index = address >> PAGE_SHIFT;
+        U32 ram = memory->ramPage[index];
+
+        if (block) {
+            if (block==currentThread->cpu.currentBlock) {
+                klog("self modifying code was not handled properly");
+            }
+            freeBlock(block);
+        }
+        host_writew(address-TO_TLB(ram,  address), value);
+    }
+}
+
+static void code_writed(struct Memory* memory, U32 address, U32 value) {
+    if (value!=readd(memory, address)) {
+        struct Block* block = getBlockAt(memory, address, 1);
+        int index = address >> PAGE_SHIFT;
+        U32 ram = memory->ramPage[index];
+
+        if (block) {
+            if (block==currentThread->cpu.currentBlock) {
+                klog("self modifying code was not handled properly");
+            }
+            freeBlock(block);
+        }
+        host_writed(address-TO_TLB(ram,  address), value);
+    }
+}
+
+static U8* code_physicalAddress(struct Memory* memory, U32 address) {
+    return NULL;
+}
+
 struct Page ramPageRO = {ram_readb, ram_writeb, ram_readw, ram_writew, ram_readd, ram_writed, ram_clear, physicalAddress};
 struct Page ramPageWO = {nopermission_readb, ram_writeb, nopermission_readw, ram_writew, nopermission_readd, ram_writed, ram_clear, physicalAddress};
 struct Page ramPageWR = {ram_readb, ram_writeb, ram_readw, ram_writew, ram_readd, ram_writed, ram_clear, physicalAddress};
 struct Page ramOnDemandPage = {ondemand_ram_readb, ondemand_ram_writeb, ondemand_ram_readw, ondemand_ram_writew, ondemand_ram_readd, ondemand_ram_writed, ondemand_ram_clear, ondemand_physicalAddress};
 struct Page ramCopyOnWritePage = {ram_readb, copyonwrite_ram_writeb, ram_readw, copyonwrite_ram_writew, ram_readd, copyonwrite_ram_writed, ram_clear, copyonwrite_physicalAddress};
+struct Page codePage = {ram_readb, code_writeb, ram_readw, code_writew, ram_readd, code_writed, ram_clear, code_physicalAddress};
 
 static void ondemmand(struct Memory* memory, U32 address) {
     U32 ram = allocRamPage();

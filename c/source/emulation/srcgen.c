@@ -8883,8 +8883,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "void writew(MMU_ARG U32 address, U16 value);\n");
         out(data, "U32 readd(MMU_ARG U32 address);\n");
         out(data, "void writed(MMU_ARG U32 address, U32 value);\n");
-        out(data, "U64 readq(MMU_ARG U32 address);\n");
-        out(data, "void writeq(MMU_ARG U32 address, U64 value);\n");
+        //out(data, "U64 readq(MMU_ARG U32 address);\n");
+        //out(data, "void writeq(MMU_ARG U32 address, U64 value);\n");
         out(data, "struct Block* getBlock(struct CPU* cpu);\n");
         out(data, "struct Block* getBlock1(struct CPU* cpu);\n");
         out(data, "struct Block* getBlock2(struct CPU* cpu);\n");

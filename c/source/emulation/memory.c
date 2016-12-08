@@ -325,7 +325,7 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
     memcpy(memory, from, sizeof(struct Memory));
     for (i=0;i<0x100000;i++) {
         struct Page* page = memory->mmu[i];
-        if (page == &ramPageRO || page == &ramPageWR || page == &ramPageWO) {
+        if (page == &ramPageRO || page == &ramPageWR || page == &ramPageWO || page == &codePage) {
             if (!IS_PAGE_SHARED(memory->flags[i])) {
                 memory->mmu[i] = &ramCopyOnWritePage;
                 from->mmu[i] = &ramCopyOnWritePage;

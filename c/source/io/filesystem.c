@@ -109,17 +109,12 @@ U32 file_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
         U32 result;
         S64 pos = file_getFilePointer(node);
 
-        if (!ram) {
-            U32 i;
-
-            read(node->handle, tmp, len);
-            for (i=0;i<len;i++) {
-                if (tmp[i]!=ram[i]) {
-                    kpanic("ouch");
-                }
-            }
-        }
-        result = read(node->handle, ram, len);	
+        if (ram) {
+            result = read(node->handle, ram, len);	
+        } else {
+            result = read(node->handle, tmp, len);
+            memcopyFromNative(MMU_PARAM address, tmp, result);
+        }        
         // :TODO: why does this happen
         //
         // installing dpkg with dpkg
@@ -142,7 +137,12 @@ U32 file_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 
             if (todo>len)
                 todo = len;
-            didRead=read(node->handle, ram, todo);		
+            if (ram) {
+                didRead=read(node->handle, ram, todo);		
+            } else {
+                didRead = read(node->handle, tmp, len);
+                memcopyFromNative(MMU_PARAM address, tmp, didRead);
+            }
             if (didRead<=0)
                 break;
             len-=didRead;
