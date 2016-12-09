@@ -348,50 +348,46 @@ static U8* copyonwrite_physicalAddress(struct Memory* memory, U32 address) {
 }
 
 extern struct KThread* currentThread;
-static void code_writeb(struct Memory* memory, U32 address, U8 value) {
-    if (value!=readb(memory, address)) {
-        struct Block* block = getBlockAt(memory, address, 1);
-        int index = address >> PAGE_SHIFT;
-        U32 ram = memory->ramPage[index];
+void removeBlockAt(struct Memory* memory, U32 address) {
+    struct Block* block = getBlockAt(memory, address, 1);
 
+    while (block) {
         if (block) {
             if (block==currentThread->cpu.currentBlock) {
                 klog("self modifying code was not handled properly");
-            } 
+            }
             freeBlock(block);
         }
+        block = getBlockAt(memory, address, 1);
+    }
+}
+
+static void code_writeb(struct Memory* memory, U32 address, U8 value) {
+    if (value!=readb(memory, address)) {
+        int index = address >> PAGE_SHIFT;
+        U32 ram = memory->ramPage[index];
+
+        removeBlockAt(memory, address);
         host_writeb(address-TO_TLB(ram,  address), value);
     }
 }
 
 static void code_writew(struct Memory* memory, U32 address, U16 value) {
     if (value!=readw(memory, address)) {
-        struct Block* block = getBlockAt(memory, address, 1);
         int index = address >> PAGE_SHIFT;
         U32 ram = memory->ramPage[index];
 
-        if (block) {
-            if (block==currentThread->cpu.currentBlock) {
-                klog("self modifying code was not handled properly");
-            }
-            freeBlock(block);
-        }
+        removeBlockAt(memory, address);
         host_writew(address-TO_TLB(ram,  address), value);
     }
 }
 
 static void code_writed(struct Memory* memory, U32 address, U32 value) {
     if (value!=readd(memory, address)) {
-        struct Block* block = getBlockAt(memory, address, 1);
         int index = address >> PAGE_SHIFT;
         U32 ram = memory->ramPage[index];
 
-        if (block) {
-            if (block==currentThread->cpu.currentBlock) {
-                klog("self modifying code was not handled properly");
-            }
-            freeBlock(block);
-        }
+        removeBlockAt(memory, address);
         host_writed(address-TO_TLB(ram,  address), value);
     }
 }
