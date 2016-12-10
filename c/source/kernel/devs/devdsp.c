@@ -24,39 +24,10 @@
 #include "log.h"
 #include "kprocess.h"
 #include "kscheduler.h"
+#include "oss.h"
 
 #include <SDL.h>
 #include <string.h>
-
-#define AFMT_QUERY               0x00000000      /* Return current fmt */
-#define AFMT_MU_LAW              0x00000001
-#define AFMT_A_LAW               0x00000002
-#define AFMT_IMA_ADPCM           0x00000004
-#define AFMT_U8                  0x00000008
-#define AFMT_S16_LE              0x00000010      /* Little endian signed 16*/
-#define AFMT_S16_BE              0x00000020      /* Big endian signed 16 */
-#define AFMT_S8                  0x00000040
-#define AFMT_U16_LE              0x00000080      /* Little endian U16 */
-#define AFMT_U16_BE              0x00000100      /* Big endian U16 */
-#define AFMT_MPEG                0x00000200      /* MPEG (2) audio */
-
-#define PCM_ENABLE_INPUT         0x00000001
-#define PCM_ENABLE_OUTPUT        0x00000002
-
-#define DSP_CAP_REVISION         0x000000ff      /* Bits for revision level (0 to 255) */
-#define DSP_CAP_DUPLEX           0x00000100      /* Full duplex record/playback */
-#define DSP_CAP_REALTIME         0x00000200      /* Real time capability */
-#define DSP_CAP_BATCH            0x00000400      /* Device has some kind of */
-                                                 /* internal buffers which may */
-                                                 /* cause some delays and */
-                                                 /* decrease precision of timing */
-#define DSP_CAP_COPROC           0x00000800      /* Has a coprocessor */
-                                                 /* Sometimes it's a DSP */
-                                                 /* but usually not */
-#define DSP_CAP_TRIGGER          0x00001000      /* Supports SETTRIGGER */
-#define DSP_CAP_MMAP             0x00002000      /* Supports mmap() */
-#define DSP_CAP_MULTI            0x00004000      /* support multiple open */
-#define DSP_CAP_BIND             0x00008000      /* channel binding to front/rear/cneter/lfe */
 
 BOOL isDspOpen = 0;
 static U32 dspFmt = AFMT_U8;
@@ -128,6 +99,7 @@ void openAudio() {
     } 
     isDspOpen = 1;
     SDL_PauseAudio(0);
+    pauseAtLen=0xFFFFFFFF;
     printf("openAudio: freq=%d(got %d) format=%d(%d/got %d) channels=%d(got %d)\n", dspFreq, got.freq, dspFmt, sdlFmt, got.format, dspChannels, got.channels);
 }
 
@@ -219,6 +191,7 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     struct CPU* cpu = &thread->cpu;
     //BOOL read = request & 0x40000000;
     BOOL write = request & 0x80000000;
+    int i;
 
     switch (request & 0xFFFF) {
     case 0x5000: // SNDCTL_DSP_RESET
@@ -361,6 +334,48 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
         return 0;
     case 0x5016: // SNDCTL_DSP_SETDUPLEX
         return -K_EINVAL;
+    case 0x5017: // SNDCTL_DSP_GETODELAY 
+        if (write) {
+            writed(MMU_PARAM_THREAD IOCTL_ARG1, dspBufferLen);
+            return 0;
+        }
+    case 0x580C: // SNDCTL_ENGINEINFO
+        if (write) {
+            U32 p = IOCTL_ARG1;
+            p+=4; // int dev; /* Audio device number */
+            writeNativeString(MMU_PARAM_THREAD p, "BoxedWine audio"); p+=64; // oss_devname_t name;
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int busy; /* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
+            writed(MMU_PARAM_THREAD p, -1); p+=4; // int pid;
+            writed(MMU_PARAM_THREAD p, PCM_CAP_OUTPUT); p+=4; // int caps;			/* PCM_CAP_INPUT, PCM_CAP_OUTPUT */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int iformats
+            writed(MMU_PARAM_THREAD p, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE); p+=4; // int oformats;
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int magic;			/* Reserved for internal use */
+            writeNativeString(MMU_PARAM_THREAD p, ""); p+=64; // oss_cmd_t cmd;		/* Command using the device (if known) */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int card_number;
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int port_number;
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int mixer_dev;
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int legacy_device;		/* Obsolete field. Replaced by devnode */
+            writed(MMU_PARAM_THREAD p, 1); p+=4; // int enabled;			/* 1=enabled, 0=device not ready at this moment */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int flags;			/* For internal use only - no practical meaning */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int min_rate
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // max_rate;	/* Sample rate limits */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int min_channels
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // max_channels;	/* Number of channels supported */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int binding;			/* DSP_BIND_FRONT, etc. 0 means undefined */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int rate_source;
+            writeNativeString(MMU_PARAM_THREAD p, ""); p+=32; // oss_handle_t handle;
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // unsigned int nrates
+            for (i=0;i<20;i++) {
+                writed(MMU_PARAM_THREAD p, 0); p+=4; // rates[20];	/* Please read the manual before using these */
+            }
+            writeNativeString(MMU_PARAM_THREAD p, ""); p+=64; // oss_longname_t song_name;	/* Song name (if given) */
+            writeNativeString(MMU_PARAM_THREAD p, ""); p+=16; // oss_label_t label;		/* Device label (if given) */
+            writed(MMU_PARAM_THREAD p, -1); p+=4; // int latency;			/* In usecs, -1=unknown */
+            writeNativeString(MMU_PARAM_THREAD p, "/dev/dsp"); p+=16; // oss_devnode_t devnode;	/* Device special file name (absolute path) */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int next_play_engine;		/* Read the documentation for more info */
+            writed(MMU_PARAM_THREAD p, 0); p+=4; // int next_rec_engine;		/* Read the documentation for more info */
+            return 0;
+        }        
     }
     return -K_ENODEV;
 }
