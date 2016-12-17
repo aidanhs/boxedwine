@@ -81,11 +81,8 @@
 		top: -10px;
 		width: 24px;
 		text-decoration: none;
-		font-height: bold;
 		-webkit-border-radius: 12px;
-		-moz-border-radius: 12px;
 		border-radius: 12px;
-		-moz-box-shadow: 1px 1px 3px #000;
 		-webkit-box-shadow: 1px 1px 3px #000;
 		box-shadow: 1px 1px 3px #000;
 	}
@@ -232,7 +229,7 @@
             
             var dir =  getParameter("work");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
-                dir = "/home/username/files";
+                dir = "";
             }else{
                 dir = dirPrefix.substring(ROOT.length) + dir;
                 console.log("setting working directory to: "+dir);
@@ -418,6 +415,9 @@
         function startEmulator()
         {
             isRunning = true;
+            var params = getEmulatorParams();
+            Module["arguments"] = params;
+            
             document.getElementById('startbtn').textContent = "Running...";
             Module["removeRunDependency"]("setupBoxedWine");
         }
@@ -453,6 +453,7 @@
                 }else if(prog.startsWith('%27') && prog.endsWith('%27')){
                     prog = prog.substring(3, prog.length - 3);
                 }
+                prog = prog.split('%20').join(' ');
                 console.log("setting program to execute to: "+prog);
             }
             return prog;
@@ -522,8 +523,6 @@
             WorkingDir = HOME_DIRECTORY.substring(ROOT.length) + path.substring(1);
             Program = file;
             
-            var params = getEmulatorParams();
-            Module["arguments"] = params;
             startEmulator();
         }
         function readyCheck(exeFiles, allFiles)
@@ -560,15 +559,32 @@
                 });
             });
         }, false);
+        function isInSubDirectory(fullPath, programDir) {
+            var fileEntry = FS.lookupPath(fullPath, { follow: true });
+            if (fileEntry!= null && fileEntry.node.isFolder) {
+                var entries = FS.readdir(fullPath).filter(function(param) {
+                    return param !== "." && param !== ".." && param !== "__MACOSX";
+                });
+                if(entries.length == 1 && entries[0] === programDir) {
+                    return true;
+                }
+            }
+            return false;
+        }
         function getEmulatorParams() {
             var params = ["-root", "/root", "-m", getMemoryAllocation()];
             if(WorkingDir.length > 0){
                 params.push("-w");
                 params.push(WorkingDir);
             }else if(appZipFile.length > 0 && Program.length > 0 && Program.substring(0 ,1) != "/"){
-                var programDir = HOME_DIRECTORY.substring(ROOT.length) + appZipFile.substring(0, appZipFile.lastIndexOf("."));
+                var subDirectory = appZipFile.substring(0, appZipFile.lastIndexOf("."));
+                var programDir = HOME_DIRECTORY.substring(ROOT.length);
                 params.push("-w");
-                params.push(programDir);
+                if(isInSubDirectory(HOME_DIRECTORY, subDirectory)){
+                    params.push(programDir + subDirectory);
+                }else{
+                    params.push(programDir);
+                }
             }
             if(Program.length > 0){
                 params.push("/usr/bin/wine");
@@ -578,9 +594,10 @@
                 }
                 params.push(Program);
             } 
+            console.log("Emulator params:" + params);
             return params;
         }
-        var params = getEmulatorParams();
+        var params = [];
       var Module = {
         logReadFiles : false, //enable if you want to prune with Reduce utility
         preRun: [initialSetup],
