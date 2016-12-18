@@ -461,9 +461,11 @@
         var errorCallback = function(e){
             console.log(e);
         }
+        var dirCount = 0;
         function getEntriesAsPromise(item, exeFiles, allFiles) {
             return new Promise((resolve, reject) => {
                 if(item.isDirectory){
+                    dirCount = dirCount + 1;
                     let reader = item.createReader();
                     let doBatch = () => {
                         reader.readEntries(entries => {
@@ -473,6 +475,12 @@
                                 });
                                 doBatch();
                             } else {
+                                dirCount = dirCount - 1;
+                                if(dirCount == 0){
+                                    if(!isAutoRunSet && !isRunning){
+                                        loadExeModal(exeFiles, allFiles);              
+                                    }
+                                }
                                 resolve();
                             }
                         }, reject);
@@ -541,23 +549,11 @@
             event.preventDefault();
             //if only i know something about async
             let items = event.dataTransfer.items;
-            let firstItem = items[0];
             let exeFiles = [];
             let allFiles = [];
-            let counter = 0;
-            let expecting = items.length;
-            let entries = [];
             for(let i =0; i < items.length; i++){
-                entries.push(items[i].webkitGetAsEntry());
+                getEntriesAsPromise(items[i].webkitGetAsEntry(), exeFiles, allFiles);
             }
-            entries.forEach(entry => { 
-                getEntriesAsPromise(entry, exeFiles, allFiles).then(function(){
-                    counter = counter + 1;
-                    if(counter == expecting && exeFiles.length >0 && !isAutoRunSet && !isRunning){
-                        loadExeModal(exeFiles, allFiles);              
-                    }
-                });
-            });
         }, false);
         function isInSubDirectory(fullPath, programDir) {
             var fileEntry = FS.lookupPath(fullPath, { follow: true });
@@ -783,7 +779,7 @@ function createFolder(parent, dir)
     try{
         Module.FS_createFolder(parent, dir, true, true);
         //console.log(entry + " is a dir parent="+parent+" dir="+dir);
-        console.log("Directory created :" + parent + "/" +  dir);
+        //console.log("Directory created :" + parent + "/" +  dir);
     }catch(ef){
       if(ef.message === "File exists"){
         console.log("Directory already exists! :" + parent + dir);
@@ -812,7 +808,7 @@ function createFile(dir, name, buf)
 {
     try{
         Module.FS_createDataFile(dir, name, buf, true, true);
-        console.log("File created :" + dir + "/" + name);
+        //console.log("File created :" + dir + "/" + name);
     }catch(e){
       if(e.message === "File exists"){
         console.log("File already exists!: " + dir + name);
