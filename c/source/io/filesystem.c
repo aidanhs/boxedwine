@@ -140,7 +140,7 @@ U32 file_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
             if (ram) {
                 didRead=read(node->handle, ram, todo);		
             } else {
-                didRead = read(node->handle, tmp, len);
+                didRead = read(node->handle, tmp, todo);
                 memcopyFromNative(MMU_PARAM address, tmp, didRead);
             }
             if (didRead<=0)
