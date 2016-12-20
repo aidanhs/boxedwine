@@ -579,7 +579,10 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo, U32 errorNo) {
             wakeThread(thread);
         }		
                 
-        context = cpu->segAddress[SS] + (ESP & cpu->stackMask) - CONTEXT_SIZE;
+		if (altStack)
+			context = thread->alternateStack + thread->alternateStackSize - CONTEXT_SIZE;
+		else
+	        context = cpu->segAddress[SS] + (ESP & cpu->stackMask) - CONTEXT_SIZE;
         writeToContext(thread, stack, context, altStack, trapNo, errorNo);
         
         cpu->stackMask = 0xFFFFFFFF;
@@ -587,13 +590,6 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo, U32 errorNo) {
         cpu->segAddress[SS] = 0;
         thread->cpu.reg[4].u32 = context;
 
-        if (altStack) {
-            thread->cpu.reg[4].u32 = thread->alternateStack+thread->alternateStackSize;
-            altStack = 1;
-#ifdef LOG_OPS
-            klog("    alternateStack %X", thread->alternateStack+thread->alternateStackSize);
-#endif
-        }
         thread->cpu.reg[4].u32 &= ~15;
         push32(&thread->cpu, 0); // padding
         if (action->flags & K_SA_SIGINFO) {
