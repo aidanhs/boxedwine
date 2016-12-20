@@ -166,9 +166,6 @@
     <ClCompile Include="..\..\..\..\source\util\crc.c">
       <Filter>source\util</Filter>
     </ClCompile>
-    <ClCompile Include="gen.c">
-      <Filter>source</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\ringbuf.c">
       <Filter>source\util</Filter>
     </ClCompile>
@@ -213,6 +210,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\sdl\sdlopengl.c">
       <Filter>source\sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devmixer.c">
+      <Filter>source\kernel\devs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

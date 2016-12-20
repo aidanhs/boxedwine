@@ -511,7 +511,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -1036,7 +1036,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>AOT;SDL2;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SUPPORTS_SETJMP;SDL2;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <UndefinePreprocessorDefinitions>
@@ -1159,6 +1159,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devinput.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devmixer.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c" />
@@ -1213,7 +1214,6 @@
     <ClCompile Include="..\..\..\..\source\util\pbl\pblPriorityQueue.c" />
     <ClCompile Include="..\..\..\..\source\util\pbl\pblSet.c" />
     <ClCompile Include="..\..\..\..\source\util\ringbuf.c" />
-    <ClCompile Include="gen.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
