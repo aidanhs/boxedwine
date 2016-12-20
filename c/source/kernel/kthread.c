@@ -68,7 +68,9 @@ void setupStack(struct KThread* thread) {
     U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
     pageCount+=2; // guard pages
     if (!findFirstAvailablePage(thread->cpu.memory, ADDRESS_PROCESS_STACK_START, pageCount, &page, 0))
-        kpanic("Failed to allocate stack for thread");
+		if (!findFirstAvailablePage(thread->cpu.memory, 0xC0000, pageCount, &page, 0))
+			if (!findFirstAvailablePage(thread->cpu.memory, 0x80000, pageCount, &page, 0))
+				kpanic("Failed to allocate stack for thread");
     allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0);
     // 1 page above (catch stack underrun)
     reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
