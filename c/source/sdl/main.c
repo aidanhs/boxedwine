@@ -330,7 +330,7 @@ int main(int argc, char **argv) {
     int userId = UID;
     char* workingDir = "/home/username";
     char pwd[MAX_FILEPATH_LEN];
-
+	U32 sound = 1;
     klog("Starting ...");
 
     startMicroCounter();
@@ -352,7 +352,9 @@ int main(int argc, char **argv) {
             i++;
         } else if (!strcmp(argv[i], "-gensrc")) {
             gensrc = 1;
-        } else {
+		} else if (!strcmp(argv[i], "-nosound")) {
+			sound = 0;
+		} else {
             break;
         }
     }
@@ -414,7 +416,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    //ppenv[envc++] = "WINEDEBUG=+relay";
+    //ppenv[envc++] = "WINEDEBUG=+oss";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -427,8 +429,10 @@ int main(int argc, char **argv) {
     addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/input/event3", &touchInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
     addVirtualFile("/dev/input/event4", &keyboardInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
-    addVirtualFile("/dev/dsp", &dspAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
-	//addVirtualFile("/dev/mixer", &mixerAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR);
+	if (sound) {
+		addVirtualFile("/dev/dsp", &dspAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR);
+		addVirtualFile("/dev/mixer", &mixerAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR);
+	}
 
     argc = argc-i;
     if (argc==0) {
