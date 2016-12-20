@@ -352,7 +352,7 @@ S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write
 
 void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
     if (s->waitingOnConnectThread)
-        kpanic("%d tried to wait on a socket read, but %d is already waiting.", thread->id, s->waitingOnConnectThread->id);
+        kpanic("%d tried to wait on a socket connect, but %d is already waiting.", thread->id, s->waitingOnConnectThread->id);
     s->waitingOnConnectThread = thread;
     addClearOnWake(thread, &s->waitingOnConnectThread);
 }

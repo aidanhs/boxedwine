@@ -43,9 +43,6 @@
 #define K_F_WRLCK	   1
 #define K_F_UNLCK	   2
 
-// if this is increased kfmmap will need to change
-#define MAX_FDS_PER_PROCESS 256
-
 struct KFileDescriptor {
     U32 accessFlags;
     U32 descriptorFlags;

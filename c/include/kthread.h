@@ -29,7 +29,7 @@
 #define WAIT_NONE 0
 #define WAIT_PID 1
 
-#define MAX_POLL_DATA 128
+#define MAX_POLL_DATA 256
 
 #define TLS_ENTRIES 10
 #define TLS_ENTRY_START_INDEX 10
@@ -75,7 +75,7 @@ struct KThread {
 #define RESTORE_SIGNAL_MASK 0xF000000000000000l
 #define SIGSUSPEND_RETURN 0x0FFFFFFFFFFFFFFFl
 
-#define addClearOnWake(thread, pTarget) thread->clearOnWake[thread->clearOnWakeCount++]=pTarget
+#define addClearOnWake(thread, pTarget) if (thread->clearOnWakeCount >= MAX_POLL_DATA) kpanic("thread->clearOnWakeCount >= MAX_POLL_DATA"); thread->clearOnWake[thread->clearOnWakeCount++]=pTarget
 
 struct KThread* allocThread();
 void initThread(struct KThread* thread, struct KProcess* process);

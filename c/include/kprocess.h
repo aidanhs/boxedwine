@@ -96,7 +96,8 @@ struct KProcess {
 #endif
     char currentDirectory[MAX_FILEPATH_LEN];
     U32 brkEnd;
-    struct KFileDescriptor* fds[MAX_FDS_PER_PROCESS]; // :TODO: maybe make this dynamic	
+    struct KFileDescriptor** fds;
+	U32 maxFds;
     struct KSigAction sigActions[MAX_SIG_ACTIONS];
     struct KTimer timer;
     char commandLine[MAX_COMMANDLINE_LEN];

@@ -109,7 +109,8 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
 #else
     process->mmapedMemory = pblListNewArrayList();
 #endif
-
+	process->fds = kalloc(sizeof(struct KFileDescriptor*) * 64, KALLOC_KPROCESS);
+	process->maxFds = 64;
     initLDT(process);
 }
 
@@ -151,7 +152,7 @@ void cleanupProcess(struct KProcess* process) {
     if (process->timer.active) {
         removeTimer(&process->timer);
     }
-    for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
+    for (i=0;i<process->maxFds;i++) {
         if (process->fds[i]) {
             process->fds[i]->refCount = 1; // make sure it is really closed
             closeFD(process->fds[i]);
@@ -231,7 +232,9 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
     process->effectiveGroupId = from->effectiveGroupId;
     safe_strcpy(process->currentDirectory, from->currentDirectory, MAX_FILEPATH_LEN);
     process->brkEnd = from->brkEnd;
-    for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
+	process->maxFds = from->maxFds;
+	process->fds = kalloc(sizeof(struct KFileDescriptor*)*process->maxFds, KALLOC_KPROCESS);
+    for (i=0;i<process->maxFds;i++) {
         if (from->fds[i]) {
             process->fds[i] = allocFileDescriptor(process, i, from->fds[i]->kobject, from->fds[i]->accessFlags, from->fds[i]->descriptorFlags);
             process->fds[i]->refCount = from->fds[i]->refCount;
@@ -430,13 +433,19 @@ void setupThreadStack(MMU_ARG struct CPU* cpu, const char* programName, int argc
 
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
     int i;
+	struct KFileDescriptor** tmp;
 
-    for (i=after;i<sizeof(process->fds);i++) {
-        if (!process->fds[i])
-            return i;
+    for (i=after;i<process->maxFds;i++) {
+		if (!process->fds[i]) {
+			return i;
+		}
     }
-    kpanic("Ran out of file descriptor handles");
-    return 0;
+	tmp = kalloc(sizeof(struct KFileDescriptor*)*process->maxFds * 2, KALLOC_KPROCESS);
+	memcpy(tmp, process->fds, process->maxFds*sizeof(struct KFileDescriptor*));
+	kfree(process->fds, KALLOC_KPROCESS);
+	process->fds = tmp;
+	process->maxFds *= 2;
+    return process->maxFds/2;
 }
 
 struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
@@ -550,7 +559,7 @@ void processOnExitThread(struct KProcess* process) {
 }
 
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle) {
-    if (handle<MAX_FDS_PER_PROCESS && handle>=0)
+    if (handle<process->maxFds && handle>=0)
         return process->fds[handle];
     return 0;
 }
@@ -1028,7 +1037,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         }
     }
     threadClearFutexes(thread);
-    for (i=0;i<MAX_FDS_PER_PROCESS;i++) {
+    for (i=0;i<process->maxFds;i++) {
         if (process->fds[i] && (process->fds[i]->descriptorFlags)) {
             process->fds[i]->refCount = 1; // make sure it is really closed
             closeFD(process->fds[i]);
