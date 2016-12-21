@@ -37,6 +37,7 @@ struct DspData {
 	U32 dspChannels;
 	U32 dspFragSize;
 	U32 dspFreq;
+	U32 bytesPerSecond;
 #define DSP_BUFFER_SIZE 1024*64
 	U8 dspBuffer[DSP_BUFFER_SIZE];
 	S32 dspBufferLen;
@@ -58,8 +59,10 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
     S32 result;
 	struct DspData* data = userdata;
 
-    if ( data->dspBufferLen == 0 )
-        return;
+	if (data->dspBufferLen == 0) {
+		memset(stream, 0, len);
+		return;
+	}
 	available = DSP_BUFFER_SIZE - data->dspBufferPos;
 	if (available>data->dspBufferLen)
 		available = data->dspBufferLen;
@@ -95,7 +98,7 @@ void openAudio(struct DspData* data) {
 	want.freq = data->dspFreq;
 	want.format = data->sdlFmt;
 	want.channels = data->dspChannels;
-    want.samples = 4096;
+    //want.samples = 4096;
     want.callback = audioCallback;  // you wrote this function elsewhere.
 	want.userdata = data;
 
@@ -105,7 +108,8 @@ void openAudio(struct DspData* data) {
 	data->isDspOpen = 1;
     SDL_PauseAudio(0);
 	data->pauseAtLen = 0xFFFFFFFF;
-	data->dspFragSize = data->dspFreq * data->dspChannels * ((data->sdlFmt == AUDIO_S16LSB || data->sdlFmt == AUDIO_S16MSB || data->sdlFmt == AUDIO_U16LSB || data->sdlFmt == AUDIO_U16MSB) ? 2 : 1) / 2;
+	data->dspFragSize = got.size;
+	data->bytesPerSecond = data->dspFreq * data->dspChannels * ((data->sdlFmt == AUDIO_S16LSB || data->sdlFmt == AUDIO_S16MSB || data->sdlFmt == AUDIO_U16LSB || data->sdlFmt == AUDIO_U16MSB) ? 2 : 1);
 	printf("openAudio: freq=%d(got %d) format=%d(%d/got %d) channels=%d(got %d)\n", data->dspFreq, got.freq, data->dspFmt, data->sdlFmt, got.format, data->dspChannels, got.channels);
 }
 

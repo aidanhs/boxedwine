@@ -444,7 +444,7 @@ int main(int argc, char **argv) {
     } else {
         argv = &argv[i];
     }
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0) {
         kwarn("SDL_Init Error: %s", SDL_GetError());
         return 0;
     }
