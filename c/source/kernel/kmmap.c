@@ -107,7 +107,9 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             thread->process->memory->flags[i + pageStart] = PAGE_RESERVED | PAGE_MAPPED;
         }
     }
-    if (write || read || exec) {		
+	// even if there are no permissions, it is important for MAP_ANONYMOUS|MAP_FIXED existing memory to be 0'd out
+    // if (write || read || exec)
+	{		
         U32 permissions = PAGE_MAPPED;
 
         if (write)
