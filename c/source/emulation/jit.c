@@ -2407,7 +2407,7 @@ void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
 void OPCALL jump(struct CPU* cpu, struct Op* op);
 void OPCALL firstOp(struct CPU* cpu, struct Op* op);
 
-U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags, U32 depth) {      
+U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags, U32 depth, struct Op** opThatUsesFlag) {
     if (depth==0)
         return 1;    
 
@@ -2432,6 +2432,8 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
 
         // an op needs a flag
         if (gFlag & flags) {
+			if (opThatUsesFlag)
+				*opThatUsesFlag = op;
             return 1;
         }
 
@@ -2471,8 +2473,8 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         if (block->block2->ops->func == restoreOps) {
             decodeBlockWithBlock(cpu, blockEIP + blockCount + op->data1, block->block2);
         }
-        if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount, 0, flags, depth-1) &&
-            !needsToSetFlag_r(cpu, block->block2, blockEIP + blockCount + op->data1, 0, flags, depth-1))
+		if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount, 0, flags, depth - 1, opThatUsesFlag) &&
+			!needsToSetFlag_r(cpu, block->block2, blockEIP + blockCount + op->data1, 0, flags, depth - 1, opThatUsesFlag))
         {
             return 0;
         }
@@ -2488,16 +2490,638 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         if (block->block1->ops->func == restoreOps) {
             decodeBlockWithBlock(cpu, blockEIP + blockCount + op->data1, block->block1);
         }
-        if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount + op->data1, 0, flags, depth-1)) {
+		if (!needsToSetFlag_r(cpu, block->block1, blockEIP + blockCount + op->data1, 0, flags, depth - 1, opThatUsesFlag)) {
             return 0;
         }
     } 
     return 1; // this is the last instruction in this block that sets this flag, we should keep it
 }
 
-U32 needsToSetFlag(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags) {
-    return needsToSetFlag_r(cpu, block, blockEIP, op, flags, 3);
+U32 needsToSetFlag(struct CPU* cpu, struct Block* block, U32 blockEIP, struct Op* op, U32 flags, struct Op** opThatUsesFlag) {
+    return needsToSetFlag_r(cpu, block, blockEIP, op, flags, 3, opThatUsesFlag);
 }
+
+void OPCALL jumpO_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (((cpu->dst.u32 ^ cpu->src.u32) & (cpu->dst.u32 ^ cpu->result.u32)) & 0x80000000) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpO_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (((cpu->dst.u16 ^ cpu->src.u16) & (cpu->dst.u16 ^ cpu->result.u16)) & 0x8000) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpO_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (((cpu->dst.u8 ^ cpu->src.u8) & (cpu->dst.u8 ^ cpu->result.u8)) & 0x80) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNO_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (!(((cpu->dst.u32 ^ cpu->src.u32) & (cpu->dst.u32 ^ cpu->result.u32)) & 0x80000000)) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNO_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (!(((cpu->dst.u16 ^ cpu->src.u16) & (cpu->dst.u16 ^ cpu->result.u16)) & 0x8000)) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNO_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (!(((cpu->dst.u8 ^ cpu->src.u8) & (cpu->dst.u8 ^ cpu->result.u8)) & 0x80)) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpB_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u32<cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpB_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u16<cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpB_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u8<cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNB_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u32>=cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNB_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u16 >= cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNB_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u8 >= cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpZ_32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u32 == 0) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpZ_16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u16 == 0) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpZ_8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u8 == 0) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNZ_32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u32 != 0) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNZ_16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u16 != 0) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNZ_8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u8 != 0) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpBE_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u32 <= cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpBE_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u16 <= cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpBE_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u8 <= cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNBE_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u32 > cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNBE_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u16 > cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNBE_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->dst.u8 > cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpS_32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u32 & 0x80000000) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpS_16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u16 & 0x8000) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpS_8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (cpu->result.u8 & 0x80) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNS_32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (!(cpu->result.u32 & 0x80000000)) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNS_16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (!(cpu->result.u16 & 0x8000)) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNS_8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if (!(cpu->result.u8 & 0x80)) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpL_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S32)cpu->dst.u32 < (S32)cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpL_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S16)cpu->dst.u16 < (S16)cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpL_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S8)cpu->dst.u8 < (S8)cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNL_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S32)cpu->dst.u32 >= (S32)cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNL_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S16)cpu->dst.u16 >= (S16)cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNL_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S8)cpu->dst.u8 >= (S8)cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpLE_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S32)cpu->dst.u32 <= (S32)cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpLE_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S16)cpu->dst.u16 <= (S16)cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpLE_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S8)cpu->dst.u8 <= (S8)cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNLE_cmp32(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S32)cpu->dst.u32 > (S32)cpu->src.u32) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNLE_cmp16(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S16)cpu->dst.u16 > (S16)cpu->src.u16) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL jumpNLE_cmp8(struct CPU* cpu, struct Op* op) {
+	DONE();
+	cpu->eip.u32 += op->eipCount;
+	if ((S8)cpu->dst.u8 > (S8)cpu->src.u8) {
+		cpu->eip.u32 += op->data1;
+		cpu->nextBlock = getBlock2(cpu);
+	}
+	else {
+		cpu->nextBlock = getBlock1(cpu);
+	}
+	CYCLES(1);
+}
+
+void OPCALL cmpr8r8(struct CPU* cpu, struct Op* op);
+void OPCALL cmpe8r8_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpe8r8_32(struct CPU* cpu, struct Op* op);
+void OPCALL cmpr8e8_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpr8e8_32(struct CPU* cpu, struct Op* op);
+void OPCALL cmp8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL cmp8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL cmp8_mem32(struct CPU* cpu, struct Op* op);
+
+void OPCALL cmpr16r16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpe16r16_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpe16r16_32(struct CPU* cpu, struct Op* op);
+void OPCALL cmpr16e16_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpr16e16_32(struct CPU* cpu, struct Op* op);
+void OPCALL cmp16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL cmp16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL cmp16_mem32(struct CPU* cpu, struct Op* op);
+
+void OPCALL cmpr32r32(struct CPU* cpu, struct Op* op);
+void OPCALL cmpe32r32_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpe32r32_32(struct CPU* cpu, struct Op* op);
+void OPCALL cmpr32e32_16(struct CPU* cpu, struct Op* op);
+void OPCALL cmpr32e32_32(struct CPU* cpu, struct Op* op);
+void OPCALL cmp32_reg(struct CPU* cpu, struct Op* op);
+void OPCALL cmp32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL cmp32_mem32(struct CPU* cpu, struct Op* op);
+
+void OPCALL testr8r8(struct CPU* cpu, struct Op* op);
+void OPCALL teste8r8_16(struct CPU* cpu, struct Op* op);
+void OPCALL teste8r8_32(struct CPU* cpu, struct Op* op);
+void OPCALL testr8e8_16(struct CPU* cpu, struct Op* op);
+void OPCALL testr8e8_32(struct CPU* cpu, struct Op* op);
+void OPCALL test8_reg(struct CPU* cpu, struct Op* op);
+void OPCALL test8_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL test8_mem32(struct CPU* cpu, struct Op* op);
+
+void OPCALL testr16r16(struct CPU* cpu, struct Op* op);
+void OPCALL teste16r16_16(struct CPU* cpu, struct Op* op);
+void OPCALL teste16r16_32(struct CPU* cpu, struct Op* op);
+void OPCALL testr16e16_16(struct CPU* cpu, struct Op* op);
+void OPCALL testr16e16_32(struct CPU* cpu, struct Op* op);
+void OPCALL test16_reg(struct CPU* cpu, struct Op* op);
+void OPCALL test16_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL test16_mem32(struct CPU* cpu, struct Op* op);
+
+void OPCALL testr32r32(struct CPU* cpu, struct Op* op);
+void OPCALL teste32r32_16(struct CPU* cpu, struct Op* op);
+void OPCALL teste32r32_32(struct CPU* cpu, struct Op* op);
+void OPCALL testr32e32_16(struct CPU* cpu, struct Op* op);
+void OPCALL testr32e32_32(struct CPU* cpu, struct Op* op);
+void OPCALL test32_reg(struct CPU* cpu, struct Op* op);
+void OPCALL test32_mem16(struct CPU* cpu, struct Op* op);
+void OPCALL test32_mem32(struct CPU* cpu, struct Op* op);
+
+void OPCALL jumpO(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNO(struct CPU* cpu, struct Op* op);
+void OPCALL jumpB(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNB(struct CPU* cpu, struct Op* op);
+void OPCALL jumpZ(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNZ(struct CPU* cpu, struct Op* op);
+void OPCALL jumpBE(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNBE(struct CPU* cpu, struct Op* op);
+void OPCALL jumpS(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNS(struct CPU* cpu, struct Op* op);
+void OPCALL jumpL(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNL(struct CPU* cpu, struct Op* op);
+void OPCALL jumpLE(struct CPU* cpu, struct Op* op);
+void OPCALL jumpNLE(struct CPU* cpu, struct Op* op);
+
+#define IS_CMP8() op->func == cmpr8r8 || op->func == cmpe8r8_16 || op->func == cmpe8r8_32 || op->func == cmpr8e8_16 || op->func == cmpr8e8_32 || op->func == cmp8_reg || op->func == cmp8_mem16 || op->func == cmp8_mem32
+#define IS_CMP16() op->func == cmpr16r16 || op->func == cmpe16r16_16 || op->func == cmpe16r16_32 || op->func == cmpr16e16_16 || op->func == cmpr16e16_32 || op->func == cmp16_reg || op->func == cmp16_mem16 || op->func == cmp16_mem32
+#define IS_CMP32() op->func == cmpr32r32 || op->func == cmpe32r32_16 || op->func == cmpe32r32_32 || op->func == cmpr32e32_16 || op->func == cmpr32e32_32 || op->func == cmp32_reg || op->func == cmp32_mem16 || op->func == cmp32_mem32
+#define IS_TEST8() op->func == testr8r8 || op->func == teste8r8_16 || op->func == teste8r8_32 || op->func == testr8e8_16 || op->func == testr8e8_32 || op->func == test8_reg || op->func == test8_mem16 || op->func == test8_mem32
+#define IS_TEST16() op->func == testr16r16 || op->func == teste16r16_16 || op->func == teste16r16_32 || op->func == testr16e16_16 || op->func == testr16e16_32 || op->func == test16_reg || op->func == test16_mem16 || op->func == test16_mem32
+#define IS_TEST32() op->func == testr32r32 || op->func == teste32r32_16 || op->func == teste32r32_32 || op->func == testr32e32_16 || op->func == testr32e32_32 || op->func == test32_reg || op->func == test32_mem16 || op->func == test32_mem32
 
 void jit(struct CPU* cpu, struct Block* block, U32 blockEIP) {
     struct Op* op;
@@ -2515,11 +3139,167 @@ void jit(struct CPU* cpu, struct Block* block, U32 blockEIP) {
             sFlags = subOpInfo[index][op->subInst].setsFlags;
         }
         if (sFlags) {
-            if (!needsToSetFlag(cpu, block, blockEIP, op, sFlags)) {
+			struct Op* opThatUsesFlag = 0;
+
+            if (!needsToSetFlag(cpu, block, blockEIP, op, sFlags, &opThatUsesFlag)) {
                 if (fastDecoder[op->inst]) {
                     fastDecoder[op->inst](op);
                 }
-            }
+			} else if (opThatUsesFlag) {
+				if (opThatUsesFlag->func == jumpO) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpO_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpO_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpO_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNO) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpNO_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpNO_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpNO_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpB) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpB_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpB_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpB_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNB) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpNB_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpNB_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpNB_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpZ) {
+					if (IS_CMP32() || IS_TEST32()) {
+						opThatUsesFlag->func = jumpZ_32;
+					} else if (IS_CMP16() || IS_TEST16()) {
+						opThatUsesFlag->func = jumpZ_16;
+					}
+					else if (IS_CMP8() || IS_TEST8()) {
+						opThatUsesFlag->func = jumpZ_8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNZ) {
+					if (IS_CMP32() || IS_TEST32()) {
+						opThatUsesFlag->func = jumpNZ_32;
+					}
+					else if (IS_CMP16() || IS_TEST16()) {
+						opThatUsesFlag->func = jumpNZ_16;
+					}
+					else if (IS_CMP8() || IS_TEST8()) {
+						opThatUsesFlag->func = jumpNZ_8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpBE) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpBE_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpBE_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpBE_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNBE) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpNBE_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpNBE_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpNBE_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpS) {
+					if (IS_CMP32() || IS_TEST32()) {
+						opThatUsesFlag->func = jumpS_32;
+					}
+					else if (IS_CMP16() || IS_TEST16()) {
+						opThatUsesFlag->func = jumpS_16;
+					}
+					else if (IS_CMP8() || IS_TEST8()) {
+						opThatUsesFlag->func = jumpS_8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNS) {
+					if (IS_CMP32() || IS_TEST32()) {
+						opThatUsesFlag->func = jumpNS_32;
+					}
+					else if (IS_CMP16() || IS_TEST16()) {
+						opThatUsesFlag->func = jumpNS_16;
+					}
+					else if (IS_CMP8() || IS_TEST8()) {
+						opThatUsesFlag->func = jumpNS_8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpL) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpL_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpL_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpL_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNL) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpNL_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpNL_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpNL_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpLE) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpLE_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpLE_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpLE_cmp8;
+					}
+				}
+				else if (opThatUsesFlag->func == jumpNLE) {
+					if (IS_CMP32()) {
+						opThatUsesFlag->func = jumpNLE_cmp32;
+					}
+					else if (IS_CMP16()) {
+						opThatUsesFlag->func = jumpNLE_cmp16;
+					}
+					else if (IS_CMP8()) {
+						opThatUsesFlag->func = jumpNLE_cmp8;
+					}
+				}
+			}
         }
         op = op->next;
     }

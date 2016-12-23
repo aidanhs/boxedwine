@@ -25,6 +25,7 @@
 struct Block{	
     struct Op* ops;
     U32 count;    
+	U32 instructionCount;
     U32 eipCount;
     struct Block* block1;
     struct Block* block2;

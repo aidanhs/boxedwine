@@ -8796,7 +8796,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "#define MMU_PARAM_CPU\n");
         out(data, "#endif\n");
         out(data, "#define setCF(cpu, b) if (b) cpu->flags|=CF; else cpu->flags&=~CF\n");
-        out(data, "#define CYCLES(x) cpu->blockCounter += x; cpu->blockInstructionCount++\n");
+        out(data, "#define CYCLES(x) cpu->blockCounter += x\n");
 
         out(data, "extern struct LazyFlags* FLAGS_NONE;\n");
         out(data, "extern struct LazyFlags* FLAGS_ADD8;\n");

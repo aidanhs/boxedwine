@@ -2629,9 +2629,11 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     data.op->inst = FETCH8(pData)+data.opCode;
     decoder[data.op->inst](pData);
     block->eipCount = 0;
+	block->instructionCount = 0;
     op = block->ops;
     while (op) {
         block->eipCount+=op->eipCount;
+		block->instructionCount++;
         op = op->next;
     }
 }

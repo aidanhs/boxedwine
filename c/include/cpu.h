@@ -214,7 +214,8 @@ void onCreateCPU(struct CPU* cpu);
 INLINE void runBlock(struct CPU* cpu, struct Block* block) {
     cpu->currentBlock = block;
     block->count++;	
-    block->ops->func(cpu, block->ops);
+	cpu->blockInstructionCount += block->instructionCount;
+    block->ops->func(cpu, block->ops);	
 }
 struct Block* getBlock(struct CPU* cpu);
 #ifdef __TEST
