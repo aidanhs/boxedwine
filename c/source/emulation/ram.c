@@ -45,10 +45,16 @@ U32 getFreePageCount() {
 struct CodePageEntry {
     struct Block* block;
     U32 offset;
+	U32 len;
     struct CodePageEntry* next;
+	struct CodePageEntry* prev;
+	struct CodePageEntry* linkedPrev;
+	struct CodePageEntry* linkedNext;
+	struct CodePage* page;
 };
 
-#define CODE_ENTRIES 128
+#define CODE_ENTRIES 512
+#define CODE_ENTRIES_SHIFT 7
 
 struct CodePage {
     struct CodePageEntry* entries[CODE_ENTRIES];
@@ -85,29 +91,67 @@ struct CodePageEntry* allocCodePageEntry() {
     return result;
 }
 
-void freeCodePageEntry(struct CodePageEntry* entry) {
-    entry->next = freeCodePageEntries;
-    freeCodePageEntries = entry;
+void freeCodePageEntry(struct CodePageEntry* entry) {	
+	U32 offset = entry->offset >> CODE_ENTRIES_SHIFT;
+	struct CodePageEntry** entries = entry->page->entries;
+    
+	// remove any entries linked to this one from other pages
+	if (entry->linkedPrev) {
+		entry->linkedPrev->linkedNext = NULL;
+		freeCodePageEntry(entry->linkedPrev);
+		entry->linkedPrev = NULL;
+	}
+	if (entry->linkedNext) {
+		entry->linkedNext->linkedPrev = NULL;
+		freeCodePageEntry(entry->linkedNext);
+		entry->linkedNext = NULL;
+	}
+
+	// remove this entry from this page's list
+	if (entry->prev)
+		entry->prev->next = entry->next;
+	else
+		entries[offset] = entry->next;
+
+	// add the entry to the free list
+	entry->next = freeCodePageEntries;
+	freeCodePageEntries = entry;
 }
 
-void addCode(struct Block* block, int ramPage, int offset) {
-    struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> 5]);
+void addCode(struct Block* block, struct CPU* cpu, U32 ip, U32 len, struct CodePageEntry* link) {
+	U32 ramPage = cpu->memory->ramPage[ip >> 12];
+	U32 offset = ip & 0xFFF;
+	struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> CODE_ENTRIES_SHIFT]);
     if (!*entry) {
         *entry = allocCodePageEntry();
         (*entry)->next = 0;
     } else {
         struct CodePageEntry* add = allocCodePageEntry();
         add->next = *entry;
+		(*entry)->prev = add;
         *entry = add;
     }
     (*entry)->offset = offset;
     (*entry)->block = block;
+	(*entry)->page = &codePages[ramPage];
+	if (offset+len>PAGE_SIZE)
+		(*entry)->len = PAGE_SIZE-offset;
+	else
+		(*entry)->len = len;
+	if (link) {
+		(*entry)->linkedPrev = link;
+		link->linkedNext = (*entry);
+	}
+	if (offset + block->eipCount > PAGE_SIZE) {
+		U32 nextPage = (ip + 0xFFF) & 0xFFFFF000;
+		addCode(block, cpu, nextPage, len - (nextPage - ip), *entry);
+	}
 }
 
 struct Block* getCode(int ramPage, int offset) {
-    struct CodePageEntry* entry = codePages[ramPage].entries[offset >> 5];
+	struct CodePageEntry* entry = codePages[ramPage].entries[offset >> CODE_ENTRIES_SHIFT];
     while (entry) {
-        if (entry->offset == offset)
+        if (entry->offset == offset && !entry->linkedPrev)
             return entry->block;
         entry = entry->next;
     }
@@ -124,23 +168,20 @@ struct Block* getBlockAt(struct Memory* memory, U32 address, U32 freeEntry) {
 
     for (i=0;i<CODE_ENTRIES;i++) {
         struct CodePageEntry* entry = entries[i];
-        struct CodePageEntry* prev = NULL;
 
         while (entry) {                            
-            if (offset>=entry->offset && offset<entry->offset+entry->block->eipCount) {
+            if (offset>=entry->offset && offset<entry->offset+entry->len) {
                 struct Block* result = entry->block;
 
                 if (freeEntry) {
-                    if (prev)
-                        prev->next = entry->next;
-                    else
-                        entries[i] = entry->next;
-                    freeCodePageEntry(entry);
+					if (entry->linkedPrev) {
+						klog("modified code on next page");
+					}
+                    freeCodePageEntry(entry);					
                 }
                 return result;
             }
             hasCode = 1;
-            prev = entry;
             entry = entry->next;
         }
     }
@@ -219,11 +260,9 @@ void freeRamPage(int page) {
             struct CodePageEntry* entry = entries[i];
             while (entry) {
                 struct CodePageEntry* next = entry->next;
-
-                if (entry->block->ops)
-                    freeOp(entry->block->ops);
-                freeBlock(entry->block);
+                                
                 freeCodePageEntry(entry);
+				freeBlock(entry->block);
                 entry = next;
             }
         }

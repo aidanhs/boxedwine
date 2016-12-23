@@ -118,7 +118,6 @@ void runTestCPU() {
     pushCode8(0);
     block = decodeBlock(cpu);
     runBlock(cpu, block);
-    freeOp(block->ops);
     freeBlock(block);
 }
 

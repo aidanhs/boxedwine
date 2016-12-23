@@ -39,7 +39,7 @@ void freeRamPage(int page);
 U8* getAddressOfRamPage(U32 page);
 int getRamRefCount(int page);
 void incrementRamRef(int page);
-void addCode(struct Block* op, int ramPage, int offset);
+void addCode(struct Block* op, struct CPU* cpu, U32 ip, U32 len, struct CodePageEntry* link);
 struct Block* getCode(int ramPage, int offset);
 
 extern U8* ram;

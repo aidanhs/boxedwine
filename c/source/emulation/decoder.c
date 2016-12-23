@@ -258,6 +258,10 @@ void freeBlock(struct Block* block) {
         freeBlockNode(block->referencedFrom);
         block->referencedFrom = next;
     }
+	if (block->ops) {
+		freeOp(block->ops);
+		block->ops = 0;
+	}
     block->block1 = freeBlocks;
     freeBlocks = block;
 }

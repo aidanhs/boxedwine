@@ -1083,11 +1083,11 @@ struct Block* getBlock(struct CPU* cpu) {
         block = getCode(cpu->memory->ramPage[page], ip & 0xFFF);
         if (!block) {
             block = decodeBlock(cpu, cpu->eip.u32);
-            addCode(block, cpu->memory->ramPage[page], ip & 0xFFF);
+            addCode(block, cpu, ip, block->eipCount, NULL);
         }
     } else {		
         block = decodeBlock(cpu, cpu->eip.u32);
-        addCode(block, cpu->memory->ramPage[page], ip & 0xFFF);
+        addCode(block, cpu, ip, block->eipCount, NULL);
     }
     cpu->memory->write[page]=0;
     cpu->memory->mmu[page] = &codePage;
