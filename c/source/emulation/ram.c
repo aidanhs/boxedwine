@@ -53,8 +53,8 @@ struct CodePageEntry {
 	struct CodePage* page;
 };
 
-#define CODE_ENTRIES 512
-#define CODE_ENTRIES_SHIFT 7
+#define CODE_ENTRIES 128
+#define CODE_ENTRIES_SHIFT 5
 
 struct CodePage {
     struct CodePageEntry* entries[CODE_ENTRIES];
