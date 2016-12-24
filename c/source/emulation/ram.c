@@ -118,7 +118,7 @@ void freeCodePageEntry(struct CodePageEntry* entry) {
 	freeCodePageEntries = entry;
 }
 
-void addCode(struct Block* block, struct CPU* cpu, U32 ip, U32 len, struct CodePageEntry* link) {
+void addCode_linked(struct Block* block, struct CPU* cpu, U32 ip, U32 len, struct CodePageEntry* link) {
 	U32 ramPage = cpu->memory->ramPage[ip >> 12];
 	U32 offset = ip & 0xFFF;
 	struct CodePageEntry** entry = &(codePages[ramPage].entries[offset >> CODE_ENTRIES_SHIFT]);
@@ -144,8 +144,12 @@ void addCode(struct Block* block, struct CPU* cpu, U32 ip, U32 len, struct CodeP
 	}
 	if (offset + block->eipCount > PAGE_SIZE) {
 		U32 nextPage = (ip + 0xFFF) & 0xFFFFF000;
-		addCode(block, cpu, nextPage, len - (nextPage - ip), *entry);
+		addCode_linked(block, cpu, nextPage, len - (nextPage - ip), *entry);
 	}
+}
+
+void addCode(struct Block* op, struct CPU* cpu, U32 ip, U32 len) {
+	addCode_linked(op, cpu, ip, len, NULL);
 }
 
 struct Block* getCode(int ramPage, int offset) {
