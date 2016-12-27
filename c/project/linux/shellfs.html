@@ -104,6 +104,10 @@
         <button id="downloadbtn" style="display: none" onclick="buildTree();">Get File(s)</button>
 		<a style="display: none" id="modalLink" href="#openModal">Open</a>
         <a style="display: none" id="modalLinkExe" href="#openModalExe">Open</a>
+
+      <span id="sound-checkbox" style="display: none">
+          <input type="checkbox" id="soundToggle" onclick="toggleSound();" label="whatever">Enable Sound</input>
+      </span>
       <input type="checkbox" id="pointerLock" checked>Lock/hide mouse pointer
       <input type="checkbox" id="showConsole" onclick="toggleConsole();" checked>Show console
       &nbsp;&nbsp;&nbsp;
@@ -143,12 +147,14 @@
     </div>
     <hr>
 
-    <script type="text/javascript" src="dropbox.min.js"></script>
+        <!-- script type="text/javascript" src="dropbox.min.js"></script -->
         <script type="text/javascript" src="browserfs.min.js"></script>
-        <script type="text/javascript" src="jszip.min.js"></script>
+        <!-- script type="text/javascript" src="jszip.min.js"></script -->
         <script type='text/javascript'>
         var AUTO_RUN = true;
+        var SOUND_ENABLED = true;
         var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
+        var SHOW_UPLOAD_DOWNLOAD = false;
         var DEFAULT_MEMORY_ALLOCATION_MB = 64;
         var ROOT = "/root";
         var HOME_DIRECTORY = ROOT + "/home/username/files/";
@@ -158,6 +164,8 @@
         var rootZipFile = getZipFile("root"); //MANUAL:"base.zip";
         var Program = getExecutable(); //MANUAL:"CHOMP.EXE";
         var WorkingDir = getWorkingDirectory(); //MANUAL:"";
+
+        var isSoundEnabled = getSound();
 
         var isRunning = false;
         var uniqueDirs = {};
@@ -211,6 +219,20 @@
             }
             console.log("setting auto run to: "+auto);
             return auto;
+        }
+        function getSound(){
+            var isSoundEnabled =  getParameter("sound");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
+                isSoundEnabled = SOUND_ENABLED;
+            }else if(isSoundEnabled == "true") {
+                isSoundEnabled = true;
+            }else if(isSoundEnabled == "false"){
+                isSoundEnabled = false;
+            }else{
+                isSoundEnabled = SOUND_ENABLED;
+            }
+            console.log("setting sound to: "+isSoundEnabled);
+            return isSoundEnabled;
         }
         function getFileDirectory(){
             
@@ -382,8 +404,10 @@
             BrowserFS.initialize(mfs);
             FS.mount(BFS, {root: '/root'}, '/root');
 
-            document.getElementById('uploadbtn').style.display = "";
-            document.getElementById('downloadbtn').style.display = "";
+            if(SHOW_UPLOAD_DOWNLOAD){
+                document.getElementById('uploadbtn').style.display = "";
+                document.getElementById('downloadbtn').style.display = "";
+            }
             spinnerElement.style.display = 'none';
             if(storageMode === STORAGE_DROPBOX){
                 startEmulator();
@@ -395,6 +419,12 @@
                     var startBtn = document.getElementById('startbtn');
                     startBtn.disabled = false;
                     startBtn.style.display = "";
+
+                    var soundToggle = document.getElementById('soundToggle');
+                    if(isSoundEnabled){
+                        soundToggle.checked = true;
+                    }
+                    //fixme: currently turning sound off breaks build. document.getElementById('sound-checkbox').style.display = "";
                 }
             }        
         }
@@ -415,6 +445,10 @@
         function startEmulator()
         {
             isRunning = true;
+
+            document.getElementById('startbtn').style.display = 'none';
+            document.getElementById('sound-checkbox').style.display = 'none';
+
             var params = getEmulatorParams();
             Module["arguments"] = params;
             
@@ -512,11 +546,9 @@
             for(let i = 0; i < exeFiles.length; i++) {
                 let fullPath = exeFiles[i];
                 let element = document.createElement("li");
-                element.addEventListener("click", function(event){
-                                         execute(fullPath);
-                                         }, false);
-                                         element.innerHTML = fullPath;
-                                         listElement.appendChild(element);
+                element.addEventListener("click", function(event){execute(fullPath);}, false);
+                element.innerHTML = fullPath;
+                listElement.appendChild(element);
             }
             root.appendChild(listElement);
         }
@@ -569,6 +601,10 @@
         }
         function getEmulatorParams() {
             var params = ["-root", "/root", "-m", getMemoryAllocation()];
+            //fixme: currently turning sound off breaks build.
+            //if(!isSoundEnabled){
+            //    params.push("-nosound");
+            //}
             if(WorkingDir.length > 0){
                 params.push("-w");
                 params.push(WorkingDir);
@@ -836,6 +872,10 @@ function toggleConsole() {
     }else{
         console.style.display = 'none';
     }
+}
+function toggleSound() {
+    var el = document.getElementById('soundToggle');
+    isSoundEnabled = el.checked;
 }
 function toggleDirectory(item){
 	var itemWidget =document.getElementById(item);

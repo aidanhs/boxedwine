@@ -10,18 +10,23 @@ BOXEDWINE_SDL    SDL OpenGL context will be used
 
 Javascript
 
-buildjs*.sh/shell.html
-This build script is used to build an emscripten target.  A folder named root containing the linux filesystem must exist in the current directory.
-The contents of the root directory is gzipped up and merged into the emscripten build.
+
+buildjsfs_sdl*.sh/shellfs.sh (default is sdl2)
+This build script integrates the browserfs library [https://github.com/jvilk/BrowserFS].
+It introduces a writeable file store for the HOME_DIRECTORY directory. 
+3 options for setting variable storageMode:
+- STORAGE_DROPBOX (requires configuration - see below)
+- STORAGE_LOCAL_STORAGE
+- STORAGE_MEMORY (default)
 
 settings:
 By default uploading/downloading occurs inside the directory /root/home/username/files/.
 It is possible to modify this by appending a ?dir=somedir to the url, else change HOME_DIRECTORY in shell.html
 also possible to:
  - specify an alternate root zip file system.
- i.e. root=win32.zip. If not set it is assumed the root fs is boxedwine.zip
+ 	i.e. root=win32.zip. If not set it is assumed the root fs is boxedwine.zip and built from a directory called root.
  - specify a zip file to appear uncompressed underneath the HOME_DIRECTORY.
- i.e. app=chomp.zip would appear as /root/home/username/chomp/. Use: zip -r9qdgds 10m chomp.zip ./chomp/*
+ 	i.e. app=chomp.zip would appear as /root/home/username/chomp/. Use: zip -r9qdgds 10m chomp.zip ./chomp/*
  - change memory allocated to boxedwine via DEFAULT_MEMORY_ALLOCATION_MB or ?m=32 on url. Default is 64
  - change the program to execute via ?p=/home/username/files/chomp/CHOMP.EXE. surround in quotes if path includes spaces.
  - set the working directory via ?work=chomp. This simplifies p as it can then be relative to the working directory.
@@ -32,25 +37,31 @@ boxedwine.html?root=win32&app=chomp&work=chomp&p=CHOMP.EXE - no need to add .zip
 boxedwine.html?app=chomp&p=CHOMP.EXE - if p does not start with a ‘/‘ and app is set, then the working directory is set to dir + app, i.e. /home/username/files/chomp
 
 Other configuration options:
-AUTO_RUN - indicates if start button is shown. default true
+AUTO_RUN - indicates if start button is shown or page auto-runs. default true
 ALLOW_PARAM_OVERRIDE_FROM_URL - indicates if url can be appended with params as above for dir, app, m & p.
 
-buildjsfs.sh/shellfs.sh
-This build script integrates the browserfs library [https://github.com/jvilk/BrowserFS].
-It introduces a writeable file store for the HOME_DIRECTORY directory. 
-3 options for setting variable storageMode:
-- STORAGE_DROPBOX
-- STORAGE_LOCAL_STORAGE
-- STORAGE_MEMORY (default - which means readonly)
 
-notes on modes:
-DROPBOX - OAuth dance provided via dropbox.js library [https://github.com/dropbox/dropbox-js].
-Because of this boxedwine must be served from a web server when using this option.
+notes on file system modes:
+DROPBOX - OAuth dance provided via dropbox.js library [https://github.com/dropbox/dropbox-js] and oauth_receiver.html.
+Because of this boxedwine must be served from a web server when using this option (make sure you copy and comment back in dropbox.min.js script).
 Also must set DROPBOX_APP_KEY and RECEIVE_URL (absolute path) inside the html.
-Make remember to also set the receive_url in your dropbox app console.
+Remember to also set the receive_url in your dropbox app console.
 LOCAL_STORAGE - browsers are crap at storage (add to the long list of other things),
-may not be  available and even if it is there are limits depending on browser, os and position of the zodiac.
-MEMORY - likely to be slower then using the buildjsmem_*.sh version. More noticeable for larger file system images.
+may not be  available and even if it is there are limits depending on browser, OS and position of the zodiac.
+MEMORY - likely to be slower then using the buildjs_*.sh version. More noticeable for larger file system images.
 
 other dials/tweaks for emscripten build files.
 see var Module inside the html file.
+
+misc notes:
+You can avoid using url params and hardcode the values straight into the html file.  Search for MANUAL: in html file. 
+Drag and drop is supported. Set AUTO_RUN to false and then drag a directory into the page. A dialog will appear and list entries for all executable files found.
+Getting files into/out of the emulator is provided behind the SHOW_UPLOAD_DOWNLOAD flag in the html. By default it is not enabled. If you wish to use it make sure to copy and comment back in jszip.min.js script). Jszip is used to download a directory.
+
+buildjs*.sh/shell.html
+This was the original build script used to build an emscripten target.  
+A folder named root containing the linux filesystem must exist in the current directory.
+The contents of the root directory is gzipped up and merged into the emscripten build itself.
+Upload/Download functionality is available
+AUTO_RUN, dir, m, work and p parameters are supported
+Drag and drop is also supported
