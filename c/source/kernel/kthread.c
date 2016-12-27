@@ -413,13 +413,13 @@ typedef struct
   {
     gregset_t gregs;
     fpregset_t fpregs;
-  } mcontext_t;
+  } mcontext_tt;
 
 typedef struct sigaltstack {
         void *ss_sp;
         int ss_flags;
         S32 ss_size;
-} stack_t;
+} stack_tt;
 
 # define _SIGSET_NWORDS (1024 / 32)
 typedef struct
@@ -432,8 +432,8 @@ unsigned long int __val[_SIGSET_NWORDS];
 struct ucontext_ia32 {
         unsigned int      uc_flags;        // 0
         unsigned int      uc_link;         // 4
-        stack_t           uc_stack;        // 8
-        mcontext_t uc_mcontext;			   // 20
+        stack_tt           uc_stack;        // 8
+        mcontext_tt uc_mcontext;			   // 20
         __sigset_t   uc_sigmask;   /* mask last for extensibility */
 };
 
