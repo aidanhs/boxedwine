@@ -366,6 +366,8 @@ U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
     safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
     safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
     link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
+    if (!link)
+        return -K_ENOENT;
     len = link->nodeType->length(link);
     writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, link->id, K__S_IFLNK | (node->nodeType->getMode(thread->process, node) & 0xFFF), node->rdev, len, 4096, (len + 4095) / 4096, node->nodeType->lastModified(node), getHardLinkCount(node));
     return 0;
