@@ -26,24 +26,27 @@
 #include "kscheduler.h"
 #include "oss.h"
 #include "kalloc.h"
-
+#include <math.h>
 #include <SDL.h>
 #include <string.h>
 
 struct DspData {
 	BOOL isDspOpen;
+    BOOL closePending;
 	U32 dspFmt;
-	U32 sdlFmt;
-	U32 dspChannels;
+    U32 silent;
+    SDL_AudioSpec want;
+    SDL_AudioSpec got;
+    U32 sameFormat;
 	U32 dspFragSize;
-	U32 dspFreq;
 	U32 bytesPerSecond;
 #define DSP_BUFFER_SIZE 1024*64
 	U8 dspBuffer[DSP_BUFFER_SIZE];
 	S32 dspBufferLen;
 	U32 dspBufferPos;
 	struct KThread* dspWaitingToWriteThread;
-	U32 pauseAtLen;
+	S32 pauseAtLen;
+    struct DspData* next;
 };
 #define pauseEnabled() (data->pauseAtLen!=0xFFFFFFFF)
 
@@ -54,24 +57,58 @@ void closeAudio(struct DspData* data) {
     }
 }
 
+static int cvtBufLen;
+static unsigned char* cvtBuf;
+struct DspData* pendingClose;
+
 void audioCallback(void *userdata, U8* stream, S32 len) {
     S32 available;
     S32 result;
 	struct DspData* data = userdata;
 
 	if (data->dspBufferLen == 0) {
-		memset(stream, 0, len);
+        memset(stream, data->got.silence, len);
+        data->silent = 1;
 		return;
 	}
+    data->silent = 0;
 	available = DSP_BUFFER_SIZE - data->dspBufferPos;
 	if (available>data->dspBufferLen)
 		available = data->dspBufferLen;
-    if (available > len)
-        available = len;
+    
 	if (pauseEnabled() && available > data->pauseAtLen) {
 		available = data->pauseAtLen;
     }
-	memcpy(stream, data->dspBuffer + data->dspBufferPos, available);
+    if (data->sameFormat) {
+        if (available > len)
+            available = len;
+        memcpy(stream, data->dspBuffer + data->dspBufferPos, available);
+        len -= available;
+    } else {
+        S32 requested;
+        static SDL_AudioCVT cvt;
+
+        SDL_BuildAudioCVT(&cvt, data->want.format, data->want.channels, data->want.freq, data->got.format, data->got.channels, data->got.freq);
+        requested = (S32)(ceil(len / cvt.len_ratio));
+        if (available > requested)
+            available = requested;
+     
+        cvt.len = available;
+        if (cvtBufLen && cvtBufLen < cvt.len * cvt.len_mult) {
+            cvtBufLen = 0;
+            SDL_free(cvtBuf);
+            cvtBuf = NULL;
+        }
+        if (!cvtBufLen) {
+            cvtBufLen = cvt.len * cvt.len_mult;
+            cvtBuf = (Uint8 *)SDL_malloc(cvt.len * cvt.len_mult);
+        }
+        cvt.buf = cvtBuf;
+        memcpy(cvt.buf, data->dspBuffer + data->dspBufferPos, available);
+        SDL_ConvertAudio(&cvt);
+        memcpy(stream, cvt.buf, cvt.len_cvt);
+        len -= cvt.len_cvt;
+    }
     result=available;
 	data->dspBufferPos += result;
 	data->dspBufferLen -= result;
@@ -79,47 +116,53 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
 		data->pauseAtLen -= result;
 	if (data->dspBufferPos == DSP_BUFFER_SIZE) {
 		data->dspBufferPos = 0;
-        audioCallback(userdata, stream+result, len-result);
+        audioCallback(userdata, stream+result, len);
         return;
     }
 	if (data->dspWaitingToWriteThread)
 		wakeThread(data->dspWaitingToWriteThread);
-    if (result<len) {
-        memset(stream+result, 0, len-result);
-		printf("audio underflow\n");
+    if (len) {
+        memset(stream+result, data->got.silence, len);
+        if (data->closePending)
+		    printf("audio underflow\n");
     }
 }
 
+void dspCheck();
+
 void openAudio(struct DspData* data) {
-    SDL_AudioSpec want;
-    SDL_AudioSpec got;
-
-    memset(&want, 0, sizeof(SDL_AudioSpec));
-	want.freq = data->dspFreq;
-	want.format = data->sdlFmt;
-	want.channels = data->dspChannels;
     //want.samples = 4096;
-    want.callback = audioCallback;  // you wrote this function elsewhere.
-	want.userdata = data;
+    data->want.callback = audioCallback;  // you wrote this function elsewhere.
+	data->want.userdata = data;
 
-    if (SDL_OpenAudio(&want, &got) < 0) {
+    if (pendingClose)
+        dspCheck();
+    if (pendingClose) {
+        printf("tried to open audio while it was in the process of being closed\n");
+    }
+    if (SDL_OpenAudio(&data->want, &data->got) < 0) {
         printf("Failed to open audio: %s\n", SDL_GetError());
     } 
+    if (data->want.freq != data->got.freq || data->want.channels != data->got.channels || data->want.format != data->got.format) {
+        data->sameFormat = 0;
+    } else {
+        data->sameFormat = 1;
+    }
 	data->isDspOpen = 1;
     SDL_PauseAudio(0);
 	data->pauseAtLen = 0xFFFFFFFF;
-	data->dspFragSize = got.size;
-	data->bytesPerSecond = data->dspFreq * data->dspChannels * ((data->sdlFmt == AUDIO_S16LSB || data->sdlFmt == AUDIO_S16MSB || data->sdlFmt == AUDIO_U16LSB || data->sdlFmt == AUDIO_U16MSB) ? 2 : 1);
-	printf("openAudio: freq=%d(got %d) format=%d(%d/got %d) channels=%d(got %d)\n", data->dspFreq, got.freq, data->dspFmt, data->sdlFmt, got.format, data->dspChannels, got.channels);
+	data->dspFragSize = data->got.size;
+    data->bytesPerSecond = data->want.freq * data->want.channels * ((data->want.format == AUDIO_S16LSB || data->want.format == AUDIO_S16MSB || data->want.format == AUDIO_U16LSB || data->want.format == AUDIO_U16MSB) ? 2 : 1);
+	printf("openAudio: freq=%d(got %d) format=%d(%x/got %x) channels=%d(got %d)\n", data->want.freq, data->got.freq, data->dspFmt, data->want.format, data->got.format, data->want.channels, data->got.channels);
 }
 
 BOOL dsp_init(struct KProcess* process, struct OpenNode* node) {
 	struct DspData* data = kalloc(sizeof(struct DspData), 0);
 	data->dspFmt = AFMT_U8;
-	data->sdlFmt = AUDIO_U8;
-	data->dspChannels = 1;
+	data->want.format = AUDIO_U8;
+	data->want.channels = 1;
 	data->dspFragSize = 5512;
-	data->dspFreq = 11025;
+	data->want.freq = 11025;
 	node->data = data;
     return TRUE;
 }
@@ -202,9 +245,16 @@ void dsp_close(struct OpenNode* node) {
 	struct DspData* data = node->data;
 
     if (data->isDspOpen) {
-        closeAudio(data);
-    }
-	kfree(data, 0);
+        if (data->dspBufferLen) {
+            struct DspData* p = pendingClose;
+            pendingClose = data;
+            pendingClose->next = p;
+            data->closePending = 1;
+        } else {
+            closeAudio(data);
+            kfree(data, 0);
+        }
+    }	
 	node->data = 0;
     freeOpenNode(node);
 }
@@ -224,9 +274,9 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
         if (len!=4) {
             kpanic("SNDCTL_DSP_SPEED was expecting a len of 4");
         }
-		data->dspFreq = readd(MMU_PARAM_THREAD IOCTL_ARG1);
+		data->want.freq = readd(MMU_PARAM_THREAD IOCTL_ARG1);
 		if (write)
-			writed(MMU_PARAM_THREAD IOCTL_ARG1, data->dspFreq);
+            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->want.freq);
         return 0;
     case 0x5003: { // SNDCTL_DSP_STEREO
         U32 fmt;
@@ -235,18 +285,18 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
             kpanic("SNDCTL_DSP_STEREO was expecting a len of 4");
         }
         fmt = readd(MMU_PARAM_THREAD IOCTL_ARG1);
-		if (fmt != data->dspChannels - 1) {
+		if (fmt != data->want.channels - 1) {
             closeAudio(data);
         }
         if (fmt == 0) {
-			data->dspChannels = 1;
+            data->want.channels = 1;
         } else if (fmt == 1) {
-			data->dspChannels = 2;
+            data->want.channels = 2;
         } else {
             kpanic("SNDCTL_DSP_STEREO wasn't expecting a value of %d", fmt);
         }
         if (write)
-			writed(MMU_PARAM_THREAD IOCTL_ARG1, data->dspChannels - 1);
+            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->want.channels - 1);
         return 0;
     }
     case 0x5005: { // SNDCTL_DSP_SETFMT 
@@ -266,35 +316,35 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
         case AFMT_A_LAW:
         case AFMT_IMA_ADPCM:
 			data->dspFmt = AFMT_U8;
-			data->sdlFmt = AUDIO_U8;
+			data->want.format = AUDIO_U8;
             break;
         case AFMT_U8:
 			data->dspFmt = AFMT_U8;
-			data->sdlFmt = AUDIO_U8;
+			data->want.format = AUDIO_U8;
             break;
         case AFMT_S16_LE:
 			data->dspFmt = AFMT_S16_LE;
-			data->sdlFmt = AUDIO_S16LSB;
+			data->want.format = AUDIO_S16LSB;
             break;
         case AFMT_S16_BE:
 			data->dspFmt = AFMT_S16_BE;
-			data->sdlFmt = AUDIO_S16MSB;
+            data->want.format = AUDIO_S16MSB;
             break;
         case AFMT_S8:
 			data->dspFmt = AFMT_S8;
-			data->sdlFmt = AUDIO_S8;
+            data->want.format = AUDIO_S8;
             break;
         case AFMT_U16_LE:
 			data->dspFmt = AFMT_U16_LE;
-			data->sdlFmt = AUDIO_U16LSB;
+            data->want.format = AUDIO_U16LSB;
             break;
         case AFMT_U16_BE:
 			data->dspFmt = AFMT_U16_BE;
-			data->sdlFmt = AUDIO_U16MSB;
+            data->want.format = AUDIO_U16MSB;
             break;
         case AFMT_MPEG:
 			data->dspFmt = AFMT_U8;
-			data->sdlFmt = AUDIO_U8;
+            data->want.format = AUDIO_U8;
             break;
         }
         if (write)
@@ -306,18 +356,18 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
         }
     case 0x5006: {// SOUND_PCM_WRITE_CHANNELS
         U32 channels = readd(MMU_PARAM_THREAD IOCTL_ARG1);
-		if (channels != data->dspChannels) {
+		if (channels != data->want.channels) {
             closeAudio(data);
         }
         if (channels==1) {
-			data->dspChannels = 1;
+            data->want.channels = 1;
         } else if (channels == 2) {
-			data->dspChannels = 2;
+            data->want.channels = 2;
         } else {
-			data->dspChannels = 2;
+            data->want.channels = 2;
         }
         if (write)
-			writed(MMU_PARAM_THREAD IOCTL_ARG1, data->dspChannels);
+            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->want.channels);
         return 0;
         }
     case 0x500A: // SNDCTL_DSP_SETFRAGMENT
@@ -453,3 +503,12 @@ BOOL dsp_canMap(struct OpenNode* node) {
 }
 
 struct NodeAccess dspAccess = {dsp_init, dsp_length, dsp_setLength, dsp_getFilePointer, dsp_seek, dsp_read, dsp_write, dsp_close, dsp_map, dsp_canMap, dsp_ioctl, dsp_setAsync, dsp_isAsync, dsp_waitForEvents, dsp_isWriteReady, dsp_isReadReady};
+
+void dspCheck() {
+    if (pendingClose && !pendingClose->dspBufferLen && pendingClose->silent) {
+        struct DspData* n = pendingClose->next;
+        closeAudio(pendingClose);
+        kfree(pendingClose, 0);
+        pendingClose = n;
+    }
+}

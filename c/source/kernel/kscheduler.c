@@ -232,8 +232,10 @@ extern U64 sysCallTime;
 U64 elapsedTimeMIPS;
 U64 elapsedInstructionsMIPS;
 
+void dspCheck();
 BOOL runSlice() {
     runTimers();
+    dspCheck();
     flipFB();
     if (nextThread) {		
         U64 startTime = getMicroCounter();
