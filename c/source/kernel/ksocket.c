@@ -111,6 +111,7 @@ struct KSocket {
     U32 nl_port;
     struct Node* node;
     struct KSocket* next;
+    struct KSocket* prev;
     struct KSocket* connection;
     BOOL connected; // this will be 0 and connection will be set while connect is blocking
     struct KSockAddress destAddress;
@@ -204,6 +205,33 @@ void updateWaitingList() {
     }
 }
 
+void addWaitingNativeSocket(struct KSocket* s) {
+    if (s->next || s == waitingNativeSockets) {
+        return;
+    }
+    s->next = waitingNativeSockets;
+    if (waitingNativeSockets)
+        waitingNativeSockets->prev = s;
+    waitingNativeSockets = s;
+}
+
+void removeWaitingSocket(struct KSocket* s) {
+    if (s == waitingNativeSockets) {
+        waitingNativeSockets = s->next;
+        if (waitingNativeSockets)
+            waitingNativeSockets->prev = NULL;
+    } else {
+        if (s->prev)
+            s->prev->next = s->next;
+        if (s->next)
+            s->next->prev = s->prev;
+    }
+    s->next = NULL;
+    s->prev = NULL;
+    wakeAndResetWaitingOnReadThreads(s);
+    wakeAndResetWaitingOnWriteThreads(s);
+}
+
 U32 checkWaitingNativeSockets(int timeout) {
     struct timeval t;
     t.tv_sec = 0;
@@ -231,12 +259,7 @@ U32 checkWaitingNativeSockets(int timeout) {
                 if (!found) {
                     s = s->next;
                 } else {
-                    if (!parent) {
-                        waitingNativeSockets = s->next;                        
-                    } else {
-                        parent->next = s->next;
-                    }
-                    s->next = 0;
+                    removeWaitingSocket(s);
                     break;
                 }
             }
@@ -244,29 +267,6 @@ U32 checkWaitingNativeSockets(int timeout) {
         return 1;
     }
     return 0;
-}
-
-void addWaitingNativeSocket(struct KSocket* s) {
-    s->next = waitingNativeSockets;
-    waitingNativeSockets = s;
-}
-
-void removeWaitingSocket(struct KSocket* s) {
-    struct KSocket* parent = waitingNativeSockets;
-    if (s == parent)
-        waitingNativeSockets = parent->next;
-    else {
-        while (parent) {
-            if (parent->next == s) {
-                parent->next = parent->next->next;
-                break;
-            }
-            parent = parent->next;
-        }
-        s->next = 0;
-    }
-    wakeAndResetWaitingOnReadThreads(s);
-    wakeAndResetWaitingOnWriteThreads(s);
 }
 
 void waitOnSocketRead(struct KSocket* s, struct KThread* thread) {
@@ -1408,6 +1408,11 @@ U32 kshutdown(struct KThread* thread, U32 socket, U32 how) {
         return -K_ENOTSOCK;
     }
     s = (struct KSocket*)fd->kobject->data;
+    if (s->nativeSocket) {
+        if (shutdown(s->nativeSocket, how) == 0)
+            return 0;
+        return -1;
+    }
     if (s->type == K_SOCK_DGRAM) {
         kpanic("shutdown on SOCK_DGRAM not implemented");
     }
@@ -1601,31 +1606,39 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     for (i=0;i<hdr.msg_iovlen;i++) {
         U32 p = readd(MMU_PARAM_THREAD hdr.msg_iov + 8 * i);
         U32 len = readd(MMU_PARAM_THREAD hdr.msg_iov + 8 * i + 4);
-        if (pos+len>4096) {
-            kpanic("sendmsg payload was larger than 4096 bytes");
-        }
-        msg->data[pos++] = len;
-        msg->data[pos++] = len >> 8;
-        msg->data[pos++] = len >> 16;
-        msg->data[pos++] = len >> 24;
-        while (len) {
-            msg->data[pos++] = readb(MMU_PARAM_THREAD p++);
-            len--;
-            result++;
+        if (s->nativeSocket) {
+            result+=nativesocket_write(MMU_PARAM_THREAD thread, fd->kobject, p, len);
+        } else {
+            if (pos + len>4096) {
+                kpanic("sendmsg payload was larger than 4096 bytes");
+            }
+            msg->data[pos++] = len;
+            msg->data[pos++] = len >> 8;
+            msg->data[pos++] = len >> 16;
+            msg->data[pos++] = len >> 24;
+            while (len) {
+                msg->data[pos++] = readb(MMU_PARAM_THREAD p++);
+                len--;
+                result++;
+            }
         }
     }
-    msg->next = 0;
-    if (!s->connection->msgs) {
-        s->connection->msgs = msg;
-    } else {
-        next = s->connection->msgs;
-        while (next->next) {
-            next = next->next;
+    if (!s->nativeSocket) {
+        msg->next = 0;
+        if (s->connection) {
+            if (!s->connection->msgs) {
+                s->connection->msgs = msg;
+            }
+            else {
+                next = s->connection->msgs;
+                while (next->next) {
+                    next = next->next;
+                }
+                next->next = msg;
+            }
+            wakeAndResetWaitingOnReadThreads(s->connection);
         }
-        next->next = msg;
     }
-    if (s->connection)
-        wakeAndResetWaitingOnReadThreads(s->connection);
     return result;
 }
 
@@ -1645,6 +1658,17 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
         return -K_ENOTSOCK;
     }
     s = (struct KSocket*)fd->kobject->data;
+    if (s->nativeSocket) {
+        readMsgHdr(MMU_PARAM_THREAD address, &hdr);        
+        for (i = 0; i < hdr.msg_iovlen; i++) {
+            U32 p = readd(MMU_PARAM_THREAD hdr.msg_iov + 8 * i);
+            U32 len = readd(MMU_PARAM_THREAD hdr.msg_iov + 8 * i + 4);
+
+            result += nativesocket_read(MMU_PARAM_THREAD thread, fd->kobject, p, len);
+        }
+        writed(MMU_PARAM_THREAD address + 4, 0); // msg_namelen, set to 0 for connected sockets
+        return result;
+    }
     if (s->domain==K_AF_NETLINK)
         return -K_EIO;
     if (!s->msgs) {
