@@ -341,7 +341,7 @@ struct Wnd* getFirstVisibleWnd() {
         if (ppWnd) {
             wnd = *ppWnd;
 #ifdef SDL2
-            if (wnd->sdlTexture) {
+            if (wnd->sdlTexture || wnd->openGlContext) {
 #else
             if (wnd->sdlSurface) {
 #endif
