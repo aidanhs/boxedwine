@@ -279,6 +279,7 @@ int getDefaultDisplayMode(PixelFormat* pf) {
 void initDisplayModes() {
     if (!modesInitialized) {
         modesInitialized = 1;
+        /*
         if (getDefaultDisplayMode(&(pfs[1]))) {
             numberOfPfs++;
             if (!(pfs[1].dwFlags & PFD_GENERIC_FORMAT)) {
@@ -309,10 +310,10 @@ void initDisplayModes() {
         memcpy(&pfs[2], &pfs[1], sizeof(PixelFormat));
         numberOfPfs++;
         pfs[1].dwFlags|=PFD_GENERIC_FORMAT;
-
+        */
         // accelerated first
-        //initAccelFormats(1);
-        //initAccelFormats(0);               
+        initAccelFormats(1);
+        initAccelFormats(0);               
     }
 }
 

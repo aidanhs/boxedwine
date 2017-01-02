@@ -1520,8 +1520,16 @@ GLAPI void APIENTRY glTexImage3D( GLenum target, GLint level, GLenum internalFor
 	CALL_10(TexImage3D, target, level, internalFormat, width, height, depth, border, format, type, P(pixels));
 }
 
+GLAPI void APIENTRY glTexImage3DEXT(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
+    CALL_10(TexImage3D, target, level, internalFormat, width, height, depth, border, format, type, P(pixels));
+}
+
 GLAPI void APIENTRY glTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels) {
 	CALL_11(TexSubImage3D, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, P(pixels));
+}
+
+GLAPI void APIENTRY glTexSubImage3DEXT(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels) {
+    CALL_11(TexSubImage3D, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, P(pixels));
 }
 
 GLAPI void APIENTRY glCopyTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height ) {

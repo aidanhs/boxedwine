@@ -719,7 +719,9 @@ U32 sdlGetNearestColor(U32 color) {
 #ifdef SDL2
     return SDL_MapRGB(SDL_GetWindowSurface(sdlWindow)->format, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF);
 #else
-    return SDL_MapRGB(surface->format, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF);
+    if (surface)
+        return SDL_MapRGB(surface->format, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF);
+    return color;
 #endif
 }
 

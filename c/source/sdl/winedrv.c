@@ -1140,7 +1140,11 @@ void boxeddrv_wglDescribePixelFormat(struct CPU* cpu) {
 }
 
 void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
-    notImplemented("boxeddrv_wglGetPixelFormat not implemented");
+    struct Wnd* wnd = getWnd(ARG1);
+    if (wnd)
+        EAX = wnd->pixelFormatIndex;
+    else
+        EAX = 0;
 }
 
 void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
@@ -1162,6 +1166,7 @@ void boxeddrv_wglSetPixelFormat(struct CPU* cpu) {
     if (wnd && ARG2 < numberOfPfs) {
         int index = ARG2;
         wnd->pixelFormat = &(pfs[index]);
+        wnd->pixelFormatIndex = index;
         EAX = 1;
     } else {
         EAX = 0;

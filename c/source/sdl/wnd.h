@@ -64,6 +64,7 @@ struct Wnd {
     struct wRECT clientRect;
     const char* text;
     PixelFormat* pixelFormat;
+    U32 pixelFormatIndex;
     void* openGlContext;
     U32 activated;
     U32 processId;

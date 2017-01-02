@@ -941,15 +941,21 @@ static int boxeddrv_wglDescribePixelFormat(HDC hdc, int fmt, UINT size, PIXELFOR
 
 static int boxeddrv_wglGetPixelFormat(HDC hdc) {
     TRACE("boxeddrv_wglGetPixelFormat hdc=%X\n", (int)hdc);
-    CALL_1(BOXED_GL_GET_PIXEL_FORMAT, hdc);
+    CALL_1(BOXED_GL_GET_PIXEL_FORMAT, WindowFromDC(hdc));
 }
 
 static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct wgl_context *share_context, const int *attrib_list);
+static void* glModule;
+
 static PROC boxeddrv_wglGetProcAddress(const char *proc) {
     TRACE("boxeddrv_wglGetProcAddress %s\n", proc);
-    //if (!strcmp(proc, "wglCreateContextAttribsARB"))
-    //    return (PROC)boxeddrv_wglCreateContextAttribsARB;
-    //CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
+    if (!strcmp(proc, "wglCreateContextAttribsARB"))
+        return (PROC)boxeddrv_wglCreateContextAttribsARB;
+
+    if (!glModule)
+        glModule = dlopen("/lib/libm.so.6", RTLD_LAZY);
+    if (glModule)
+        return dlsym(handle, proc);
     return NULL;
 }
 

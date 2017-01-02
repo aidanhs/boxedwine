@@ -25,6 +25,8 @@
 
 glTexImage3D_func ext_glTexImage3D;
 
+void loadExtensions();
+
 #ifdef BOXEDWINE_ES
 #define GL_FUNC(name) es_##name
 #include "es/esopengl.h"
@@ -1092,12 +1094,12 @@ void glcommon_glGetString(struct CPU* cpu) {
         index = STRING_GL_RENDERER;
     } else if (name == GL_VERSION) {
         index = STRING_GL_VERSION;
-        //result = "1.2"
+        result = "1.2 BoxedWine";
     } else if (name == GL_SHADING_LANGUAGE_VERSION) {
         index = STRING_GL_SHADING_LANGUAGE_VERSION;
     } else if (name == GL_EXTENSIONS) {
         index = STRING_GL_EXTENSIONS;
-        result = "";
+        result = "GL_EXT_texture3D GL_VERSION_1_2";
     }
 #ifdef USE_MMU
     if (!cpu->thread->process->strings[index])
@@ -3240,12 +3242,16 @@ void glcommon_glGenTextures(struct CPU* cpu) {
 // GLAPI void APIENTRY glDeleteTextures( GLsizei n, const GLuint *textures) {
 void glcommon_glDeleteTextures(struct CPU* cpu) {
     GLsizei n = ARG1;
-    GL_FUNC(glDeleteTextures)(n, marshalui(cpu, ARG2, n));
+    GLuint* textures = marshalui(cpu, ARG2, n);
+
+    GL_FUNC(glDeleteTextures)(n, textures);
 }
 
 // GLAPI void APIENTRY glBindTexture( GLenum target, GLuint texture ) {
 void glcommon_glBindTexture(struct CPU* cpu) {
-    GL_FUNC(glBindTexture)(ARG1, ARG2);
+    GLenum target = ARG1;
+    GLuint texture = ARG2;
+    GL_FUNC(glBindTexture)(target, texture);
 }
 
 // GLAPI void APIENTRY glPrioritizeTextures( GLsizei n, const GLuint *textures, const GLclampf *priorities ) {
@@ -3413,6 +3419,8 @@ void glcommon_glTexImage3D(struct CPU* cpu) {
     GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
+    if (!ext_glTexImage3D)
+        loadExtensions();
     if (ext_glTexImage3D)
         ext_glTexImage3D(ARG1, ARG2, ARG3, width, height, depth, border, format, type, marshalPixels(cpu, width, height, depth, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG10));
 }
