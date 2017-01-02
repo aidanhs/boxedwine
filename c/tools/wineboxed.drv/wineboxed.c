@@ -952,10 +952,15 @@ static PROC boxeddrv_wglGetProcAddress(const char *proc) {
     if (!strcmp(proc, "wglCreateContextAttribsARB"))
         return (PROC)boxeddrv_wglCreateContextAttribsARB;
 
-    if (!glModule)
-        glModule = dlopen("/lib/libm.so.6", RTLD_LAZY);
-    if (glModule)
-        return dlsym(handle, proc);
+    if (!glModule) {
+        glModule = dlopen("/lib/libGL.so.1", RTLD_LAZY);        
+    } 
+    if (glModule) {
+        PROC result = dlsym(glModule, proc);
+        TRACE("glModule=%p result=%p\n", glModule, result);
+        return result;
+    }
+    TRACE("could not find /lib/libGL.so.1\n");
     return NULL;
 }
 
