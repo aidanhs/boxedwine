@@ -74,4 +74,5 @@ U32 syscall_pipe(struct KThread* thread, U32 address);
 U32 syscall_pipe2(struct KThread* thread, U32 address, U32 flags);
 
 const char* socketAddressName(struct KThread* thread, U32 address, U32 len);
+U32 isNativeSocket(struct KThread* thread, int desc);
 #endif

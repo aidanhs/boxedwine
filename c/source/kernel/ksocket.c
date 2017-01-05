@@ -206,7 +206,7 @@ void updateWaitingList() {
 }
 
 void addWaitingNativeSocket(struct KSocket* s) {
-    if (s->next || s == waitingNativeSockets) {
+    if (s->prev || s->next || s == waitingNativeSockets) {
         return;
     }
     s->next = waitingNativeSockets;
@@ -1270,6 +1270,17 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
             len = sizeof(s->destAddress.data);
         memcopyFromNative(MMU_PARAM_THREAD address + 2, s->destAddress.data, len);
         writed(MMU_PARAM_THREAD plen, 2 + strlen(s->destAddress.data) + 1);
+    }
+    else if (s->nativeSocket && len<=256) {
+        char buf[256];
+        U32 result = getsockname(s->nativeSocket, buf, &len);
+        if (result)
+            result = handleNativeSocketError(thread, s, 0);
+        else {
+            memcopyFromNative(MMU_PARAM_THREAD address, buf, len);
+            writed(MMU_PARAM_THREAD plen, len);
+        }
+        return result;
     } else {
         kwarn("getsockname not implemented");
         return -K_EACCES;
@@ -1667,6 +1678,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             result += nativesocket_read(MMU_PARAM_THREAD thread, fd->kobject, p, len);
         }
         writed(MMU_PARAM_THREAD address + 4, 0); // msg_namelen, set to 0 for connected sockets
+        writed(MMU_PARAM_THREAD address + 20, 0); // msg_controllen
         return result;
     }
     if (s->domain==K_AF_NETLINK)
@@ -1800,4 +1812,17 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
         return result;
     }
     return handleNativeSocketError(thread, s, 0);
+}
+
+U32 isNativeSocket(struct KThread* thread, int desc) {
+    struct KFileDescriptor* fd = getFileDescriptor(thread->process, desc);
+    struct KSocket* s;
+
+    if (fd && fd->kobject->type == KTYPE_SOCK) {
+        struct KSocket* s = (struct KSocket*)fd->kobject->data;
+        if (s->nativeSocket) {
+            return 1;
+        }
+    }
+    return 0;
 }
