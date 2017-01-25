@@ -1661,6 +1661,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     U32 result = 0;
     U32 i;
     U32 pos=0;
+    U32 msg_namelen;
 
     if (!fd) {
         return -K_EBADF;
@@ -1670,14 +1671,37 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     }
     s = (struct KSocket*)fd->kobject->data;
     if (s->nativeSocket) {
+        msg_namelen = readd(MMU_PARAM_THREAD address+4);
         readMsgHdr(MMU_PARAM_THREAD address, &hdr);        
         for (i = 0; i < hdr.msg_iovlen; i++) {
             U32 p = readd(MMU_PARAM_THREAD hdr.msg_iov + 8 * i);
             U32 len = readd(MMU_PARAM_THREAD hdr.msg_iov + 8 * i + 4);
 
-            result += nativesocket_read(MMU_PARAM_THREAD thread, fd->kobject, p, len);
+            if (s->type == K_SOCK_DGRAM && s->domain==K_AF_INET && msg_namelen>=sizeof(struct sockaddr_in)) {
+                struct sockaddr_in in;
+                S32 r;
+                U32 inLen = sizeof(struct sockaddr_in);
+
+                if (len>sizeof(tmp64k))
+                    len = sizeof(tmp64k);
+                r = recvfrom(s->nativeSocket, tmp64k, len, 0, &in, &inLen);
+                if (r>=0) {
+                    memcopyFromNative(MMU_PARAM_THREAD p, tmp64k, r);
+                    // :TODO: maybe copied fields to the expected location rather than assume the structures are the same
+                    memcopyFromNative(MMU_PARAM_THREAD readd(MMU_PARAM_THREAD address), &in, sizeof(in));
+                    writed(MMU_PARAM_THREAD address + 4, inLen);
+                    result+=r;
+                }
+                else if (result)
+                    break;
+                else
+                    result = handleNativeSocketError(thread, s, 0);
+            } else {
+                result += nativesocket_read(MMU_PARAM_THREAD thread, fd->kobject, p, len);
+            }
         }
-        writed(MMU_PARAM_THREAD address + 4, 0); // msg_namelen, set to 0 for connected sockets
+        if (s->type==K_SOCK_STREAM)
+            writed(MMU_PARAM_THREAD address + 4, 0); // msg_namelen, set to 0 for connected sockets
         writed(MMU_PARAM_THREAD address + 20, 0); // msg_controllen
         return result;
     }
