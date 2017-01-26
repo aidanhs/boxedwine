@@ -157,23 +157,23 @@ U32 file_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 U32 file_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 #ifndef USE_MMU
     return write(node->handle, (void*)address, len);
-#else
-    if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
+#else	
+    U32 wrote = 0;
+    while (len) {
+        U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
         U8* ram = getPhysicalAddress(memory, address);
-        return write(node->handle, ram, len);		
-    } else {		
-        U32 wrote = 0;
-        while (len) {
-            U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
-            U8* ram = getPhysicalAddress(memory, address);
-            if (todo>len)
-                todo = len;
+        if (todo>len)
+            todo = len;
+        if (ram)
             wrote+=write(node->handle, ram, todo);		
-            len-=todo;
-            address+=todo;
+        else {
+            memcopyToNative(MMU_PARAM address, tmp64k, todo);
+            wrote+=write(node->handle, tmp64k, todo);		
         }
-        return wrote;
+        len-=todo;
+        address+=todo;
     }
+    return wrote;
 #endif
 }
 
