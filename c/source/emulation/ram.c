@@ -94,7 +94,8 @@ struct CodePageEntry* allocCodePageEntry() {
 void freeCodePageEntry(struct CodePageEntry* entry) {	
 	U32 offset = entry->offset >> CODE_ENTRIES_SHIFT;
 	struct CodePageEntry** entries = entry->page->entries;
-    
+   
+
 	// remove any entries linked to this one from other pages
 	if (entry->linkedPrev) {
 		entry->linkedPrev->linkedNext = NULL;
@@ -112,6 +113,8 @@ void freeCodePageEntry(struct CodePageEntry* entry) {
 		entry->prev->next = entry->next;
 	else
 		entries[offset] = entry->next;
+    if (entry->next)
+        entry->next->prev = entry->prev;
 
 	// add the entry to the free list
 	entry->next = freeCodePageEntries;
