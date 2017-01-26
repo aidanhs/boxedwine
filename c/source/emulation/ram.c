@@ -456,8 +456,10 @@ static void ondemmand(struct Memory* memory, U32 address) {
     BOOL read = IS_PAGE_READ(flags) | IS_PAGE_EXEC(flags);
     BOOL write = IS_PAGE_WRITE(flags);
 
-    memory->ramPage[page] = ram;	
-    memory->flags[page] |= PAGE_IN_RAM;
+    if (read || write) {
+        memory->ramPage[page] = ram;	
+        memory->flags[page] |= PAGE_IN_RAM;
+    }
     if (read && write) {
         memory->mmu[page] = &ramPageWR;
         memory->read[page] = TO_TLB(ram,  address);
@@ -465,9 +467,11 @@ static void ondemmand(struct Memory* memory, U32 address) {
     } else if (write) {
         memory->mmu[page] = &ramPageWO;
         memory->write[page] = TO_TLB(ram,  address);
-    } else {
+    } else if (read) {
         memory->mmu[page] = &ramPageRO;
         memory->read[page] = TO_TLB(ram,  address);
+    } else {
+        memory->mmu[page] = &invalidPage;
     }
 }
 
