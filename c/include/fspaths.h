@@ -8,5 +8,6 @@ BOOL normalizePath(char* path);
 void localPathToRemote(char* path);
 void remotePathToLocal(char* path);
 const char* pathMakeWindowsHappy(const char* path);
+BOOL doesPathExist(const char* path);
 
 #endif

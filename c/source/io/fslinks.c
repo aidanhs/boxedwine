@@ -26,6 +26,7 @@
 #include "opennode.h"
 #include "fspaths.h"
 #include "filesystem.h"
+#include UNISTD
 
 extern PblMap* localSkipLinksMap;
 extern char pathSeperator;

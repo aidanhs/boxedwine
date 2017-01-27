@@ -47,5 +47,9 @@ struct Node {
 
 INLINE U32 getHardLinkCount(struct Node* node) {if (node->nextHardLink) return 2; return 1;}
 void initNodes();
-
+struct Node* getNodeInCache(const char* localPath);
+struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing);
+struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev);
+struct Node* getParentNode(struct Node* node);
+void removeNode(struct Node* node);
 #endif

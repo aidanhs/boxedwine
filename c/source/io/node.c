@@ -22,6 +22,7 @@
 #include "khashmap.h"
 #include "filesystem.h"
 #include "fsfile.h"
+#include "fspaths.h"
 
 static int nodeId = 1;
 static struct KHashmap nodeMap;

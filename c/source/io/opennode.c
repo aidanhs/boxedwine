@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "kprocess.h"
 #include "opennode.h"
 #include "kalloc.h"
 #include "nodeaccess.h"

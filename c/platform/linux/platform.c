@@ -80,11 +80,11 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
 	return result;
 }
 
-int getPixelFormats(PixelFormat* pfd, int maxPfs) {
+int getPixelFormats(PixelFormat* pfs, int maxPfs) {
     pfs[1].nSize = 40;
     pfs[1].nVersion = 1;
-    pfs[1].dwFlags = PFD_SUPPORT_OPENGL|PFD_DRAW_TO_WINDOW|PFD_DOUBLEBUFFER;
-    pfs[1].iPixelType = PFD_TYPE_RGBA;                  
+    pfs[1].dwFlags = K_PFD_SUPPORT_OPENGL|K_PFD_DRAW_TO_WINDOW|K_PFD_DOUBLEBUFFER;
+    pfs[1].iPixelType = K_PFD_TYPE_RGBA;                  
     pfs[1].cRedBits = 8;
     pfs[1].cGreenBits = 8;
     pfs[1].cBlueBits = 8;
@@ -97,9 +97,7 @@ int getPixelFormats(PixelFormat* pfd, int maxPfs) {
     pfs[1].cDepthBits = 24;
     pfs[1].cStencilBits = 8;
     pfs[1].cColorBits = 32;
-    numberOfPfs++;
     memcpy(&pfs[2], &pfs[1], sizeof(PixelFormat));
-    numberOfPfs++;
-    pfs[1].dwFlags|=PFD_GENERIC_FORMAT;
+    pfs[1].dwFlags|=K_PFD_GENERIC_FORMAT;
     return 2;
 }

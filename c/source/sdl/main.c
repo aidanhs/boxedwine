@@ -41,6 +41,7 @@
 #include "sdlwindow.h"
 #include "kalloc.h"
 #include "devmixer.h"
+#include "fspaths.h"
 
 void mesa_init();
 void gl_init();

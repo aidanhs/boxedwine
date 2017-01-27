@@ -17,12 +17,13 @@
  */
 
 #include "platform.h"
+#include "kprocess.h"
 #include "opennode.h"
 #include "kalloc.h"
 #include "memory.h"
 #include "kerror.h"
 #include "nodeaccess.h"
-#include "opennode.h"
+#include "node.h"
 
 struct DirData {
     S32 pos;

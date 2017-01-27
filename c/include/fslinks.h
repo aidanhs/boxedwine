@@ -5,7 +5,6 @@
 
 // if returns true, path will contain the local link
 BOOL followLinks(char* path, int pathSize, U32* isLink);
-BOOL doesPathExist(const char* path);
 BOOL kreadLink(const char* path, char* buffer, int bufferSize, BOOL makeAbsolute);
 
 U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2);

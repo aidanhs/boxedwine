@@ -29,21 +29,6 @@
 
 extern char pathSeperator;
 
-struct Node* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing);
-struct Node* getParentNode(struct Node* node);
-struct Node* getNodeInCache(const char* localPath);
 void initFileSystem(const char* rootPath);
-// slots will be big enough to hold a void*
-struct Node* allocNode(const char* localPath, const char* nativePath, struct NodeType* nodeType, U32 rdev);
-void removeNode(struct Node* node);
-struct OpenNode* allocOpenNode(struct KProcess* process, struct Node* node, U32 handle, U32 flags, struct NodeAccess* nodeAccess);
-void freeOpenNode(struct OpenNode* node);
 struct Node* getLocalAndNativePaths(const char* currentDirectory, const char* path, char* localPath, int localPathSize, char* nativePath, int nativePathSize, U32* isLink);
-
-U32 getDirCount(struct OpenNode* node);
-struct Node* getDirNode(struct OpenNode* node, U32 index);
-
-BOOL doesPathExist(const char* path);
-
-
 #endif

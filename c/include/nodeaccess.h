@@ -22,6 +22,7 @@
 #include "platform.h"
 #include "memory.h"
 #include "kthread.h"
+#include "node.h"
 
 struct KProcess;
 

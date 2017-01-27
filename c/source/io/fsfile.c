@@ -33,6 +33,7 @@
 #include "fsfileaccess.h"
 #include UTIME
 #include MKDIR_INCLUDE
+#include UNISTD
 
 extern char pathSeperator;
 

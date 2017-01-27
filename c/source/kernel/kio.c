@@ -30,6 +30,7 @@
 #include "kstat.h"
 #include "kprocess.h"
 #include "fslinks.h"
+#include "fsdiraccess.h"
 
 #include <errno.h>
 #include <string.h>
