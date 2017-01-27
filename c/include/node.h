@@ -46,4 +46,6 @@ struct Node {
 };
 
 INLINE U32 getHardLinkCount(struct Node* node) {if (node->nextHardLink) return 2; return 1;}
+void initNodes();
+
 #endif

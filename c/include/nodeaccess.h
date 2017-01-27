@@ -30,21 +30,6 @@ struct KProcess;
 #define IOCTL_ARG3 EDI
 #define IOCTL_ARG4 EBP
 
-struct OpenNode {
-    U32 handle;
-    U32 flags;
-    union {
-        struct NodeAccess* access;
-        struct OpenNode* next;
-    };
-    struct Node* node;
-    struct Node* linkedNoded;
-    void* data;
-    U32 idata;
-    struct OpenNode* nextOpen;
-    U64 cachedPosDuringDelete;
-};
-
 struct NodeAccess {
     BOOL (*init)(struct KProcess* process, struct OpenNode* node);
     S64  (*length)(struct OpenNode* node);

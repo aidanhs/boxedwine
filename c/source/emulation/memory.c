@@ -26,6 +26,7 @@
 #include "node.h"
 #include "ksignal.h"
 #include "ksystem.h"
+#include "opennode.h"
 
 #include <string.h>
 #include <setjmp.h>

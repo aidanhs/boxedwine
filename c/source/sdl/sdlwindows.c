@@ -404,7 +404,6 @@ U32 sdlMakeCurrent(void* context) {
 void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
     SDL_GLContext context = NULL;
-    unsigned char* version;
     destroySDL2();
 
     firstWindowCreated = 1;
@@ -451,8 +450,9 @@ void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, 
 }
 
 void displayChanged() {
+#ifndef SDL2
     U32 flags;
-
+#endif
     firstWindowCreated = 1;
 #ifdef SDL2
     destroySDL2();

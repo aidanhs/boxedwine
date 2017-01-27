@@ -63,7 +63,7 @@ U32 mixer_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     struct CPU* cpu = &thread->cpu;
     BOOL read = request & 0x40000000;
     BOOL write = request & 0x80000000;
-    int i;
+    U32 i;
 
     switch (request & 0xFFFF) {
     case 0x5801: // SNDCTL_SYSINFO

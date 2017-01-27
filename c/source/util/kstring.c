@@ -31,3 +31,14 @@ int endsWith(const char *str, const char *suffix)
         return 0;
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
+
+void trimTrailingSpaces(char* path) {
+    int i;
+    int len = strlen(path);
+    for (i=len-1;i>=0;i--) {
+        if (path[i]==' ')
+            path[i] = 0;
+        else
+            break;
+    }
+}

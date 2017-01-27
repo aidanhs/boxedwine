@@ -1273,7 +1273,7 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     }
     else if (s->nativeSocket && len<=256) {
         char buf[256];
-        U32 result = getsockname(s->nativeSocket, buf, &len);
+        U32 result = getsockname(s->nativeSocket, (struct sockaddr*)buf, &len);
         if (result)
             result = handleNativeSocketError(thread, s, 0);
         else {
@@ -1684,11 +1684,11 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
 
                 if (len>sizeof(tmp64k))
                     len = sizeof(tmp64k);
-                r = recvfrom(s->nativeSocket, tmp64k, len, 0, &in, &inLen);
+                r = recvfrom(s->nativeSocket, tmp64k, len, 0, (struct sockaddr*)&in, &inLen);
                 if (r>=0) {
                     memcopyFromNative(MMU_PARAM_THREAD p, tmp64k, r);
                     // :TODO: maybe copied fields to the expected location rather than assume the structures are the same
-                    memcopyFromNative(MMU_PARAM_THREAD readd(MMU_PARAM_THREAD address), &in, sizeof(in));
+                    memcopyFromNative(MMU_PARAM_THREAD readd(MMU_PARAM_THREAD address), (const char*)&in, sizeof(in));
                     writed(MMU_PARAM_THREAD address + 4, inLen);
                     result+=r;
                 }
@@ -1840,7 +1840,6 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
 
 U32 isNativeSocket(struct KThread* thread, int desc) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, desc);
-    struct KSocket* s;
 
     if (fd && fd->kobject->type == KTYPE_SOCK) {
         struct KSocket* s = (struct KSocket*)fd->kobject->data;

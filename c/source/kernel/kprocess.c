@@ -432,7 +432,7 @@ void setupThreadStack(MMU_ARG struct CPU* cpu, const char* programName, int argc
 }
 
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
-    int i;
+    U32 i;
 	struct KFileDescriptor** tmp;
 
     for (i=after;i<process->maxFds;i++) {
@@ -559,7 +559,7 @@ void processOnExitThread(struct KProcess* process) {
 }
 
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle) {
-    if (handle<process->maxFds && handle>=0)
+    if (handle<(FD)process->maxFds && handle>=0)
         return process->fds[handle];
     return 0;
 }

@@ -32,6 +32,7 @@
 #include "ksocket.h"
 #include "kepoll.h"
 #include "ksystem.h"
+#include "fslinks.h"
 
 #include <stdarg.h>
 

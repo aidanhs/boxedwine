@@ -20,5 +20,6 @@
 #define __KSTRING_H__
 
 int endsWith(const char *str, const char *suffix);
+void trimTrailingSpaces(char* path);
 
 #endif

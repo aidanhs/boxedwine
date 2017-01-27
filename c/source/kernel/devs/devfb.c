@@ -352,7 +352,9 @@ void fbSetupScreenForMesa(int width, int height, int depth) {
 }
 
 void fbSetupScreen() {
+#ifndef SDL2
     U32 flags;
+#endif
 
     bOpenGL = 0;
 #ifdef SDL2

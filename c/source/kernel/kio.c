@@ -29,6 +29,7 @@
 #include "filesystem.h"
 #include "kstat.h"
 #include "kprocess.h"
+#include "fslinks.h"
 
 #include <errno.h>
 #include <string.h>
