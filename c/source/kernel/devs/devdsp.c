@@ -387,6 +387,8 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
 		//} audio_buf_info;
 
     case 0x500C: // SNDCTL_DSP_GETOSPACE
+        if (!data->dspFragSize)
+            data->dspFragSize = 1024;
 		writed(MMU_PARAM_THREAD IOCTL_ARG1, (DSP_BUFFER_SIZE - data->dspBufferLen) / data->dspFragSize); // fragments
 		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 4, DSP_BUFFER_SIZE / data->dspFragSize);
 		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, data->dspFragSize);

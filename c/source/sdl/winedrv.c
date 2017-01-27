@@ -1131,7 +1131,7 @@ void boxeddrv_wglCreateContext(struct CPU* cpu) {
 }
 
 void boxeddrv_wglDeleteContext(struct CPU* cpu) {
-    notImplemented("boxeddrv_wglDeleteContext not implemented");
+    displayChanged(); // just guess, seems fine if we just support one context at a time
 }
 
 // HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr

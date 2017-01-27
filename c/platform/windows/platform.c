@@ -20,6 +20,7 @@
 #include "log.h"
 #include "node.h"
 #include "filesystem.h"
+#include "pixelformat.h"
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -103,4 +104,47 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
         return result;
     }
     return 0;
+}
+
+int getPixelFormats(PixelFormat* pfd, int maxPfs) {
+    PIXELFORMATDESCRIPTOR p;
+    HDC hdc = GetDC(GetDesktopWindow());
+    int count = DescribePixelFormat(hdc, 0, 0, NULL);
+    int result = 1;
+    int i;
+
+    for (i=1;i<=count && result<maxPfs;i++) {
+        DescribePixelFormat(hdc, i, sizeof(p), &p);
+        if ((p.dwFlags & PFD_SUPPORT_OPENGL) && p.cColorBits<=32) {
+            pfd[result].nSize = 40;
+            pfd[result].nVersion = 1;
+            pfd[result].dwFlags = p.dwFlags;
+            pfd[result].iPixelType = p.iPixelType;
+            pfd[result].cColorBits = p.cColorBits;
+            pfd[result].cRedBits = p.cRedBits;
+            pfd[result].cRedShift = p.cRedShift;
+            pfd[result].cGreenBits = p.cGreenBits;
+            pfd[result].cGreenShift = p.cGreenShift;
+            pfd[result].cBlueBits = p.cBlueBits;
+            pfd[result].cBlueShift = p.cBlueShift;
+            pfd[result].cAlphaBits = p.cAlphaBits;
+            pfd[result].cAlphaShift = p.cAlphaShift;
+            pfd[result].cAccumBits = p.cAccumBits;
+            pfd[result].cAccumRedBits = p.cAccumRedBits;
+            pfd[result].cAccumGreenBits = p.cAccumGreenBits;
+            pfd[result].cAccumBlueBits = p.cAccumBlueBits;
+            pfd[result].cAccumAlphaBits = p.cAccumAlphaBits;
+            pfd[result].cDepthBits = p.cDepthBits;
+            pfd[result].cStencilBits = p.cStencilBits;
+            pfd[result].cAuxBuffers = p.cAuxBuffers;
+            pfd[result].iLayerType = p.iLayerType;
+            pfd[result].bReserved = p.bReserved;
+            pfd[result].dwLayerMask = p.dwLayerMask;
+            pfd[result].dwVisibleMask = p.dwVisibleMask;
+            pfd[result].dwDamageMask = p.dwDamageMask;
+            result++;
+            fprintf(stderr, "Pixel Format: %d bit (%d%d%d%d) %s:%s depth=%d stencil=%d accum=%d\n", p.cColorBits, p.cRedBits, p.cBlueBits, p.cGreenBits, p.cAlphaBits, (p.dwFlags & K_PFD_GENERIC_FORMAT)?"not accelerated":"accelerated", (p.dwFlags & K_PFD_DOUBLEBUFFER)?"double buffered":"single buffered", p.cDepthBits, p.cStencilBits, p.cAccumBits);
+        }
+    }
+    return result;
 }

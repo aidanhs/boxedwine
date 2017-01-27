@@ -21,6 +21,7 @@
 
 #include "platform.h"
 #include "memory.h"
+#include "pixelformat.h"
 
 struct wRECT {
     S32 left;
@@ -28,35 +29,6 @@ struct wRECT {
     S32 right;
     S32 bottom;
 };
-
-typedef struct tagPixelFormat {
-    U16  nSize;
-    U16  nVersion;
-    U32 dwFlags;
-    U8  iPixelType;
-    U8  cColorBits;
-    U8  cRedBits;
-    U8  cRedShift;
-    U8  cGreenBits;
-    U8  cGreenShift;
-    U8  cBlueBits;
-    U8  cBlueShift;
-    U8  cAlphaBits;
-    U8  cAlphaShift;
-    U8  cAccumBits;
-    U8  cAccumRedBits;
-    U8  cAccumGreenBits;
-    U8  cAccumBlueBits;
-    U8  cAccumAlphaBits;
-    U8  cDepthBits;
-    U8  cStencilBits;
-    U8  cAuxBuffers;
-    U8  iLayerType;
-    U8  bReserved;
-    U32 dwLayerMask;
-    U32 dwVisibleMask;
-    U32 dwDamageMask;
-} PixelFormat;
 
 struct Wnd {
     U32 surface;

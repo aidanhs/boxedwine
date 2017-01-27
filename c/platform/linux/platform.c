@@ -23,6 +23,7 @@
 #include "log.h"
 #include "node.h"
 #include "filesystem.h"
+#include "pixelformat.h"
 
 unsigned long long int getSystemTimeAsMicroSeconds() {
 	struct timeval  tv;
@@ -77,4 +78,28 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
         	closedir(dp);
     	}
 	return result;
+}
+
+int getPixelFormats(PixelFormat* pfd, int maxPfs) {
+    pfs[1].nSize = 40;
+    pfs[1].nVersion = 1;
+    pfs[1].dwFlags = PFD_SUPPORT_OPENGL|PFD_DRAW_TO_WINDOW|PFD_DOUBLEBUFFER;
+    pfs[1].iPixelType = PFD_TYPE_RGBA;                  
+    pfs[1].cRedBits = 8;
+    pfs[1].cGreenBits = 8;
+    pfs[1].cBlueBits = 8;
+    pfs[1].cAlphaBits = 0;
+    pfs[1].cAccumRedBits = 16;
+    pfs[1].cAccumGreenBits = 16;
+    pfs[1].cAccumBlueBits = 16;
+    pfs[1].cAccumAlphaBits = 16;
+    pfs[1].cAccumBits = 64;
+    pfs[1].cDepthBits = 24;
+    pfs[1].cStencilBits = 8;
+    pfs[1].cColorBits = 32;
+    numberOfPfs++;
+    memcpy(&pfs[2], &pfs[1], sizeof(PixelFormat));
+    numberOfPfs++;
+    pfs[1].dwFlags|=PFD_GENERIC_FORMAT;
+    return 2;
 }
