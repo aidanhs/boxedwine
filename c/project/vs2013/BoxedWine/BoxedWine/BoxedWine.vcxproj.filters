@@ -214,6 +214,24 @@
     <ClCompile Include="..\..\..\..\source\kernel\devs\devmixer.c">
       <Filter>source\kernel\devs</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\fslinks.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\opennode.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\fsdiraccess.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\fsfile.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\fsfileaccess.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\io\fspaths.c">
+      <Filter>source\io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -441,6 +459,24 @@
     <ClInclude Include="..\..\..\..\include\ktimer.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\include\fslinks.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\fspaths.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\opennode.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\fsdiraccess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\fsfileaccess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\fsfile.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -494,5 +530,8 @@
     <Filter Include="source\util\pbl">
       <UniqueIdentifier>{59140a27-2526-4bd5-9d85-72fb5804c102}</UniqueIdentifier>
     </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

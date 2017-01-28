@@ -363,7 +363,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\include;$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(VC_IncludePath);..\..\..\..\lib\sdl2\include;..\..\..\..\mesa\include;$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CivNet|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -511,7 +511,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;LOG_SYSCALLS;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -519,8 +519,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>;..\..\..\..\lib\sdl1\lib\x86</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);sdl.lib;SDLmain.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>;..\..\..\..\lib\sdl2\lib\x86</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);sdl2.lib;SDL2main.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>
@@ -1036,7 +1036,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>SUPPORTS_SETJMP;SDL2;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;SDL2;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <UndefinePreprocessorDefinitions>
@@ -1074,6 +1074,11 @@
     <ClInclude Include="..\..\..\..\include\filepath.h" />
     <ClInclude Include="..\..\..\..\include\filesystem.h" />
     <ClInclude Include="..\..\..\..\include\fpu.h" />
+    <ClInclude Include="..\..\..\..\include\fsdiraccess.h" />
+    <ClInclude Include="..\..\..\..\include\fsfile.h" />
+    <ClInclude Include="..\..\..\..\include\fsfileaccess.h" />
+    <ClInclude Include="..\..\..\..\include\fslinks.h" />
+    <ClInclude Include="..\..\..\..\include\fspaths.h" />
     <ClInclude Include="..\..\..\..\include\jit.h" />
     <ClInclude Include="..\..\..\..\include\kalloc.h" />
     <ClInclude Include="..\..\..\..\include\karray.h" />
@@ -1109,6 +1114,7 @@
     <ClInclude Include="..\..\..\..\include\nodeaccess.h" />
     <ClInclude Include="..\..\..\..\include\nodeType.h" />
     <ClInclude Include="..\..\..\..\include\op.h" />
+    <ClInclude Include="..\..\..\..\include\opennode.h" />
     <ClInclude Include="..\..\..\..\include\page.h" />
     <ClInclude Include="..\..\..\..\include\pbl.h" />
     <ClInclude Include="..\..\..\..\include\platform.h" />
@@ -1154,7 +1160,13 @@
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
     <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
+    <ClCompile Include="..\..\..\..\source\io\fsdiraccess.c" />
+    <ClCompile Include="..\..\..\..\source\io\fsfile.c" />
+    <ClCompile Include="..\..\..\..\source\io\fsfileaccess.c" />
+    <ClCompile Include="..\..\..\..\source\io\fslinks.c" />
+    <ClCompile Include="..\..\..\..\source\io\fspaths.c" />
     <ClCompile Include="..\..\..\..\source\io\node.c" />
+    <ClCompile Include="..\..\..\..\source\io\opennode.c" />
     <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />
@@ -1214,6 +1226,9 @@
     <ClCompile Include="..\..\..\..\source\util\pbl\pblPriorityQueue.c" />
     <ClCompile Include="..\..\..\..\source\util\pbl\pblSet.c" />
     <ClCompile Include="..\..\..\..\source\util\ringbuf.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

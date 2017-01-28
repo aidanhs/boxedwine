@@ -12,7 +12,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/c3 /usr/bin/wine /home/username/c3/c3</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\root -m 64 -w /home/username/.wine/drive_c/Games/Descent3Demo2 /usr/bin/wine "c:/Games/Descent3Demo2/Descent 3 Demo 2.exe"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CivNet|Win32'">
@@ -92,7 +92,7 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|Win32'">
-    <LocalDebuggerCommandArguments>-gensrc -root c:\boxedwine_unmodified -m 64 -w /home/username/c3 /usr/bin/wine /home/username/c3/c3</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\root -m 64 -w /home/username/Diablo/Spawn /usr/bin/wine /home/username/tower/SETUP.EXE</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">
