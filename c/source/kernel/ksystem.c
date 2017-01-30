@@ -27,9 +27,7 @@
 #include "bufferaccess.h"
 #include "kstat.h"
 #include "kio.h"
-#include "nodetype.h"
-#include "virtualfile.h"
-#include "filesystem.h"
+#include "fsapi.h"
 
 #include <time.h>
 
@@ -238,8 +236,8 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
     struct KProcess* process;
     const char* args[5];
     char tmp[16];
-    struct NodeAccess out;
-    struct Node* node;
+    struct FsOpenNodeFunc out;
+    struct FsNode* node;
     static char buffer[1024];
     struct KFileDescriptor* fd;
     int i;
@@ -270,7 +268,7 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
     }
     removeProcess(process);
     freeProcess(process);
-    removeNode(node);
+    removeNodeFromCache(node);
     kfree(node, KALLOC_NODE);
     for (i=0;i<sizeof(buffer);i++) {
         if (buffer[i]==10 || buffer[i]==13) {

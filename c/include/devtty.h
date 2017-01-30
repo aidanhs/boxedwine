@@ -19,8 +19,8 @@
 #ifndef __DEVTTY_H__
 #define __DEVTTY_H__
 
-#include "nodeaccess.h"
+#include "fsapi.h"
 
-extern struct NodeAccess ttyAccess;
+extern struct FsOpenNodeFunc ttyAccess;
 
 #endif

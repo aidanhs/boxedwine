@@ -17,12 +17,10 @@
  */
 
 #include "platform.h"
-#include "nodeaccess.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kerror.h"
 #include "ram.h"
 #include "log.h"
+#include "fsapi.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -30,32 +28,32 @@
 char meminfo[128];
 U32 meminfoLen;
 
-BOOL meminfo_init(struct KProcess* process, struct OpenNode* node) {
+BOOL meminfo_init(struct KProcess* process, struct FsOpenNode* node) {
     sprintf(meminfo, "MemTotal: %d kB\nMemFree: %d kB\n", getPageCount()<<2, getFreePageCount()<<2);
     meminfoLen = strlen(meminfo)+1;
     node->idata = 0; // file pos
     return TRUE;
 }
 
-S64 meminfo_length(struct OpenNode* node) {
+S64 meminfo_length(struct FsOpenNode* node) {
     return meminfoLen;
 }
 
-BOOL meminfo_setLength(struct OpenNode* node, S64 len) {
+BOOL meminfo_setLength(struct FsOpenNode* node, S64 len) {
     return FALSE;
 }
 
-S64 meminfo_getFilePointer(struct OpenNode* node) {
+S64 meminfo_getFilePointer(struct FsOpenNode* node) {
     return node->idata;
 }
 
-S64 meminfo_seek(struct OpenNode* node, S64 pos) {
+S64 meminfo_seek(struct FsOpenNode* node, S64 pos) {
     if (pos>meminfoLen)
         pos = meminfoLen;
     return node->idata = (U32)pos;
 }
 
-U32 meminfo_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 meminfo_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     U32 pos = node->idata;
     if (pos>=meminfoLen)
         return -1;
@@ -66,45 +64,45 @@ U32 meminfo_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
     return len;
 }
 
-U32 meminfo_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 meminfo_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return len;
 }
 
-void meminfo_close(struct OpenNode* node) {
-    freeOpenNode(node);
+void meminfo_close(struct FsOpenNode* node) {
+    node->func->free(node);
 }
 
-U32 meminfo_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 meminfo_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void meminfo_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void meminfo_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     if (isAsync)
         kwarn("meminfo_setAsync not implemented");
 }
 
-BOOL meminfo_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL meminfo_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return 0;
 }
 
-void meminfo_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void meminfo_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
     kpanic("waiting on meminfo is not implemented");
 }
 
-BOOL meminfo_isWriteReady(struct OpenNode* node) {
+BOOL meminfo_isWriteReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL meminfo_isReadReady(struct OpenNode* node) {
+BOOL meminfo_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 meminfo_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 meminfo_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
-BOOL meminfo_canMap(struct OpenNode* node) {
+BOOL meminfo_canMap(struct FsOpenNode* node) {
     return FALSE;
 }
 
-struct NodeAccess meminfoAccess = {meminfo_init, meminfo_length, meminfo_setLength, meminfo_getFilePointer, meminfo_seek, meminfo_read, meminfo_write, meminfo_close, meminfo_map, meminfo_canMap, meminfo_ioctl, meminfo_setAsync, meminfo_isAsync, meminfo_waitForEvents, meminfo_isWriteReady, meminfo_isReadReady};
+struct FsOpenNodeFunc meminfoAccess = {meminfo_init, meminfo_length, meminfo_setLength, meminfo_getFilePointer, meminfo_seek, meminfo_read, meminfo_write, meminfo_close, meminfo_map, meminfo_canMap, meminfo_ioctl, meminfo_setAsync, meminfo_isAsync, meminfo_waitForEvents, meminfo_isWriteReady, meminfo_isReadReady};

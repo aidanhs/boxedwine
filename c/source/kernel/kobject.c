@@ -24,7 +24,7 @@
 
 static struct KObject* freeKObjects;
 
-struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data) {
+struct KObject* allocKObject(struct KObjectAccess* access, U32 type, struct FsOpenNode* openNode, struct KSocket* socket) {
     struct KObject* result;
 
     if (freeKObjects) {
@@ -36,7 +36,8 @@ struct KObject* allocKObject(struct KObjectAccess* access, U32 type, void* data)
     }
     result->access = access;
     result->refCount = 1;
-    result->data = data;
+    result->openFile = openNode;
+    result->socket = socket;
     result->type = type;
     return result;
 }

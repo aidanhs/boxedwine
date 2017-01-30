@@ -19,9 +19,9 @@
 #ifndef __BUFFERACCESS_H__
 #define __BUFFERACCESS_H__
 
-#include "nodeaccess.h"
+#include "fsapi.h"
 
-extern struct NodeAccess bufferAccess;
-void makeBufferAccess(struct NodeAccess* nodeAccess);
+extern struct FsOpenNodeFunc bufferAccess;
+void makeBufferAccess(struct FsOpenNodeFunc* nodeAccess);
 
 #endif

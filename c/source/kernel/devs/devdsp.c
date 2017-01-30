@@ -17,9 +17,6 @@
  */
 
 #include "platform.h"
-#include "nodeaccess.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kerror.h"
 #include "log.h"
 #include "kprocess.h"
@@ -29,6 +26,7 @@
 #include <math.h>
 #include <SDL.h>
 #include <string.h>
+#include "fsapi.h"
 
 struct DspData {
 	BOOL isDspOpen;
@@ -156,7 +154,7 @@ void openAudio(struct DspData* data) {
 	printf("openAudio: freq=%d(got %d) format=%d(%x/got %x) channels=%d(got %d)\n", data->want.freq, data->got.freq, data->dspFmt, data->want.format, data->got.format, data->want.channels, data->got.channels);
 }
 
-BOOL dsp_init(struct KProcess* process, struct OpenNode* node) {
+BOOL dsp_init(struct KProcess* process, struct FsOpenNode* node) {
 	struct DspData* data = kalloc(sizeof(struct DspData), 0);
 	data->dspFmt = AFMT_U8;
 	data->want.format = AUDIO_U8;
@@ -167,29 +165,29 @@ BOOL dsp_init(struct KProcess* process, struct OpenNode* node) {
     return TRUE;
 }
 
-S64 dsp_length(struct OpenNode* node) {
+S64 dsp_length(struct FsOpenNode* node) {
     return 0;
 }
 
-BOOL dsp_setLength(struct OpenNode* node, S64 len) {
+BOOL dsp_setLength(struct FsOpenNode* node, S64 len) {
     return FALSE;
 }
 
-S64 dsp_getFilePointer(struct OpenNode* node) {
+S64 dsp_getFilePointer(struct FsOpenNode* node) {
     return 0;
 }
 
-S64 dsp_seek(struct OpenNode* node, S64 pos) {
+S64 dsp_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 dsp_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 dsp_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
 extern struct KThread* currentThread;
 
-U32 dsp_write(MMU_ARG struct OpenNode* node, U32 address, U32 l) {
+U32 dsp_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 l) {
     S32 len = (S32)l;
     S32 available;
     S32 result;
@@ -241,7 +239,7 @@ U32 dsp_write(MMU_ARG struct OpenNode* node, U32 address, U32 l) {
     return result;
 }
 
-void dsp_close(struct OpenNode* node) {
+void dsp_close(struct FsOpenNode* node) {
 	struct DspData* data = node->data;
 
     if (data->isDspOpen) {
@@ -256,10 +254,10 @@ void dsp_close(struct OpenNode* node) {
         }
     }	
 	node->data = 0;
-    freeOpenNode(node);
+    node->func->free(node);
 }
 
-U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     U32 len = (request >> 16) & 0x3FFF;
     struct CPU* cpu = &thread->cpu;
     //BOOL read = request & 0x40000000;
@@ -468,16 +466,16 @@ U32 dsp_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void dsp_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void dsp_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     if (isAsync)
         kwarn("dsp_setAsync not implemented");
 }
 
-BOOL dsp_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL dsp_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return 0;
 }
 
-void dsp_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void dsp_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
 	struct DspData* data = node->data;
 
     if (events & K_POLLOUT) {
@@ -488,23 +486,23 @@ void dsp_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events
     }
 }
 
-BOOL dsp_isWriteReady(struct OpenNode* node) {
+BOOL dsp_isWriteReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL dsp_isReadReady(struct OpenNode* node) {
+BOOL dsp_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 dsp_map(MMU_ARG struct OpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 dsp_map(MMU_ARG struct FsOpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
-BOOL dsp_canMap(struct OpenNode* node) {
+BOOL dsp_canMap(struct FsOpenNode* node) {
     return FALSE;
 }
 
-struct NodeAccess dspAccess = {dsp_init, dsp_length, dsp_setLength, dsp_getFilePointer, dsp_seek, dsp_read, dsp_write, dsp_close, dsp_map, dsp_canMap, dsp_ioctl, dsp_setAsync, dsp_isAsync, dsp_waitForEvents, dsp_isWriteReady, dsp_isReadReady};
+struct FsOpenNodeFunc dspAccess = {dsp_init, dsp_length, dsp_setLength, dsp_getFilePointer, dsp_seek, dsp_read, dsp_write, dsp_close, dsp_map, dsp_canMap, dsp_ioctl, dsp_setAsync, dsp_isAsync, dsp_waitForEvents, dsp_isWriteReady, dsp_isReadReady};
 
 void dspCheck() {
     if (pendingClose && !pendingClose->dspBufferLen && pendingClose->silent) {

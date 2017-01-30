@@ -17,17 +17,14 @@
  */
 
 #include "platform.h"
-#include "nodeaccess.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kerror.h"
 #include "kprocess.h"
 #include <SDL.h>
 #include "log.h"
-#include "nodeaccess.h"
 #include "kthread.h"
 #include "kmmap.h"
 #include "kalloc.h"
+#include "fsapi.h"
 
 U32 windowCX;
 U32 windowCY;
@@ -470,7 +467,7 @@ static U8* fb_physicalAddress(MMU_ARG U32 address) {
 struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
 #endif
 
-BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
+BOOL fb_init(struct KProcess* process, struct FsOpenNode* node) {
     if (!fbinit) {		
 
         fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
@@ -501,26 +498,26 @@ BOOL fb_init(struct KProcess* process, struct OpenNode* node) {
     return TRUE;
 }
 
-S64 fb_length(struct OpenNode* node) {
+S64 fb_length(struct FsOpenNode* node) {
     return fb_fix_screeninfo.smem_len;
 }
 
-BOOL fb_setLength(struct OpenNode* node, S64 len) {
+BOOL fb_setLength(struct FsOpenNode* node, S64 len) {
     return FALSE;
 }
 
-S64 fb_getFilePointer(struct OpenNode* node) {
+S64 fb_getFilePointer(struct FsOpenNode* node) {
     return node->idata;
 }
 
-S64 fb_seek(struct OpenNode* node, S64 pos) {
+S64 fb_seek(struct FsOpenNode* node, S64 pos) {
     if (pos>fb_fix_screeninfo.smem_len)
         pos = fb_fix_screeninfo.smem_len;
     node->idata = (U32)pos;
     return pos;
 }
 
-U32 fb_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 fb_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     if (node->idata+len>fb_fix_screeninfo.line_length)
         len = fb_fix_screeninfo.line_length-node->idata;
     memcopyFromNative(MMU_PARAM address, screenPixels+node->idata, len);
@@ -528,7 +525,7 @@ U32 fb_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
     return len;
 }
 
-U32 fb_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 fb_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     if (node->idata+len>fb_fix_screeninfo.line_length)
         len = fb_fix_screeninfo.line_length-node->idata;
     memcopyToNative(MMU_PARAM address, screenPixels+node->idata, len);
@@ -536,11 +533,11 @@ U32 fb_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
     return len;
 }
 
-void fb_close(struct OpenNode* node) {
-    freeOpenNode(node);
+void fb_close(struct FsOpenNode* node) {
+    node->func->free(node);
 }
 
-U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 fb_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     struct CPU* cpu=&thread->cpu;
 
     switch(request) {
@@ -573,29 +570,29 @@ U32 fb_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return 0;
 }
 
-void fb_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void fb_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     if (isAsync)
         kwarn("fb_setAsync not implemented");
 }
 
-BOOL fb_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL fb_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return 0;
 }
 
-void fb_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void fb_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
     kpanic("fb_waitForEvents not implemented");
 }
 
 
-BOOL fb_isWriteReady(struct OpenNode* node) {
+BOOL fb_isWriteReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL fb_isReadReady(struct OpenNode* node) {
+BOOL fb_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 fb_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 fb_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 #ifdef USE_MMU
     U32 pageStart = fb_fix_screeninfo.smem_start >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
@@ -617,11 +614,11 @@ U32 fb_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 fl
     return fb_fix_screeninfo.smem_start;
 }
 
-BOOL fb_canMap(struct OpenNode* node) {
+BOOL fb_canMap(struct FsOpenNode* node) {
     return TRUE;
 }
 
-struct NodeAccess fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_setAsync, fb_isAsync, fb_waitForEvents, fb_isWriteReady, fb_isReadReady};
+struct FsOpenNodeFunc fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePointer, fb_seek, fb_read, fb_write, fb_close, fb_map, fb_canMap, fb_ioctl, fb_setAsync, fb_isAsync, fb_waitForEvents, fb_isWriteReady, fb_isReadReady};
 
 void flipFB() {
     if (updateAvailable && !bOpenGL) {

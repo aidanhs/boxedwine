@@ -17,48 +17,46 @@
  */
 
 #include "platform.h"
-#include "nodeaccess.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kerror.h"
 #include "kprocess.h"
 #include "oss.h"
+#include "fsapi.h"
 
-BOOL mixer_init(struct KProcess* process, struct OpenNode* node) {
+BOOL mixer_init(struct KProcess* process, struct FsOpenNode* node) {
     return TRUE;
 }
 
-S64 mixer_length(struct OpenNode* node) {
+S64 mixer_length(struct FsOpenNode* node) {
     return 0;
 }
 
-BOOL mixer_setLength(struct OpenNode* node, S64 len) {
+BOOL mixer_setLength(struct FsOpenNode* node, S64 len) {
     return FALSE;
 }
 
-S64 mixer_getFilePointer(struct OpenNode* node) {
+S64 mixer_getFilePointer(struct FsOpenNode* node) {
     return 0;
 }
 
-S64 mixer_seek(struct OpenNode* node, S64 pos) {
+S64 mixer_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 mixer_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 mixer_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
 extern struct KThread* currentThread;
 
-U32 mixer_write(MMU_ARG struct OpenNode* node, U32 address, U32 l) {
+U32 mixer_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 l) {
     return 0;
 }
 
-void mixer_close(struct OpenNode* node) {    
-    freeOpenNode(node);
+void mixer_close(struct FsOpenNode* node) {    
+    node->func->free(node);
 }
 
-U32 mixer_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 mixer_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     U32 len = (request >> 16) & 0x3FFF;
     struct CPU* cpu = &thread->cpu;
     BOOL read = request & 0x40000000;
@@ -139,32 +137,32 @@ U32 mixer_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -K_ENODEV;
 }
 
-void mixer_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void mixer_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     if (isAsync)
         kwarn("mixer_setAsync not implemented");
 }
 
-BOOL mixer_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL mixer_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return 0;
 }
 
-void mixer_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void mixer_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
 }
 
-BOOL mixer_isWriteReady(struct OpenNode* node) {
+BOOL mixer_isWriteReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL mixer_isReadReady(struct OpenNode* node) {
+BOOL mixer_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 mixer_map(MMU_ARG struct OpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 mixer_map(MMU_ARG struct FsOpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
-BOOL mixer_canMap(struct OpenNode* node) {
+BOOL mixer_canMap(struct FsOpenNode* node) {
     return FALSE;
 }
 
-struct NodeAccess mixerAccess = {mixer_init, mixer_length, mixer_setLength, mixer_getFilePointer, mixer_seek, mixer_read, mixer_write, mixer_close, mixer_map, mixer_canMap, mixer_ioctl, mixer_setAsync, mixer_isAsync, mixer_waitForEvents, mixer_isWriteReady, mixer_isReadReady};
+struct FsOpenNodeFunc mixerAccess = {mixer_init, mixer_length, mixer_setLength, mixer_getFilePointer, mixer_seek, mixer_read, mixer_write, mixer_close, mixer_map, mixer_canMap, mixer_ioctl, mixer_setAsync, mixer_isAsync, mixer_waitForEvents, mixer_isWriteReady, mixer_isReadReady};

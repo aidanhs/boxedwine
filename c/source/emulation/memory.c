@@ -23,10 +23,8 @@
 #include "kprocess.h"
 #include "kalloc.h"
 #include "kfmmap.h"
-#include "node.h"
 #include "ksignal.h"
 #include "ksystem.h"
-#include "opennode.h"
 
 #include <string.h>
 #include <setjmp.h>
@@ -60,7 +58,7 @@ void log_pf(struct KProcess* process, U32 address) {
     printf("Mapped Files:\n");
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount)
-            printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+(int)process->mappedFiles[i].len, ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath);
+            printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+(int)process->mappedFiles[i].len, process->mappedFiles[i].file->openFile->node->path);
     }
 #endif
     walkStack(cpu, cpu->eip.u32, EBP, 2);

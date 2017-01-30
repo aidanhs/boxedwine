@@ -17,9 +17,6 @@
  */
 
 #include "platform.h"
-#include "nodeaccess.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kerror.h"
 #include "log.h"
 #include "kthread.h"
@@ -28,6 +25,7 @@
 #include "ksystem.h"
 #include "ksignal.h"
 #include "kscheduler.h"
+#include "fsapi.h"
 
 #include <string.h>
 
@@ -83,7 +81,7 @@ void freeEventData(struct EventData* data) {
     freeEvents = data;
 }
 
-BOOL input_init(struct KProcess* process, struct OpenNode* node) {
+BOOL input_init(struct KProcess* process, struct FsOpenNode* node) {
     if (!freeEventsInitialized) {
         U32 i;
 
@@ -96,24 +94,24 @@ BOOL input_init(struct KProcess* process, struct OpenNode* node) {
     return TRUE;
 }
 
-S64 input_length(struct OpenNode* node) {
+S64 input_length(struct FsOpenNode* node) {
     return 0;
 }
 
-BOOL input_setLength(struct OpenNode* node, S64 len) {
+BOOL input_setLength(struct FsOpenNode* node, S64 len) {
     return FALSE;
 }
 
-S64 input_getFilePointer(struct OpenNode* node) {
+S64 input_getFilePointer(struct FsOpenNode* node) {
     return 0;
 }
 
-S64 input_seek(struct OpenNode* node, S64 pos) {
+S64 input_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
 // :TODO: can this be blocking
-U32 input_read(MMU_ARG struct InputEventQueue* queue, struct OpenNode* node, U32 address, U32 len) {
+U32 input_read(MMU_ARG struct InputEventQueue* queue, struct FsOpenNode* node, U32 address, U32 len) {
     U32 result = 0;
 
     while (queue->firstQueuedEvent && result+16<=len) {
@@ -135,11 +133,11 @@ U32 input_read(MMU_ARG struct InputEventQueue* queue, struct OpenNode* node, U32
     return result;
 }
 
-U32 input_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 input_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return len;
 }
 
-void input_waitForEvents(struct InputEventQueue* queue, struct OpenNode* node, struct KThread* thread, U32 events) {
+void input_waitForEvents(struct InputEventQueue* queue, struct FsOpenNode* node, struct KThread* thread, U32 events) {
     if (events & K_POLLIN) {
         if (queue->waitingToReadThread)
             kpanic("%d tried to wait on a input read, but %d is already waiting.", thread->id, queue->waitingToReadThread->id);
@@ -148,10 +146,10 @@ void input_waitForEvents(struct InputEventQueue* queue, struct OpenNode* node, s
     }
 }
 
-void input_close(struct InputEventQueue* queue, struct OpenNode* node) {
+void input_close(struct InputEventQueue* queue, struct FsOpenNode* node) {
     struct EventData* e = queue->firstQueuedEvent;
 
-    freeOpenNode(node);
+    node->func->free(node);
     while (e) {
         struct EventData* next = e->next;
         freeEventData(e);
@@ -188,7 +186,7 @@ void writeAbs(MMU_ARG U32 address, U32 value, U32 min, U32 max) {
     writed(MMU_PARAM address+20, 96);
 }
 
-U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct FsOpenNode* node, U32 request) {
     struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
@@ -228,7 +226,7 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Op
     return -1;
 }
 
-void input_setAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void input_setAsync(struct InputEventQueue* queue, struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     if (isAsync) {
         if (queue->asyncProcessId && queue->asyncProcessId!=process->id) {
             kpanic("touch_setAsync only supports one process: %d tried to attached but %d already has it", process->id, queue->asyncProcessId);
@@ -244,27 +242,27 @@ void input_setAsync(struct InputEventQueue* queue, struct OpenNode* node, struct
     }
 }
 
-BOOL input_isAsync(struct InputEventQueue* queue, struct OpenNode* node, struct KProcess* process) {
+BOOL input_isAsync(struct InputEventQueue* queue, struct FsOpenNode* node, struct KProcess* process) {
     return queue->asyncProcessId == process->id;
 }
 
-BOOL input_isWriteReady(struct InputEventQueue* queue, struct OpenNode* node) {
+BOOL input_isWriteReady(struct InputEventQueue* queue, struct FsOpenNode* node) {
     return freeEvents!=0;
 }
 
-BOOL input_isReadReady(struct InputEventQueue* queue, struct OpenNode* node) {
+BOOL input_isReadReady(struct InputEventQueue* queue, struct FsOpenNode* node) {
     return queue->firstQueuedEvent!=0;
 }
 
-U32 input_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 input_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
-BOOL input_canMap(struct OpenNode* node) {
+BOOL input_canMap(struct FsOpenNode* node) {
     return FALSE;
 }
 
-BOOL touch_init(struct KProcess* process, struct OpenNode* node) {
+BOOL touch_init(struct KProcess* process, struct FsOpenNode* node) {
     touchEvents.bustype = 3;
     touchEvents.vendor = 0;
     touchEvents.product = 0;
@@ -274,27 +272,27 @@ BOOL touch_init(struct KProcess* process, struct OpenNode* node) {
     return input_init(process, node);
 }
 
-U32 touch_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 touch_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return input_read(MMU_PARAM &touchEvents, node, address, len);
 }
 
-void touch_close(struct OpenNode* node) {
+void touch_close(struct FsOpenNode* node) {
     input_close(&touchEvents, node);
 }
 
-void touch_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void touch_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
     input_waitForEvents(&touchEvents, node, thread, events);
 }
 
-BOOL touch_isReadReady(struct OpenNode* node) {
+BOOL touch_isReadReady(struct FsOpenNode* node) {
     return input_isReadReady(&touchEvents, node);
 }
 
-BOOL touch_isWriteReady(struct OpenNode* node) {
+BOOL touch_isWriteReady(struct FsOpenNode* node) {
     return input_isWriteReady(&touchEvents, node);
 }
 
-U32 touch_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 touch_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
@@ -350,17 +348,17 @@ U32 touch_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -1;
 }
 
-void touch_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void touch_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     input_setAsync(&touchEvents, node, process, fd, isAsync);
 }
 
-BOOL touch_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL touch_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return input_isAsync(&touchEvents, node, process);
 }
 
-struct NodeAccess touchInputAccess = {touch_init, input_length, input_setLength, input_getFilePointer, input_seek, touch_read, input_write, touch_close, input_map, input_canMap, touch_ioctl, touch_setAsync, touch_isAsync, touch_waitForEvents, touch_isWriteReady, touch_isReadReady};
+struct FsOpenNodeFunc touchInputAccess = {touch_init, input_length, input_setLength, input_getFilePointer, input_seek, touch_read, input_write, touch_close, input_map, input_canMap, touch_ioctl, touch_setAsync, touch_isAsync, touch_waitForEvents, touch_isWriteReady, touch_isReadReady};
 
-BOOL mouse_init(struct KProcess* process, struct OpenNode* node) {
+BOOL mouse_init(struct KProcess* process, struct FsOpenNode* node) {
     mouseEvents.bustype = 3;
     mouseEvents.vendor = 0x046d;
     mouseEvents.product = 0xc52b;
@@ -370,27 +368,27 @@ BOOL mouse_init(struct KProcess* process, struct OpenNode* node) {
     return input_init(process, node);
 }
 
-U32 mouse_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 mouse_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return input_read(MMU_PARAM &mouseEvents, node, address, len);
 }
 
-void mouse_close(struct OpenNode* node) {
+void mouse_close(struct FsOpenNode* node) {
     input_close(&mouseEvents, node);
 }
 
-void mouse_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void mouse_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
     input_waitForEvents(&mouseEvents, node, thread, events);
 }
 
-BOOL mouse_isReadReady(struct OpenNode* node) {
+BOOL mouse_isReadReady(struct FsOpenNode* node) {
     return input_isReadReady(&mouseEvents, node);
 }
 
-BOOL mouse_isWriteReady(struct OpenNode* node) {
+BOOL mouse_isWriteReady(struct FsOpenNode* node) {
     return input_isWriteReady(&mouseEvents, node);
 }
 
-U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 mouse_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
@@ -446,17 +444,17 @@ U32 mouse_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -1;
 }
 
-void mouse_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void mouse_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     input_setAsync(&mouseEvents, node, process, fd, isAsync);
 }
 
-BOOL mouse_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL mouse_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return input_isAsync(&mouseEvents, node, process);
 }
 
-struct NodeAccess mouseInputAccess = {mouse_init, input_length, input_setLength, input_getFilePointer, input_seek, mouse_read, input_write, mouse_close, input_map, input_canMap, mouse_ioctl, mouse_setAsync, mouse_isAsync, mouse_waitForEvents, mouse_isWriteReady, mouse_isReadReady};
+struct FsOpenNodeFunc mouseInputAccess = {mouse_init, input_length, input_setLength, input_getFilePointer, input_seek, mouse_read, input_write, mouse_close, input_map, input_canMap, mouse_ioctl, mouse_setAsync, mouse_isAsync, mouse_waitForEvents, mouse_isWriteReady, mouse_isReadReady};
 
-BOOL keyboard_init(struct KProcess* process, struct OpenNode* node) {
+BOOL keyboard_init(struct KProcess* process, struct FsOpenNode* node) {
     keyboardEvents.bustype = 0x11;
     keyboardEvents.vendor = 1;
     keyboardEvents.product = 1;
@@ -466,27 +464,27 @@ BOOL keyboard_init(struct KProcess* process, struct OpenNode* node) {
     return input_init(process, node);
 }
 
-U32 keyboard_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 keyboard_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return input_read(MMU_PARAM &keyboardEvents, node, address, len);
 }
 
-void keyboard_close(struct OpenNode* node) {
+void keyboard_close(struct FsOpenNode* node) {
     input_close(&keyboardEvents, node);
 }
 
-void keyboard_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void keyboard_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
     input_waitForEvents(&keyboardEvents, node, thread, events);
 }
 
-BOOL keyboard_isReadReady(struct OpenNode* node) {
+BOOL keyboard_isReadReady(struct FsOpenNode* node) {
     return input_isReadReady(&keyboardEvents, node);
 }
 
-BOOL keyboard_isWriteReady(struct OpenNode* node) {
+BOOL keyboard_isWriteReady(struct FsOpenNode* node) {
     return input_isWriteReady(&keyboardEvents, node);
 }
 
-U32 keyboard_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 keyboard_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     struct CPU* cpu = &thread->cpu;
 
     switch (request & 0xFFFF) {
@@ -607,15 +605,15 @@ U32 keyboard_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return -1;
 }
 
-void keyboard_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void keyboard_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     input_setAsync(&keyboardEvents, node, process, fd, isAsync);
 }
 
-BOOL keyboard_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL keyboard_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return input_isAsync(&keyboardEvents, node, process);
 }
 
-struct NodeAccess keyboardInputAccess = {keyboard_init, input_length, input_setLength, input_getFilePointer, input_seek, keyboard_read, input_write, keyboard_close, input_map, input_canMap, keyboard_ioctl, keyboard_setAsync, keyboard_isAsync, keyboard_waitForEvents, keyboard_isWriteReady, keyboard_isReadReady};
+struct FsOpenNodeFunc keyboardInputAccess = {keyboard_init, input_length, input_setLength, input_getFilePointer, input_seek, keyboard_read, input_write, keyboard_close, input_map, input_canMap, keyboard_ioctl, keyboard_setAsync, keyboard_isAsync, keyboard_waitForEvents, keyboard_isWriteReady, keyboard_isReadReady};
 
 void queueEvent(struct InputEventQueue* queue, U32 type, U32 code, U32 value, U64 time) {
     struct EventData* data = allocEventData();

@@ -19,14 +19,11 @@
 #include "kobject.h"
 #include "kprocess.h"
 #include "kobjectaccess.h"
-#include "nodeaccess.h"
-#include "node.h"
-#include "nodetype.h"
 #include "log.h"
-#include "filesystem.h"
+#include "fsapi.h"
 
 void kfile_onDelete(struct KObject* obj) {
-    ((struct OpenNode*)obj->data)->access->close((struct OpenNode*)obj->data);
+    obj->openFile->func->close(obj->openFile);
 }
 
 void kfile_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -40,18 +37,16 @@ BOOL kfile_isBlocking(struct KObject* obj) {
 }
 
 void kfile_setAsync(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    openNode->access->setAsync(openNode, process, fd, isAsync);
+    obj->openFile->func->setAsync(obj->openFile, process, fd, isAsync);
 }
 
 BOOL kfile_isAsync(struct KObject* obj, struct KProcess* process) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->isAsync(openNode, process);
+    return obj->openFile->func->isAsync(obj->openFile, process);
 }
 
 struct KFileLock* kfile_getLock(struct KObject* obj, struct KFileLock* lock) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    struct Node* node = openNode->node;
+    struct FsOpenNode* openNode = obj->openFile;
+    struct FsNode* node = openNode->node;
     struct KFileLock* next = node->locks;
     U64 l1 = lock->l_start;
     U64 l2 = l1+lock->l_len;
@@ -73,8 +68,8 @@ struct KFileLock* kfile_getLock(struct KObject* obj, struct KFileLock* lock) {
 }
 
 U32 kfile_setLock(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    struct Node* node = openNode->node;
+    struct FsOpenNode* openNode = obj->openFile;
+    struct FsNode* node = openNode->node;
     
     // :TODO: unlock, auto remove lock if process exits
     if (lock->l_type == K_F_UNLCK) {
@@ -96,58 +91,52 @@ BOOL kfile_isOpen(struct KObject* obj) {
 }
 
 BOOL kfile_isReadReady(struct KObject* obj) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->isReadReady(openNode);
+    return obj->openFile->func->isReadReady(obj->openFile);
 }
 
 BOOL kfile_isWriteReady(struct KObject* obj) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->isWriteReady(openNode);
+    return obj->openFile->func->isWriteReady(obj->openFile);
 }
 
 void kfile_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    openNode->access->waitForEvents(openNode, thread, events);
+    obj->openFile->func->waitForEvents(obj->openFile, thread, events);
 }
 
 U32  kfile_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    return ((struct OpenNode*)obj->data)->access->write(MMU_PARAM (struct OpenNode*)obj->data, buffer, len);
+    return obj->openFile->func->write(MMU_PARAM obj->openFile, buffer, len);
 }
 
 U32  kfile_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    return ((struct OpenNode*)obj->data)->access->read(MMU_PARAM (struct OpenNode*)obj->data, buffer, len);
+    return obj->openFile->func->read(MMU_PARAM obj->openFile, buffer, len);
 }
 
 U32 kfile_stat(MMU_ARG struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    struct Node* node = openNode->node;
-    U64 len = node->nodeType->length(node);
+    struct FsOpenNode* openNode = obj->openFile;
+    struct FsNode* node = openNode->node;
+    U64 len = node->func->length(node);
 
-    writeStat(MMU_PARAM address, is64, 1, node->id, node->nodeType->getMode(process, node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->nodeType->lastModified(node), getHardLinkCount(node));
+    writeStat(MMU_PARAM address, is64, 1, node->id, node->func->getMode(process, node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->func->lastModified(node), getHardLinkCount(node));
     return 0;
 }
 
 U32 kfile_map(MMU_ARG struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-    return ((struct OpenNode*)obj->data)->access->map(MMU_PARAM (struct OpenNode*)obj->data, address, len, prot, flags, off);
+    return obj->openFile->func->map(MMU_PARAM obj->openFile, address, len, prot, flags, off);
 }
 
 BOOL kfile_canMap(struct KObject* obj) {
-    return ((struct OpenNode*)obj->data)->access->canMap((struct OpenNode*)obj->data);
+    return obj->openFile->func->canMap(obj->openFile);
 }
 
 S64 kfile_seek(struct KObject* obj, S64 pos) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->seek(openNode, pos);
+    return obj->openFile->func->seek(obj->openFile, pos);
 }
 
 S64 kfile_getPos(struct KObject* obj) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->getFilePointer(openNode);
+    return obj->openFile->func->getFilePointer(obj->openFile);
 }
 
 U32 kfile_ioctl(struct KThread* thread, struct KObject* obj, U32 request) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->ioctl(thread, openNode, request);
+    return obj->openFile->func->ioctl(thread, obj->openFile, request);
 }
 
 BOOL kfile_supportsLocks(struct KObject* obj) {
@@ -155,12 +144,11 @@ BOOL kfile_supportsLocks(struct KObject* obj) {
 }
 
 S64 kfile_length(struct KObject* obj) {
-    struct OpenNode* openNode = (struct OpenNode*)obj->data;
-    return openNode->access->length(openNode);
+    return obj->openFile->func->length(obj->openFile);
 }
 
 struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_waitForEvents, kfile_write, kfile_read, kfile_stat, kfile_map, kfile_canMap};
 
-struct KObject* allocKFile(struct OpenNode* node) {
-    return allocKObject(&kfileAccess, KTYPE_FILE, (void*)node);
+struct KObject* allocKFile(struct FsOpenNode* node) {
+    return allocKObject(&kfileAccess, KTYPE_FILE, node, 0);
 }

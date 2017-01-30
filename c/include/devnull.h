@@ -19,8 +19,8 @@
 #ifndef __DEVNULL_H__
 #define __DEVNULL_H__
 
-#include "nodeaccess.h"
+#include "fsapi.h"
 
-extern struct NodeAccess nullAccess;
+extern struct FsOpenNodeFunc nullAccess;
 
 #endif

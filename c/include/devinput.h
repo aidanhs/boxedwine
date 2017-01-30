@@ -19,12 +19,12 @@
 #ifndef __DEVINPUT_H__
 #define __DEVINPUT_H__
 
-#include "nodeaccess.h"
+#include "fsapi.h"
 #include "platform.h"
 
-extern struct NodeAccess touchInputAccess;
-extern struct NodeAccess keyboardInputAccess;
-extern struct NodeAccess mouseInputAccess;
+extern struct FsOpenNodeFunc touchInputAccess;
+extern struct FsOpenNodeFunc keyboardInputAccess;
+extern struct FsOpenNodeFunc mouseInputAccess;
 
 void onMouseMove(U32 x, U32 y);
 void onMouseButtonDown(U32 button);

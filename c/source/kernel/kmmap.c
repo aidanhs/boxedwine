@@ -23,14 +23,10 @@
 #include "kobjectaccess.h"
 #include "ram.h"
 #include "kfmmap.h"
-#include "nodeaccess.h"
-#include "node.h"
 #include "ksystem.h"
 #include "kalloc.h"
 #include "kio.h"
 #include "kfile.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "loader.h"
 
 #include <string.h>
@@ -125,10 +121,10 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             struct KProcess* process = thread->process;
             int index = -1;
 
-            cache = getMappedFileInCache(((struct OpenNode*)fd->kobject->data)->node->path.localPath);
+            cache = getMappedFileInCache(fd->kobject->openFile->node->path);
             if (!cache) {
                 cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache), KALLOC_MAPPEDFILECACHE);
-                safe_strcpy(cache->name, ((struct OpenNode*)fd->kobject->data)->node->path.localPath, MAX_FILEPATH_LEN);
+                safe_strcpy(cache->name, fd->kobject->openFile->node->path, MAX_FILEPATH_LEN);
                 cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
                 cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount, KALLOC_MMAP_CACHE_RAMPAGE);
                 putMappedFileInCache(cache);				

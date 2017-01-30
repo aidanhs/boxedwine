@@ -19,8 +19,8 @@
 #ifndef __DEVMIXER_H__
 #define __DEVMIXER_H__
 
-#include "nodeaccess.h"
+#include "fsapi.h"
 
-extern struct NodeAccess mixerAccess;
+extern struct FsOpenNodeFunc mixerAccess;
 
 #endif

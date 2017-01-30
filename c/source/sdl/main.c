@@ -22,13 +22,11 @@
 
 #include <SDL.h>
 #include "log.h"
-#include "filesystem.h"
 #include "ram.h"
 #include "kprocess.h"
 #include "kthread.h"
 #include "kscheduler.h"
 #include "kstat.h"
-#include "virtualfile.h"
 #include "devtty.h"
 #include "devurandom.h"
 #include "devnull.h"
@@ -41,7 +39,6 @@
 #include "sdlwindow.h"
 #include "kalloc.h"
 #include "devmixer.h"
-#include "fspaths.h"
 
 void mesa_init();
 void gl_init();
@@ -379,11 +376,10 @@ int main(int argc, char **argv) {
     }
     klog("Using root directory: %s", root);
     initSystem();
-    if (!doesPathExist(root)) {
+    if (!initFileSystem(root)) {
         kwarn("root %s does not exist", root);
         return 0;
     }
-    initFileSystem(root);
     initRAM(mb*1024*1024/PAGE_SIZE);
     initFB(screenWidth, screenHeight, bpp, fullscreen);
     initCallbacks();
@@ -417,7 +413,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
+    //ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
     //ppenv[envc++] = "WINEDEBUG=+boxeddrv";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);

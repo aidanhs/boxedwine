@@ -16,15 +16,13 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "nodeaccess.h"
 #include "kerror.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kthread.h"
 #include "kprocess.h"
 #include "kalloc.h"
 #include "log.h"
 #include "memory.h"
+#include "fsapi.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -84,7 +82,7 @@ void writeTermios(MMU_ARG U32 address, struct TTYData* data) {
     }
 }
 
-BOOL tty_init(struct KProcess* process, struct OpenNode* node) {
+BOOL tty_init(struct KProcess* process, struct FsOpenNode* node) {
     struct TTYData* data = (struct TTYData*)kalloc(sizeof(struct TTYData), KALLOC_TTYDATA);
     data->mode = VT_AUTO;
     data->kbMode = K_UNICODE;
@@ -92,23 +90,23 @@ BOOL tty_init(struct KProcess* process, struct OpenNode* node) {
     return TRUE;
 }
 
-S64 tty_length(struct OpenNode* node) {
+S64 tty_length(struct FsOpenNode* node) {
     return 0;
 }
 
-BOOL tty_setLength(struct OpenNode* node, S64 len) {
+BOOL tty_setLength(struct FsOpenNode* node, S64 len) {
     return FALSE;
 }
 
-S64 tty_getFilePointer(struct OpenNode* node) {
+S64 tty_getFilePointer(struct FsOpenNode* node) {
     return 0;
 }
 
-S64 tty_seek(struct OpenNode* node, S64 pos) {
+S64 tty_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 tty_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 tty_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
@@ -116,7 +114,7 @@ U32 tty_read(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 static char buffer[PAGE_SIZE+1];
 #endif
 
-U32 tty_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
+U32 tty_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
 #ifdef USE_MMU
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
         U8* ram = getPhysicalAddress(MMU_PARAM address);
@@ -146,11 +144,11 @@ U32 tty_write(MMU_ARG struct OpenNode* node, U32 address, U32 len) {
 #endif
 }
 
-void tty_close(struct OpenNode* node) {
-    freeOpenNode(node);
+void tty_close(struct FsOpenNode* node) {
+    node->func->free(node);
 }
 
-U32 tty_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
+U32 tty_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     struct TTYData* data = (struct TTYData*)node->data;
     struct CPU* cpu = &thread->cpu;
 
@@ -246,33 +244,33 @@ U32 tty_ioctl(struct KThread* thread, struct OpenNode* node, U32 request) {
     return 0;
 }
 
-void tty_setAsync(struct OpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+void tty_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
     if (isAsync)
         kwarn("tty_setAsync not implemented");
 }
 
-BOOL tty_isAsync(struct OpenNode* node, struct KProcess* process) {
+BOOL tty_isAsync(struct FsOpenNode* node, struct KProcess* process) {
     return 0;
 }
 
-void tty_waitForEvents(struct OpenNode* node, struct KThread* thread, U32 events) {
+void tty_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
     //kpanic("tty_waitForEvents not implemented");
 }
 
-BOOL tty_isWriteReady(struct OpenNode* node) {
+BOOL tty_isWriteReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL tty_isReadReady(struct OpenNode* node) {
+BOOL tty_isReadReady(struct FsOpenNode* node) {
     return 0;
 }
 
-U32 tty_map(MMU_ARG struct OpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 tty_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
-BOOL tty_canMap(struct OpenNode* node) {
+BOOL tty_canMap(struct FsOpenNode* node) {
     return FALSE;
 }
 
-struct NodeAccess ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_setAsync, tty_isAsync, tty_waitForEvents, tty_isWriteReady, tty_isReadReady};
+struct FsOpenNodeFunc ttyAccess = {tty_init, tty_length, tty_setLength, tty_getFilePointer, tty_seek, tty_read, tty_write, tty_close, tty_map, tty_canMap, tty_ioctl, tty_setAsync, tty_isAsync, tty_waitForEvents, tty_isWriteReady, tty_isReadReady};

@@ -20,8 +20,8 @@
 #define __KFILE_H__
 
 #include "kobject.h"
-#include "nodeaccess.h"
+#include "fsapi.h"
 
-struct KObject* allocKFile(struct OpenNode* node);
+struct KObject* allocKFile(struct FsOpenNode* node);
 
 #endif

@@ -21,10 +21,8 @@
 #include "memory.h"
 #include "log.h"
 #include "kobjectaccess.h"
-#include "nodetype.h"
-#include "filesystem.h"
 #include "kerror.h"
-#include "virtualfile.h"
+#include "fsapi.h"
 #include "kstat.h"
 #include "kalloc.h"
 #include "kscheduler.h"
@@ -32,6 +30,7 @@
 #include "kio.h"
 #include "ram.h"
 #include "ringbuf.h"
+#include "fsapi.h"
 
 #ifdef WIN32
 #undef BOOL
@@ -109,7 +108,7 @@ struct KSocket {
     BOOL blocking;
     BOOL listening;
     U32 nl_port;
-    struct Node* node;
+    struct FsNode* node;
     struct KSocket* next;
     struct KSocket* prev;
     struct KSocket* connection;
@@ -357,62 +356,72 @@ void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
     addClearOnWake(thread, &s->waitingOnConnectThread);
 }
 
-BOOL unixsocket_isDirectory(struct Node* node) {
+BOOL unixsocket_isDirectory(struct FsNode* node) {
     return FALSE;
 }
 
-BOOL unixsocket_remove(struct Node* node) {
+BOOL unixsocket_remove(struct FsNode* node) {
     return 0;
 }
 
-U64 unixsocket_lastModified(struct Node* node) {
+U64 unixsocket_lastModified(struct FsNode* node) {
     return 0;
 }
 
-U64 unixsocket_length(struct Node* node) {
+U64 unixsocket_length(struct FsNode* node) {
     return 0;
 }
 
-U32 unixsocket_getMode(struct KProcess* process, struct Node* node) {
+U32 unixsocket_getMode(struct KProcess* process, struct FsNode* node) {
     return K__S_IREAD | K__S_IWRITE | K_S_IFSOCK;
 }
 
-BOOL unixsocket_canRead(struct KProcess* process, struct Node* node) {
+BOOL unixsocket_canRead(struct KProcess* process, struct FsNode* node) {
     return TRUE;
 }
 
-BOOL unixsocket_canWrite(struct KProcess* process, struct Node* node) {
+BOOL unixsocket_canWrite(struct KProcess* process, struct FsNode* node) {
     return TRUE;
 }
 
-struct OpenNode* unixsocket_open(struct KProcess* process, struct Node* node, U32 flags) {
+struct FsOpenNode* unixsocket_open(struct KProcess* process, struct FsNode* node, U32 flags) {
     kwarn("unixsocket_open was called, this shouldn't happen.  syscall_open should detect we have a kobject already");
     return 0;
 }
 
-BOOL unixsocket_setLastModifiedTime(struct Node* node, U32 time) {
-    ((struct KSocket*)node->kobject->data)->lastModifiedTime = ((U64)time)*1000;
+BOOL unixsocket_setLastModifiedTime(struct FsNode* node, U32 time) {
+    node->kobject->socket->lastModifiedTime = ((U64)time)*1000;
     return 0;
 }
 
-U32 unixsocket_getType(struct Node* node, U32 checkForLink) {
+U32 unixsocket_getType(struct FsNode* node, U32 checkForLink) {
     return 12; // DT_SOCK
 }
 
-BOOL unixsocket_exists(struct Node* node) {
+BOOL unixsocket_exists(struct FsNode* node) {
     return node->kobject!=0;
 }
 
-U32 unixsocket_rename(struct Node* oldNode, struct Node* newNode) {
+U32 unixsocket_rename(struct FsNode* oldNode, struct FsNode* newNode) {
     return -K_EIO;
 }
 
-struct NodeType unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode};
+U32 unixsocket_removeDir(struct FsNode* node) {
+    kpanic("unixsocket_removeDir not implemented");
+    return 0;
+}
+
+U32 unixsocket_makeDir(struct FsNode* node) {
+    kpanic("unixsocket_makeDir not implemented");
+    return 0;
+}
+
+struct FsNodeFunc unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode, unixsocket_removeDir, unixsocket_makeDir};
 
 void freeSocket(struct KSocket* socket);
 
 void unixsocket_onDelete(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     U32 i=0;
 
     if (s->node) {
@@ -457,12 +466,12 @@ void unixsocket_onDelete(struct KObject* obj) {
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     s->blocking = blocking;
 }
 
 BOOL unixsocket_isBlocking(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     return s->blocking;
 }
 
@@ -486,22 +495,22 @@ U32 unixsocket_setLock(struct KObject* obj, struct KFileLock* lock, BOOL wait, s
 }
 
 BOOL unixsocket_isOpen(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     return s->listening || s->connection;
 }
 
 BOOL unixsocket_isReadReady(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     return s->inClosed || ringbuf_bytes_used(s->recvBuffer) || s->pendingConnectionsCount || s->msgs;
 }
 
 BOOL unixsocket_isWriteReady(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     return s->connection!=0;
 }
 
 void unixsocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     if (events & K_POLLIN) {
         waitOnSocketRead(s, thread);
     }
@@ -514,7 +523,7 @@ void unixsocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 e
 }
 
 U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     U32 count=0;
 
     if (s->type == K_SOCK_DGRAM) {
@@ -561,7 +570,7 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
 }
 
 U32 unixsocket_write_native_nowait(MMU_ARG struct KObject* obj, U8 value) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     U32 count=0;
 
     if (s->type == K_SOCK_DGRAM) {
@@ -581,7 +590,7 @@ U32 unixsocket_write_native_nowait(MMU_ARG struct KObject* obj, U8 value) {
 }
 
 U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     U32 count = 0;
     if (!s->inClosed && !s->connection)
         return -K_EPIPE;
@@ -623,7 +632,7 @@ U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buf
 }
 
 U32 unixsocket_stat(MMU_ARG struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
-    struct KSocket* s = (struct KSocket*)obj->data;	
+    struct KSocket* s = obj->socket;	
     writeStat(MMU_PARAM address, is64, 1, (s->node?s->node->id:0), K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, (s->node?s->node->rdev:0), 0, 4096, 0, s->lastModifiedTime, 1);
     return 0;
 }
@@ -659,7 +668,7 @@ S64 unixsocket_klength(struct KObject* obj) {
 struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_waitForEvents, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_map, unixsocket_canMap};
 
 U32 nativesocket_ioctl(struct KThread* thread, struct KObject* obj, U32 request) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
 
     if (request == 0x541b) {
         int value=0;
@@ -686,19 +695,19 @@ S64 nativesocket_getPos(struct KObject* obj) {
 }
 
 void nativesocket_onDelete(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     closesocket(s->nativeSocket);
     s->nativeSocket = 0;
     removeWaitingSocket(s);
 }
 
 void nativesocket_setBlocking(struct KObject* obj, BOOL blocking) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     s->blocking = blocking;
 }
 
 BOOL nativesocket_isBlocking(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     return s->blocking;
 }
 
@@ -726,12 +735,12 @@ BOOL nativesocket_supportsLocks(struct KObject* obj) {
 }
 
 BOOL nativesocket_isOpen(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     return s->listening || s->connected;
 }
 
 BOOL nativesocket_isReadReady(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     fd_set          sready;
     struct timeval  nowait;
 
@@ -744,7 +753,7 @@ BOOL nativesocket_isReadReady(struct KObject* obj) {
 }
 
 BOOL nativesocket_isWriteReady(struct KObject* obj) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     fd_set          sready;
     struct timeval  nowait;
 
@@ -757,7 +766,7 @@ BOOL nativesocket_isWriteReady(struct KObject* obj) {
 }
 
 void nativesocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
 
     if (events & K_POLLIN) {
         waitOnSocketRead(s, thread);
@@ -771,7 +780,7 @@ void nativesocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32
 char tmp64k[64*1024];
 
 U32 nativesocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    struct KSocket* s = (struct KSocket*)obj->data;
+    struct KSocket* s = obj->socket;
     U32 done = 0;
     S32 result = 0;
 
@@ -797,7 +806,7 @@ U32 nativesocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 
 }
 
 U32 nativesocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    struct KSocket* s = (struct KSocket*)obj->data;	
+    struct KSocket* s = obj->socket;	
     S32 result = 0;
     U32 done = 0;
 
@@ -880,7 +889,7 @@ void freeSocket(struct KSocket* socket) {
 U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct KSocket** returnSocket) {
     if (domain==K_AF_UNIX) {
         struct KSocket* s = allocSocket();
-        struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, s);
+        struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, 0, s);
         struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
         closeKObject(kSocket);
         s->pid = thread->process->id;
@@ -893,7 +902,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
     } else if (domain==K_AF_NETLINK) {
         // just fake it so that libudev doesn't crash
         struct KSocket* s = allocSocket();
-        struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, s);
+        struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, 0, s);
         struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
         closeKObject(kSocket);
         s->pid = thread->process->id;
@@ -952,7 +961,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
             return -K_EPROTOTYPE;
         } else {
             struct KSocket* s = allocSocket();
-            struct KObject* kSocket = allocKObject(&nativesocketAccess, KTYPE_SOCK, s);
+            struct KObject* kSocket = allocKObject(&nativesocketAccess, KTYPE_SOCK, 0, s);
             struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
             closeKObject(kSocket);
             s->pid = thread->process->id;
@@ -991,26 +1000,21 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     family = readw(MMU_PARAM_THREAD address);
     if (family==K_AF_UNIX) {
-        char localPath[MAX_FILEPATH_LEN];
-        char nativePath[MAX_FILEPATH_LEN];
         const char* name = socketAddressName(thread, address, len);
-        struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, name, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, 0);
+        struct FsNode* node;
 
         if (!name || !name[0]) {
             return 0; // :TODO: why does XOrg need this
         }
-        if (node && node->nodeType->exists(node)) {
+        node = getNodeFromLocalPath(thread->process->currentDirectory, name, 0);
+        if (node && node->func->exists(node)) {
             return -K_EADDRINUSE;
         }
-        if (!strlen(localPath)) {
-            return -K_ENOENT;
-        }
-        if (!node) {
-            node = allocNode(localPath, 0, &unixSocketNodeType, 2);
-        }
+        node->func = &unixSocketNodeType;
+        node->rdev = 2;
         node->kobject = fd->kobject;
         s->node = node;
         return 0;
@@ -1043,7 +1047,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (s->connected) {
         return -K_EISCONN;
     }		
@@ -1092,16 +1096,14 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
             return -K_ENOENT;
         }
         if (s->domain==K_AF_UNIX) {
-            char localPath[MAX_FILEPATH_LEN];
-            char nativePath[MAX_FILEPATH_LEN];
-            struct Node* node = getLocalAndNativePaths(thread->process->currentDirectory, s->destAddress.data, localPath, MAX_FILEPATH_LEN, nativePath, MAX_FILEPATH_LEN, 0);
+            struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, s->destAddress.data, MAX_FILEPATH_LEN);
             struct KSocket* destination = 0;
 
             if (!node || !node->kobject) {
                 s->destAddress.family = 0;
                 return -K_ECONNREFUSED;
             }
-            destination = (struct KSocket*)node->kobject->data;
+            destination = node->kobject->socket;
             if (s->connection) {
                 s->connected = 1;
                 return 0;
@@ -1155,7 +1157,7 @@ U32 klisten(struct KThread* thread, U32 socket, U32 backlog) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (s->nativeSocket) {
         S32 result = listen(s->nativeSocket, backlog);
         if (result>=0) {
@@ -1189,7 +1191,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (!s->listening) {
         return -K_EINVAL;
     }
@@ -1254,7 +1256,7 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (s->domain == K_AF_NETLINK) {
         if (len>0 && len<12)
             kpanic("getsocketname: AF_NETLINK wrong address size");
@@ -1300,7 +1302,7 @@ U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (s->nativeSocket) {        
         S32 result = getpeername(s->nativeSocket, &a, &len);
         if (result==0) {
@@ -1339,8 +1341,8 @@ U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 sock
     fd2 = ksocket(thread, af, type, protocol);
     f1 = getFileDescriptor(thread->process, fd1);
     f2 = getFileDescriptor(thread->process, fd2);
-    s1 = (struct KSocket*)(f1->kobject->data);
-    s2 = (struct KSocket*)(f2->kobject->data);
+    s1 = f1->kobject->socket;
+    s2 = f2->kobject->socket;
     
     s1->connection = s2;
     s2->connection = s1;
@@ -1368,7 +1370,7 @@ U32 ksend(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     s->flags = 0;
     if (flags == 0x4000) {
         //  MSG_NOSIGNAL
@@ -1392,7 +1394,7 @@ U32 krecv(struct KThread* thread, U32 socket, U32 buffer, U32 len, U32 flags) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     s->flags = 0;
     if (flags == 0x4000) {
         //  MSG_NOSIGNAL
@@ -1418,7 +1420,7 @@ U32 kshutdown(struct KThread* thread, U32 socket, U32 how) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (s->nativeSocket) {
         if (shutdown(s->nativeSocket, how) == 0)
             return 0;
@@ -1456,7 +1458,7 @@ U32 ksetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (level == K_SOL_SOCKET) {
         switch (name) {
             case K_SO_RCVBUF:
@@ -1491,7 +1493,7 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     len = readd(MMU_PARAM_THREAD len_address);
     if (level == K_SOL_SOCKET) {
         if (name == K_SO_RCVBUF) {
@@ -1584,7 +1586,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     msg = allocSocketMsg();
     readMsgHdr(MMU_PARAM_THREAD address, &hdr);
 
@@ -1669,7 +1671,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (s->nativeSocket) {
         msg_namelen = readd(MMU_PARAM_THREAD address+4);
         readMsgHdr(MMU_PARAM_THREAD address, &hdr);        
@@ -1784,7 +1786,7 @@ U32 ksendto(struct KThread* thread, U32 socket, U32 message, U32 length, U32 fla
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (!s->nativeSocket)
         return 0;
     if (flags & 1)
@@ -1816,7 +1818,7 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
     if (fd->kobject->type!=KTYPE_SOCK) {
         return -K_ENOTSOCK;
     }
-    s = (struct KSocket*)fd->kobject->data;
+    s = fd->kobject->socket;
     if (!s->nativeSocket)
         return 0;
     if (flags & 1)
@@ -1842,7 +1844,7 @@ U32 isNativeSocket(struct KThread* thread, int desc) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, desc);
 
     if (fd && fd->kobject->type == KTYPE_SOCK) {
-        struct KSocket* s = (struct KSocket*)fd->kobject->data;
+        struct KSocket* s = fd->kobject->socket;
         if (s->nativeSocket) {
             return 1;
         }

@@ -21,9 +21,6 @@
 #include "kscheduler.h"
 #include "log.h"
 #include "ksystem.h"
-#include "filesystem.h"
-#include "nodeaccess.h"
-#include "nodetype.h"
 #include "loader.h"
 #include "kmmap.h"
 #include "kfiledescriptor.h"
@@ -32,7 +29,7 @@
 #include "kobject.h"
 #include "kobjectaccess.h"
 #include "kalloc.h"
-#include "virtualfile.h"
+#include "fsapi.h"
 #include "kstat.h"
 #include "bufferaccess.h"
 #include "ksignal.h"
@@ -449,8 +446,8 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
 }
 
 struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
-    struct Node* node;
-    struct OpenNode* openNode;
+    struct FsNode* node;
+    struct FsOpenNode* openNode;
     struct KFileDescriptor* result;
     struct KObject* kobject;
 
@@ -464,7 +461,7 @@ struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char*
         kobject = node->kobject;
         kobject->refCount++;
     } else {
-        openNode = node->nodeType->open(process, node, accessFlags);
+        openNode = node->func->open(process, node, accessFlags);
         if (!openNode)
             return 0;
         kobject = allocKFile(openNode);
@@ -491,7 +488,7 @@ void initStdio(struct KProcess* process) {
 }
 
 struct KThread* startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId) {
-    struct Node* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
+    struct FsNode* node = getNodeFromLocalPath(currentDirectory, args[0], TRUE);
     const char* interpreter = 0;
     const char* loader = 0;
     const char* pArgs[MAX_ARG_COUNT];
@@ -502,7 +499,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
 #endif
     struct KThread* thread = allocThread();
     U32 i;
-    struct OpenNode* openNode = 0;
+    struct FsOpenNode* openNode = 0;
     BOOL result = FALSE;
 
     initProcess(MMU_PARAM process, argc, args, userId);
@@ -533,7 +530,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
         scheduleThread(thread);
     }
     if (openNode) {
-        openNode->access->close(openNode);
+        openNode->func->close(openNode);
     }
     return thread;
 }
@@ -631,7 +628,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
     return result;
 }
 
-struct Node* getNode(struct KThread* thread, U32 fileName) {
+struct FsNode* getNode(struct KThread* thread, U32 fileName) {
     return getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD fileName), TRUE);
 }
 
@@ -641,7 +638,7 @@ const char* getModuleName(struct CPU* cpu, U32 eip) {
 #ifdef USE_MMU
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
-            return ((struct OpenNode*)process->mappedFiles[i].file->data)->node->path.localPath;
+            return process->mappedFiles[i].file->openFile->node->path;
     }
 #else
     {
@@ -891,8 +888,8 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {
     return 0;
 }
 
-struct Node* findInPath(struct KProcess* process, const char* arg) {
-    struct Node* node = getNodeFromLocalPath(process->currentDirectory, arg, TRUE);
+struct FsNode* findInPath(struct KProcess* process, const char* arg) {
+    struct FsNode* node = getNodeFromLocalPath(process->currentDirectory, arg, TRUE);
     U32 i;
 
     if (arg[0]!='/') {
@@ -925,8 +922,8 @@ U32 readStringArray(MMU_ARG U32 address, const char** a, int size, unsigned int*
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     struct KProcess* process = thread->process;
     char* first = getNativeString(MMU_PARAM_THREAD readd(MMU_PARAM_THREAD argv));
-    struct Node* node;
-    struct OpenNode* openNode = 0;
+    struct FsNode* node;
+    struct FsOpenNode* openNode = 0;
     const char* interpreter = 0;
     const char* loader = 0;
     struct KThread* processThread;
@@ -987,7 +984,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
             args[0] = interpreter;		
     }
             
-    args[argc++] = node->path.localPath;
+    args[argc++] = node->path;
     // copy args/env out of memory before memory is reset
     tmpIndex = readStringArray(MMU_PARAM_THREAD argv + 4, args, MAX_ARG_COUNT, &argc, tmp64k, 1024 * 64, tmpIndex);
     readStringArray(MMU_PARAM_THREAD envp, envs, MAX_ARG_COUNT, &envc, tmp64k, 1024 * 64, tmpIndex);
@@ -1064,7 +1061,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     }	
     // must come after loadProgram because of process->phdr
     setupThreadStack(MMU_PARAM_THREAD &thread->cpu, process->name, argc, args, envc, envs);
-    openNode->access->close(openNode);
+    openNode->func->close(openNode);
 
     if (process->wakeOnExitOrExec) {
         wakeThread(process->wakeOnExitOrExec);
@@ -1074,12 +1071,12 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 }
 
 U32 syscall_chdir(struct KThread* thread, U32 path) {
-    struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), TRUE);
-    if (!node || !node->nodeType->exists(node))
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), TRUE);
+    if (!node || !node->func->exists(node))
         return -K_ENOENT;
-    if (!node->nodeType->isDirectory(node))
+    if (!node->func->isDirectory(node))
         return -K_ENOTDIR;
-    safe_strcpy(thread->process->currentDirectory, node->path.localPath, MAX_FILEPATH_LEN);
+    safe_strcpy(thread->process->currentDirectory, node->path, MAX_FILEPATH_LEN);
     return 0;
 }
 
@@ -1296,7 +1293,7 @@ U32 syscall_prlimit(struct KThread* thread, U32 pid, U32 resource, U32 newlimit,
 
 U32 syscall_fchdir(struct KThread* thread, FD fildes) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
-    struct OpenNode* openNode;
+    struct FsOpenNode* openNode;
 
     if (fd==0) {
         return -K_EBADF;
@@ -1304,11 +1301,11 @@ U32 syscall_fchdir(struct KThread* thread, FD fildes) {
     if (fd->kobject->type!=KTYPE_FILE) {
         return -K_EINVAL;
     }
-    openNode = (struct OpenNode*)fd->kobject->data;
-    if (!openNode->node->nodeType->isDirectory(openNode->node)) {		
+    openNode = fd->kobject->openFile;
+    if (!openNode->node->func->isDirectory(openNode->node)) {		
         return -K_ENOTDIR;
     }
-    safe_strcpy(thread->process->currentDirectory, openNode->node->path.localPath, MAX_FILEPATH_LEN);
+    safe_strcpy(thread->process->currentDirectory, openNode->node->path, MAX_FILEPATH_LEN);
     return 0;
 }
 

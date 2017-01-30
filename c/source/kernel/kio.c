@@ -23,14 +23,9 @@
 #include "kobjectaccess.h"
 #include "log.h"
 #include "kerror.h"
-#include "nodetype.h"
-#include "nodeaccess.h"
-#include "node.h"
-#include "filesystem.h"
 #include "kstat.h"
 #include "kprocess.h"
-#include "fslinks.h"
-#include "fsdiraccess.h"
+#include "fsapi.h"
 
 #include <errno.h>
 #include <string.h>
@@ -85,9 +80,9 @@ U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
         } else if (fd->kobject->type!=KTYPE_FILE){
             result = -K_ENOTDIR;
         } else {
-            struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
-            currentDirectory = openNode->node->path.localPath;
-            if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+            struct FsOpenNode* openNode = fd->kobject->openFile;
+            currentDirectory = openNode->node->path;
+            if (!openNode->node->func->isDirectory(openNode->node)) {
                 result = -K_ENOTDIR;
             }
         }
@@ -172,8 +167,8 @@ S32 syscall_seek(struct KThread* thread, FD handle, S32 offset, U32 whence) {
     } else if (whence == 1) {
         pos = offset + fd->kobject->access->seek(fd->kobject, 0);
     } else if (whence == 2) {
-        struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
-        pos = openNode->access->length(openNode) + offset;
+        struct FsOpenNode* openNode = fd->kobject->openFile;
+        pos = openNode->func->length(openNode) + offset;
     } else {
         return -K_EINVAL;
     }
@@ -191,7 +186,7 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
 
 U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
     const char* currentDirectory=0;
-    struct Node* node;	
+    struct FsNode* node;	
 
     if (dirfd==-100) { // AT_FDCWD
         currentDirectory = thread->process->currentDirectory;
@@ -202,24 +197,24 @@ U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
         } else if (fd->kobject->type!=KTYPE_FILE){
             return -K_ENOTDIR;
         } else {
-            struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
-            currentDirectory = openNode->node->path.localPath;
-            if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+            struct FsOpenNode* openNode = fd->kobject->openFile;
+            currentDirectory = openNode->node->path;
+            if (!openNode->node->func->isDirectory(openNode->node)) {
                 return -K_ENOTDIR;
             }
         }
     }
     node = getNodeFromLocalPath(currentDirectory, getNativeString(MMU_PARAM_THREAD address), TRUE);
-    if (node && node->nodeType->exists(node)) {
+    if (node && node->func->exists(node)) {
         if (flags & 0x200) { // unlinkat AT_REMOVEDIR
-            if (!node->nodeType->isDirectory(node)) {
+            if (!node->func->isDirectory(node)) {
                 return -K_ENOTDIR;
             }
-            if (rmdir(node->path.nativePath) == 0)
+            if (node->func->removeDir(node) == 0)
                 return 0;
             return -K_ENOTEMPTY;
         } else {
-            if (!node->nodeType->remove(node)) {
+            if (!node->func->remove(node)) {
                 kwarn("filed to remove file: errno=%d", errno);
                 return -K_EBUSY;
             }
@@ -231,7 +226,7 @@ U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
 
 U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U32 flag) {
     const char* currentDirectory=0;
-    struct Node* node;	
+    struct FsNode* node;	
 
     if (dirfd==-100) { // AT_FDCWD
         currentDirectory = thread->process->currentDirectory;
@@ -242,53 +237,53 @@ U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U3
         } else if (fd->kobject->type!=KTYPE_FILE){
             return -K_ENOTDIR;
         } else {
-            struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
-            currentDirectory = openNode->node->path.localPath;
-            if (!openNode->node->nodeType->isDirectory(openNode->node)) {
-                openNode->access->close(openNode);
+            struct FsOpenNode* openNode = fd->kobject->openFile;
+            currentDirectory = openNode->node->path;
+            if (!openNode->node->func->isDirectory(openNode->node)) {
+                openNode->func->close(openNode);
                 return -K_ENOTDIR;
             }
         }
     }
     node = getNodeFromLocalPath(currentDirectory, getNativeString(MMU_PARAM_THREAD address), TRUE);
-    if (node && node->nodeType->exists(node)) {
+    if (node && node->func->exists(node)) {
         U64 len;
 
         if (flag == 0x100) { // AT_SYMLINK_NOFOLLOW
-            if (node->path.isLink) {
-                struct Node* link;				
+            if (isLink(node)) {
+                struct FsNode* link;				
                 char tmp[MAX_FILEPATH_LEN];
 
-                safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
+                safe_strcpy(tmp, node->path, MAX_FILEPATH_LEN);
                 safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
                 link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
-                len = link->nodeType->length(node);
-                writeStat(MMU_PARAM_THREAD buf, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len + 4095) / 4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+                len = link->func->length(node);
+                writeStat(MMU_PARAM_THREAD buf, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
                 return 0;
             }
         }
-        len = node->nodeType->length(node);
-        writeStat(MMU_PARAM_THREAD buf, TRUE, 1, node->id, node->nodeType->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+        len = node->func->length(node);
+        writeStat(MMU_PARAM_THREAD buf, TRUE, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
         return 0;
     }
     return -K_ENOENT;
 }
 
 U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
-    struct Node* node = getNode(thread, fileName);
+    struct FsNode* node = getNode(thread, fileName);
 
-    if (node==0 || !node->nodeType->exists(node)) {
+    if (node==0 || !node->func->exists(node)) {
         return -K_ENOENT;
     }
     if (flags==0)
         return 0;
     if ((flags & 4)!=0) {
-        if (!node->nodeType->canRead(thread->process, node)) {
+        if (!node->func->canRead(thread->process, node)) {
             return -K_EACCES;
         }
     }
     if ((flags & 2)!=0) {
-        if (!node->nodeType->canWrite(thread->process, node)) {
+        if (!node->func->canWrite(thread->process, node)) {
             return -K_EACCES;
         }
     }
@@ -300,7 +295,7 @@ U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
 
 U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
-    struct OpenNode* openNode;
+    struct FsOpenNode* openNode;
 
     if (fd==0) {
         return -K_EBADF;
@@ -308,70 +303,70 @@ U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length) {
     if (fd->kobject->type!=KTYPE_FILE) {
         return -K_EINVAL;
     }
-    openNode = (struct OpenNode*)fd->kobject->data;
-    if (openNode->node->nodeType->isDirectory(openNode->node)) {
+    openNode = fd->kobject->openFile;
+    if (openNode->node->func->isDirectory(openNode->node)) {
         return -K_EISDIR;
     }
     if (!canWriteFD(fd)) {
         return -K_EINVAL;
     }
-    if (!openNode->access->setLength(openNode, length)) {
+    if (!openNode->func->setLength(openNode, length)) {
         return -K_EIO;
     }
     return 0;
 }
 
 U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
-    struct Node* node = getNode(thread, path);
+    struct FsNode* node = getNode(thread, path);
     U64 len;
-    if (node==0 || !node->nodeType->exists(node)) {
+    if (node==0 || !node->func->exists(node)) {
         return -K_ENOENT;
     }
 
-    if (node->path.isLink) {
+    if (isLink(node)) {
         char tmp[MAX_FILEPATH_LEN];
 
-        safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
+        safe_strcpy(tmp, node->path, MAX_FILEPATH_LEN);
         safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
         node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
-        if (node && kreadLink(node->path.nativePath, tmp, MAX_FILEPATH_LEN, FALSE)) {
+        if (node && readLink(node, tmp, MAX_FILEPATH_LEN, FALSE)) {
             if (tmp[0]!='/') {
                 char tmp2[MAX_FILEPATH_LEN];
 
-                strcpy(tmp2, node->path.localPath);
+                strcpy(tmp2, node->path);
                 strcpy(strrchr(tmp2, '/')+1, tmp);
                 strcpy(tmp, tmp2);
             }
             node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);            
         }
-        if (node==0 || !node->nodeType->exists(node)) {
+        if (node==0 || !node->func->exists(node)) {
             return -K_ENOENT;
         }
     }
-    len = node->nodeType->length(node);
-    writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, node->id, node->nodeType->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+    len = node->func->length(node);
+    writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
     return 0;
 }
 
 U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
-    struct Node* node = getNode(thread, path);
-    struct Node* link;
+    struct FsNode* node = getNode(thread, path);
+    struct FsNode* link;
     U64 len;
     char tmp[MAX_FILEPATH_LEN];
 
-    if (node==0 || !node->nodeType->exists(node)) {
+    if (node==0 || !node->func->exists(node)) {
         return -K_ENOENT;
     }	
-    if (!node->path.isLink) {
+    if (!isLink(node)) {
         return syscall_stat64(thread, path, buffer);
     }
-    safe_strcpy(tmp, node->path.localPath, MAX_FILEPATH_LEN);
+    safe_strcpy(tmp, node->path, MAX_FILEPATH_LEN);
     safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
     link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
     if (!link)
         return -K_ENOENT;
-    len = link->nodeType->length(link);
-    writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, link->id, K__S_IFLNK | (node->nodeType->getMode(thread->process, node) & 0xFFF), node->rdev, len, 4096, (len + 4095) / 4096, node->nodeType->lastModified(node), getHardLinkCount(node));
+    len = link->func->length(link);
+    writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, link->id, K__S_IFLNK | (node->func->getMode(thread->process, node) & 0xFFF), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
     return 0;
 }
 
@@ -418,12 +413,12 @@ U32 syscall_dup(struct KThread* thread, FD fildes) {
 }
 
 U32 syscall_unlink(struct KThread* thread, U32 path) {
-    struct Node* node = getNode(thread, path);
+    struct FsNode* node = getNode(thread, path);
 
-    if (node==0 || !node->nodeType->exists(node)) {
+    if (node==0 || !node->func->exists(node)) {
         return -K_ENOENT;
     }
-    if (!node->nodeType->remove(node)) {
+    if (!node->func->remove(node)) {
         kwarn("filed to remove file: errno=%d", errno);
         return -K_EBUSY;
     }
@@ -436,53 +431,53 @@ U32 syscall_fchmod(struct KThread* thread, FD fd, U32 mod) {
 }
 
 U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
-    struct Node* oldNode;
-    struct Node* newNode;
+    struct FsNode* oldNode;
+    struct FsNode* newNode;
     char path[MAX_FILEPATH_LEN];
     char oldPath[MAX_FILEPATH_LEN];
 
     safe_strcpy(oldPath, getNativeString(MMU_PARAM_THREAD oldName), MAX_FILEPATH_LEN);
     oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, FALSE);
-    if (!oldNode || (!oldNode->nodeType->exists(oldNode) && !oldNode->path.isLink)) {
+    if (!oldNode || (!oldNode->func->exists(oldNode) && !isLink(oldNode))) {
         return -K_ENOENT;
     }
     safe_strcpy(path, getNativeString(MMU_PARAM_THREAD newName), MAX_FILEPATH_LEN);
     newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
-    if (newNode->nodeType->exists(newNode)) {
-        if (newNode->nodeType->isDirectory(newNode)) {
-            struct OpenNode* openNode = newNode->nodeType->open(thread->process, newNode, K_O_RDONLY); 
-            if (openNode->access->length(openNode)) {
-                openNode->access->close(openNode);
+    if (newNode->func->exists(newNode)) {
+        if (newNode->func->isDirectory(newNode)) {
+            struct FsOpenNode* openNode = newNode->func->open(thread->process, newNode, K_O_RDONLY); 
+            if (openNode->func->length(openNode)) {
+                openNode->func->close(openNode);
                 return -K_ENOTEMPTY;
             }
-            openNode->access->close(openNode);
-            if (!oldNode->nodeType->isDirectory(oldNode)) {
+            openNode->func->close(openNode);
+            if (!oldNode->func->isDirectory(oldNode)) {
                 return -K_EISDIR;
             }
         }
-        newNode->nodeType->remove(newNode);
+        newNode->func->remove(newNode);
     }
-    if (oldNode->path.isLink) {
+    if (isLink(oldNode)) {
         safe_strcat(path, ".link", MAX_FILEPATH_LEN);
         safe_strcat(oldPath, ".link", MAX_FILEPATH_LEN);
         oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, TRUE);
         newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
-        if (newNode->nodeType->exists(newNode)) {
-            if (newNode->nodeType->isDirectory(newNode)) {
-                struct OpenNode* openNode = newNode->nodeType->open(thread->process, newNode, K_O_RDONLY); 
-                if (openNode->access->length(openNode)) {
-                    openNode->access->close(openNode);
+        if (newNode->func->exists(newNode)) {
+            if (newNode->func->isDirectory(newNode)) {
+                struct FsOpenNode* openNode = newNode->func->open(thread->process, newNode, K_O_RDONLY); 
+                if (openNode->func->length(openNode)) {
+                    openNode->func->close(openNode);
                     return -K_ENOTEMPTY;
                 }
-                openNode->access->close(openNode);
-                if (!oldNode->nodeType->isDirectory(oldNode)) {
+                openNode->func->close(openNode);
+                if (!oldNode->func->isDirectory(oldNode)) {
                     return -K_EISDIR;
                 }
             }
-            newNode->nodeType->remove(newNode);
+            newNode->func->remove(newNode);
         }
     }
-    return oldNode->nodeType->rename(oldNode, newNode);
+    return oldNode->func->rename(oldNode, newNode);
 }
 
 S64 syscall_llseek(struct KThread* thread, FD fildes, S64 offset, U32 whence) {
@@ -545,7 +540,7 @@ U32 writeRecord(MMU_ARG U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const 
 
 U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOOL is64) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
-    struct OpenNode* openNode;
+    struct FsOpenNode* openNode;
     U32 len = 0;
     U32 entries;
     U32 i;
@@ -556,36 +551,36 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
     if (fd->kobject->type!=KTYPE_FILE) {
         return -K_ENOTDIR;
     }
-    openNode = (struct OpenNode*)fd->kobject->data;
-    if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+    openNode = fd->kobject->openFile;
+    if (!openNode->node->func->isDirectory(openNode->node)) {
         return -K_ENOTDIR;
     }
-    entries = getDirCount(openNode);
+    entries = openNode->func->getDirectoryEntryCount(openNode);
 
-    if ((U32)openNode->access->getFilePointer(openNode)==0) {
-        U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->nodeType->getType(openNode->node, 1));
-        struct Node* entry;
+    if ((U32)openNode->func->getFilePointer(openNode)==0) {
+        U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->func->getType(openNode->node, 1));
+        struct FsNode* entry;
 
         dirp+=recordLen;
         len+=recordLen;
 
         entry = getParentNode(openNode->node);
         if (entry) {
-            recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 1, is64, "..", entry->id, entry->nodeType->getType(entry, 1));
+            recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 1, is64, "..", entry->id, entry->func->getType(entry, 1));
             dirp+=recordLen;
             len+=recordLen;
-            openNode->access->seek(openNode, 2);
+            openNode->func->seek(openNode, 2);
         } else {
-            openNode->access->seek(openNode, 1);
+            openNode->func->seek(openNode, 1);
         }
     }
-    for (i=(U32)openNode->access->getFilePointer(openNode);i<entries;i++) {
-        struct Node* entry = getDirNode(openNode, i);
-        U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, i + 2, is64, entry->name, entry->id, entry->nodeType->getType(entry, 1));
+    for (i=(U32)openNode->func->getFilePointer(openNode);i<entries;i++) {
+        struct FsNode* entry = openNode->func->getDirectoryEntry(openNode, i);
+        U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, i + 2, is64, entry->name, entry->id, entry->func->getType(entry, 1));
         if (recordLen>0) {
             dirp+=recordLen;
             len+=recordLen;
-            openNode->access->seek(openNode, i+1);
+            openNode->func->seek(openNode, i+1);
         } else if (recordLen == 0) {
             return len;
         } else {
@@ -597,7 +592,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 
 U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path, U32 buffer, U32 bufSize) {
     const char* s = getNativeString(MMU_PARAM_THREAD path);
-    struct Node* node;
+    struct FsNode* node;
     char tmpPath[MAX_FILEPATH_LEN];
 
     // :TODO: move these to the virtual filesystem
@@ -611,26 +606,26 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
         int h = atoi(s+14);
         struct KFileDescriptor* fd = getFileDescriptor(thread->process, h);
         int len;
-        struct OpenNode* openNode;
+        struct FsOpenNode* openNode;
 
         if (!fd)
             return -K_EINVAL;
         if (fd->kobject->type!=KTYPE_FILE) {
             return -K_EINVAL;
         }
-        openNode = (struct OpenNode*)fd->kobject->data;
-        len = strlen(openNode->node->path.localPath);
+        openNode = fd->kobject->openFile;
+        len = strlen(openNode->node->path);
         if (len>(int)bufSize)
             len=bufSize;
-        memcopyFromNative(MMU_PARAM_THREAD buffer, openNode->node->path.localPath, len);
+        memcopyFromNative(MMU_PARAM_THREAD buffer, openNode->node->path, len);
         return len;        
     }
     safe_strcpy(tmpPath, s, MAX_FILEPATH_LEN);
     safe_strcat(tmpPath, ".link", MAX_FILEPATH_LEN);
     node = getNodeFromLocalPath(currentDirectory, tmpPath, TRUE);
-    if (!node || !node->nodeType->exists(node))
+    if (!node || !node->func->exists(node))
         return -K_EINVAL;
-    if (kreadLink(node->path.nativePath, tmpPath, MAX_FILEPATH_LEN, FALSE)) {
+    if (readLink(node, tmpPath, MAX_FILEPATH_LEN, FALSE)) {
         U32 len = strlen(tmpPath);
         if (len>bufSize)
             len=bufSize;
@@ -652,9 +647,9 @@ U32 syscall_readlinkat(struct KThread* thread, FD dirfd, U32 pathname, U32 buf, 
         } else if (fd->kobject->type!=KTYPE_FILE){
             return -K_ENOTDIR;
         } else {
-            struct OpenNode* openNode = (struct OpenNode*)fd->kobject->data;
-            currentDirectory = openNode->node->path.localPath;
-            if (!openNode->node->nodeType->isDirectory(openNode->node)) {
+            struct FsOpenNode* openNode = fd->kobject->openFile;
+            currentDirectory = openNode->node->path;
+            if (!openNode->node->func->isDirectory(openNode->node)) {
                 return -K_ENOTDIR;
             }
         }
@@ -667,31 +662,29 @@ U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) 
 }
 
 U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
-    struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
 
     if (!node) {
         kpanic("Oops, syscall_mkdir couldn't find node");
     }
-    if (node->nodeType->exists(node)) {
+    if (node->func->exists(node)) {
         return -K_EEXIST;
     }
-    if (!node->nodeType->canWrite(thread->process, node) || MKDIR(node->path.nativePath)!=0)
+    if (!node->func->canWrite(thread->process, node) || node->func->makeDir(node)!=0)
         return -K_EACCES;
     return 0;
 }
 
 U32 syscall_rmdir(struct KThread* thread, U32 path) {
-    struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), TRUE);
-    U32 result = 0;
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), TRUE);
 
-    if (!node || !node->nodeType->exists(node)) {
+    if (!node || !node->func->exists(node)) {
         return -K_ENOENT;
     }
-    if (!node->nodeType->isDirectory(node)) {
+    if (!node->func->isDirectory(node)) {
         return -K_ENOTDIR;
     }
-    result = rmdir(node->path.nativePath);
-    if (result == 0)
+    if (!node->func->removeDir(node))
         return 0;
     return -K_ENOTEMPTY;
 }
@@ -700,7 +693,7 @@ U32 syscall_rmdir(struct KThread* thread, U32 path) {
 #define FS_FREE_SIZE 96636764160l
 
 U32 syscall_statfs(struct KThread* thread, U32 path, U32 address) {
-    struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
     if (!node) {
         return -K_ENOENT;
     }
@@ -719,7 +712,7 @@ U32 syscall_statfs(struct KThread* thread, U32 path, U32 address) {
 }
 
 U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
-    struct Node* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
     if (!node) {
         return -K_ENOENT;
     }
@@ -761,13 +754,13 @@ U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
     S64 pos;
     U32 result;
-    struct OpenNode* openNode;
+    struct FsOpenNode* openNode;
 
     if (fd==0 || fd->kobject->type!=KTYPE_FILE) {
         return -K_EBADF;
     }
-    openNode = (struct OpenNode*)fd->kobject->data;
-    if (openNode->node->nodeType->isDirectory(openNode->node)) {
+    openNode = fd->kobject->openFile;
+    if (openNode->node->func->isDirectory(openNode->node)) {
         return -K_EISDIR;
     }
     pos = fd->kobject->access->seek(fd->kobject, offset);
@@ -780,13 +773,13 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
     S64 pos;
     U32 result;
-    struct OpenNode* openNode;
+    struct FsOpenNode* openNode;
 
     if (fd==0 || fd->kobject->type!=KTYPE_FILE) {
         return -K_EBADF;
     }
-    openNode = (struct OpenNode*)fd->kobject->data;
-    if (openNode->node->nodeType->isDirectory(openNode->node)) {
+    openNode = fd->kobject->openFile;
+    if (openNode->node->func->isDirectory(openNode->node)) {
         return -K_EISDIR;
     }
     pos = fd->kobject->access->seek(fd->kobject, offset);

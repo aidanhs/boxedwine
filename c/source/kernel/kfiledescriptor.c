@@ -17,7 +17,6 @@
  */
 
 #include "kfiledescriptor.h"
-#include "nodetype.h"
 #include "kalloc.h"
 #include "kprocess.h"
 #include "kobject.h"

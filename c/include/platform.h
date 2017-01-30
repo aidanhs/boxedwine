@@ -68,8 +68,8 @@
 # define S_ISDIR(ST_MODE) (((ST_MODE) & _S_IFMT) == _S_IFDIR)
 #endif
 
-struct Node;
-int listNodes(struct Node* dir, struct Node** nodes, int maxCount);
+struct FsNode;
+int listNodes(struct FsNode* dir, struct FsNode** nodes, int maxCount);
 U64 getSystemTimeAsMicroSeconds();
 U64 getMicroCounter();
 void startMicroCounter();

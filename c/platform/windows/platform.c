@@ -17,10 +17,10 @@
  */
 
 #include <Windows.h>
+#include "platform.h"
 #include "log.h"
-#include "node.h"
-#include "filesystem.h"
 #include "pixelformat.h"
+#include "fsapi.h"
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -63,20 +63,19 @@ ULONGLONG getSystemTimeAsMicroSeconds() {
     return t;
 }
 
-
-int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
+int listNodes(struct FsNode* dir, struct FsNode** nodes, int maxCount) {
     char path[MAX_FILEPATH_LEN];
     char tmp[MAX_FILEPATH_LEN];
     WIN32_FIND_DATA findData;
     HANDLE hFind;
     int result=0;
 
-    safe_strcpy(path, dir->path.nativePath, MAX_FILEPATH_LEN);
+    safe_strcpy(path, dir->reserved1, MAX_FILEPATH_LEN);
     safe_strcat(path, "\\*.*", MAX_FILEPATH_LEN);
     hFind = FindFirstFile(path, &findData); 
     if(hFind != INVALID_HANDLE_VALUE)  { 		
-        nodes[result++]=getNodeFromLocalPath(dir->path.localPath, ".", FALSE);
-        nodes[result++]=getNodeFromLocalPath(dir->path.localPath, "..", FALSE);
+        nodes[result++]=getNodeFromLocalPath(dir->path, ".", FALSE);
+        nodes[result++]=getNodeFromLocalPath(dir->path, "..", FALSE);
         do  { 
             if (strcmp(findData.cFileName, ".") && strcmp(findData.cFileName, ".."))  {
                 int len;
@@ -92,10 +91,10 @@ int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
                 if (!strcmp(tmp, "z(_colon_)")) {
                     strcpy(tmp, "z:");
                 }
-                nodes[result] = getNodeFromLocalPath(dir->path.localPath, tmp, FALSE);
+                nodes[result] = getNodeFromLocalPath(dir->path, tmp, FALSE);
                 result++;
                 if (result==maxCount) {
-                    kwarn("hit the maximum number of files that can be returned in a director for %s", dir->path.nativePath);
+                    kwarn("hit the maximum number of files that can be returned in a director for %s", dir->reserved1);
                     break;
                 }
             }

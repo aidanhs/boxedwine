@@ -1072,10 +1072,9 @@
     <ClInclude Include="..\..\..\..\include\devurandom.h" />
     <ClInclude Include="..\..\..\..\include\ea.h" />
     <ClInclude Include="..\..\..\..\include\filepath.h" />
-    <ClInclude Include="..\..\..\..\include\filesystem.h" />
     <ClInclude Include="..\..\..\..\include\fpu.h" />
+    <ClInclude Include="..\..\..\..\include\fsapi.h" />
     <ClInclude Include="..\..\..\..\include\fsdiraccess.h" />
-    <ClInclude Include="..\..\..\..\include\fsfile.h" />
     <ClInclude Include="..\..\..\..\include\fsfileaccess.h" />
     <ClInclude Include="..\..\..\..\include\fslinks.h" />
     <ClInclude Include="..\..\..\..\include\fspaths.h" />
@@ -1110,11 +1109,7 @@
     <ClInclude Include="..\..\..\..\include\log.h" />
     <ClInclude Include="..\..\..\..\include\meminfo.h" />
     <ClInclude Include="..\..\..\..\include\memory.h" />
-    <ClInclude Include="..\..\..\..\include\node.h" />
-    <ClInclude Include="..\..\..\..\include\nodeaccess.h" />
-    <ClInclude Include="..\..\..\..\include\nodeType.h" />
     <ClInclude Include="..\..\..\..\include\op.h" />
-    <ClInclude Include="..\..\..\..\include\opennode.h" />
     <ClInclude Include="..\..\..\..\include\page.h" />
     <ClInclude Include="..\..\..\..\include\pbl.h" />
     <ClInclude Include="..\..\..\..\include\platform.h" />
@@ -1159,15 +1154,7 @@
     <ClCompile Include="..\..\..\..\source\emulation\shift.c" />
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
-    <ClCompile Include="..\..\..\..\source\io\filesystem.c" />
-    <ClCompile Include="..\..\..\..\source\io\fsdiraccess.c" />
-    <ClCompile Include="..\..\..\..\source\io\fsfile.c" />
-    <ClCompile Include="..\..\..\..\source\io\fsfileaccess.c" />
-    <ClCompile Include="..\..\..\..\source\io\fslinks.c" />
-    <ClCompile Include="..\..\..\..\source\io\fspaths.c" />
-    <ClCompile Include="..\..\..\..\source\io\node.c" />
-    <ClCompile Include="..\..\..\..\source\io\opennode.c" />
-    <ClCompile Include="..\..\..\..\source\io\virtualfile.c" />
+    <ClCompile Include="..\..\..\..\source\io\fsapi.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devinput.c" />
@@ -1229,6 +1216,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\..\..\include\iosyscalls.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

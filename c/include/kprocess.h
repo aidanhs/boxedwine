@@ -24,7 +24,7 @@
 #include "kthread.h"
 #include "karray.h"
 #include "kfiledescriptor.h"
-#include "nodeaccess.h"
+#include "fsapi.h"
 #include "ktimer.h"
 #include "kshm.h"
 #include "pbl.h"
@@ -103,8 +103,8 @@ struct KProcess {
     char commandLine[MAX_COMMANDLINE_LEN];
     char exe[MAX_FILEPATH_LEN];
     char name[MAX_FILEPATH_LEN];
-    struct NodeAccess commandLineAccess;
-    struct Node* commandLineNode;
+    struct FsOpenNodeFunc commandLineAccess;
+    struct FsNode* commandLineNode;
     struct KArray threads;
     char path[MAX_PATHS][MAX_FILEPATH_LEN];
     U32 shms[MAX_SHM][MAX_SHM_ATTACH];
@@ -134,7 +134,7 @@ struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDi
 U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options);
 BOOL isProcessStopped(struct KProcess* process);
 BOOL isProcessTerminated(struct KProcess* process);
-struct Node* getNode(struct KThread* thread, U32 fileName);
+struct FsNode* getNode(struct KThread* thread, U32 fileName);
 const char* getModuleName(struct CPU* cpu, U32 eip);
 U32 getModuleEip(struct CPU* cpu, U32 eip);
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after);

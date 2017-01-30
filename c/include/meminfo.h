@@ -19,8 +19,8 @@
 #ifndef __MEMINFO_H__
 #define __MEMINFO_H__
 
-#include "nodeaccess.h"
+#include "fsapi.h"
 
-extern struct NodeAccess meminfoAccess;
+extern struct FsOpenNodeFunc meminfoAccess;
 
 #endif

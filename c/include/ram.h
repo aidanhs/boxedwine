@@ -21,6 +21,7 @@
 
 #include "page.h"
 #include "op.h"
+#include "memory.h"
 
 void initRAM(U32 pages);
 U32 getPageCount();

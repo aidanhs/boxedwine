@@ -13,15 +13,6 @@
     <ClCompile Include="..\..\..\..\source\emulation\memory.c">
       <Filter>source\emulation</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\filesystem.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\virtualfile.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\node.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c">
       <Filter>source\kernel\devs</Filter>
     </ClCompile>
@@ -214,22 +205,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\devs\devmixer.c">
       <Filter>source\kernel\devs</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\fslinks.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\opennode.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\fsdiraccess.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\fsfile.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\fsfileaccess.c">
-      <Filter>source\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\io\fspaths.c">
+    <ClCompile Include="..\..\..\..\source\io\fsapi.c">
       <Filter>source\io</Filter>
     </ClCompile>
   </ItemGroup>
@@ -268,9 +244,6 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\filepath.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\include\filesystem.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\fpu.h">
@@ -361,15 +334,6 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\memory.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\include\node.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\include\nodeaccess.h">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\include\nodeType.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\op.h">
@@ -465,16 +429,13 @@
     <ClInclude Include="..\..\..\..\include\fspaths.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\include\opennode.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\include\fsdiraccess.h">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\fsfileaccess.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\include\fsfile.h">
+    <ClInclude Include="..\..\..\..\include\fsapi.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -533,5 +494,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\..\..\include\iosyscalls.h">
+      <Filter>include</Filter>
+    </Text>
   </ItemGroup>
 </Project>

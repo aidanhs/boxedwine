@@ -21,9 +21,8 @@
 #include <string.h>
 
 #include "log.h"
-#include "node.h"
-#include "filesystem.h"
 #include "pixelformat.h"
+#include "fsapi.h"
 
 unsigned long long int getSystemTimeAsMicroSeconds() {
 	struct timeval  tv;
@@ -56,18 +55,18 @@ unsigned long long int getMicroCounter()
 }
 #endif
 
-int listNodes(struct Node* dir, struct Node** nodes, int maxCount) {
+int listNodes(struct FsNode* dir, struct FsNode** nodes, int maxCount) {
 	DIR *dp = NULL;
 	struct dirent *dptr = NULL;
 	U32 result = 0;
 
-	dp = opendir(dir->path.nativePath);
+	dp = opendir(dir->reserved1);
 	if (dp) {
-		nodes[result++]=getNodeFromLocalPath(dir->path.localPath, ".", FALSE);
-                nodes[result++]=getNodeFromLocalPath(dir->path.localPath, "..", FALSE);
+		nodes[result++]=getNodeFromLocalPath(dir->path, ".", FALSE);
+                nodes[result++]=getNodeFromLocalPath(dir->path, "..", FALSE);
         	while(NULL != (dptr = readdir(dp))) {
 			if (strcmp(dptr->d_name, ".") && strcmp(dptr->d_name, ".."))  {
-				nodes[result] = getNodeFromLocalPath(dir->path.localPath, dptr->d_name, TRUE);
+				nodes[result] = getNodeFromLocalPath(dir->path, dptr->d_name, TRUE);
 				result++;
 				if (result==maxCount) {
 					kwarn("hit the maximum number of files that can be returned in a director for %s", dir->path.nativePath);
