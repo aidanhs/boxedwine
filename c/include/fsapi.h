@@ -3,6 +3,7 @@
 
 #include "platform.h"
 #include "memory.h"
+#include "kthread.h"
 
 #define K_O_RDONLY   0x0000
 #define K_O_WRONLY   0x0001
@@ -33,6 +34,8 @@
 
 #define FS_BLOCK_SIZE 8192
 
+struct FsNode;
+struct FsOpenNode;
 struct FsNodeFunc {
     BOOL (*isDirectory)(struct FsNode* node);
     BOOL (*exists)(struct FsNode* node);

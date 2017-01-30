@@ -82,7 +82,7 @@ char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
             openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
             if (phdr.p_type==PT_INTERP) {
                 openNode->func->seek(openNode, phdr.p_offset);	
-                openNode->func->readNative(openNode, interp, phdr.p_filesz);
+                openNode->func->readNative(openNode, (U8*)interp, phdr.p_filesz);
                 interp[phdr.p_filesz] = 0;
                 return interp;
             }

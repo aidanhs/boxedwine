@@ -27,6 +27,6 @@
 BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpenNode* openNode, U32* eip);
 BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct FsNode* node, const char** loader, const char** interpreter, const char** interpreterArgs, U32* interpreterArgsCount, struct FsOpenNode** result);
 int getMemSizeOfElf(struct FsOpenNode* openNode);
-U32 getPELoadAddress(struct OpenNode* FsopenNode, U32* section, U32* numberOfSections, U32* sizeOfSection);
+U32 getPELoadAddress(struct FsOpenNode* FsopenNode, U32* section, U32* numberOfSections, U32* sizeOfSection);
 
 #endif

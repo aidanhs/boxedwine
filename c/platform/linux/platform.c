@@ -69,7 +69,7 @@ int listNodes(struct FsNode* dir, struct FsNode** nodes, int maxCount) {
 				nodes[result] = getNodeFromLocalPath(dir->path, dptr->d_name, TRUE);
 				result++;
 				if (result==maxCount) {
-					kwarn("hit the maximum number of files that can be returned in a director for %s", dir->path.nativePath);
+					kwarn("hit the maximum number of files that can be returned in a director for %s", dir->reserved1);
 					break;
 				}
 			}

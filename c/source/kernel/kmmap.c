@@ -196,7 +196,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             if (fd) {
                 int fileLength = (int)fd->kobject->access->length(fd->kobject);
                 // extra room, this is an overestimation, required by ld
-                int memSize = getMemSizeOfElf((struct OpenNode*)fd->kobject->data);
+                int memSize = getMemSizeOfElf(fd->kobject->openFile);
 
 
                 if (fileLength > memLen) {

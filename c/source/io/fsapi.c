@@ -64,6 +64,8 @@ BOOL doesPathExist(const char* path) {
 
 BOOL initFileSystem(const char* rootPath) {
     int len = strlen(rootPath);
+
+    pathSeperator = '/';
     if (rootPath[len-1]=='/')
         pathSeperator = '/';
     else if (rootPath[len-1]=='\\')
@@ -72,7 +74,7 @@ BOOL initFileSystem(const char* rootPath) {
         if (strchr(rootPath, '\\'))
             pathSeperator = '\\';
     }
-
+    
     if (!doesPathExist(rootPath))
         return FALSE;
 
@@ -734,12 +736,12 @@ U32 dir_getDirectoryEntryCount(struct FsOpenNode* node) {
 }
 
 U32 dir_readNative(struct FsOpenNode* node, U8* buffer, U32 len) {
-    kpanic("dir_readNative not implemented");
+    kpanic("dir_readNative not implemented: %s", node->node->path);
     return 0;
 }
 
 U32 dir_writeNative(struct FsOpenNode* node, U8* buffer, U32 len) {
-    kpanic("dir_writeNative not implemented");
+    kpanic("dir_writeNative not implemented: %s", node->node->path);
     return 0;
 }
 
@@ -1150,7 +1152,7 @@ U32 syscall_link(struct KThread* thread, U32 from, U32 to) {
     struct FsNode* toNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD to), FALSE);
     struct FsOpenNode* fromOpenNode;
     struct FsOpenNode* toOpenNode;
-    char buffer[PAGE_SIZE];
+    U8 buffer[PAGE_SIZE];
 
     if (!fromNode || !fromNode->func->exists(fromNode)) {
         return -K_ENOENT;
