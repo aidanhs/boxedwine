@@ -557,7 +557,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
     }
     entries = openNode->func->getDirectoryEntryCount(openNode);
 
-    if ((U32)openNode->func->getFilePointer(openNode)==0) {
+    if ((U32)openNode->func->getFilePointer(openNode)==0 && entries) {
         U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->func->getType(openNode->node, 1));
         struct FsNode* entry;
 

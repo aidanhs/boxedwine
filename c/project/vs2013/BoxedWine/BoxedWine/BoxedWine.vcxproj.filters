@@ -208,6 +208,18 @@
     <ClCompile Include="..\..\..\..\source\io\fsapi.c">
       <Filter>source\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\lib\zlib\contrib\minizip\ioapi.c">
+      <Filter>minizip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lib\zlib\contrib\minizip\mztools.c">
+      <Filter>minizip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lib\zlib\contrib\minizip\unzip.c">
+      <Filter>minizip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lib\zlib\contrib\minizip\zip.c">
+      <Filter>minizip</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -438,6 +450,21 @@
     <ClInclude Include="..\..\..\..\include\fsapi.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\crypt.h">
+      <Filter>minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\ioapi.h">
+      <Filter>minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\mztools.h">
+      <Filter>minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\unzip.h">
+      <Filter>minizip</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\zip.h">
+      <Filter>minizip</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -490,6 +517,9 @@
     </Filter>
     <Filter Include="source\util\pbl">
       <UniqueIdentifier>{59140a27-2526-4bd5-9d85-72fb5804c102}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="minizip">
+      <UniqueIdentifier>{6be3ffdc-ef7e-4be0-ae02-92bfaf1a278f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

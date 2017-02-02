@@ -42,3 +42,16 @@ void trimTrailingSpaces(char* path) {
             break;
     }
 }
+
+void stringReplace(const char* searchStr, const char* replaceStr, char* str, int len) {
+    char* p = strstr(str, searchStr);
+    int sLen = strlen(searchStr);
+    int rLen = strlen(replaceStr);
+
+    while (p) {
+        memmove(p+rLen, p+sLen, strlen(p)-sLen+1);
+        strncpy(p, replaceStr, rLen);
+        p+=rLen;
+        p=strstr(p, searchStr);
+    }
+}

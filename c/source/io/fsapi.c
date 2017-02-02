@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #include "platform.h"
 #include "fsapi.h"
@@ -12,13 +13,17 @@
 #include "khashmap.h"
 #include "kstring.h"
 
+#undef OF
+#include "unzip.h"
+
 #include UTIME
 #include MKDIR_INCLUDE
 #include UNISTD
 
 char pathSeperator;
 
-char rootFileSystem[MAX_FILEPATH_LEN];
+static char rootFileSystem[MAX_FILEPATH_LEN];
+static unzFile *zipfile;
 
 static char tmpPath[MAX_FILEPATH_LEN];
 static char tmpLocalPath[MAX_FILEPATH_LEN];
@@ -36,10 +41,19 @@ static char pathTmp[MAX_FILEPATH_LEN];
 #define hardLink1 reserved9
 #define openfunc1 reserved10
 #define mode1 reserved11
+#define isZipDirectory1 reserved12
+#define zipFileLastModified1 reserved13
+#define zipFileSize1 reserved14
+#define zipFilePos1 reserved15
+#define zipOffset1 reserved16
+#define zipNextChild1 reserved17
+#define zipFirstChild1 reserved18
+#define isZipFile1 reserved19
 
 static int nodeId = 1;
 static struct KHashmap nodeMap;
 static PblMap* localSkipLinksMap;
+static char tmp[4096];
 
 void initNodes() {
     initHashmap(&nodeMap);
@@ -62,40 +76,32 @@ BOOL doesPathExist(const char* path) {
     return FALSE;
 }
 
-BOOL initFileSystem(const char* rootPath) {
-    int len = strlen(rootPath);
+void localPathToRemote(const char* localPath, char* nativePath, int nativePathSize);
+struct FsNode* getNodeInCache(const char* localPath);
+void remotePathToLocal(char* path);
 
-    pathSeperator = '/';
-    if (rootPath[len-1]=='/')
-        pathSeperator = '/';
-    else if (rootPath[len-1]=='\\')
-        pathSeperator = '\\';
-    else {
-        if (strchr(rootPath, '\\'))
-            pathSeperator = '\\';
+struct FsNode* getNodeFromNative(const char* nativePath) {
+    char tmp[MAX_FILEPATH_LEN];
+    strcpy(tmp, nativePath);
+    remotePathToLocal(tmp);
+    return getNodeInCache(tmp);
+}
+
+BOOL doesLocalPathExist(const char* localPath) {
+    char nativePath[MAX_FILEPATH_LEN];
+    const char* path;
+    struct FsNode* node;
+    localPathToRemote(localPath, nativePath, MAX_FILEPATH_LEN);
+    path = pathMakeWindowsHappy(nativePath);
+    if (access(path, 0)!=-1) {
+        return TRUE;
     }
-    
-    if (!doesPathExist(rootPath))
-        return FALSE;
-
-    safe_strcpy(rootFileSystem, rootPath, MAX_FILEPATH_LEN);
-
-    if (rootFileSystem[len-1]==pathSeperator)
-        rootFileSystem[len-1] = 0;
-    initNodes();
-    localSkipLinksMap = pblMapNewHashMap();
-    {
-        struct FsNode* dir = getNodeFromLocalPath("", "/tmp/del", TRUE);
-        if (dir) {
-            struct FsNode* result[100];
-            int count = listNodes(dir, result, 100);
-            int i;
-            for (i=0;i<count;i++) {
-                remove(result[i]->nativePath1);
-            }
-        }
-    }
-    return TRUE;
+    node = getNodeFromNative(nativePath);
+    if (node)
+        node = getNodeInCache(node->path);
+    if (node)
+        return node->func->exists(node);
+    return FALSE;
 }
 
 // home/. dir should return the same node as /home/ dirs which should be the same as /home, so remove trailing . and /
@@ -125,6 +131,7 @@ BOOL normalizePath(char* path) {
     if (path[len-1]=='/') {
         path[len-1]=0;
     }
+    stringReplace("//", "/", path, MAX_FILEPATH_LEN);
     return TRUE;
 }
 
@@ -175,33 +182,36 @@ static const char* invalidPaths[] = {
     "lpt9",
 };
 
-void localPathToRemote(char* path) {
-    int len = strlen(path);
+void localPathToRemote(const char* localPath, char* nativePath, int nativePathSize) {
+    int len;
     int i;
 
-    for (i=0;i<len;i++) {
-        if (path[i]=='/')
-            path[i]=pathSeperator;
-        else if (path[i]==':') {
-            memmove(path+i+9, path+i+1, strlen(path+i+1)+1);
-            memcpy(path+i, "(_colon_)", 9);
+    safe_strcpy(nativePath, rootFileSystem, nativePathSize);
+    safe_strcat(nativePath, localPath, nativePathSize);
+    len = strlen(nativePath);
+    for (i=2;i<len;i++) {
+        if (nativePath[i]=='/')
+            nativePath[i]=pathSeperator;
+        else if (nativePath[i]==':') {
+            memmove(nativePath+i+9, nativePath+i+1, strlen(nativePath+i+1)+1);
+            memcpy(nativePath+i, "(_colon_)", 9);
             i+=8;
             len+=8;
         }
     }
     for (i=0;i<sizeof(invalidPaths)/sizeof(invalidPaths[0]);i++) {
-        const char* sub = strstr(path, invalidPaths[i]);
+        const char* sub = strstr(nativePath, invalidPaths[i]);
         if (sub) {
-            int pos = sub-path;
+            int pos = sub-nativePath;
             int len = strlen(invalidPaths[i]);
 
-            if (path[pos-1]==pathSeperator && (path[pos+len]=='.' || path[pos+len]==pathSeperator || path[pos+len]==0)) {
-                memmove(path+pos+len+4, path+pos+len, strlen(path+pos+len)+1);
-                memcpy(path+pos+2, invalidPaths[i], len);
-                path[pos]='(';
-                path[pos+1]='_';
-                path[pos+2+len]='_';
-                path[pos+2+len+1]=')';
+            if (nativePath[pos-1]==pathSeperator && (nativePath[pos+len]=='.' || nativePath[pos+len]==pathSeperator || nativePath[pos+len]==0)) {
+                memmove(nativePath+pos+len+4, nativePath+pos+len, strlen(nativePath+pos+len)+1);
+                memcpy(nativePath+pos+2, invalidPaths[i], len);
+                nativePath[pos]='(';
+                nativePath[pos+1]='_';
+                nativePath[pos+2+len]='_';
+                nativePath[pos+2+len+1]=')';
             }
         }
     }
@@ -211,6 +221,7 @@ void remotePathToLocal(char* path) {
     int len = strlen(path);
     int i;
     int rootlen = strlen(rootFileSystem);
+    char* result;
 
     if (strncmp(path, rootFileSystem, rootlen)==0) {
         memmove(path, path+rootlen, strlen(path)-rootlen+1); 
@@ -219,7 +230,11 @@ void remotePathToLocal(char* path) {
         if (path[i]==pathSeperator)
             path[i]='/';		
     }
-    // :TODO: is reversing the colon code necessary
+    result = strstr(path, "(_colon_)");
+    if (result) {
+        result[0]=':';
+        memmove(result+1, result+9, strlen(result+9)+1);
+    }
 }
 
 U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path1, U32 path2) {
@@ -258,30 +273,30 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
     return 0;
 }
 
-BOOL kreadLink(const char* path, char* buffer, int bufferSize, BOOL makeAbsolute) {
-    int h;
+BOOL kreadLink(const char* localPath, char* buffer, int bufferSize, BOOL makeAbsolute) {
     char tmp[MAX_FILEPATH_LEN+1];
     int readCount;
-
-    h = open(path, O_RDONLY);
-    if (h<=0)
+    struct FsNode* node = getNodeFromLocalPath("", localPath, 1);
+    struct FsOpenNode* openNode;
+    if (!node)
         return FALSE;
-    readCount = read(h, tmp, MAX_FILEPATH_LEN+1);
-    if (readCount<=0 || readCount>=MAX_FILEPATH_LEN) {
-        close(h);
+    openNode = node->func->open(0, node, K_O_RDONLY);
+    if (!openNode)
+        return FALSE;
+    readCount = openNode->func->readNative(openNode, tmp, MAX_FILEPATH_LEN+1);
+    openNode->func->close(openNode);
+    if (readCount<=0 || readCount>=MAX_FILEPATH_LEN) {        
         return FALSE;
     }
     tmp[readCount]=0;
     if (makeAbsolute && tmp[0]!='/') {
-        int len = strrchr(path, pathSeperator)-path;
-        memcpy(buffer, path, len);
+        int len = strrchr(localPath, '/')-localPath;
+        memcpy(buffer, localPath, len);
         buffer[len+1]=0;
         safe_strcat(buffer, tmp, bufferSize);
-        remotePathToLocal(buffer);
     } else {
         safe_strcpy(buffer, tmp, bufferSize);
     }
-    close(h);
     return TRUE;
 }
 
@@ -290,11 +305,9 @@ BOOL followLinks(char* path, int pathSize, U32* isLink) {
     int i;
     char tmp[MAX_FILEPATH_LEN];
 
-    if (doesPathExist(path))
-        return FALSE;
     safe_strcpy(tmp, path, MAX_FILEPATH_LEN);
     safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
-    if (doesPathExist(tmp)) {
+    if (doesLocalPathExist(tmp)) {
         if (kreadLink(tmp, tmp, MAX_FILEPATH_LEN, TRUE)) {
             safe_strcpy(path, tmp, pathSize);
             if (isLink)
@@ -305,17 +318,15 @@ BOOL followLinks(char* path, int pathSize, U32* isLink) {
 
     len = strlen(path);
     for (i=0;i<len;i++) {
-        if (path[i]==pathSeperator) {
+        if (path[i]=='/') {
             safe_strcpy(tmp, path, MAX_FILEPATH_LEN); // don't include path seperator
             tmp[i]=0;
-            if (!doesPathExist(tmp)) {
-                safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
-                if (doesPathExist(tmp)) {
-                    if (kreadLink(tmp, tmp, MAX_FILEPATH_LEN, TRUE)) {
-                        safe_strcat(tmp, path+i, MAX_FILEPATH_LEN); 
-                        safe_strcpy(path, tmp, pathSize);						
-                        return TRUE;
-                    }
+            safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
+            if (doesLocalPathExist(tmp)) {
+                if (kreadLink(tmp, tmp, MAX_FILEPATH_LEN, TRUE)) {
+                    safe_strcat(tmp, path+i, MAX_FILEPATH_LEN); 
+                    safe_strcpy(path, tmp, pathSize);						
+                    return TRUE;
                 }
             }
         }
@@ -347,6 +358,8 @@ struct FsNode* getLocalAndNativePaths(const char* currentDirectory, const char* 
         safe_strcat(localPath, path, localPathSize);
     }	
     trimTrailingSpaces(localPath);
+    stringReplace("//", "/", localPath, localPathSize);
+    normalizePath(localPath);
 
     found = pblMapGet(localSkipLinksMap, localPath, strlen(localPath)+1, NULL);
     if (found) {
@@ -356,27 +369,22 @@ struct FsNode* getLocalAndNativePaths(const char* currentDirectory, const char* 
         safe_strcpy(nativePath, found->nativePath, nativePathSize);
     } else {
         char fullLocalPath[MAX_FILEPATH_LEN];
-        safe_strcpy(fullLocalPath, localPath, MAX_FILEPATH_LEN);	    
-
-        normalizePath(localPath);	
-        safe_strcpy(nativePath, rootFileSystem, nativePathSize);	
-        safe_strcat(nativePath, localPath, nativePathSize);
+        
+        safe_strcpy(fullLocalPath, localPath, MAX_FILEPATH_LEN);	            
         while (TRUE) {
-            localPathToRemote(nativePath+strlen(rootFileSystem)); // don't convert colon's in the root path			
-            if (followLinks(nativePath, nativePathSize, &tmp32)) {
-                normalizePath(nativePath);
-                memmove(nativePath+strlen(rootFileSystem), nativePath, strlen(nativePath)+1);
-                memcpy(nativePath, rootFileSystem, strlen(rootFileSystem));
+            if (followLinks(fullLocalPath, localPathSize, &tmp32)) {
+                normalizePath(fullLocalPath);
             } else {
                 break;
             }
         }
         if (isLink)
             *isLink = tmp32;
+        localPathToRemote(fullLocalPath, nativePath, nativePathSize);
         safe_strcpy(localEntry.nativePath, nativePath, MAX_FILEPATH_LEN);
         safe_strcpy(localEntry.localPath, localPath, MAX_FILEPATH_LEN);
         localEntry.isLink = tmp32;
-        pblMapAdd(localSkipLinksMap, fullLocalPath, strlen(fullLocalPath)+1, &localEntry, sizeof(struct LocalPath));
+        pblMapAdd(localSkipLinksMap, localPath, strlen(localPath)+1, &localEntry, sizeof(struct LocalPath));
     }
     return getNodeInCache(localPath);
 }
@@ -424,10 +432,10 @@ struct FsOpenNode* allocOpenNode(struct KProcess* process, struct FsNode* node, 
         struct FsNode* actualNode = node;
 
         if (node->isLink1) {
-            static char tmp[MAX_FILEPATH_LEN];
-            safe_strcpy(tmp, node->nativePath1, MAX_FILEPATH_LEN);
+            char tmp[MAX_FILEPATH_LEN];
+            strcpy(tmp, node->nativePath1);
             remotePathToLocal(tmp);
-            result->linkedNoded1 = getNodeFromLocalPath("", tmp, TRUE);
+            result->linkedNoded1 = getNodeFromLocalPath("", tmp, 0);
             actualNode = result->linkedNoded1;
         }
         result->nextOpen1 = actualNode->openNodes1;
@@ -457,23 +465,19 @@ static S64 openfile_seek(struct FsOpenNode* node, S64 pos) {
     return lseek(node->handle1, (U32)pos, SEEK_SET);
 }
 
-#ifdef USE_MMU
-char tmp[4096];
-#endif
-
 static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
 #ifndef USE_MMU
-    return read(node->handle, (void*)address, len);
+    return node->func->readNative(node, (void*)address, len);
 #else
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
         U8* ram = getPhysicalAddress(memory, address);
         U32 result;
-        S64 pos = openfile_getFilePointer(node);
+        S64 pos = node->func->getFilePointer(node);
 
         if (ram) {
-            result = read(node->handle1, ram, len);	
+            result = node->func->readNative(node, ram, len);	
         } else {
-            result = read(node->handle1, tmp, len);
+            result = node->func->readNative(node, tmp, len);
             memcopyFromNative(MMU_PARAM address, tmp, result);
         }        
         // :TODO: why does this happen
@@ -484,7 +488,7 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
         // 3) dpkg continues to run then hits a new part of the code that causes an on demand load
         // 4) on windows 7 x64 this resulted in a full read of one page, but the result returned by read was less that 4096, it was 0xac8 (2760)
         if (result<len) {
-            if (openfile_getFilePointer(node)==pos+len) {
+            if (node->func->getFilePointer(node)==pos+len) {
                 result = len;
             }
         }
@@ -499,9 +503,9 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
             if (todo>len)
                 todo = len;
             if (ram) {
-                didRead=read(node->handle1, ram, todo);		
+                didRead=node->func->readNative(node, ram, todo);		
             } else {
-                didRead = read(node->handle1, tmp, todo);
+                didRead = node->func->readNative(node, tmp, todo);
                 memcopyFromNative(MMU_PARAM address, tmp, didRead);
             }
             if (didRead<=0)
@@ -517,7 +521,7 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
 
 static U32 openfile_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
 #ifndef USE_MMU
-    return write(node->handle, (void*)address, len);
+    return node->func->writeNative(node, (void*)address, len);
 #else	
     U32 wrote = 0;
     while (len) {
@@ -526,10 +530,10 @@ static U32 openfile_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len)
         if (todo>len)
             todo = len;
         if (ram)
-            wrote+=write(node->handle1, ram, todo);		
+            wrote+=node->func->writeNative(node, ram, todo);
         else {
             memcopyToNative(MMU_PARAM address, tmp64k, todo);
-            wrote+=write(node->handle1, tmp64k, todo);		
+            wrote+=node->func->writeNative(node, tmp64k, todo);		
         }
         len-=todo;
         address+=todo;
@@ -605,6 +609,151 @@ U32 openfile_writeNative(struct FsOpenNode* node, U8* buffer, U32 len) {
 
 struct FsOpenNodeFunc fileAccess = {openfile_init, openfile_length, openfile_setLength, openfile_getFilePointer, openfile_seek, openfile_read, openfile_write, openfile_close, openfile_map, openfile_canMap, openfile_ioctl, openfile_setAsync, openfile_isAsync, openfile_waitForEvents, openfile_isWriteReady, openfile_isReadReady, openfile_free, openfile_getDirectoryEntry, openfile_getDirectoryEntryCount, openfile_readNative, openfile_writeNative};
 
+BOOL moveToFileSystem(struct FsNode* node);
+
+void ensurePathIsLocal(struct FsNode* node) {
+    if (node && zipfile && !doesPathExist(node->nativePath1)) {
+        moveToFileSystem(node);
+    }
+}
+
+BOOL moveToFileSystem(struct FsNode* node) {
+    node = getNodeFromNative(node->nativePath1);
+    if (!node)
+        return FALSE;
+    if (!node->isZipFile1)
+        return FALSE;
+
+    if (strcmp(node->path, "/")==0) {
+        if (!doesPathExist(node->nativePath1))
+            MKDIR(node->nativePath1);
+        return TRUE;
+    }
+    ensurePathIsLocal(getParentNode(node));
+    if (!doesPathExist(node->nativePath1)) {        
+        if (node->func->isDirectory(node)) {    
+            MKDIR(node->nativePath1);
+        } else {
+            // :TODO: handle open node
+            kpanic("moveToFileSystem not implemented");
+        }
+    }   
+    return TRUE;
+}
+
+static S64 zipOpenFile_length(struct FsOpenNode* node) {
+    return node->node->func->length(node->node);
+}
+
+static BOOL zipOpenFile_setLength(struct FsOpenNode* node, S64 len) {
+    moveToFileSystem(node->node);
+    return openfile_setLength(node, len);
+}
+
+static S64 zipOpenFile_getFilePointer(struct FsOpenNode* node) {
+    return node->zipFilePos1;
+}
+
+static S64 zipOpenFile_seek(struct FsOpenNode* node, S64 pos) {
+    if (pos>(S64)node->node->func->length(node->node))
+        node->zipFilePos1 = node->node->func->length(node->node);
+    else
+        return node->zipFilePos1 = pos;
+    return node->zipFilePos1;
+}
+
+static U64 lastZipOffset = 0xFFFFFFFFFFFFFFFFl;
+static U64 lastZipFileOffset;
+
+static void setupZipRead(U64 zipOffset, U64 zipFileOffset) {
+    if (zipOffset != lastZipOffset || zipFileOffset < lastZipFileOffset) {
+        unzCloseCurrentFile(zipfile);
+        unzSetOffset64(zipfile, zipOffset);
+        lastZipFileOffset = 0;
+        unzOpenCurrentFile(zipfile);
+        lastZipOffset = zipOffset;
+    }
+    if (zipFileOffset != lastZipFileOffset) {
+        U32 todo = (U32)(zipFileOffset - lastZipFileOffset);
+        while (todo) {
+            todo-=unzReadCurrentFile(zipfile, tmp, todo>4096?4096:todo);
+        }
+    }        
+}
+
+static void zipOpenFile_close(struct FsOpenNode* node) {
+    removeOpenNodeFromNode(node);
+    freeOpenNode(node);
+}
+
+static U32 zipOpenFile_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
+    return -K_ENODEV;
+}
+
+static void zipOpenFile_setAsync(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync) {
+    if (isAsync)
+        kwarn("file_setAsync not implemented");
+}
+
+static BOOL zipOpenFile_isAsync(struct FsOpenNode* node, struct KProcess* process) {
+    return 0;
+}
+
+static void zipOpenFile_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
+    kwarn("file_waitForEvents not implemented");
+}
+
+static BOOL zipOpenFile_isWriteReady(struct FsOpenNode* node) {
+    return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
+}
+
+static BOOL zipOpenFile_isReadReady(struct FsOpenNode* node) {
+    return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
+}
+
+static U32 zipOpenFile_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+    return 0;
+}
+
+static BOOL zipOpenFile_canMap(struct FsOpenNode* node) {
+    return TRUE;
+}
+
+static BOOL zipOpenFile_init(struct KProcess* process, struct FsOpenNode* node) {
+    return TRUE;
+}
+
+void zipOpenFile_free(struct FsOpenNode* node) {
+    freeOpenNode(node);
+}
+
+struct FsNode* zipOpenFile_getDirectoryEntry(struct FsOpenNode* node, U32 index) {
+    kpanic("openfile_getDirectoryEntry not implemented");
+    return 0;
+}
+
+U32 zipOpenFile_getDirectoryEntryCount(struct FsOpenNode* node) {
+    kpanic("openfile_getDirectoryEntryCount not implemented");
+    return 0;
+}
+
+U32 zipOpenFile_readNative(struct FsOpenNode* node, U8* buffer, U32 len) {
+    U32 result;
+
+    setupZipRead(node->node->zipOffset1, node->zipFilePos1);    
+    result = unzReadCurrentFile(zipfile, buffer, len);
+    node->zipFilePos1+=result;
+    lastZipFileOffset = node->zipFilePos1;
+    return result;
+}
+
+U32 zipOpenFile_writeNative(struct FsOpenNode* node, U8* buffer, U32 len) {
+    moveToFileSystem(node->node);
+    return openfile_writeNative(node, buffer, len);
+}
+
+struct FsOpenNodeFunc zipFileAccess = {zipOpenFile_init, zipOpenFile_length, zipOpenFile_setLength, zipOpenFile_getFilePointer, zipOpenFile_seek, openfile_read, openfile_write, zipOpenFile_close, zipOpenFile_map, zipOpenFile_canMap, zipOpenFile_ioctl, zipOpenFile_setAsync, zipOpenFile_isAsync, zipOpenFile_waitForEvents, zipOpenFile_isWriteReady, zipOpenFile_isReadReady, zipOpenFile_free, zipOpenFile_getDirectoryEntry, zipOpenFile_getDirectoryEntryCount, zipOpenFile_readNative, zipOpenFile_writeNative};
+
 struct DirData {
     S32 pos;
     struct FsNode* nodes[MAX_DIR_LISTING];
@@ -618,7 +767,7 @@ void freeDirData(struct DirData* data) {
     freeDirDatas = data;
 }
 
-struct DirData* allocDirData() {
+struct DirData* allocDirData(struct FsNode* node) {
     struct DirData* result;
 
     if (freeDirDatas) {
@@ -628,14 +777,38 @@ struct DirData* allocDirData() {
     } else {
         result = (struct DirData*)kalloc(sizeof(struct DirData), KALLOC_DIRDATA);
     }	
+
+    result->count = listNodes(node, result->nodes, MAX_DIR_LISTING);
+
+    // zip children are on the non linked node
+    node = getNodeFromNative(node->nativePath1);
+
+    if (node && node->zipFirstChild1) {
+        PblSet* existing = pblSetNewHashSet();
+        U32 i;
+        struct FsNode* next = node->zipFirstChild1;
+
+        for (i=0;i<result->count;i++)
+            pblSetAdd(existing, result->nodes[i]);
+
+        if (result->count==0) {
+            result->nodes[result->count++]=getNodeFromLocalPath(node->path, ".", FALSE);
+            result->nodes[result->count++]=getNodeFromLocalPath(node->path, "..", FALSE);
+        }
+
+        while (next && result->count<MAX_DIR_LISTING) {
+            if (!pblSetContains(existing, next))
+                result->nodes[result->count++]=next;
+            next = next->zipNextChild1;
+        }
+    }
     return result;
 }
 
 struct DirData* getDirData(struct FsOpenNode* node) {
     struct DirData* data = (struct DirData*)node->data;
     if (!data) {
-        data = allocDirData();
-        data->count = listNodes(node->node, data->nodes, MAX_DIR_LISTING);
+        data = allocDirData(node->node);        
         node->data = data;
     }
     return data;
@@ -747,6 +920,10 @@ U32 dir_writeNative(struct FsOpenNode* node, U8* buffer, U32 len) {
 
 struct FsOpenNodeFunc dirAccess = {dir_init, dir_length, dir_setLength, dir_getFilePointer, dir_seek, dir_read, dir_write, dir_close, dir_map, dir_canMap, dir_ioctl, dir_setAsync, dir_isAsync, dir_waitForEvents, dir_isWriteReady, dir_isReadReady, dir_free, dir_getDirectoryEntry, dir_getDirectoryEntryCount, dir_readNative, dir_writeNative};
 
+void deleteZipFile(struct FsNode* node) {
+    removeNodeFromCache(node);
+}
+
 BOOL file_isDirectory(struct FsNode* node) {
     struct stat buf;
     const char* path = node->nativePath1;
@@ -755,6 +932,10 @@ BOOL file_isDirectory(struct FsNode* node) {
     if (stat(path, &buf)==0) {
         return S_ISDIR(buf.st_mode);
     }
+
+    node = getNodeFromNative(node->nativePath1);
+    if (node && node->isZipFile1)
+        return node->isZipDirectory1;
     return FALSE;
 }
 
@@ -768,7 +949,7 @@ BOOL file_remove(struct FsNode* node) {
         node = getNodeFromLocalPath("", tmpLocalPath, TRUE);
     }
     result = unlink(node->nativePath1)==0;
-    if (!result && node->func->exists(node)) {
+    if (!result && doesPathExist(node->nativePath1)) {
         struct FsOpenNode* openNode = node->openNodes1;
         int i;
         U32 isLink;
@@ -818,6 +999,13 @@ BOOL file_remove(struct FsNode* node) {
         forcedClose = TRUE;
         result = TRUE;
     }
+    if (!result) {
+        node = getNodeFromNative(node->nativePath1);
+        if (node && node->isZipFile1) {
+            deleteZipFile(node);
+            result = TRUE;
+        }
+    }
     return result;
 }
 
@@ -829,6 +1017,9 @@ U64 file_lastModified(struct FsNode* node) {
     if (stat(path, &buf)==0) {
         return buf.st_mtime;
     }
+    node = getNodeFromNative(node->nativePath1);
+    if (node && node->isZipFile1)
+        return node->zipFileLastModified1;
     return 0;
 }
 
@@ -840,13 +1031,16 @@ U64 file_length(struct FsNode* node) {
     if (stat(path, &buf)==0) {
         return buf.st_size;
     }
+    node = getNodeFromNative(node->nativePath1);
+    if (node && node->isZipFile1)
+        return node->zipFileSize1;
     return 0;
 }
 
 struct FsOpenNode* file_open(struct KProcess* process, struct FsNode* node, U32 flags) {
     U32 openFlags = O_BINARY;
     U32 f;
-
+    
     if (node->func->isDirectory(node)) {
         return allocOpenNode(process, node, 0, flags, &dirAccess);
     }
@@ -854,8 +1048,10 @@ struct FsOpenNode* file_open(struct KProcess* process, struct FsNode* node, U32 
         openFlags|=O_RDONLY;
     } else if ((flags & K_O_ACCMODE)==K_O_WRONLY) {
         openFlags|=O_WRONLY;
+        ensurePathIsLocal(getParentNode(node));
     } else {
         openFlags|=O_RDWR;
+        ensurePathIsLocal(getParentNode(node));
     }
     if (flags & K_O_CREAT) {
         openFlags|=O_CREAT;
@@ -870,18 +1066,26 @@ struct FsOpenNode* file_open(struct KProcess* process, struct FsNode* node, U32 
         openFlags|=O_APPEND;
     }
     f = open(node->nativePath1, openFlags, 0666);	
-    if (!f || f==0xFFFFFFFF)
+    if (!f || f==0xFFFFFFFF) {
+        struct FsNode* zipNode = getNodeFromNative(node->nativePath1);
+        if (zipNode && zipNode->isZipFile1 && (flags & K_O_ACCMODE)==K_O_RDONLY)
+            return allocOpenNode(process, zipNode, 0, flags, &zipFileAccess);
         return 0;
+    }
     return allocOpenNode(process, node, f, flags, &fileAccess);
 }
 
 BOOL file_setLastModifiedTime(struct FsNode* node, U32 time) {
     struct utimbuf buf = {time, time};
+    if (!doesPathExist(node->nativePath1)) {
+        moveToFileSystem(node);
+    }
     return utime(node->nativePath1, &buf)==0;
+    
 }
 
 U32 file_getType(struct FsNode* node, U32 checkForLink) {	
-    if (file_isDirectory(node))
+    if (node->func->isDirectory(node))
         return 4; // DT_DIR
     if (checkForLink && node->isLink1) 
         return 10; // DT_LNK
@@ -905,13 +1109,22 @@ BOOL file_canWrite(struct KProcess* process, struct FsNode* node) {
 }
 
 BOOL file_exists(struct FsNode* node) {
-    return doesPathExist(node->nativePath1);
+    BOOL result = doesPathExist(node->nativePath1);
+    if (!result) {
+        node = getNodeFromNative(node->nativePath1);
+        if (node && node->isZipFile1)
+            return TRUE;
+    }
+    return result;
 }
 
 U32 file_rename(struct FsNode* oldNode, struct FsNode* newNode) {
     struct FsOpenNode* openNode = oldNode->openNodes1;
     U32 result;
 
+    if (!doesPathExist(oldNode->nativePath1)) {
+        moveToFileSystem(oldNode);
+    }
     while (openNode) {
         openNode->cachedPosDuringDelete1 = openNode->func->getFilePointer(openNode);
         close(openNode->handle1);
@@ -947,10 +1160,32 @@ U32 file_rename(struct FsNode* oldNode, struct FsNode* newNode) {
 }
 
 U32 file_removeDir(struct FsNode* node) {
-    return rmdir(node->nativePath1);
+    if (doesPathExist(node->nativePath1))
+        return rmdir(node->nativePath1);
+    else {
+        struct DirData* data = allocDirData(node);
+
+        if (data->count>2) {
+            freeDirData(data);
+            return -1;
+        }
+        if (data->count<=2) {
+            U32 i;
+
+            for (i=0;i<data->count;i++) {
+                if (strcmp(data->nodes[i]->name,".") && strcmp(data->nodes[i]->name,"..")) {
+                    freeDirData(data);
+                    return -1;
+                }
+            }
+        }
+        deleteZipFile(node);
+        return 0;
+    }
 }
 
 U32 file_makeDir(struct FsNode* node) {
+    ensurePathIsLocal(getParentNode(node));
     return MKDIR(node->nativePath1);
 }
 
@@ -959,7 +1194,7 @@ BOOL isLink(struct FsNode* node) {
 }
 
 BOOL readLink(struct FsNode* node, char* buffer, int bufferSize, BOOL makeAbsolute) {
-    return kreadLink(node->nativePath1, buffer, bufferSize, makeAbsolute);
+    return kreadLink(node->path, buffer, bufferSize, makeAbsolute);
 }
 
 U32 getHardLinkCount(struct FsNode* node) {
@@ -986,6 +1221,7 @@ struct FsNode* allocNode(const char* localPath, const char* nativePath, struct F
 
     U32 localLen = 0;
     U32 nativeLen = 0;
+
     if (localPath)
         localLen=strlen(localPath)+1;
     if (nativePath)
@@ -1026,7 +1262,9 @@ struct FsNode* getNodeFromLocalPath(const char* currentDirectory, const char* pa
     }
     
     if (existing && !doesPathExist(nativePath)) {
-        return 0;
+        struct FsNode* node = getNodeFromNative(nativePath);
+        if (!node || !node->isZipFile1)
+            return 0;
     }
     
     result = allocNode(localPath, nativePath, &fileNodeFunc, 1);	
@@ -1213,4 +1451,193 @@ U32 syscall_symlinkat(struct KThread* thread, U32 oldpath, FD dirfd, U32 newpath
 
 U32 syscall_symlink(struct KThread* thread, U32 path1, U32 path2) {
     return symlinkInDirectory(thread, thread->process->currentDirectory, path1, path2);
+}
+
+
+struct fsZipInfo {
+    char filename[MAX_FILEPATH_LEN];
+    char link[MAX_FILEPATH_LEN];
+    BOOL isLink;
+    BOOL isDirectory;
+    U64 length;
+    U64 lastModified;
+    U64 offset;
+};
+BOOL initFileSystem(const char* rootPath, const char* zipPath) {
+    int len = strlen(rootPath);
+
+    pathSeperator = '/';
+    if (rootPath[len-1]=='/')
+        pathSeperator = '/';
+    else if (rootPath[len-1]=='\\')
+        pathSeperator = '\\';
+    else {
+        if (strchr(rootPath, '\\'))
+            pathSeperator = '\\';
+    }
+    
+    if (!doesPathExist(rootPath))
+        return FALSE;
+
+    safe_strcpy(rootFileSystem, rootPath, MAX_FILEPATH_LEN);
+
+    if (rootFileSystem[len-1]==pathSeperator)
+        rootFileSystem[len-1] = 0;
+    initNodes();
+    localSkipLinksMap = pblMapNewHashMap();
+
+    if (zipPath) {
+        unz_global_info global_info;
+        U32 i,j;
+        struct fsZipInfo* zipInfo;
+        U32 missingLinks;
+
+        zipfile = unzOpen(zipPath);
+        if (!zipfile) {
+            klog("Could not load zip file: %s", zipPath);
+        }
+
+        if (unzGetGlobalInfo( zipfile, &global_info ) != UNZ_OK) {
+            klog("Could not read file global info from zip file: %s", zipPath);
+            unzClose( zipfile );
+            return FALSE;
+        }
+        zipInfo = kalloc(sizeof(struct fsZipInfo)*global_info.number_entry, 0);
+        for (i = 0; i < global_info.number_entry; ++i) {
+            unz_file_info file_info;
+            U32 filenameLen;
+            struct tm tm;
+
+            zipInfo[i].filename[0]='/';
+            if ( unzGetCurrentFileInfo(zipfile, &file_info, zipInfo[i].filename+1, MAX_FILEPATH_LEN-1, NULL, 0, NULL, 0 ) != UNZ_OK ) {
+                klog("Could not read file info from zip file: %s", zipPath);
+                unzClose( zipfile );
+                return FALSE;
+            }
+            
+            zipInfo[i].offset = unzGetOffset64(zipfile);
+            remotePathToLocal(zipInfo[i].filename);
+            filenameLen = strlen(zipInfo[i].filename);
+            if (len>5 && strstr(zipInfo[i].filename+filenameLen-5, ".link")) {
+                U32 read;
+
+                zipInfo[i].filename[filenameLen-5] = 0;
+                zipInfo[i].isLink = TRUE;
+                unzOpenCurrentFile(zipfile);
+                read = unzReadCurrentFile(zipfile, zipInfo[i].link, MAX_FILEPATH_LEN);
+                zipInfo[i].link[read]=0;
+                unzCloseCurrentFile(zipfile);
+            }                       
+            
+            if (zipInfo[i].filename[filenameLen-1] == '/') {
+                zipInfo[i].filename[filenameLen-1] = 0;
+                zipInfo[i].isDirectory = TRUE;
+            } else {
+                zipInfo[i].length = file_info.uncompressed_size;
+            }               
+            tm.tm_sec = file_info.tmu_date.tm_sec;
+            tm.tm_min = file_info.tmu_date.tm_min;
+            tm.tm_hour = file_info.tmu_date.tm_hour;
+            tm.tm_mday = file_info.tmu_date.tm_mday;
+            tm.tm_mon = file_info.tmu_date.tm_mon;
+            tm.tm_year = file_info.tmu_date.tm_year;
+            if (tm.tm_year>1900)
+                tm.tm_year-=1900;
+
+            zipInfo[i].lastModified = mktime(&tm);
+
+            unzGoToNextFile(zipfile);
+        }
+        for (i = 0; i < global_info.number_entry; ++i) {
+            struct FsNode* node;
+
+            if (zipInfo[i].isLink) {
+                char tmp[MAX_FILEPATH_LEN];
+                safe_strcpy(tmp, zipInfo[i].filename, MAX_FILEPATH_LEN);                
+                safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
+                node = getNodeFromLocalPath("", tmp, 0);
+            } else {
+                node = getNodeFromLocalPath("", zipInfo[i].filename, 0);
+            }                
+            node->zipFileLastModified1 = zipInfo[i].lastModified;
+            node->zipFileSize1 = zipInfo[i].length;
+            node->isZipFile1 = 1;
+            node->zipOffset1 = zipInfo[i].offset;
+            if (zipInfo[i].isDirectory) {
+                node->isZipDirectory1 = TRUE;                    
+            }
+        }
+        for (j=0;j<10;j++) {
+            missingLinks = 0;
+            for (i = 0; i < global_info.number_entry; ++i) {
+                if (zipInfo[i].isLink) {
+                    struct FsNode* node;
+
+                    if (zipInfo[i].link[0]=='/') {
+                        node = getNodeFromLocalPath("", zipInfo[i].link, 1);    
+                    } else {
+                        char dir[MAX_FILEPATH_LEN];
+                        strcpy(dir, zipInfo[i].filename);
+                        *(strrchr(dir, '/'))=0;
+                        node = getNodeFromLocalPath(dir, zipInfo[i].link, 1);
+                    }
+                    if (!node) {
+                        missingLinks++;
+                    } else {
+                        struct FsNode* linkNode = allocNode(zipInfo[i].filename, node->nativePath1, &fileNodeFunc, 1);
+                        linkNode->isLink1 = 1;
+                        linkNode->isZipFile1 = 1;
+                        linkNode->isZipDirectory1 = node->isZipDirectory1;
+                        linkNode->zipFileLastModified1 = node->zipFileLastModified1;
+                        linkNode->zipFileSize1 = node->zipFileSize1;
+                        linkNode->zipOffset1 = node->zipOffset1;
+                        zipInfo[i].isLink = 0; // don't reprocess
+                    }
+                }
+            }
+            if (!missingLinks) {                
+                break;
+            }
+        }     
+        for (i = 0; i < global_info.number_entry; ++i) {
+            struct FsNode* node = getNodeFromLocalPath("", zipInfo[i].filename, 1);
+            if (node) {
+                char tmp[MAX_FILEPATH_LEN];
+                struct FsNode* parent;
+                if (strlen(node->path)==0)
+                    continue;
+                strcpy(tmp, node->path);
+                tmp[strlen(node->path)-strlen(node->name)-1]=0;
+                parent = getNodeFromLocalPath("", tmp, 1);
+                if (parent) {
+                    if (parent->zipFirstChild1)
+                        node->zipNextChild1 = parent->zipFirstChild1;
+                    parent->zipFirstChild1 = node;
+
+                }
+            }
+        }
+        if (missingLinks) {
+            klog("%s has links that could not be resolved", zipPath);
+            for (i = 0; i < global_info.number_entry; ++i) {
+                if (zipInfo[i].isLink) {
+                    klog("    %s", zipInfo[i].filename);
+                }
+            }
+        }
+        kfree(zipInfo, 0);
+    }
+    
+    {
+        struct FsNode* dir = getNodeFromLocalPath("", "/tmp/del", TRUE);
+        if (dir) {
+            struct FsNode* result[100];
+            int count = listNodes(dir, result, 100);
+            int i;
+            for (i=0;i<count;i++) {
+                remove(result[i]->nativePath1);
+            }
+        }
+    }
+    return TRUE;
 }

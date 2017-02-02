@@ -21,5 +21,6 @@
 
 int endsWith(const char *str, const char *suffix);
 void trimTrailingSpaces(char* path);
+void stringReplace(const char* searchStr, const char* replaceStr, char* str, int len);
 
 #endif

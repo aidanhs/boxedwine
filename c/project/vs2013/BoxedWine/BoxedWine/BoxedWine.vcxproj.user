@@ -4,99 +4,11 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\squeeze -m 600</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\boxedwine -m 192 /usr/bin/wine notepad</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\root -m 64 -w /home/username/.wine/drive_c/Games/Descent3Demo2 /usr/bin/wine "c:/Games/Descent3Demo2/Descent 3 Demo 2.exe"</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CivNet|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/civnet /usr/bin/wine /home/username/civnet/civnet</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Civ2|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/civ2 /usr/bin/wine /home/username/civ2/civ2</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Sphere|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/s /usr/bin/wine /home/username/s/SPHEJONG.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Chomp|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/chomp /usr/bin/wine /home/username/chomp/CHOMP.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Age of Empires|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/aoe /usr/bin/wine /home/username/aoe/EMPIRES.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Caesar 3|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/c3 /usr/bin/wine /home/username/c3/c3</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Diablo|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/diablo /usr/bin/wine /home/username/diablo/diablo_s.exe</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Castle1|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/castle /usr/bin/wine /home/username/castle/CASTLE1.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Duck|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/duck /usr/bin/wine /home/username/duck/PDH2JD.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Astroids|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/ARCADE /usr/bin/wine /home/username/ARCADE/ASTEROID.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Quake2|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/q2 /usr/bin/wine /home/username/q2/quake2.exe</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Ski|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/ski /usr/bin/wine /home/username/ski/ski</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Break|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/break /usr/bin/wine /home/username/break/BTDEMO.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Tempest|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/ARCADE /usr/bin/wine /home/username/ARCADE/TEMPEST.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SimEarth|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/simearth /usr/bin/wine /home/username/simearth/WGAIA.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SimTower|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\boxedwine_unmodified -m 64 -w /home/username/SIMTOWER /usr/bin/wine /home/username/SIMTOWER/SIMTOWER.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ES Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root z:\TV\root -m 192 /usr/bin/wine z:/home/username/wglgears.exe</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\root3 -zip c:\root.zip -m 64 -w "/home/username/.wine/drive_c/Program Files/NetSurf/NetSurf" /usr/bin/wine "c:/Program Files/NetSurf/NetSurf/NetSurf.exe"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\squeeze -m 600</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\\boxedwine  -m 192 /usr/bin/wine notepad</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\root -m 64 -w /home/username/Diablo/Spawn /usr/bin/wine /home/username/tower/SETUP.EXE</LocalDebuggerCommandArguments>
-    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\squeeze -m 600</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\root -m 64 -w /home/username /usr/bin/wine winecfg</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

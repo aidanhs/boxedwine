@@ -94,6 +94,13 @@ struct FsNode {
     struct FsNode* reserved9;
     struct FsOpenNodeFunc* reserved10;
     U32 reserved11;
+    BOOL reserved12;
+    U64 reserved13;
+    U64 reserved14;
+    U64 reserved16;
+    struct FsNode* reserved17;
+    struct FsNode* reserved18;
+    BOOL reserved19;
 };
 
 struct FsOpenNode {
@@ -108,9 +115,10 @@ struct FsOpenNode {
     struct FsOpenNode* reserved6;
     struct FsOpenNode* reserved7;
     struct FsNode* reserved8;
+    U64 reserved15;
 };
 
-BOOL initFileSystem(const char* rootPath);
+BOOL initFileSystem(const char* rootPath, const char* zipPath);
 struct FsNode* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing);
 struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32 mode);
 void removeNodeFromCache(struct FsNode* node);

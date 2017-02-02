@@ -320,6 +320,7 @@ void initWine();
 int main(int argc, char **argv) {
     int i;
     const char* root = 0;
+    const char* zip = 0;
     const char* ppenv[32];
     int envc=0;
     int mb=64;
@@ -338,6 +339,9 @@ int main(int argc, char **argv) {
     for (i=1;i<argc;i++) {
         if (!strcmp(argv[i], "-root") && i+1<argc) {
             root = argv[i+1];
+            i++;
+        } else if (!strcmp(argv[i], "-zip") && i+1<argc) {
+            zip = argv[i+1];
             i++;
         } else if (!strcmp(argv[i], "-m") && i+1<argc) {
             mb = atoi(argv[i+1]);
@@ -376,7 +380,7 @@ int main(int argc, char **argv) {
     }
     klog("Using root directory: %s", root);
     initSystem();
-    if (!initFileSystem(root)) {
+    if (!initFileSystem(root, zip)) {
         kwarn("root %s does not exist", root);
         return 0;
     }
@@ -414,7 +418,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
     //ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
-    //ppenv[envc++] = "WINEDEBUG=+boxeddrv";
+    //ppenv[envc++] = "WINEDEBUG=+file";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
