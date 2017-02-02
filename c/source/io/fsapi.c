@@ -14,7 +14,7 @@
 #include "kstring.h"
 
 #undef OF
-#include "unzip.h"
+#include "../../lib/zlib/contrib/minizip/unzip.h"
 
 #include UTIME
 #include MKDIR_INCLUDE
@@ -283,7 +283,7 @@ BOOL kreadLink(const char* localPath, char* buffer, int bufferSize, BOOL makeAbs
     openNode = node->func->open(0, node, K_O_RDONLY);
     if (!openNode)
         return FALSE;
-    readCount = openNode->func->readNative(openNode, tmp, MAX_FILEPATH_LEN+1);
+    readCount = openNode->func->readNative(openNode, (U8*)tmp, MAX_FILEPATH_LEN+1);
     openNode->func->close(openNode);
     if (readCount<=0 || readCount>=MAX_FILEPATH_LEN) {        
         return FALSE;
@@ -477,7 +477,7 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
         if (ram) {
             result = node->func->readNative(node, ram, len);	
         } else {
-            result = node->func->readNative(node, tmp, len);
+            result = node->func->readNative(node, (U8*)tmp, len);
             memcopyFromNative(MMU_PARAM address, tmp, result);
         }        
         // :TODO: why does this happen
@@ -505,7 +505,7 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
             if (ram) {
                 didRead=node->func->readNative(node, ram, todo);		
             } else {
-                didRead = node->func->readNative(node, tmp, todo);
+                didRead = node->func->readNative(node, (U8*)tmp, todo);
                 memcopyFromNative(MMU_PARAM address, tmp, didRead);
             }
             if (didRead<=0)
@@ -533,7 +533,7 @@ static U32 openfile_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len)
             wrote+=node->func->writeNative(node, ram, todo);
         else {
             memcopyToNative(MMU_PARAM address, tmp64k, todo);
-            wrote+=node->func->writeNative(node, tmp64k, todo);		
+            wrote+=node->func->writeNative(node, (U8*)tmp64k, todo);		
         }
         len-=todo;
         address+=todo;
