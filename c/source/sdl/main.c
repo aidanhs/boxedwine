@@ -417,6 +417,7 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
+    ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
     //ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
     //ppenv[envc++] = "WINEDEBUG=+file";
 

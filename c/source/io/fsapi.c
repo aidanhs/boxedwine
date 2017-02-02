@@ -1476,8 +1476,9 @@ BOOL initFileSystem(const char* rootPath, const char* zipPath) {
             pathSeperator = '\\';
     }
     
-    if (!doesPathExist(rootPath))
-        return FALSE;
+    if (!doesPathExist(rootPath)) {
+        MKDIR(rootPath);
+    }
 
     safe_strcpy(rootFileSystem, rootPath, MAX_FILEPATH_LEN);
 

@@ -4,7 +4,7 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-root c:\root3 -zip c:\root.zip -m 64 -w "/home/username/.wine/drive_c/Program Files/NetSurf/NetSurf" /usr/bin/wine "c:/Program Files/NetSurf/NetSurf/NetSurf.exe"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-root c:\root3\root -zip c:\root.zip -m 64 -w "/home/username/.wine/drive_c/Program Files/NetSurf/NetSurf" /usr/bin/wine winecfg</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
