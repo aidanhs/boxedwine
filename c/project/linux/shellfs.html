@@ -155,17 +155,19 @@
         var SOUND_ENABLED = true;
         var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
         var SHOW_UPLOAD_DOWNLOAD = false;
+        var RETRIEVE_REMOTE_DLL_FILES = false;
         var DEFAULT_MEMORY_ALLOCATION_MB = 64;
         var ROOT = "/root";
         var HOME_DIRECTORY = ROOT + "/home/username/files/";
+        var DLL_DIRECTORY = ROOT + "/usr/lib/i386-linux-gnu/wine/wine";
         var dirPrefix = getFileDirectory();
         var isAutoRunSet = getAutoRun();
-        var extraZipFiles = getZipFileList("extra"); //MANUAL:"dlls.zip;fonts.zip";
+        var extraZipFiles = getZipFileList("overlay"); //MANUAL:"dlls.zip;fonts.zip";
         var appZipFile = getZipFile("app"); //MANUAL:"chomp.zip";
         var rootZipFile = getZipFile("root"); //MANUAL:"base.zip";
         var Program = getExecutable(); //MANUAL:"CHOMP.EXE";
         var WorkingDir = getWorkingDirectory(); //MANUAL:"";
-
+        var retrieveDlls = getRetrieveDlls();
         var isSoundEnabled = getSound();
 
         var isRunning = false;
@@ -221,15 +223,21 @@
             console.log("setting auto run to: "+auto);
             return auto;
         }
+        function getRetrieveDlls(){
+            var retrieveEnabled =  getParameter("remote");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
+                retrieveEnabled = RETRIEVE_REMOTE_DLL_FILES;
+            }else if(!(retrieveEnabled == "true" || retrieveEnabled == "false")){
+                retrieveEnabled = RETRIEVE_REMOTE_DLL_FILES;
+            }
+            console.log("setting retrieve remote Dlls to: "+retrieveEnabled);
+            return retrieveEnabled;
+        }
         function getSound(){
             var isSoundEnabled =  getParameter("sound");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
                 isSoundEnabled = SOUND_ENABLED;
-            }else if(isSoundEnabled == "true") {
-                isSoundEnabled = true;
-            }else if(isSoundEnabled == "false"){
-                isSoundEnabled = false;
-            }else{
+            }else if(!(isSoundEnabled == "true" || isSoundEnabled == "false")){
                 isSoundEnabled = SOUND_ENABLED;
             }
             console.log("setting sound to: "+isSoundEnabled);
@@ -254,7 +262,11 @@
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
                 dir = "";
             }else{
-                dir = dirPrefix.substring(ROOT.length) + dir;
+                if(dir.startsWith('c:/')){
+                    dir = "/home/username/.wine/c_drive/" + dir.substring(3);
+                }else{
+                    dir = dirPrefix.substring(ROOT.length) + dir;
+                }
                 console.log("setting working directory to: "+dir);
             }
             return dir;
@@ -409,6 +421,27 @@
             }
         }
 
+        function buildDllFileSystem(fsDllCallback)
+        {
+            if(!retrieveDlls) {
+                return fsDllCallback(null);
+            }
+            var adapter = new BrowserFS.FileSystem.FolderAdapter("/dlls"
+                            , new BrowserFS.FileSystem.XmlHttpRequest("dlls.json"));
+            var overlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), adapter);
+            adapter.initialize(function dllcallback(de){
+                if(de){
+                    console.log(de);
+                }
+                overlay.initialize(function ocallback(oe){
+                    if(oe){
+                        console.log(oe);
+                    }
+                    fsDllCallback(overlay);
+                });
+            });
+        }
+
         function buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter, extraFSs)
         {
             FS.createFolder(FS.root, 'root', true, true);
@@ -418,36 +451,41 @@
                 if(e3){
                     console.log(e3);
                 }
-                homeAdapter.initialize(function callback(e){
-                    if(e){
-                        console.log(e);
-                    }
-                    var homeOverlay = new BrowserFS.FileSystem.OverlayFS(writableStorage, homeAdapter);
-                    homeOverlay.initialize(function callback(e2){
-                        if(e2){
-                            console.log(e2);
+                buildDllFileSystem(function(dllFS) {
+                    homeAdapter.initialize(function callback(e){
+                        if(e){
+                            console.log(e);
                         }
-                        if(isDropBox) {
-                            var mirrorFS = new BrowserFS.FileSystem.AsyncMirror(homeOverlay, new BrowserFS.FileSystem.Dropbox(client));
-                            mirrorFS.initialize(function callback(e4){
-                                if(e4){
-                                    console.log(e4);
-                                }
-                                postBuildFileSystem(rootOverlay, mirrorFS, extraFSs);
-                            });
-                        }else{
-                            postBuildFileSystem(rootOverlay, homeOverlay, extraFSs);
-                        }
+                        var homeOverlay = new BrowserFS.FileSystem.OverlayFS(writableStorage, homeAdapter);
+                        homeOverlay.initialize(function callback(e2){
+                            if(e2){
+                                console.log(e2);
+                            }
+                            if(isDropBox) {
+                                var mirrorFS = new BrowserFS.FileSystem.AsyncMirror(homeOverlay, new BrowserFS.FileSystem.Dropbox(client));
+                                mirrorFS.initialize(function callback(e4){
+                                    if(e4){
+                                        console.log(e4);
+                                    }
+                                    postBuildFileSystem(rootOverlay, mirrorFS, extraFSs, dllFS);
+                                });
+                            }else{
+                                postBuildFileSystem(rootOverlay, homeOverlay, extraFSs, dllFS);
+                            }
+                        });
                     });
                 });
             });
         }
-        function postBuildFileSystem(rootFS, homeFS, extraFSs)
+        function postBuildFileSystem(rootFS, homeFS, extraFSs, dllFS)
         {
             var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
             var mfs = new BrowserFS.FileSystem.MountableFileSystem();
             mfs.mount('/', rootFS);
             mfs.mount(dirPrefixWithoutEndSlash, homeFS);
+            if(dllFS != null) {
+                mfs.mount(DLL_DIRECTORY, dllFS);
+            }
             var BFS = new BrowserFS.EmscriptenFS();
 
             BrowserFS.initialize(mfs);
@@ -490,10 +528,12 @@
                 createFolderIfNecessary(filename, prefix);
                 fs.readdirSync(filename).forEach(function(item) {
                     var file = path.resolve(filename, item);
-                    if (fs.statSync(file).isDirectory()) {
-                        copyDirectory(fs, file, prefix);
-                    } else {
-                        createFileIfNecessary(fs, file, prefix);
+                    if(!(file.startsWith("/__MACOSX") || file.endsWith(".DS_Store"))) {
+                        if (fs.statSync(file).isDirectory()) {
+                            copyDirectory(fs, file, prefix);
+                        } else {
+                            createFileIfNecessary(fs, file, prefix);
+                        }
                     }
                 });
             }
@@ -507,16 +547,25 @@
             var parent =  extractFirstPartOfPath(fullPath);
             if(parent.length > 0){
                 var filename = extractLastPartOfPath(fullPath);
-                try{
+                try {
                     var contents = fs.readFileSync(file, null, flag_r);
                     Module.FS_createDataFile("root" + parent, filename, contents, true, true);
-                }catch(ef){
-                    if(ef.message != "File exists"){
+                }catch(ef) {
+                    if(ef.message === "File exists"){
+                        try {
+                        Module.FS_unlink("root" + parent + "/" + filename);
+                        var contents = fs.readFileSync(file, null, flag_r);
+                        Module.FS_createDataFile("root" + parent, filename, contents, true, true);
+                        }catch(ef) {
+                            console.log("file replace error:" + ef.message + " for: " + parent + "/" + filename);
+                        }
+                    }else {
                         console.log("file creation error:" + ef.message + " for: " + parent + "/" + filename);
                     }
                 }
             }
         }
+        //todo use stat!
         function createFolderIfNecessary(fullPath, prefix)
         {
 
@@ -527,9 +576,15 @@
             var dir = extractLastPartOfPath(fullPath);
             if(parent.length > 0){
                 try{
-                    FS.createFolder("/root/" + parent, dir, true, true);
+                    FS.lookupPath("/root" + parent + "/" + dir, { follow: true });
                 }catch(ef){
-                    if(ef.message != "File exists"){
+                    if(ef.message == "No such file or directory") {
+                        try{
+                            FS.createFolder("/root/" + parent, dir, true, true);
+                        }catch(cef) {
+                            console.log("Directory creation error:" + cef.message + " for: " + parent + "/" + dir);
+                        }
+                    }else if(ef.message != "File exists"){
                         console.log("Directory creation error:" + ef.message+" for: " + parent + "/" +  dir);
                     }
                 }
@@ -586,7 +641,7 @@
         {
             var prog =  getParameter("p");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || prog===""){
-                prog = "";
+                prog = "taskmgr.exe";
                 console.log("not setting program to execute");
             }else{
                 if(prog.startsWith("%22") && prog.endsWith("%22")){
@@ -700,8 +755,10 @@
                 var entries = FS.readdir(fullPath).filter(function(param) {
                     return param !== "." && param !== ".." && param !== "__MACOSX";
                 });
-                if(entries.length == 1 && entries[0] === programDir) {
-                    return true;
+                for(var idx = 0; idx < entries.length; idx++) {
+                    if(entries[idx] === programDir) {
+                        return true;
+                    }
                 }
             }
             return false;

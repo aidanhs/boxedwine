@@ -1,5 +1,5 @@
 #!/bin/sh
-sh buildjsfs_sdl2.sh
+sh buildjsfs_sdl2.sh $1
 mkdir build
 rm build/*
 cp boxedwine.html build/

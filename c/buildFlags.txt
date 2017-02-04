@@ -30,11 +30,20 @@ also possible to:
  - change memory allocated to boxedwine via DEFAULT_MEMORY_ALLOCATION_MB or ?m=32 on url. Default is 64
  - change the program to execute via ?p=/home/username/files/chomp/CHOMP.EXE. surround in quotes if path includes spaces.
  - set the working directory via ?work=chomp. This simplifies p as it can then be relative to the working directory.
-
+ - set an overlay via ?overlay=more.zip;files.zip. Where each zip file contains additional files to add to the root file system. Existing files are overridden.
 Some simplifications are possible:
 boxedwine.html?p=notepad - run notepad in the root fs
 boxedwine.html?root=win32&app=chomp&work=chomp&p=CHOMP.EXE - no need to add .zip for root and app zip file name
 boxedwine.html?app=chomp&p=CHOMP.EXE - if p does not start with a ‘/‘ and app is set, then the working directory is set to dir + app, i.e. /home/username/files/chomp
+
+Remote serving of DLL files
+As the DLL files utilised will depend on what is executed, it makes sense to only provide the minimal number of DLL files and augment with files from the network.
+To use:
+create a directory with minimal required DLLs (same directory structure as main zip file). Reference this via &overlay=
+create a directory dlls with the additional DLLs from root/usr/lib/i386-linux-gnu/wine/wine
+call the build script with extra parameter 'remote' ie buildjsfs_sdl2.sh remote
+This will additionally build dlls.json that should be copied along with the dlls directory to your webserver.
+* adding the remote param also ensures that the original dlls in /wine/wine are not zipped into the main zip file.
 
 Other configuration options:
 AUTO_RUN - indicates if start button is shown or page auto-runs. default true
