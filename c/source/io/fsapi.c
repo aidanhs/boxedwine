@@ -413,7 +413,7 @@ void freeOpenNode(struct FsOpenNode* node) {
     node->next1 = freeOpenNodes;
     freeOpenNodes = node;
 }
-
+void openfile_free(struct FsOpenNode* node);
 struct FsOpenNode* allocOpenNode(struct KProcess* process, struct FsNode* node, U32 handle, U32 flags, struct FsOpenNodeFunc* func) {
     struct FsOpenNode* result;
 
@@ -424,6 +424,8 @@ struct FsOpenNode* allocOpenNode(struct KProcess* process, struct FsNode* node, 
     } else {
         result = (struct FsOpenNode*)kalloc(sizeof(struct FsOpenNode), KALLOC_OPENNODE);
     }	
+    if (!func->free)
+        func->free = openfile_free;
     result->handle1 = handle;
     result->flags = flags;
     result->func = func;

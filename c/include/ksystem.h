@@ -54,6 +54,7 @@ U32 getMilliesSinceStart();
 U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz);
 U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec);
 U32 syscall_times(struct KThread* thread, U32 buf);
+U32 syscall_sysinfo(struct KThread* thread, U32 address);
 void printStacks();
 void syscallToString(struct CPU* cpu, char* buffer);
 void runThreadSlice(struct KThread* thread);

@@ -105,6 +105,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_socketcall 102
 #define __NR_setitimer 104
 #define __NR_wait4 114
+#define __NR_sysinfo 116
 #define __NR_ipc 117
 #define __NR_fsync 118
 #define __NR_sigreturn 119
@@ -462,6 +463,9 @@ void syscall(struct CPU* cpu, U32 eipCount) {
             kwarn("__NR_wait4 rusuage not implemented");
         }
 #endif
+        break;
+    case __NR_sysinfo:
+        result=syscall_sysinfo(thread, ARG1);
         break;
     case __NR_ipc:
         // ARG5 holds the pointer to be copied

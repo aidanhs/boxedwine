@@ -162,7 +162,11 @@ void nopermission_writed(struct Memory* memory, U32 address, U32 value) {
 void pf_clear(struct Memory* memory, U32 page) {
 }
 
-struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear};
+static U8* invalid_physicalAddress(struct Memory* memory, U32 address) {
+    return 0;
+}
+
+struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear, invalid_physicalAddress};
 #endif
 
 #ifdef USE_MMU

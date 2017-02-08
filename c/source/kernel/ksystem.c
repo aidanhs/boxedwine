@@ -231,6 +231,42 @@ U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec) {
     return 0;
 }
 
+/*
+ struct sysinfo {
+    long uptime;             // Seconds since boot
+    unsigned long loads[3];  // 1, 5, and 15 minute load averages
+    unsigned long totalram;  // Total usable main memory size
+    unsigned long freeram;   // Available memory size
+    unsigned long sharedram; // Amount of shared memory
+    unsigned long bufferram; // Memory used by buffers
+    unsigned long totalswap; // Total swap space size
+    unsigned long freeswap;  // Swap space still available
+    unsigned short procs;    // Number of current processes
+    unsigned long totalhigh; // Total high memory size
+    unsigned long freehigh;  // Available high memory size
+    unsigned int mem_unit;   // Memory unit size in bytes
+    char _f[20-2*sizeof(long)-sizeof(int)]; // Padding to 64 bytes
+};
+*/
+
+U32 syscall_sysinfo(struct KThread* thread, U32 address) {
+    writed(MMU_PARAM_THREAD address, getMilliesSinceStart()/1000); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, getPageCount()); address+=4;
+    writed(MMU_PARAM_THREAD address, getFreePageCount()); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writew(MMU_PARAM_THREAD address, getProcessCount()); address+=2;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, 0); address+=4;
+    writed(MMU_PARAM_THREAD address, PAGE_SIZE);
+    return 0;
+}
+
 const char* getFunctionName(const char* name, U32 moduleEip) {
     struct KThread* thread;
     struct KProcess* process;

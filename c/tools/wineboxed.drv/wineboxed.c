@@ -155,14 +155,14 @@ typedef struct
 #define BOXED_CREATE_DESKTOP                        (BOXED_BASE+86)
 #define BOXED_HAS_WND                               (BOXED_BASE+87)
 
-#define CALL_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index):"%eax"); 
-#define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"((DWORD)arg1):"%eax"); 
-#define CALL_2(index, arg1,arg2) __asm__("push %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $12, %%esp"::"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2):"%eax");
-#define CALL_3(index, arg1,arg2,arg3) __asm__("push %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $16, %%esp"::"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3):"%eax");
-#define CALL_4(index, arg1,arg2,arg3,arg4) __asm__("push %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $20, %%esp"::"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4):"%eax");
-#define CALL_5(index, arg1,arg2,arg3,arg4,arg5) __asm__("push %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $24, %%esp"::"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4), "g"((DWORD)arg5):"%eax");
-#define CALL_6(index, arg1,arg2,arg3,arg4,arg5,arg6) __asm__("push %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $28, %%esp"::"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4), "g"((DWORD)arg5), "g"((DWORD)arg6):"%eax");
-#define CALL_7(index, arg1,arg2,arg3,arg4,arg5,arg6,arg7) __asm__("push %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x98\n\taddl $32, %%esp"::"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4), "g"((DWORD)arg5), "g"((DWORD)arg6), "g"((DWORD)arg7):"%eax");
+#define CALL_0(index) __asm__("push %1\n\tint $0x98\n\taddl $4, %%esp": "=a" (result):"i"(index):); 
+#define CALL_1(index, arg1) __asm__("push %2\n\tpush %1\n\tint $0x98\n\taddl $8, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1):); 
+#define CALL_2(index, arg1,arg2) __asm__("push %3\n\tpush %2\n\tpush %1\n\tint $0x98\n\taddl $12, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2):);
+#define CALL_3(index, arg1,arg2,arg3) __asm__("push %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tint $0x98\n\taddl $16, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3):);
+#define CALL_4(index, arg1,arg2,arg3,arg4) __asm__("push %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tint $0x98\n\taddl $20, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4):);
+#define CALL_5(index, arg1,arg2,arg3,arg4,arg5) __asm__("push %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tint $0x98\n\taddl $24, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4), "g"((DWORD)arg5):);
+#define CALL_6(index, arg1,arg2,arg3,arg4,arg5,arg6) __asm__("push %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tint $0x98\n\taddl $28, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4), "g"((DWORD)arg5), "g"((DWORD)arg6):);
+#define CALL_7(index, arg1,arg2,arg3,arg4,arg5,arg6,arg7) __asm__("push %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tint $0x98\n\taddl $32, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1), "g"((DWORD)arg2), "g"((DWORD)arg3), "g"((DWORD)arg4), "g"((DWORD)arg5), "g"((DWORD)arg6), "g"((DWORD)arg7):);
 
 #define CALL_NORETURN_0(index) __asm__("push %0\n\tint $0x98\n\taddl $4, %%esp"::"i"(index)); 
 #define CALL_NORETURN_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x98\n\taddl $8, %%esp"::"i"(index), "g"((DWORD)arg1)); 
@@ -204,13 +204,17 @@ static inline BOOL can_activate_window(HWND hwnd)
 }
 
 int CDECL boxeddrv_AcquireClipboard(HWND hwnd) {
-    TRACE("hwnd=%p\n", hwnd);
+    int result;
     CALL_1(BOXED_ACQUIRE_CLIPBOARD, hwnd);
+    TRACE("hwnd=%p result=%d\n", hwnd, result);
+    return result;
 }
 
 HKL CDECL boxeddrv_ActivateKeyboardLayout(HKL hkl, UINT flags) {
-    TRACE("hkl=%p flags=0x%08x\n", hkl, flags);
+    int result;
     CALL_2(BOXED_ACTIVATE_KEYBOARD_LAYOUT, hkl, flags);
+    TRACE("hkl=%p flags=0x%08x result=%d\n", hkl, flags, result);
+    return (HKL)result;
 }
 
 void CDECL boxeddrv_Beep(void) {
@@ -236,13 +240,17 @@ LONG CDECL boxeddrv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode,
 }
 
 BOOL CDECL boxeddrv_ClipCursor(LPCRECT clip) {
-    TRACE("clip=%s\n", wine_dbgstr_rect(clip));
+    int result;
     CALL_1(BOXED_CLIP_CURSOR, clip);
+    TRACE("clip=%s result=%d\n", wine_dbgstr_rect(clip), result);
+    return (BOOL)result;
 }
 
 INT CDECL boxeddrv_CountClipboardFormats(void) {
-    TRACE("\n");
+    INT result;
     CALL_0(BOXED_COUNT_CLIPBOARD_FORMATS);
+    TRACE("result=%d\n", result);
+    return result;
 }
 
 void initDesktop(HWND hwnd) {
@@ -282,14 +290,17 @@ void initDesktop(HWND hwnd) {
     }
 }
 BOOL CDECL boxeddrv_CreateDesktopWindow(HWND hwnd) {
+    int result;
     CALL_1(BOXED_CREATE_DESKTOP_WINDOW, hwnd);
     initDesktop(hwnd);
-    return TRUE;
+    return (BOOL)result;
 }
 
 BOOL CDECL boxeddrv_CreateWindow(HWND hwnd) {
-    TRACE("hwnd=%p\n", hwnd);
+    int result;
     CALL_1(BOXED_CREATE_WINDOW, hwnd);
+    TRACE("hwnd=%p result=%d\n", hwnd, result);
+    return (BOOL)result;
 }
 
 void CDECL boxeddrv_DestroyCursorIcon(HCURSOR cursor) {
@@ -320,8 +331,10 @@ void CDECL boxeddrv_EndClipboardUpdate(void) {
 }
 
 UINT CDECL boxeddrv_EnumClipboardFormats(UINT prev_format) {
-    TRACE("prev_format=%d\n", prev_format);
+    UINT result;
     CALL_1(BOXED_ENUM_CLIPBOARD_FORMATS, prev_format);
+    TRACE("prev_format=%d result=%d\n", prev_format, result);
+    return result;
 }
 
 INT boxeddrv_GetDeviceCaps(PHYSDEV dev, INT cap);
@@ -363,18 +376,24 @@ BOOL CDECL boxeddrv_EnumDisplayMonitors(HDC hdc, LPRECT rect, MONITORENUMPROC pr
 }
 
 BOOL CDECL boxeddrv_EnumDisplaySettingsEx(LPCWSTR devname, DWORD mode, LPDEVMODEW devmode, DWORD flags) {
-    TRACE("devname=%s mode=%d devmode=%p flags=0x%08x\n", debugstr_w(devname), mode, devmode, flags);
+    int result;
     CALL_4(BOXED_ENUM_DISPLAY_SETTINGS_EX, devname, mode, devmode, flags);
+    TRACE("devname=%s mode=%d devmode=%p flags=0x%08x result=%d\n", debugstr_w(devname), mode, devmode, flags, result);
+    return (BOOL)result;
 }
 
 HANDLE CDECL boxeddrv_GetClipboardData(UINT desired_format) {
-    TRACE("desired_format=%d\n", desired_format);
+    int result;
     CALL_1(BOXED_GET_CLIPBOARD_DATA, desired_format);
+    TRACE("desired_format=%d result=%d\n", desired_format, result);
+    return (HANDLE)result;
 }
 
 BOOL CDECL boxeddrv_GetCursorPos(LPPOINT pos) {
-    TRACE("pos=%p\n", pos);
+    int result;
     CALL_1(BOXED_GET_CURSOR_POS, pos);
+    TRACE("pos=%p(%d,%d) result=%d\n", pos, pos->x, pos->y, result);
+    return result;
 }
 
 static HKL get_locale_kbd_layout(void)
@@ -426,8 +445,10 @@ BOOL CDECL boxeddrv_GetKeyboardLayoutName(LPWSTR name) {
 }
 
 INT CDECL boxeddrv_GetKeyNameText(LONG lparam, LPWSTR buffer, INT size) {
-    TRACE("lparam=0x%08x buffer=%p size=%d\n", lparam, buffer, size);
+    INT result;
     CALL_3(BOXED_GET_KEY_NAME, lparam, buffer, size);
+    TRACE("lparam=0x%08x buffer=%p size=%d result=%d\n", lparam, buffer, size, result);
+    return result;
 }
 
 BOOL CDECL boxeddrv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info) {
@@ -445,13 +466,17 @@ BOOL CDECL boxeddrv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info) {
 }
 
 BOOL CDECL boxeddrv_IsClipboardFormatAvailable(UINT desired_format) {
-    TRACE("desired_format=%d\n", desired_format);
+    int result;
     CALL_1(BOXED_IS_CLIPBOARD_FORMAT_AVAILABLE, desired_format);
+    TRACE("desired_format=%d result=%d\n", desired_format, result);
+    return (BOOL)result;
 }
 
 UINT CDECL boxeddrv_MapVirtualKeyEx(UINT wCode, UINT wMapType, HKL hkl) {
-    TRACE("wCode=%d wMapType=%d hkl=%p\n", wCode, wMapType, hkl);
+    UINT result;
     CALL_3(BOXED_MAP_VIRTUAL_KEY_EX, wCode, wMapType, hkl);
+    TRACE("wCode=%d wMapType=%d hkl=%p result=%d\n", wCode, wMapType, hkl, result);
+    return result;
 }
 
 int eventsInitialized = 0;
@@ -546,8 +571,10 @@ void CDECL boxeddrv_SetCapture(HWND hwnd, UINT flags) {
 }
 
 BOOL CDECL boxeddrv_SetClipboardData(UINT format_id, HANDLE data, BOOL owner) {
-    TRACE("format_id=%d data=%p owner=%d\n", format_id, data, owner);
+    int result;
     CALL_3(BOXED_SET_CLIPBOARD_DATA, format_id, data, owner);
+    TRACE("format_id=%d data=%p owner=%d\n", format_id, data, owner);
+    return (BOOL)result;
 }
 
 void CDECL boxeddrv_SetCursor(HCURSOR cursor) {
@@ -607,8 +634,10 @@ void CDECL boxeddrv_SetCursor(HCURSOR cursor) {
 }
 
 BOOL CDECL boxeddrv_SetCursorPos(INT x, INT y) {
-    TRACE("x=%d y=%d\n", x, y);
+    int result;
     CALL_2(BOXED_SET_CURSOR_POS, x, y);
+    TRACE("x=%d y=%d result=%d\n", x, y, result);
+    return (BOOL)result;
 }
 
 void CDECL boxeddrv_SetFocus(HWND hwnd) {
@@ -646,8 +675,10 @@ void CDECL boxeddrv_SetParent(HWND hwnd, HWND parent, HWND old_parent) {
 }
 
 int CDECL boxeddrv_SetWindowRgn(HWND hwnd, HRGN hrgn, BOOL redraw) {
-    TRACE("hwnd=%p hrgn=%p redraw=%d\n", hwnd, hrgn, redraw);
+    int result;
     CALL_3(BOXED_SET_WINDOW_RGN, hwnd, hrgn, redraw);
+    TRACE("hwnd=%p hrgn=%p redraw=%d result=%d\n", hwnd, hrgn, redraw, result);
+    return result;
 }
 
 void CDECL boxeddrv_SetWindowStyle(HWND hwnd, INT offset, STYLESTRUCT *style) {
@@ -679,29 +710,41 @@ UINT CDECL boxeddrv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp) {
 }
 
 LRESULT CDECL boxeddrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam) {
-    TRACE("hwnd=%p wparam=0x%08x lparam=0x%08x\n", hwnd, (int)wparam, (int)lparam);
+    int result;
     CALL_3(BOXED_SYS_COMMAND, hwnd, wparam, lparam);
+    TRACE("hwnd=%p wparam=0x%08x lparam=0x%08x result=%d\n", hwnd, (int)wparam, (int)lparam, result);
+    return (LRESULT)result;
 }
 
 BOOL CDECL boxeddrv_SystemParametersInfo(UINT action, UINT int_param, void *ptr_param, UINT flags) {
-    TRACE("action=%d int_param=%d ptr_param=%p flags=0x%08x\n", action, int_param, ptr_param, flags);
+    int result;
     CALL_4(BOXED_SYSTEM_PARAMETERS_INFO, action, int_param, ptr_param, flags);
+    TRACE("action=%d int_param=%d ptr_param=%p flags=0x%08x result=%d\n", action, int_param, ptr_param, flags, result);
+    return (BOOL)result;
 }
 
 INT CDECL boxeddrv_ToUnicodeEx(UINT virtKey, UINT scanCode, const BYTE *lpKeyState, LPWSTR bufW, int bufW_size, UINT flags, HKL hkl) {
+    INT result;
     CALL_7(BOXED_TO_UNICODE_EX, virtKey, scanCode, lpKeyState, bufW, bufW_size, flags, hkl);
+    return result;
 }
 
 BOOL CDECL boxeddrv_UpdateLayeredWindow(HWND hwnd, const UPDATELAYEREDWINDOWINFO *info, const RECT *window_rect) {
+    int result;
     CALL_3(BOXED_UPDATE_LAYERED_WINDOW, hwnd, info, window_rect);
+    return (BOOL)result;
 }
 
 SHORT CDECL boxeddrv_VkKeyScanEx(WCHAR wChar, HKL hkl) {
+    int result;
     CALL_2(BOXED_VK_KEY_SCAN_EX, wChar, hkl);
+    return (SHORT)result;
 }
 
 LRESULT CDECL boxeddrv_WindowMessage(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
+    int result;
     CALL_4(BOXED_WINDOW_MESSAGE, hwnd, msg, wp, lp);
+    return (LRESULT)result;
 }
 
 void boxeddrv_SetSurface(HWND hwnd, struct window_surface *surface) {
@@ -709,11 +752,15 @@ void boxeddrv_SetSurface(HWND hwnd, struct window_surface *surface) {
 }
 
 struct window_surface* boxeddrv_GetSurface(HWND hwnd) {
+    struct window_surface* result;
     CALL_1(BOXED_GET_SURFACE, hwnd);
+    return result;
 }
 
 BOOL boxeddrv_HasWnd(HWND hwnd) {
+    int result;
     CALL_1(BOXED_HAS_WND, hwnd);
+    return (BOOL)result;
 }
 
 void CDECL boxeddrv_WindowPosChanged(HWND hwnd, HWND insert_after, UINT swp_flags, const RECT *window_rect, const RECT *client_rect, const RECT *visible_rect, const RECT *valid_rects, struct window_surface *surface) {
@@ -833,100 +880,145 @@ void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width,
 }
 
 BOOL boxeddrv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {
-    TRACE("dev=%p ramp=%p\n", dev, ramp);
+    int result;
     CALL_2(BOXED_GET_DEVICE_GAMMA_RAMP, dev, ramp);
+    TRACE("dev=%p ramp=%p result=%d\n", dev, ramp, result);
+    return (BOOL)result;
 }
 
 BOOL boxeddrv_SetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp) {
-    TRACE("dev=%p ramp=%p\n", dev, ramp);
+    int result;
     CALL_2(BOXED_SET_DEVICE_GAMMA_RAMP, dev, ramp);
+    TRACE("dev=%p ramp=%p result=%d\n", dev, ramp, result);
+    return (BOOL)result;
 }
 
 INT boxeddrv_GetDeviceCaps(PHYSDEV dev, INT cap) {
-    TRACE("dev=%p cap=%d\n", dev, cap);
+    INT result;
     switch (cap) {
     case PDEVICESIZE:
         return sizeof(BOXEDDRV_PDEVICE);
     }
+    TRACE("BOXED_GET_DEVICE_CAPS=%d\n", BOXED_GET_DEVICE_CAPS);
     CALL_2(BOXED_GET_DEVICE_CAPS, dev, cap);
+    TRACE("dev=%p cap=%d result=%d\n", dev, cap, result);
+    return result;
 }
 
 int CDECL wine_notify_icon(DWORD msg, NOTIFYICONDATAW *data) {
+    int result;
     CALL_2(BOXED_WINE_NOTIFY_ICON, msg, data);
+    return result;
 }
 
 BOOL WINAPI ImeConfigure(HKL hKL, HWND hWnd, DWORD dwMode, LPVOID lpData) {
+    int result;
     CALL_4(BOXED_IME_CONFIGURE, hKL, hWnd, dwMode, lpData);
+    return (BOOL)result;
 }
 
 DWORD WINAPI ImeConversionList(HIMC hIMC, LPCWSTR lpSource, LPCANDIDATELIST lpCandList, DWORD dwBufLen, UINT uFlag) {
+    DWORD result;
     CALL_5(BOXED_IME_CONVERSION_LIST, hIMC, lpSource, lpCandList, dwBufLen, uFlag);
+    return result;
 }
 
 BOOL WINAPI ImeDestroy(UINT uForce) {
+    int result;
     CALL_1(BOXED_IME_DESTROY, uForce);
+    return (BOOL)result;
 }
 
 UINT WINAPI ImeEnumRegisterWord(REGISTERWORDENUMPROCW lpfnEnumProc, LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszRegister, LPVOID lpData) {
+    UINT result;
     CALL_5(BOXED_IME_ENUM_REGISTER_WORD, lpfnEnumProc, lpszReading, dwStyle, lpszRegister, lpData);
+    return result;
 }
 
 LRESULT WINAPI ImeEscape(HIMC hIMC, UINT uSubFunc, LPVOID lpData) {
+    LRESULT result;
     CALL_3(BOXED_IME_ESCAPE, hIMC, uSubFunc, lpData);
+    return result;
 }
 
 DWORD WINAPI ImeGetImeMenuItems(HIMC hIMC, DWORD dwFlags, DWORD dwType, LPIMEMENUITEMINFOW lpImeParentMenu, LPIMEMENUITEMINFOW lpImeMenu, DWORD dwSize) {
+    DWORD result;
     CALL_6(BOXED_IME_GET_IME_MENU_ITEMS, hIMC, dwFlags, dwType, lpImeParentMenu, lpImeMenu, dwSize);
+    return result;
 }
 
 UINT WINAPI ImeGetRegisterWordStyle(UINT nItem, LPSTYLEBUFW lpStyleBuf) {
+    UINT result;
     CALL_2(BOXED_IME_GET_REGISTER_WORD_STYLE, nItem, lpStyleBuf);
+    return result;
 }
 
 BOOL WINAPI ImeInquire(LPIMEINFO lpIMEInfo, LPWSTR lpszUIClass, LPCWSTR lpszOption) {
+    int result;
     CALL_3(BOXED_IME_INQUIRE, lpIMEInfo, lpszUIClass, lpszOption);
+    return (BOOL)result;
 }
 
 BOOL WINAPI ImeProcessKey(HIMC hIMC, UINT vKey, LPARAM lKeyData, const LPBYTE lpbKeyState) {
+    int result;
     CALL_4(BOXED_IME_PROCESS_KEY, hIMC, vKey, lKeyData, lpbKeyState);
+    return (BOOL)result;
 }
 
 BOOL WINAPI ImeRegisterWord(LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszRegister) {
+    int result;
     CALL_3(BOXED_IME_REGISTER_WORD, lpszReading, dwStyle, lpszRegister);
+    return (BOOL)result;
 }
 
 BOOL WINAPI ImeSelect(HIMC hIMC, BOOL fSelect) {
+    int result;
     CALL_2(BOXED_IME_SELECT, hIMC, fSelect);
+    return (BOOL)result;
 }
 
 BOOL WINAPI ImeSetActiveContext(HIMC hIMC, BOOL fFlag) {
+    int result;
     CALL_2(BOXED_IME_SET_ACTIVE_CONTEXT, hIMC, fFlag);
+    return (BOOL)result;
 }
 
 BOOL WINAPI ImeSetCompositionString(HIMC hIMC, DWORD dwIndex, LPCVOID lpComp, DWORD dwCompLen, LPCVOID lpRead, DWORD dwReadLen) {
+    int result;
     CALL_6(BOXED_IME_SET_COMPOSITION_STRING, hIMC, dwIndex, lpComp, dwCompLen, lpRead, dwReadLen);
+    return (BOOL)result;
 }
 
 UINT WINAPI ImeToAsciiEx(UINT uVKey, UINT uScanCode, const LPBYTE lpbKeyState, LPDWORD lpdwTransKey, UINT fuState, HIMC hIMC) {
+    UINT result;
     CALL_6(BOXED_IME_TO_ASCII_EX, uVKey, uScanCode, lpbKeyState, lpdwTransKey, fuState, hIMC);
+    return (UINT)result;
 }
 
 BOOL WINAPI ImeUnregisterWord(LPCWSTR lpszReading, DWORD dwStyle, LPCWSTR lpszUnregister) {
+    int result;
     CALL_3(BOXED_IME_UNREGISTER_WORD, lpszReading, dwStyle, lpszUnregister);
+    return (BOOL)result;
 }
 
 BOOL WINAPI NotifyIME(HIMC hIMC, DWORD dwAction, DWORD dwIndex, DWORD dwValue) {
+    int result;
     CALL_4(BOXED_NOTIFY_IME, hIMC, dwAction, dwIndex, dwValue);
+    return (BOOL)result;
 }
 
 static BOOL boxeddrv_wglCopyContext(struct wgl_context *src, struct wgl_context *dst, UINT mask) {
-    TRACE("boxeddrv_wglCopyContext src=%p dst=%p mask=%X\n", src, dst, mask);
+    int result;
     CALL_3(BOXED_GL_COPY_CONTEXT, src, dst, mask);
+    TRACE("boxeddrv_wglCopyContext src=%p dst=%p mask=%X result=%d\n", src, dst, mask, result);
+    return (BOOL)result;
 }
 
 static struct wgl_context *boxeddrv_wglCreateContext(HDC hdc) {
-    TRACE("boxeddrv_wglCreateContext hdc=%X\n", (int)hdc);
+    struct wgl_context* result;
     CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), 0, 0, 0, 0);
+    TRACE("boxeddrv_wglCreateContext hdc=%X result=%p\n", (int)hdc, result);
+    return result;
 }
 
 static void boxeddrv_wglDeleteContext(struct wgl_context *context) {
@@ -935,13 +1027,17 @@ static void boxeddrv_wglDeleteContext(struct wgl_context *context) {
 }
 
 static int boxeddrv_wglDescribePixelFormat(HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr) {
-    TRACE("boxeddrv_wglDescribePixelFormat hdc=%X fmt=%d size=%d descr=%p\n", (int)hdc, fmt, size, descr);
+    int result;
     CALL_4(BOXED_GL_DESCRIBE_PIXEL_FORMAT, hdc, fmt, size, descr);
+    TRACE("boxeddrv_wglDescribePixelFormat hdc=%X fmt=%d size=%d descr=%p result=%d\n", (int)hdc, fmt, size, descr, result);
+    return result;
 }
 
 static int boxeddrv_wglGetPixelFormat(HDC hdc) {
-    TRACE("boxeddrv_wglGetPixelFormat hdc=%X\n", (int)hdc);
+    int result;
     CALL_1(BOXED_GL_GET_PIXEL_FORMAT, WindowFromDC(hdc));
+    TRACE("boxeddrv_wglGetPixelFormat hdc=%X result=%d\n", (int)hdc, result);
+    return result;
 }
 
 static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct wgl_context *share_context, const int *attrib_list);
@@ -965,30 +1061,42 @@ static PROC boxeddrv_wglGetProcAddress(const char *proc) {
 }
 
 static BOOL boxeddrv_wglMakeCurrent(HDC hdc, struct wgl_context *context) {
-    TRACE("boxeddrv_wglMakeCurrent hdc=%X context=%p\n",(int)hdc, context);
+    int result;
     CALL_2(BOXED_GL_MAKE_CURRENT, WindowFromDC(hdc), context);
+    TRACE("boxeddrv_wglMakeCurrent hdc=%X context=%p result=%d\n",(int)hdc, context, result);
+    return (BOOL)result;
 }
 
 static BOOL boxeddrv_wglSetPixelFormat(HDC hdc, int fmt, const PIXELFORMATDESCRIPTOR *descr) {
-    TRACE("boxeddrv_wglSetPixelFormat hdc=%X fmt=%d descr=%p\n", (int)hdc, fmt, descr);
+    int result;
     CALL_3(BOXED_GL_SET_PIXEL_FORMAT, WindowFromDC(hdc), fmt, descr);
+    TRACE("boxeddrv_wglSetPixelFormat hdc=%X fmt=%d descr=%p result=%d\n", (int)hdc, fmt, descr, result);
+    return (BOOL)result;
 }
 
 static BOOL boxeddrv_wglShareLists(struct wgl_context *org, struct wgl_context *dest) {
-    TRACE("boxeddrv_wglShareLists org=%p dest=%p\n", org, dest);
+    int result;
     CALL_2(BOXED_GL_SHARE_LISTS, org, dest);
+    TRACE("boxeddrv_wglShareLists org=%p dest=%p result=%d\n", org, dest, result);
+    return (BOOL)result;
 }
 
 static BOOL boxeddrv_wglSwapBuffers(HDC hdc) {
+    int result;
     CALL_1(BOXED_GL_SWAP_BUFFERS, hdc);
+    return (BOOL)result;
 }
 
 UINT CDECL boxeddrv_GetKeyboardLayoutList(INT size, HKL *list) {
+    UINT result;
     CALL_2(BOXED_GET_KEYBOARD_LAYOUT_LIST, size, list);
+    return result;
 }
 
 BOOL CDECL boxeddrv_RegisterHotKey(HWND hwnd, UINT mod_flags, UINT vkey) {
+    int result;
     CALL_3(BOXED_REGISTER_HOT_KEY, hwnd, mod_flags, vkey);
+    return (BOOL)result;
 }
 
 void CDECL boxeddrv_UnregisterHotKey(HWND hwnd, UINT modifiers, UINT vkey) {
@@ -1090,6 +1198,7 @@ static BOOL boxeddrv_DeleteDC(PHYSDEV dev)
 UINT boxeddrv_RealizePalette( PHYSDEV dev, HPALETTE hpal, BOOL primary ) {
     PALETTEENTRY entries[256];
     WORD num_entries;
+    UINT result;
 
     TRACE("dev=%p hpal=%p primary=%d\n", dev, hpal, primary);
     if (!GetObjectW( hpal, sizeof(num_entries), &num_entries )) return 0;
@@ -1100,8 +1209,9 @@ UINT boxeddrv_RealizePalette( PHYSDEV dev, HPALETTE hpal, BOOL primary ) {
         num_entries = 256;
     }
     if (!(num_entries = GetPaletteEntries( hpal, 0, num_entries, entries ))) return 0;
-    TRACE("num_entries=%d entries=%p\n", num_entries, entries);
     CALL_2(BOXED_REALIZE_PALETTE, (DWORD)num_entries, entries);
+    TRACE("num_entries=%d entries=%p result=%d\n", num_entries, entries, result);
+    return result;
 }
 
 BOOL boxeddrv_UnrealizePalette( HPALETTE hpal )
@@ -1111,23 +1221,29 @@ BOOL boxeddrv_UnrealizePalette( HPALETTE hpal )
 
 UINT boxeddrv_GetSystemPaletteEntries( PHYSDEV dev, UINT start, UINT count, LPPALETTEENTRY entries )
 {
-    TRACE("dev=%p start=%d count=%d entries=%p\n", dev, start, count, entries);
+    UINT result;
     CALL_3(BOXED_GET_SYSTEM_PALETTE, start, count, entries);
+    TRACE("dev=%p start=%d count=%d entries=%p result=%d\n", dev, start, count, entries, result);
+    return result;
 }
 
 COLORREF boxeddrv_GetNearestColor( PHYSDEV dev, COLORREF color )
 {
+    COLORREF result;
     CALL_1(BOXED_GET_NEAREST_COLOR, color);
+    return result;
 }
 
 UINT boxeddrv_RealizeDefaultPalette( PHYSDEV dev )
 {
     PALETTEENTRY entries[256];
     int count;
+    UINT result;
 
-    TRACE("dev=%p\n",dev);
     count = GetPaletteEntries( GetStockObject(DEFAULT_PALETTE), 0, 256, entries );
     CALL_2(BOXED_REALIZE_DEFAULT_PALETTE, count, entries);
+    TRACE("dev=%p result=%d\n",dev, result);
+    return result;
 }
 
 static BOOL boxeddrv_CreateDC(PHYSDEV *pdev, LPCWSTR driver, LPCWSTR device, LPCWSTR output, const DEVMODEW* initData);
@@ -1325,6 +1441,7 @@ static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct w
 {
     const int *iptr;
     int major = 1, minor = 0, profile = WGL_CONTEXT_CORE_PROFILE_BIT_ARB, flags = 0;
+    struct wgl_context* result;
 
     TRACE("boxeddrv_wglCreateContextAttribsARB hdc=%p share_context=%p attrib_list=%p\n", hdc, share_context, attrib_list);
 
@@ -1373,9 +1490,12 @@ static struct wgl_context *boxeddrv_wglCreateContextAttribsARB(HDC hdc, struct w
     }
 
     CALL_5(BOXED_GL_CREATE_CONTEXT, WindowFromDC(hdc), major, minor, profile, flags);
+    return result;
 }
 
 BOOL CDECL boxeddrv_create_desktop( UINT width, UINT height )
 {
+    int result;
     CALL_2(BOXED_CREATE_DESKTOP, width, height);
+    return (BOOL)result;
 }

@@ -341,6 +341,7 @@ void boxeddrv_CountClipboardFormats(struct CPU* cpu) {
 // BOOL CDECL drv_CreateDesktopWindow(HWND hwnd)
 void boxeddrv_CreateDesktopWindow(struct CPU* cpu) {
     // setting up window pos was handled in driver
+    EAX = 1;
 }
 
 // BOOL CDECL drv_CreateWindow(HWND hwnd)
