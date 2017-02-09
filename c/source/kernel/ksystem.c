@@ -272,7 +272,7 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
     struct KProcess* process;
     const char* args[5];
     char tmp[16];
-    struct FsOpenNodeFunc out;
+    struct FsOpenNodeFunc out = {0};
     struct FsNode* node;
     static char buffer[1024];
     struct KFileDescriptor* fd;
