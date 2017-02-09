@@ -31,8 +31,8 @@
 
 #include <time.h>
 
-U32 screenCx;
-U32 screenCy;
+U32 screenCx = 800;
+U32 screenCy = 600;
 
 static struct KArray processes;
 //static PblMap* mappedFileCache;
