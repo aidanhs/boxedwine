@@ -136,7 +136,9 @@ void openAudio(struct DspData* data) {
     if (pendingClose)
         dspCheck();
     if (pendingClose) {
-        printf("tried to open audio while it was in the process of being closed\n");
+        closeAudio(pendingClose);
+        kfree(pendingClose, 0);
+        pendingClose = NULL;
     }
     if (SDL_OpenAudio(&data->want, &data->got) < 0) {
         printf("Failed to open audio: %s\n", SDL_GetError());

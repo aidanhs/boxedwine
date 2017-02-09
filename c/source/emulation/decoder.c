@@ -2371,7 +2371,7 @@ DECODER decoder[1024] = {
     decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
     decode0e8, decode0e9, decode0ea, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
     decode0f0, invalidOp, decode0f2, decode0f3, decode0f4, decode0f5, decode0f6, decode0f7,
-    decode0f8, decode0f9, invalidOp, invalidOp, decode0fc, decode0fd, decode0fe, decode0ff,
+    decode0f8, decode0f9, decode0fa, decode0fb, decode0fc, decode0fd, decode0fe, decode0ff,
 
     // 100
     invalidOp, invalidOp, decode102, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -2453,7 +2453,7 @@ DECODER decoder[1024] = {
     decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
     decode2e8, decode2e9, invalidOp, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
     decode0f0, invalidOp, decode0f2, decode0f3, decode0f4, decode0f5, decode0f6, decode2f7,
-    decode0f8, decode0f9, invalidOp, invalidOp, decode0fc, decode0fd, decode0fe, decode2ff,
+    decode0f8, decode0f9, decode0fa, decode0fb, decode0fc, decode0fd, decode0fe, decode2ff,
 
     // 300
     invalidOp, decode301, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,

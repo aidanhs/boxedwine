@@ -3964,6 +3964,18 @@ void decode0f9(struct DecodeData* data) {
     LOG_OP("STC");
     NEXT_OP(data);
 }
+// CLI
+void decode0fa(struct DecodeData* data) {
+    data->op->func = cli;
+    LOG_OP("CLI");
+    NEXT_OP(data);
+}
+// STI
+void decode0fb(struct DecodeData* data) {
+    data->op->func = sti;
+    LOG_OP("STI");
+    NEXT_OP(data);
+}
 // CLD
 void decode0fc(struct DecodeData* data) {
     data->op->func = cld;

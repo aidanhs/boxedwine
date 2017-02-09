@@ -1961,6 +1961,20 @@ void OPCALL cld(struct CPU* cpu, struct Op* op) {
     NEXT();
 }
 
+void OPCALL cli(struct CPU* cpu, struct Op* op) {
+    fillFlags(cpu);
+    removeFlag(IF);
+    CYCLES(7);
+    NEXT();
+}
+
+void OPCALL sti(struct CPU* cpu, struct Op* op) {
+    fillFlags(cpu);
+    cpu->flags |= IF;
+    CYCLES(7);
+    NEXT();
+}
+
 void OPCALL std(struct CPU* cpu, struct Op* op) {
     addFlag(DF);
     cpu->df = -1;
