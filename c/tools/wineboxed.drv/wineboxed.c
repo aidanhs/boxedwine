@@ -873,8 +873,15 @@ BOOL getZOrderCallback(HWND hWnd, LPARAM lParam) {
 
 void boxeddrv_FlushSurface(HWND hwnd, void* bits, int xOrg, int yOrg, int width, int height, RECT* rects, int rectCount) {
     struct winZOrder zorder;
-    zorder.count = 0;	
-    EnumWindows((WNDENUMPROC)getZOrderCallback, (LPARAM)&zorder);
+    HWND h = GetTopWindow(NULL);
+
+    zorder.count = 0;	    
+    while (h) {
+        zorder.windows[zorder.count++] = h;
+        h = GetWindow(h, GW_HWNDNEXT);
+    }
+
+    // EnumWindows((WNDENUMPROC)getZOrderCallback, (LPARAM)&zorder);
     TRACE("hwnd=%p bits=%p width=%d height=%d rects=%p rectCount=%d hWndCount=%d\n", hwnd, bits, width, height, rects, rectCount, zorder.count); 
     CALL_NORETURN_9(BOXED_FLUSH_SURFACE, hwnd, bits, xOrg, yOrg, width, height, &zorder, rects, rectCount);
 }
