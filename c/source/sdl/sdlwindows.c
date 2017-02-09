@@ -25,13 +25,10 @@
 #include "ksystem.h"
 #include "sdlwindow.h"
 
-int horz_res = 800;
-int vert_res = 600;
 int bits_per_pixel = 32;
 int default_horz_res = 800;
 int default_vert_res = 600;
 int default_bits_per_pixel = 32;
-static int initialized;
 static int firstWindowCreated;
 
 PblMap* cursors;
@@ -298,18 +295,15 @@ SDL_Color sdlSystemPalette[256] = {
 
 void displayChanged();
 
-static void init() {
-    if (!initialized) {
-        initialized = 1;
-        hwndToWnd = pblMapNewHashMap();
-    }
+void initSDL() {
+    default_horz_res = screenCx;
+    default_vert_res = screenCy;
+    hwndToWnd = pblMapNewHashMap();
 }
 
 struct Wnd* getWnd(U32 hwnd) {
     struct Wnd** result;
-    if (!hwndToWnd) {
-        init();
-    }
+
     result = pblMapGet(hwndToWnd, &hwnd, sizeof(U32), NULL);
     if (result)
         return *result;
@@ -456,15 +450,15 @@ void displayChanged() {
     firstWindowCreated = 1;
 #ifdef SDL2
     destroySDL2();
-    sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, horz_res, vert_res, SDL_WINDOW_SHOWN);
+    sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenCx, screenCy, SDL_WINDOW_SHOWN);
     sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);	
 #else
     flags = SDL_HWSURFACE;
     if (surface && SDL_MUSTLOCK(surface)) {
         SDL_UnlockSurface(surface);
     }
-    printf("Switching to %dx%d@%d\n", horz_res, vert_res, bits_per_pixel);
-    surface = SDL_SetVideoMode(horz_res, vert_res, 32, flags);
+    printf("Switching to %dx%d@%d\n", screenCx, screenCy, bits_per_pixel);
+    surface = SDL_SetVideoMode(screenCx, screenCy, 32, flags);
 #endif
 }
 

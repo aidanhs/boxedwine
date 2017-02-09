@@ -31,6 +31,9 @@
 
 #include <time.h>
 
+U32 screenCx;
+U32 screenCy;
+
 static struct KArray processes;
 //static PblMap* mappedFileCache;
 static struct KHashmap mappedFileCache;

@@ -29,9 +29,6 @@
 
 #include <string.h>
 
-extern U32 screenWidth;
-extern U32 screenHeight;
-
 static U32 lastX;
 static U32 lastY;
 
@@ -331,7 +328,7 @@ U32 touch_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             U32 address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-            writeAbs(MMU_PARAM_THREAD address, lastX, 0, screenWidth);
+            writeAbs(MMU_PARAM_THREAD address, lastX, 0, screenCx);
             return 0;
         }
         case 0x4541: { // EVIOCGABS (ABS_Y)
@@ -339,7 +336,7 @@ U32 touch_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             int address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-            writeAbs(MMU_PARAM_THREAD address, lastY, 0, screenHeight);
+            writeAbs(MMU_PARAM_THREAD address, lastY, 0, screenCy);
             return 0;
         }
         default:

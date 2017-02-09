@@ -25,20 +25,15 @@
 #include "kmmap.h"
 #include "kalloc.h"
 #include "fsapi.h"
+#include "ksystem.h"
 
-U32 windowCX;
-U32 windowCY;
-U32 windowBPP;
-U32 windowFullScreen;
+static U32 screenBPP=24;
+static U32 fullScreen=0;
 U32 updateAvailable;
 U32 paletteChanged;
 char* screenPixels;
 
-void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen) {
-    windowCX = cx;
-    windowCY = cy;
-    windowBPP = bpp;
-    windowFullScreen = fullscreen;
+void initFB() {
 }
 
 struct fb_fix_screeninfo {
@@ -264,8 +259,8 @@ void readVarInfo(MMU_ARG int address, struct fb_var_screeninfo* info) {
     info->rotate = readd(MMU_PARAM address); address+=4;
     info->colorspace = readd(MMU_PARAM address); address+=4;	
 
-    windowCX = info->xres;
-    windowCY = info->yres;
+    screenCx = info->xres;
+    screenCy = info->yres;
 }
 
 struct fb_var_screeninfo fb_var_screeninfo;
@@ -477,12 +472,12 @@ BOOL fb_init(struct KProcess* process, struct FsOpenNode* node) {
 #else
         fb_fix_screeninfo.smem_start = 4 * 1024 * 1024;
 #endif
-        fb_var_screeninfo.xres = windowCX;
-        fb_var_screeninfo.yres = windowCY;
-        fb_var_screeninfo.xres_virtual = windowCX;
-        fb_var_screeninfo.yres_virtual = windowCY;
+        fb_var_screeninfo.xres = screenCx;
+        fb_var_screeninfo.yres = screenCy;
+        fb_var_screeninfo.xres_virtual = screenCx;
+        fb_var_screeninfo.yres_virtual = screenCy;
 
-        fb_var_screeninfo.bits_per_pixel = windowBPP;
+        fb_var_screeninfo.bits_per_pixel = screenBPP;
         fb_var_screeninfo.red.length = 8;			
         fb_var_screeninfo.green.length = 8;		
         fb_var_screeninfo.blue.length = 8;

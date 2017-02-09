@@ -23,9 +23,8 @@
 #include "kthread.h"
 #include "sdlopengl.h"
 #include "sdlwindow.h"
+#include "ksystem.h"
 
-extern int horz_res;
-extern int vert_res;
 extern int default_horz_res;
 extern int default_vert_res;
 extern int bits_per_pixel;
@@ -306,23 +305,23 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
                 bits_per_pixel = 32; // let the dib driver handle it
         }
         if (dmFields & DM_PELSWIDTH) {
-            horz_res = readd(MMU_PARAM_CPU devmode + 172);
+            screenCx = readd(MMU_PARAM_CPU devmode + 172);
         }
         if (dmFields & DM_PELSHEIGHT) {
-            vert_res = readd(MMU_PARAM_CPU devmode + 176);
+            screenCy = readd(MMU_PARAM_CPU devmode + 176);
         }
     }	
-    if (!horz_res || !vert_res) {
-        horz_res = default_horz_res;
-        vert_res = default_vert_res;
+    if (!screenCx || !screenCy) {
+        screenCx = default_horz_res;
+        screenCy = default_vert_res;
     }
     if (!bits_per_pixel) {
         bits_per_pixel = default_bits_per_pixel;
     }
     displayChanged();
     writed(MMU_PARAM_CPU ARG6, DISP_CHANGE_SUCCESSFUL);	
-    writed(MMU_PARAM_CPU ARG7, horz_res);	
-    writed(MMU_PARAM_CPU ARG8, vert_res);	
+    writed(MMU_PARAM_CPU ARG7, screenCx);	
+    writed(MMU_PARAM_CPU ARG8, screenCy);	
     writed(MMU_PARAM_CPU ARG9, bits_per_pixel);	
 }
 
@@ -467,8 +466,8 @@ void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
         }
         else if (ARG2 == ENUM_CURRENT_SETTINGS) {
             writed(MMU_PARAM_CPU devmode + 168, bits_per_pixel);
-            writed(MMU_PARAM_CPU devmode + 172, horz_res);
-            writed(MMU_PARAM_CPU devmode + 176, vert_res);
+            writed(MMU_PARAM_CPU devmode + 172, screenCx);
+            writed(MMU_PARAM_CPU devmode + 176, screenCy);
         } else {
             EAX = 0;
             return;
@@ -902,16 +901,16 @@ void boxeddrv_GetDeviceCaps(struct CPU* cpu) {
         ret = 240; // 17 inch monitor?
         break;
     case HORZRES:
-        ret = horz_res;
+        ret = screenCx;
         break;
     case VERTRES:
-        ret = vert_res;
+        ret = screenCy;
         break;
     case DESKTOPHORZRES:
-        ret = horz_res;
+        ret = screenCx;
         break;
     case DESKTOPVERTRES:
-        ret = vert_res;
+        ret = screenCy;
         break;
     case BITSPIXEL:
         ret = bits_per_pixel;

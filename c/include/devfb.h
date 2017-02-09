@@ -23,7 +23,7 @@
 
 extern struct FsOpenNodeFunc fbAccess;
 
-void initFB(U32 cx, U32 cy, U32 bpp, U32 fullscreen);
+void initFB();
 void flipFB();
 void fbSetCaption(const char* title, const char* icon);
 void fbSwapOpenGL();

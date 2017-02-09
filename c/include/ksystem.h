@@ -22,6 +22,9 @@
 #include "platform.h"
 #include "kprocess.h"
 
+extern U32 screenCx;
+extern U32 screenCy;
+
 #define UID 1
 #define GID 1000
 

@@ -50,8 +50,6 @@ void sdlgl_init();
 
 #include CURDIR_INCLUDE
 
-U32 screenWidth = 800;
-U32 screenHeight = 600;
 U32 lastTitleUpdate = 0;
 
 #ifndef __TEST
@@ -304,6 +302,40 @@ void mainloop() {
 }
 #endif
 
+// This parses a resolution given as a string in the format of: '800x600'
+// with the width being the first number
+//
+// This logic taken from WINE source code in desktop.c
+int parse_resolution(const char *resolutionString, U32 *width, U32 *height)
+{
+    // Moving pointer for where the character parsing completes at
+    char *end;
+
+    // Parse the width
+    *width = strtoul(resolutionString, &end, 10);
+
+    // Width parsing failed, pointer not moved
+    if (end == resolutionString) 
+        return FALSE;
+	
+    // If the next character is not an 'x' then it is an improper resolution format
+    if (*end != 'x') 
+        return FALSE;
+
+    // Advance the string to beyond the 'x'
+    resolutionString = end + 1;
+
+    // Attempt to parse the height
+    *height = strtoul(resolutionString, &end, 10);
+
+    // Height parsing failed, character not null (end of string)
+    if (*end)
+        return FALSE;
+
+    // Made it!  Full string was parsed
+    return TRUE;
+}
+
 U64 cpuTime;
 U64 cpuInstructions;
 extern U32 contextTime;
@@ -316,6 +348,7 @@ void writeSource();
 
 U32 checkWaitingNativeSockets(int timeout);
 void initWine();
+void initSDL();
 
 int main(int argc, char **argv) {
     int i;
@@ -324,7 +357,6 @@ int main(int argc, char **argv) {
     const char* ppenv[32];
     int envc=0;
     int mb=64;
-    int bpp = 24;
     int fullscreen = 0;
     int userId = UID;
     char* workingDir = "/home/username";
@@ -356,7 +388,19 @@ int main(int argc, char **argv) {
             gensrc = 1;
 		} else if (!strcmp(argv[i], "-nosound")) {
 			sound = 0;
-		} else {
+        } else if (!strcmp(argv[i], "-resolution")) {
+            U32 width;
+            U32 height;
+
+            int success = parse_resolution(argv[i+1], &width, &height);
+            if (success == TRUE) {
+                screenCx = width;
+                screenCy = height;
+
+                klog("Resolution set to: %dx%d", screenCx, screenCy);
+            }
+            i++;
+        } else {
             break;
         }
     }
@@ -385,7 +429,8 @@ int main(int argc, char **argv) {
         return 0;
     }
     initRAM(mb*1024*1024/PAGE_SIZE);
-    initFB(screenWidth, screenHeight, bpp, fullscreen);
+    initFB();
+    initSDL();
     initCallbacks();
     initBlockCache();	
     initWine();
@@ -419,7 +464,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "WINELOADERNOEXEC=1";
     ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
     //ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
-    //ppenv[envc++] = "WINEDEBUG=+file";
+    //ppenv[envc++] = "WINEDEBUG=+relay,+dsound";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
