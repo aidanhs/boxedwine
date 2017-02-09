@@ -1508,6 +1508,10 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
             if (len != 4)
                 kpanic("getsockopt SO_ERROR expecting len of 4");
             writed(MMU_PARAM_THREAD value, s->error);
+        } else if (name == K_SO_TYPE) { 
+            if (len != 4)
+                kpanic("getsockopt K_SO_TYPE expecting len of 4");
+            writed(MMU_PARAM_THREAD value, s->type);
         } else if (name == K_SO_PEERCRED) {
             if (s->domain!=K_AF_UNIX) {
                 return -K_EINVAL; // :TODO: is this right
@@ -1521,10 +1525,13 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
             writed(MMU_PARAM_THREAD value + 4, UID);
             writed(MMU_PARAM_THREAD value + 8, GID);
         } else {
-            kpanic("getsockopt name %d not implemented", name);
+            kwarn("getsockopt name %d not implemented", name);
+            return -K_EINVAL;
         }
     } else {
-        kpanic("getsockopt level %d not implemented", level);
+        kwarn("getsockopt level %d not implemented", level);
+        writed(MMU_PARAM_THREAD 0xFFFFFFFF, 1);
+        return -K_EINVAL;
     }
     return 0;
 }
