@@ -832,10 +832,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
         break;
         */
     case __NR_utimensat:
-        result = 0;
-#ifdef _DEBUG
-        kwarn("__NR_utimensat not implemented");
-#endif
+        result = syscall_utimesat(thread, ARG1, ARG2, ARG3, ARG4);
         break;		
     case __NR_pipe2:
         result = syscall_pipe2(thread, ARG1, ARG2);

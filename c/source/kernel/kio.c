@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include RMDIR_INCLUDE
 #include MKDIR_INCLUDE
 
@@ -68,11 +69,10 @@ U32 syscall_open(struct KThread* thread, const char* currentDirectory, U32 name,
     return -K_EINVAL;
 }
 
-U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
-    const char* currentDirectory=0;
+U32 getCurrentDirectoryFromDirFD(struct KThread* thread, FD dirfd, const char** currentDirectory) {
     U32 result = 0;
     if (dirfd==-100) { // AT_FDCWD
-        currentDirectory = thread->process->currentDirectory;
+        *currentDirectory = thread->process->currentDirectory;
     } else {
         struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
         if (!fd) {
@@ -81,15 +81,23 @@ U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
             result = -K_ENOTDIR;
         } else {
             struct FsOpenNode* openNode = fd->kobject->openFile;
-            currentDirectory = openNode->node->path;
-            if (!openNode->node->func->isDirectory(openNode->node)) {
-                result = -K_ENOTDIR;
-            }
+            *currentDirectory = openNode->node->path;
         }
     }
-    if (result==0)
-        result = syscall_open(thread, currentDirectory, name, flags);
     return result;
+}
+
+U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
+    const char* currentDirectory=0;
+    const char* path = getNativeString(MMU_PARAM_THREAD name);
+    U32 result = 0;
+    
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
+
+    if (result)
+        return result;
+    return syscall_open(thread, currentDirectory, name, flags);
 }
 
 //struct iovec {
@@ -187,24 +195,15 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
 U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
     const char* currentDirectory=0;
     struct FsNode* node;	
+    const char* path = getNativeString(MMU_PARAM_THREAD address);
+    U32 result = 0;
+    
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
 
-    if (dirfd==-100) { // AT_FDCWD
-        currentDirectory = thread->process->currentDirectory;
-    } else {
-        struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
-        if (!fd) {
-            return -K_EBADF;
-        } else if (fd->kobject->type!=KTYPE_FILE){
-            return -K_ENOTDIR;
-        } else {
-            struct FsOpenNode* openNode = fd->kobject->openFile;
-            currentDirectory = openNode->node->path;
-            if (!openNode->node->func->isDirectory(openNode->node)) {
-                return -K_ENOTDIR;
-            }
-        }
-    }
-    node = getNodeFromLocalPath(currentDirectory, getNativeString(MMU_PARAM_THREAD address), TRUE);
+    if (result)
+        return result;
+    node = getNodeFromLocalPath(currentDirectory, path, TRUE);
     if (node && node->func->exists(node)) {
         if (flags & 0x200) { // unlinkat AT_REMOVEDIR
             if (!node->func->isDirectory(node)) {
@@ -227,25 +226,15 @@ U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
 U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U32 flag) {
     const char* currentDirectory=0;
     struct FsNode* node;	
+    const char* path = getNativeString(MMU_PARAM_THREAD address);
+    U32 result = 0;
+    
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
 
-    if (dirfd==-100) { // AT_FDCWD
-        currentDirectory = thread->process->currentDirectory;
-    } else {
-        struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
-        if (!fd) {
-            return -K_EBADF;
-        } else if (fd->kobject->type!=KTYPE_FILE){
-            return -K_ENOTDIR;
-        } else {
-            struct FsOpenNode* openNode = fd->kobject->openFile;
-            currentDirectory = openNode->node->path;
-            if (!openNode->node->func->isDirectory(openNode->node)) {
-                openNode->func->close(openNode);
-                return -K_ENOTDIR;
-            }
-        }
-    }
-    node = getNodeFromLocalPath(currentDirectory, getNativeString(MMU_PARAM_THREAD address), TRUE);
+    if (result)
+        return result;
+    node = getNodeFromLocalPath(currentDirectory, path, TRUE);
     if (node && node->func->exists(node)) {
         U64 len;
 
@@ -636,24 +625,15 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
 }
 
 U32 syscall_readlinkat(struct KThread* thread, FD dirfd, U32 pathname, U32 buf, U32 bufsiz) {
-    const char* currentDirectory;
+    const char* currentDirectory = 0;
+    const char* path = getNativeString(MMU_PARAM_THREAD pathname);
+    U32 result = 0;
+    
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
 
-    if (dirfd==-100) { // AT_FDCWD
-        currentDirectory = thread->process->currentDirectory;
-    } else {
-        struct KFileDescriptor* fd = getFileDescriptor(thread->process, dirfd);
-        if (!fd) {
-            return -K_EBADF;
-        } else if (fd->kobject->type!=KTYPE_FILE){
-            return -K_ENOTDIR;
-        } else {
-            struct FsOpenNode* openNode = fd->kobject->openFile;
-            currentDirectory = openNode->node->path;
-            if (!openNode->node->func->isDirectory(openNode->node)) {
-                return -K_ENOTDIR;
-            }
-        }
-    }
+    if (result)
+        return result;
     return readlinkInDirectory(thread, currentDirectory, pathname, buf, bufsiz);
 }
 
@@ -786,4 +766,49 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
     result = fd->kobject->access->write(MMU_PARAM_THREAD thread, fd->kobject, address, len);
     fd->kobject->access->seek(fd->kobject, pos);
     return result;
+}
+
+#define K_UTIME_NOW 0x3fffffff
+#define K_UTIME_OMIT 0x3ffffffe
+
+U32 syscall_utimesat(struct KThread* thread, FD dirfd, U32 address, U32 times, U32 flags) {
+    const char* currentDirectory=0;
+    struct FsNode* node;	
+    const char* path = getNativeString(MMU_PARAM_THREAD address);
+    U32 result = 0;
+    
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
+
+    if (result)
+        return result;
+    node = getNodeFromLocalPath(currentDirectory, path, TRUE);
+    if (node && node->func->exists(node)) {
+        U64 lastAccessTime = 0;
+        U32 lastAccessTimeNano = 0;
+        U64 lastModifiedTime =  0;
+        U32 lastModifiedTimeNano = 0;
+
+        if (times) {
+            lastAccessTime = readd(MMU_PARAM_THREAD times);
+            lastAccessTimeNano = readd(MMU_PARAM_THREAD times+4);
+            lastModifiedTime = readd(MMU_PARAM_THREAD times+8);
+            lastModifiedTimeNano = readd(MMU_PARAM_THREAD times+12);
+        }
+        if (lastAccessTimeNano != K_UTIME_OMIT) {
+            if (lastAccessTimeNano == K_UTIME_NOW) {
+                lastAccessTime = time(NULL);
+                lastAccessTimeNano = 0;
+            }
+        }
+        if (lastModifiedTimeNano != K_UTIME_OMIT) {
+            if (lastModifiedTimeNano == K_UTIME_NOW) {
+                lastModifiedTime = (U32)time(NULL);
+                lastModifiedTimeNano = 0;
+            }
+        }
+        node->func->setTimes(node, lastAccessTime, lastAccessTimeNano, lastModifiedTime, lastAccessTimeNano);
+        return 0;
+    }
+    return -K_ENOENT;
 }

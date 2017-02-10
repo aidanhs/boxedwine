@@ -389,11 +389,6 @@ struct FsOpenNode* unixsocket_open(struct KProcess* process, struct FsNode* node
     return 0;
 }
 
-BOOL unixsocket_setLastModifiedTime(struct FsNode* node, U32 time) {
-    node->kobject->socket->lastModifiedTime = ((U64)time)*1000;
-    return 0;
-}
-
 U32 unixsocket_getType(struct FsNode* node, U32 checkForLink) {
     return 12; // DT_SOCK
 }
@@ -416,7 +411,12 @@ U32 unixsocket_makeDir(struct FsNode* node) {
     return 0;
 }
 
-struct FsNodeFunc unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_setLastModifiedTime, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode, unixsocket_removeDir, unixsocket_makeDir};
+U32 unixsocket_setTimes(struct FsNode* node, U64 lastAccessTime, U32 lastAccessTimeNano, U64 lastModifiedTime, U32 lastModifiedTimeNano) {
+    klog("unixsocket_setTimes not implemented");
+    return 0;
+}
+
+struct FsNodeFunc unixSocketNodeType = {unixsocket_isDirectory, unixsocket_exists, unixsocket_rename, unixsocket_remove, unixsocket_lastModified, unixsocket_length, unixsocket_open, unixsocket_canRead, unixsocket_canWrite, unixsocket_getType, unixsocket_getMode, unixsocket_removeDir, unixsocket_makeDir, unixsocket_setTimes};
 
 void freeSocket(struct KSocket* socket);
 

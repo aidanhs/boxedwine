@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <errno.h>
 
 #include "platform.h"
 #include "fsapi.h"
@@ -354,8 +355,10 @@ struct FsNode* getLocalAndNativePaths(const char* currentDirectory, const char* 
         safe_strcpy(localPath, path, localPathSize);
     else {
         safe_strcpy(localPath, currentDirectory, localPathSize);
-        safe_strcat(localPath, "/", localPathSize);
-        safe_strcat(localPath, path, localPathSize);
+        if (strlen(path)) {
+            safe_strcat(localPath, "/", localPathSize);
+            safe_strcat(localPath, path, localPathSize);
+        }
     }	
     trimTrailingSpaces(localPath);
     stringReplace("//", "/", localPath, localPathSize);
@@ -1017,11 +1020,11 @@ U64 file_lastModified(struct FsNode* node) {
 
     path = pathMakeWindowsHappy(path);
     if (stat(path, &buf)==0) {
-        return buf.st_mtime;
+        return buf.st_mtime*1000l;
     }
     node = getNodeFromNative(node->nativePath1);
     if (node && node->isZipFile1)
-        return node->zipFileLastModified1;
+        return node->zipFileLastModified1*1000l;
     return 0;
 }
 
@@ -1075,15 +1078,6 @@ struct FsOpenNode* file_open(struct KProcess* process, struct FsNode* node, U32 
         return 0;
     }
     return allocOpenNode(process, node, f, flags, &fileAccess);
-}
-
-BOOL file_setLastModifiedTime(struct FsNode* node, U32 time) {
-    struct utimbuf buf = {time, time};
-    if (!doesPathExist(node->nativePath1)) {
-        moveToFileSystem(node);
-    }
-    return utime(node->nativePath1, &buf)==0;
-    
 }
 
 U32 file_getType(struct FsNode* node, U32 checkForLink) {	
@@ -1191,6 +1185,30 @@ U32 file_makeDir(struct FsNode* node) {
     return MKDIR(node->nativePath1);
 }
 
+U32 file_setTimes(struct FsNode* node, U64 lastAccessTime, U32 lastAccessTimeNano, U64 lastModifiedTime, U32 lastModifiedTimeNano) {
+    struct utimbuf settime = {0, 0};
+    U32 result;
+
+    if (!doesPathExist(node->nativePath1)) {
+        moveToFileSystem(node);
+    }
+    if (lastAccessTime) {
+        settime.actime = lastAccessTime;
+    }
+    if (lastModifiedTime) {
+        settime.modtime = lastModifiedTime;
+    }       
+    result = utime(node->nativePath1,&settime);
+    if (result == 0)
+        return 0;
+    switch (errno) {
+    case EPERM: return -K_EPERM;
+    case ENOENT: return -K_ENOENT;
+    }
+    return -K_EACCES;
+    return 0;
+}
+
 BOOL isLink(struct FsNode* node) {
     return node->isLink1;
 }
@@ -1216,7 +1234,7 @@ struct FsNode* getParentNode(struct FsNode* node) {
     return 0;
 }
 
-struct FsNodeFunc fileNodeFunc = {file_isDirectory, file_exists, file_rename, file_remove, file_lastModified, file_length, file_open, file_setLastModifiedTime, file_canRead, file_canWrite, file_getType, file_getMode, file_removeDir, file_makeDir};
+struct FsNodeFunc fileNodeFunc = {file_isDirectory, file_exists, file_rename, file_remove, file_lastModified, file_length, file_open, file_canRead, file_canWrite, file_getType, file_getMode, file_removeDir, file_makeDir, file_setTimes};
 
 struct FsNode* allocNode(const char* localPath, const char* nativePath, struct FsNodeFunc* func, U32 rdev) {
     struct FsNode* result;
@@ -1332,10 +1350,6 @@ struct FsOpenNode* virtual_open(struct KProcess* process, struct FsNode* node, U
     return allocOpenNode(process, node, -1, flags, node->openfunc1);
 }
 
-BOOL virtual_setLastModifiedTime(struct FsNode* node, U32 time) {
-    return 0;
-}
-
 U32 virtual_getType(struct FsNode* node, U32 checkForLink) {
     U32 mode = node->mode1;
 
@@ -1369,7 +1383,11 @@ U32 virtual_makeDir(struct FsNode* node) {
     return 0;
 }
 
-struct FsNodeFunc virtualNodeType = {virtual_isDirectory, virtual_exists, virtual_rename, virtual_remove, virtual_lastModified, virtual_length, virtual_open, virtual_setLastModifiedTime, virtual_canRead, virtual_canWrite, virtual_getType, virtual_getMode, virtual_removeDir, virtual_makeDir};
+U32 virtual_setTimes(struct FsNode* node, U64 lastAccessTime, U32 lastAccessTimeNano, U64 lastModifiedTime, U32 lastModifiedTimeNano) {
+    klog("virtual_setTimes not implemented");
+    return 0;
+}
+struct FsNodeFunc virtualNodeType = {virtual_isDirectory, virtual_exists, virtual_rename, virtual_remove, virtual_lastModified, virtual_length, virtual_open, virtual_canRead, virtual_canWrite, virtual_getType, virtual_getMode, virtual_removeDir, virtual_makeDir, virtual_setTimes};
 
 void openvirtual_free(struct FsOpenNode* node) {
     freeOpenNode(node);

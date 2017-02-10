@@ -44,13 +44,13 @@ struct FsNodeFunc {
     U64 (*lastModified)(struct FsNode* node);
     U64 (*length)(struct FsNode* node);
     struct FsOpenNode* (*open)(struct KProcess* process, struct FsNode* node, U32 flags);
-    BOOL (*setLastModifiedTime)(struct FsNode* node, U32 time);
     BOOL (*canRead)(struct KProcess* process, struct FsNode* node);
     BOOL (*canWrite)(struct KProcess* process, struct FsNode* node);
     U32 (*getType)(struct FsNode* node, U32 checkForLink);
     U32 (*getMode)(struct KProcess* process, struct FsNode* node);
     U32 (*removeDir)(struct FsNode* node);
     U32 (*makeDir)(struct FsNode* node);    
+    U32 (*setTimes)(struct FsNode* node, U64 lastAccessTime, U32 lastAccessTimeNano, U64 lastModifiedTime, U32 lastModifiedTimeNano);
 };
 
 struct FsOpenNodeFunc {
@@ -87,7 +87,7 @@ struct FsNode {
     U32 id;
     U32 rdev;
     struct KFileLock* locks;
-    
+
     const char* reserved1;
     BOOL  reserved2;
     struct FsOpenNode* reserved3;
