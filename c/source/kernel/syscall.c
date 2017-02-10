@@ -129,6 +129,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_sched_get_priority_min	160
 #define __NR_nanosleep 162
 #define __NR_mremap 163
+#define __NR_vm86 166
 #define __NR_poll 168
 #define __NR_prctl 172
 #define __NR_rt_sigaction 174
@@ -572,6 +573,9 @@ void syscall(struct CPU* cpu, U32 eipCount) {
         break;
     case __NR_mremap:
         result = syscall_mremap(thread, ARG1, ARG2, ARG3, ARG4);
+        break;
+    case __NR_vm86:
+        kpanic("Application tried to enter DOS mode (vm86).  BoxedWine does not support this.");
         break;
     case __NR_poll:
         result = syscall_poll(thread, ARG1, ARG2, ARG3);		

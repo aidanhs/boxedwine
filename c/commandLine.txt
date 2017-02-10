@@ -12,6 +12,8 @@ This will load the file system from wine.zip and write the changes to c:\root
 
 * options
 
+-bpp X : Value must be 16 or 32.  Most games are fine with 32-bit.
+
 -gensrc : This is used for ahead of time (AOT) compiling and requires the source to be build with GENERATE_SOURCE.  With this enabled the user can run the program, then compile the output back into the program for a performance boost.  Currently I don't recommend using this, it should be considered experimental and the out put will not be compatible with future versions of BoxedWine.
 
 -m XX : How many megabytes the emulated RAM will have.  The default is 64

@@ -47,6 +47,7 @@ void sdlgl_init();
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
+extern bits_per_pixel;
 
 #include CURDIR_INCLUDE
 
@@ -400,6 +401,13 @@ int main(int argc, char **argv) {
                 klog("Resolution set to: %dx%d", screenCx, screenCy);
             }
             i++;
+        } else if (!strcmp(argv[i], "-bpp")) {
+            bits_per_pixel = atoi(argv[i+1]);
+            i++;
+            if (bits_per_pixel!=16 && bits_per_pixel!=32) {
+                klog("-bpp must be 16 or 32");
+                bits_per_pixel = 32;
+            }
         } else {
             break;
         }
