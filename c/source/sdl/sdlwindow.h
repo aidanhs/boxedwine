@@ -25,6 +25,7 @@
 
 int sdlMouseMouse(int x, int y);
 int sdlMouseButton(U32 down, U32 button, int x, int y);
+int sdlMouseWheel(int amount, int x, int y);
 int sdlKey(U32 key, U32 down);
 U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, U32 bufW_size, U32 flags, U32 hkl);
 void sdlSwapBuffers();

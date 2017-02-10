@@ -470,9 +470,9 @@ int main(int argc, char **argv) {
     //ppenv[envc++] = "LD_DEBUG=all";
     //ppenv[envc++] = "LD_BIND_NOW=1";
     ppenv[envc++] = "WINELOADERNOEXEC=1";
-    ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
-    //ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
-    //ppenv[envc++] = "WINEDEBUG=+relay,+dsound";
+    //ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
+    ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
+    //ppenv[envc++] = "WINEDEBUG=+message";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -554,6 +554,13 @@ int main(int argc, char **argv) {
                     } else if (e.button.button == SDL_BUTTON_RIGHT) {
                         if (!sdlMouseButton(0, 1, e.motion.x, e.motion.y))
                             onMouseButtonUp(1);
+                    }
+                } else if (e.type == SDL_MOUSEWHEEL) {
+                    // Handle up/down mouse wheel movements
+                    int x, y;
+                    SDL_GetMouseState(&x, &y);
+                    if (!sdlMouseWheel(e.wheel.y*80, x, y)) {
+                        onMouseWheel(e.wheel.y);
                     }
                 } else if (e.type == SDL_KEYDOWN) {
                     if (e.key.keysym.sym==SDLK_SCROLLOCK) {

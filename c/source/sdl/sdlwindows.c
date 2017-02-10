@@ -847,6 +847,35 @@ int sdlMouseMouse(int x, int y) {
     return 1;
 }
 
+int sdlMouseWheel(int amount, int x, int y) {
+    struct Wnd* wnd;
+
+    if (!hwndToWnd)
+        return 0;
+    wnd = getWndFromPoint(x, y);
+    if (!wnd)
+        wnd = getFirstVisibleWnd();
+    if (wnd) {
+        struct KProcess* process = getProcessById(wnd->processId);        
+        if (process) {
+            struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
+            if (fd) {
+#ifdef USE_MMU
+                struct Memory* memory = process->memory;
+#endif
+                writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
+                writeLittleEndian_4(MMU_PARAM fd, x); // dx
+                writeLittleEndian_4(MMU_PARAM fd, y); // dy
+                writeLittleEndian_4(MMU_PARAM fd, amount); // mouseData
+                writeLittleEndian_4(MMU_PARAM fd, MOUSEEVENTF_WHEEL | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE); // dwFlags
+                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
+                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+            }
+        }
+    }
+    return 1;
+}
+
 int sdlMouseButton(U32 down, U32 button, int x, int y) {
     struct Wnd* wnd;
 

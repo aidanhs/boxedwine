@@ -29,6 +29,7 @@ extern struct FsOpenNodeFunc mouseInputAccess;
 void onMouseMove(U32 x, U32 y);
 void onMouseButtonDown(U32 button);
 void onMouseButtonUp(U32 button);
+void onMouseWheel(S32 value);
 void onKeyDown(U32 code);
 void onKeyUp(U32 code);
 
@@ -66,6 +67,9 @@ void onKeyUp(U32 code);
 #define K_BTN_FORWARD             0x115
 #define K_BTN_BACK                0x116
 #define K_BTN_TASK                0x117
+
+#define K_BTN_MOUSEWHEEL_UP       0x118  // Probably wrong?
+#define K_BTN_MOUSEWHEEL_DOWN     0x119
 
 #define K_KEY_RESERVED            0
 #define K_KEY_ESC                 1

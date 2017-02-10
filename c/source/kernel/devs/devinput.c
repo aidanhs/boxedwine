@@ -398,6 +398,8 @@ U32 mouse_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
             writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
             writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MOUSEWHEEL_UP);
+            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MOUSEWHEEL_DOWN);
             return result;
         }
         case 0x4522: { // EVIOCGBIT, EV_REL
@@ -726,6 +728,33 @@ void onMouseButtonDown(U32 button) {
         struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
         if (process)
             signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
+    }
+    if (touchEvents.waitingToReadThread)
+        wakeThread(touchEvents.waitingToReadThread);
+}
+
+void onMouseWheel(S32 value) {
+    U64 time = getSystemTimeAsMicroSeconds();
+
+    // Up direction (y > 0)
+    if (value > 0)  {
+        // Mouse wheel cannot really be held down so the 'up' event is sent, too
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MOUSEWHEEL_UP, value, time);
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MOUSEWHEEL_UP, 0, time);
+    }
+    // Down direction
+    else if (value < 0) {
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MOUSEWHEEL_DOWN, -value, time);
+        queueEvent(&touchEvents, K_EV_KEY, K_BTN_MOUSEWHEEL_DOWN, 0, time);
+    }
+    else
+        return;
+
+    queueEvent(&touchEvents, K_EV_SYN, K_SYN_REPORT, 0, time);
+    if (touchEvents.asyncProcessId) {
+        struct KProcess* process = getProcessById(touchEvents.asyncProcessId);
+        if (process)
+            signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);
     }
     if (touchEvents.waitingToReadThread)
         wakeThread(touchEvents.waitingToReadThread);

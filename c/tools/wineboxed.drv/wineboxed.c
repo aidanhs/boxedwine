@@ -533,15 +533,19 @@ void processEvents() {
         }
         TRACE("read event: type=");
         if (input.type == 0) {
-            POINT p;
-            p.x = input.mi.dx;
-            p.y = input.mi.dy;
-            hwnd = WindowFromPoint(p);
-            if (!hwnd) {
-                continue;
+            if (input.mi.dwFlags & MOUSEEVENTF_WHEEL) {
+                hwnd = GetForegroundWindow();
+            } else {
+                POINT p;
+                p.x = input.mi.dx;
+                p.y = input.mi.dy;
+                hwnd = WindowFromPoint(p);
+                if (!hwnd) {
+                    continue;
+                }
+                hwnd = GetAncestor(hwnd, GA_ROOT);                
             }
-            hwnd = GetAncestor(hwnd, GA_ROOT);
-            TRACE("mouse hwnd=%p dx=%d dy=%d dwFlags=%X time=%X\n", hwnd, input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
+            TRACE("mouse %s hwnd=%p dx=%d dy=%d dwFlags=%X time=%X\n", ((input.mi.dwFlags & MOUSEEVENTF_WHEEL)?"wheel":""), hwnd, input.mi.dx, input.mi.dy, input.mi.dwFlags, input.mi.time);
         } else {
             hwnd = GetForegroundWindow();
         }
