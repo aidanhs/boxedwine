@@ -177,6 +177,7 @@ char* getNativeString2(MMU_ARG U32 address);
 char* getNativeStringW2(MMU_ARG U32 address);
 void writeNativeString(MMU_ARG U32 address, const char* str);
 U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len);
+void writeNativeStringW(MMU_ARG U32 address, const char* str);
 
 void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len);
 void memcopyToNative(MMU_ARG U32 address, char* p, U32 len);

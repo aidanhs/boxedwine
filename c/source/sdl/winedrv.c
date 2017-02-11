@@ -24,6 +24,7 @@
 #include "sdlopengl.h"
 #include "sdlwindow.h"
 #include "ksystem.h"
+#include <SDL.h>
 
 extern int default_horz_res;
 extern int default_vert_res;
@@ -226,6 +227,9 @@ void notImplemented(const char* s) {
 #define SWP_NOCLIENTMOVE    0x1000
 #define SWP_STATECHANGED    0x8000
 
+#define CF_UNICODETEXT 0xd
+#define CF_TEXT 0x1
+
 void boxeddrv_AcquireClipboard(struct CPU* cpu) {
     
 }
@@ -333,8 +337,10 @@ void boxeddrv_ClipCursor(struct CPU* cpu) {
 
 // INT CDECL drv_CountClipboardFormats(void)
 void boxeddrv_CountClipboardFormats(struct CPU* cpu) {
-    notImplemented("boxeddrv_CountClipboardFormats not implemented");
-    EAX = 0;
+    if (SDL_HasClipboardText())
+        EAX = 2; // CF_UNICODETEXT & CF_TEXT
+    else
+        EAX = 0;
 }
 
 // BOOL CDECL drv_CreateDesktopWindow(HWND hwnd)
@@ -363,18 +369,26 @@ void boxeddrv_DestroyWindow(struct CPU* cpu) {
 
 // void CDECL drv_EmptyClipboard(void)
 void boxeddrv_EmptyClipboard(struct CPU* cpu) {
-    notImplemented("boxeddrv_EmptyClipboard not implemented");
+    SDL_SetClipboardText(NULL);
 }
 
 //void CDECL drv_EndClipboardUpdate(void)
 void boxeddrv_EndClipboardUpdate(struct CPU* cpu) {
-    notImplemented("boxeddrv_EndClipboardUpdate not implemented");
+    
 }
 
 // UINT CDECL drv_EnumClipboardFormats(UINT prev_format)
 void boxeddrv_EnumClipboardFormats(struct CPU* cpu) {
-    notImplemented("boxeddrv_EnumClipboardFormats not implemented");
-    EAX = 0;
+    U32 prevFormat = ARG1;
+    if (SDL_HasClipboardText()) {
+        if (prevFormat == 0)
+            EAX = CF_TEXT;
+        else if (prevFormat == CF_TEXT)
+            EAX = CF_UNICODETEXT;
+        else
+            EAX = 0;
+    } else
+        EAX = 0;
 }
 
 // BOOL CDECL drv_EnumDisplayMonitors(HDC hdc, LPRECT rect, MONITORENUMPROC proc, LPARAM lparam)
@@ -478,10 +492,27 @@ void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
     EAX = 1;
 }
 
-// HANDLE CDECL drv_GetClipboardData(UINT desired_format)
+// int CDECL drv_GetClipboardData(UINT desired_format, char* buffer, int bufferLen)
 void boxeddrv_GetClipboardData(struct CPU* cpu) {
-    notImplemented("boxeddrv_GetClipboardData not implemented");
-    EAX = 0;
+    U32 format = ARG1;
+
+    if ((format == CF_TEXT || format == CF_UNICODETEXT) && SDL_HasClipboardText()) {
+        char* text = SDL_GetClipboardText();
+        int len = 0;
+        if (text)
+            len = strlen(text);
+        if (format == CF_TEXT) {
+            if (len+1>ARG3)
+                len = ARG3 - 1;
+            memcopyFromNative(MMU_PARAM_CPU ARG2, text, len+1);
+            EAX = len+1;
+        } else {
+            writeNativeStringW(MMU_PARAM_CPU ARG2, text);
+            EAX = 2*(len+1);
+        }        
+    } else {    
+        EAX = 0;
+    }
 }
 
 // BOOL CDECL drv_GetCursorPos(LPPOINT pos)
@@ -525,8 +556,11 @@ void boxeddrv_GetMonitorInfo(struct CPU* cpu) {
 
 // BOOL CDECL drv_IsClipboardFormatAvailable(UINT desired_format)
 void boxeddrv_IsClipboardFormatAvailable(struct CPU* cpu) {
-    notImplemented("boxeddrv_IsClipboardFormatAvailable not implemented");
-    EAX = 0;
+    U32 format = ARG1;
+    if ((format == CF_TEXT || format == CF_UNICODETEXT) && SDL_HasClipboardText())
+        EAX = 1;
+    else
+        EAX = 0;
 }
 
 // UINT CDECL drv_MapVirtualKeyEx(UINT wCode, UINT wMapType, HKL hkl)
@@ -547,10 +581,25 @@ void boxeddrv_SetCapture(struct CPU* cpu) {
     notImplemented("boxeddrv_SetCapture not implemented");
 }
 
-// BOOL CDECL drv_SetClipboardData(UINT format_id, HANDLE data, BOOL owner)
+// BOOL CDECL drv_SetClipboardData(UINT format_id, char* data, int len, BOOL owner)
 void boxeddrv_SetClipboardData(struct CPU* cpu) {
-    notImplemented("boxeddrv_SetClipboardData not implemented");
-    EAX = 0;
+    U32 format = ARG1;
+    char* text = 0;
+    int len = ARG3;
+
+    if (format == CF_TEXT) {
+        text = getNativeString(MMU_PARAM_CPU ARG2);
+    } else if (format == CF_UNICODETEXT) {
+        text = getNativeStringW(MMU_PARAM_CPU ARG2);
+    }
+    if (text) {
+        if (SDL_SetClipboardText(text)==0)
+            EAX = 1;
+        else
+            EAX = 0;
+    } else {
+        EAX = 0;
+    }
 }
 
 // void CDECL drv_SetCursor(HCURSOR cursor)

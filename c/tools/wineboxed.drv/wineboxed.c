@@ -203,6 +203,7 @@ static inline BOOL can_activate_window(HWND hwnd)
     return TRUE;
 }
 
+
 int CDECL boxeddrv_AcquireClipboard(HWND hwnd) {
     int result;
     CALL_1(BOXED_ACQUIRE_CLIPBOARD, hwnd);
@@ -382,11 +383,29 @@ BOOL CDECL boxeddrv_EnumDisplaySettingsEx(LPCWSTR devname, DWORD mode, LPDEVMODE
     return (BOOL)result;
 }
 
+char tmp64k[64*1024];
+
 HANDLE CDECL boxeddrv_GetClipboardData(UINT desired_format) {
     int result;
-    CALL_1(BOXED_GET_CLIPBOARD_DATA, desired_format);
-    TRACE("desired_format=%d result=%d\n", desired_format, result);
-    return (HANDLE)result;
+    HANDLE h = 0;
+
+    CALL_3(BOXED_GET_CLIPBOARD_DATA, desired_format, tmp64k, sizeof(tmp64k));
+    TRACE("desired_format=%d result=%d %s\n", desired_format, result, result>0?tmp64k:"");
+    if (result) {
+        LPVOID p;
+
+        h = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, result);
+        if (!h)
+            return NULL;
+        p = GlobalLock(h);
+        if (!p) {
+            GlobalFree(h);
+            return NULL;
+        }
+        memcpy(p, tmp64k, result);
+        GlobalUnlock(h);
+    }
+    return h;
 }
 
 BOOL CDECL boxeddrv_GetCursorPos(LPPOINT pos) {
@@ -576,8 +595,20 @@ void CDECL boxeddrv_SetCapture(HWND hwnd, UINT flags) {
 
 BOOL CDECL boxeddrv_SetClipboardData(UINT format_id, HANDLE data, BOOL owner) {
     int result;
-    CALL_3(BOXED_SET_CLIPBOARD_DATA, format_id, data, owner);
-    TRACE("format_id=%d data=%p owner=%d\n", format_id, data, owner);
+    int len = GlobalSize(data);
+    LPVOID src = GlobalLock(data);
+    WCHAR buffer[256];
+
+    buffer[0]=0;
+    GetClipboardFormatNameW(format_id, buffer, sizeof(buffer) / sizeof(buffer[0]));
+    CALL_4(BOXED_SET_CLIPBOARD_DATA, format_id, src, len, owner);
+    GlobalUnlock(data);
+    TRACE("format_id=%d (%s) data=%p dataLen=%d owner=%d\n", format_id, debugstr_w(buffer), data, len, owner);
+    if (len && format_id != CF_TEXT && format_id != CF_UNICODETEXT) {
+        HWND clipboardOwner = GetClipboardOwner();
+        SendMessageW(clipboardOwner, WM_RENDERFORMAT, CF_UNICODETEXT, 0);
+        TRACE("Requesting HWND=%x to convert %s to CF_UNICODETEXT\n", clipboardOwner, debugstr_w(buffer));
+    }
     return (BOOL)result;
 }
 

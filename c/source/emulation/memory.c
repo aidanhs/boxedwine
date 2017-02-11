@@ -605,7 +605,16 @@ U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len) {
     return count;
 }
 
-static char tmpBuffer[MAX_FILEPATH_LEN];
+void writeNativeStringW(MMU_ARG U32 address, const char* str) {	
+    while (*str) {
+        writew(memory, address, *str);
+        str++;
+        address+=2;
+    }
+    writeb(memory, address, 0);
+}
+
+static char tmpBuffer[64*1024];
 
 char* getNativeString(MMU_ARG U32 address) {
 #ifdef USE_MMU
@@ -619,7 +628,8 @@ char* getNativeString(MMU_ARG U32 address) {
     do {
         c = readb(memory, address++);
         tmpBuffer[i++] = c;
-    } while(c);
+    } while(c && i<sizeof(tmpBuffer));
+    tmpBuffer[sizeof(tmpBuffer)-1]=0;
     return tmpBuffer;
 #else
     return (char*)address;
@@ -638,12 +648,13 @@ char* getNativeStringW(MMU_ARG U32 address) {
         c = (char)readw(MMU_PARAM address);
         address+=2;
         tmpBuffer[i++] = c;
-    } while(c);
+    } while(c && i<sizeof(tmpBuffer));
+    tmpBuffer[sizeof(tmpBuffer)-1]=0;
     return tmpBuffer;
 }
 
 #ifdef USE_MMU
-static char tmpBuffer2[MAX_FILEPATH_LEN];
+static char tmpBuffer2[64*1024];
 #endif
 
 char* getNativeString2(MMU_ARG U32 address) {
@@ -658,7 +669,8 @@ char* getNativeString2(MMU_ARG U32 address) {
     do {
         c = readb(memory, address++);
         tmpBuffer2[i++] = c;
-    } while(c);
+    } while(c && i<sizeof(tmpBuffer2));
+    tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
     return tmpBuffer2;
 #else
     return (char*)address;
@@ -678,7 +690,8 @@ char* getNativeStringW2(MMU_ARG U32 address) {
         c = (char)readw(memory, address);
         address+=2;
         tmpBuffer2[i++] = c;
-    } while(c);
+    } while(c && i<sizeof(tmpBuffer2));
+    tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
     return tmpBuffer2;
 #else
     return (char*)address;
