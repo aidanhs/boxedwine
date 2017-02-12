@@ -301,6 +301,10 @@ void initSDL() {
     hwndToWnd = pblMapNewHashMap();
 }
 
+BOOL isBoxedWineDriverActive() {
+    return pblMapSize(hwndToWnd)!=0;
+}
+
 struct Wnd* getWnd(U32 hwnd) {
     struct Wnd** result;
 
