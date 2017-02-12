@@ -401,7 +401,6 @@ U32 sdlMakeCurrent(void* context) {
 
 void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
-    SDL_GLContext context = NULL;
     destroySDL2();
 
     firstWindowCreated = 1;
@@ -432,18 +431,26 @@ void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, 
         return NULL;
     }
 
-    context = SDL_GL_CreateContext(sdlWindow);
-    if (!context) {
+    sdlContext = SDL_GL_CreateContext(sdlWindow);
+    if (!sdlContext) {
         fprintf(stderr, "Couldn't create context: %s\n", SDL_GetError());
         displayChanged();
         return NULL;
     }
-    wnd->openGlContext = context;
-    return context;
+    wnd->openGlContext = sdlContext;
+    return sdlContext;
 #else
     surface = NULL;
     SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);        
     return (void*)1;
+#endif
+}
+
+void screenResized() {
+#ifdef SDL2
+    SDL_SetWindowSize(sdlWindow, screenCx, screenCy);
+#else
+    displayChanged();
 #endif
 }
 

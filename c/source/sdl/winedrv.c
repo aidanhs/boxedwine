@@ -286,6 +286,7 @@ void boxeddrv_Beep(struct CPU* cpu) {
 #define DM_DISPLAYFIXEDOUTPUT   __MSABI_LONG(0x20000000)
 
 void displayChanged();
+void screenResized();
 // LONG CDECL drv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode, HWND hwnd, DWORD flags, LPVOID lpvoid)
 void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
     U32 devmode = ARG2;
@@ -322,7 +323,7 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
     if (!bits_per_pixel) {
         bits_per_pixel = default_bits_per_pixel;
     }
-    displayChanged();
+    screenResized();
     writed(MMU_PARAM_CPU ARG6, DISP_CHANGE_SUCCESSFUL);	
     writed(MMU_PARAM_CPU ARG7, screenCx);	
     writed(MMU_PARAM_CPU ARG8, screenCy);	
