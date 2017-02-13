@@ -28,11 +28,13 @@
 
 int extLoaded = 0;
 extern glTexImage3D_func ext_glTexImage3D;
+extern glDrawRangeElements_func ext_glDrawRangeElements;
 
 void loadExtensions() {
     if (!extLoaded) {
         extLoaded = 1;
         ext_glTexImage3D = (glTexImage3D_func)SDL_GL_GetProcAddress("glTexImage3D");
+        ext_glDrawRangeElements = (glDrawRangeElements_func)SDL_GL_GetProcAddress("glDrawRangeElements");
     }
 }
 
@@ -115,6 +117,7 @@ void sdlgl_init() {
     int99Callback[XMakeCurrent] = sdl_glXMakeCurrent;
     int99Callback[XDestroyContext] = sdl_glXDestroyContext;	
     int99Callback[XSwapBuffer] = sdl_glXSwapBuffers;
+    loadExtensions();
 }
 
 #endif

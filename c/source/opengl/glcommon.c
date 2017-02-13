@@ -24,8 +24,7 @@
 #include "log.h"
 
 glTexImage3D_func ext_glTexImage3D;
-
-void loadExtensions();
+glDrawRangeElements_func ext_glDrawRangeElements;
 
 #ifdef BOXEDWINE_ES
 #define GL_FUNC(name) es_##name
@@ -34,8 +33,27 @@ void loadExtensions();
 #define GL_FUNC(name) name
 #endif
 
-#define GL_LOG(name)
+#define GL_LOG(name) klog(#name)
 
+U32 getDataSize(U32 type) {
+    switch (type) {
+    case GL_UNSIGNED_BYTE:
+    case GL_BYTE: 
+        return 1;
+    case GL_SHORT:
+    case GL_UNSIGNED_SHORT: 
+        return 2;
+    case GL_INT:
+    case GL_UNSIGNED_INT:
+    case GL_FLOAT:
+        return 4;
+    case GL_DOUBLE:
+        return 8;
+    default:
+        kpanic("glcommon.c getDataSize unknown type: %d", type);
+        return 4;
+    }
+}
 float fARG(struct CPU* cpu, U32 arg) {
     struct int2Float i;
     i.i = arg;
@@ -3664,63 +3682,160 @@ void glcommon_glCopyTexSubImage2D(struct CPU* cpu) {
 /* vertex arrays */
 // GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glVertexPointer(struct CPU* cpu) {
-    kpanic("glcommon_glVertexPointer not implemented");
+    GL_LOG(glVertexPointer);
+    cpu->thread->glVertextPointer.size = ARG1;
+    cpu->thread->glVertextPointer.type = ARG2;
+    cpu->thread->glVertextPointer.stride = ARG3;
+    cpu->thread->glVertextPointer.ptr = ARG4;
+    if (cpu->thread->glVertextPointer.ptr==0)
+        GL_FUNC(glVertexPointer)(cpu->thread->glVertextPointer.size, cpu->thread->glVertextPointer.type, cpu->thread->glVertextPointer.stride, 0);
 }
 
 // GLAPI void APIENTRY glNormalPointer( GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glNormalPointer(struct CPU* cpu) {
-    kpanic("glcommon_glNormalPointer not implemented");
+    GL_LOG(glNormalPointer);
+    cpu->thread->glNormalPointer.size = 1;
+    cpu->thread->glNormalPointer.type = ARG1;
+    cpu->thread->glNormalPointer.stride = ARG2;
+    cpu->thread->glNormalPointer.ptr = ARG3;
+    if (cpu->thread->glNormalPointer.ptr==0)
+        GL_FUNC(glNormalPointer)(cpu->thread->glNormalPointer.type, cpu->thread->glNormalPointer.stride, 0);
 }
 
 // GLAPI void APIENTRY glColorPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glColorPointer(struct CPU* cpu) {
-    kpanic("glcommon_glColorPointer not implemented");
+    GL_LOG(glColorPointer);
+    cpu->thread->glColorPointer.size = ARG1;
+    cpu->thread->glColorPointer.type = ARG2;
+    cpu->thread->glColorPointer.stride = ARG3;
+    cpu->thread->glColorPointer.ptr = ARG4;
+    if (cpu->thread->glColorPointer.ptr==0)
+        GL_FUNC(glColorPointer)(cpu->thread->glColorPointer.size, cpu->thread->glColorPointer.type, cpu->thread->glColorPointer.stride, 0);
 }
 
 // GLAPI void APIENTRY glIndexPointer( GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glIndexPointer(struct CPU* cpu) {
-    kpanic("glcommon_glIndexPointer not implemented");
+    GL_LOG(glIndexPointer);    
+    cpu->thread->glNormalPointer.size = 1;
+    cpu->thread->glIndexPointer.type = ARG1;
+    cpu->thread->glIndexPointer.stride = ARG2;
+    cpu->thread->glIndexPointer.ptr = ARG3;
+    if (cpu->thread->glIndexPointer.ptr==0)
+        GL_FUNC(glIndexPointer)(cpu->thread->glIndexPointer.type, cpu->thread->glIndexPointer.stride, 0);
 }
 
 // GLAPI void APIENTRY glTexCoordPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glTexCoordPointer(struct CPU* cpu) {
-    kpanic("glcommon_glTexCoordPointer not implemented");
+    GL_LOG(glTexCoordPointer);
+    cpu->thread->glTexCoordPointer.size = ARG1;
+    cpu->thread->glTexCoordPointer.type = ARG2;
+    cpu->thread->glTexCoordPointer.stride = ARG3;
+    cpu->thread->glTexCoordPointer.ptr = ARG4;
+    if (cpu->thread->glTexCoordPointer.ptr==0)
+        GL_FUNC(glTexCoordPointer)(cpu->thread->glTexCoordPointer.size, cpu->thread->glTexCoordPointer.type, cpu->thread->glTexCoordPointer.stride, 0);
 }
 
 // GLAPI void APIENTRY glEdgeFlagPointer( GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glEdgeFlagPointer(struct CPU* cpu) {
-    kpanic("glcommon_glEdgeFlagPointer not implemented");
+    GL_LOG(glEdgeFlagPointer);
+    cpu->thread->glNormalPointer.size = 1;
+    cpu->thread->glNormalPointer.type = GL_BYTE;
+    cpu->thread->glEdgeFlagPointer.stride = ARG1;
+    cpu->thread->glEdgeFlagPointer.ptr = ARG2;
+    if (cpu->thread->glEdgeFlagPointer.ptr==0)
+        GL_FUNC(glEdgeFlagPointer)(cpu->thread->glEdgeFlagPointer.stride, 0);
 }
 
 // GLAPI void APIENTRY glGetPointerv( GLenum pname, GLvoid **params ) {
 void glcommon_glGetPointerv(struct CPU* cpu) {
-    kpanic("glcommon_glGetPointerv not implemented");
+    GL_LOG(glGetPointerv);
+    switch (ARG1) {
+    case GL_COLOR_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glColorPointer.ptr); break;
+    case GL_EDGE_FLAG_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glEdgeFlagPointer.ptr); break;
+    case GL_INDEX_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glIndexPointer.ptr); break;
+    case GL_NORMAL_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glNormalPointer.ptr); break;
+    case GL_TEXTURE_COORD_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glTexCoordPointer.ptr); break;
+    case GL_VERTEX_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glVertextPointer.ptr); break;
+    default: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), 0);
+    }
+}
+
+void updateVertexPointer(struct CPU* cpu, struct OpenGLVetexPointer* p, U32 count) {
+    if (p->ptr) {
+        U32 datasize = count * p->size * (p->stride?p->stride:getDataSize(p->type));    
+        if (PAGE_SIZE - (p->ptr & PAGE_MASK) > datasize) {
+            if (p->marshal_size) {
+                free(p->marshal);
+            }
+            p->marshal = getPhysicalAddress(MMU_PARAM_CPU p->ptr);
+            p->marshal_size = 0;
+            if (p->marshal)
+                return;
+        }
+        if (p->marshal_size < datasize) {
+            if (p->marshal_size) {
+                free(p->marshal);
+            }
+            p->marshal = malloc(datasize);
+            p->marshal_size = datasize;
+        }
+        memcopyToNative(MMU_PARAM_CPU p->ptr, p->marshal, datasize);
+    }
+}
+
+void updateVertexPointers(struct CPU* cpu, U32 count) {
+    updateVertexPointer(cpu, &cpu->thread->glVertextPointer, count);
+    if (cpu->thread->glVertextPointer.ptr) GL_FUNC(glVertexPointer)(cpu->thread->glVertextPointer.size, cpu->thread->glVertextPointer.type, cpu->thread->glVertextPointer.stride, cpu->thread->glVertextPointer.marshal);
+
+    updateVertexPointer(cpu, &cpu->thread->glNormalPointer, count);
+    if (cpu->thread->glNormalPointer.ptr) GL_FUNC(glNormalPointer)(cpu->thread->glNormalPointer.type, cpu->thread->glNormalPointer.stride, cpu->thread->glNormalPointer.marshal);
+
+    updateVertexPointer(cpu, &cpu->thread->glColorPointer, count);
+    if (cpu->thread->glColorPointer.ptr) GL_FUNC(glColorPointer)(cpu->thread->glColorPointer.size, cpu->thread->glColorPointer.type, cpu->thread->glColorPointer.stride, cpu->thread->glColorPointer.marshal);
+
+    updateVertexPointer(cpu, &cpu->thread->glIndexPointer, count);
+    if (cpu->thread->glIndexPointer.ptr) GL_FUNC(glIndexPointer)(cpu->thread->glIndexPointer.type, cpu->thread->glIndexPointer.stride, cpu->thread->glIndexPointer.marshal);
+
+    updateVertexPointer(cpu, &cpu->thread->glTexCoordPointer, count);
+    if (cpu->thread->glTexCoordPointer.ptr) GL_FUNC(glTexCoordPointer)(cpu->thread->glTexCoordPointer.size, cpu->thread->glTexCoordPointer.type, cpu->thread->glTexCoordPointer.stride, cpu->thread->glTexCoordPointer.marshal);
+
+    updateVertexPointer(cpu, &cpu->thread->glEdgeFlagPointer, count);
+    if (cpu->thread->glEdgeFlagPointer.ptr) GL_FUNC(glEdgeFlagPointer)(cpu->thread->glEdgeFlagPointer.stride, cpu->thread->glEdgeFlagPointer.marshal);
 }
 
 // GLAPI void APIENTRY glArrayElement( GLint i ) {
 void glcommon_glArrayElement(struct CPU* cpu) {
-    kpanic("glcommon_glArrayElement not implemented");
+    GL_LOG(glArrayElement);
+    updateVertexPointers(cpu, ARG1);
+    GL_FUNC(glArrayElement)(ARG1);
 }
 
 // GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count ) {
 void glcommon_glDrawArrays(struct CPU* cpu) {
-    kpanic("glcommon_glDrawArrays not implemented");
+    GL_LOG(glDrawArrays);
+    updateVertexPointers(cpu, ARG3);
+    GL_FUNC(glDrawArrays)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glDrawElements( GLenum mode, GLsizei count, GLenum type, const GLvoid *indices ) {
 void glcommon_glDrawElements(struct CPU* cpu) {
-    kpanic("glcommon_glDrawElements not implemented");
+    GL_LOG(glDrawElements);
+    updateVertexPointers(cpu, ARG2);
+    GL_FUNC(glDrawElements)(ARG1, ARG2, ARG3, (const GLvoid*)ARG4);
 }
 
 // GLAPI void APIENTRY glInterleavedArrays( GLenum format, GLsizei stride, const GLvoid *pointer ) {
 void glcommon_glInterleavedArrays(struct CPU* cpu) {
-    kpanic("glcommon_glInterleavedArrays not implemented");
+    kpanic("glInterleavedArrays no supported");
 }
 
 /* 1.2 functions */
 // GLAPI void APIENTRY glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices ) {
 void glcommon_glDrawRangeElements(struct CPU* cpu) {
-    kpanic("glcommon_glDrawRangeElements not implemented");
+    GL_LOG(glDrawRangeElements);
+    updateVertexPointers(cpu, ARG4);
+    if (ext_glDrawRangeElements)
+        ext_glDrawRangeElements(ARG1, ARG2, ARG3, ARG4, ARG5, (const GLvoid*)ARG6);
 }
 
 
@@ -3746,8 +3861,6 @@ void glcommon_glTexImage3D(struct CPU* cpu) {
     GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_IMAGES, &skipImages);
 
-    if (!ext_glTexImage3D)
-        loadExtensions();
     if (ext_glTexImage3D)
         ext_glTexImage3D(ARG1, ARG2, ARG3, width, height, depth, border, format, type, marshalPixels(cpu, width, height, depth, format, type, pixels_per_row, skipRows, alignment, skipImages, ARG10));
 }

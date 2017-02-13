@@ -1389,7 +1389,7 @@ U32 allocPage(struct KProcess* process) {
     U32 page = 0;
     if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page, 0))
         kpanic("Failed to allocate stack for thread");
-    allocPages(process->memory, &ramOnDemandPage, TRUE, page, 1, PAGE_READ|PAGE_WRITE, 0);
+    allocPages(process->memory, &ramPageWR, TRUE, page, 1, PAGE_READ|PAGE_WRITE, 0);
     return page << PAGE_SHIFT;
 }
 

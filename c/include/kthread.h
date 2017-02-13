@@ -34,6 +34,15 @@
 #define TLS_ENTRIES 10
 #define TLS_ENTRY_START_INDEX 10
 
+struct OpenGLVetexPointer {
+    U32 size;
+    U32 type;
+    U32 stride;
+    U32 ptr;
+    U8* marshal;
+    U32 marshal_size;
+};
+
 struct KThread {
     U32 id;
     U32 sigMask; // :TODO: what happens when this is changed while in a signal
@@ -70,6 +79,13 @@ struct KThread {
     U64 waitingForSignalToEndMaskToRestore;
     U32     waitType;
     struct user_desc tls[TLS_ENTRIES];
+
+    struct OpenGLVetexPointer glVertextPointer;
+    struct OpenGLVetexPointer glNormalPointer;
+    struct OpenGLVetexPointer glColorPointer;
+    struct OpenGLVetexPointer glIndexPointer;
+    struct OpenGLVetexPointer glTexCoordPointer;
+    struct OpenGLVetexPointer glEdgeFlagPointer;
 };
 
 #define RESTORE_SIGNAL_MASK 0xF000000000000000l

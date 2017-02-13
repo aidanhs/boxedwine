@@ -114,7 +114,7 @@ int getPixelFormats(PixelFormat* pfd, int maxPfs) {
 
     for (i=1;i<=count && result<maxPfs;i++) {
         DescribePixelFormat(hdc, i, sizeof(p), &p);
-        if ((p.dwFlags & PFD_SUPPORT_OPENGL) && p.cColorBits<=32) {
+        if ((p.dwFlags & PFD_SUPPORT_OPENGL) && p.cColorBits<=32 && !(p.dwFlags & PFD_GENERIC_FORMAT)) {
             pfd[result].nSize = 40;
             pfd[result].nVersion = 1;
             pfd[result].dwFlags = p.dwFlags;
