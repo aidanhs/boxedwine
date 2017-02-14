@@ -1216,7 +1216,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 ioctlsocket(result, FIONBIO, &mode);
             }
 #else
-            fcntl(result, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) | O_NONBLOCK);
+            fcntl(result, F_SETFL, fcntl(result, F_GETFL, 0) | O_NONBLOCK);
 #endif
             if (address)
                 memcopyFromNative(MMU_PARAM_THREAD address, (char*)&addr, addrlen);

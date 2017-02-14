@@ -48,7 +48,7 @@ void sdlgl_init();
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
-extern bits_per_pixel;
+extern int bits_per_pixel;
 
 #include CURDIR_INCLUDE
 
