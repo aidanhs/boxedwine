@@ -107,7 +107,7 @@ BOOL doesLocalPathExist(const char* localPath) {
 
 // home/. dir should return the same node as /home/ dirs which should be the same as /home, so remove trailing . and /
 BOOL normalizePath(char* path) {
-    int len = strlen(path);
+    int len = (int)strlen(path);
     int i;
     int lastDir = -1;
     int lastDir2 = -1;
@@ -189,7 +189,7 @@ void localPathToRemote(const char* localPath, char* nativePath, int nativePathSi
 
     safe_strcpy(nativePath, rootFileSystem, nativePathSize);
     safe_strcat(nativePath, localPath, nativePathSize);
-    len = strlen(nativePath);
+    len = (int)strlen(nativePath);
     for (i=2;i<len;i++) {
         if (nativePath[i]=='/')
             nativePath[i]=pathSeperator;
@@ -203,8 +203,8 @@ void localPathToRemote(const char* localPath, char* nativePath, int nativePathSi
     for (i=0;i<sizeof(invalidPaths)/sizeof(invalidPaths[0]);i++) {
         const char* sub = strstr(nativePath, invalidPaths[i]);
         if (sub) {
-            int pos = sub-nativePath;
-            int len = strlen(invalidPaths[i]);
+            int pos = (int)(sub-nativePath);
+            int len = (int)strlen(invalidPaths[i]);
 
             if (nativePath[pos-1]==pathSeperator && (nativePath[pos+len]=='.' || nativePath[pos+len]==pathSeperator || nativePath[pos+len]==0)) {
                 memmove(nativePath+pos+len+4, nativePath+pos+len, strlen(nativePath+pos+len)+1);
@@ -219,9 +219,9 @@ void localPathToRemote(const char* localPath, char* nativePath, int nativePathSi
 }
 
 void remotePathToLocal(char* path) {
-    int len = strlen(path);
+    int len = (int)strlen(path);
     int i;
-    int rootlen = strlen(rootFileSystem);
+    int rootlen = (int)strlen(rootFileSystem);
     char* result;
 
     if (strncmp(path, rootFileSystem, rootlen)==0) {
@@ -268,7 +268,7 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
     if (!openNode) {
         return -K_EIO;
     }
-    openNode->func->write(MMU_PARAM_THREAD openNode, path1, strlen(s1));
+    openNode->func->write(MMU_PARAM_THREAD openNode, path1, (U32)strlen(s1));
     openNode->func->close(openNode);
     pblMapClear(localSkipLinksMap);
     return 0;
@@ -291,7 +291,7 @@ BOOL kreadLink(const char* localPath, char* buffer, int bufferSize, BOOL makeAbs
     }
     tmp[readCount]=0;
     if (makeAbsolute && tmp[0]!='/') {
-        int len = strrchr(localPath, '/')-localPath;
+        int len = (int)(strrchr(localPath, '/')-localPath);
         memcpy(buffer, localPath, len);
         buffer[len+1]=0;
         safe_strcat(buffer, tmp, bufferSize);
@@ -317,7 +317,7 @@ BOOL followLinks(char* path, int pathSize, U32* isLink) {
         }
     }
 
-    len = strlen(path);
+    len = (int)strlen(path);
     for (i=0;i<len;i++) {
         if (path[i]=='/') {
             safe_strcpy(tmp, path, MAX_FILEPATH_LEN); // don't include path seperator
@@ -1243,9 +1243,9 @@ struct FsNode* allocNode(const char* localPath, const char* nativePath, struct F
     U32 nativeLen = 0;
 
     if (localPath)
-        localLen=strlen(localPath)+1;
+        localLen=(U32)strlen(localPath)+1;
     if (nativePath)
-        nativeLen=strlen(nativePath)+1;
+        nativeLen=(U32)strlen(nativePath)+1;
     result = (struct FsNode*)kalloc(sizeof(struct FsNode)+localLen+nativeLen, KALLOC_NODE);
     result->id = nodeId++;
     result->func = func;
@@ -1484,7 +1484,7 @@ struct fsZipInfo {
     U64 offset;
 };
 BOOL initFileSystem(const char* rootPath, const char* zipPath) {
-    int len = strlen(rootPath);
+    int len = (int)strlen(rootPath);
 
     pathSeperator = '/';
     if (rootPath[len-1]=='/')
@@ -1538,7 +1538,7 @@ BOOL initFileSystem(const char* rootPath, const char* zipPath) {
             
             zipInfo[i].offset = unzGetOffset64(zipfile);
             remotePathToLocal(zipInfo[i].filename);
-            filenameLen = strlen(zipInfo[i].filename);
+            filenameLen = (U32)strlen(zipInfo[i].filename);
             if (len>5 && strstr(zipInfo[i].filename+filenameLen-5, ".link")) {
                 U32 read;
 

@@ -440,7 +440,7 @@ char * tag,        /** tag used for memory leak detection */
 char * data        /** string to duplicate                */
 )
 {
-    int length = strlen( data ) + 1;
+    int length = (int)strlen( data ) + 1;
 
     if( !tag )
     {

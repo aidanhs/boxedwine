@@ -78,7 +78,7 @@ void startMicroCounter();
 #include "log.h"
 
 INLINE void safe_strcpy(char* dest, const char* src, int bufferSize) {
-    int len = strlen(src);
+    int len = (int)strlen(src);
     if (len+1>bufferSize) {
         kpanic("safe_strcpy failed to copy %s, buffer is %d bytes", src, bufferSize);
     }
@@ -86,7 +86,7 @@ INLINE void safe_strcpy(char* dest, const char* src, int bufferSize) {
 }
 
 INLINE void safe_strcat(char* dest, const char* src, int bufferSize) {
-    int len = strlen(src)+strlen(dest);
+    int len = (int)(strlen(src)+strlen(dest));
     if (len+1>bufferSize) {
         kpanic("safe_strcat failed to copy %s, buffer is %d bytes", src, bufferSize);
     }

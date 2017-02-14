@@ -423,7 +423,7 @@ int main(int argc, char **argv) {
         } else {
             pathSeperator = '/';
         }
-        len = strlen(base);
+        len = (int)strlen(base);
         if (base[len-1]!=pathSeperator) {
             base[len] = pathSeperator;
             base[len+1] = 0;

@@ -42,7 +42,7 @@ S64 buffer_getFilePointer(struct FsOpenNode* node) {
 }
 
 S64 buffer_seek(struct FsOpenNode* node, S64 pos) {
-    if (pos>strlen((char*)node->func->data))
+    if (pos>(S64)strlen((char*)node->func->data))
         pos = strlen((char*)node->func->data);
     return node->idata = (U32)pos;
 }
@@ -50,7 +50,7 @@ S64 buffer_seek(struct FsOpenNode* node, S64 pos) {
 U32 buffer_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     U32 pos = node->idata;
     if (pos+len>strlen((char*)node->func->data))
-        len = strlen((char*)node->func->data)-pos;
+        len = (U32)strlen((char*)node->func->data)-pos;
     memcopyFromNative(MMU_PARAM address, ((char*)node->func->data)+pos, len);
     return len;
 }

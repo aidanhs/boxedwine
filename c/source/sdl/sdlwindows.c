@@ -674,7 +674,7 @@ void showWnd(struct Wnd* wnd, U32 bShow) {
 }
 
 void setWndText(struct Wnd* wnd, const char* text) {
-    int len = strlen(text);
+    int len = (int)strlen(text);
     char* buf;
 
     if (wnd->text)

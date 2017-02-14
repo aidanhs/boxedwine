@@ -49,7 +49,7 @@ void destroyHashmap(struct KHashmap* hashMap) {
 // http://en.wikipedia.org/wiki/Jenkins_hash_function
 static U32 calculateHash(const char* key) {
     U32 hash, i;
-    U32 len = strlen(key);
+    U32 len = (int)strlen(key);
 
     for(hash = i = 0; i < len; ++i)
     {

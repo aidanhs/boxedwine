@@ -25,8 +25,8 @@ int endsWith(const char *str, const char *suffix)
 
     if (!str || !suffix)
         return 0;
-    lenstr = strlen(str);
-    lensuffix = strlen(suffix);
+    lenstr = (int)strlen(str);
+    lensuffix = (int)strlen(suffix);
     if (lensuffix >  lenstr)
         return 0;
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
@@ -34,7 +34,7 @@ int endsWith(const char *str, const char *suffix)
 
 void trimTrailingSpaces(char* path) {
     int i;
-    int len = strlen(path);
+    int len = (int)strlen(path);
     for (i=len-1;i>=0;i--) {
         if (path[i]==' ')
             path[i] = 0;
@@ -45,8 +45,8 @@ void trimTrailingSpaces(char* path) {
 
 void stringReplace(const char* searchStr, const char* replaceStr, char* str, int len) {
     char* p = strstr(str, searchStr);
-    int sLen = strlen(searchStr);
-    int rLen = strlen(replaceStr);
+    int sLen = (int)strlen(searchStr);
+    int rLen = (int)strlen(replaceStr);
 
     while (p) {
         memmove(p+rLen, p+sLen, strlen(p)-sLen+1);

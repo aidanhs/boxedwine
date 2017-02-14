@@ -30,7 +30,7 @@ U32 meminfoLen;
 
 BOOL meminfo_init(struct KProcess* process, struct FsOpenNode* node) {
     sprintf(meminfo, "MemTotal: %d kB\nMemFree: %d kB\n", getPageCount()<<2, getFreePageCount()<<2);
-    meminfoLen = strlen(meminfo)+1;
+    meminfoLen = (U32)strlen(meminfo)+1;
     node->idata = 0; // file pos
     return TRUE;
 }

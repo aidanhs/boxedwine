@@ -33,7 +33,7 @@ glDrawRangeElements_func ext_glDrawRangeElements;
 #define GL_FUNC(name) name
 #endif
 
-#define GL_LOG(name) klog(#name)
+#define GL_LOG(name)
 
 U32 getDataSize(U32 type) {
     switch (type) {

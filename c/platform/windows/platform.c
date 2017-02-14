@@ -81,7 +81,7 @@ int listNodes(struct FsNode* dir, struct FsNode** nodes, int maxCount) {
                 int len;
 
                 strcpy(tmp, findData.cFileName);
-                len = strlen(tmp);
+                len = (int)strlen(tmp);
                 if (!strcmp(tmp+len-5, ".link")) {
                     tmp[len-5]=0;
                 }

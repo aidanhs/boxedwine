@@ -501,9 +501,9 @@ void boxeddrv_GetClipboardData(struct CPU* cpu) {
         char* text = SDL_GetClipboardText();
         int len = 0;
         if (text)
-            len = strlen(text);
+            len = (int)strlen(text);
         if (format == CF_TEXT) {
-            if (len+1>ARG3)
+            if (len+1>(int)ARG3)
                 len = ARG3 - 1;
             memcopyFromNative(MMU_PARAM_CPU ARG2, text, len+1);
             EAX = len+1;

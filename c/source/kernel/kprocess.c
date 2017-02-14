@@ -281,7 +281,7 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
 }
 
 void writeStackString(MMU_ARG struct CPU* cpu, const char* s) {
-    int count = (strlen(s)+4)/4;
+    int count = (int)((strlen(s)+4)/4);
     int i;
 
     for (i=0;i<count;i++) {
@@ -292,7 +292,7 @@ void writeStackString(MMU_ARG struct CPU* cpu, const char* s) {
 
 void setupPath(struct KProcess* process, const char* str) {
     U32 i = 0;
-    U32 len = strlen(str);
+    U32 len = (U32)strlen(str);
     U32 pathIndex = 0;
     U32 charIndex = 0;
 
@@ -681,7 +681,7 @@ U32 getModuleEip(struct CPU* cpu, U32 eip) {
 }
 
 U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size) {
-    U32 len = strlen(thread->process->currentDirectory);
+    U32 len = (U32)strlen(thread->process->currentDirectory);
     if (len+1>size)
         return -K_ERANGE;
     writeNativeString(MMU_PARAM_THREAD buffer, thread->process->currentDirectory);
@@ -913,7 +913,7 @@ U32 readStringArray(MMU_ARG U32 address, const char** a, int size, unsigned int*
             kpanic("Too many env or arg: %d is max", size);
         safe_strcpy(tmp+tmpIndex, str, tmpSize-tmpIndex);
         a[*count]=tmp+tmpIndex;
-        tmpIndex+=strlen(str)+1;
+        tmpIndex+=(U32)strlen(str)+1;
         *count=*count+1;
     }
     return tmpIndex;
@@ -1394,7 +1394,7 @@ U32 allocPage(struct KProcess* process) {
 }
 
 void addString(struct KProcess* process, U32 index, const char* str) {
-    U32 len = strlen(str);
+    U32 len = (U32)strlen(str);
     if (index<NUMBER_OF_STRINGS) {
         if (!process->stringAddress) {
             process->stringAddress = allocPage(process);

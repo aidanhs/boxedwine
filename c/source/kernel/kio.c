@@ -498,7 +498,7 @@ U32 writeRecord(MMU_ARG U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const 
     U32 recordLen;
 
     if (is64) {
-        recordLen = 20+strlen(name);
+        recordLen = 20+(U32)strlen(name);
         recordLen=(recordLen+3) / 4 * 4;
         if (recordLen+len>count) {
             if (len==0)
@@ -511,7 +511,7 @@ U32 writeRecord(MMU_ARG U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const 
         writeb(MMU_PARAM dirp + 18, type);
         writeNativeString(MMU_PARAM dirp + 19, name);
     } else {
-        recordLen = 12+strlen(name);
+        recordLen = 12+(U32)strlen(name);
         recordLen=(recordLen+3) / 4 * 4;
         if (recordLen+len>count) {
             if (len==0)
@@ -586,7 +586,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
 
     // :TODO: move these to the virtual filesystem
     if (!strcmp("/proc/self/exe", s)) {
-        U32 len = strlen(thread->process->exe);
+        U32 len = (U32)strlen(thread->process->exe);
         if (len>bufSize)
             len=bufSize;
         memcopyFromNative(MMU_PARAM_THREAD buffer, thread->process->exe, len);
@@ -603,7 +603,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
             return -K_EINVAL;
         }
         openNode = fd->kobject->openFile;
-        len = strlen(openNode->node->path);
+        len = (int)strlen(openNode->node->path);
         if (len>(int)bufSize)
             len=bufSize;
         memcopyFromNative(MMU_PARAM_THREAD buffer, openNode->node->path, len);
@@ -615,7 +615,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
     if (!node || !node->func->exists(node))
         return -K_EINVAL;
     if (readLink(node, tmpPath, MAX_FILEPATH_LEN, FALSE)) {
-        U32 len = strlen(tmpPath);
+        U32 len = (U32)strlen(tmpPath);
         if (len>bufSize)
             len=bufSize;
         memcopyFromNative(MMU_PARAM_THREAD buffer, tmpPath, len);

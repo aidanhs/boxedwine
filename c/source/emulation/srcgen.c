@@ -107,7 +107,7 @@ void outfp(FILE* fp, const char* str) {
 }
 
 void out(struct GenData* data, const char* str) {
-    U32 len = strlen(str);
+    U32 len = (U32)strlen(str);
     if (data->sourceBufferPos+len>data->sourceBufferLen) {
         char* tmp = kalloc(data->sourceBufferLen*2, KALLOC_SRCGENBUFFER);
         strcpy(tmp, data->sourceBuffer);

@@ -555,7 +555,7 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
         if (todo>4096)
             todo = 4096;
         if (todo>ringbuf_capacity(s->connection->recvBuffer))
-            todo = ringbuf_capacity(s->connection->recvBuffer);
+            todo = (U32)ringbuf_capacity(s->connection->recvBuffer);
         memcopyToNative(MMU_PARAM_THREAD buffer, tmp, todo);
         ringbuf_memcpy_into(s->connection->recvBuffer, tmp, todo);
         buffer+=todo;
@@ -615,7 +615,7 @@ U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buf
         if (todo > 4096)
             todo = 4096;
         if (todo > ringbuf_bytes_used(s->recvBuffer))
-            todo = ringbuf_bytes_used(s->recvBuffer);
+            todo = (U32)ringbuf_bytes_used(s->recvBuffer);
 
         ringbuf_memcpy_from(tmp, s->recvBuffer, todo);
         
@@ -956,7 +956,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
         } else {
             return -K_EPROTOTYPE;
         }
-        nativeSocket = socket(AF_INET, nativeType, nativeProtocol);
+        nativeSocket = (S32)socket(AF_INET, nativeType, nativeProtocol);
         if (nativeSocket<0) {
             return -K_EPROTOTYPE;
         } else {
@@ -1198,14 +1198,32 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
     if (s->nativeSocket) {
         struct sockaddr addr;
         U32 addrlen = sizeof(struct sockaddr);
-        result = accept(s->nativeSocket, &addr, &addrlen);
+        S32 result = (S32)accept(s->nativeSocket, &addr, &addrlen);
         if (result>=0) {
+            struct KSocket* newSocket = allocSocket();
+            struct KObject* kSocket = allocKObject(&nativesocketAccess, KTYPE_SOCK, 0, s);
+            struct KFileDescriptor* fd = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
+            closeKObject(kSocket);
+
+            newSocket->pid = thread->process->id;
+            newSocket->domain = s->domain;
+            newSocket->protocol = s->protocol;
+            newSocket->type = s->type;
+            newSocket->nativeSocket = result;
+#ifdef WIN32
+            {
+                u_long mode = 1;
+                ioctlsocket(result, FIONBIO, &mode);
+            }
+#else
+            fcntl(result, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) | O_NONBLOCK);
+#endif
             if (address)
                 memcopyFromNative(MMU_PARAM_THREAD address, (char*)&addr, addrlen);
             if (len) {
                 writed(MMU_PARAM_THREAD len, addrlen);
             }
-            return result;
+            return fd->handle;
         }
         return handleNativeSocketError(thread, s, 0);
     }
@@ -1271,7 +1289,7 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
         if (len>sizeof(s->destAddress.data))
             len = sizeof(s->destAddress.data);
         memcopyFromNative(MMU_PARAM_THREAD address + 2, s->destAddress.data, len);
-        writed(MMU_PARAM_THREAD plen, 2 + strlen(s->destAddress.data) + 1);
+        writed(MMU_PARAM_THREAD plen, 2 + (U32)strlen(s->destAddress.data) + 1);
     }
     else if (s->nativeSocket && len<=256) {
         char buf[256];
@@ -1319,7 +1337,7 @@ U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     if (len>sizeof(s->destAddress.data))
         len = sizeof(s->destAddress.data);
     memcopyFromNative(MMU_PARAM_THREAD address + 2, s->destAddress.data, len);
-    writed(MMU_PARAM_THREAD plen, 2 + strlen(s->destAddress.data) + 1);
+    writed(MMU_PARAM_THREAD plen, 2 + (U32)strlen(s->destAddress.data) + 1);
     return 0;
 }
 
