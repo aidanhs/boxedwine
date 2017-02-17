@@ -36,9 +36,10 @@
 #define ADDRESS_PROCESS_FRAME_BUFFER	0xF8000
 #define ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS 0xF8000000
 
-#ifdef USE_MMU
 struct MapedFiles {
+#ifndef HAS_64BIT_MMU
     struct MappedFileCache* systemCacheEntry;
+#endif
     struct KObject* file;
     U32 refCount;
     U32 address;
@@ -46,14 +47,6 @@ struct MapedFiles {
     U64 offset;
 };
 #define MAX_MAPPED_FILE 1024
-#else
-struct MappedMemory {
-    U8* allocatedAddress;
-    U8* address;
-    U32 len;
-    char* name;
-};
-#endif
 #define MAX_SIG_ACTIONS 64
 #define MAX_PATHS 10
 #define K_SIG_INFO_SIZE 10
@@ -85,15 +78,8 @@ struct KProcess {
     U32 signaled;
     U32 exitCode;
     BOOL terminated;
-#ifdef USE_MMU
-    struct Memory* memory;
+    struct Memory* memory; 
     struct MapedFiles mappedFiles[MAX_MAPPED_FILE];
-#else
-    PblList* mmapedMemory;
-    U32 reallocAddress;
-    U32 reallocLen;
-    U32 reallocOffset;
-#endif
     char currentDirectory[MAX_FILEPATH_LEN];
     U32 brkEnd;
     struct KFileDescriptor** fds;
@@ -110,11 +96,9 @@ struct KProcess {
     U32 shms[MAX_SHM][MAX_SHM_ATTACH];
     struct KProcess* next;
     struct KThread* waitingThread;
-#ifdef USE_MMU
     U32 strings[NUMBER_OF_STRINGS];
     U32 stringAddress;
     U32 stringAddressIndex;
-#endif
     U32 loaderBaseAddress;
     U32 phdr;
     U32 phnum;
@@ -144,6 +128,11 @@ void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID
 void signalALRM(struct KProcess* process);
 void signalIllegalInstruction(struct KThread* thread, int code);
 void closeMemoryMapped(struct MapedFiles* mapped);
+
+#ifdef HAS_64BIT_MMU
+void allocNativeMemory(struct Memory* memory, U32 page, U32 pageCount, U32 flags);
+void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount);
+#endif
 
 // returns tid
 U32 processAddThread(struct KProcess* process, struct KThread* thread);

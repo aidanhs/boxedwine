@@ -38,7 +38,7 @@ static struct KArray processes;
 //static PblMap* mappedFileCache;
 static struct KHashmap mappedFileCache;
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 static U32 callbackPage;
 #endif
 
@@ -55,7 +55,7 @@ void initSystem() {
 }
 
 void addCallback(void (OPCALL *func)(struct CPU*, struct Op*)) {
-    U32 funcAddress = (U32)func;
+    U64 funcAddress = (U64)func;
     U8* address = callbackAddress+callbackPos*CALLBACK_OP_SIZE;
     callbacks[callbackPos++] = (U32)address;
     
@@ -70,9 +70,19 @@ void addCallback(void (OPCALL *func)(struct CPU*, struct Op*)) {
     *address=(U8)(funcAddress >> 16);
     address++;
     *address=(U8)(funcAddress >> 24);
+    if (sizeof(func)==8) {
+        address++;
+        *address=(U8)(funcAddress >> 32);
+        address++;
+        *address=(U8)(funcAddress >> 40);
+        address++;
+        *address=(U8)(funcAddress >> 48);
+        address++;
+        *address=(U8)(funcAddress >> 56);
+    }
 }
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 void initCallbacksInProcess(struct KProcess* process) {
     U32 page = CALL_BACK_ADDRESS >> PAGE_SHIFT;
 
@@ -90,12 +100,17 @@ void initCallbacks() {
 }
 #else
 void initCallbacks() {
-    callbackAddress = kalloc(4096);
+    callbackAddress = kalloc(4096, 0);
     addCallback(onExitSignal);
+}
+void initCallbacksInProcess(struct KProcess* process) {
+    U32 page = CALL_BACK_ADDRESS >> PAGE_SHIFT;
+    allocNativeMemory(process->memory, page, 1, PAGE_READ|PAGE_EXEC);
+    memcpy(getNativeAddress(process->memory, CALL_BACK_ADDRESS), callbackAddress, 4096);
 }
 #endif
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 struct MappedFileCache* getMappedFileInCache(const char* name) {
     return (struct MappedFileCache*)getHashmapValue(&mappedFileCache, name);
     //struct MappedFileCache** result = pblMapGet(mappedFileCache, (void*)name, strlen(name), NULL);
@@ -332,7 +347,11 @@ void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent) {
 
     klog("%*s %-20s %-40s %08x / %08x", indent, "", name?name:"Unknown", functionName, eip, moduleEip);
     
-    if (cpu->memory->read[ebp >> 12]) {
+#ifdef HAS_64BIT_MMU 
+    if (cpu->memory->flags[ebp >> PAGE_SHIFT] & PAGE_IN_RAM) {
+#else
+    if (cpu->memory->read[ebp >> PAGE_SHIFT]) {
+#endif
         prevEbp = readd(MMU_PARAM_CPU ebp); 
         returnEip = readd(MMU_PARAM_CPU ebp+4); 
         if (prevEbp==0)

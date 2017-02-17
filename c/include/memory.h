@@ -30,82 +30,94 @@
 
 extern char tmp64k[];
 
-#ifdef USE_MMU
 struct Memory {
-    struct Page* mmu[NUMBER_OF_PAGES];
     U8 flags[NUMBER_OF_PAGES];
+    U8 committed[NUMBER_OF_PAGES];
+    struct KProcess* process;
+    U32 allocated;
+#ifndef HAS_64BIT_MMU
+    struct Page* mmu[NUMBER_OF_PAGES];
     U32 read[NUMBER_OF_PAGES];
     U32 write[NUMBER_OF_PAGES];
     U32 ramPage[NUMBER_OF_PAGES];
-    struct KProcess* process;
+#else    
+    U64 id;    
+#endif
 #ifdef LOG_OPS
     U32 log;
 #endif
 };
-#endif
 
-#ifdef USE_MMU
 #define MMU_ARG struct Memory* memory,
 #define MMU_PARAM memory,
 #define MMU_PARAM_THREAD thread->process->memory,
 #define MMU_PARAM_CPU cpu->memory,
 
+#ifdef HAS_64BIT_MMU
+INLINE void* getNativeAddress(MMU_ARG U32 address) {
+    return (void*)(address | memory->id);
+}
+INLINE U32 getHostAddress(MMU_ARG void* address) {
+    return (U32)address;
+}
+INLINE U8 readb(MMU_ARG U32 address) {
+#ifdef LOG_OPS
+    U8 result = *(U8*)getNativeAddress(MMU_PARAM address);
+    if (memory->log)
+        fprintf(logFile, "readb %X @%X\n", result, address);
+    return result;
+#else
+    return *(U8*)getNativeAddress(MMU_PARAM address);
+#endif
+}
+INLINE void writeb(MMU_ARG U32 address, U8 value) {
+#ifdef LOG_OPS
+    if (memory->log)
+        fprintf(logFile, "writeb %X @%X\n", value, address);
+#endif
+    *(U8*)getNativeAddress(MMU_PARAM address) = value;
+}
+INLINE U16 readw(MMU_ARG U32 address) {
+#ifdef LOG_OPS
+    U16 result = *(U16*)getNativeAddress(MMU_PARAM address);
+    if (memory->log)
+        fprintf(logFile, "readw %X @%X\n", result, address);
+    return result;
+#else
+    return *(U16*)getNativeAddress(MMU_PARAM address);
+#endif
+}
+INLINE void writew(MMU_ARG U32 address, U16 value) {
+#ifdef LOG_OPS
+    if (memory->log)
+        fprintf(logFile, "writew %X @%X\n", value, address);
+#endif
+    *(U16*)getNativeAddress(MMU_PARAM address) = value;
+}
+INLINE U32 readd(MMU_ARG U32 address) {
+#ifdef LOG_OPS
+    U32 result = *(U32*)getNativeAddress(MMU_PARAM address);
+    if (memory->log)
+        fprintf(logFile, "readd %X @%X\n", result, address);
+    return result;
+#else
+    return *(U32*)getNativeAddress(MMU_PARAM address);
+#endif
+}
+INLINE void writed(MMU_ARG U32 address, U32 value) {
+#ifdef LOG_OPS
+    if (memory->log)
+        fprintf(logFile, "writed %X @%X\n", value, address);
+#endif
+    *(U32*)getNativeAddress(MMU_PARAM address) = value;
+}
+#else
 U8 readb(MMU_ARG U32 address);
 void writeb(MMU_ARG U32 address, U8 value);
 U16 readw(MMU_ARG U32 address);
 void writew(MMU_ARG U32 address, U16 value);
 U32 readd(MMU_ARG U32 address);
 void writed(MMU_ARG U32 address, U32 value);
-#else
-#define MMU_ARG
-#define MMU_PARAM 
-#define MMU_PARAM_THREAD
-#define MMU_PARAM_CPU
-
-INLINE U8 readb(MMU_ARG U32 address) {
-    return *(U8*)address;
-}
-
-INLINE void writeb(MMU_ARG U32 address, U8 value) {
-    *(U8*)address = value;
-}
-
-INLINE U16 readw(MMU_ARG U32 address) {
-#ifdef UNALIGNED_MEMORY
-    return (*(U8*)address) | ((*(U8*)address + 1) << 8);
-#else
-    return *(U16*)address;
-#endif
-}
-
-INLINE void writew(MMU_ARG U32 address, U16 value) {
-#ifdef UNALIGNED_MEMORY
-    *(U8*)address = (U8)value;
-    *(U8*)(address + 1) = (U8)(value >> 8);
-#else
-    *(U16*)address = value;
-#endif
-}
-
-INLINE U32 readd(MMU_ARG U32 address) {
-#ifdef UNALIGNED_MEMORY
-    return (*(U8*)address) | ((*(U8*)address + 1) << 8) | ((*(U8*)address + 2) << 16) | ((*(U8*)address + 3) << 24);
-#else
-    return *(U32*)address;
-#endif
-}
-
-INLINE void writed(MMU_ARG U32 address, U32 value) {
-#ifdef UNALIGNED_MEMORY
-    *(U8*)address = (U8)value;
-    *(U8*)(address + 1) = (U8)(value >> 8);
-    *(U8*)(address + 2) = (U8)(value >> 16);
-    *(U8*)(address + 3) = (U8)(value >> 24);
-#else
-    *(U32*)address = value;
-#endif
-}
-
 #endif
 
 INLINE U64 readq(MMU_ARG U32 address) {
@@ -121,7 +133,7 @@ void zeroMemory(MMU_ARG U32 address, int len);
 void readMemory(MMU_ARG U8* data, U32 address, int len);
 void writeMemory(MMU_ARG U32 address, U8* data, int len);
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 extern struct Page invalidPage;
 
 U8 nopermission_readb(struct Memory* memory, U32 address);
@@ -131,14 +143,14 @@ void nopermission_writew(struct Memory* memory, U32 address, U16 value);
 U32 nopermission_readd(struct Memory* memory, U32 address);
 void nopermission_writed(struct Memory* memory, U32 address, U32 value);
 
+#endif
+
 struct Memory* allocMemory();
 void initMemory(struct Memory* memory);
-void resetMemory(struct Memory* memory);
 void cloneMemory(struct Memory* memory, struct Memory* from);
 void freeMemory(struct Memory* memory);
 void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
-
-#endif
+void resetMemory(struct Memory* memory);
 
 // values in the upper byte of data
 #define PAGE_READ 0x01
@@ -158,13 +170,17 @@ void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
 #define IS_PAGE_SHARED(flags) (flags & PAGE_SHARED)
 #define IS_PAGE_IN_RAM(data) (data & PAGE_IN_RAM)
 
-#ifdef USE_MMU
-// data is only used if allocRAM is FALSE
-void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data);
-
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeMapped);
 // should be called after findFirstAvailablePage, it will not verify that the pages are UNRESERVED before marking them RESERVED
 void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 status);
+
+#ifdef HAS_64BIT_MMU
+void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions);
+void reserveNativeMemory(struct Memory* memory);
+void releaseNativeMemory(struct Memory* memory);
+#else
+// data is only used if allocRAM is FALSE
+void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 data);
 
 U8* getPhysicalAddress(struct Memory* memory, U32 address);
 

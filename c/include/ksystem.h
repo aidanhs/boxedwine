@@ -38,9 +38,7 @@ extern U32 screenCy;
 
 void initSystem();
 void initCallbacks();
-#ifdef USE_MMU
 void initCallbacksInProcess(struct KProcess* process);
-#endif
 
 // returns pid
 U32 addProcess(struct KProcess* process);
@@ -63,7 +61,7 @@ void syscallToString(struct CPU* cpu, char* buffer);
 void runThreadSlice(struct KThread* thread);
 void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent);
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 struct MappedFileCache {
     U32* ramPages;
     U32 pageCount;

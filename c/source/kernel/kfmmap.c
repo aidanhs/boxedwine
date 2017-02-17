@@ -27,7 +27,7 @@
 #include <string.h>
 
 // :TODO: what about sync'ing the writes back to the file?
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 static void ondemmandFile(struct Memory* memory, U32 address) {
     U32 page = address >> PAGE_SHIFT;
     U32 flags = memory->flags[page];

@@ -62,9 +62,7 @@ struct CPU {
     U32		segValue[7]; // index 6 is for 0, used in LEA instruction	
     U32		flags;
     struct Reg		eip;	
-#ifdef USE_MMU
     struct Memory* memory;
-#endif
     struct KThread* thread;
     struct Reg     src;
     struct Reg     dst;

@@ -145,5 +145,301 @@ int getPixelFormats(PixelFormat* pfd, int maxPfs) {
             fprintf(stderr, "Pixel Format: %d bit (%d%d%d%d) %s:%s depth=%d stencil=%d accum=%d\n", p.cColorBits, p.cRedBits, p.cBlueBits, p.cGreenBits, p.cAlphaBits, (p.dwFlags & K_PFD_GENERIC_FORMAT)?"not accelerated":"accelerated", (p.dwFlags & K_PFD_DOUBLEBUFFER)?"double buffered":"single buffered", p.cDepthBits, p.cStencilBits, p.cAccumBits);
         }
     }
+    if (result==1) {
+        for (i=1;i<=count && result<maxPfs;i++) {
+            DescribePixelFormat(hdc, i, sizeof(p), &p);
+            if ((p.dwFlags & PFD_SUPPORT_OPENGL) && p.cColorBits<=32) {
+                pfd[result].nSize = 40;
+                pfd[result].nVersion = 1;
+                pfd[result].dwFlags = p.dwFlags;
+                pfd[result].iPixelType = p.iPixelType;
+                pfd[result].cColorBits = p.cColorBits;
+                pfd[result].cRedBits = p.cRedBits;
+                pfd[result].cRedShift = p.cRedShift;
+                pfd[result].cGreenBits = p.cGreenBits;
+                pfd[result].cGreenShift = p.cGreenShift;
+                pfd[result].cBlueBits = p.cBlueBits;
+                pfd[result].cBlueShift = p.cBlueShift;
+                pfd[result].cAlphaBits = p.cAlphaBits;
+                pfd[result].cAlphaShift = p.cAlphaShift;
+                pfd[result].cAccumBits = p.cAccumBits;
+                pfd[result].cAccumRedBits = p.cAccumRedBits;
+                pfd[result].cAccumGreenBits = p.cAccumGreenBits;
+                pfd[result].cAccumBlueBits = p.cAccumBlueBits;
+                pfd[result].cAccumAlphaBits = p.cAccumAlphaBits;
+                pfd[result].cDepthBits = p.cDepthBits;
+                pfd[result].cStencilBits = p.cStencilBits;
+                pfd[result].cAuxBuffers = p.cAuxBuffers;
+                pfd[result].iLayerType = p.iLayerType;
+                pfd[result].bReserved = p.bReserved;
+                pfd[result].dwLayerMask = p.dwLayerMask;
+                pfd[result].dwVisibleMask = p.dwVisibleMask;
+                pfd[result].dwDamageMask = p.dwDamageMask;
+                result++;
+                fprintf(stderr, "Pixel Format: %d bit (%d%d%d%d) %s:%s depth=%d stencil=%d accum=%d\n", p.cColorBits, p.cRedBits, p.cBlueBits, p.cGreenBits, p.cAlphaBits, (p.dwFlags & K_PFD_GENERIC_FORMAT)?"not accelerated":"accelerated", (p.dwFlags & K_PFD_DOUBLEBUFFER)?"double buffered":"single buffered", p.cDepthBits, p.cStencilBits, p.cAccumBits);
+            }
+        }
+    }
     return result;
 }
+
+#ifdef HAS_64BIT_MMU
+#include "kmmap.h"
+#include "kerror.h"
+#include "kfiledescriptor.h"
+#include "memory.h"
+#include "kprocess.h"
+#include "kthread.h"
+#include "kobject.h"
+#include "kobjectaccess.h"
+
+static U32 gran = 0x10;
+
+void allocNativeMemory(struct Memory* memory, U32 page, U32 pageCount, U32 flags) {
+    U32 granPage;
+    U32 granCount;
+    U32 i;    
+
+    if (!gran) {
+         SYSTEM_INFO si;
+         GetSystemInfo(&si);
+         gran = si.dwPageSize >> PAGE_SHIFT;
+    }
+    granPage = page & ~(gran-1);
+    granCount = ((gran - 1) + pageCount + (page - granPage)) / gran;
+    for (i=0; i < granCount; i++) {
+        if (!memory->committed[granPage]) {
+            U32 j;
+
+            if (!VirtualAlloc(getNativeAddress(memory, granPage << PAGE_SHIFT), gran << PAGE_SHIFT, MEM_COMMIT, PAGE_READWRITE)) {
+                LPSTR messageBuffer = NULL;
+                size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+                kpanic("failed to commit memory: %s", messageBuffer);
+            }
+            memory->allocated+=(gran << PAGE_SHIFT);
+            for (j=0;j<gran;j++)
+                memory->committed[granPage+j] = 1;
+        }
+        granPage+=gran;
+    }
+    for (i=0;i<pageCount;i++) {
+        memory->flags[page+i] = (flags & PAGE_PERMISSION_MASK);
+        memory->flags[page+i] |= PAGE_IN_RAM;
+        memory->flags[page+i] &= ~PAGE_RESERVED;        
+    }
+    memset(getNativeAddress(memory, page << PAGE_SHIFT), 0, pageCount << PAGE_SHIFT);
+    //printf("allocated %X - %X\n", page << PAGE_SHIFT, (page+pageCount) << PAGE_SHIFT);
+}
+
+void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
+    U32 i;
+    U32 granPage;
+    U32 granCount;
+
+    if (!gran) {
+         SYSTEM_INFO si;
+         GetSystemInfo(&si);
+         gran = si.dwPageSize >> PAGE_SHIFT;
+    }
+
+    for (i=0;i<pageCount;i++) {
+        process->memory->flags[page+i] = 0;
+    }
+
+    granPage = page & ~(gran-1);
+    granCount = ((gran - 1) + pageCount + (page - granPage)) / gran;
+    for (i=0; i < granCount; i++) {
+        U32 j;
+        BOOL inUse = FALSE;
+
+        for (j=0;j<gran;j++) {
+            if (process->memory->flags[granPage+j] & PAGE_IN_RAM) {
+                inUse = TRUE;
+            }
+        }
+        if (!inUse) {
+            if (!VirtualFree(getNativeAddress(process->memory, granPage << PAGE_SHIFT), gran, MEM_DECOMMIT)) {
+                LPSTR messageBuffer = NULL;
+                size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+                kpanic("failed to release memory: %s", messageBuffer);
+            }
+            for (j=0;j<gran;j++) {
+                process->memory->committed[granPage+j]=0;
+            }
+            process->memory->allocated-=(gran << PAGE_SHIFT);
+        }
+        granPage+=gran;
+    }
+}
+
+static U64 nextMemoryId = 1;
+
+void reserveNativeMemory(struct Memory* memory) {    
+    nextMemoryId++;
+    memory->id = nextMemoryId << 32;
+    while (VirtualAlloc(getNativeAddress(memory, 0), 0x100000000l, MEM_RESERVE, PAGE_READWRITE)==0) {
+        nextMemoryId++;
+        memory->id = nextMemoryId << 32;
+    }
+}
+
+void releaseNativeMemory(struct Memory* memory) {
+    if (!VirtualFree(getNativeAddress(memory, 0), 0, MEM_DECOMMIT)) {
+        LPSTR messageBuffer = NULL;
+        size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+        kpanic("failed to release memory: %s", messageBuffer);
+    }
+    memset(memory->flags, 0, sizeof(memory->flags));
+    memset(memory->committed, 0, sizeof(memory->committed));
+    memory->allocated = 0;
+}
+
+U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
+    BOOL shared = (flags & K_MAP_SHARED)!=0;
+    BOOL priv = (flags & K_MAP_PRIVATE)!=0;
+    BOOL read = (prot & K_PROT_READ)!=0;
+    BOOL write = (prot & K_PROT_WRITE)!=0;
+    BOOL exec = (prot & K_PROT_EXEC)!=0;
+    U32 pageStart = addr >> PAGE_SHIFT;
+    U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
+    U32 permissions = PAGE_MAPPED;
+        
+    struct KFileDescriptor* fd = 0;
+    U32 i;
+
+    if ((shared && priv) || (!shared && !priv)) {
+        return -K_EINVAL;
+    }
+
+    if (!(flags & K_MAP_ANONYMOUS) && fildes>=0) {
+        fd = getFileDescriptor(thread->process, fildes);
+        if (fd == 0) {
+            return -K_EBADF;
+        }
+        if (!fd->kobject->access->canMap(fd->kobject)) {
+            return -K_EACCES;
+        }
+        if (len==0 || (off & 0xFFF)!=0) {
+            return -K_EINVAL;
+        }
+        if ((!canReadFD(fd) && read) || (!priv && (!canWriteFD(fd) && write))) {
+            return -K_EACCES;
+        }
+    }        
+    if (flags & K_MAP_FIXED) {
+        if (addr & (PAGE_SIZE-1)) {
+            return -K_EINVAL;
+        }
+    } else {		
+        if (pageStart + pageCount> ADDRESS_PROCESS_MMAP_START)
+            return -K_ENOMEM;
+        if (pageStart == 0)
+            pageStart = ADDRESS_PROCESS_MMAP_START;
+        if (!findFirstAvailablePage(MMU_PARAM_THREAD pageStart, pageCount, &pageStart, addr!=0)) {
+            // :TODO: what erro
+            return -K_EINVAL;
+        }
+        if (addr!=0 && pageStart+pageCount> ADDRESS_PROCESS_MMAP_START)
+            return -K_ENOMEM;
+        addr = pageStart << PAGE_SHIFT;
+    }
+    if (fd) {
+        U32 result = fd->kobject->access->map(MMU_PARAM_THREAD fd->kobject, addr, len, prot, flags, off);
+        if (result) {
+            return result;
+        }
+    }
+    for (i=0;i<pageCount;i++) {
+        // This will prevent the next anonymous mmap from using this range
+        if (thread->process->memory->flags[i + pageStart] == 0) {
+            thread->process->memory->flags[i + pageStart] = PAGE_RESERVED;
+        }
+        thread->process->memory->flags[i + pageStart] = PAGE_MAPPED;
+    }
+    if (write)
+        permissions|=PAGE_WRITE;
+    if (read)
+        permissions|=PAGE_READ;
+    if (exec)
+        permissions|=PAGE_EXEC;
+    if (shared)
+        permissions|=PAGE_SHARED;    
+    if (fd) {	
+        struct KProcess* process = thread->process;
+        int index = -1;
+
+        for (i=0;i<MAX_MAPPED_FILE;i++) {
+            if (!process->mappedFiles[i].refCount) {
+                index = i;
+                break;
+            }
+        }
+        if (index<0) {
+            kwarn("MAX_MAPPED_FILE is not large enough");
+        } else {
+            process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
+            process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
+            process->mappedFiles[index].offset = off;
+            process->mappedFiles[index].refCount = 0;
+            process->mappedFiles[index].file = fd->kobject;
+            process->mappedFiles[index].file->refCount++;
+        
+        }
+        fd->kobject->openFile->func->seek(fd->kobject->openFile, off);
+        allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions);
+        fd->kobject->openFile->func->read(MMU_PARAM_THREAD fd->kobject->openFile, addr, len);        
+    } else if (read || write || exec) {
+        allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions);
+    }
+    return addr;
+}
+
+U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
+    BOOL read = (prot & K_PROT_READ)!=0;
+    BOOL write = (prot & K_PROT_WRITE)!=0;
+    BOOL exec = (prot & K_PROT_EXEC)!=0;
+    U32 pageStart = address >> PAGE_SHIFT;
+    U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
+    struct Memory* memory = thread->process->memory;
+    U32 permissions = 0;
+    U32 i;
+
+    if (write)
+        permissions|=PAGE_WRITE;
+    if (read)
+        permissions|=PAGE_READ;
+    if (exec)
+        permissions|=PAGE_EXEC;
+
+    for (i=pageStart;i<pageStart+pageCount;i++) {
+        if (!(memory->flags[i] & PAGE_IN_RAM) && (write || read || exec)) {
+            allocPages(MMU_PARAM_THREAD i, 1, permissions);
+        }        
+    }
+    return 0;
+}
+
+#include "kthread.h"
+#include "ksystem.h"
+extern struct KThread* currentThread;
+void seg_mapper(struct Memory* memory, U32 address) ;
+
+int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
+{
+    if (code == EXCEPTION_ACCESS_VIOLATION) {
+        U32 address = getHostAddress(currentThread->process->memory, ep->ExceptionRecord->ExceptionAddress);
+        seg_mapper(currentThread->process->memory, address);
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void platformRunThreadSlice(struct KThread* thread) {
+    __try {
+        runThreadSlice(thread);
+    } __except(seh_filter(GetExceptionCode(), GetExceptionInformation())) {
+        thread->cpu.nextBlock = 0;
+        thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
+    }
+}
+#endif

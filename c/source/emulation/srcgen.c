@@ -931,11 +931,7 @@ void OPCALL jump(struct CPU* cpu, struct Op* op);
 void OPCALL firstOp(struct CPU* cpu, struct Op* op);
 void OPCALL restoreOps(struct CPU* cpu, struct Op* op);
 
-#ifdef USE_MMU
 #define MMU_PARAM_DATA data->cpu->memory,
-#else
-#define MMU_PARAM_DATA 
-#endif
 
 void addBlockToData(struct GenData* data, struct Block* block) {
     struct Op* op = block->ops;
@@ -6854,20 +6850,12 @@ void gen2ff(struct GenData* data, struct Op* op) {
     } else if (op->func == jmpNear32_mem16) {
         out(data, "cpu->eip.u32 = readd(MMU_PARAM_CPU ");
         out(data, getEaa16(op));
-#ifdef USE_MMU
         out(data, ");");
-#else
-        out(data, "); if (cpu->eip.u32 >= cpu->thread->process->reallocAddress && cpu->eip.u32< cpu->thread->process->reallocAddress + cpu->thread->process->reallocLen) {cpu->eip.u32 += cpu->thread->process->reallocOffset;}");
-#endif
         out(data, " CYCLES(4); cpu->nextBlock = getBlock(cpu);");
     } else if (op->func == jmpNear32_mem32) {
         out(data, "cpu->eip.u32 = readd(MMU_PARAM_CPU ");
         out(data, getEaa32(op));
-#ifdef USE_MMU
         out(data, ");");
-#else
-        out(data, "); if (cpu->eip.u32 >= cpu->thread->process->reallocAddress && cpu->eip.u32< cpu->thread->process->reallocAddress + cpu->thread->process->reallocLen) {cpu->eip.u32 += cpu->thread->process->reallocOffset;}");
-#endif
         out(data, " CYCLES(4); cpu->nextBlock = getBlock(cpu);");
     } else if (op->func == pushEd_reg) {
         out(data, "push32(cpu, ");
@@ -8721,7 +8709,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
             return;
         }
         for (i=0;i<op->eipCount;i++) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
             if (!cpu->memory->read[data->ip >> 12])
                 return;
 #endif
@@ -8786,7 +8774,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(ESI);
         OUT_DEFINE(EDI);
         OUT_DEFINE(FMASK_ALL);
-        out(data, "#ifdef USE_MMU\n");
+        out(data, "#ifndef HAS_64BIT_MMU\n");
         out(data, "#define MMU_ARG struct Memory* memory,\n");
         out(data, "#define MMU_PARAM memory,\n");
         out(data, "#define MMU_PARAM_CPU cpu->memory,\n");
@@ -8871,7 +8859,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "struct user_desc {U32  entry_number;U32 base_addr;U32  limit;union {struct {U32  seg_32bit:1;U32  contents:2;U32  read_exec_only:1;U32  limit_in_pages:1;U32  seg_not_present:1;U32  useable:1;};U32 flags;};};\n");
 
         out(data, "struct CPU {struct Reg reg[9]; U8* reg8[8]; U32 segAddress[7]; U32 segValue[7]; U32 flags; struct Reg eip;");
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
         out(data, "struct Memory* memory;");
 #endif
         out(data, "struct KThread* thread; struct Reg src; struct Reg dst; struct Reg dst2; struct Reg result; struct LazyFlags* lazyFlags; int df; U32 oldcf; U32 big; struct FPU fpu; struct Block* nextBlock; struct Block* currentBlock; U64 timeStampCounter; U32 blockCounter; U32 blockInstructionCount; BOOL log; U32 cpl; U32 stackMask; U32 stackNotMask; U32 cr0;};\n");

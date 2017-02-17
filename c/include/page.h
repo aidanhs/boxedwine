@@ -21,7 +21,7 @@
 
 #include "platform.h"
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 struct Memory;
 
 struct Page {

@@ -414,7 +414,7 @@ void fbSetupScreen() {
     fb_fix_screeninfo.smem_len = fb_fix_screeninfo.line_length*fb_var_screeninfo.yres_virtual;	
 }
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 static U8 fb_readb(MMU_ARG U32 address) {	
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
@@ -467,11 +467,7 @@ BOOL fb_init(struct KProcess* process, struct FsOpenNode* node) {
 
         fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
         fb_fix_screeninfo.type = 0; // FB_TYPE_PACKED_PIXELS
-#ifdef USE_MMU
         fb_fix_screeninfo.smem_start = ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS;		
-#else
-        fb_fix_screeninfo.smem_start = 4 * 1024 * 1024;
-#endif
         fb_var_screeninfo.xres = screenCx;
         fb_var_screeninfo.yres = screenCy;
         fb_var_screeninfo.xres_virtual = screenCx;
@@ -588,7 +584,7 @@ BOOL fb_isReadReady(struct FsOpenNode* node) {
 }
 
 U32 fb_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     U32 pageStart = fb_fix_screeninfo.smem_start >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
     U32 i;
@@ -606,6 +602,7 @@ U32 fb_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 
         memory->mmu[i+pageStart]=&fbPage;
     }
 #endif
+    kpanic("frame buffer not implemented for HAS_64BIT_MMU");
     return fb_fix_screeninfo.smem_start;
 }
 

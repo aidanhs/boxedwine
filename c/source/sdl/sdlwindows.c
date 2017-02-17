@@ -842,9 +842,8 @@ int sdlMouseMouse(int x, int y) {
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
-#ifdef USE_MMU
                 struct Memory* memory = process->memory;
-#endif               
+
                 writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
                 writeLittleEndian_4(MMU_PARAM fd, x); // dx
                 writeLittleEndian_4(MMU_PARAM fd, y); // dy
@@ -871,9 +870,7 @@ int sdlMouseWheel(int amount, int x, int y) {
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
-#ifdef USE_MMU
                 struct Memory* memory = process->memory;
-#endif
                 writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
                 writeLittleEndian_4(MMU_PARAM fd, x); // dx
                 writeLittleEndian_4(MMU_PARAM fd, y); // dy
@@ -900,9 +897,7 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
-#ifdef USE_MMU
                 struct Memory* memory = process->memory;
-#endif
                 U32 flags = MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE;
 
                 if (down) {
@@ -1115,9 +1110,8 @@ int sdlKey(U32 key, U32 down) {
             if (fd) {
                 U16 vKey = 0;
                 U16 scan = 0;
-#ifdef USE_MMU
                 struct Memory* memory = process->memory;
-#endif
+
                 U32 flags = 0;
                 if (!down) 
                     flags|=KEYEVENTF_KEYUP;

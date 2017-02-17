@@ -41,6 +41,7 @@ U32 syscall_mlock(struct KThread* thread, U32 addr, U32 len) {
     return 0;
 }
 
+#ifndef HAS_64BIT_MMU
 U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
     BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
@@ -76,7 +77,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return -K_EINVAL;
         }
     } else {		
-#ifdef USE_MMU
         if (pageStart + pageCount> ADDRESS_PROCESS_MMAP_START)
             return -K_ENOMEM;
         if (pageStart == 0)
@@ -87,8 +87,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         }
         if (addr!=0 && pageStart+pageCount> ADDRESS_PROCESS_MMAP_START)
             return -K_ENOMEM;
-        addr = pageStart << PAGE_SHIFT;
-#endif		
+        addr = pageStart << PAGE_SHIFT;	
     }
     if (fd) {
         U32 result = fd->kobject->access->map(MMU_PARAM_THREAD fd->kobject, addr, len, prot, flags, off);
@@ -96,7 +95,6 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return result;
         }
     }
-#ifdef USE_MMU
     for (i=0;i<pageCount;i++) {
         // This will prevent the next anonymous mmap from using this range
         if (thread->process->memory->mmu[i + pageStart] == &invalidPage) {
@@ -169,108 +167,10 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             allocPages(thread->process->memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
         }		
     }
-#else 	
-    {
-        struct MappedMemory* result = NULL;
-        if (flags & K_MAP_FIXED) {
-            PblIterator* it = pblListIterator(thread->process->mmapedMemory);
-
-            while (pblIteratorHasNext(it)) {
-                struct MappedMemory* item = pblIteratorNext(it);
-                if (addr >= item->address && addr < item->address + item->len) {
-                    result = item;
-                    if (item->address + item->len < addr + len) {
-                        kpanic("tried to reallocate using mmap passed the end");
-                    }
-                    break;
-                }
-            }
-            if (!result)
-                kpanic("Non mmu does not support mmap to a fixed address");
-        }
-        else {			
-            int memLen = len + 1024 * 1024 * 4; // padding for the wine loader
-            
-            result = kalloc(sizeof(struct MappedMemory));
-
-            if (fd) {
-                int fileLength = (int)fd->kobject->access->length(fd->kobject);
-                // extra room, this is an overestimation, required by ld
-                int memSize = getMemSizeOfElf(fd->kobject->openFile);
-
-
-                if (fileLength > memLen) {
-                    memLen = fileLength;
-                }
-                memLen += memSize;
-            }
-
-            result->allocatedAddress = kalloc(memLen + 0xFFF);
-            if (!result->allocatedAddress) {
-                kfree(result);
-                return -K_ENOMEM;
-            }
-            result->address = (U8*)((U32)(result->allocatedAddress + 0xFFF) & 0xFFFFF000);
-            result->len = memLen;
-            
-            if (fd) {
-                char* name = ((struct OpenNode*)fd->kobject->data)->node->path.localPath;
-                result->name = kalloc(strlen(name) + 1);
-                strcpy(result->name, name);
-
-                kwarn("%s @ %X (len=%d)\n", name, result->address, memLen);
-            }
-            pblListAdd(thread->process->mmapedMemory, result);
-            addr = result->address;
-        }
-        if (fd) {
-            syscall_pread64(thread, fildes, addr, len, off);
-            if (1) {
-                U32 section = 0;
-                U32 numberOfSections = 0;
-                U32 sizeOfSection = 0;
-                U32 loadAt = getPELoadAddress((struct OpenNode*)fd->kobject->data, &section, &numberOfSections, &sizeOfSection);
-
-                if (loadAt > 4095) {
-                    int i;
-
-                    if (thread->process->reallocAddress && thread->process->reallocAddress != loadAt) {
-                        kpanic("Currently only one stripped relocated file per process");
-                    }
-                    if (!thread->process->reallocAddress) {
-                        thread->process->reallocAddress = loadAt;
-                        thread->process->reallocLen = result->len;
-                        thread->process->reallocOffset = addr - loadAt;
-                    }
-
-                    for (i = 0; i<numberOfSections; i++) {
-                        // :TODO: need to research this, why not rdata?
-                        U32 SizeOfRawData = readd(section + 16);
-                        if (SizeOfRawData && !strcmp((char*)section, ".data")) {
-                            U32 j;
-                            U32 VirtualAddress = readd(section + 12) + thread->process->reallocAddress;
-
-                            for (j = 0; j<SizeOfRawData; j += 4) {
-                                U32 r = readd(thread->process->reallocOffset + VirtualAddress + j);
-                                if (r >= thread->process->reallocAddress && r<thread->process->reallocAddress + thread->process->reallocLen) {
-                                    writed(thread->process->reallocOffset + VirtualAddress + j, r + thread->process->reallocOffset);
-                                }
-                            }
-                        }
-                        section+=sizeOfSection;
-                    }
-                }
-            }			
-        } else {
-            memset((void*)addr, 0, len);
-        }
-    }
-#endif
     return addr;
 }
 
 U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
-#ifdef USE_MMU
     BOOL read = (prot & K_PROT_READ)!=0;
     BOOL write = (prot & K_PROT_WRITE)!=0;
     BOOL exec = (prot & K_PROT_EXEC)!=0;
@@ -316,12 +216,11 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
             kpanic("syscall_mprotect unknown page type");
         }
     }
-#endif
     return 0;
 }
-
+#endif
 U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     U32 pageStart = address >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
     U32 i;
@@ -342,7 +241,7 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
 }
 
 U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 newsize, U32 flags) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     if (flags > 1) {
         kpanic("__NR_mremap not implemented: flags=%X", flags);
     }
@@ -388,7 +287,7 @@ U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 news
 }
 
 U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     struct MapedFiles* file = 0;
     U32 i;
 

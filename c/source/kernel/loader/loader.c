@@ -235,27 +235,26 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpen
     U32 address=0xFFFFFFFF;
     U32 i;
     U32 reloc;
-    U32 flags = K_MAP_PRIVATE | K_MAP_ANONYMOUS;
 
     if (len!=sizeof(buffer)) {
         return FALSE;
     }
     if (!isValidElf(hdr))
-        return FALSE;
-
+        return FALSE;    
     len=0;
     openNode->func->seek(openNode, hdr->e_phoff);	
     for (i=0;i<hdr->e_phnum;i++) {
         struct Elf32_Phdr phdr;		
         openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
         if (phdr.p_type==PT_LOAD) {
-            if (phdr.p_paddr<address)
+            if (phdr.p_paddr<address) {
                 address=phdr.p_paddr;
+            }
             if (len<phdr.p_paddr+phdr.p_memsz)
                 len=phdr.p_paddr+phdr.p_memsz;
         }
     }
-#ifdef USE_MMU
+
     if (address>0x10000) {
         reloc = 0;
         len-=address;
@@ -263,12 +262,9 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpen
         reloc = ADDRESS_PROCESS_LOADER<<PAGE_SHIFT;
         address = reloc;
     }
-    flags |= K_MAP_FIXED;
-#endif
-    address = syscall_mmap64(thread, address, len+BRK_EXTRA, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, flags, -1, 0);
-#ifndef USE_MMU
-    reloc = address;
-#endif
+
+    if (reloc)
+        address = syscall_mmap64(thread, address, len, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE | K_MAP_ANONYMOUS | K_MAP_FIXED, -1, 0);
     process->loaderBaseAddress = address;
     process->brkEnd = address+len;
     process->phdr = 0;
@@ -278,11 +274,13 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpen
         openNode->func->seek(openNode, hdr->e_phoff+hdr->e_phentsize*i);
         openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
         if (phdr.p_type==PT_LOAD) {
+            if (!reloc)
+                syscall_mmap64(thread, reloc+phdr.p_paddr, phdr.p_memsz, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE | K_MAP_ANONYMOUS | K_MAP_FIXED, -1, 0);
             if (phdr.p_filesz>0) {
                 if (phdr.p_offset<=hdr->e_phoff && hdr->e_phoff<phdr.p_offset+phdr.p_filesz) {
                     process->phdr = reloc+phdr.p_paddr+hdr->e_phoff-phdr.p_offset;
                 }
-                openNode->func->seek(openNode, phdr.p_offset);
+                openNode->func->seek(openNode, phdr.p_offset);                
                 openNode->func->read(MMU_PARAM_THREAD openNode, reloc+phdr.p_paddr, phdr.p_filesz);		
             }
         }

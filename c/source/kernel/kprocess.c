@@ -77,10 +77,8 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
     char* name;
 
     memset(process, 0, sizeof(struct KProcess));	
-#ifdef USE_MMU
     process->memory = memory;
-    memory->process = process;
-#endif
+    memory->process = process;    
     process->id = addProcess(process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);	
     process->parentId = 1;
@@ -101,11 +99,7 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
             safe_strcat(process->commandLine, " ", MAX_COMMANDLINE_LEN);
         safe_strcat(process->commandLine, args[i], MAX_COMMANDLINE_LEN);
     }
-#ifdef USE_MMU
     initCallbacksInProcess(process);
-#else
-    process->mmapedMemory = pblListNewArrayList();
-#endif
 	process->fds = kalloc(sizeof(struct KFileDescriptor*) * 64, KALLOC_KPROCESS);
 	process->maxFds = 64;
     initLDT(process);
@@ -123,12 +117,12 @@ struct KProcess* allocProcess() {
     return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
 }
 
-#ifdef USE_MMU
 void closeMemoryMapped(struct MapedFiles* mapped) {
     mapped->refCount--;
     if (mapped->refCount == 0) {
         closeKObject(mapped->file);
         mapped->file = 0;
+#ifndef HAS_64BIT_MMU
         mapped->systemCacheEntry->refCount--;
         if (mapped->systemCacheEntry->refCount == 0) {			
             U32 i;
@@ -140,9 +134,10 @@ void closeMemoryMapped(struct MapedFiles* mapped) {
             removeMappedFileInCache(mapped->systemCacheEntry);
             kfree(mapped->systemCacheEntry, KALLOC_MAPPEDFILECACHE);
         }
+#endif
     }
 }
-#endif
+
 void cleanupProcess(struct KProcess* process) {
     U32 i;
 
@@ -164,18 +159,10 @@ void cleanupProcess(struct KProcess* process) {
             }
         }
     }
-#ifdef USE_MMU
     if (process->memory) {
         freeMemory(process->memory);
         process->memory = 0;
     }
-#else
-    if (process->mmapedMemory) {
-        pblListFree(process->mmapedMemory);
-        process->mmapedMemory = NULL;
-    }
-#endif
-#ifdef USE_MMU
     // must run after free'ing memory
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount) {
@@ -186,7 +173,6 @@ void cleanupProcess(struct KProcess* process) {
             }
         }
     }
-#endif
 }
 
 void freeProcess(struct KProcess* process) {
@@ -215,10 +201,8 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
     U32 i;
 
     memset(process, 0, sizeof(struct KProcess));	
-#ifdef USE_MMU
     process->memory = memory;
-    memory->process = process;
-#endif	
+    memory->process = process;    
     process->id = addProcess(process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
 
@@ -237,17 +221,18 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
             process->fds[i]->refCount = from->fds[i]->refCount;
         }
     }
-#ifdef USE_MMU
+
     memcpy(process->mappedFiles, from->mappedFiles, sizeof(struct MapedFiles)*MAX_MAPPED_FILE);
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount) {
             process->mappedFiles[i].file->refCount++;
+#ifdef HAS_64BIT_MMU
+            kpanic("Need to clone memory mapped files");
+#else
             process->mappedFiles[i].systemCacheEntry->refCount++;
+#endif
         }
     }
-#else
-    process->mmapedMemory = pblListClone(from->mmapedMemory);
-#endif
     memcpy(process->sigActions, from->sigActions, sizeof(struct KSigAction)*MAX_SIG_ACTIONS);
     memcpy(process->path, from->path, sizeof(process->path));
     safe_strcpy(process->commandLine, from->commandLine, MAX_COMMANDLINE_LEN);
@@ -264,13 +249,12 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
             }
         }
     }
-#ifdef USE_MMU
     for (i=0;i<NUMBER_OF_STRINGS;i++) {
         process->strings[i] = from->strings[i];
     }
     process->stringAddress = from->stringAddress;
     process->stringAddressIndex = from->stringAddressIndex;
-#endif
+
     for (i=0;i<LDT_ENTRIES;i++) {
         process->ldt[i] = from->ldt[i];
     }
@@ -494,14 +478,12 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
     const char* pArgs[MAX_ARG_COUNT];
     unsigned int argIndex=MAX_ARG_COUNT;
     struct KProcess* process = allocProcess();
-#ifdef USE_MMU
     struct Memory* memory = allocMemory();		
-#endif
     struct KThread* thread = allocThread();
     U32 i;
     struct FsOpenNode* openNode = 0;
     BOOL result = FALSE;
-
+        
     initProcess(MMU_PARAM process, argc, args, userId);
     initThread(thread, process);
     initStdio(process);
@@ -635,23 +617,11 @@ struct FsNode* getNode(struct KThread* thread, U32 fileName) {
 const char* getModuleName(struct CPU* cpu, U32 eip) {
     struct KProcess* process = cpu->thread->process;
     U32 i;
-#ifdef USE_MMU
+
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
             return process->mappedFiles[i].file->openFile->node->path;
     }
-#else
-    {
-        PblIterator* it = pblListIterator(cpu->thread->process->mmapedMemory);
-        while (pblIteratorHasNext(it)) {
-            struct MappedMemory* item = pblIteratorNext(it);
-            if (eip >= item->address && eip < item->address + item->len) {
-                if (item->name)
-                    return item->name;
-            }
-        }
-    }
-#endif
     return "Unknown";
 }
 
@@ -659,24 +629,12 @@ U32 getModuleEip(struct CPU* cpu, U32 eip) {
     struct KProcess* process = cpu->thread->process;
     U32 i;
     
-#ifdef USE_MMU
     if (eip<0xd0000000)
         return eip;
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount && eip>=process->mappedFiles[i].address && eip<process->mappedFiles[i].address+process->mappedFiles[i].len)
             return eip-process->mappedFiles[i].address;
     }
-#else
-    {
-        PblIterator* it = pblListIterator(cpu->thread->process->mmapedMemory);
-        while (pblIteratorHasNext(it)) {
-            struct MappedMemory* item = pblIteratorNext(it);
-            if (eip >= item->address && eip < item->address + item->len) {
-                return eip - (U32)item->address;
-            }
-        }
-    }
-#endif
     return 0;
 }
 
@@ -721,19 +679,14 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         flags &=~K_CLONE_VFORK;
         vFork = 1;
     }
-#ifndef USE_MMU
-    vFork = 1;
-#endif
+
     if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID) || (flags & 0xFFFFFF00)==(K_CLONE_PARENT_SETTID)) {
-#ifdef USE_MMU
         struct Memory* memory = allocMemory();
-#endif
         struct KProcess* newProcess = allocProcess();
         struct KThread* newThread = allocThread();
+
         newProcess->parentId = thread->process->id;        
-#ifdef USE_MMU
         cloneMemory(memory, thread->process->memory);
-#endif		
         cloneProcess(MMU_PARAM newProcess, thread->process);
         cloneThread(newThread, thread, newProcess);
         initStdio(newProcess);
@@ -996,11 +949,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     }
 
     // reset memory must come after we grab the args and env
-#ifdef USE_MMU
     resetMemory(thread->process->memory);
-#else
-    // we assume we came here because of vfork, otherwise this would leak memory
-#endif
     {
         struct KProcess* process = thread->process;
         U32 id = thread->id;
@@ -1015,11 +964,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 
     setupStack(thread);	
 
-#ifdef USE_MMU
     memset(process->mappedFiles, 0, sizeof(process->mappedFiles));
-#else
-    pblListClear(process->mmapedMemory);
-#endif
     memset(process->sigActions, 0, sizeof(process->sigActions));
     if (process->timer.millies!=0) {
         removeTimer(&process->timer);
@@ -1052,9 +997,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
             }
         }
     }
-#ifdef USE_MMU
     initCallbacksInProcess(process);
-#endif
     if (!loadProgram(process, thread, openNode, &thread->cpu.eip.u32)) {		
         // :TODO: maybe alloc a new memory object and keep the old one until we know we are loaded
         kpanic("program failed to load, but memory was already reset");
@@ -1384,12 +1327,15 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
     }
 }
 
-#ifdef USE_MMU
 U32 allocPage(struct KProcess* process) {
     U32 page = 0;
     if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page, 0))
         kpanic("Failed to allocate stack for thread");
+#ifdef HAS_64BIT_MMU
+    allocPages(process->memory, page, 1, PAGE_READ|PAGE_WRITE);
+#else
     allocPages(process->memory, &ramPageWR, TRUE, page, 1, PAGE_READ|PAGE_WRITE, 0);
+#endif
     return page << PAGE_SHIFT;
 }
 
@@ -1405,7 +1351,6 @@ void addString(struct KProcess* process, U32 index, const char* str) {
     }
 }
 
-#endif
 /*
 struct user_desc {
     unsigned int  entry_number;

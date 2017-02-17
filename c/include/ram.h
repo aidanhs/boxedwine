@@ -27,7 +27,7 @@ void initRAM(U32 pages);
 U32 getPageCount();
 U32 getFreePageCount();
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 extern struct Page ramPageRO;
 extern struct Page ramPageWO;
 extern struct Page ramPageWR;

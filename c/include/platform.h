@@ -23,19 +23,16 @@
 // maximum number of files per directory
 #define MAX_DIR_LISTING 4096
 
-#ifdef USE_MMU
-#define BRK_EXTRA 0
-#else
-// wine server uses a little more than 128k
-#define BRK_EXTRA (256*1024)
-#endif
-
 #include "platformtypes.h"
 #define BOOL unsigned int
 #define FD S32
 
 #define TRUE 1
 #define FALSE 0
+
+#ifdef HAS_64BIT_MMU
+void platformRunThreadSlice(struct KThread* thread);
+#endif
 
 #ifdef PLATFORM_MSVC
 #define OPCALL __fastcall

@@ -45,9 +45,7 @@ void onCreateCPU(struct CPU* cpu) {
 void initCPU(struct CPU* cpu, struct KProcess* process) {
     memset(cpu, 0, sizeof(struct CPU));
     onCreateCPU(cpu);
-#ifdef USE_MMU
     cpu->memory = process->memory;
-#endif
     cpu->lazyFlags = FLAGS_NONE;
     cpu->big = 1;
     cpu->df = 1;
@@ -1064,7 +1062,7 @@ void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op) {
     cpu->nextBlock = &emptyBlock;
 }
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 void initBlockCache() {
 }
 
@@ -1101,16 +1099,20 @@ void initBlockCache() {
 }
 
 struct Block* getBlock(struct CPU* cpu) {
-    fflush(logFile);
-    {
-        struct Block** result = pblMapGet(blockCache, &cpu->eip.u32, 4, NULL);
-        if (!result) {
-            struct Block* block = decodeBlock(cpu, cpu->eip.u32);
-            pblMapAdd(blockCache, &cpu->eip.u32, 4, &block, 4);
-            return block;
-        }
-        return *result;
+    U32 ip;
+
+    if (cpu->big)
+        ip = cpu->segAddress[CS] + cpu->eip.u32;
+    else
+        ip = cpu->segAddress[CS] + cpu->eip.u16;
+    U64 hash = (U64)getNativeAddress(cpu->memory, ip);
+    struct Block** result = pblMapGet(blockCache, &hash, 8, NULL);
+    if (!result) {
+        struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+        pblMapAdd(blockCache, &hash, 8, &block, sizeof(struct Block*));
+        return block;
     }
+    return *result;    
 }
 #endif
 

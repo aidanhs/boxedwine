@@ -41,15 +41,22 @@ void log_pf(struct KProcess* process, U32 address) {
     printf("%.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X %s at %.8X\n", cpu->segAddress[CS] + cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, getModuleName(cpu, cpu->segAddress[CS]+cpu->eip.u32), getModuleEip(cpu, cpu->segAddress[CS]+cpu->eip.u32));
 
     printf("Page Fault at %.8X\n", address);
-#ifdef USE_MMU
     printf("Valid address ranges:\n");
     for (i=0;i<NUMBER_OF_PAGES;i++) {
         if (!start) {
+#ifdef HAS_64BIT_MMU
+            if (process->memory->flags[i] & PAGE_IN_RAM) {
+#else
             if (process->memory->mmu[i] != &invalidPage) {
+#endif
                 start = i;
             }
         } else {
+#ifdef HAS_64BIT_MMU
+            if (!(process->memory->flags[i] & PAGE_IN_RAM)) {
+#else
             if (process->memory->mmu[i] == &invalidPage) {
+#endif
                 printf("    %.8X - %.8X\n", start*PAGE_SIZE, i*PAGE_SIZE);
                 start = 0;
             }
@@ -60,11 +67,10 @@ void log_pf(struct KProcess* process, U32 address) {
         if (process->mappedFiles[i].refCount)
             printf("    %.8X - %.8X %s\n", process->mappedFiles[i].address, process->mappedFiles[i].address+(int)process->mappedFiles[i].len, process->mappedFiles[i].file->openFile->node->path);
     }
-#endif
     walkStack(cpu, cpu->eip.u32, EBP, 2);
     kpanic("pf");
 }
-#ifdef USE_MMU
+
 void seg_mapper(struct Memory* memory, U32 address) {
     if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
         U32 eip = currentThread->cpu.eip.u32;
@@ -74,10 +80,12 @@ void seg_mapper(struct Memory* memory, U32 address) {
         memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 1; // SEGV_MAPERR
         memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
         runSignal(currentThread, K_SIGSEGV, EXCEPTION_PAGE_FAULT, 0);
+#ifndef HAS_64BIT_MMU
 #ifdef SUPPORTS_SETJMP
         longjmp(runBlockJump, 1);		
 #else
         runUntil(currentThread, eip);
+#endif
 #endif
     } else {
         log_pf(memory->process, address);
@@ -104,6 +112,7 @@ void seg_access(struct Memory* memory, U32 address) {
     }
 }
 
+#ifndef HAS_64BIT_MMU
 U8 invalid_readb(struct Memory* memory, U32 address) {
     seg_mapper(memory, address);
     return 0;
@@ -169,7 +178,7 @@ static U8* invalid_physicalAddress(struct Memory* memory, U32 address) {
 struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear, invalid_physicalAddress};
 #endif
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 U8 readb(MMU_ARG U32 address) {
     int index = address >> 12;
 #ifdef LOG_OPS
@@ -294,22 +303,35 @@ void writed(MMU_ARG U32 address, U32 value) {
     }
 }
 
+#endif
+
 struct Memory* allocMemory() {
     struct Memory* memory = (struct Memory*)kalloc(sizeof(struct Memory), KALLOC_MEMORY);
     initMemory(memory);
+#ifdef HAS_64BIT_MMU
+    reserveNativeMemory(memory);
+#endif
     return memory;
 }
 
 void initMemory(struct Memory* memory) {
+#ifndef HAS_64BIT_MMU
     int i=0;
+#endif
 
     memset(memory, 0, sizeof(struct Memory));
+#ifndef HAS_64BIT_MMU
     for (i=0;i<0x100000;i++) {
         memory->mmu[i] = &invalidPage;
     }
+#endif
 }
 
 void resetMemory(struct Memory* memory) {
+#ifdef HAS_64BIT_MMU
+    releaseNativeMemory(memory);
+    reserveNativeMemory(memory);
+#else
     U32 i=0;
 
     for (i=0;i<0x100000;i++) {
@@ -320,8 +342,22 @@ void resetMemory(struct Memory* memory) {
         memory->write[i] = 0;
         memory->ramPage[i] = 0;
     }
+#endif
 }
 
+#ifdef HAS_64BIT_MMU
+void cloneMemory(struct Memory* memory, struct Memory* from) {
+    int i=0;    
+    for (i=0;i<0x100000;i++) {
+        if (from->flags[i] & PAGE_IN_RAM) {
+            allocNativeMemory(memory, i, 1, from->flags[i]);
+            memcpy(getNativeAddress(memory, i << PAGE_SHIFT), getNativeAddress(from, i << PAGE_SHIFT), PAGE_SIZE);
+        } else {
+            memory->flags[i] = from->flags[i];
+        }     
+    }
+}
+#else
 void cloneMemory(struct Memory* memory, struct Memory* from) {
     int i=0;
 
@@ -361,16 +397,105 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
         }
     }
 }
+#endif
 
 void freeMemory(struct Memory* memory) {
+#ifdef HAS_64BIT_MMU
+    releaseNativeMemory(memory);
+#else
     int i;
 
-    for (i=0;i<0x100000;i++) {
-        memory->mmu[i]->clear(memory, i);
+    for (i=0;i<0x100000;i++) {   
+        memory->mmu[i]->clear(memory, i);    
     }
+#endif
     kfree(memory, KALLOC_MEMORY);
 }
 
+void zeroMemory(MMU_ARG U32 address, int len) {
+#ifdef HAS_64BIT_MMU
+    memset(getNativeAddress(MMU_PARAM address), 0, len);
+#else
+    int i;
+    for (i=0;i<len;i++) {
+        writeb(memory, address, 0);
+        address++;
+    }
+#endif
+}
+
+void readMemory(MMU_ARG U8* data, U32 address, int len) {
+#ifdef HAS_64BIT_MMU
+    memcpy(data, getNativeAddress(MMU_PARAM address), len);
+#else
+    int i;
+    for (i=0;i<len;i++) {
+        *data=readb(memory, address);
+        address++;
+        data++;
+    }
+#endif
+}
+
+void writeMemory(MMU_ARG U32 address, U8* data, int len) {
+#ifdef HAS_64BIT_MMU
+    memcpy(getNativeAddress(MMU_PARAM address), data, len);
+#else
+    int i;
+    for (i=0;i<len;i++) {
+        writeb(memory, address, *data);
+        address++;
+        data++;
+    }
+#endif
+}
+
+#ifdef HAS_64BIT_MMU
+BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeReMapped) {
+    U32 i;
+    
+    for (i=startingPage;i<NUMBER_OF_PAGES;i++) {
+        if ((memory->flags[i] & (PAGE_MAPPED|PAGE_IN_RAM)) == 0 || (canBeReMapped && (memory->flags[i] & PAGE_MAPPED))) {
+            U32 j;
+            BOOL success = TRUE;
+
+            for (j=1;j<pageCount;j++) {
+                if ((memory->flags[i+j] & PAGE_IN_RAM) || (!canBeReMapped && (memory->flags[i+j] & PAGE_MAPPED))) {
+                    success = FALSE;
+                    break;
+                }
+            }
+            if (success) {
+                *result = i;
+                return TRUE;
+            }
+            i+=j; // no reason to check all the pages again
+        }
+    }
+    return FALSE;
+}
+void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 flags) {
+    U32 i;
+    
+    for (i=startingPage;i<startingPage+pageCount;i++) {
+        memory->flags[i]=PAGE_RESERVED;
+    }
+}
+
+void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
+    U32 i;
+
+    for (i=startingPage;i<startingPage+pageCount;i++) {
+        memory->flags[i]=0;
+    }
+    freeNativeMemory(memory->process, startingPage, pageCount);
+}
+
+void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions) {
+    allocNativeMemory(memory, page, pageCount, permissions);
+}
+
+#else
 void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32 page, U32 pageCount, U8 permissions, U32 ramPage) {
     U32 i;
     U32 address = page << PAGE_SHIFT;
@@ -403,46 +528,7 @@ void allocPages(struct Memory* memory, struct Page* pageType, BOOL allocRAM, U32
         }
     }
 }
-#endif
-void zeroMemory(MMU_ARG U32 address, int len) {
-#ifdef USE_MMU
-    int i;
-    for (i=0;i<len;i++) {
-        writeb(memory, address, 0);
-        address++;
-    }
-#else
-    memset((void*)address, 0, len);
-#endif
-}
 
-void readMemory(MMU_ARG U8* data, U32 address, int len) {
-#ifdef USE_MMU
-    int i;
-    for (i=0;i<len;i++) {
-        *data=readb(memory, address);
-        address++;
-        data++;
-    }
-#else
-    memcpy(data, (void*)address, len);
-#endif
-}
-
-void writeMemory(MMU_ARG U32 address, U8* data, int len) {
-#ifdef USE_MMU
-    int i;
-    for (i=0;i<len;i++) {
-        writeb(memory, address, *data);
-        address++;
-        data++;
-    }
-#else
-    memcpy((void*)address, data, len);
-#endif
-}
-
-#ifdef USE_MMU
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeReMapped) {
     U32 i;
     
@@ -498,7 +584,7 @@ void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
     for (i=0;i<len;i++) {
         writeb(memory, address+i, p[i]);
     }
-#elif defined(USE_MMU)
+#elif !defined(HAS_64BIT_MMU)
     U32 i;
 
     if (len>4) {
@@ -531,7 +617,7 @@ void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
         writeb(memory, address+i, p[i]);
     }
 #else
-    memcpy((void*)address, p, len);
+    memcpy(getNativeAddress(MMU_PARAM address), p, len);
 #endif
 }
 
@@ -542,7 +628,7 @@ void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
     for (i=0;i<len;i++) {
         p[i] = readb(memory, address+i);
     }
-#elif defined(USE_MMU)
+#elif !defined(HAS_64BIT_MMU)
     U32 i;
 
     if (len>4) {
@@ -575,12 +661,12 @@ void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
         p[i] = readb(memory, address+i);
     }
 #else
-    memcpy(p, (void*)address, len);
+    memcpy(p, getNativeAddress(MMU_PARAM address), len);
 #endif
 }
 
 void writeNativeString(MMU_ARG U32 address, const char* str) {	
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     while (*str) {
         writeb(memory, address, *str);
         str++;
@@ -588,7 +674,7 @@ void writeNativeString(MMU_ARG U32 address, const char* str) {
     }
     writeb(memory, address, 0);
 #else
-    strcpy((char*)address, str);
+    strcpy(getNativeAddress(MMU_PARAM address), str);
 #endif
 }
 
@@ -617,7 +703,7 @@ void writeNativeStringW(MMU_ARG U32 address, const char* str) {
 static char tmpBuffer[64*1024];
 
 char* getNativeString(MMU_ARG U32 address) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     char c;
     int i=0;
 
@@ -632,7 +718,11 @@ char* getNativeString(MMU_ARG U32 address) {
     tmpBuffer[sizeof(tmpBuffer)-1]=0;
     return tmpBuffer;
 #else
-    return (char*)address;
+    if (!address) {
+        tmpBuffer[0]=0;
+        return tmpBuffer;
+    }
+    return (char*)getNativeAddress(MMU_PARAM address);
 #endif
 }
 
@@ -653,12 +743,10 @@ char* getNativeStringW(MMU_ARG U32 address) {
     return tmpBuffer;
 }
 
-#ifdef USE_MMU
 static char tmpBuffer2[64*1024];
-#endif
 
 char* getNativeString2(MMU_ARG U32 address) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     char c;
     int i=0;
 
@@ -673,12 +761,16 @@ char* getNativeString2(MMU_ARG U32 address) {
     tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
     return tmpBuffer2;
 #else
-    return (char*)address;
+    if (!address) {
+        tmpBuffer2[0]=0;
+        return tmpBuffer2;
+    }
+    return (char*)getNativeAddress(MMU_PARAM address);
 #endif
 }
 
 char* getNativeStringW2(MMU_ARG U32 address) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     char c;
     int i=0;
 
@@ -694,6 +786,6 @@ char* getNativeStringW2(MMU_ARG U32 address) {
     tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
     return tmpBuffer2;
 #else
-    return (char*)address;
+    return (char*)getNativeAddress(MMU_PARAM address);
 #endif
 }

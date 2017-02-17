@@ -110,12 +110,12 @@ U32 tty_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 static char buffer[PAGE_SIZE+1];
 #endif
 
 U32 tty_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
         U8* ram = getPhysicalAddress(MMU_PARAM address);
         memcpy(buffer, ram, len);
@@ -139,7 +139,7 @@ U32 tty_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
         return result;
     }
 #else
-    fwrite((void*)address, len, 1, stdout);
+    fwrite(getNativeAddress(MMU_PARAM address), len, 1, stdout);
     return len;
 #endif
 }

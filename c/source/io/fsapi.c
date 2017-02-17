@@ -471,8 +471,8 @@ static S64 openfile_seek(struct FsOpenNode* node, S64 pos) {
 }
 
 static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
-#ifndef USE_MMU
-    return node->func->readNative(node, (void*)address, len);
+#ifdef HAS_64BIT_MMU
+    return node->func->readNative(node, getNativeAddress(MMU_PARAM address), len);
 #else
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
         U8* ram = getPhysicalAddress(memory, address);
@@ -525,8 +525,8 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
 }
 
 static U32 openfile_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
-#ifndef USE_MMU
-    return node->func->writeNative(node, (void*)address, len);
+#ifdef HAS_64BIT_MMU
+    return node->func->writeNative(node, getNativeAddress(MMU_PARAM address), len);
 #else	
     U32 wrote = 0;
     while (len) {

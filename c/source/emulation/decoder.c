@@ -48,8 +48,8 @@ struct DecodeData {
     U32 start;
     U32 opCode;
     struct CPU* cpu;
-#ifdef USE_MMU
     struct Memory* memory;
+#ifndef HAS_64BIT_MMU    
     U8* page;
     U32 pagePos;
 #endif
@@ -57,7 +57,7 @@ struct DecodeData {
     int count;
 };
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 extern U8* ram;
 
 void fillFetchPage(struct DecodeData* data) {
@@ -74,20 +74,27 @@ void fillFetchPage(struct DecodeData* data) {
 #endif
 
 U8 FETCH8(struct DecodeData* data) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     if (data->pagePos>=PAGE_SIZE)
         fillFetchPage(data);
     data->ip++;
     return data->page[data->pagePos++];
 #else
-    return readb(data->ip++);
+    U32 address;
+
+    if (data->cpu->big)
+        address = data->ip + data->cpu->segAddress[CS];
+    else
+        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
+    data->ip++;
+    return readb(data->memory, address);
 #endif
 }
 
 U16 FETCH16(struct DecodeData* data) {
     U16 result;
 
-#ifdef USE_MMU	
+#ifndef HAS_64BIT_MMU
 
 #ifndef UNALIGNED_MEMORY
     if (data->pagePos>=PAGE_SIZE-1) {
@@ -103,15 +110,20 @@ U16 FETCH16(struct DecodeData* data) {
     return result;
 #endif
 #else
-    result = readw(data->ip);
-    data->ip += 2;
-    return result;
+    U32 address;
+
+    if (data->cpu->big)
+        address = data->ip + data->cpu->segAddress[CS];
+    else
+        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
+    data->ip+=2;
+    return readw(data->memory, address);
 #endif
 }
 
 U32 FETCH32(struct DecodeData* data) {
     U32 result;
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 #ifndef UNALIGNED_MEMORY
     if (data->pagePos>=PAGE_SIZE-3) {
 #endif
@@ -128,14 +140,14 @@ U32 FETCH32(struct DecodeData* data) {
     return result;
 #endif
 #else
-    result = readd(data->ip);
-    if (result >= data->cpu->thread->process->reallocAddress && result < data->cpu->thread->process->reallocAddress + data->cpu->thread->process->reallocLen) {
-        U32 tmp;
+    U32 address;
 
-        result += data->cpu->thread->process->reallocOffset;
-    }
-    data->ip += 4;
-    return result;
+    if (data->cpu->big)
+        address = data->ip + data->cpu->segAddress[CS];
+    else
+        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
+    data->ip+=4;
+    return readd(data->memory, address);
 #endif
 }
 
@@ -2017,7 +2029,13 @@ void decode0fe(struct DecodeData* data) {
             LOG_E8("DEC", rm, data);
             break;
         case 0x07:
-            data->op->func = (OpCallback)FETCH32(data);
+            if (sizeof(data->op->func)==8) {
+                U64 address = FETCH32(data);
+                address |= ((U64)FETCH32(data)) << 32;
+                data->op->func = (OpCallback)address;
+            } else {
+                data->op->func = (OpCallback)FETCH32(data);
+            }
             return;
         default:
             kpanic("Illegal GRP4 Call %d, ",((rm>>3) & 7));
@@ -2538,7 +2556,7 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     while (op) {
         for (i=0;i<op->eipCount;i++) {
             // don't generate pf's from AOT
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
             if (!cpu->memory->read[ip>>12])
                 return 0;
 #endif
@@ -2626,8 +2644,8 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     data.rep_zero = 0;
     data.cpu = cpu;
     data.count = 0;
-#ifdef USE_MMU
     data.memory = cpu->memory;
+#ifndef HAS_64BIT_MMU    
     fillFetchPage(pData);    
 #endif
     data.op->inst = FETCH8(pData)+data.opCode;

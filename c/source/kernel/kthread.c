@@ -52,18 +52,13 @@ void freeThread(struct KThread* thread) {
     }
     unscheduleThread(thread);	
     threadClearFutexes(thread);
-#ifdef USE_MMU
     releaseMemory(thread->cpu.memory, thread->stackPageStart, thread->stackPageCount);
-#else
-    kfree(thread->stackAddress);
-#endif
     processOnExitThread(thread->process);
     thread->nextFreeThread = freeThreads;	
     freeThreads = thread;
 }
 
 void setupStack(struct KThread* thread) {
-#ifdef USE_MMU
     U32 page = 0;
     U32 pageCount = MAX_STACK_SIZE >> PAGE_SHIFT; // 1MB for max stack
     pageCount+=2; // guard pages
@@ -71,7 +66,11 @@ void setupStack(struct KThread* thread) {
 		if (!findFirstAvailablePage(thread->cpu.memory, 0xC0000, pageCount, &page, 0))
 			if (!findFirstAvailablePage(thread->cpu.memory, 0x80000, pageCount, &page, 0))
 				kpanic("Failed to allocate stack for thread");
+#ifdef HAS_64BIT_MMU
+    allocPages(thread->cpu.memory, page+1, pageCount-2, PAGE_READ|PAGE_WRITE);
+#else
     allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0);
+#endif
     // 1 page above (catch stack underrun)
     reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
     // 1 page below (catch stack overrun)
@@ -79,10 +78,6 @@ void setupStack(struct KThread* thread) {
     thread->stackPageCount = pageCount;
     thread->stackPageStart = page;
     thread->cpu.reg[4].u32 = (thread->stackPageStart + thread->stackPageCount - 1) << PAGE_SHIFT; // one page away from the top
-#else
-    thread->stackAddress = kalloc(1024 * 1024);
-    thread->cpu.reg[4].u32 = (U32)(thread->stackAddress + 1024 * 1024 - 4096);
-#endif
     thread->cpu.thread = thread;
 }
 
@@ -110,13 +105,9 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
     thread->cpu.blockCounter = 0;
     thread->process = process;
     thread->sigMask = from->sigMask;
-#ifdef USE_MMU
     thread->cpu.memory = process->memory;
     thread->stackPageStart = from->stackPageStart;
     thread->stackPageCount = from->stackPageCount;
-#else
-    thread->stackAddress = from->stackAddress;
-#endif
     thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
     thread->id = processAddThread(process, thread);
 }
@@ -186,10 +177,10 @@ void threadClearFutexes(struct KThread* thread) {
 }
 
 U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
     U8* ramAddress = getPhysicalAddress(MMU_PARAM_THREAD addr);
 #else
-    U8* ramAddress = (U8*)addr;
+    U8* ramAddress = (U8*)getNativeAddress(MMU_PARAM_THREAD addr);
 #endif
 
     if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {

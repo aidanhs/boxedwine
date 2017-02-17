@@ -33,8 +33,51 @@ glDrawRangeElements_func ext_glDrawRangeElements;
 #define GL_FUNC(name) name
 #endif
 
-#define GL_LOG(name)
+#define GL_LOG(name) 
 
+float fARG(struct CPU* cpu, U32 arg) {
+    struct int2Float i;
+    i.i = arg;
+    return i.f;
+}
+
+double dARG(struct CPU* cpu, int address) {
+    struct long2Double i;
+    i.l = readq(MMU_PARAM_CPU address);
+    return i.d;
+}
+
+#ifdef HAS_64BIT_MMU
+#define marshald(cpu, address, count) (GLdouble*)getNativeAddress(cpu->memory, address)
+#define marshalf(cpu, address, count) (GLfloat*)getNativeAddress(cpu->memory, address)
+#define marshali(cpu, address, count) (GLint*)getNativeAddress(cpu->memory, address)
+#define marshalui(cpu, address, count) (GLuint*)getNativeAddress(cpu->memory, address)
+#define marshals(cpu, address, count) (GLshort*)getNativeAddress(cpu->memory, address)
+#define marshalus(cpu, address, count) (GLushort*)getNativeAddress(cpu->memory, address)
+#define marshalb(cpu, address, count) (GLbyte*)getNativeAddress(cpu->memory, address)
+#define marshalub(cpu, address, count) (GLubyte*)getNativeAddress(cpu->memory, address)
+#define marshalbool(cpu, address, count) (GLboolean*)getNativeAddress(cpu->memory, address)
+#define marshal2d(cpu, address, count) (GLdouble*)getNativeAddress(cpu->memory, address)
+#define marshal2f(cpu, address, count) (GLfloat*)getNativeAddress(cpu->memory, address)
+#define marshal2i(cpu, address, count) (GLint*)getNativeAddress(cpu->memory, address)
+
+#define marshal2ui(cpu, address, count) (GLuint*)getNativeAddress(cpu->memory, address)
+#define marshal2s(cpu, address, count) (GLshort*)getNativeAddress(cpu->memory, address)
+#define marshal2us(cpu, address, count) (GLushort*)getNativeAddress(cpu->memory, address)
+#define marshal2b(cpu, address, count) (GLbyte*)getNativeAddress(cpu->memory, address)
+#define marshal2ub(cpu, address, count) (GLubyte*)getNativeAddress(cpu->memory, address)
+#define marshal2bool(cpu, address, count) (GLboolean*)getNativeAddress(cpu->memory, address)
+#define marshalBackd(cpu, address, buffer, count)
+#define marshalBackf(cpu, address, buffer, count)
+#define marshalBacki(cpu, address, buffer, count)
+#define marshalBackui(cpu, address, buffer, count)
+#define marshalBackus(cpu, address, buffer, count)
+#define marshalBacks(cpu, address, buffer, count)
+#define marshalBackb(cpu, address, buffer, count)
+#define marshalBackub(cpu, address,  buffer, count)
+#define marshalBackbool(cpu, address, buffer, count)
+#define getSize(pname) 0
+#else
 U32 getDataSize(U32 type) {
     switch (type) {
     case GL_UNSIGNED_BYTE:
@@ -53,17 +96,6 @@ U32 getDataSize(U32 type) {
         kpanic("glcommon.c getDataSize unknown type: %d", type);
         return 4;
     }
-}
-float fARG(struct CPU* cpu, U32 arg) {
-    struct int2Float i;
-    i.i = arg;
-    return i.f;
-}
-
-double dARG(struct CPU* cpu, int address) {
-    struct long2Double i;
-    i.l = readq(MMU_PARAM_CPU address);
-    return i.d;
 }
 
 GLdouble* bufferd;
@@ -373,184 +405,6 @@ void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
 
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count) {
     memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
-}
-
-// GLAPI void APIENTRY glClearIndex( GLfloat c )
-void glcommon_glClearIndex(struct CPU* cpu) {
-    GL_LOG(glClearIndex);
-    GL_FUNC(glClearIndex)(fARG1);
-}
-
-// GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
-void glcommon_glClearColor(struct CPU* cpu) {
-    GL_LOG(glClearColor);
-    GL_FUNC(glClearColor)(fARG1, fARG2, fARG3, fARG4);
-}
-
-// GLAPI void APIENTRY glClear( GLbitfield mask )
-void glcommon_glClear(struct CPU* cpu) {
-    GL_LOG(glClear);
-    GL_FUNC(glClear)(ARG1);
-}
-
-// GLAPI void APIENTRY glIndexMask( GLuint mask ) {
-void glcommon_glIndexMask(struct CPU* cpu) {
-    GL_LOG(glIndexMask);
-    GL_FUNC(glIndexMask)(ARG1);
-}
-
-// GLAPI void APIENTRY glColorMask( GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha ) {
-void glcommon_glColorMask(struct CPU* cpu) {
-    GL_LOG(glColorMask);
-    GL_FUNC(glColorMask)(ARG1, ARG2, ARG3, ARG4);
-}
-
-// GLAPI void APIENTRY glAlphaFunc( GLenum func, GLclampf ref ) {
-void glcommon_glAlphaFunc(struct CPU* cpu) {
-    GL_LOG(glAlphaFunc);
-    GL_FUNC(glAlphaFunc)(ARG1, fARG2);
-}
-
-// GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor ) {
-void glcommon_glBlendFunc(struct CPU* cpu) {
-    GL_LOG(glBlendFunc);
-    GL_FUNC(glBlendFunc)(ARG1, ARG2);
-}
-
-// GLAPI void APIENTRY glLogicOp( GLenum opcode ) {
-void glcommon_glLogicOp(struct CPU* cpu) {
-    GL_LOG(glLogicOp);
-    GL_FUNC(glLogicOp)(ARG1);
-}
-
-// GLAPI void APIENTRY glCullFace( GLenum mode ) {
-void glcommon_glCullFace(struct CPU* cpu) {
-    GL_LOG(glCullFace);
-    GL_FUNC(glCullFace)(ARG1);
-}
-
-// GLAPI void APIENTRY glFrontFace( GLenum mode ) {
-void glcommon_glFrontFace(struct CPU* cpu) {
-    GL_LOG(glFrontFace);
-    GL_FUNC(glFrontFace)(ARG1);
-}
-
-// GLAPI void APIENTRY glPointSize( GLfloat size ) {
-void glcommon_glPointSize(struct CPU* cpu) {
-    GL_LOG(glPointSize);
-    GL_FUNC(glPointSize)(fARG1);
-}
-
-// GLAPI void APIENTRY glLineWidth( GLfloat width ) {
-void glcommon_glLineWidth(struct CPU* cpu) {
-    GL_LOG(glLineWidth);
-    GL_FUNC(glLineWidth)(fARG1);
-}
-
-// GLAPI void APIENTRY glLineStipple( GLint factor, GLushort pattern ) {
-void glcommon_glLineStipple(struct CPU* cpu) {
-    GL_LOG(glLineStipple);
-    GL_FUNC(glLineStipple)(ARG1, ARG2);
-}
-
-// GLAPI void APIENTRY glPolygonMode( GLenum face, GLenum mode ) {
-void glcommon_glPolygonMode(struct CPU* cpu) {
-    GL_LOG(glPolygonMode);
-    GL_FUNC(glPolygonMode)(ARG1, ARG2);
-}
-
-// GLAPI void APIENTRY glPolygonOffset( GLfloat factor, GLfloat units ) {
-void glcommon_glPolygonOffset(struct CPU* cpu) {
-    GL_LOG(glPolygonOffset);
-    GL_FUNC(glPolygonOffset)(fARG1, fARG2);
-}
-
-// GLAPI void APIENTRY glPolygonStipple( const GLubyte *mask ) {
-void glcommon_glPolygonStipple(struct CPU* cpu) {
-    GL_LOG(glPolygonStipple);
-    GL_FUNC(glPolygonStipple)(marshalub(cpu, ARG1, 128));
-}
-
-// GLAPI void APIENTRY glGetPolygonStipple( GLubyte *mask ) {
-void glcommon_glGetPolygonStipple(struct CPU* cpu) {
-    U8 buffer[128];
-    GL_LOG(glGetPolygonStipple);
-    GL_FUNC(glGetPolygonStipple)(buffer);
-    marshalBackub(cpu, ARG1, buffer, 128);	
-}
-
-// GLAPI void APIENTRY glEdgeFlag( GLboolean flag ) {
-void glcommon_glEdgeFlag(struct CPU* cpu) {
-    GL_LOG(glEdgeFlag);
-    GL_FUNC(glEdgeFlag)(ARG1);
-}
-
-// GLAPI void APIENTRY glEdgeFlagv( const GLboolean *flag ) {
-void glcommon_glEdgeFlagv(struct CPU* cpu) {
-    GL_LOG(glEdgeFlagv);
-    GL_FUNC(glEdgeFlagv)(marshalbool(cpu, ARG1, 1));
-}
-
-// GLAPI void APIENTRY glScissor( GLint x, GLint y, GLsizei width, GLsizei height) {
-void glcommon_glScissor(struct CPU* cpu) {
-    GL_LOG(glScissor);
-    GL_FUNC(glScissor)(ARG1, ARG2, ARG3, ARG4);
-}
-
-// GLAPI void APIENTRY glClipPlane( GLenum plane, const GLdouble *equation ) {
-void glcommon_glClipPlane(struct CPU* cpu) {
-    GL_LOG(glClipPlane);
-    GL_FUNC(glClipPlane)(ARG1, marshald(cpu, ARG2, 4));
-}
-
-// GLAPI void APIENTRY glGetClipPlane( GLenum plane, GLdouble *equation ) {
-void glcommon_glGetClipPlane(struct CPU* cpu) {
-    GLdouble buffer[4];
-    GL_LOG(glGetClipPlane);
-    GL_FUNC(glGetClipPlane)(ARG1, buffer);
-    marshalBackd(cpu, ARG2, buffer, 4);
-}
-
-// GLAPI void APIENTRY glDrawBuffer( GLenum mode ) {
-void glcommon_glDrawBuffer(struct CPU* cpu) {
-    GL_LOG(glDrawBuffer);
-    GL_FUNC(glDrawBuffer)(ARG1);
-}
-
-// GLAPI void APIENTRY glReadBuffer( GLenum mode ) {
-void glcommon_glReadBuffer(struct CPU* cpu) {
-    GL_LOG(glReadBuffer);
-    GL_FUNC(glReadBuffer)(ARG1);
-}
-
-// GLAPI void APIENTRY glEnable( GLenum cap ) {
-void glcommon_glEnable(struct CPU* cpu) {
-    GL_LOG(glEnable);
-    GL_FUNC(glEnable)(ARG1);
-}
-
-// GLAPI void APIENTRY glDisable( GLenum cap ) {
-void glcommon_glDisable(struct CPU* cpu) {
-    GL_LOG(glDisable);
-    GL_FUNC(glDisable)(ARG1);
-}
-
-// GLAPI GLboolean APIENTRY glIsEnabled( GLenum cap ) {
-void glcommon_glIsEnabled(struct CPU* cpu) {
-    GL_LOG(glIsEnabled);
-    EAX = GL_FUNC(glIsEnabled)(ARG1);
-}
-
-// GLAPI void APIENTRY glEnableClientState( GLenum cap ) {  /* 1.1 */
-void glcommon_glEnableClientState(struct CPU* cpu) {
-    GL_LOG(glEnableClientState);
-    GL_FUNC(glEnableClientState)(ARG1);
-}
-
-// GLAPI void APIENTRY glDisableClientState( GLenum cap ) {  /* 1.1 */
-void glcommon_glDisableClientState(struct CPU* cpu) {
-    GL_LOG(glDisableClientState);
-    GL_FUNC(glDisableClientState)(ARG1);
 }
 
 int getSize(GLenum pname) {
@@ -1060,6 +914,184 @@ int getSize(GLenum pname) {
           return 0;
    }
 }
+#endif
+// GLAPI void APIENTRY glClearIndex( GLfloat c )
+void glcommon_glClearIndex(struct CPU* cpu) {
+    GL_LOG(glClearIndex);
+    GL_FUNC(glClearIndex)(fARG1);
+}
+
+// GLAPI void APIENTRY glClearColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha )
+void glcommon_glClearColor(struct CPU* cpu) {
+    GL_LOG(glClearColor);
+    GL_FUNC(glClearColor)(fARG1, fARG2, fARG3, fARG4);
+}
+
+// GLAPI void APIENTRY glClear( GLbitfield mask )
+void glcommon_glClear(struct CPU* cpu) {
+    GL_LOG(glClear);
+    GL_FUNC(glClear)(ARG1);
+}
+
+// GLAPI void APIENTRY glIndexMask( GLuint mask ) {
+void glcommon_glIndexMask(struct CPU* cpu) {
+    GL_LOG(glIndexMask);
+    GL_FUNC(glIndexMask)(ARG1);
+}
+
+// GLAPI void APIENTRY glColorMask( GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha ) {
+void glcommon_glColorMask(struct CPU* cpu) {
+    GL_LOG(glColorMask);
+    GL_FUNC(glColorMask)(ARG1, ARG2, ARG3, ARG4);
+}
+
+// GLAPI void APIENTRY glAlphaFunc( GLenum func, GLclampf ref ) {
+void glcommon_glAlphaFunc(struct CPU* cpu) {
+    GL_LOG(glAlphaFunc);
+    GL_FUNC(glAlphaFunc)(ARG1, fARG2);
+}
+
+// GLAPI void APIENTRY glBlendFunc( GLenum sfactor, GLenum dfactor ) {
+void glcommon_glBlendFunc(struct CPU* cpu) {
+    GL_LOG(glBlendFunc);
+    GL_FUNC(glBlendFunc)(ARG1, ARG2);
+}
+
+// GLAPI void APIENTRY glLogicOp( GLenum opcode ) {
+void glcommon_glLogicOp(struct CPU* cpu) {
+    GL_LOG(glLogicOp);
+    GL_FUNC(glLogicOp)(ARG1);
+}
+
+// GLAPI void APIENTRY glCullFace( GLenum mode ) {
+void glcommon_glCullFace(struct CPU* cpu) {
+    GL_LOG(glCullFace);
+    GL_FUNC(glCullFace)(ARG1);
+}
+
+// GLAPI void APIENTRY glFrontFace( GLenum mode ) {
+void glcommon_glFrontFace(struct CPU* cpu) {
+    GL_LOG(glFrontFace);
+    GL_FUNC(glFrontFace)(ARG1);
+}
+
+// GLAPI void APIENTRY glPointSize( GLfloat size ) {
+void glcommon_glPointSize(struct CPU* cpu) {
+    GL_LOG(glPointSize);
+    GL_FUNC(glPointSize)(fARG1);
+}
+
+// GLAPI void APIENTRY glLineWidth( GLfloat width ) {
+void glcommon_glLineWidth(struct CPU* cpu) {
+    GL_LOG(glLineWidth);
+    GL_FUNC(glLineWidth)(fARG1);
+}
+
+// GLAPI void APIENTRY glLineStipple( GLint factor, GLushort pattern ) {
+void glcommon_glLineStipple(struct CPU* cpu) {
+    GL_LOG(glLineStipple);
+    GL_FUNC(glLineStipple)(ARG1, ARG2);
+}
+
+// GLAPI void APIENTRY glPolygonMode( GLenum face, GLenum mode ) {
+void glcommon_glPolygonMode(struct CPU* cpu) {
+    GL_LOG(glPolygonMode);
+    GL_FUNC(glPolygonMode)(ARG1, ARG2);
+}
+
+// GLAPI void APIENTRY glPolygonOffset( GLfloat factor, GLfloat units ) {
+void glcommon_glPolygonOffset(struct CPU* cpu) {
+    GL_LOG(glPolygonOffset);
+    GL_FUNC(glPolygonOffset)(fARG1, fARG2);
+}
+
+// GLAPI void APIENTRY glPolygonStipple( const GLubyte *mask ) {
+void glcommon_glPolygonStipple(struct CPU* cpu) {
+    GL_LOG(glPolygonStipple);
+    GL_FUNC(glPolygonStipple)(marshalub(cpu, ARG1, 128));
+}
+
+// GLAPI void APIENTRY glGetPolygonStipple( GLubyte *mask ) {
+void glcommon_glGetPolygonStipple(struct CPU* cpu) {
+    U8 buffer[128];
+    GL_LOG(glGetPolygonStipple);
+    GL_FUNC(glGetPolygonStipple)(buffer);
+    marshalBackub(cpu, ARG1, buffer, 128);	
+}
+
+// GLAPI void APIENTRY glEdgeFlag( GLboolean flag ) {
+void glcommon_glEdgeFlag(struct CPU* cpu) {
+    GL_LOG(glEdgeFlag);
+    GL_FUNC(glEdgeFlag)(ARG1);
+}
+
+// GLAPI void APIENTRY glEdgeFlagv( const GLboolean *flag ) {
+void glcommon_glEdgeFlagv(struct CPU* cpu) {
+    GL_LOG(glEdgeFlagv);
+    GL_FUNC(glEdgeFlagv)(marshalbool(cpu, ARG1, 1));
+}
+
+// GLAPI void APIENTRY glScissor( GLint x, GLint y, GLsizei width, GLsizei height) {
+void glcommon_glScissor(struct CPU* cpu) {
+    GL_LOG(glScissor);
+    GL_FUNC(glScissor)(ARG1, ARG2, ARG3, ARG4);
+}
+
+// GLAPI void APIENTRY glClipPlane( GLenum plane, const GLdouble *equation ) {
+void glcommon_glClipPlane(struct CPU* cpu) {
+    GL_LOG(glClipPlane);
+    GL_FUNC(glClipPlane)(ARG1, marshald(cpu, ARG2, 4));
+}
+
+// GLAPI void APIENTRY glGetClipPlane( GLenum plane, GLdouble *equation ) {
+void glcommon_glGetClipPlane(struct CPU* cpu) {
+    GLdouble buffer[4];
+    GL_LOG(glGetClipPlane);
+    GL_FUNC(glGetClipPlane)(ARG1, buffer);
+    marshalBackd(cpu, ARG2, buffer, 4);
+}
+
+// GLAPI void APIENTRY glDrawBuffer( GLenum mode ) {
+void glcommon_glDrawBuffer(struct CPU* cpu) {
+    GL_LOG(glDrawBuffer);
+    GL_FUNC(glDrawBuffer)(ARG1);
+}
+
+// GLAPI void APIENTRY glReadBuffer( GLenum mode ) {
+void glcommon_glReadBuffer(struct CPU* cpu) {
+    GL_LOG(glReadBuffer);
+    GL_FUNC(glReadBuffer)(ARG1);
+}
+
+// GLAPI void APIENTRY glEnable( GLenum cap ) {
+void glcommon_glEnable(struct CPU* cpu) {
+    GL_LOG(glEnable);
+    GL_FUNC(glEnable)(ARG1);
+}
+
+// GLAPI void APIENTRY glDisable( GLenum cap ) {
+void glcommon_glDisable(struct CPU* cpu) {
+    GL_LOG(glDisable);
+    GL_FUNC(glDisable)(ARG1);
+}
+
+// GLAPI GLboolean APIENTRY glIsEnabled( GLenum cap ) {
+void glcommon_glIsEnabled(struct CPU* cpu) {
+    GL_LOG(glIsEnabled);
+    EAX = GL_FUNC(glIsEnabled)(ARG1);
+}
+
+// GLAPI void APIENTRY glEnableClientState( GLenum cap ) {  /* 1.1 */
+void glcommon_glEnableClientState(struct CPU* cpu) {
+    GL_LOG(glEnableClientState);
+    GL_FUNC(glEnableClientState)(ARG1);
+}
+
+// GLAPI void APIENTRY glDisableClientState( GLenum cap ) {  /* 1.1 */
+void glcommon_glDisableClientState(struct CPU* cpu) {
+    GL_LOG(glDisableClientState);
+    GL_FUNC(glDisableClientState)(ARG1);
+}
 
 // GLAPI void APIENTRY glGetBooleanv( GLenum pname, GLboolean *params ) {
 void glcommon_glGetBooleanv(struct CPU* cpu) {
@@ -1161,13 +1193,9 @@ void glcommon_glGetString(struct CPU* cpu) {
         index = STRING_GL_EXTENSIONS;
         result = "GL_EXT_texture3D GL_VERSION_1_2";
     }
-#ifdef USE_MMU
     if (!cpu->thread->process->strings[index])
         addString(cpu->thread->process, index, result);
     EAX =  cpu->thread->process->strings[index];
-#else
-    EAX = (U32)result;
-#endif
 }
 
 // GLAPI void APIENTRY glHint( GLenum target, GLenum mode ) {
@@ -3683,72 +3711,103 @@ void glcommon_glCopyTexSubImage2D(struct CPU* cpu) {
 // GLAPI void APIENTRY glVertexPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glVertexPointer(struct CPU* cpu) {
     GL_LOG(glVertexPointer);
+#ifdef HAS_64BIT_MMU
+    GL_FUNC(glVertexPointer)(ARG1, ARG2, ARG3, getNativeAddress(MMU_PARAM_CPU ARG4));
+#else
     cpu->thread->glVertextPointer.size = ARG1;
     cpu->thread->glVertextPointer.type = ARG2;
     cpu->thread->glVertextPointer.stride = ARG3;
     cpu->thread->glVertextPointer.ptr = ARG4;
     if (cpu->thread->glVertextPointer.ptr==0)
         GL_FUNC(glVertexPointer)(cpu->thread->glVertextPointer.size, cpu->thread->glVertextPointer.type, cpu->thread->glVertextPointer.stride, 0);
+#endif
 }
 
 // GLAPI void APIENTRY glNormalPointer( GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glNormalPointer(struct CPU* cpu) {
     GL_LOG(glNormalPointer);
+#ifdef HAS_64BIT_MMU
+    GL_FUNC(glNormalPointer)(ARG1, ARG2, getNativeAddress(MMU_PARAM_CPU ARG3));
+#else
     cpu->thread->glNormalPointer.size = 1;
     cpu->thread->glNormalPointer.type = ARG1;
     cpu->thread->glNormalPointer.stride = ARG2;
     cpu->thread->glNormalPointer.ptr = ARG3;
     if (cpu->thread->glNormalPointer.ptr==0)
         GL_FUNC(glNormalPointer)(cpu->thread->glNormalPointer.type, cpu->thread->glNormalPointer.stride, 0);
+#endif
 }
 
 // GLAPI void APIENTRY glColorPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glColorPointer(struct CPU* cpu) {
     GL_LOG(glColorPointer);
+#ifdef HAS_64BIT_MMU
+    GL_FUNC(glColorPointer)(ARG1, ARG2, ARG3, getNativeAddress(MMU_PARAM_CPU ARG4));
+#else
     cpu->thread->glColorPointer.size = ARG1;
     cpu->thread->glColorPointer.type = ARG2;
     cpu->thread->glColorPointer.stride = ARG3;
     cpu->thread->glColorPointer.ptr = ARG4;
     if (cpu->thread->glColorPointer.ptr==0)
         GL_FUNC(glColorPointer)(cpu->thread->glColorPointer.size, cpu->thread->glColorPointer.type, cpu->thread->glColorPointer.stride, 0);
+#endif
 }
 
 // GLAPI void APIENTRY glIndexPointer( GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glIndexPointer(struct CPU* cpu) {
     GL_LOG(glIndexPointer);    
+#ifdef HAS_64BIT_MMU
+    GL_FUNC(glIndexPointer)(ARG1, ARG2, getNativeAddress(MMU_PARAM_CPU ARG3));
+#else
     cpu->thread->glNormalPointer.size = 1;
     cpu->thread->glIndexPointer.type = ARG1;
     cpu->thread->glIndexPointer.stride = ARG2;
     cpu->thread->glIndexPointer.ptr = ARG3;
     if (cpu->thread->glIndexPointer.ptr==0)
         GL_FUNC(glIndexPointer)(cpu->thread->glIndexPointer.type, cpu->thread->glIndexPointer.stride, 0);
+#endif
 }
 
 // GLAPI void APIENTRY glTexCoordPointer( GLint size, GLenum type, GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glTexCoordPointer(struct CPU* cpu) {
     GL_LOG(glTexCoordPointer);
+#ifdef HAS_64BIT_MMU    
+    GL_FUNC(glTexCoordPointer)(ARG1, ARG2, ARG3, getNativeAddress(MMU_PARAM_CPU ARG4));
+#else
     cpu->thread->glTexCoordPointer.size = ARG1;
     cpu->thread->glTexCoordPointer.type = ARG2;
     cpu->thread->glTexCoordPointer.stride = ARG3;
     cpu->thread->glTexCoordPointer.ptr = ARG4;
     if (cpu->thread->glTexCoordPointer.ptr==0)
         GL_FUNC(glTexCoordPointer)(cpu->thread->glTexCoordPointer.size, cpu->thread->glTexCoordPointer.type, cpu->thread->glTexCoordPointer.stride, 0);
+#endif
 }
 
 // GLAPI void APIENTRY glEdgeFlagPointer( GLsizei stride, const GLvoid *ptr ) {
 void glcommon_glEdgeFlagPointer(struct CPU* cpu) {
     GL_LOG(glEdgeFlagPointer);
+#ifdef HAS_64BIT_MMU
+    GL_FUNC(glEdgeFlagPointer)(ARG1, getNativeAddress(MMU_PARAM_CPU ARG2));
+#else
     cpu->thread->glNormalPointer.size = 1;
     cpu->thread->glNormalPointer.type = GL_BYTE;
     cpu->thread->glEdgeFlagPointer.stride = ARG1;
     cpu->thread->glEdgeFlagPointer.ptr = ARG2;
     if (cpu->thread->glEdgeFlagPointer.ptr==0)
         GL_FUNC(glEdgeFlagPointer)(cpu->thread->glEdgeFlagPointer.stride, 0);
+#endif
 }
 
 // GLAPI void APIENTRY glGetPointerv( GLenum pname, GLvoid **params ) {
 void glcommon_glGetPointerv(struct CPU* cpu) {
     GL_LOG(glGetPointerv);
+#ifdef HAS_64BIT_MMU
+    {
+        GLvoid* params;
+        GL_FUNC(glGetPointerv)(ARG1, &params);
+        writed(MMU_PARAM_CPU ARG2, getHostAddress(MMU_PARAM_CPU params));
+    }
+#else
     switch (ARG1) {
     case GL_COLOR_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glColorPointer.ptr); break;
     case GL_EDGE_FLAG_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glEdgeFlagPointer.ptr); break;
@@ -3758,8 +3817,9 @@ void glcommon_glGetPointerv(struct CPU* cpu) {
     case GL_VERTEX_ARRAY_POINTER: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), cpu->thread->glVertextPointer.ptr); break;
     default: writed(MMU_PARAM_CPU readd(MMU_PARAM_CPU ARG2), 0);
     }
+#endif
 }
-
+#ifndef HAS_64BIT_MMU
 void updateVertexPointer(struct CPU* cpu, struct OpenGLVetexPointer* p, U32 count) {
     if (p->ptr) {
         U32 datasize = count * p->size * (p->stride?p->stride:getDataSize(p->type));    
@@ -3802,25 +3862,31 @@ void updateVertexPointers(struct CPU* cpu, U32 count) {
     updateVertexPointer(cpu, &cpu->thread->glEdgeFlagPointer, count);
     if (cpu->thread->glEdgeFlagPointer.ptr) GL_FUNC(glEdgeFlagPointer)(cpu->thread->glEdgeFlagPointer.stride, cpu->thread->glEdgeFlagPointer.marshal);
 }
-
+#endif
 // GLAPI void APIENTRY glArrayElement( GLint i ) {
 void glcommon_glArrayElement(struct CPU* cpu) {
     GL_LOG(glArrayElement);
+#ifndef HAS_64BIT_MMU
     updateVertexPointers(cpu, ARG1);
+#endif
     GL_FUNC(glArrayElement)(ARG1);
 }
 
 // GLAPI void APIENTRY glDrawArrays( GLenum mode, GLint first, GLsizei count ) {
 void glcommon_glDrawArrays(struct CPU* cpu) {
     GL_LOG(glDrawArrays);
+#ifndef HAS_64BIT_MMU
     updateVertexPointers(cpu, ARG3);
+#endif
     GL_FUNC(glDrawArrays)(ARG1, ARG2, ARG3);
 }
 
 // GLAPI void APIENTRY glDrawElements( GLenum mode, GLsizei count, GLenum type, const GLvoid *indices ) {
 void glcommon_glDrawElements(struct CPU* cpu) {
     GL_LOG(glDrawElements);
+#ifndef HAS_64BIT_MMU
     updateVertexPointers(cpu, ARG2);
+#endif
     GL_FUNC(glDrawElements)(ARG1, ARG2, ARG3, (const GLvoid*)ARG4);
 }
 
@@ -3833,7 +3899,9 @@ void glcommon_glInterleavedArrays(struct CPU* cpu) {
 // GLAPI void APIENTRY glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices ) {
 void glcommon_glDrawRangeElements(struct CPU* cpu) {
     GL_LOG(glDrawRangeElements);
+#ifndef HAS_64BIT_MMU
     updateVertexPointers(cpu, ARG4);
+#endif
     if (ext_glDrawRangeElements)
         ext_glDrawRangeElements(ARG1, ARG2, ARG3, ARG4, ARG5, (const GLvoid*)ARG6);
 }

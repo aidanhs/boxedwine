@@ -246,7 +246,11 @@ BOOL runSlice() {
         nextThread = nextThread->next;						
         sysCallTime = 0;
 
+#ifdef HAS_64BIT_MMU
+        platformRunThreadSlice(currentThread);
+#else
         runThreadSlice(currentThread);
+#endif
         endTime = getMicroCounter();
         diff = endTime-startTime;
         

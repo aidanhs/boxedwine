@@ -21,7 +21,7 @@
 
 #include "page.h"
 
-#ifdef USE_MMU
+#ifndef HAS_64BIT_MMU
 extern struct Page ramOnDemandFilePage;
 #endif
 

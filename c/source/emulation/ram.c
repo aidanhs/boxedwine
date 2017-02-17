@@ -16,7 +16,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef USE_MMU
+#ifdef HAS_64BIT_MMU
 #include "platform.h"
 void initRAM(U32 pages) {
 

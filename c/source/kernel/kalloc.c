@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "kalloc.h"
+#include "kprocess.h"
 
 static U32 usage[KALLOC_COUNT];
 static U32 count[KALLOC_COUNT];
@@ -62,6 +63,8 @@ void kfree(void* p, U32 type) {
 #endif
 }
 
+BOOL getNextProcess(U32* index, struct KProcess** process);
+
 void printMemUsage() {
     printf("%8dkb / %5d KALLOC_RAM\n", usage[KALLOC_RAM]/1024, count[KALLOC_RAM]);
     printf("%8dkb / %5d KALLOC_BLOCK\n", usage[KALLOC_BLOCK]/1024, count[KALLOC_BLOCK]);
@@ -97,4 +100,18 @@ void printMemUsage() {
     printf("%8dkb / %5d KALLOC_OPENGL\n", usage[KALLOC_OPENGL]/1024, count[KALLOC_OPENGL]);
     printf("%8dMB /%6d total\n", totalUsage/1024/1024, totalCount);
     printf("%8dMB /%6d max\n", maxUsage/1024/1024, maxCount);
+
+    {
+        U32 index=0;
+        struct KProcess* process=0;
+
+        while (getNextProcess(&index, &process)) {
+            U32 threadIndex = 0;
+            struct KThread* thread = 0;
+
+            if (process && process->memory) {
+                printf("%8dMB %s\n", process->memory->allocated/1024/1024, process->commandLine);
+            }
+        }
+    }
 }

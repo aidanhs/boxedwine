@@ -542,11 +542,11 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
         return -K_EWOULDBLOCK;
     }
     //printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
-#ifndef USE_MMU
+#ifdef HAS_64BIT_MMU
     count = len;
     if (count>ringbuf_capacity(s->connection->recvBuffer))
-        count=ringbuf_capacity(s->connection->recvBuffer);
-    ringbuf_memcpy_into(s->connection->recvBuffer, (void*)buffer, count);
+        count=(U32)ringbuf_capacity(s->connection->recvBuffer);
+    ringbuf_memcpy_into(s->connection->recvBuffer, getNativeAddress(MMU_PARAM_THREAD buffer), count);
 #else
     while (!ringbuf_is_full(s->connection->recvBuffer) && len) {
         S8 tmp[4096];
@@ -602,11 +602,11 @@ U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buf
         waitOnSocketRead(s, thread);
         return -K_WAIT;
     }
-#ifndef USE_MMU
+#ifdef HAS_64BIT_MMU
     count = len;
     if (count>ringbuf_bytes_used(s->recvBuffer))
-        count=ringbuf_bytes_used(s->recvBuffer);
-    ringbuf_memcpy_from((void*)buffer, s->recvBuffer, count);
+        count=(U32)ringbuf_bytes_used(s->recvBuffer);
+    ringbuf_memcpy_from(getNativeAddress(MMU_PARAM_THREAD buffer), s->recvBuffer, count);
 #else
     while (len && !ringbuf_is_empty(s->recvBuffer)) {
         S8 tmp[4096];
