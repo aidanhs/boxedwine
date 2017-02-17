@@ -1548,7 +1548,6 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
         }
     } else {
         kwarn("getsockopt level %d not implemented", level);
-        writed(MMU_PARAM_THREAD 0xFFFFFFFF, 1);
         return -K_EINVAL;
     }
     return 0;
