@@ -35,6 +35,9 @@ extern char tmp64k[];
 #define MMU_PARAM_THREAD thread->process->memory,
 #define MMU_PARAM_CPU cpu->memory,
 
+struct Memory;
+struct KProcess;
+
 U8 readb(MMU_ARG U32 address);
 void writeb(MMU_ARG U32 address, U8 value);
 U16 readw(MMU_ARG U32 address);
