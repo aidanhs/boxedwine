@@ -163,8 +163,8 @@
         var dirPrefix = getFileDirectory();
         var isAutoRunSet = getAutoRun();
         var extraZipFiles = getZipFileList("overlay"); //MANUAL:"dlls.zip;fonts.zip";
-        var appZipFile = getZipFile("app"); //MANUAL:"chomp.zip";
-        var rootZipFile = getZipFile("root"); //MANUAL:"base.zip";
+        var appZipFile = getAppZipFile("app"); //MANUAL:"chomp.zip";
+        var rootZipFile = getRootZipFile("root"); //MANUAL:"base.zip";
         var Program = getExecutable(); //MANUAL:"CHOMP.EXE";
         var WorkingDir = getWorkingDirectory(); //MANUAL:"";
         var retrieveDlls = getRetrieveDlls();
@@ -244,13 +244,17 @@
             return isSoundEnabled;
         }
         function getFileDirectory(){
-            
+
             var dir =  getParameter("dir");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || dir===""){
                 dir = HOME_DIRECTORY;
             }else{
                 if(!dir.endsWith("/")){
                     dir = dir + "/";
+                }
+                if(!dir.startsWith(ROOT)) {
+                    console.log("file directory must start at /root");
+                    dir = HOME_DIRECTORY;
                 }
             }
             console.log("setting file directory to: "+dir);
@@ -271,8 +275,8 @@
             }
             return dir;
         }
-        function getZipFile(param){
-            
+        function getAppZipFile(param){
+
             var filename =  getParameter(param);
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL || filename===""){
                 filename = "";
@@ -283,6 +287,19 @@
                 }
                 console.log("setting " + param + " zip file to: "+filename);
             }
+            return filename;
+        }
+        function getRootZipFile(param){
+
+            var filename =  getParameter(param);
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL || filename===""){
+                filename = "boxedwine.zip";
+            }else{
+                if(!filename.endsWith(".zip")){
+                    filename = filename + ".zip";
+                }
+            }
+            console.log("setting " + param + " zip file to: "+filename);
             return filename;
         }
         function getZipFileList(param){
@@ -356,45 +373,46 @@
             var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
 
             buildExtraFileSystems(Buffer, function(extraFSs) {
-                var rootMfs = new BrowserFS.FileSystem.MountableFileSystem();
+                buildAppFileSystems(function(homeAdapter) {
+                    var rootMfs = new BrowserFS.FileSystem.MountableFileSystem();
 
-                var rootListingObject = {};
-                if(rootZipFile.length == 0){
-                    rootZipFile="boxedwine.zip";
-                }
-                rootListingObject[rootZipFile] =  null;
+                    var rootListingObject = {};
+                    rootListingObject[rootZipFile] =  null;
 
-                rootMfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest(rootListingObject, ""));
-                rootMfs.readFile('/temp/' + rootZipFile, null, flag_r, function callback(e, contents){
+                    rootMfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest(rootListingObject, ""));
+                    rootMfs.readFile('/temp/' + rootZipFile, null, flag_r, function callback(e, contents){
+                        if(e){
+                            console.log(e);
+                        }
+                        Module.FS_createDataFile("/", rootZipFile, contents, true, true);
+                        contents = null;
+                        buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs);
+                        rootMfs = null;
+                    });
+                });
+            });
+        }
+        function buildAppFileSystems(adapterCallback)
+        {
+            var Buffer = BrowserFS.BFSRequire('buffer').Buffer;
+            if(appZipFile.length > 0){
+                var listingObject = {};
+                listingObject[appZipFile] =  null;
+                var mfs = new BrowserFS.FileSystem.MountableFileSystem();
+                mfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest(listingObject, ""));
+                mfs.readFile('/temp/' + appZipFile, null, flag_r, function callback(e, contents){
                     if(e){
                         console.log(e);
                     }
-                    var zipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
-                    var homeAdapter = null;
-                    if(appZipFile.length > 0){
-                        var listingObject = {};
-                        listingObject[appZipFile] =  null;
-                        var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-                        mfs.mount('/temp', new BrowserFS.FileSystem.XmlHttpRequest(listingObject, ""));
-                        mfs.readFile('/temp/' + appZipFile, null, flag_r, function callback(e, contents){
-                            if(e){
-                                console.log(e);
-                            }
-                            var additionalZipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
-                            homeAdapter = new BrowserFS.FileSystem.FolderAdapter("/", additionalZipfs);
-                            buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter, extraFSs);
-                            rootMfs = null;
-                            mfs = null;
-                        });
-                    }else{
-                        var dirPrefixParentDir = parentDir(dirPrefix);
-                        dirPrefixParentDir = dirPrefixParentDir.substring(0, dirPrefixParentDir.length - 1);
-                        homeAdapter = new BrowserFS.FileSystem.FolderAdapter(dirPrefixParentDir, zipfs);
-                        buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter, extraFSs)
-                        rootMfs = null;
-                    }
+                    var additionalZipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
+                    homeAdapter = new BrowserFS.FileSystem.FolderAdapter("/", additionalZipfs);
+                    adapterCallback(homeAdapter);
+                    mfs = null;
                 });
-            });
+            }else{
+                homeAdapter = new BrowserFS.FileSystem.FolderAdapter("/", new BrowserFS.FileSystem.InMemory());
+                adapterCallback(homeAdapter);
+            }
         }
         function buildExtraFileSystems(Buffer, fsCallback)
         {
@@ -442,15 +460,21 @@
             });
         }
 
-        function buildBrowserFileSystem(writableStorage, isDropBox, zipfs, homeAdapter, extraFSs)
+        function buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs)
         {
             FS.createFolder(FS.root, 'root', true, true);
-            var rootOverlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), zipfs);
+            var mainfs = new BrowserFS.FileSystem.InMemory();
+            createFolders(mainfs, dirPrefix.substring(ROOT.length).split("/"));
+            createFolders(mainfs, DLL_DIRECTORY.substring(ROOT.length).split("/"));
 
+            //i do not understand why i need the overlay
+            var rootOverlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), mainfs);
             rootOverlay.initialize(function callback(e3){
                 if(e3){
                     console.log(e3);
                 }
+
+
                 buildDllFileSystem(function(dllFS) {
                     homeAdapter.initialize(function callback(e){
                         if(e){
@@ -481,7 +505,7 @@
         {
             var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
             var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-            mfs.mount('/', rootFS);
+            mfs.mount('/root', rootFS);
             mfs.mount(dirPrefixWithoutEndSlash, homeFS);
             if(dllFS != null) {
                 mfs.mount(DLL_DIRECTORY, dllFS);
@@ -490,11 +514,12 @@
 
             BrowserFS.initialize(mfs);
             FS.mount(BFS, {root: '/root'}, '/root');
-
             for(let i = 0; i < extraFSs.length; i++) {
                 recursiveCopy(extraFSs[i], extraZipFiles[i], '/');
             }
             extraFSs = null;
+
+
             if(SHOW_UPLOAD_DOWNLOAD){
                 document.getElementById('uploadbtn').style.display = "";
                 document.getElementById('downloadbtn').style.display = "";
@@ -518,6 +543,17 @@
                     //fixme: currently turning sound off breaks build. document.getElementById('sound-checkbox').style.display = "";
                 }
             }        
+        }
+
+        function createFolders(mainfs, folders)
+        {
+            var directory = "";
+            for(var k = 0; k < folders.length; k++){
+                if(folders[k].length > 0) {
+                    directory = directory + "/" + folders[k];
+                    mainfs.mkdirSync(directory);
+                }
+            }
         }
         function recursiveCopy(fs, zipFilename, filename) {
 
@@ -722,7 +758,7 @@
             var file = extractLastPartOfPath(filename);
             var path = extractFirstPartOfPath(filename);
             
-            WorkingDir = HOME_DIRECTORY.substring(ROOT.length) + path.substring(1);
+            WorkingDir = dirPrefix.substring(ROOT.length) + path.substring(1);
             Program = file;
             
             startEmulator();
@@ -764,7 +800,7 @@
             return false;
         }
         function getEmulatorParams() {
-            var params = ["-root", "/root", "-m", getMemoryAllocation()];
+            var params = ["-root", "/root", "-m", getMemoryAllocation(), "-zip", rootZipFile];
             //fixme: currently turning sound off breaks build.
             //if(!isSoundEnabled){
             //    params.push("-nosound");
@@ -774,9 +810,9 @@
                 params.push(WorkingDir);
             }else if(appZipFile.length > 0 && Program.length > 0 && Program.substring(0 ,1) != "/"){
                 var subDirectory = appZipFile.substring(0, appZipFile.lastIndexOf("."));
-                var programDir = HOME_DIRECTORY.substring(ROOT.length);
+                var programDir = dirPrefix.substring(ROOT.length);
                 params.push("-w");
-                if(isInSubDirectory(HOME_DIRECTORY, subDirectory)){
+                if(isInSubDirectory(dirPrefix, subDirectory)){
                     params.push(programDir + subDirectory);
                 }else{
                     params.push(programDir);
