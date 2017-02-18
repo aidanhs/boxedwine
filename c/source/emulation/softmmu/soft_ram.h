@@ -19,7 +19,9 @@
 #ifndef __RAM_H__
 #define __RAM_H__
 
-#include "page.h"
+#ifndef HAS_64BIT_MMU
+
+#include "soft_page.h"
 #include "op.h"
 #include "memory.h"
 
@@ -27,7 +29,6 @@ void initRAM(U32 pages);
 U32 getPageCount();
 U32 getFreePageCount();
 
-#ifndef HAS_64BIT_MMU
 extern struct Page ramPageRO;
 extern struct Page ramPageWO;
 extern struct Page ramPageWR;

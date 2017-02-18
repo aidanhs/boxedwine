@@ -10,9 +10,6 @@
     <ClCompile Include="..\..\..\..\source\emulation\decoder.c">
       <Filter>source\emulation</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\memory.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c">
       <Filter>source\kernel\devs</Filter>
     </ClCompile>
@@ -58,13 +55,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c">
       <Filter>source\kernel</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\kernel\kfmmap.c">
-      <Filter>source\kernel</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\kio.c">
-      <Filter>source\kernel</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c">
       <Filter>source\kernel</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\kobject.c">
@@ -120,9 +111,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\log.c">
       <Filter>source\util</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\ram.c">
-      <Filter>source\emulation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\opengl\glcommon.c">
       <Filter>opengl</Filter>
@@ -219,6 +207,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\lib\zlib\contrib\minizip\zip.c">
       <Filter>minizip</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_memory.c">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_ram.c">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\hardmmu\hard_memory.c">
+      <Filter>source\emulation\hardmmu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_mmap.c">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_file_map.c">
+      <Filter>source\emulation\softmmu</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -465,6 +468,24 @@
     <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\zip.h">
       <Filter>minizip</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_file_map.h">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_page.h">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_ram.h">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\hardmmu\hard_memory.h">
+      <Filter>source\emulation\hardmmu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_memory.h">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\decodedata.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">
@@ -520,6 +541,12 @@
     </Filter>
     <Filter Include="minizip">
       <UniqueIdentifier>{6be3ffdc-ef7e-4be0-ae02-92bfaf1a278f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\emulation\softmmu">
+      <UniqueIdentifier>{0b40ed43-c940-475f-a783-ceaf5a1355c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\emulation\hardmmu">
+      <UniqueIdentifier>{c453ca4f-3de0-498b-b001-428cfe7d89bb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

@@ -8709,10 +8709,8 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
             return;
         }
         for (i=0;i<op->eipCount;i++) {
-#ifndef HAS_64BIT_MMU
-            if (!cpu->memory->read[data->ip >> 12])
+            if (isValidReadAddress(cpu->memory, data->ip))
                 return;
-#endif
             data->ops[data->opPos++] = readb(MMU_PARAM_CPU data->ip++);
         }
         op = op->next;
@@ -8774,15 +8772,9 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         OUT_DEFINE(ESI);
         OUT_DEFINE(EDI);
         OUT_DEFINE(FMASK_ALL);
-        out(data, "#ifndef HAS_64BIT_MMU\n");
         out(data, "#define MMU_ARG struct Memory* memory,\n");
         out(data, "#define MMU_PARAM memory,\n");
         out(data, "#define MMU_PARAM_CPU cpu->memory,\n");
-        out(data, "#else\n");
-        out(data, "#define MMU_ARG\n");
-        out(data, "#define MMU_PARAM\n");
-        out(data, "#define MMU_PARAM_CPU\n");
-        out(data, "#endif\n");
         out(data, "#define setCF(cpu, b) if (b) cpu->flags|=CF; else cpu->flags&=~CF\n");
         out(data, "#define CYCLES(x) cpu->blockCounter += x\n");
 
@@ -8859,9 +8851,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block) {
         out(data, "struct user_desc {U32  entry_number;U32 base_addr;U32  limit;union {struct {U32  seg_32bit:1;U32  contents:2;U32  read_exec_only:1;U32  limit_in_pages:1;U32  seg_not_present:1;U32  useable:1;};U32 flags;};};\n");
 
         out(data, "struct CPU {struct Reg reg[9]; U8* reg8[8]; U32 segAddress[7]; U32 segValue[7]; U32 flags; struct Reg eip;");
-#ifndef HAS_64BIT_MMU
         out(data, "struct Memory* memory;");
-#endif
         out(data, "struct KThread* thread; struct Reg src; struct Reg dst; struct Reg dst2; struct Reg result; struct LazyFlags* lazyFlags; int df; U32 oldcf; U32 big; struct FPU fpu; struct Block* nextBlock; struct Block* currentBlock; U64 timeStampCounter; U32 blockCounter; U32 blockInstructionCount; BOOL log; U32 cpl; U32 stackMask; U32 stackNotMask; U32 cr0;};\n");
 
         out(data, "struct LazyFlags {U32 (*getCF)(struct CPU* cpu);U32 (*getOF)(struct CPU* cpu);U32 (*getAF)(struct CPU* cpu);U32 (*getZF)(struct CPU* cpu);U32 (*getSF)(struct CPU* cpu);U32 (*getPF)(struct CPU* cpu);};\n");

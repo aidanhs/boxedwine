@@ -28,7 +28,6 @@
 #include "kscheduler.h"
 #include "ksystem.h"
 #include "kio.h"
-#include "ram.h"
 #include "ringbuf.h"
 #include "fsapi.h"
 
@@ -542,12 +541,6 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
         return -K_EWOULDBLOCK;
     }
     //printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
-#ifdef HAS_64BIT_MMU
-    count = len;
-    if (count>ringbuf_capacity(s->connection->recvBuffer))
-        count=(U32)ringbuf_capacity(s->connection->recvBuffer);
-    ringbuf_memcpy_into(s->connection->recvBuffer, getNativeAddress(MMU_PARAM_THREAD buffer), count);
-#else
     while (!ringbuf_is_full(s->connection->recvBuffer) && len) {
         S8 tmp[4096];
         U32 todo = len;
@@ -562,7 +555,6 @@ U32 unixsocket_write(MMU_ARG struct KThread* thread, struct KObject* obj, U32 bu
         len-=todo;
         count+=todo;
     }
-#endif
     if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
     }
@@ -606,7 +598,7 @@ U32 unixsocket_read(MMU_ARG struct KThread* thread, struct KObject* obj, U32 buf
     count = len;
     if (count>ringbuf_bytes_used(s->recvBuffer))
         count=(U32)ringbuf_bytes_used(s->recvBuffer);
-    ringbuf_memcpy_from(getNativeAddress(MMU_PARAM_THREAD buffer), s->recvBuffer, count);
+    ringbuf_memcpy_from(getPhysicalAddress(MMU_PARAM_THREAD buffer), s->recvBuffer, count);
 #else
     while (len && !ringbuf_is_empty(s->recvBuffer)) {
         S8 tmp[4096];

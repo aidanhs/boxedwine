@@ -48,25 +48,25 @@ double dARG(struct CPU* cpu, int address) {
 }
 
 #ifdef HAS_64BIT_MMU
-#define marshald(cpu, address, count) (GLdouble*)getNativeAddress(cpu->memory, address)
-#define marshalf(cpu, address, count) (GLfloat*)getNativeAddress(cpu->memory, address)
-#define marshali(cpu, address, count) (GLint*)getNativeAddress(cpu->memory, address)
-#define marshalui(cpu, address, count) (GLuint*)getNativeAddress(cpu->memory, address)
-#define marshals(cpu, address, count) (GLshort*)getNativeAddress(cpu->memory, address)
-#define marshalus(cpu, address, count) (GLushort*)getNativeAddress(cpu->memory, address)
-#define marshalb(cpu, address, count) (GLbyte*)getNativeAddress(cpu->memory, address)
-#define marshalub(cpu, address, count) (GLubyte*)getNativeAddress(cpu->memory, address)
-#define marshalbool(cpu, address, count) (GLboolean*)getNativeAddress(cpu->memory, address)
-#define marshal2d(cpu, address, count) (GLdouble*)getNativeAddress(cpu->memory, address)
-#define marshal2f(cpu, address, count) (GLfloat*)getNativeAddress(cpu->memory, address)
-#define marshal2i(cpu, address, count) (GLint*)getNativeAddress(cpu->memory, address)
+#define marshald(cpu, address, count) (GLdouble*)getPhysicalAddress(cpu->memory, address)
+#define marshalf(cpu, address, count) (GLfloat*)getPhysicalAddress(cpu->memory, address)
+#define marshali(cpu, address, count) (GLint*)getPhysicalAddress(cpu->memory, address)
+#define marshalui(cpu, address, count) (GLuint*)getPhysicalAddress(cpu->memory, address)
+#define marshals(cpu, address, count) (GLshort*)getPhysicalAddress(cpu->memory, address)
+#define marshalus(cpu, address, count) (GLushort*)getPhysicalAddress(cpu->memory, address)
+#define marshalb(cpu, address, count) (GLbyte*)getPhysicalAddress(cpu->memory, address)
+#define marshalub(cpu, address, count) (GLubyte*)getPhysicalAddress(cpu->memory, address)
+#define marshalbool(cpu, address, count) (GLboolean*)getPhysicalAddress(cpu->memory, address)
+#define marshal2d(cpu, address, count) (GLdouble*)getPhysicalAddress(cpu->memory, address)
+#define marshal2f(cpu, address, count) (GLfloat*)getPhysicalAddress(cpu->memory, address)
+#define marshal2i(cpu, address, count) (GLint*)getPhysicalAddress(cpu->memory, address)
 
-#define marshal2ui(cpu, address, count) (GLuint*)getNativeAddress(cpu->memory, address)
-#define marshal2s(cpu, address, count) (GLshort*)getNativeAddress(cpu->memory, address)
-#define marshal2us(cpu, address, count) (GLushort*)getNativeAddress(cpu->memory, address)
-#define marshal2b(cpu, address, count) (GLbyte*)getNativeAddress(cpu->memory, address)
-#define marshal2ub(cpu, address, count) (GLubyte*)getNativeAddress(cpu->memory, address)
-#define marshal2bool(cpu, address, count) (GLboolean*)getNativeAddress(cpu->memory, address)
+#define marshal2ui(cpu, address, count) (GLuint*)getPhysicalAddress(cpu->memory, address)
+#define marshal2s(cpu, address, count) (GLshort*)getPhysicalAddress(cpu->memory, address)
+#define marshal2us(cpu, address, count) (GLushort*)getPhysicalAddress(cpu->memory, address)
+#define marshal2b(cpu, address, count) (GLbyte*)getPhysicalAddress(cpu->memory, address)
+#define marshal2ub(cpu, address, count) (GLubyte*)getPhysicalAddress(cpu->memory, address)
+#define marshal2bool(cpu, address, count) (GLboolean*)getPhysicalAddress(cpu->memory, address)
 #define marshalBackd(cpu, address, buffer, count)
 #define marshalBackf(cpu, address, buffer, count)
 #define marshalBacki(cpu, address, buffer, count)
@@ -3712,7 +3712,7 @@ void glcommon_glCopyTexSubImage2D(struct CPU* cpu) {
 void glcommon_glVertexPointer(struct CPU* cpu) {
     GL_LOG(glVertexPointer);
 #ifdef HAS_64BIT_MMU
-    GL_FUNC(glVertexPointer)(ARG1, ARG2, ARG3, getNativeAddress(MMU_PARAM_CPU ARG4));
+    GL_FUNC(glVertexPointer)(ARG1, ARG2, ARG3, getPhysicalAddress(MMU_PARAM_CPU ARG4));
 #else
     cpu->thread->glVertextPointer.size = ARG1;
     cpu->thread->glVertextPointer.type = ARG2;
@@ -3727,7 +3727,7 @@ void glcommon_glVertexPointer(struct CPU* cpu) {
 void glcommon_glNormalPointer(struct CPU* cpu) {
     GL_LOG(glNormalPointer);
 #ifdef HAS_64BIT_MMU
-    GL_FUNC(glNormalPointer)(ARG1, ARG2, getNativeAddress(MMU_PARAM_CPU ARG3));
+    GL_FUNC(glNormalPointer)(ARG1, ARG2, getPhysicalAddress(MMU_PARAM_CPU ARG3));
 #else
     cpu->thread->glNormalPointer.size = 1;
     cpu->thread->glNormalPointer.type = ARG1;
@@ -3742,7 +3742,7 @@ void glcommon_glNormalPointer(struct CPU* cpu) {
 void glcommon_glColorPointer(struct CPU* cpu) {
     GL_LOG(glColorPointer);
 #ifdef HAS_64BIT_MMU
-    GL_FUNC(glColorPointer)(ARG1, ARG2, ARG3, getNativeAddress(MMU_PARAM_CPU ARG4));
+    GL_FUNC(glColorPointer)(ARG1, ARG2, ARG3, getPhysicalAddress(MMU_PARAM_CPU ARG4));
 #else
     cpu->thread->glColorPointer.size = ARG1;
     cpu->thread->glColorPointer.type = ARG2;
@@ -3757,7 +3757,7 @@ void glcommon_glColorPointer(struct CPU* cpu) {
 void glcommon_glIndexPointer(struct CPU* cpu) {
     GL_LOG(glIndexPointer);    
 #ifdef HAS_64BIT_MMU
-    GL_FUNC(glIndexPointer)(ARG1, ARG2, getNativeAddress(MMU_PARAM_CPU ARG3));
+    GL_FUNC(glIndexPointer)(ARG1, ARG2, getPhysicalAddress(MMU_PARAM_CPU ARG3));
 #else
     cpu->thread->glNormalPointer.size = 1;
     cpu->thread->glIndexPointer.type = ARG1;
@@ -3772,7 +3772,7 @@ void glcommon_glIndexPointer(struct CPU* cpu) {
 void glcommon_glTexCoordPointer(struct CPU* cpu) {
     GL_LOG(glTexCoordPointer);
 #ifdef HAS_64BIT_MMU    
-    GL_FUNC(glTexCoordPointer)(ARG1, ARG2, ARG3, getNativeAddress(MMU_PARAM_CPU ARG4));
+    GL_FUNC(glTexCoordPointer)(ARG1, ARG2, ARG3, getPhysicalAddress(MMU_PARAM_CPU ARG4));
 #else
     cpu->thread->glTexCoordPointer.size = ARG1;
     cpu->thread->glTexCoordPointer.type = ARG2;
@@ -3787,7 +3787,7 @@ void glcommon_glTexCoordPointer(struct CPU* cpu) {
 void glcommon_glEdgeFlagPointer(struct CPU* cpu) {
     GL_LOG(glEdgeFlagPointer);
 #ifdef HAS_64BIT_MMU
-    GL_FUNC(glEdgeFlagPointer)(ARG1, getNativeAddress(MMU_PARAM_CPU ARG2));
+    GL_FUNC(glEdgeFlagPointer)(ARG1, getPhysicalAddress(MMU_PARAM_CPU ARG2));
 #else
     cpu->thread->glNormalPointer.size = 1;
     cpu->thread->glNormalPointer.type = GL_BYTE;

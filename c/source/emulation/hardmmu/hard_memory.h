@@ -16,25 +16,31 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef __PAGE_H__
-#define __PAGE_H__
+#ifndef __HARD_MEMORY_H__
+#define __HARD_MEMORY_H__
 
 #include "platform.h"
+#include "memory.h"
 
-#ifndef HAS_64BIT_MMU
-struct Memory;
-
-struct Page {
-    U8 (*readb)(struct Memory* memory, U32 address);
-    void (*writeb)(struct Memory* memory, U32 address, U8 value);
-    U16 (*readw)(struct Memory* memory, U32 address);
-    void (*writew)(struct Memory* memory, U32 address, U16 value);
-    U32 (*readd)(struct Memory* memory, U32 address);
-    void (*writed)(struct Memory* memory, U32 address, U32 value);
-    void (*clear)(struct Memory* memory, U32 page);
-    U8* (*physicalAddress)(struct Memory* memory, U32 address);
+struct Memory {
+    U8 flags[NUMBER_OF_PAGES];
+    U8 committed[NUMBER_OF_PAGES];
+    struct KProcess* process;
+    U32 allocated;
+    U64 id;    
+#ifdef LOG_OPS
+    U32 log;
+#endif
 };
 
-#endif
+INLINE void* getNativeAddress(MMU_ARG U32 address) {
+    return (void*)(address | memory->id);
+}
+INLINE U32 getHostAddress(MMU_ARG void* address) {
+    return (U32)address;
+}
+
+void reserveNativeMemory(struct Memory* memory);
+void releaseNativeMemory(struct Memory* memory);
 
 #endif

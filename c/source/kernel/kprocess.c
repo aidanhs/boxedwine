@@ -33,7 +33,6 @@
 #include "kstat.h"
 #include "bufferaccess.h"
 #include "ksignal.h"
-#include "ram.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -78,7 +77,6 @@ void initProcess(MMU_ARG struct KProcess* process, U32 argc, const char** args, 
 
     memset(process, 0, sizeof(struct KProcess));	
     process->memory = memory;
-    memory->process = process;    
     process->id = addProcess(process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);	
     process->parentId = 1;
@@ -115,27 +113,6 @@ struct KProcess* allocProcess() {
         return result;
     }
     return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
-}
-
-void closeMemoryMapped(struct MapedFiles* mapped) {
-    mapped->refCount--;
-    if (mapped->refCount == 0) {
-        closeKObject(mapped->file);
-        mapped->file = 0;
-#ifndef HAS_64BIT_MMU
-        mapped->systemCacheEntry->refCount--;
-        if (mapped->systemCacheEntry->refCount == 0) {			
-            U32 i;
-            for (i=0;i<mapped->systemCacheEntry->pageCount;i++) {
-                if (mapped->systemCacheEntry->ramPages[i])
-                    freeRamPage(mapped->systemCacheEntry->ramPages[i]);
-            }
-            kfree(mapped->systemCacheEntry->ramPages, KALLOC_MMAP_CACHE_RAMPAGE);
-            removeMappedFileInCache(mapped->systemCacheEntry);
-            kfree(mapped->systemCacheEntry, KALLOC_MAPPEDFILECACHE);
-        }
-#endif
-    }
 }
 
 void cleanupProcess(struct KProcess* process) {
@@ -202,7 +179,6 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
 
     memset(process, 0, sizeof(struct KProcess));	
     process->memory = memory;
-    memory->process = process;    
     process->id = addProcess(process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
 
@@ -478,7 +454,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
     const char* pArgs[MAX_ARG_COUNT];
     unsigned int argIndex=MAX_ARG_COUNT;
     struct KProcess* process = allocProcess();
-    struct Memory* memory = allocMemory();		
+    struct Memory* memory = allocMemory(process);		
     struct KThread* thread = allocThread();
     U32 i;
     struct FsOpenNode* openNode = 0;
@@ -680,9 +656,9 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         vFork = 1;
     }
 
-    if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID) || (flags & 0xFFFFFF00)==(K_CLONE_PARENT_SETTID)) {
-        struct Memory* memory = allocMemory();
+    if ((flags & 0xFFFFFF00)==(K_CLONE_CHILD_SETTID|K_CLONE_CHILD_CLEARTID) || (flags & 0xFFFFFF00)==(K_CLONE_PARENT_SETTID)) {        
         struct KProcess* newProcess = allocProcess();
+        struct Memory* memory = allocMemory(newProcess);
         struct KThread* newThread = allocThread();
 
         newProcess->parentId = thread->process->id;        
@@ -1331,11 +1307,7 @@ U32 allocPage(struct KProcess* process) {
     U32 page = 0;
     if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page, 0))
         kpanic("Failed to allocate stack for thread");
-#ifdef HAS_64BIT_MMU
-    allocPages(process->memory, page, 1, PAGE_READ|PAGE_WRITE);
-#else
-    allocPages(process->memory, &ramPageWR, TRUE, page, 1, PAGE_READ|PAGE_WRITE, 0);
-#endif
+    allocPages(process->memory, page, 1, PAGE_READ|PAGE_WRITE, 0, 0, 0);
     return page << PAGE_SHIFT;
 }
 

@@ -110,7 +110,7 @@ void printMemUsage() {
             struct KThread* thread = 0;
 
             if (process && process->memory) {
-                printf("%8dMB %s\n", process->memory->allocated/1024/1024, process->commandLine);
+                printf("%8dMB %s\n", getMemoryAllocated(process->memory)/1024/1024, process->commandLine);
             }
         }
     }

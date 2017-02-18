@@ -236,7 +236,7 @@ void dspCheck();
 BOOL runSlice() {
     runTimers();
     dspCheck();
-    flipFB();
+    //flipFB();
     if (nextThread) {		
         U64 startTime = getMicroCounter();
         U64 endTime;

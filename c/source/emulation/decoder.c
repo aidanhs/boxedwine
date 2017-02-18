@@ -31,125 +31,13 @@
 #include "block.h"
 #include "jit.h"
 #include "ksystem.h"
+#include "decodedata.h"
 
 #define FETCH_S8(data) (S8)FETCH8(data)
 #define FETCH_S16(data) (S16)FETCH16(data)
 #define FETCH_S32(data) (S32)FETCH32(data)
 
 void log_pf(struct KProcess* process, U32 address);
-
-struct DecodeData {
-    int ds;
-    int ss;
-    int rep;
-    int rep_zero;
-    int ea16;
-    U32 ip;
-    U32 start;
-    U32 opCode;
-    struct CPU* cpu;
-    struct Memory* memory;
-#ifndef HAS_64BIT_MMU    
-    U8* page;
-    U32 pagePos;
-#endif
-    struct Op* op;	
-    int count;
-};
-
-#ifndef HAS_64BIT_MMU
-extern U8* ram;
-
-void fillFetchPage(struct DecodeData* data) {
-    U32 address;
-
-    if (data->cpu->big)
-        address = data->ip + data->cpu->segAddress[CS];
-    else
-        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
-    data->pagePos = address & 0xFFF;
-    readb(data->memory, address);
-    data->page = &ram[(address & 0xFFFFF000) - data->memory->read[address>>12]];
-}
-#endif
-
-U8 FETCH8(struct DecodeData* data) {
-#ifndef HAS_64BIT_MMU
-    if (data->pagePos>=PAGE_SIZE)
-        fillFetchPage(data);
-    data->ip++;
-    return data->page[data->pagePos++];
-#else
-    U32 address;
-
-    if (data->cpu->big)
-        address = data->ip + data->cpu->segAddress[CS];
-    else
-        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
-    data->ip++;
-    return readb(data->memory, address);
-#endif
-}
-
-U16 FETCH16(struct DecodeData* data) {
-    U16 result;
-
-#ifndef HAS_64BIT_MMU
-
-#ifndef UNALIGNED_MEMORY
-    if (data->pagePos>=PAGE_SIZE-1) {
-#endif
-        result = FETCH8(data);
-        result |= FETCH8(data) << 8;
-        return result;
-#ifndef UNALIGNED_MEMORY
-    }
-    data->ip+=2;
-    result = *(U16*)(&data->page[data->pagePos]);
-    data->pagePos+=2;
-    return result;
-#endif
-#else
-    U32 address;
-
-    if (data->cpu->big)
-        address = data->ip + data->cpu->segAddress[CS];
-    else
-        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
-    data->ip+=2;
-    return readw(data->memory, address);
-#endif
-}
-
-U32 FETCH32(struct DecodeData* data) {
-    U32 result;
-#ifndef HAS_64BIT_MMU
-#ifndef UNALIGNED_MEMORY
-    if (data->pagePos>=PAGE_SIZE-3) {
-#endif
-        result = FETCH8(data);
-        result |= FETCH8(data) << 8;
-        result |= FETCH8(data) << 16;
-        result |= FETCH8(data) << 24;
-        return result;
-#ifndef UNALIGNED_MEMORY
-    }
-    data->ip+=4;
-    result = *(U32*)(&data->page[data->pagePos]);
-    data->pagePos+=4;
-    return result;
-#endif
-#else
-    U32 address;
-
-    if (data->cpu->big)
-        address = data->ip + data->cpu->segAddress[CS];
-    else
-        address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
-    data->ip+=4;
-    return readd(data->memory, address);
-#endif
-}
 
 struct Op* freeOps;
 int totalOpCount;
@@ -2645,9 +2533,7 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     data.cpu = cpu;
     data.count = 0;
     data.memory = cpu->memory;
-#ifndef HAS_64BIT_MMU    
-    fillFetchPage(pData);    
-#endif
+    initDecodeData(pData);    
     data.op->inst = FETCH8(pData)+data.opCode;
     decoder[data.op->inst](pData);
     block->eipCount = 0;

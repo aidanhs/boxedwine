@@ -16,26 +16,13 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifdef HAS_64BIT_MMU
-#include "platform.h"
-void initRAM(U32 pages) {
-
-}
-
-U32 getPageCount() {
-    return 262144; // 1GB
-}
-
-U32 getFreePageCount() {
-    return 196608; // 768MB
-}
-
-#else
+#ifndef HAS_64BIT_MMU
 #include "memory.h"
 #include "log.h"
 #include "block.h"
 #include "op.h"
-#include "ram.h"
+#include "soft_ram.h"
+#include "soft_memory.h"
 #include "kalloc.h"
 #include "kthread.h"
 

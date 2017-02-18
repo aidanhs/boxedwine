@@ -20,7 +20,6 @@
 #include "kscheduler.h"
 #include "kprocess.h"
 #include "log.h"
-#include "ram.h"
 #include "ksystem.h"
 #include "kerror.h"
 #include "ksignal.h"
@@ -66,11 +65,7 @@ void setupStack(struct KThread* thread) {
 		if (!findFirstAvailablePage(thread->cpu.memory, 0xC0000, pageCount, &page, 0))
 			if (!findFirstAvailablePage(thread->cpu.memory, 0x80000, pageCount, &page, 0))
 				kpanic("Failed to allocate stack for thread");
-#ifdef HAS_64BIT_MMU
-    allocPages(thread->cpu.memory, page+1, pageCount-2, PAGE_READ|PAGE_WRITE);
-#else
-    allocPages(thread->cpu.memory, &ramOnDemandPage, FALSE, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0);
-#endif
+    allocPages(thread->cpu.memory, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0, 0, 0);
     // 1 page above (catch stack underrun)
     reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
     // 1 page below (catch stack overrun)
@@ -177,11 +172,7 @@ void threadClearFutexes(struct KThread* thread) {
 }
 
 U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
-#ifndef HAS_64BIT_MMU
     U8* ramAddress = getPhysicalAddress(MMU_PARAM_THREAD addr);
-#else
-    U8* ramAddress = (U8*)getNativeAddress(MMU_PARAM_THREAD addr);
-#endif
 
     if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
         struct futex* f=getFutex(thread, ramAddress);

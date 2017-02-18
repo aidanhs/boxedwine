@@ -19,7 +19,6 @@
 #include "ksystem.h"
 #include "karray.h"
 #include "log.h"
-#include "ram.h"
 #include "kalloc.h"
 //#include "pbl.h"
 #include "khashmap.h"
@@ -38,77 +37,11 @@ static struct KArray processes;
 //static PblMap* mappedFileCache;
 static struct KHashmap mappedFileCache;
 
-#ifndef HAS_64BIT_MMU
-static U32 callbackPage;
-#endif
-
-static U8* callbackAddress;
-static int callbackPos;
-static U32 callbacks[512];
-
-#define CALLBACK_OP_SIZE 8
-
 void initSystem() {
     initArray(&processes, 100);		
     //mappedFileCache = pblMapNewHashMap();
     initHashmap(&mappedFileCache);
 }
-
-void addCallback(void (OPCALL *func)(struct CPU*, struct Op*)) {
-    U64 funcAddress = (U64)func;
-    U8* address = callbackAddress+callbackPos*CALLBACK_OP_SIZE;
-    callbacks[callbackPos++] = (U32)address;
-    
-    *address=0xFE;
-    address++;
-    *address=0x38;
-    address++;
-    *address=(U8)funcAddress;
-    address++;
-    *address=(U8)(funcAddress >> 8);
-    address++;
-    *address=(U8)(funcAddress >> 16);
-    address++;
-    *address=(U8)(funcAddress >> 24);
-    if (sizeof(func)==8) {
-        address++;
-        *address=(U8)(funcAddress >> 32);
-        address++;
-        *address=(U8)(funcAddress >> 40);
-        address++;
-        *address=(U8)(funcAddress >> 48);
-        address++;
-        *address=(U8)(funcAddress >> 56);
-    }
-}
-
-#ifndef HAS_64BIT_MMU
-void initCallbacksInProcess(struct KProcess* process) {
-    U32 page = CALL_BACK_ADDRESS >> PAGE_SHIFT;
-
-    process->memory->mmu[page] = &ramPageRO;
-    process->memory->flags[page] = PAGE_READ|PAGE_EXEC|PAGE_IN_RAM;
-    process->memory->ramPage[page] = callbackPage;
-    process->memory->read[page] = TO_TLB(callbackPage,  CALL_BACK_ADDRESS);
-    incrementRamRef(callbackPage);
-}
-
-void initCallbacks() {
-    callbackPage = allocRamPage();
-    callbackAddress = getAddressOfRamPage(callbackPage);
-    addCallback(onExitSignal);
-}
-#else
-void initCallbacks() {
-    callbackAddress = kalloc(4096, 0);
-    addCallback(onExitSignal);
-}
-void initCallbacksInProcess(struct KProcess* process) {
-    U32 page = CALL_BACK_ADDRESS >> PAGE_SHIFT;
-    allocNativeMemory(process->memory, page, 1, PAGE_READ|PAGE_EXEC);
-    memcpy(getNativeAddress(process->memory, CALL_BACK_ADDRESS), callbackAddress, 4096);
-}
-#endif
 
 #ifndef HAS_64BIT_MMU
 struct MappedFileCache* getMappedFileInCache(const char* name) {
@@ -347,11 +280,7 @@ void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent) {
 
     klog("%*s %-20s %-40s %08x / %08x", indent, "", name?name:"Unknown", functionName, eip, moduleEip);
     
-#ifdef HAS_64BIT_MMU 
-    if (cpu->memory->flags[ebp >> PAGE_SHIFT] & PAGE_IN_RAM) {
-#else
-    if (cpu->memory->read[ebp >> PAGE_SHIFT]) {
-#endif
+    if (isValidReadAddress(cpu->memory, ebp)) {
         prevEbp = readd(MMU_PARAM_CPU ebp); 
         returnEip = readd(MMU_PARAM_CPU ebp+4); 
         if (prevEbp==0)

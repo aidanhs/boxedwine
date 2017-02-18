@@ -22,7 +22,6 @@
 
 #include <SDL.h>
 #include "log.h"
-#include "ram.h"
 #include "kprocess.h"
 #include "kthread.h"
 #include "kscheduler.h"

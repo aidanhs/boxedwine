@@ -25,7 +25,6 @@
 #include "log.h"
 #include "kscheduler.h"
 #include "ksystem.h"
-#include "ram.h"
 #include "ksignal.h"
 
 #include <string.h>

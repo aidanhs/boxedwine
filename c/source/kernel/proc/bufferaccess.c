@@ -18,7 +18,6 @@
 
 #include "platform.h"
 #include "kerror.h"
-#include "ram.h"
 #include "log.h"
 #include "fsapi.h"
 

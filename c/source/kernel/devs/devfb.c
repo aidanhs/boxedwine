@@ -459,7 +459,7 @@ static U8* fb_physicalAddress(MMU_ARG U32 address) {
     return &((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
-struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
+//struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
 #endif
 
 BOOL fb_init(struct KProcess* process, struct FsOpenNode* node) {
@@ -584,7 +584,7 @@ BOOL fb_isReadReady(struct FsOpenNode* node) {
 }
 
 U32 fb_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-#ifndef HAS_64BIT_MMU
+#if 0
     U32 pageStart = fb_fix_screeninfo.smem_start >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
     U32 i;

@@ -19,7 +19,6 @@
 #include "cpu.h"
 #include "log.h"
 #include "decoder.h"
-#include "ram.h"
 #include "platform.h"
 #include "jit.h"
 #include "pbl.h"
@@ -1061,60 +1060,6 @@ void threadDone(struct CPU* cpu) {
 void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op) {
     cpu->nextBlock = &emptyBlock;
 }
-
-#ifndef HAS_64BIT_MMU
-void initBlockCache() {
-}
-
-struct Block* getBlock(struct CPU* cpu) {
-    struct Block* block;	
-    U32 ip;
-
-    if (cpu->big)
-        ip = cpu->segAddress[CS] + cpu->eip.u32;
-    else
-        ip = cpu->segAddress[CS] + cpu->eip.u16;
-
-    U32 page = ip >> PAGE_SHIFT;
-    U32 flags = cpu->memory->flags[page];
-    if (IS_PAGE_IN_RAM(flags)) {
-        block = getCode(cpu->memory->ramPage[page], ip & 0xFFF);
-        if (!block) {
-            block = decodeBlock(cpu, cpu->eip.u32);
-            addCode(block, cpu, ip, block->eipCount);
-        }
-    } else {		
-        block = decodeBlock(cpu, cpu->eip.u32);
-        addCode(block, cpu, ip, block->eipCount);
-    }
-    cpu->memory->write[page]=0;
-    cpu->memory->mmu[page] = &codePage;
-    return block;
-}
-#else
-PblMap* blockCache;
-
-void initBlockCache() {
-    blockCache = pblMapNewHashMap();
-}
-
-struct Block* getBlock(struct CPU* cpu) {
-    U32 ip;
-
-    if (cpu->big)
-        ip = cpu->segAddress[CS] + cpu->eip.u32;
-    else
-        ip = cpu->segAddress[CS] + cpu->eip.u16;
-    U64 hash = (U64)getNativeAddress(cpu->memory, ip);
-    struct Block** result = pblMapGet(blockCache, &hash, 8, NULL);
-    if (!result) {
-        struct Block* block = decodeBlock(cpu, cpu->eip.u32);
-        pblMapAdd(blockCache, &hash, 8, &block, sizeof(struct Block*));
-        return block;
-    }
-    return *result;    
-}
-#endif
 
 void runCPU(struct CPU* cpu) {	
     runBlock(cpu, getBlock(cpu));

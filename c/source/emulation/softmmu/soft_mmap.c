@@ -15,19 +15,20 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
+#ifndef HAS_64BIT_MMU
 #include "kmmap.h"
 #include "log.h"
 #include "kprocess.h"
 #include "kerror.h"
 #include "kobjectaccess.h"
-#include "ram.h"
-#include "kfmmap.h"
+#include "soft_memory.h"
+#include "soft_ram.h"
 #include "ksystem.h"
 #include "kalloc.h"
 #include "kio.h"
 #include "kfile.h"
 #include "loader.h"
+#include "soft_file_map.h"
 
 #include <string.h>
 
@@ -41,7 +42,6 @@ U32 syscall_mlock(struct KThread* thread, U32 addr, U32 len) {
     return 0;
 }
 
-#ifndef HAS_64BIT_MMU
 U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flags, FD fildes, U64 off) {
     BOOL shared = (flags & K_MAP_SHARED)!=0;
     BOOL priv = (flags & K_MAP_PRIVATE)!=0;
@@ -146,25 +146,12 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
                 process->mappedFiles[index].file = fd->kobject;
                 process->mappedFiles[index].file->refCount++;
             }
-
             for (i=0;i<pageCount;i++) {
-                U32 data = 0;	
-                if (fd) {
-                    int filePage = (int)(off>>PAGE_SHIFT);
-                    if (index>0xFFF || filePage>0xFFFFF) {
-                        kpanic("mmap: couldn't page file mapping info to memory data: fildes=%d filePage=%d", fildes, filePage);
-                    }
-                    if (off & PAGE_MASK) {
-                        kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
-                    }
-                    data=index | (filePage << 12);
-                    off+=4096;
-                }
-                process->mappedFiles[index].refCount++;
-                allocPages(thread->process->memory, &ramOnDemandFilePage, FALSE, pageStart++, 1, permissions, data);
+                allocPages(thread->process->memory, pageStart++, 1, permissions, fildes, off, index);
+                off+=PAGE_SIZE;
             }
         } else {
-            allocPages(thread->process->memory, &ramOnDemandPage, FALSE, pageStart, pageCount, permissions, 0);
+            allocPages(thread->process->memory, pageStart, pageCount, permissions, 0, 0, 0);
         }		
     }
     return addr;
@@ -218,9 +205,8 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
     }
     return 0;
 }
-#endif
+
 U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
-#ifndef HAS_64BIT_MMU
     U32 pageStart = address >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
     U32 i;
@@ -233,15 +219,10 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
         memory->read[i+pageStart]=0;
         memory->write[i+pageStart]=0;
     }
-#else
-    // this address might not be the same as kalloc returned because of alignment
-    // :TODO: track mmap and kfree if the entire result of mmap is unmapped
-#endif
     return 0;
 }
 
 U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 newsize, U32 flags) {
-#ifndef HAS_64BIT_MMU
     if (flags > 1) {
         kpanic("__NR_mremap not implemented: flags=%X", flags);
     }
@@ -280,14 +261,9 @@ U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 news
             return -K_ENOMEM;
         }
     }
-#else 
-    kpanic("__NR_mremap not implemented");
-    return -K_ENOMEM;
-#endif
 }
 
 U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
-#ifndef HAS_64BIT_MMU
     struct MapedFiles* file = 0;
     U32 i;
 
@@ -298,7 +274,7 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
     }
     if (!file)
         return -K_ENOMEM;
-    //kpanic("syscall_msync not implemented");
-#endif
+    klog("syscall_msync not implemented");
     return 0;
 }
+#endif

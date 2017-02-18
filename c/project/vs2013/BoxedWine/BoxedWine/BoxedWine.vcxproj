@@ -88,7 +88,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>LOG_SYSCALLS;LOG_OPS;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LOG_SYSCALLS;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -162,7 +162,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>HAS_64BIT_MMU;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;PLATFORM_MSVC;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <UndefinePreprocessorDefinitions>
@@ -249,7 +249,9 @@
     <ClInclude Include="..\..\..\..\source\emulation\arith.h" />
     <ClInclude Include="..\..\..\..\source\emulation\conditions.h" />
     <ClInclude Include="..\..\..\..\source\emulation\decode.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\decodedata.h" />
     <ClInclude Include="..\..\..\..\source\emulation\fpu.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\hardmmu\hard_memory.h" />
     <ClInclude Include="..\..\..\..\source\emulation\incdec.h" />
     <ClInclude Include="..\..\..\..\source\emulation\instructions.h" />
     <ClInclude Include="..\..\..\..\source\emulation\ops.h" />
@@ -257,6 +259,10 @@
     <ClInclude Include="..\..\..\..\source\emulation\setcc.h" />
     <ClInclude Include="..\..\..\..\source\emulation\shift.h" />
     <ClInclude Include="..\..\..\..\source\emulation\shift_op.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_file_map.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_memory.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_page.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_ram.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
@@ -286,11 +292,14 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c" />
     <ClCompile Include="..\..\..\..\source\emulation\decoder.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\hardmmu\hard_memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\instructions.c" />
     <ClCompile Include="..\..\..\..\source\emulation\jit.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\memory.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\ram.c" />
     <ClCompile Include="..\..\..\..\source\emulation\shift.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_file_map.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_memory.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_mmap.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_ram.c" />
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
     <ClCompile Include="..\..\..\..\source\io\fsapi.c" />
@@ -306,9 +315,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\kfile.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c" />
-    <ClCompile Include="..\..\..\..\source\kernel\kfmmap.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kio.c" />
-    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kobject.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kpoll.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kprocess.c" />

@@ -20,20 +20,13 @@
 #include "kerror.h"
 #include "kthread.h"
 #include "kprocess.h"
-#include "kalloc.h"
-#include "ram.h"
 #include "log.h"
 
 #include <string.h>
 
 struct SHM {
-#ifndef HAS_64BIT_MMU
-    U32* pages;
-    U32 pageCount;
-#else
     void* address;
     U32 len;
-#endif
     U32 refCount;
     U32 key;
     U32 cpid;
@@ -49,17 +42,8 @@ struct SHM {
 
 struct SHM shm[MAX_SHM];
 
-void freeShm(int index) {
-#ifndef HAS_64BIT_MMU
-    U32 i;
-
-    for (i=0;i<shm[index].pageCount;i++) {
-        freeRamPage(shm[index].pages[i]);
-    }
-    kfree(shm[index].pages, KALLOC_SHM_PAGE);
-#else
-    kfree(shm[index].address, 0);
-#endif
+void freeShm(struct KProcess* process, int index) {
+    freeMappable(process->memory, shm[index].address);
     memset(&shm[index], 0, sizeof(struct SHM));
 }
 
@@ -72,11 +56,7 @@ U32 syscall_shmget(struct KThread* thread, U32 key, U32 size, U32 flags) {
 
     if (key==0) { // IPC_PRIVATE
         for (i=0;i<MAX_SHM;i++) {
-#ifndef HAS_64BIT_MMU
-            if (!shm[i].pages) {
-#else
             if (!shm[i].address) {
-#endif
                 index = i;
                 break;
             }
@@ -92,11 +72,7 @@ U32 syscall_shmget(struct KThread* thread, U32 key, U32 size, U32 flags) {
             }
         }
         for (i=0;i<MAX_SHM;i++) {
-#ifndef HAS_64BIT_MMU
-            if (!shm[i].pages) {
-#else
             if (!shm[i].address) {
-#endif
                 index = i;
                 break;
             }
@@ -109,16 +85,8 @@ U32 syscall_shmget(struct KThread* thread, U32 key, U32 size, U32 flags) {
     shm[index].cuid = thread->process->effectiveUserId;
     shm[index].cgid = thread->process->effectiveGroupId;
     shm[index].ctime = getSystemTimeAsMicroSeconds();
-#ifndef HAS_64BIT_MMU
-    shm[index].pageCount = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-    shm[index].pages = (U32*)kalloc(shm[index].pageCount*4, KALLOC_SHM_PAGE);
-    for (i=0;i<shm[index].pageCount;i++) {
-        shm[index].pages[i] = allocRamPage();
-    }
-#else 
     shm[index].len = size;
-    shm[index].address = kalloc(size, 0);;
-#endif
+    shm[index].address = allocMappable(MMU_PARAM_THREAD (size + PAGE_SIZE - 1) /PAGE_SIZE);
     return index+1;
 }
 
@@ -136,9 +104,7 @@ void incrementShmAttach(struct KProcess* process, int shmid) {
 U32 syscall_shmat(struct KThread* thread, U32 shmid, U32 shmaddr, U32 shmflg, U32 rtnAddr) {	
     U32 result = 0;
     U32 i;
-#ifndef HAS_64BIT_MMU
     U32 permissions;
-#endif
     S32 attachSlot = -1;
 
     shmid--; // external is 1 based, internal is 0 based
@@ -154,49 +120,24 @@ U32 syscall_shmat(struct KThread* thread, U32 shmid, U32 shmaddr, U32 shmflg, U3
     if (shmaddr && (shmflg & SHM_RND)) {
         shmaddr = shmaddr & ~PAGE_MASK;
     }
-#ifndef HAS_64BIT_MMU
-    if (shmid>=MAX_SHM || !shm[shmid].pages || (shmaddr && (shmaddr & PAGE_MASK))) {
-#else
-    kpanic("shared memory not supported with HAS_64BIT_MMU");
     if (shmid >= MAX_SHM || !shm[shmid].address || (shmaddr && (shmaddr & PAGE_MASK))) {
-#endif
         return -K_EINVAL;
     }
     if (shmflg & SHM_REMAP) {
         kpanic("syscall_shmat SHM_REMAP not implemented");
     }
-#ifndef HAS_64BIT_MMU
     if (!shmaddr) {
         shmaddr = ADDRESS_PROCESS_MMAP_START << PAGE_SHIFT;
     }
-    if (!findFirstAvailablePage(MMU_PARAM_THREAD shmaddr >> PAGE_SHIFT, shm[shmid].pageCount, &result, 0)) {
+    if (!findFirstAvailablePage(MMU_PARAM_THREAD shmaddr >> PAGE_SHIFT, (shm[shmid].len + PAGE_SIZE - 1) / PAGE_SIZE, &result, 0)) {
         return -K_EINVAL;
     }
     if (shmflg & SHM_RDONLY) {
-        permissions = PAGE_SHM|PAGE_READ;
+        permissions = PAGE_READ;
     } else {
-        permissions = PAGE_READ|PAGE_WRITE|PAGE_SHM;
+        permissions = PAGE_READ|PAGE_WRITE;
     }
-    for (i=0;i<shm[shmid].pageCount;i++) {
-        struct Memory* memory = thread->process->memory;
-        if (shmflg & SHM_RDONLY) {
-            memory->mmu[i+result]=&ramPageRO;
-        } else {
-            memory->mmu[i+result]=&ramPageWR;
-        }
-        memory->flags[i+result] = permissions|PAGE_IN_RAM;
-        memory->ramPage[i+result] = shm[shmid].pages[i];
-        if (!(shmflg & SHM_RDONLY)) {
-            memory->write[i+result] = TO_TLB(shm[shmid].pages[i], (i+result) << PAGE_SHIFT);
-        }
-        memory->read[i+result] = TO_TLB(shm[shmid].pages[i], (i+result) << PAGE_SHIFT);
-        incrementRamRef(shm[shmid].pages[i]);
-    }
-#else
-    if (shmaddr)
-        return -K_EINVAL;
-    result = (U32)shm[shmid].address;
-#endif
+    mapMappable(MMU_PARAM_THREAD result, (shm[shmid].len + PAGE_SIZE - 1), shm[shmid].address, permissions);    
     incrementShmAttach(thread->process, shmid);
     thread->process->shms[shmid][attachSlot]=(result << PAGE_SHIFT);
     writed(MMU_PARAM_THREAD rtnAddr, thread->process->shms[shmid][attachSlot]);
@@ -208,7 +149,7 @@ void decrementShmAttach(struct KProcess* process, U32 i) {
     shm[i].lpid = process->id;
     shm[i].nattch--;
     if (shm[i].nattch == 0 && shm[i].markedForDelete) {
-        freeShm(i);
+        freeShm(process, i);
     }
 }
 
@@ -230,11 +171,7 @@ U32 syscall_shmdt(struct KThread* thread, U32 shmaddr) {
     if (shmid<0) {
         return -K_EINVAL;
     }
-#ifndef HAS_64BIT_MMU
-    for (i=0;i<shm[shmid].pageCount;i++) {
-        thread->process->memory->mmu[i + page]->clear(thread->process->memory, i + page);
-    }
-#endif
+    unmapMappable(MMU_PARAM_THREAD page, (shm[shmid].len + PAGE_SIZE - 1) / PAGE_SIZE);
     decrementShmAttach(thread->process, shmid);
     return 0;
 }
@@ -257,11 +194,7 @@ U32 syscall_shmdt(struct KThread* thread, U32 shmaddr) {
 
 U32 syscall_shmctl(struct KThread* thread, U32 shmid, U32 cmd, U32 buf) {	
     shmid--;
-#ifndef HAS_64BIT_MMU
-    if (shmid>=MAX_SHM || !shm[shmid].pages)
-#else
     if (shmid >= MAX_SHM || !shm[shmid].address)
-#endif
         return -K_EINVAL;
     if (!buf)
         return -K_EFAULT;
@@ -278,12 +211,7 @@ U32 syscall_shmctl(struct KThread* thread, U32 shmid, U32 cmd, U32 buf) {
         writew(MMU_PARAM_THREAD buf, 0); buf += 2;
         writed(MMU_PARAM_THREAD buf, 0); buf += 4;
         writed(MMU_PARAM_THREAD buf, 0); buf += 4;
-
-#ifndef HAS_64BIT_MMU
-        writed(MMU_PARAM_THREAD buf, shm[shmid].pageCount << PAGE_SHIFT); buf += 4;
-#else
         writed(MMU_PARAM_THREAD buf, shm[shmid].len); buf += 4;
-#endif
         writed(MMU_PARAM_THREAD buf, (U32)(shm[shmid].atime / 1000000)); buf += 4;
         writed(MMU_PARAM_THREAD buf, (U32)(shm[shmid].dtime / 1000000)); buf += 4;
         writed(MMU_PARAM_THREAD buf, (U32)(shm[shmid].ctime / 1000000)); buf += 4;

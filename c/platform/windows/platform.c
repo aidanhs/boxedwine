@@ -192,6 +192,7 @@ int getPixelFormats(PixelFormat* pfd, int maxPfs) {
 #include "kthread.h"
 #include "kobject.h"
 #include "kobjectaccess.h"
+#include "../../source/emulation/hardmmu/hard_memory.h"
 
 static U32 gran = 0x10;
 
@@ -386,10 +387,10 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         
         }
         fd->kobject->openFile->func->seek(fd->kobject->openFile, off);
-        allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions);
+        allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions, 0, 0, 0);
         fd->kobject->openFile->func->read(MMU_PARAM_THREAD fd->kobject->openFile, addr, len);        
     } else if (read || write || exec) {
-        allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions);
+        allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions, 0, 0, 0);
     }
     return addr;
 }
@@ -413,9 +414,77 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
 
     for (i=pageStart;i<pageStart+pageCount;i++) {
         if (!(memory->flags[i] & PAGE_IN_RAM) && (write || read || exec)) {
-            allocPages(MMU_PARAM_THREAD i, 1, permissions);
+            allocPages(MMU_PARAM_THREAD i, 1, permissions, 0, 0, 0);
         }        
     }
+    return 0;
+}
+
+U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
+    U32 pageStart = address >> PAGE_SHIFT;
+    U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
+
+    freeNativeMemory(thread->process, pageStart, pageCount);
+    return 0;
+}
+
+U32 syscall_mlock(struct KThread* thread, U32 addr, U32 len) {
+    return 0;
+}
+
+U32 syscall_mremap(struct KThread* thread, U32 oldaddress, U32 oldsize, U32 newsize, U32 flags) {
+    if (flags > 1) {
+        kpanic("__NR_mremap not implemented: flags=%X", flags);
+    }
+    if (newsize<oldsize) {
+        syscall_unmap(thread, oldaddress+newsize, oldsize-newsize);
+        return oldaddress;
+    } else {
+        struct Memory* memory = thread->process->memory;
+        U32 result;
+        U32 prot=0;
+        U32 flags = memory->flags[oldaddress >> PAGE_SHIFT];
+        U32 f = K_MAP_FIXED;
+        if (IS_PAGE_READ(flags)) {
+            prot|=K_PROT_READ;
+        }
+        if (IS_PAGE_WRITE(flags)) {
+            prot|=K_PROT_WRITE;
+        }
+        if (IS_PAGE_EXEC(flags)) {
+            prot|=K_PROT_EXEC;
+        }
+        if (IS_PAGE_SHARED(flags)) {
+            f|=K_MAP_SHARED;
+        } else {
+            f|=K_MAP_PRIVATE;
+        }
+        result = syscall_mmap64(thread, oldaddress+oldsize, newsize-oldsize, prot, f, -1, 0);
+        if (result==oldaddress+oldsize) {
+            return oldaddress;
+        }
+       
+        if ((flags & 1)!=0) { // MREMAP_MAYMOVE
+            kpanic("__NR_mremap not implemented");
+            return -K_ENOMEM;
+        } else {
+            return -K_ENOMEM;
+        }
+    }
+}
+
+U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
+    struct MapedFiles* file = 0;
+    U32 i;
+
+    for (i=0;i<MAX_MAPPED_FILE;i++) {
+        if (thread->process->mappedFiles[i].refCount && addr>=thread->process->mappedFiles[i].address && thread->process->mappedFiles[i].address+thread->process->mappedFiles[i].len<addr) {
+            file = & thread->process->mappedFiles[i];
+        }
+    }
+    if (!file)
+        return -K_ENOMEM;
+    klog("syscall_msync not implemented");
     return 0;
 }
 

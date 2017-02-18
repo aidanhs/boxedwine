@@ -17,12 +17,14 @@
  */
 
 #include "kfiledescriptor.h"
-#include "ram.h"
 #include "kprocess.h"
 #include "kobject.h"
 #include "kobjectaccess.h"
 #include "kfiledescriptor.h"
 #include "ksystem.h"
+#include "soft_memory.h"
+#include "soft_ram.h"
+#include "kalloc.h"
 
 #include <string.h>
 
@@ -127,5 +129,24 @@ static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address) {
 }
 
 struct Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear, ondemandfile_physicalAddress};
+
+void closeMemoryMapped(struct MapedFiles* mapped) {
+    mapped->refCount--;
+    if (mapped->refCount == 0) {
+        closeKObject(mapped->file);
+        mapped->file = 0;
+        mapped->systemCacheEntry->refCount--;
+        if (mapped->systemCacheEntry->refCount == 0) {			
+            U32 i;
+            for (i=0;i<mapped->systemCacheEntry->pageCount;i++) {
+                if (mapped->systemCacheEntry->ramPages[i])
+                    freeRamPage(mapped->systemCacheEntry->ramPages[i]);
+            }
+            kfree(mapped->systemCacheEntry->ramPages, KALLOC_MMAP_CACHE_RAMPAGE);
+            removeMappedFileInCache(mapped->systemCacheEntry);
+            kfree(mapped->systemCacheEntry, KALLOC_MAPPEDFILECACHE);
+        }
+    }
+}
 
 #endif
