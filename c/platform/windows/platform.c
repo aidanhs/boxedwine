@@ -21,6 +21,7 @@
 #include "log.h"
 #include "pixelformat.h"
 #include "fsapi.h"
+#include "../../source/emulation/hardmmu/hard_memory.h"
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -201,15 +202,10 @@ void allocNativeMemory(struct Memory* memory, U32 page, U32 pageCount, U32 flags
     U32 granCount;
     U32 i;    
 
-    if (!gran) {
-         SYSTEM_INFO si;
-         GetSystemInfo(&si);
-         gran = si.dwPageSize >> PAGE_SHIFT;
-    }
     granPage = page & ~(gran-1);
     granCount = ((gran - 1) + pageCount + (page - granPage)) / gran;
     for (i=0; i < granCount; i++) {
-        if (!memory->committed[granPage]) {
+        if (!(memory->nativeFlags[granPage] & NATIVE_FLAG_COMMITTED)) {
             U32 j;
 
             if (!VirtualAlloc(getNativeAddress(memory, granPage << PAGE_SHIFT), gran << PAGE_SHIFT, MEM_COMMIT, PAGE_READWRITE)) {
@@ -219,12 +215,12 @@ void allocNativeMemory(struct Memory* memory, U32 page, U32 pageCount, U32 flags
             }
             memory->allocated+=(gran << PAGE_SHIFT);
             for (j=0;j<gran;j++)
-                memory->committed[granPage+j] = 1;
+                memory->nativeFlags[granPage+j] |= NATIVE_FLAG_COMMITTED;
         }
         granPage+=gran;
     }
     for (i=0;i<pageCount;i++) {
-        memory->flags[page+i] = (flags & PAGE_PERMISSION_MASK);
+        memory->flags[page+i] = flags;
         memory->flags[page+i] |= PAGE_IN_RAM;
         memory->flags[page+i] &= ~PAGE_RESERVED;        
     }
@@ -236,12 +232,6 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     U32 i;
     U32 granPage;
     U32 granCount;
-
-    if (!gran) {
-         SYSTEM_INFO si;
-         GetSystemInfo(&si);
-         gran = si.dwPageSize >> PAGE_SHIFT;
-    }
 
     for (i=0;i<pageCount;i++) {
         process->memory->flags[page+i] = 0;
@@ -265,7 +255,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
                 kpanic("failed to release memory: %s", messageBuffer);
             }
             for (j=0;j<gran;j++) {
-                process->memory->committed[granPage+j]=0;
+                process->memory->nativeFlags[granPage+j]=0;
             }
             process->memory->allocated-=(gran << PAGE_SHIFT);
         }
@@ -291,7 +281,7 @@ void releaseNativeMemory(struct Memory* memory) {
         kpanic("failed to release memory: %s", messageBuffer);
     }
     memset(memory->flags, 0, sizeof(memory->flags));
-    memset(memory->committed, 0, sizeof(memory->committed));
+    memset(memory->nativeFlags, 0, sizeof(memory->nativeFlags));
     memory->allocated = 0;
 }
 
@@ -350,13 +340,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return result;
         }
     }
-    for (i=0;i<pageCount;i++) {
-        // This will prevent the next anonymous mmap from using this range
-        if (thread->process->memory->flags[i + pageStart] == 0) {
-            thread->process->memory->flags[i + pageStart] = PAGE_RESERVED;
-        }
-        thread->process->memory->flags[i + pageStart] = PAGE_MAPPED;
-    }
+
     if (write)
         permissions|=PAGE_WRITE;
     if (read)
@@ -368,6 +352,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
     if (fd) {	
         struct KProcess* process = thread->process;
         int index = -1;
+        S64 pos;
 
         for (i=0;i<MAX_MAPPED_FILE;i++) {
             if (!process->mappedFiles[i].refCount) {
@@ -386,11 +371,20 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             process->mappedFiles[index].file->refCount++;
         
         }
+        process->mappedFiles[index].refCount++;
+        pos = fd->kobject->openFile->func->getFilePointer(fd->kobject->openFile);
         fd->kobject->openFile->func->seek(fd->kobject->openFile, off);
         allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions, 0, 0, 0);
         fd->kobject->openFile->func->read(MMU_PARAM_THREAD fd->kobject->openFile, addr, len);        
+        fd->kobject->openFile->func->seek(fd->kobject->openFile, pos);
     } else if (read || write || exec) {
         allocPages(MMU_PARAM_THREAD pageStart, pageCount, permissions, 0, 0, 0);
+    } else {
+        U32 i;
+
+        for (i=0;i<pageCount;i++) {
+            thread->process->memory->flags[pageStart+i] = permissions;
+        }    
     }
     return addr;
 }
@@ -415,6 +409,9 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
     for (i=pageStart;i<pageStart+pageCount;i++) {
         if (!(memory->flags[i] & PAGE_IN_RAM) && (write || read || exec)) {
             allocPages(MMU_PARAM_THREAD i, 1, permissions, 0, 0, 0);
+        } else {
+            memory->flags[i] &=~ PAGE_PERMISSION_MASK;
+            memory->flags[i] |= permissions;
         }        
     }
     return 0;
@@ -488,17 +485,69 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
     return 0;
 }
 
+void addCodeToPage(struct Memory* memory, U32 page) {
+    U32 granPage;
+    DWORD oldProtect;
+
+    granPage = page & ~(gran-1);
+    // :TODO: would the granularity ever be more than 4k?  should I check: SYSTEM_INFO System_Info; GetSystemInfo(&System_Info);
+    if (!(memory->nativeFlags[page] & NATIVE_FLAG_READONLY)) {
+        if (!VirtualProtect(getNativeAddress(memory, page << PAGE_SHIFT), (1 << PAGE_SHIFT), PAGE_READONLY, &oldProtect)) {
+            LPSTR messageBuffer = NULL;
+            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+            kpanic("failed to protect memory: %s", messageBuffer);
+        }
+        memory->nativeFlags[page] |= NATIVE_FLAG_READONLY;
+    }
+}
+
 #include "kthread.h"
 #include "ksystem.h"
 extern struct KThread* currentThread;
+extern PblMap* codeCache;
+extern PblMap* blockCache;
+
 void seg_mapper(struct Memory* memory, U32 address) ;
 
 int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) {
-        U32 address = getHostAddress(currentThread->process->memory, ep->ExceptionRecord->ExceptionAddress);
-        seg_mapper(currentThread->process->memory, address);
-        return EXCEPTION_EXECUTE_HANDLER;
+        U32 address = getHostAddress(currentThread->process->memory, ep->ExceptionRecord->ExceptionInformation[1]);
+        if (currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
+            DWORD oldProtect;
+            U64 hash = ep->ExceptionRecord->ExceptionInformation[1] >> PAGE_SHIFT;
+            PblList** blocksOnPage = pblMapGet(codeCache, &hash, 8, NULL);
+            if (!VirtualProtect(getNativeAddress(currentThread->process->memory, address & 0xFFFFF000), (1 << PAGE_SHIFT), PAGE_READWRITE, &oldProtect)) {
+                LPSTR messageBuffer = NULL;
+                size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+                kpanic("failed to unprotect memory: %s", messageBuffer);
+            }
+            currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] &= ~NATIVE_FLAG_READONLY;
+            if (blocksOnPage) {  
+                // This seems hard, remove all code blocks in the page when just one of them needs to be removed
+                // but it is simple and if performance is an issue we can change it later
+                while (!pblListIsEmpty(*blocksOnPage)) {
+                    struct Block* block = pblListGetFirst(*blocksOnPage);
+                    pblMapRemove(blockCache, &block->hash, 8, NULL);
+                    pblListRemoveElement(block->codeLink[0], block);
+                    if (block->codeLink[1])
+                        pblListRemoveElement(block->codeLink[1], block);
+                    if (currentThread->cpu.currentBlock == block) {
+                        delayFreeBlock(block);
+                    } else {
+                        freeBlock(block);
+                    }
+                }
+            }
+            return EXCEPTION_CONTINUE_EXECUTION;
+        } else {
+            seg_mapper(currentThread->process->memory, address);
+            return EXCEPTION_EXECUTE_HANDLER;
+        }
+    } else if (code == STATUS_GUARD_PAGE_VIOLATION) {
+        U64 hash = (U64)ep->ExceptionRecord->ExceptionAddress >> PAGE_SHIFT;
+        PblList* blocks = pblMapGet(codeCache, &hash, 8, NULL);
+        int ii=0;
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }

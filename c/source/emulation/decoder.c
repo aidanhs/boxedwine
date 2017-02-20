@@ -146,7 +146,7 @@ struct Block* allocBlock() {
     return result;
 }
 
-void freeBlock(struct Block* block) {
+void unlinkBlock(struct Block* block) {
     while (block->referencedFrom) {
         struct BlockNode* next = block->referencedFrom->next;
 
@@ -158,6 +158,20 @@ void freeBlock(struct Block* block) {
         freeBlockNode(block->referencedFrom);
         block->referencedFrom = next;
     }
+}
+
+static struct Block* delayedFree;
+
+void delayFreeBlock(struct Block* block) {
+    if (delayedFree) {
+        freeBlock(delayedFree);
+    }
+    unlinkBlock(block);
+    delayedFree = block;
+}
+
+void freeBlock(struct Block* block) {
+    unlinkBlock(block);
 	if (block->ops) {
 		freeOp(block->ops);
 		block->ops = 0;

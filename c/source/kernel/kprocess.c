@@ -203,7 +203,7 @@ void cloneProcess(MMU_ARG struct KProcess* process, struct KProcess* from) {
         if (process->mappedFiles[i].refCount) {
             process->mappedFiles[i].file->refCount++;
 #ifdef HAS_64BIT_MMU
-            kpanic("Need to clone memory mapped files");
+            klog("Need to clone memory mapped files");
 #else
             process->mappedFiles[i].systemCacheEntry->refCount++;
 #endif

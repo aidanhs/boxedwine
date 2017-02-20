@@ -979,7 +979,7 @@ BOOL file_remove(struct FsNode* node) {
             }
         }
         if (rename(node->nativePath1, tmpNativePath)!=0) {
-            kpanic("could not rename %s", node->nativePath1);
+            klog("could not rename %s", node->nativePath1);
         }
         openNode = node->openNodes1;
         while (openNode) {

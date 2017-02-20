@@ -22,9 +22,12 @@
 #include "platform.h"
 #include "memory.h"
 
+#define NATIVE_FLAG_COMMITTED 0x01
+#define NATIVE_FLAG_READONLY 0x02
+
 struct Memory {
     U8 flags[NUMBER_OF_PAGES];
-    U8 committed[NUMBER_OF_PAGES];
+    U8 nativeFlags[NUMBER_OF_PAGES];
     struct KProcess* process;
     U32 allocated;
     U64 id;    

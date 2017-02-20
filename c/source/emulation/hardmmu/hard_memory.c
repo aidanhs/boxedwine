@@ -146,7 +146,7 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
             BOOL success = TRUE;
 
             for (j=1;j<pageCount;j++) {
-                if ((memory->flags[i+j] & PAGE_IN_RAM) || (!canBeReMapped && (memory->flags[i+j] & PAGE_MAPPED))) {
+                if ((memory->flags[i+j] & (PAGE_MAPPED|PAGE_IN_RAM)) && (!canBeReMapped || !(memory->flags[i+j] & PAGE_MAPPED))) {
                     success = FALSE;
                     break;
                 }
@@ -169,11 +169,6 @@ void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 fl
 }
 
 void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
-    U32 i;
-
-    for (i=startingPage;i<startingPage+pageCount;i++) {
-        memory->flags[i]=0;
-    }
     freeNativeMemory(memory->process, startingPage, pageCount);
 }
 
@@ -182,103 +177,15 @@ void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, 
 }
 
 void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
-#ifdef UNALIGNED_MEMORY
-    U32 i;
-    for (i=0;i<len;i++) {
-        writeb(memory, address+i, p[i]);
-    }
-#elif !defined(HAS_64BIT_MMU)
-    U32 i;
-
-    if (len>4) {
-        U8* ram = getPhysicalAddress(memory, address);
-    
-        if (ram) {
-            U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
-            if (todo>len)
-                todo=len;
-            while (1) {
-                memcpy(ram, p, todo);
-                len-=todo;
-                if (!len) {
-                    return;
-                }
-                address+=todo;
-                p+=todo;
-                ram = getPhysicalAddress(memory, address);
-                if (!ram) {
-                    break;
-                }
-                todo = PAGE_SIZE;
-                if (todo>len)
-                    todo=len;
-            }
-        }
-    }
-
-    for (i=0;i<len;i++) {
-        writeb(memory, address+i, p[i]);
-    }
-#else
     memcpy(getNativeAddress(MMU_PARAM address), p, len);
-#endif
 }
 
 void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
-#ifdef UNALIGNED_MEMORY
-    U32 i;
-
-    for (i=0;i<len;i++) {
-        p[i] = readb(memory, address+i);
-    }
-#elif !defined(HAS_64BIT_MMU)
-    U32 i;
-
-    if (len>4) {
-        U8* ram = getPhysicalAddress(memory, address);
-    
-        if (ram) {
-            U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
-            if (todo>len)
-                todo=len;
-            while (1) {
-                memcpy(p, ram, todo);
-                len-=todo;
-                if (!len) {
-                    return;
-                }
-                address+=todo;
-                p+=todo;
-                ram = getPhysicalAddress(memory, address);
-                if (!ram) {
-                    break;
-                }
-                todo = PAGE_SIZE;
-                if (todo>len)
-                    todo=len;
-            }
-        }
-    }
-    
-    for (i=0;i<len;i++) {
-        p[i] = readb(memory, address+i);
-    }
-#else
     memcpy(p, getNativeAddress(MMU_PARAM address), len);
-#endif
 }
 
 void writeNativeString(MMU_ARG U32 address, const char* str) {	
-#ifndef HAS_64BIT_MMU
-    while (*str) {
-        writeb(memory, address, *str);
-        str++;
-        address++;
-    }
-    writeb(memory, address, 0);
-#else
     strcpy(getNativeAddress(MMU_PARAM address), str);
-#endif
 }
 
 U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len) {	
@@ -306,27 +213,11 @@ void writeNativeStringW(MMU_ARG U32 address, const char* str) {
 static char tmpBuffer[64*1024];
 
 char* getNativeString(MMU_ARG U32 address) {
-#ifndef HAS_64BIT_MMU
-    char c;
-    int i=0;
-
-    if (!address) {
-        tmpBuffer[0]=0;
-        return tmpBuffer;
-    }
-    do {
-        c = readb(memory, address++);
-        tmpBuffer[i++] = c;
-    } while(c && i<sizeof(tmpBuffer));
-    tmpBuffer[sizeof(tmpBuffer)-1]=0;
-    return tmpBuffer;
-#else
     if (!address) {
         tmpBuffer[0]=0;
         return tmpBuffer;
     }
     return (char*)getNativeAddress(MMU_PARAM address);
-#endif
 }
 
 char* getNativeStringW(MMU_ARG U32 address) {
@@ -349,31 +240,14 @@ char* getNativeStringW(MMU_ARG U32 address) {
 static char tmpBuffer2[64*1024];
 
 char* getNativeString2(MMU_ARG U32 address) {
-#ifndef HAS_64BIT_MMU
-    char c;
-    int i=0;
-
-    if (!address) {
-        tmpBuffer2[0]=0;
-        return tmpBuffer2;
-    }
-    do {
-        c = readb(memory, address++);
-        tmpBuffer2[i++] = c;
-    } while(c && i<sizeof(tmpBuffer2));
-    tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
-    return tmpBuffer2;
-#else
     if (!address) {
         tmpBuffer2[0]=0;
         return tmpBuffer2;
     }
     return (char*)getNativeAddress(MMU_PARAM address);
-#endif
 }
 
 char* getNativeStringW2(MMU_ARG U32 address) {
-#ifndef HAS_64BIT_MMU
     char c;
     int i=0;
 
@@ -388,9 +262,6 @@ char* getNativeStringW2(MMU_ARG U32 address) {
     } while(c && i<sizeof(tmpBuffer2));
     tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
     return tmpBuffer2;
-#else
-    return (char*)getNativeAddress(MMU_PARAM address);
-#endif
 }
 
 U8 readb(MMU_ARG U32 address) {
@@ -494,9 +365,12 @@ void initCallbacksInProcess(struct KProcess* process) {
 }
 
 PblMap* blockCache;
+PblMap* codeCache;
+void addCodeToPage(struct Memory* memory, U32 page);
 
 void initBlockCache() {
     blockCache = pblMapNewHashMap();
+    codeCache = pblMapNewHashMap();
 }
 
 struct Block* getBlock(struct CPU* cpu) {
@@ -510,7 +384,40 @@ struct Block* getBlock(struct CPU* cpu) {
     struct Block** result = pblMapGet(blockCache, &hash, 8, NULL);
     if (!result) {
         struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+        PblList* code;
+        U32 i;
+
+        block->hash = hash;
         pblMapAdd(blockCache, &hash, 8, &block, sizeof(struct Block*));
+
+        for (i=0;i<2;i++) {
+            PblList** ppCode;
+            hash = hash >> PAGE_SHIFT;
+            if (hash == 0x20003a9) {
+                int ii=0;
+            }
+            ppCode = pblMapGet(codeCache, &hash, 8, NULL);
+            if (!ppCode) {
+                code = pblListNewLinkedList();
+                ppCode = &code;
+                pblMapAdd(codeCache, &hash, 8, ppCode, sizeof(PblList*));
+            }
+            block->codeLink[i] = *ppCode;
+            pblListAdd(*ppCode, block);
+            addCodeToPage(cpu->memory, ip >> PAGE_SHIFT);
+            if ((ip & PAGE_MASK) + block->eipCount >= PAGE_SIZE) {
+                U32 finished = PAGE_SIZE-(ip & PAGE_MASK) ;
+                // move to the next page, we don't care about the exact beginning of the next page because both ip and hash will be shifted down to a page
+                if (cpu->big)
+                    ip = cpu->segAddress[CS] + cpu->eip.u32 + finished;
+                else
+                    ip = cpu->segAddress[CS] + ((cpu->eip.u16 + finished) & 0xFFFF);
+                hash = (U64)getNativeAddress(cpu->memory, ip);
+                continue;
+            }
+            break;
+        }
+
         return block;
     }
     return *result;    

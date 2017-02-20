@@ -21,6 +21,7 @@
 
 #include "op.h"
 #include "platform.h"
+#include "pbl.h"
 
 struct Block{	
     struct Op* ops;
@@ -30,6 +31,10 @@ struct Block{
     struct Block* block1;
     struct Block* block2;
     U32 startFunction;
+#ifdef HAS_64BIT_MMU
+    U64 hash;
+    PblList* codeLink[2];
+#endif
     U32 jit;
     struct BlockNode* referencedFrom;
 };
