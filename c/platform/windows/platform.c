@@ -22,6 +22,11 @@
 #include "pixelformat.h"
 #include "fsapi.h"
 #include "../../source/emulation/hardmmu/hard_memory.h"
+#include "kthread.h"
+#include "ksystem.h"
+extern struct KThread* currentThread;
+extern PblMap* codeCache;
+extern PblMap* blockCache;
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -234,8 +239,25 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     U32 granCount;
 
     for (i=0;i<pageCount;i++) {
+        U64 hash = getNativeAddress(process->memory, (page+i) << PAGE_SHIFT);
+        U64 pageHash = hash >> PAGE_SHIFT;
+        PblList** blocksOnPage = pblMapGet(codeCache, &pageHash, 8, NULL);
+        if (blocksOnPage) {
+            while (!pblListIsEmpty(*blocksOnPage)) {
+                struct Block* block = pblListGetFirst(*blocksOnPage);
+                pblMapRemove(blockCache, &block->hash, 8, NULL);
+                pblListRemoveElement(block->codeLink[0], block);
+                if (block->codeLink[1])
+                    pblListRemoveElement(block->codeLink[1], block);
+                if (currentThread->cpu.currentBlock == block) {
+                    delayFreeBlock(block);
+                } else {
+                    freeBlock(block);
+                }
+            }
+        }
         process->memory->flags[page+i] = 0;
-    }
+    }    
 
     granPage = page & ~(gran-1);
     granCount = ((gran - 1) + pageCount + (page - granPage)) / gran;
@@ -246,7 +268,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
         for (j=0;j<gran;j++) {
             if (process->memory->flags[granPage+j] & PAGE_IN_RAM) {
                 inUse = TRUE;
-            }
+            }            
         }
         if (!inUse) {
             if (!VirtualFree(getNativeAddress(process->memory, granPage << PAGE_SHIFT), gran, MEM_DECOMMIT)) {
@@ -260,7 +282,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
             process->memory->allocated-=(gran << PAGE_SHIFT);
         }
         granPage+=gran;
-    }
+    }    
 }
 
 static U64 nextMemoryId = 1;
@@ -500,12 +522,6 @@ void addCodeToPage(struct Memory* memory, U32 page) {
         memory->nativeFlags[page] |= NATIVE_FLAG_READONLY;
     }
 }
-
-#include "kthread.h"
-#include "ksystem.h"
-extern struct KThread* currentThread;
-extern PblMap* codeCache;
-extern PblMap* blockCache;
 
 void seg_mapper(struct Memory* memory, U32 address) ;
 

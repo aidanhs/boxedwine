@@ -207,7 +207,7 @@ void writeNativeStringW(MMU_ARG U32 address, const char* str) {
         str++;
         address+=2;
     }
-    writeb(memory, address, 0);
+    writew(memory, address, 0);
 }
 
 static char tmpBuffer[64*1024];
@@ -406,8 +406,8 @@ struct Block* getBlock(struct CPU* cpu) {
             pblListAdd(*ppCode, block);
             addCodeToPage(cpu->memory, ip >> PAGE_SHIFT);
             if ((ip & PAGE_MASK) + block->eipCount >= PAGE_SIZE) {
-                U32 finished = PAGE_SIZE-(ip & PAGE_MASK) ;
-                // move to the next page, we don't care about the exact beginning of the next page because both ip and hash will be shifted down to a page
+                U32 finished = PAGE_SIZE-(ip & PAGE_MASK);
+                
                 if (cpu->big)
                     ip = cpu->segAddress[CS] + cpu->eip.u32 + finished;
                 else
