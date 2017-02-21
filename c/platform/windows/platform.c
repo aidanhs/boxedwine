@@ -25,8 +25,6 @@
 #include "kthread.h"
 #include "ksystem.h"
 extern struct KThread* currentThread;
-extern PblMap* codeCache;
-extern PblMap* blockCache;
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -239,23 +237,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     U32 granCount;
 
     for (i=0;i<pageCount;i++) {
-        U64 hash = getNativeAddress(process->memory, (page+i) << PAGE_SHIFT);
-        U64 pageHash = hash >> PAGE_SHIFT;
-        PblList** blocksOnPage = pblMapGet(codeCache, &pageHash, 8, NULL);
-        if (blocksOnPage) {
-            while (!pblListIsEmpty(*blocksOnPage)) {
-                struct Block* block = pblListGetFirst(*blocksOnPage);
-                pblMapRemove(blockCache, &block->hash, 8, NULL);
-                pblListRemoveElement(block->codeLink[0], block);
-                if (block->codeLink[1])
-                    pblListRemoveElement(block->codeLink[1], block);
-                if (currentThread->cpu.currentBlock == block) {
-                    delayFreeBlock(block);
-                } else {
-                    freeBlock(block);
-                }
-            }
-        }
+        clearPageFromBlockCache(process->memory, page+i);
         process->memory->flags[page+i] = 0;
     }    
 
@@ -297,10 +279,15 @@ void reserveNativeMemory(struct Memory* memory) {
 }
 
 void releaseNativeMemory(struct Memory* memory) {
+    U32 i;
+
     if (!VirtualFree(getNativeAddress(memory, 0), 0, MEM_DECOMMIT)) {
         LPSTR messageBuffer = NULL;
         size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
         kpanic("failed to release memory: %s", messageBuffer);
+    }
+    for (i=0;i<NUMBER_OF_PAGES;i++) {
+        clearPageFromBlockCache(memory, i);
     }
     memset(memory->flags, 0, sizeof(memory->flags));
     memset(memory->nativeFlags, 0, sizeof(memory->nativeFlags));
@@ -507,7 +494,7 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
     return 0;
 }
 
-void addCodeToPage(struct Memory* memory, U32 page) {
+void makeCodePageReadOnly(struct Memory* memory, U32 page) {
     U32 granPage;
     DWORD oldProtect;
 
@@ -531,39 +518,19 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
         U32 address = getHostAddress(currentThread->process->memory, ep->ExceptionRecord->ExceptionInformation[1]);
         if (currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
             DWORD oldProtect;
-            U64 hash = ep->ExceptionRecord->ExceptionInformation[1] >> PAGE_SHIFT;
-            PblList** blocksOnPage = pblMapGet(codeCache, &hash, 8, NULL);
+            U32 page = address>>PAGE_SHIFT;
             if (!VirtualProtect(getNativeAddress(currentThread->process->memory, address & 0xFFFFF000), (1 << PAGE_SHIFT), PAGE_READWRITE, &oldProtect)) {
                 LPSTR messageBuffer = NULL;
                 size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
                 kpanic("failed to unprotect memory: %s", messageBuffer);
             }
-            currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] &= ~NATIVE_FLAG_READONLY;
-            if (blocksOnPage) {  
-                // This seems hard, remove all code blocks in the page when just one of them needs to be removed
-                // but it is simple and if performance is an issue we can change it later
-                while (!pblListIsEmpty(*blocksOnPage)) {
-                    struct Block* block = pblListGetFirst(*blocksOnPage);
-                    pblMapRemove(blockCache, &block->hash, 8, NULL);
-                    pblListRemoveElement(block->codeLink[0], block);
-                    if (block->codeLink[1])
-                        pblListRemoveElement(block->codeLink[1], block);
-                    if (currentThread->cpu.currentBlock == block) {
-                        delayFreeBlock(block);
-                    } else {
-                        freeBlock(block);
-                    }
-                }
-            }
+            currentThread->process->memory->nativeFlags[page] &= ~NATIVE_FLAG_READONLY;
+            clearPageFromBlockCache(currentThread->process->memory, page);
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
             seg_mapper(currentThread->process->memory, address);
             return EXCEPTION_EXECUTE_HANDLER;
         }
-    } else if (code == STATUS_GUARD_PAGE_VIOLATION) {
-        U64 hash = (U64)ep->ExceptionRecord->ExceptionAddress >> PAGE_SHIFT;
-        PblList* blocks = pblMapGet(codeCache, &hash, 8, NULL);
-        int ii=0;
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }

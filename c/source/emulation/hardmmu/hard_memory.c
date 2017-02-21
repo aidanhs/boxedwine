@@ -364,63 +364,162 @@ void initCallbacksInProcess(struct KProcess* process) {
     memcpy(getNativeAddress(process->memory, CALL_BACK_ADDRESS), callbackAddress, 4096);
 }
 
-PblMap* blockCache;
 PblMap* codeCache;
-void addCodeToPage(struct Memory* memory, U32 page);
+void makeCodePageReadOnly(struct Memory* memory, U32 page);
 
 void initBlockCache() {
-    blockCache = pblMapNewHashMap();
     codeCache = pblMapNewHashMap();
+}
+
+#define BLOCKS_IN_CACHE 256
+#define BLOCK_CACHE_SHIFT 4
+
+struct BlockCache {	
+    struct Block* block;
+    struct BlockCache* next;
+};
+
+struct BlockCache* freeCacheBlocks;
+
+struct BlockCache* allocCacheBlock() {
+    if (freeCacheBlocks) {
+        struct BlockCache* result = freeCacheBlocks;
+        freeCacheBlocks = freeCacheBlocks->next;
+        return result;
+    } else {
+        U32 count = 1024*1023/sizeof(struct BlockCache);
+        U32 i;
+        struct BlockCache* cacheBlock = (struct BlockCache*)kalloc(1024*1023, KALLOC_OP);
+
+        for (i=0;i<count;i++) {
+            cacheBlock->next = freeCacheBlocks;
+            freeCacheBlocks = cacheBlock;
+            cacheBlock++;
+        }
+        return allocCacheBlock();
+    }
+}
+
+void freeCacheBlock(struct BlockCache* cacheBlock) {
+    cacheBlock->next = freeCacheBlocks;
+    freeCacheBlocks = cacheBlock;
+}
+
+struct Block* getBlockFromCache(struct Memory* memory, U32 ip) {
+    struct BlockCache** cacheblocks = (struct BlockCache**)memory->codeCache[ip >> PAGE_SHIFT];
+    struct BlockCache* cacheBlock;
+    if (!cacheblocks)
+        return NULL;
+    cacheBlock = cacheblocks[(ip & 0xFFF)>>BLOCK_CACHE_SHIFT];
+    while (cacheBlock && cacheBlock->block) {
+        if (cacheBlock->block->ip == ip)
+            return cacheBlock->block;
+        cacheBlock = cacheBlock->next;
+    }
+    return 0;
+}
+
+void addBlockToCache(struct Memory* memory, struct Block* block, U32 ip) {
+    struct BlockCache** cacheBlocks = memory->codeCache[ip >> PAGE_SHIFT];
+    U32 index = (ip & 0xFFF)>>BLOCK_CACHE_SHIFT;
+    struct BlockCache* cacheBlock = allocCacheBlock();
+
+    if (!cacheBlocks) {
+        cacheBlocks = (struct BlockCache**)kalloc(sizeof(struct BlockCache*)*BLOCKS_IN_CACHE, 0);
+        memory->codeCache[ip >> PAGE_SHIFT] = cacheBlocks;
+    }
+    cacheBlock->next = cacheBlocks[index];
+    cacheBlocks[index] = cacheBlock;
+    cacheBlock->block = block;
+}
+
+void removeBlockFromPage(struct Memory* memory, struct Block* block, U32 page, U32 ip) {
+    struct BlockCache** cacheblocks = (struct BlockCache**)memory->codeCache[page];
+    struct BlockCache* cacheBlock;
+    struct BlockCache* prev = NULL;
+
+    if (!cacheblocks)
+        return;
+    cacheBlock = cacheblocks[(ip & 0xFFF)>>BLOCK_CACHE_SHIFT];
+    while (cacheBlock && cacheBlock->block) {
+        if (cacheBlock->block == block) {
+            if (prev)
+                prev->next = cacheBlock->next;
+            else
+                cacheblocks[(ip & 0xFFF)>>BLOCK_CACHE_SHIFT] = cacheBlock->next;
+            freeCacheBlock(cacheBlock);
+            break;
+        }
+        prev = cacheBlock;
+        cacheBlock = cacheBlock->next;
+    }
+}
+
+void clearPageFromBlockCache(struct Memory* memory, U32 page) {
+    struct BlockCache** cacheblocks = (struct BlockCache**)memory->codeCache[page];
+    if (cacheblocks) {
+        U32 i;
+        for (i=0;i<BLOCKS_IN_CACHE;i++) {
+            struct BlockCache* cacheBlock = cacheblocks[i];
+            while (cacheBlock) {
+                struct Block* block = cacheBlock->block;
+                struct BlockCache* c;
+
+                if (block->page[0]) {
+                    int ii=0;
+                }
+                // does this block spanned more than one page?
+                if (block->page[0]!=page) {
+                    removeBlockFromPage(memory, block, block->page[0], block->ip);
+                } else if (block->page[1] && block->page[1]!=page) {
+                    removeBlockFromPage(memory, block, block->page[1], block->page[1] << PAGE_SHIFT);
+                }
+
+                if (currentThread->cpu.currentBlock == block) {
+                    delayFreeBlock(block);
+                } else {
+                    freeBlock(block);
+                }
+                c = cacheBlock;                
+                cacheBlock = cacheBlock->next;
+                freeCacheBlock(c);
+            }
+        }
+        kfree(cacheblocks, 0);
+        memory->codeCache[page] = 0;
+    }    
 }
 
 struct Block* getBlock(struct CPU* cpu) {
     U32 ip;
-
+    struct Block* block;
     if (cpu->big)
         ip = cpu->segAddress[CS] + cpu->eip.u32;
     else
         ip = cpu->segAddress[CS] + cpu->eip.u16;
-    U64 hash = (U64)getNativeAddress(cpu->memory, ip);
-    struct Block** result = pblMapGet(blockCache, &hash, 8, NULL);
-    if (!result) {
-        struct Block* block = decodeBlock(cpu, cpu->eip.u32);
-        PblList* code;
-        U32 i;
-
-        block->hash = hash;
-        pblMapAdd(blockCache, &hash, 8, &block, sizeof(struct Block*));
-
-        for (i=0;i<2;i++) {
-            PblList** ppCode;
-            hash = hash >> PAGE_SHIFT;
-            if (hash == 0x20003a9) {
-                int ii=0;
-            }
-            ppCode = pblMapGet(codeCache, &hash, 8, NULL);
-            if (!ppCode) {
-                code = pblListNewLinkedList();
-                ppCode = &code;
-                pblMapAdd(codeCache, &hash, 8, ppCode, sizeof(PblList*));
-            }
-            block->codeLink[i] = *ppCode;
-            pblListAdd(*ppCode, block);
-            addCodeToPage(cpu->memory, ip >> PAGE_SHIFT);
-            if ((ip & PAGE_MASK) + block->eipCount >= PAGE_SIZE) {
-                U32 finished = PAGE_SIZE-(ip & PAGE_MASK);
+    block = getBlockFromCache(cpu->memory, ip);
+    if (!block) {
+        block = decodeBlock(cpu, cpu->eip.u32);
+        block->ip = ip;
+        block->page[0] = (ip >> PAGE_SHIFT);
+        addBlockToCache(cpu->memory, block, ip);
+        makeCodePageReadOnly(cpu->memory, ip >> PAGE_SHIFT);
+        if ((ip & PAGE_MASK) + block->eipCount >= PAGE_SIZE) {
+            U32 finished = PAGE_SIZE-(ip & PAGE_MASK);
                 
-                if (cpu->big)
-                    ip = cpu->segAddress[CS] + cpu->eip.u32 + finished;
-                else
-                    ip = cpu->segAddress[CS] + ((cpu->eip.u16 + finished) & 0xFFFF);
-                hash = (U64)getNativeAddress(cpu->memory, ip);
-                continue;
-            }
-            break;
-        }
+            if (cpu->big)
+                ip = cpu->segAddress[CS] + cpu->eip.u32 + finished;
+            else
+                ip = cpu->segAddress[CS] + ((cpu->eip.u16 + finished) & 0xFFFF);
+            makeCodePageReadOnly(cpu->memory, ip >> PAGE_SHIFT);
 
-        return block;
+            // this page will never return this block because block->ip doesn't exist in the page, but we add it to the page 
+            // so that when the page is cleared we will remove the block from both pages
+            addBlockToCache(cpu->memory, block, ip);
+            block->page[1] = (ip >> PAGE_SHIFT);
+        }        
     }
-    return *result;    
+    return block;
 }
 
 U8 FETCH8(struct DecodeData* data) {

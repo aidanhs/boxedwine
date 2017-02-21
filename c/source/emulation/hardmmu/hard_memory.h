@@ -25,12 +25,15 @@
 #define NATIVE_FLAG_COMMITTED 0x01
 #define NATIVE_FLAG_READONLY 0x02
 
+#define BLOCK_SHIFT 15
+
 struct Memory {
     U8 flags[NUMBER_OF_PAGES];
     U8 nativeFlags[NUMBER_OF_PAGES];
     struct KProcess* process;
     U32 allocated;
     U64 id;    
+    void* codeCache[NUMBER_OF_PAGES]; // 4 MB 
 #ifdef LOG_OPS
     U32 log;
 #endif
@@ -45,5 +48,5 @@ INLINE U32 getHostAddress(MMU_ARG void* address) {
 
 void reserveNativeMemory(struct Memory* memory);
 void releaseNativeMemory(struct Memory* memory);
-
+void clearPageFromBlockCache(struct Memory* memory, U32 page);
 #endif

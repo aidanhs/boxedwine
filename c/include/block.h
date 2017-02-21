@@ -32,8 +32,8 @@ struct Block{
     struct Block* block2;
     U32 startFunction;
 #ifdef HAS_64BIT_MMU
-    U64 hash;
-    PblList* codeLink[2];
+    U32 ip;
+    U32 page[2];
 #endif
     U32 jit;
     struct BlockNode* referencedFrom;
