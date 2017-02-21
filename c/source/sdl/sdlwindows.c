@@ -448,7 +448,10 @@ void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, 
 
 void screenResized() {
 #ifdef SDL2
-    SDL_SetWindowSize(sdlWindow, screenCx, screenCy);
+    if (sdlContext)
+        SDL_SetWindowSize(sdlWindow, screenCx, screenCy);
+    else
+        displayChanged();
 #else
     displayChanged();
 #endif
