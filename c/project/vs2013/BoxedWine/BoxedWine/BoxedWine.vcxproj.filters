@@ -217,11 +217,11 @@
     <ClCompile Include="..\..\..\..\source\emulation\hardmmu\hard_memory.c">
       <Filter>source\emulation\hardmmu</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_mmap.c">
-      <Filter>source\emulation\softmmu</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_file_map.c">
       <Filter>source\emulation\softmmu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c">
+      <Filter>source\kernel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -19,6 +19,7 @@
 #ifndef __HARD_MEMORY_H__
 #define __HARD_MEMORY_H__
 
+#ifdef HAS_64BIT_MMU
 #include "platform.h"
 #include "memory.h"
 
@@ -49,4 +50,5 @@ INLINE U32 getHostAddress(MMU_ARG void* address) {
 void reserveNativeMemory(struct Memory* memory);
 void releaseNativeMemory(struct Memory* memory);
 void clearPageFromBlockCache(struct Memory* memory, U32 page);
+#endif
 #endif

@@ -298,7 +298,6 @@
     <ClCompile Include="..\..\..\..\source\emulation\shift.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_file_map.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_memory.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_mmap.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_ram.c" />
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
@@ -316,6 +315,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\kfiledescriptor.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfilelock.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kio.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\kmmap.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kobject.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kpoll.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kprocess.c" />

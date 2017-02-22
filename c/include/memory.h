@@ -76,7 +76,6 @@ void freeMappable(struct Memory* memory, void* address);
 #define PAGE_EXEC 0x04
 #define PAGE_SHARED 0x08
 #define PAGE_MAPPED 0x20
-#define PAGE_RESERVED 0x40
 #define PAGE_IN_RAM 0x80
 #define PAGE_PERMISSION_MASK 0x07
 
@@ -88,10 +87,10 @@ void freeMappable(struct Memory* memory, void* address);
 #define IS_PAGE_IN_RAM(data) (data & PAGE_IN_RAM)
 
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeMapped);
-// should be called after findFirstAvailablePage, it will not verify that the pages are UNRESERVED before marking them RESERVED
-void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 status);
 
 void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fd, U64 offset, U32 cacheIndex);
+void protectPage(struct Memory* memory, U32 page, U32 permissions);
+void freePage(struct Memory* memory, U32 page);
 
 U8* getPhysicalAddress(struct Memory* memory, U32 address);
 

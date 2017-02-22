@@ -15,20 +15,18 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#ifndef HAS_64BIT_MMU
 #include "kmmap.h"
 #include "log.h"
 #include "kprocess.h"
 #include "kerror.h"
 #include "kobjectaccess.h"
-#include "soft_memory.h"
-#include "soft_ram.h"
+#include "../emulation/softmmu/soft_memory.h"
+#include "../emulation/hardmmu/hard_memory.h"
 #include "ksystem.h"
 #include "kalloc.h"
 #include "kio.h"
 #include "kfile.h"
 #include "loader.h"
-#include "soft_file_map.h"
 
 #include <string.h>
 
@@ -95,12 +93,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return result;
         }
     }
-    for (i=0;i<pageCount;i++) {
-        // This will prevent the next anonymous mmap from using this range
-        if (thread->process->memory->mmu[i + pageStart] == &invalidPage) {
-            thread->process->memory->flags[i + pageStart] = PAGE_RESERVED | PAGE_MAPPED;
-        }
-    }
+
 	// even if there are no permissions, it is important for MAP_ANONYMOUS|MAP_FIXED existing memory to be 0'd out
     // if (write || read || exec)
 	{		
@@ -115,19 +108,8 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         if (shared)
             permissions|=PAGE_SHARED;
         if (fd) {	
-            struct MappedFileCache* cache;
             struct KProcess* process = thread->process;
             int index = -1;
-
-            cache = getMappedFileInCache(fd->kobject->openFile->node->path);
-            if (!cache) {
-                cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache), KALLOC_MAPPEDFILECACHE);
-                safe_strcpy(cache->name, fd->kobject->openFile->node->path, MAX_FILEPATH_LEN);
-                cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
-                cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount, KALLOC_MMAP_CACHE_RAMPAGE);
-                putMappedFileInCache(cache);				
-            }
-            cache->refCount++;
 
             for (i=0;i<MAX_MAPPED_FILE;i++) {
                 if (!process->mappedFiles[i].refCount) {
@@ -140,16 +122,12 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             } else {
                 process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
                 process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
-                process->mappedFiles[index].offset = off;
-                process->mappedFiles[index].systemCacheEntry = cache;
+                process->mappedFiles[index].offset = off;                
                 process->mappedFiles[index].refCount = 0;
                 process->mappedFiles[index].file = fd->kobject;
                 process->mappedFiles[index].file->refCount++;
             }
-            for (i=0;i<pageCount;i++) {
-                allocPages(thread->process->memory, pageStart++, 1, permissions, fildes, off, index);
-                off+=PAGE_SIZE;
-            }
+            allocPages(thread->process->memory, pageStart, pageCount, permissions, fildes, off, index);
         } else {
             allocPages(thread->process->memory, pageStart, pageCount, permissions, 0, 0, 0);
         }		
@@ -175,33 +153,7 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
         permissions|=PAGE_EXEC;
 
     for (i=pageStart;i<pageStart+pageCount;i++) {
-        struct Page* page = memory->mmu[i];
-        U32 flags = memory->flags[i];
-
-        flags&=~PAGE_PERMISSION_MASK;
-        flags|=permissions;
-        memory->flags[i] = flags;
-
-        if (page == &invalidPage) {
-            memory->mmu[i] = &ramOnDemandPage;
-        } else if (page==&ramPageRO || page==&ramPageWO || page==&ramPageWR) {
-            if (read && write) {
-                memory->mmu[i] = &ramPageWR;
-                memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
-                memory->write[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
-            } else if (write) {
-                memory->mmu[i] = &ramPageWO;
-                memory->read[i] = 0;
-                memory->write[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
-            } else {
-                memory->mmu[i] = &ramPageRO;
-                memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
-                memory->write[i] = 0;
-            }
-        } else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage || page==&codePage) {
-        } else {
-            kpanic("syscall_mprotect unknown page type");
-        }
+        protectPage(memory, i, permissions);
     }
     return 0;
 }
@@ -213,11 +165,7 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
     struct Memory* memory = thread->process->memory;
 
     for (i=0;i<pageCount;i++) {
-        memory->mmu[i+pageStart]->clear(memory, i+pageStart);
-        memory->mmu[i+pageStart]=&invalidPage;
-        memory->flags[i+pageStart]=0;
-        memory->read[i+pageStart]=0;
-        memory->write[i+pageStart]=0;
+        freePage(memory, pageStart+i);
     }
     return 0;
 }
@@ -277,4 +225,3 @@ U32 syscall_msync(struct KThread* thread, U32 addr, U32 len, U32 flags) {
     klog("syscall_msync not implemented");
     return 0;
 }
-#endif

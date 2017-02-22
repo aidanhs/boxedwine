@@ -160,20 +160,41 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
     }
     return FALSE;
 }
-void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 flags) {
-    U32 i;
-    
-    for (i=startingPage;i<startingPage+pageCount;i++) {
-        memory->flags[i]=PAGE_RESERVED;
-    }
-}
 
 void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
     freeNativeMemory(memory->process, startingPage, pageCount);
 }
 
-void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fd, U64 offset, U32 cacheIndex) {
-    allocNativeMemory(memory, page, pageCount, permissions);
+void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fildes, U64 offset, U32 cacheIndex) {
+    if ((permissions & PAGE_PERMISSION_MASK) || fildes) {
+        allocNativeMemory(memory, page, pageCount, permissions);
+    } else {
+        U32 i;
+        releaseMemory(memory, page, pageCount);
+        for (i=0;i<pageCount;i++) {
+            memory->flags[i+page]=permissions;
+        }
+    }
+    if (fildes) {
+        struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
+        U64 pos = fd->kobject->openFile->func->getFilePointer(fd->kobject->openFile);
+        fd->kobject->openFile->func->seek(fd->kobject->openFile, offset);
+        fd->kobject->openFile->func->read(memory, fd->kobject->openFile, page << PAGE_SHIFT, pageCount << PAGE_SHIFT);        
+        fd->kobject->openFile->func->seek(fd->kobject->openFile, pos);
+    }    
+}
+
+void protectPage(struct Memory* memory, U32 i, U32 permissions) {
+    if (!(memory->flags[i] & PAGE_IN_RAM) && (permissions & PAGE_PERMISSION_MASK)) {
+        allocPages(memory, i, 1, permissions, 0, 0, 0);
+    } else {
+        memory->flags[i] &=~ PAGE_PERMISSION_MASK;
+        memory->flags[i] |= permissions;
+    } 
+}
+
+void freePage(struct Memory* memory, U32 page) {
+    freeNativeMemory(memory->process, page, 1);
 }
 
 void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {

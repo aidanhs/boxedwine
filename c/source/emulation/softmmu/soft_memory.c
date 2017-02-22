@@ -28,6 +28,9 @@
 #include "soft_memory.h"
 #include "../decodedata.h"
 #include "decoder.h"
+#include "kobject.h"
+#include "kobjectaccess.h"
+#include "soft_ram.h"
 
 #include <string.h>
 #include <setjmp.h>
@@ -399,15 +402,28 @@ void writeMemory(MMU_ARG U32 address, U8* data, int len) {
     }
 }
 
-void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fd, U64 offset, U32 cacheIndex) {
+void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fildes, U64 offset, U32 cacheIndex) {
     U32 i;
     U32 address = page << PAGE_SHIFT;
     struct Page* pageType;
-    U32 data = 0;
 
-    if (fd) {
+    if (fildes) {
+        struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
+
         int filePage = (int)(offset>>PAGE_SHIFT);
-       
+        struct MappedFileCache* cache;
+        struct KProcess* process = memory->process;
+
+        cache = getMappedFileInCache(fd->kobject->openFile->node->path);
+        if (!cache) {
+            cache = (struct MappedFileCache*)kalloc(sizeof(struct MappedFileCache), KALLOC_MAPPEDFILECACHE);
+            safe_strcpy(cache->name, fd->kobject->openFile->node->path, MAX_FILEPATH_LEN);
+            cache->pageCount = (U32)((fd->kobject->access->length(fd->kobject) + PAGE_SIZE-1) >> PAGE_SHIFT);
+            cache->ramPages = (U32*)kalloc(sizeof(U32)*cache->pageCount, KALLOC_MMAP_CACHE_RAMPAGE);
+            putMappedFileInCache(cache);				
+        }
+        cache->refCount++;
+
         pageType = &ramOnDemandFilePage;
 
         if (cacheIndex>0xFFF || filePage>0xFFFFF) {
@@ -416,23 +432,75 @@ void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, 
         if (offset & PAGE_MASK) {
             kpanic("mmap: wasn't expecting the offset to be in the middle of a page");
         }
-        data=cacheIndex | (filePage << 12);
-        memory->process->mappedFiles[cacheIndex].refCount++;
+        process->mappedFiles[cacheIndex].systemCacheEntry = cache;        
+
+        for (i=0;i<pageCount;i++) {
+            if (memory->mmu[page]!=&invalidPage) {
+                memory->mmu[page]->clear(memory, page);
+            }
+            memory->mmu[page] = pageType;
+            memory->flags[page] = permissions;
+            memory->ramPage[page] = cacheIndex | (filePage++ << 12);
+            memory->read[page] = 0;
+            memory->write[page] = 0;
+
+            memory->process->mappedFiles[cacheIndex].refCount++;
+            page++;
+        }
     } else {
         pageType = &ramOnDemandPage;
-    }
 
-    for (i=0;i<pageCount;i++) {
-        if (memory->mmu[page]!=&invalidPage) {
-            memory->mmu[page]->clear(memory, page);
+        for (i=0;i<pageCount;i++) {
+            if (memory->mmu[page]!=&invalidPage) {
+                memory->mmu[page]->clear(memory, page);
+            }
+            memory->mmu[page] = pageType;
+            memory->flags[page] = permissions;
+            memory->ramPage[page] = 0;
+            memory->read[page] = 0;
+            memory->write[page] = 0;
+            page++;
         }
-        memory->mmu[page] = pageType;
-        memory->flags[page] = permissions;
-        memory->ramPage[page] = data;
-        memory->read[page] = 0;
-        memory->write[page] = 0;
-        page++;
+    }    
+}
+
+void protectPage(struct Memory* memory, U32 i, U32 permissions) {
+    struct Page* page = memory->mmu[i];
+    U32 flags = memory->flags[i];
+
+    flags&=~PAGE_PERMISSION_MASK;
+    flags|=(permissions & PAGE_PERMISSION_MASK);
+    memory->flags[i] = flags;
+
+    if (page == &invalidPage) {
+        memory->mmu[i] = &ramOnDemandPage;
+    } else if (page==&ramPageRO || page==&ramPageWO || page==&ramPageWR) {
+        if ((permissions & PAGE_READ) && (permissions & PAGE_WRITE)) {
+            memory->mmu[i] = &ramPageWR;
+            memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
+            memory->write[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
+        } else if (permissions & PAGE_WRITE) {
+            memory->mmu[i] = &ramPageWO;
+            memory->read[i] = 0;
+            memory->write[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
+        } else {
+            // :TODO: is this right?
+            memory->mmu[i] = &ramPageRO;
+            memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
+            memory->write[i] = 0;
+        }
+    } else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage || page==&codePage) {
+    } else {
+        kpanic("syscall_mprotect unknown page type");
     }
+}
+
+void freePage(struct Memory* memory, U32 page) {
+    memory->mmu[page]->clear(memory, page);
+    memory->mmu[page]=&invalidPage;
+    memory->flags[page]=0;
+    memory->read[page]=0;
+    memory->write[page]=0;
 }
 
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeReMapped) {

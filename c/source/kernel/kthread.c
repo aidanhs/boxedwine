@@ -67,9 +67,9 @@ void setupStack(struct KThread* thread) {
 				kpanic("Failed to allocate stack for thread");
     allocPages(thread->cpu.memory, page+1, pageCount-2, PAGE_READ|PAGE_WRITE, 0, 0, 0);
     // 1 page above (catch stack underrun)
-    reservePages(thread->cpu.memory, page+pageCount-1, 1, PAGE_RESERVED);
+    allocPages(thread->cpu.memory, page+pageCount-1, 1, 0, 0, 0, 0);
     // 1 page below (catch stack overrun)
-    reservePages(thread->cpu.memory, page, 1, PAGE_RESERVED);
+    allocPages(thread->cpu.memory, page, 1, 0, 0, 0, 0);
     thread->stackPageCount = pageCount;
     thread->stackPageStart = page;
     thread->cpu.reg[4].u32 = (thread->stackPageStart + thread->stackPageCount - 1) << PAGE_SHIFT; // one page away from the top
