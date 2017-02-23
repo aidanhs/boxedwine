@@ -26,6 +26,8 @@ struct FPU_Reg {
         double d;
         U64 l;
     };
+    U64 loadedInteger;
+    U8 isIntegerLoaded;
 };
 
 struct FPU {

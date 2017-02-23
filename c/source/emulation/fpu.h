@@ -119,11 +119,13 @@ static void FPU_PUSH(struct FPU* fpu, double in) {
     //actually check if empty
     fpu->tags[fpu->top] = TAG_Valid;
     fpu->regs[fpu->top].d = in;
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
 }
 
 static void FPU_PREP_PUSH(struct FPU* fpu) {
     fpu->top = (fpu->top - 1) & 7;
     fpu->tags[fpu->top] = TAG_Valid;
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
 }
 
 void push(struct FPU* fpu, double value) {
@@ -249,6 +251,8 @@ static void FPU_FLD_I32(struct FPU* fpu, S32 value, int store_to) {
 
 static void FPU_FLD_I64(struct FPU* fpu, S64 value, int store_to) {
     fpu->regs[store_to].d = (double)value;
+    fpu->regs[store_to].loadedInteger = value;
+    fpu->regs[store_to].isIntegerLoaded = 1;
 }
 
 static void FPU_FBLD(struct FPU* fpu, U8 data[], int store_to) {
@@ -328,7 +332,10 @@ void FPU_FST_I32(struct CPU* cpu, int addr) {
 }
 
 void FPU_FST_I64(struct CPU* cpu, int addr) {
-    writeq(MMU_PARAM_CPU addr, (S64) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
+    if (cpu->fpu.regs[cpu->fpu.top].isIntegerLoaded)
+        writeq(MMU_PARAM_CPU addr, cpu->fpu.regs[cpu->fpu.top].loadedInteger);
+    else
+        writeq(MMU_PARAM_CPU addr, (S64) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
 }
 
 void FPU_FBST(struct CPU* cpu, int addr) {
@@ -366,6 +373,7 @@ static void FPU_FADD(struct FPU* fpu, int op1, int op2) {
     double d = fpu->regs[op1].d;
 #endif
     fpu->regs[op1].d += fpu->regs[op2].d;
+    fpu->regs[op1].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     LOG("FPU_FADD %f + %f = %f", d, fpu->regs[op2].d, fpu->regs[op1].d);
     LOG_STACK(fpu);
@@ -378,6 +386,7 @@ static void FPU_FDIV(struct FPU* fpu, int st, int other) {
     double d = fpu->regs[st].d;
 #endif
     fpu->regs[st].d = fpu->regs[st].d / fpu->regs[other].d;
+    fpu->regs[st].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     if (fpu->regs[other].d==0.0) {
         LOG("*** FPU DIVIDE BY ZERO ***");
@@ -393,6 +402,7 @@ static void FPU_FDIVR(struct FPU* fpu, int st, int other) {
     double d = fpu->regs[st].d;
 #endif
     fpu->regs[st].d = fpu->regs[other].d / fpu->regs[st].d;
+    fpu->regs[st].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     if (d==0.0) {
         LOG("*** FPU DIVIDE BY ZERO ***");
@@ -408,6 +418,7 @@ static void FPU_FMUL(struct FPU* fpu, int st, int other) {
     double d = fpu->regs[st].d;
 #endif
     fpu->regs[st].d *= fpu->regs[other].d;
+    fpu->regs[st].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     LOG("FPU_FMUL %f * %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
     LOG_STACK(fpu);
@@ -420,6 +431,7 @@ static void FPU_FSUB(struct FPU* fpu, int st, int other) {
     double d = fpu->regs[st].d;
 #endif
     fpu->regs[st].d = fpu->regs[st].d - fpu->regs[other].d;
+    fpu->regs[st].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     LOG("FPU_FSUB %f - %f = %f", d, fpu->regs[other].d, fpu->regs[st].d);
     LOG_STACK(fpu);
@@ -432,6 +444,7 @@ static void FPU_FSUBR(struct FPU* fpu, int st, int other) {
     double d = fpu->regs[st].d;
 #endif
     fpu->regs[st].d = fpu->regs[other].d - fpu->regs[st].d;
+    fpu->regs[st].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     LOG("FPU_FSUBR %f - %f = %f", fpu->regs[other].d, d, fpu->regs[st].d);
     LOG_STACK(fpu);
@@ -441,11 +454,11 @@ static void FPU_FSUBR(struct FPU* fpu, int st, int other) {
 
 static void FPU_FXCH(struct FPU* fpu, int st, int other) {
     int tag = fpu->tags[other];
-    double reg = fpu->regs[other].d;
+    struct FPU_Reg reg = fpu->regs[other];
     fpu->tags[other] = fpu->tags[st];
-    fpu->regs[other].d = fpu->regs[st].d;
+    fpu->regs[other] = fpu->regs[st];
     fpu->tags[st] = tag;
-    fpu->regs[st].d = reg;
+    fpu->regs[st] = reg;
 #ifdef LOG_FPU
     LOG("    FPU_FXCH %f <-> %f", fpu->regs[other].d, fpu->regs[st].d);
     LOG("    after");
@@ -455,7 +468,7 @@ static void FPU_FXCH(struct FPU* fpu, int st, int other) {
 
 static void FPU_FST(struct FPU* fpu, int st, int other) {
     fpu->tags[other] = fpu->tags[st];
-    fpu->regs[other].d = fpu->regs[st].d;
+    fpu->regs[other] = fpu->regs[st];
 #ifdef LOG_FPU
     LOG("FPU_FST %f", fpu->regs[st].d);
     LOG_STACK(fpu);
@@ -522,6 +535,7 @@ void FPU_FRNDINT(struct FPU* fpu) {
     double value = fpu->regs[fpu->top].d;
     S64 temp = (S64)FROUND(fpu, value);
     fpu->regs[fpu->top].d = (double) (temp);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
 #ifdef LOG_FPU
     LOG("FPU_FRNDINT %d -> %d", value, fpu->regs[fpu->top].d);
     LOG_STACK(fpu);
@@ -536,6 +550,7 @@ void FPU_FPREM(struct FPU* fpu) {
     // Real64 res=valtop - ressaved*valdiv;
     // res= fmod(valtop,valdiv);
     fpu->regs[fpu->top].d = valtop - ressaved*valdiv;
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_SET_C0(fpu, (int)(ressaved & 4));
     FPU_SET_C3(fpu, (int)(ressaved & 2));
     FPU_SET_C1(fpu, (int)(ressaved & 1));
@@ -559,6 +574,7 @@ void FPU_FPREM1(struct FPU* fpu) {
     else if (quot-quotf<0.5) ressaved = (S64)(quotf);
     else ressaved = (S64)(((((S64)(quotf))&1)!=0)?(quotf+1):(quotf));
     fpu->regs[fpu->top].d = valtop - ressaved*valdiv;
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_SET_C0(fpu, (int)(ressaved&4));
     FPU_SET_C3(fpu, (int)(ressaved&2));
     FPU_SET_C1(fpu, (int)(ressaved&1));
@@ -603,15 +619,18 @@ void FPU_FXAM(struct FPU* fpu) {
 
 void FPU_F2XM1(struct FPU* fpu) {
     fpu->regs[fpu->top].d = pow(2.0, fpu->regs[fpu->top].d) - 1;
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
 }
 
 void FPU_FYL2X(struct FPU* fpu) {
     fpu->regs[STV(fpu, 1)].d *= log(fpu->regs[fpu->top].d) / log(2.0);
+    fpu->regs[STV(fpu, 1)].isIntegerLoaded = 0;
     FPU_FPOP(fpu);
 }
 
 void FPU_FPTAN(struct FPU* fpu) {
     fpu->regs[fpu->top].d = tan(fpu->regs[fpu->top].d);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_PUSH(fpu, 1.0);
     FPU_SET_C2(fpu, 0);
     //flags and such :)
@@ -619,23 +638,27 @@ void FPU_FPTAN(struct FPU* fpu) {
 
 void FPU_FPATAN(struct FPU* fpu) {
     fpu->regs[STV(fpu,1)].d = atan2(fpu->regs[STV(fpu, 1)].d, fpu->regs[fpu->top].d);
+    fpu->regs[STV(fpu, 1)].isIntegerLoaded = 0;
     FPU_FPOP(fpu);
     //flags and such :)
 }
 
 void FPU_FYL2XP1(struct FPU* fpu) {
     fpu->regs[STV(fpu, 1)].d *= log(fpu->regs[fpu->top].d + 1.0) / log(2.0);
+    fpu->regs[STV(fpu, 1)].isIntegerLoaded = 0;
     FPU_FPOP(fpu);
 }
 
 void FPU_FSQRT(struct FPU* fpu) {
     fpu->regs[fpu->top].d = sqrt(fpu->regs[fpu->top].d);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     //flags and such :)
 }
 
 void FPU_FSINCOS(struct FPU* fpu) {
     double temp = fpu->regs[fpu->top].d;
     fpu->regs[fpu->top].d = sin(temp);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_PUSH(fpu, cos(temp));
     FPU_SET_C2(fpu, 0);
     //flags and such :)
@@ -645,16 +668,19 @@ void FPU_FSCALE(struct FPU* fpu) {
     double value = fpu->regs[STV(fpu, 1)].d;
     S64 chopped = (S64)value;
     fpu->regs[fpu->top].d *= pow(2.0, (double)chopped);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     //2^x where x is chopped.
 }
 
 void FPU_FSIN(struct FPU* fpu) {
     fpu->regs[fpu->top].d = sin(fpu->regs[fpu->top].d);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_SET_C2(fpu, 0);
 }
 
 void FPU_FCOS(struct FPU* fpu) {
     fpu->regs[fpu->top].d = cos(fpu->regs[fpu->top].d);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_SET_C2(fpu, 0);
     //flags and such :)
 }
@@ -734,15 +760,18 @@ void FPU_FXTRACT(struct FPU* fpu) {
     double mant = tmp.d / (pow(2.0, (double) (exp80final)));
         
     fpu->regs[fpu->top].d = (double) (exp80final);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
     FPU_PUSH(fpu, mant);
 }
 
 static void FPU_FCHS(struct FPU* fpu) {
     fpu->regs[fpu->top].d = -1.0 * (fpu->regs[fpu->top].d);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
 }
 
 void FPU_FABS(struct FPU* fpu) {
     fpu->regs[fpu->top].d = fabs(fpu->regs[fpu->top].d);
+    fpu->regs[fpu->top].isIntegerLoaded = 0;
 }
 
 static void FPU_FTST(struct FPU* fpu) {
