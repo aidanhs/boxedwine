@@ -403,11 +403,11 @@ typedef struct sigaltstack {
         S32 ss_size;
 } stack_tt;
 
-# define _SIGSET_NWORDS (1024 / 32)
+# define K_SIGSET_NWORDS (1024 / 32)
 typedef struct
 {
-unsigned long int __val[_SIGSET_NWORDS];
-} __sigset_t;
+unsigned long int __val[K_SIGSET_NWORDS];
+} k__sigset_t;
 
 
 // Userlevel context. 
@@ -416,7 +416,7 @@ struct ucontext_ia32 {
         unsigned int      uc_link;         // 4
         stack_tt           uc_stack;        // 8
         mcontext_tt uc_mcontext;			   // 20
-        __sigset_t   uc_sigmask;   /* mask last for extensibility */
+        k__sigset_t   uc_sigmask;   /* mask last for extensibility */
 };
 
 
@@ -490,14 +490,12 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
     U32 context;	
     U64 tsc = cpu->timeStampCounter;
     U32 b = cpu->blockCounter;
-    U32 stackAddress;
 
     pop32(cpu); // signal
     pop32(cpu); // address
     context = pop32(cpu);
     cpu->thread->waitStartTime = pop32(cpu);
     cpu->thread->interrupted = pop32(cpu);
-    stackAddress=cpu->reg[4].u32;
 
 #ifdef LOG_OPS
     //klog("onExitSignal signal=%d info=%X context=%X stack=%X interrupted=%d", signal, address, context, cpu->reg[4].u32, cpu->thread->interrupted);

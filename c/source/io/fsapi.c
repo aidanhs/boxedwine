@@ -946,7 +946,6 @@ BOOL file_isDirectory(struct FsNode* node) {
 
 BOOL file_remove(struct FsNode* node) {
     BOOL result;
-    BOOL forcedClose = FALSE;
 
     if (node->isLink1) {
         safe_strcpy(tmpLocalPath, node->path, MAX_FILEPATH_LEN);
@@ -1001,7 +1000,6 @@ BOOL file_remove(struct FsNode* node) {
             openNode->func->seek(openNode, openNode->cachedPosDuringDelete1);
             openNode = openNode->nextOpen1;
         }
-        forcedClose = TRUE;
         result = TRUE;
     }
     if (!result) {

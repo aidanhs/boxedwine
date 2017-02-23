@@ -188,6 +188,7 @@ int getMemSizeOfElf(struct FsOpenNode* openNode) {
     openNode->func->seek(openNode, pos);
     return len - address + 4096*sections; // 4096 for alignment
 }
+#if 0
 U32 getPELoadAddress(struct FsOpenNode* openNode, U32* section, U32* numberOfSections, U32* sizeOfSection) {
     static U8 buffer[1024];	
     U64 pos = openNode->func->getFilePointer(openNode);
@@ -227,7 +228,7 @@ U32 getPELoadAddress(struct FsOpenNode* openNode, U32* section, U32* numberOfSec
     // IMAGE_NT_HEADERS.OptionalHeader.ImageBase
     return buffer[offset + 0x34] | ((U32)buffer[offset + 0x35] << 8) | ((U32)buffer[offset + 0x36] << 16) | ((U32)buffer[offset + 0x37] << 24);
 }
-
+#endif
 BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpenNode* openNode, U32* eip) {
     U8 buffer[sizeof(struct Elf32_Ehdr)];
     struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;

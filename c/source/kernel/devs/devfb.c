@@ -364,7 +364,7 @@ void fbSetupScreen() {
         flags |=SDL_HWPALETTE;
     }
     surface=SDL_SetVideoMode(fb_var_screeninfo.xres_virtual,fb_var_screeninfo.yres_virtual,fb_var_screeninfo.bits_per_pixel, flags);
-#endif
+
     if (fb_var_screeninfo.bits_per_pixel==8) {
         SDL_Color colors[256];
         int i;
@@ -374,10 +374,9 @@ void fbSetupScreen() {
           colors[i].g=(U8)fb_cmap.green[i];
           colors[i].b=(U8)fb_cmap.blue[i];
         }
-#ifndef SDL2
         SDL_SetPalette(surface, SDL_PHYSPAL, colors, 0, 256);
-#endif
     }
+#endif
 
     SDL_ShowCursor(0);
     fb_fix_screeninfo.visual = 2; // FB_VISUAL_TRUECOLOR
@@ -614,6 +613,7 @@ struct FsOpenNodeFunc fbAccess = {fb_init, fb_length, fb_setLength, fb_getFilePo
 
 void flipFB() {
     if (updateAvailable && !bOpenGL) {
+#ifndef SDL2
         if (fb_var_screeninfo.bits_per_pixel==8 && paletteChanged) {
             SDL_Color colors[256];
             int i;
@@ -624,10 +624,9 @@ void flipFB() {
               colors[i].b=(U8)fb_cmap.blue[i];
             }
             paletteChanged = 0;
-    #ifndef SDL2
             SDL_SetPalette(surface, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
-    #endif
         }
+#endif
 #ifdef SDL2
         SDL_UpdateTexture(sdlTexture, NULL, screenPixels, fb_fix_screeninfo.line_length);
         SDL_RenderClear(sdlRenderer);

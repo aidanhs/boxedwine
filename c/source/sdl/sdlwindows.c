@@ -389,17 +389,19 @@ static void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
-U32 sdlMakeCurrent(void* context) {
+U32 sdlMakeCurrent(U32 arg) {
 #ifdef SDL2
-    if (SDL_GL_MakeCurrent(sdlWindow, context)==0)
-        return 1;
+    if (arg == 0x100) {
+        if (SDL_GL_MakeCurrent(sdlWindow, sdlContext)==0)
+            return 1;
+    }
     return 0;
 #else
     return 1;
 #endif
 }
 
-void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
+U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
     destroySDL2();
 
@@ -428,21 +430,21 @@ void* sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, 
     if (!sdlWindow) {
         fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
         displayChanged();
-        return NULL;
+        return 0;
     }
 
     sdlContext = SDL_GL_CreateContext(sdlWindow);
     if (!sdlContext) {
         fprintf(stderr, "Couldn't create context: %s\n", SDL_GetError());
         displayChanged();
-        return NULL;
+        return 0;
     }
     wnd->openGlContext = sdlContext;
-    return sdlContext;
+    return 0x100;
 #else
     surface = NULL;
     SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);        
-    return (void*)1;
+    return 0x200;
 #endif
 }
 
@@ -492,21 +494,10 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
     struct Wnd* wnd = getWnd(hwnd);
     struct wRECT r;
     U32 y;    
-    SDL_Rect srcRect;
-    SDL_Rect dstRect;
     int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
     static int i;
 
     readRect(MMU_PARAM rect, &r);
-
-    srcRect.x = 0;
-    srcRect.y = 0;
-    srcRect.w = r.right - r.left;
-    srcRect.h = r.bottom - r.top;
-    dstRect.x = xOrg;
-    dstRect.y = yOrg;
-    dstRect.w = srcRect.w;
-    dstRect.h = srcRect.h;        
 
     if (!firstWindowCreated) {
         displayChanged();

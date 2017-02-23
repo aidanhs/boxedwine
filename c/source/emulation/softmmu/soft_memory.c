@@ -743,14 +743,12 @@ BOOL isValidReadAddress(struct Memory* memory, U32 address) {
 static U32 callbackPage;
 static U8* callbackAddress;
 static int callbackPos;
-static U32 callbacks[512];
-
-#define CALLBACK_OP_SIZE 8
+static void* callbacks[512];
 
 void addCallback(void (OPCALL *func)(struct CPU*, struct Op*)) {
     U64 funcAddress = (U64)func;
-    U8* address = callbackAddress+callbackPos*CALLBACK_OP_SIZE;
-    callbacks[callbackPos++] = (U32)address;
+    U8* address = callbackAddress+callbackPos*(4+sizeof(void*));
+    callbacks[callbackPos++] = address;
     
     *address=0xFE;
     address++;

@@ -1176,7 +1176,7 @@ void boxeddrv_wglCreateContext(struct CPU* cpu) {
     if (!wnd) {
         EAX = 0;
     } else {
-        EAX = (U32)sdlCreateOpenglWindow(wnd, ARG2, ARG3, ARG4, ARG5);
+        EAX = sdlCreateOpenglWindow(wnd, ARG2, ARG3, ARG4, ARG5);
     }
 }
 
@@ -1204,7 +1204,7 @@ void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
 
 // HwND hwnd, void* context
 void boxeddrv_wglMakeCurrent(struct CPU* cpu) {
-    EAX = sdlMakeCurrent((void*)ARG2);
+    EAX = sdlMakeCurrent(ARG2);
 }
 
 extern U32 numberOfPfs;

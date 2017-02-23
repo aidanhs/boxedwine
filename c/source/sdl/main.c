@@ -592,9 +592,9 @@ int main(int argc, char **argv) {
             if (!ran) {
                 struct KProcess* process=0;
                 int count = 0;
-
-                i=0;
-                while (getNextProcess(&i, &process)) {
+                U32 processIndex = 0;
+                
+                while (getNextProcess(&processIndex, &process)) {
                     if (process && !isProcessStopped(process) && !isProcessTerminated(process)) {
                         count++;
                     }

@@ -39,6 +39,7 @@ void kpanic(const char* msg, ...) {
         fclose(logFile);
     }
     i=1/j;
+    printf("%i\n", i); // just use it so it doesn't get optimized out
 }
 
 void kwarn(const char* msg, ...) {

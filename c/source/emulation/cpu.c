@@ -219,11 +219,11 @@ void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
             if (ssLdt->seg_32bit) {
                 cpu->stackMask = 0xFFFFFFFF;
                 cpu->stackNotMask = 0;
-                ESP+=bytes;
+                ESP=n_esp+bytes;
             } else {
                 cpu->stackMask = 0x0000FFFF;
                 cpu->stackNotMask = 0xFFFF0000;
-                SP+=bytes;
+                SP=n_esp+bytes;
             }
         }
     }
@@ -991,11 +991,11 @@ U32 pop32(struct CPU* cpu) {
 }
 
 U16 peek16(struct CPU* cpu, U32 index) {
-    return readw(MMU_PARAM_CPU cpu->segAddress[SS]+ (ESP+index*2 & cpu->stackMask));
+    return readw(MMU_PARAM_CPU cpu->segAddress[SS]+ ((ESP+index*2) & cpu->stackMask));
 }
 
 U32 peek32(struct CPU* cpu, U32 index) {
-    return readd(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP+index*4 & cpu->stackMask));
+    return readd(MMU_PARAM_CPU cpu->segAddress[SS] + ((ESP+index*4) & cpu->stackMask));
 }
 
 void cpu_exception(struct CPU* cpu, int code, int error) {
