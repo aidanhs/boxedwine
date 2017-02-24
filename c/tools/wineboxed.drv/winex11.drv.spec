@@ -21,7 +21,7 @@
 @ cdecl GetClipboardData(long) boxeddrv_GetClipboardData
 @ cdecl GetCursorPos(ptr) boxeddrv_GetCursorPos
 @ cdecl GetKeyboardLayout(long) boxeddrv_GetKeyboardLayout
-@ cdecl GetKeyboardLayoutList(long ptr) boxeddrv_GetKeyboardLayoutList
+#@ cdecl GetKeyboardLayoutList(long ptr) boxeddrv_GetKeyboardLayoutList
 @ cdecl GetKeyboardLayoutName(ptr) boxeddrv_GetKeyboardLayoutName
 @ cdecl GetKeyNameText(long ptr long) boxeddrv_GetKeyNameText
 @ cdecl GetMonitorInfo(long ptr) boxeddrv_GetMonitorInfo
