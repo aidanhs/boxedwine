@@ -759,7 +759,7 @@ void decode267(struct DecodeData* data) {
 // Grpl Eb,Ib
 void decode080(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(add8_reg, add8_mem16, add8_mem32); break;
     case 1: DECODE_E(or8_reg, or8_mem16, or8_mem32); break;
@@ -789,7 +789,7 @@ void decode080(struct DecodeData* data) {
 // Grpl Ew,Iw
 void decode081(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(add16_reg, add16_mem16, add16_mem32); break;
     case 1: DECODE_E(or16_reg, or16_mem16, or16_mem32); break;
@@ -819,7 +819,7 @@ void decode081(struct DecodeData* data) {
 // Grpl Ed,Id
 void decode281(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(add32_reg, add32_mem16, add32_mem32); break;
     case 1: DECODE_E(or32_reg, or32_mem16, or32_mem32); break;
@@ -849,7 +849,7 @@ void decode281(struct DecodeData* data) {
 // Grpl Ew,Ix
 void decode083(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(add16_reg, add16_mem16, add16_mem32); break;
     case 1: DECODE_E(or16_reg, or16_mem16, or16_mem32); break;
@@ -880,7 +880,7 @@ void decode083(struct DecodeData* data) {
 // Grpl Ed,Ix
 void decode283(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(add32_reg, add32_mem16, add32_mem32); break;
     case 1: DECODE_E(or32_reg, or32_mem16, or32_mem32); break;
@@ -1069,7 +1069,7 @@ void decode09b(struct DecodeData* data) {
 // GRP2 Eb,Ib
 void decode0c0(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol8_reg_op, rol8_mem16_op, rol8_mem32_op); break;
     case 1: DECODE_E(ror8_reg_op, ror8_mem16_op, ror8_mem32_op); break;
@@ -1111,7 +1111,7 @@ void decode0c0(struct DecodeData* data) {
 // GRP2 Ew,Ib
 void decode0c1(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol16_reg_op, rol16_mem16_op, rol16_mem32_op); break;
     case 1: DECODE_E(ror16_reg_op, ror16_mem16_op, ror16_mem32_op); break;
@@ -1153,7 +1153,7 @@ void decode0c1(struct DecodeData* data) {
 // GRP2 Ed,Ib
 void decode2c1(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol32_reg_op, rol32_mem32_op, rol32_mem32_op); break;
     case 1: DECODE_E(ror32_reg_op, ror32_mem32_op, ror32_mem32_op); break;
@@ -1249,7 +1249,7 @@ void decode2cf(struct DecodeData* data) {
 // GRP2 Eb,1
 void decode0d0(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol8_reg_op, rol8_mem16_op, rol8_mem32_op); break;
     case 1: DECODE_E(ror8_reg_op, ror8_mem16_op, ror8_mem32_op); break;
@@ -1279,7 +1279,7 @@ void decode0d0(struct DecodeData* data) {
 // GRP2 Ew,1
 void decode0d1(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol16_reg_op, rol16_mem16_op, rol16_mem32_op); break;
     case 1: DECODE_E(ror16_reg_op, ror16_mem16_op, ror16_mem32_op); break;
@@ -1309,7 +1309,7 @@ void decode0d1(struct DecodeData* data) {
 // GRP2 Ed,1
 void decode2d1(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol32_reg_op, rol32_mem32_op, rol32_mem32_op); break;
     case 1: DECODE_E(ror32_reg_op, ror32_mem32_op, ror32_mem32_op); break;
@@ -1339,7 +1339,7 @@ void decode2d1(struct DecodeData* data) {
 // GRP2 Eb,CL
 void decode0d2(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol8cl_reg_op, rol8cl_mem16_op, rol8cl_mem32_op); break;
     case 1: DECODE_E(ror8cl_reg_op, ror8cl_mem16_op, ror8cl_mem32_op); break;
@@ -1368,7 +1368,7 @@ void decode0d2(struct DecodeData* data) {
 // GRP2 Ew,CL
 void decode0d3(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol16cl_reg_op, rol16cl_mem16_op, rol16cl_mem32_op); break;
     case 1: DECODE_E(ror16cl_reg_op, ror16cl_mem16_op, ror16cl_mem32_op); break;
@@ -1397,7 +1397,7 @@ void decode0d3(struct DecodeData* data) {
 // GRP2 Ed,CL
 void decode2d3(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch (G(rm)) {
     case 0: DECODE_E(rol32cl_reg_op, rol32cl_mem32_op, rol32cl_mem32_op); break;
     case 1: DECODE_E(ror32cl_reg_op, ror32cl_mem32_op, ror32cl_mem32_op); break;
@@ -1587,7 +1587,7 @@ void decode0d9(struct DecodeData* data) {
 // FPU ESC 2
 void decode0da(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     if (rm >= 0xc0) {
         data->op->r1 = E(rm);         
         switch ((rm >> 3) & 7) {
@@ -1635,7 +1635,7 @@ void decode0da(struct DecodeData* data) {
 // FPU ESC 3
 void decode0db(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     if (rm >= 0xc0) {
         data->op->r1 = E(rm); 
         switch ((rm >> 3) & 7) {
@@ -1820,7 +1820,7 @@ void decode0de(struct DecodeData* data) {
 // FPU ESC 7
 void decode0df(struct DecodeData* data) {
     U8 rm = FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     if (rm >= 0xc0) {
         data->op->r1 = E(rm); 
         switch ((rm >> 3) & 7) {
@@ -1938,7 +1938,7 @@ void decode0f4(struct DecodeData* data) {
 // GRP4 Eb
 void decode0fe(struct DecodeData* data) {
     U8 rm=FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch ((rm>>3)&7) {
         case 0x00:										// INC Eb 
             DECODE_E(inc8_reg, inc8_mem16, inc8_mem32);
@@ -1967,7 +1967,7 @@ void decode0fe(struct DecodeData* data) {
 // GRP5 Ew
 void decode0ff(struct DecodeData* data) {
     U8 rm=FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch ((rm>>3)&7) {
         case 0x00:										// INC Ew 
             DECODE_E(inc16_reg, inc16_mem16, inc16_mem32);
@@ -2015,7 +2015,7 @@ void decode0ff(struct DecodeData* data) {
 // GRP5 Ed
 void decode2ff(struct DecodeData* data) {
     U8 rm=FETCH8(data);
-    data->op->subInst = G(rm);
+    data->op->rm = rm;
     switch ((rm>>3)&7) {
         case 0x00:											// INC Ed 
             DECODE_E(inc32_reg, inc32_mem16, inc32_mem32);

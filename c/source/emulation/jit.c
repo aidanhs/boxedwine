@@ -2383,7 +2383,11 @@ U16 flagsThatOpUses(struct Op* op) {
     U16 index = gFlag >> 12;
 
     if (index) {
-        gFlag = subOpInfo[index][op->subInst].getsFlags;
+        U32 subIndex = (op->rm >> 3) & 7;
+        if (op->rm>=0xC0) {
+            index = opInfo[op->inst].setsFlags >> 12;
+        }
+        gFlag = subOpInfo[index][subIndex].getsFlags;
     }
     return gFlag;
 }
@@ -2440,7 +2444,11 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         sFlag = opInfo[op->inst].setsFlags;        
         index = sFlag >> 12;
         if (index) {
-            sFlag = subOpInfo[index][op->subInst].setsFlags;
+            U32 subIndex = (op->rm >> 3) & 7;
+            if (op->rm<0xC0) {
+                index = opInfo[op->inst].getsFlags >> 12;
+            }
+            sFlag = subOpInfo[index][(op->rm >> 3) & 7].setsFlags;
         }
 
         // an op sets the flag before it is used so the op being tested doesn't need to set it
@@ -3136,7 +3144,11 @@ void jit(struct CPU* cpu, struct Block* block, U32 blockEIP) {
         U16 sFlags = opInfo[op->inst].setsFlags;
         U16 index = sFlags >> 12;
         if (index) {
-            sFlags = subOpInfo[index][op->subInst].setsFlags;
+            U32 subIndex = (op->rm >> 3) & 7;
+            if (op->rm<0xC0) {
+                index = opInfo[op->inst].getsFlags >> 12;
+            }
+            sFlags = subOpInfo[index][(op->rm >> 3) & 7].setsFlags;
         }
         if (sFlags) {
 			struct Op* opThatUsesFlag = 0;

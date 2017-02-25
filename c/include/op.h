@@ -41,7 +41,7 @@ struct Op {
         U8 r2;
         U8 base;        
     };
-    U8 subInst;
+    U8 rm; // not always set, used by JIT
     U8 e1;
     U8 e2;	
     U8 eSib;
