@@ -2158,7 +2158,7 @@ void cpuid(struct CPU* cpu) {
             ECX='n' | ('t' << 8) | ('e' << 16) | ('l'<< 24);
             break;
         case 1:	/* get processor type/family/model/stepping and feature flags */
-            EAX=0x611;		/* intel pentium pro */
+            EAX=0x633;		/* intel pentium 2 */
             EBX=0;			/* Not Supported */
             ECX=0;			/* No features */
             EDX=0x00000011;	/* FPU+TimeStamp/RDTSC */
@@ -2166,6 +2166,7 @@ void cpuid(struct CPU* cpu) {
             EDX|= (1<<15);    /* support CMOV instructions */
             EDX|= (1<<13);    /* PTE Global Flag */
             EDX|= (1<<8);     /* CMPXCHG8B instruction */
+            EDX|= (1<<23);    // MMX
             break;
         case 0x80000000:
             EAX = 0;

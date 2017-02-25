@@ -424,6 +424,22 @@ const char* M32(struct DecodeData* data, int rm, struct Op* op) {
     return tmp;
 }
 
+const char* M64(struct DecodeData* data, int rm, struct Op* op) {
+    strcpy(tmp, "QWORD PTR [");
+    if (op->base != SEG_ZERO) {
+        strcat(tmp, EABASE(op->base));
+        strcat(tmp, ":");
+    }
+
+    if (data->ea16) {
+        EAA16(tmp, rm, op);
+    } else {
+        EAA32(tmp, rm, op);
+    }
+    strcat(tmp, "]");
+    return tmp;
+}
+
 const char* O32(struct Op* op) {
     strcpy(tmp, "DWORD PTR [");
     if (op->base != SEG_ZERO) {
@@ -589,6 +605,8 @@ if (rm >= 0xc0 ) {					\
 } else {							\
     DECODE_MEMORY(m16, m32);		\
 }
+
+#include "mmx.h"
 
 #ifdef LOG_OPS
 char tmpc[32];
@@ -2394,11 +2412,11 @@ DECODER decoder[1024] = {
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 360
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    decode360, decode361, decode362, decode363, decode364, decode365, decode366, decode367,
+    decode368, decode369, decode36a, decode36b, invalidOp, invalidOp, decode36e, decode36f,
     // 370
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, decode371, decode372, decode373, decode374, decode375, decode376, decode377,
+    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode37e, decode37f,
     // 380
     decode380, decode381, decode382, decode383, decode384, decode385, decode386, decode387,
     decode388, decode389, decode38a, decode38b, decode38c, decode38d, decode38e, decode38f,
@@ -2415,14 +2433,14 @@ DECODER decoder[1024] = {
     invalidOp, decode3c1, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode3c7,
     decode3c8, decode3c9, decode3ca, decode3cb, decode3cc, decode3cd, decode3ce, decode3cf,
     // 3d0
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, decode3d1, decode3d2, decode3d3, invalidOp, decode3d5, invalidOp, invalidOp,
+    decode3d8, decode3d9, invalidOp, decode3db, decode3dc, decode3dd, invalidOp, decode3df,
     // 3e0
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, decode3e1, decode3e2, invalidOp, invalidOp, decode3e5, invalidOp, invalidOp,
+    decode3e8, decode3e9, invalidOp, decode3eb, decode3ec, decode3ed, invalidOp, decode3ef,
     // 3f0
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, decode3f1, decode3f2, decode3f3, invalidOp, decode3f5, invalidOp, invalidOp,
+    decode3f8, decode3f9, decode3fa, invalidOp, decode3fc, decode3fd, decode3fe, invalidOp,
 };
 
 struct Block* decodeBlock(struct CPU* cpu, U32 eip) {	

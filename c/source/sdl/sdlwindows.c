@@ -394,6 +394,8 @@ U32 sdlMakeCurrent(U32 arg) {
     if (arg == 0x100) {
         if (SDL_GL_MakeCurrent(sdlWindow, sdlContext)==0)
             return 1;
+    } else if (arg == 0) {
+        return 1;
     }
     return 0;
 #else

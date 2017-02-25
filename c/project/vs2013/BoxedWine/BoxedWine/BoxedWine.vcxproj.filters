@@ -486,6 +486,9 @@
     <ClInclude Include="..\..\..\..\source\emulation\decodedata.h">
       <Filter>source\emulation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\mmx.h">
+      <Filter>source\emulation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="include">

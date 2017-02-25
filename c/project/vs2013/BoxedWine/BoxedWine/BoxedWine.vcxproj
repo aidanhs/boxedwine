@@ -88,7 +88,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>LOG_SYSCALLS;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -254,6 +254,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\hardmmu\hard_memory.h" />
     <ClInclude Include="..\..\..\..\source\emulation\incdec.h" />
     <ClInclude Include="..\..\..\..\source\emulation\instructions.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\mmx.h" />
     <ClInclude Include="..\..\..\..\source\emulation\ops.h" />
     <ClInclude Include="..\..\..\..\source\emulation\pushpop.h" />
     <ClInclude Include="..\..\..\..\source\emulation\setcc.h" />
