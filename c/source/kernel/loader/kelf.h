@@ -74,7 +74,7 @@ struct k_Elf32_Phdr{
     k_Elf32_Word      p_memsz;
     k_Elf32_Word      p_flags;
     k_Elf32_Word      p_align;
-};
+}
 );
 
 BOOL isValidElf(struct k_Elf32_Ehdr* hdr);
