@@ -23,11 +23,11 @@
 
 #define k_EI_NIDENT 16
 
-#define k_Elf32_Addr unsigned long
-#define k_Elf32_Half unsigned short
-#define k_Elf32_Off unsigned long
-#define k_Elf32_Sword signed long
-#define k_Elf32_Word unsigned long
+#define k_Elf32_Addr U32
+#define k_Elf32_Half U16
+#define k_Elf32_Off U32
+#define k_Elf32_Sword S32
+#define k_Elf32_Word U32
 
 PACKED(
 struct k_Elf32_Ehdr{
