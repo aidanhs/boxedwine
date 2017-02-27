@@ -213,7 +213,7 @@ void logsyscall(const char* fmt, ...) {
 #define SARG6 readd(MMU_PARAM_THREAD ARG2+16)
 #define SARG7 readd(MMU_PARAM_THREAD ARG2+20)
 
-void syscall(struct CPU* cpu, U32 eipCount) {
+void ksyscall(struct CPU* cpu, U32 eipCount) {
     struct KThread* thread = cpu->thread;
     struct KProcess* process = thread->process;
     S32 result=0;
@@ -869,7 +869,7 @@ void syscall(struct CPU* cpu, U32 eipCount) {
 }
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op) {
-    syscall(cpu, op->eipCount);
+    ksyscall(cpu, op->eipCount);
 }
 
 void syscallToString(struct CPU* cpu, char* buffer) {
