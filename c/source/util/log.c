@@ -66,7 +66,7 @@ void klog(const char* msg, ...) {
         vfprintf(logFile, msg, argptr);
     }
     va_end(argptr);
-    fprintf(stderr, "\n");
+    fprintf(stdout, "\n");
     if (logFile) {
         fprintf(logFile, "\n");
     }
