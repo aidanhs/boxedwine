@@ -3884,10 +3884,23 @@ void glcommon_glDrawArrays(struct CPU* cpu) {
 // GLAPI void APIENTRY glDrawElements( GLenum mode, GLsizei count, GLenum type, const GLvoid *indices ) {
 void glcommon_glDrawElements(struct CPU* cpu) {
     GL_LOG(glDrawElements);
-#ifndef HAS_64BIT_MMU
+#ifdef HAS_64BIT_MMU
+    GL_FUNC(glDrawElements)(ARG1, ARG2, ARG3, (const GLvoid*)getPhysicalAddress(MMU_PARAM_CPU ARG4));
+#else
     updateVertexPointers(cpu, ARG2);
-#endif
-    GL_FUNC(glDrawElements)(ARG1, ARG2, ARG3, (const GLvoid*)ARG4);
+    {
+        GLvoid* p;
+        GLenum type = ARG5;
+
+        if (type == GL_UNSIGNED_BYTE)
+            p = marshal2ub(cpu, ARG6, getDataSize(GL_UNSIGNED_BYTE)*ARG4);
+        else if (type == GL_UNSIGNED_SHORT)
+            p = marshal2us(cpu, ARG6, getDataSize(GL_UNSIGNED_BYTE)*ARG4);
+        else if (type == GL_UNSIGNED_SHORT)
+            p = marshal2ui(cpu, ARG6, getDataSize(GL_UNSIGNED_INT)*ARG4);
+        GL_FUNC(glDrawElements)(ARG1, ARG2, ARG3, p);
+    }
+#endif    
 }
 
 // GLAPI void APIENTRY glInterleavedArrays( GLenum format, GLsizei stride, const GLvoid *pointer ) {
@@ -3899,11 +3912,24 @@ void glcommon_glInterleavedArrays(struct CPU* cpu) {
 // GLAPI void APIENTRY glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices ) {
 void glcommon_glDrawRangeElements(struct CPU* cpu) {
     GL_LOG(glDrawRangeElements);
-#ifndef HAS_64BIT_MMU
-    updateVertexPointers(cpu, ARG4);
-#endif
+#ifdef HAS_64BIT_MMU
     if (ext_glDrawRangeElements)
-        ext_glDrawRangeElements(ARG1, ARG2, ARG3, ARG4, ARG5, (const GLvoid*)ARG6);
+        ext_glDrawRangeElements(ARG1, ARG2, ARG3, ARG4, ARG5, (const GLvoid*)getPhysicalAddress(MMU_PARAM_CPU ARG6));
+#else
+    updateVertexPointers(cpu, ARG4);
+    if (ext_glDrawRangeElements) {
+        GLvoid* p;
+        GLenum type = ARG5;
+
+        if (type == GL_UNSIGNED_BYTE)
+            p = marshal2ub(cpu, ARG6, getDataSize(GL_UNSIGNED_BYTE)*ARG4);
+        else if (type == GL_UNSIGNED_SHORT)
+            p = marshal2us(cpu, ARG6, getDataSize(GL_UNSIGNED_BYTE)*ARG4);
+        else if (type == GL_UNSIGNED_SHORT)
+            p = marshal2ui(cpu, ARG6, getDataSize(GL_UNSIGNED_INT)*ARG4);
+        ext_glDrawRangeElements(ARG1, ARG2, ARG3, ARG4, ARG5, p);
+    }
+#endif
 }
 
 
