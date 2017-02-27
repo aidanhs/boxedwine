@@ -80,7 +80,7 @@ void initThread(struct KThread* thread, struct KProcess* process) {
     int i;
 
     memset(thread, 0, sizeof(struct KThread));	
-    initCPU(&thread->cpu, process);	
+    initCPU(&thread->cpu, process->memory);	
     thread->process = process;
     thread->id = processAddThread(process, thread);
     thread->sigMask = 0;

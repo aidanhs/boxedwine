@@ -24,6 +24,7 @@
 #include "pbl.h"
 #include "ksignal.h"
 #include "ksystem.h"
+#include "memory.h"
 
 #include <string.h>
 
@@ -41,10 +42,10 @@ void onCreateCPU(struct CPU* cpu) {
     cpu->reg8[7] = &cpu->reg[3].h8;    
 }
 
-void initCPU(struct CPU* cpu, struct KProcess* process) {
+void initCPU(struct CPU* cpu, struct Memory* memory) {
     memset(cpu, 0, sizeof(struct CPU));
     onCreateCPU(cpu);
-    cpu->memory = process->memory;
+    cpu->memory = memory;
     cpu->lazyFlags = FLAGS_NONE;
     cpu->big = 1;
     cpu->df = 1;

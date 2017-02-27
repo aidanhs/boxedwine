@@ -935,7 +935,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         thread->id = id;
         thread->scheduledNode = scheduledNode;
         thread->process = process;
-        initCPU(&thread->cpu, process);
+        initCPU(&thread->cpu, process->memory);
     }
 
     setupStack(thread);	

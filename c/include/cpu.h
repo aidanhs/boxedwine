@@ -207,7 +207,7 @@ U16 peek16(struct CPU* cpu, U32 index);
 U32 peek32(struct CPU* cpu, U32 index);
 void exception(struct CPU* cpu, int code);
 void cpu_exception(struct CPU* cpu, int code, int error);
-void initCPU(struct CPU* cpu, struct KProcess* process);
+void initCPU(struct CPU* cpu, struct Memory* memory);
 void onCreateCPU(struct CPU* cpu);
 INLINE void runBlock(struct CPU* cpu, struct Block* block) {
     cpu->currentBlock = block;
