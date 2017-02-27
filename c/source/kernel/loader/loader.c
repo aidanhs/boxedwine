@@ -43,6 +43,7 @@ char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
     struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
     U32 len = openNode->func->readNative(openNode, buffer, sizeof(buffer));
 
+    klog("getInterpreter %s len=%d", openNode->node->path, len);
     *isElf=TRUE;
     if (len!=sizeof(buffer)) {
         *isElf=FALSE;
@@ -51,6 +52,7 @@ char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
         *isElf = isValidElf(hdr);
     }
     if (!*isElf) {
+        klog("getInterpreter not elf");
         if (buffer[0]=='#') {
             U32 i;
             U32 mode = 0;
@@ -75,6 +77,7 @@ char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
     } else {
         U32 i;
 
+        klog("getInterpreter elf=true hdr->e-phoff=%d",hdr->e_phoff);
         openNode->func->seek(openNode, hdr->e_phoff);	
         for (i=0;i<hdr->e_phoff;i++) {
             struct Elf32_Phdr phdr;		

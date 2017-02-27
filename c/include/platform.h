@@ -48,6 +48,7 @@ void platformRunThreadSlice(struct KThread* thread);
 #define MKDIR(x) mkdir(x)
 #define INLINE __inline
 #define OPENGL_CALL_TYPE __stdcall
+#define PACKED( s ) __pragma( pack(push, 1) ) s __pragma( pack(pop) )
 #else
 #define OPCALL
 #define UNISTD <unistd.h>
@@ -59,6 +60,7 @@ void platformRunThreadSlice(struct KThread* thread);
 #define O_BINARY 0
 #define INLINE inline
 #define OPENGL_CALL_TYPE
+#define PACKED( s ) s __attribute__((__packed__))
 #endif
 
 #ifndef S_ISDIR
