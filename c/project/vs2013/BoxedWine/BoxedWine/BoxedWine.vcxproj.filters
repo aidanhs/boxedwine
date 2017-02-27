@@ -399,9 +399,6 @@
     <ClInclude Include="..\..\..\..\source\emulation\setcc.h">
       <Filter>source\emulation</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h">
-      <Filter>source\kernel\loader</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h">
       <Filter>opengl</Filter>
     </ClInclude>
@@ -488,6 +485,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\emulation\mmx.h">
       <Filter>source\emulation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\kernel\loader\kelf.h">
+      <Filter>source\kernel\loader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

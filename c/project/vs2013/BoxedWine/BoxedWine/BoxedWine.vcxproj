@@ -266,7 +266,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_ram.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
-    <ClInclude Include="..\..\..\..\source\kernel\loader\elf.h" />
+    <ClInclude Include="..\..\..\..\source\kernel\loader\kelf.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
     <ClInclude Include="..\..\..\..\source\sdl\sdlopengl.h" />
     <ClInclude Include="..\..\..\..\source\sdl\sdlwindow.h" />

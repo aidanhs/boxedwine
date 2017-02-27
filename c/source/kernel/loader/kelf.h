@@ -29,6 +29,7 @@
 #define k_Elf32_Sword signed long
 #define k_Elf32_Word unsigned long
 
+PACKED(
 struct k_Elf32_Ehdr{
     unsigned char   e_ident[k_EI_NIDENT];
     k_Elf32_Half      e_type;
@@ -44,8 +45,10 @@ struct k_Elf32_Ehdr{
     k_Elf32_Half      e_shentsize;
     k_Elf32_Half      e_shnum;
     k_Elf32_Half      e_shstrndx;
-};
+}
+);
 
+PACKED(
 struct k_Elf32_Shdr
 {
     k_Elf32_Word    sh_name;
@@ -58,8 +61,10 @@ struct k_Elf32_Shdr
     k_Elf32_Word    sh_info;
     k_Elf32_Word    sh_addralign;
     k_Elf32_Word    sh_entsize;
-};
+}
+);
 
+PACKED(
 struct k_Elf32_Phdr{
     k_Elf32_Word      p_type;
     k_Elf32_Off       p_offset;
@@ -70,6 +75,7 @@ struct k_Elf32_Phdr{
     k_Elf32_Word      p_flags;
     k_Elf32_Word      p_align;
 };
+);
 
 BOOL isValidElf(struct k_Elf32_Ehdr* hdr);
 
