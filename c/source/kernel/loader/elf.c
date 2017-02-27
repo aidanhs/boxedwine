@@ -16,9 +16,9 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#include "elf.h"
+#include "kelf.h"
 
-BOOL isValidElf(struct Elf32_Ehdr* hdr) {
+BOOL isValidElf(struct k_Elf32_Ehdr* hdr) {
     if (hdr->e_ident[0] != 0x7F || hdr->e_ident[1] != 'E' || hdr->e_ident[2] != 'L' || hdr->e_ident[3] != 'F') {
         return FALSE;
     }

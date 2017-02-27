@@ -17,7 +17,7 @@
  */
 
 #include "platform.h"
-#include "elf.h"
+#include "kelf.h"
 #include "kmmap.h"
 #include "kthread.h"
 #include "kprocess.h"
@@ -39,11 +39,10 @@ static char interp[MAX_FILEPATH_LEN];
 static char shell_interp[MAX_FILEPATH_LEN];
 
 char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
-    U8 buffer[sizeof(struct Elf32_Ehdr)];
-    struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
+    U8 buffer[sizeof(struct k_Elf32_Ehdr)];
+    struct k_Elf32_Ehdr* hdr = (struct k_Elf32_Ehdr*)buffer;
     U32 len = openNode->func->readNative(openNode, buffer, sizeof(buffer));
 
-    klog("getInterpreter %s len=%d", openNode->node->path, len);
     *isElf=TRUE;
     if (len!=sizeof(buffer)) {
         *isElf=FALSE;
@@ -52,7 +51,6 @@ char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
         *isElf = isValidElf(hdr);
     }
     if (!*isElf) {
-        klog("getInterpreter not elf");
         if (buffer[0]=='#') {
             U32 i;
             U32 mode = 0;
@@ -77,12 +75,11 @@ char* getInterpreter(struct FsOpenNode* openNode, BOOL* isElf) {
     } else {
         U32 i;
 
-        klog("getInterpreter elf=true hdr->e-phoff=%d",hdr->e_phoff);
         openNode->func->seek(openNode, hdr->e_phoff);	
         for (i=0;i<hdr->e_phoff;i++) {
-            struct Elf32_Phdr phdr;		
+            struct k_Elf32_Phdr phdr;		
             openNode->func->seek(openNode, hdr->e_phoff+i*hdr->e_phentsize);	
-            openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
+            openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct k_Elf32_Phdr));
             if (phdr.p_type==PT_INTERP) {
                 openNode->func->seek(openNode, phdr.p_offset);	
                 openNode->func->readNative(openNode, (U8*)interp, phdr.p_filesz);
@@ -157,8 +154,8 @@ BOOL inspectNode(struct KProcess* process, const char* currentDirectory, struct 
 }
 
 int getMemSizeOfElf(struct FsOpenNode* openNode) {
-    U8 buffer[sizeof(struct Elf32_Ehdr)];
-    struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
+    U8 buffer[sizeof(struct k_Elf32_Ehdr)];
+    struct k_Elf32_Ehdr* hdr = (struct k_Elf32_Ehdr*)buffer;
     U32 len;
     U64 pos = openNode->func->getFilePointer(openNode);
     U32 address = 0xFFFFFFFF;
@@ -178,8 +175,8 @@ int getMemSizeOfElf(struct FsOpenNode* openNode) {
     len = 0;
     openNode->func->seek(openNode, hdr->e_phoff);
     for (i = 0; i<hdr->e_phnum; i++) {
-        struct Elf32_Phdr phdr;
-        openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
+        struct k_Elf32_Phdr phdr;
+        openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct k_Elf32_Phdr));
         if (phdr.p_type == PT_LOAD) {
             if (phdr.p_paddr<address)
                 address = phdr.p_paddr;
@@ -233,8 +230,8 @@ U32 getPELoadAddress(struct FsOpenNode* openNode, U32* section, U32* numberOfSec
 }
 #endif
 BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpenNode* openNode, U32* eip) {
-    U8 buffer[sizeof(struct Elf32_Ehdr)];
-    struct Elf32_Ehdr* hdr = (struct Elf32_Ehdr*)buffer;
+    U8 buffer[sizeof(struct k_Elf32_Ehdr)];
+    struct k_Elf32_Ehdr* hdr = (struct k_Elf32_Ehdr*)buffer;
     U32 len = openNode->func->readNative(openNode, buffer, sizeof(buffer));
     U32 address=0xFFFFFFFF;
     U32 i;
@@ -248,8 +245,8 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpen
     len=0;
     openNode->func->seek(openNode, hdr->e_phoff);	
     for (i=0;i<hdr->e_phnum;i++) {
-        struct Elf32_Phdr phdr;		
-        openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
+        struct k_Elf32_Phdr phdr;		
+        openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct k_Elf32_Phdr));
         if (phdr.p_type==PT_LOAD) {
             if (phdr.p_paddr<address) {
                 address=phdr.p_paddr;
@@ -274,9 +271,9 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpen
     process->phdr = 0;
 
     for (i=0;i<hdr->e_phnum;i++) {
-        struct Elf32_Phdr phdr;		
+        struct k_Elf32_Phdr phdr;		
         openNode->func->seek(openNode, hdr->e_phoff+hdr->e_phentsize*i);
-        openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct Elf32_Phdr));
+        openNode->func->readNative(openNode, (U8*)&phdr, sizeof(struct k_Elf32_Phdr));
         if (phdr.p_type==PT_LOAD) {
             if (!reloc)
                 syscall_mmap64(thread, reloc+phdr.p_paddr, phdr.p_memsz, K_PROT_READ | K_PROT_WRITE | K_PROT_EXEC, K_MAP_PRIVATE | K_MAP_ANONYMOUS | K_MAP_FIXED, -1, 0);
