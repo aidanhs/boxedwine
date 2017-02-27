@@ -3839,7 +3839,7 @@ void updateVertexPointer(struct CPU* cpu, struct OpenGLVetexPointer* p, U32 coun
             p->marshal = malloc(datasize);
             p->marshal_size = datasize;
         }
-        memcopyToNative(MMU_PARAM_CPU p->ptr, p->marshal, datasize);
+        memcopyToNative(MMU_PARAM_CPU p->ptr, (S8*)p->marshal, datasize);
     }
 }
 
@@ -3889,7 +3889,7 @@ void glcommon_glDrawElements(struct CPU* cpu) {
 #else
     updateVertexPointers(cpu, ARG2);
     {
-        GLvoid* p;
+        GLvoid* p = NULL;
         GLenum type = ARG5;
 
         if (type == GL_UNSIGNED_BYTE)
@@ -3918,7 +3918,7 @@ void glcommon_glDrawRangeElements(struct CPU* cpu) {
 #else
     updateVertexPointers(cpu, ARG4);
     if (ext_glDrawRangeElements) {
-        GLvoid* p;
+        GLvoid* p = NULL;
         GLenum type = ARG5;
 
         if (type == GL_UNSIGNED_BYTE)
