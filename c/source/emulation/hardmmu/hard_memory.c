@@ -497,7 +497,7 @@ void clearPageFromBlockCache(struct Memory* memory, U32 page) {
                 }
 
                 if (currentThread->cpu.currentBlock == block) {
-                    delayFreeBlock(block);
+                    delayFreeBlockAndKillCurrentBlock(block);
                 } else {
                     freeBlock(block);
                 }

@@ -387,9 +387,14 @@ void removeBlockAt(struct Memory* memory, U32 address) {
     while (block) {
         if (block) {
             if (block==currentThread->cpu.currentBlock) {
-                klog("self modifying code was not handled properly");
+                if (address < currentThread->cpu.segAddress[CS] + currentThread->cpu.eip.u32) {
+                    delayFreeBlock(block);
+                } else {
+                    delayFreeBlockAndKillCurrentBlock(block);
+                }
+            } else {
+                freeBlock(block);
             }
-            freeBlock(block);
         }
         block = getBlockAt(memory, address, 1);
     }

@@ -170,6 +170,28 @@ void delayFreeBlock(struct Block* block) {
     delayedFree = block;
 }
 
+// This will stop the execution of the current block while letting the 
+// current op finish, we want to let the current op finish and not longjmp
+// out because we don't want an unfinished op since we won't come back
+// to it.  
+//
+// This function will insert and empty op between all the ops so that 
+// emptyOp will be called next.  It also maintains a nice linked list
+// so that all the ops will be freed properly.
+void delayFreeBlockAndKillCurrentBlock(struct Block* block) {
+    struct Op* op = block->ops;
+    while (op) {
+        struct Op* next = op->next;
+        if (next) {
+            op->next = allocOp();
+            op->next->func = emptyOp;
+            op->next->next = next;
+        }
+        op = next;
+    }
+    delayFreeBlock(block);
+}
+
 void freeBlock(struct Block* block) {
     unlinkBlock(block);
 	if (block->ops) {
@@ -2503,6 +2525,12 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     struct Block* block = cpu->currentBlock;
     U32 eip = cpu->eip.u32;
 
+    if (eip == 0x004dd568) {
+        int ii=0;
+    }
+    if (eip == 0x004dd556) {
+        int ii=0;
+    }
     op->next->func(cpu, op->next);
     if (cpu->thread->process->terminated)
         return;
@@ -2534,7 +2562,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
 #endif
 
         if (needJIT) {
-            jit(cpu, block, eip);
+            //jit(cpu, block, eip);
         }
     }
 }
@@ -2544,6 +2572,15 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     struct DecodeData* pData = &data;
     struct Op* op;
 
+    if (eip==0x4DD556) {
+        int ii=0;
+    }
+    if (eip==0x4dd558) {
+        int ii=0;
+    }
+    if (eip==0x4DD578) {
+        int ii=0;
+    }
     block->ops = allocOp();
     block->ops->func = firstOp;
     data.op = allocOp();
