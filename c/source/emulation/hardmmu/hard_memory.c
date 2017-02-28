@@ -486,9 +486,6 @@ void clearPageFromBlockCache(struct Memory* memory, U32 page) {
                 struct Block* block = cacheBlock->block;
                 struct BlockCache* c;
 
-                if (block->page[0]) {
-                    int ii=0;
-                }
                 // does this block spanned more than one page?
                 if (block->page[0]!=page) {
                     removeBlockFromPage(memory, block, block->page[0], block->ip);

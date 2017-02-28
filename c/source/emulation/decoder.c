@@ -146,6 +146,29 @@ struct Block* allocBlock() {
     return result;
 }
 
+void removeBlockFromBlockReference(struct Block* block, struct Block* reference) {
+	if (block && reference) {
+		struct BlockNode* from = reference->referencedFrom;
+		struct BlockNode* prev = NULL;
+
+		while (from) {
+			if (from->block == block) {
+				struct BlockNode* removed = from;
+
+				if (prev) {					
+					prev->next = from->next;					
+				} else {
+					reference->referencedFrom = from->next;
+				}
+				from = from->next;
+				freeBlockNode(removed);
+				continue;
+			}
+			prev = from;
+			from = from->next;
+		}
+	}
+}
 void unlinkBlock(struct Block* block) {
     while (block->referencedFrom) {
         struct BlockNode* next = block->referencedFrom->next;
@@ -158,6 +181,10 @@ void unlinkBlock(struct Block* block) {
         freeBlockNode(block->referencedFrom);
         block->referencedFrom = next;
     }
+	removeBlockFromBlockReference(block, block->block1);
+	removeBlockFromBlockReference(block, block->block2);
+	block->block1 = NULL;
+	block->block2 = NULL;
 }
 
 static struct Block* delayedFree;
@@ -167,6 +194,7 @@ void delayFreeBlock(struct Block* block) {
         freeBlock(delayedFree);
     }
     unlinkBlock(block);
+	block->count = 0; // make sure JIT won't run on it
     delayedFree = block;
 }
 
@@ -174,20 +202,11 @@ void delayFreeBlock(struct Block* block) {
 // current op finish, we want to let the current op finish and not longjmp
 // out because we don't want an unfinished op since we won't come back
 // to it.  
-//
-// This function will insert and empty op between all the ops so that 
-// emptyOp will be called next.  It also maintains a nice linked list
-// so that all the ops will be freed properly.
 void delayFreeBlockAndKillCurrentBlock(struct Block* block) {
     struct Op* op = block->ops;
     while (op) {
-        struct Op* next = op->next;
-        if (next) {
-            op->next = allocOp();
-            op->next->func = emptyOp;
-            op->next->next = next;
-        }
-        op = next;
+        op->func = emptyOp;
+        op = op->next;
     }
     delayFreeBlock(block);
 }
@@ -2525,12 +2544,6 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     struct Block* block = cpu->currentBlock;
     U32 eip = cpu->eip.u32;
 
-    if (eip == 0x004dd568) {
-        int ii=0;
-    }
-    if (eip == 0x004dd556) {
-        int ii=0;
-    }
     op->next->func(cpu, op->next);
     if (cpu->thread->process->terminated)
         return;
@@ -2572,15 +2585,6 @@ void decodeBlockWithBlock(struct CPU* cpu, U32 eip, struct Block* block) {
     struct DecodeData* pData = &data;
     struct Op* op;
 
-    if (eip==0x4DD556) {
-        int ii=0;
-    }
-    if (eip==0x4dd558) {
-        int ii=0;
-    }
-    if (eip==0x4DD578) {
-        int ii=0;
-    }
     block->ops = allocOp();
     block->ops->func = firstOp;
     data.op = allocOp();
