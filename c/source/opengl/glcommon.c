@@ -1583,11 +1583,9 @@ GLvoid* marshalEdgeFlagPointer(struct CPU* cpu, GLsizei stride, U32 ptr) {
     return 0;
 }
 
-U32 marshalBackp(struct CPU* cpu, GLvoid* p) {
-    if (sizeof(void*)!=4 && (p & 0xFFFFFFFF00000000l)) {
-        kpanic("OpenGL is returning a 64-bit pointer to Wine, this currently isn't supported");
-    }
-    return (U32)p;
+U32 marshalBackp(struct CPU* cpu, GLvoid* buffer, U32 size) { 
+    klog("marshalBackp not implemented");
+    return 0;
 }
 
 GLvoid* marshalp(struct CPU* cpu, U32 buffer) {
@@ -1596,6 +1594,25 @@ GLvoid* marshalp(struct CPU* cpu, U32 buffer) {
     return (GLvoid*)getPhysicalAddress(cpu->memory, buffer);
 }
 
+U32 marshalBackSync(struct CPU* cpu, GLsync sync) {
+    klog("marshalBackSync not implemented");
+    return 0;
+}
+
+GLsync marshalSync(struct CPU* cpu, U32 sync) {
+    klog("marshalSync not implemented");
+    return 0;
+}
+
+GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count) {
+    klog("marshalpp not implemented");
+    return 0;
+}
+
+void* marshalunhandled(const char* func, const char* param, struct CPU* cpu, U32 address) {
+    klog("%s parameter in OpenGL function, %s, was not marshalled", func, param);
+    return 0;
+}
 #endif
 
 // GLAPI const GLubyte* APIENTRY glGetString( GLenum name ) {
