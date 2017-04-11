@@ -35,13 +35,14 @@ struct Memory {
     U32 allocated;
     U64 id;    
     void* codeCache[NUMBER_OF_PAGES]; // 4 MB 
+    U64 ids[NUMBER_OF_PAGES];
 #ifdef LOG_OPS
     U32 log;
 #endif
 };
 
 INLINE void* getNativeAddress(MMU_ARG U32 address) {
-    return (void*)(address | memory->id);
+    return (void*)(address + memory->ids[address >> PAGE_SHIFT]);
 }
 INLINE U32 getHostAddress(MMU_ARG void* address) {
     return (U32)address;
@@ -50,5 +51,6 @@ INLINE U32 getHostAddress(MMU_ARG void* address) {
 void reserveNativeMemory(struct Memory* memory);
 void releaseNativeMemory(struct Memory* memory);
 void clearPageFromBlockCache(struct Memory* memory, U32 page);
+U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size);
 #endif
 #endif

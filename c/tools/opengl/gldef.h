@@ -336,97 +336,16 @@
 #define DrawArrays 334
 #define DrawElements 335
 #define InterleavedArrays 336
-/* 1.2 functions */
-#define DrawRangeElements 337
-#define TexImage3D 338
-#define TexSubImage3D 339
-#define CopyTexSubImage3D 340
-#define ColorTable 341
-#define ColorSubTable 342
-#define ColorTableParameteriv 343
-#define ColorTableParameterfv 344
-#define CopyColorSubTable 345
-#define CopyColorTable 346
-#define GetColorTable 347
-#define GetColorTableParameterfv 348
-#define GetColorTableParameteriv 349
-#define BlendEquation 350
-#define BlendColor 351
-#define Histogram 352
-#define ResetHistogram 353
-#define GetHistogram 354
-#define GetHistogramParameterfv 355
-#define GetHistogramParameteriv 356
-#define Minmax 357
-#define ResetMinmax 358
-#define GetMinmax 359
-#define GetMinmaxParameterfv 360
-#define GetMinmaxParameteriv 361
-#define ConvolutionFilter1D 362
-#define ConvolutionFilter2D 363
-#define ConvolutionParameterf 364
-#define ConvolutionParameterfv 365
-#define ConvolutionParameteri 366
-#define ConvolutionParameteriv 367
-#define CopyConvolutionFilter1D 368
-#define CopyConvolutionFilter2D 369
-#define GetConvolutionFilter 370
-#define GetConvolutionParameterfv 371
-#define GetConvolutionParameteriv 372
-#define SeparableFilter2D 373
-#define GetSeparableFilter 374
-/* 1.3 functions */
-#define ActiveTexture 375
-#define ClientActiveTexture 376
-#define CompressedTexImage1D 377
-#define CompressedTexImage2D 378
-#define CompressedTexImage3D 379
-#define CompressedTexSubImage1D 380
-#define CompressedTexSubImage2D 381
-#define CompressedTexSubImage3D 382
-#define GetCompressedTexImage 383
-#define MultiTexCoord1d 384
-#define MultiTexCoord1dv 385
-#define MultiTexCoord1f 386
-#define MultiTexCoord1fv 387
-#define MultiTexCoord1i 388
-#define MultiTexCoord1iv 389
-#define MultiTexCoord1s 390
-#define MultiTexCoord1sv 391
-#define MultiTexCoord2d 392
-#define MultiTexCoord2dv 393
-#define MultiTexCoord2f 394
-#define MultiTexCoord2fv 395
-#define MultiTexCoord2i 396
-#define MultiTexCoord2iv 397
-#define MultiTexCoord2s 398
-#define MultiTexCoord2sv 399
-#define MultiTexCoord3d 400
-#define MultiTexCoord3dv 401
-#define MultiTexCoord3f 402
-#define MultiTexCoord3fv 403
-#define MultiTexCoord3i 404
-#define MultiTexCoord3iv 405
-#define MultiTexCoord3s 406
-#define MultiTexCoord3sv 407
-#define MultiTexCoord4d 408
-#define MultiTexCoord4dv 409
-#define MultiTexCoord4f 410
-#define MultiTexCoord4fv 411
-#define MultiTexCoord4i 412
-#define MultiTexCoord4iv 413
-#define MultiTexCoord4s 414
-#define MultiTexCoord4sv 415
-#define LoadTransposeMatrixd 416
-#define LoadTransposeMatrixf 417
-#define MultTransposeMatrixd 418
-#define MultTransposeMatrixf 419
-#define SampleCoverage 420
-#define SamplePass 421
+#define SamplePass 337
 
-#define XCreateContext 422
-#define XMakeCurrent 423
-#define XDestroyContext 424
-#define XSwapBuffer 425
+#define XCreateContext 338
+#define XMakeCurrent 339
+#define XDestroyContext 340
+#define XSwapBuffer 341
+
+#define GL_EXT_BASE 342
+
+#undef MemoryBarrier
+#include "gldef_ext.h"
 
 #endif

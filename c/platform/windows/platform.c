@@ -211,7 +211,7 @@ void allocNativeMemory(struct Memory* memory, U32 page, U32 pageCount, U32 flags
         if (!(memory->nativeFlags[granPage] & NATIVE_FLAG_COMMITTED)) {
             U32 j;
 
-            if (!VirtualAlloc(getNativeAddress(memory, granPage << PAGE_SHIFT), gran << PAGE_SHIFT, MEM_COMMIT, PAGE_READWRITE)) {
+            if (!VirtualAlloc((void*)((granPage << PAGE_SHIFT) | memory->id), gran << PAGE_SHIFT, MEM_COMMIT, PAGE_READWRITE)) {
                 LPSTR messageBuffer = NULL;
                 size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
                 kpanic("failed to commit memory: %s", messageBuffer);
@@ -225,6 +225,7 @@ void allocNativeMemory(struct Memory* memory, U32 page, U32 pageCount, U32 flags
     for (i=0;i<pageCount;i++) {
         memory->flags[page+i] = flags;
         memory->flags[page+i] |= PAGE_IN_RAM;
+        memory->ids[page+i] = memory->id;
     }
     memset(getNativeAddress(memory, page << PAGE_SHIFT), 0, pageCount << PAGE_SHIFT);
     //printf("allocated %X - %X\n", page << PAGE_SHIFT, (page+pageCount) << PAGE_SHIFT);
@@ -238,6 +239,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     for (i=0;i<pageCount;i++) {
         clearPageFromBlockCache(process->memory, page+i);
         process->memory->flags[page+i] = 0;
+        process->memory->ids[page+i] = 0;
     }    
 
     granPage = page & ~(gran-1);
@@ -252,7 +254,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
             }            
         }
         if (!inUse) {
-            if (!VirtualFree(getNativeAddress(process->memory, granPage << PAGE_SHIFT), gran, MEM_DECOMMIT)) {
+            if (!VirtualFree((void*)((granPage << PAGE_SHIFT) | process->memory->id), gran, MEM_DECOMMIT)) {
                 LPSTR messageBuffer = NULL;
                 size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
                 kpanic("failed to release memory: %s", messageBuffer);
@@ -271,16 +273,16 @@ static U64 nextMemoryId = 1;
 void reserveNativeMemory(struct Memory* memory) {    
     nextMemoryId++;
     memory->id = nextMemoryId << 32;
-    while (VirtualAlloc(getNativeAddress(memory, 0), 0x100000000l, MEM_RESERVE, PAGE_READWRITE)==0) {
+    while (VirtualAlloc((void*)memory->id, 0x100000000l, MEM_RESERVE, PAGE_READWRITE)==0) {
         nextMemoryId++;
         memory->id = nextMemoryId << 32;
-    }
+    }    
 }
 
 void releaseNativeMemory(struct Memory* memory) {
     U32 i;
 
-    if (!VirtualFree(getNativeAddress(memory, 0), 0, MEM_DECOMMIT)) {
+    if (!VirtualFree((void*)memory->id, 0, MEM_DECOMMIT)) {
         LPSTR messageBuffer = NULL;
         size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
         kpanic("failed to release memory: %s", messageBuffer);
@@ -290,6 +292,7 @@ void releaseNativeMemory(struct Memory* memory) {
     }
     memset(memory->flags, 0, sizeof(memory->flags));
     memset(memory->nativeFlags, 0, sizeof(memory->nativeFlags));
+    memset(memory->ids, 0, sizeof(memory->ids));
     memory->allocated = 0;
 }
 

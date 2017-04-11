@@ -1315,7 +1315,11 @@ void addString(struct KProcess* process, U32 index, const char* str) {
     U32 len = (U32)strlen(str);
     if (index<NUMBER_OF_STRINGS) {
         if (!process->stringAddress) {
-            process->stringAddress = allocPage(process);
+            U32 page = 0;
+            if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 10, &page, 0))
+                kpanic("Failed to allocate stack for thread");
+            allocPages(process->memory, page, 10, PAGE_READ|PAGE_WRITE, 0, 0, 0);
+            process->stringAddress = page << PAGE_SHIFT;
         }
         process->strings[index] = process->stringAddress+process->stringAddressIndex;
         memcopyFromNative(process->memory, process->strings[index], str, len+1);

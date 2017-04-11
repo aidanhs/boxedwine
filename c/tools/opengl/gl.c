@@ -1,6 +1,7 @@
 #include "gldef.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifdef USE_GLX
 #include <X11/X.h>
@@ -23,6 +24,21 @@ typedef float           GLfloat;        /* single precision float */
 typedef float           GLclampf;       /* single precision float in [0,1] */
 typedef double          GLdouble;       /* double precision float */
 typedef double          GLclampd;       /* double precision float in [0,1] */
+typedef uint64_t GLuint64;
+typedef int64_t GLint64;
+typedef uint64_t GLuint64EXT;
+typedef int64_t GLint64EXT;
+typedef unsigned short GLhalfNV;
+typedef struct __GLsync *GLsync;
+typedef int GLintptr;
+typedef GLint GLfixed;
+typedef unsigned int GLhandleARB;
+typedef int GLvdpauSurfaceNV;
+typedef char GLchar;
+typedef int GLsizeiptr;
+typedef char GLcharARB;
+typedef int GLsizeiptrARB;
+typedef int GLintptrARB;
 
 typedef void *GLXContext;
 #ifdef USE_GLX
@@ -133,10 +149,22 @@ typedef XID GLXWindow;
 // pointer parameter
 #define P(p) p
 
-#define CALL_R(index) __asm__("push %0\n\tint $0x99\n\taddl $4, %%esp"::"i"(index):"%eax"); 
-#define CALL_1_R(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x99\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
+#define LL(l) &l
 
-#define CALL(index) __asm__("push %0\n\tint $0x99\n\taddl $4, %%esp"::"i"(index)); 
+#define CALL_0_R(index) __asm__("push %0\n\tint $0x99\n\taddl $4, %%esp"::"i"(index):"%eax"); 
+#define CALL_1_R(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x99\n\taddl $8, %%esp"::"i"(index), "g"(arg1):"%eax"); 
+#define CALL_2_R(index, arg1, arg2) __asm__("push %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $12, %%esp"::"i"(index), "g"(arg1), "g"(arg2):"%eax"); 
+#define CALL_3_R(index, arg1, arg2, arg3) __asm__("push %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $16, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3):"%eax"); 
+#define CALL_4_R(index, arg1, arg2, arg3, arg4) __asm__("push %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $20, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4):"%eax"); 
+#define CALL_5_R(index, arg1, arg2, arg3, arg4, arg5) __asm__("push %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $24, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5):"%eax");
+#define CALL_6_R(index, arg1, arg2, arg3, arg4, arg5, arg6) __asm__("push %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $28, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6):"%eax");
+#define CALL_7_R(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7) __asm__("push %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $32, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7):"%eax");
+#define CALL_8_R(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) __asm__("push %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $36, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8):"%eax");
+#define CALL_9_R(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __asm__("push %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $40, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9):"%eax");
+#define CALL_10_R(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) __asm__("push %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $44, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10):"%eax");
+#define CALL_11_R(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) __asm__("push %11\n\tpush %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $48, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10), "g"(arg11):"%eax");
+
+#define CALL_0(index) __asm__("push %0\n\tint $0x99\n\taddl $4, %%esp"::"i"(index)); 
 #define CALL_1(index, arg1) __asm__("push %1\n\tpush %0\n\tint $0x99\n\taddl $8, %%esp"::"i"(index), "g"(arg1)); 
 #define CALL_2(index, arg1, arg2) __asm__("push %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $12, %%esp"::"i"(index), "g"(arg1), "g"(arg2)); 
 #define CALL_3(index, arg1, arg2, arg3) __asm__("push %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $16, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3)); 
@@ -148,6 +176,10 @@ typedef XID GLXWindow;
 #define CALL_9(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __asm__("push %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $40, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9));
 #define CALL_10(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) __asm__("push %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $44, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10));
 #define CALL_11(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11) __asm__("push %11\n\tpush %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $48, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10), "g"(arg11));
+#define CALL_12(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12) __asm__("push %12\n\tpush %11\n\tpush %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $52, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10), "g"(arg11), "g"(arg12));
+#define CALL_13(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13) __asm__("push %13\n\tpush %12\n\tpush %11\n\tpush %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $56, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10), "g"(arg11), "g"(arg12), "g"(arg13));
+#define CALL_14(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14) __asm__("push %14\n\tpush %13\n\tpush %12\n\tpush %11\n\tpush %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $60, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10), "g"(arg11), "g"(arg12), "g"(arg13), "g"(arg14));
+#define CALL_15(index, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15) __asm__("push %15\n\tpush %14\n\tpush %13\n\tpush %12\n\tpush %11\n\tpush %10\n\tpush %9\n\tpush %8\n\tpush %7\n\tpush %6\n\tpush %5\n\tpush %4\n\tpush %3\n\tpush %2\n\tpush %1\n\tpush %0\n\tint $0x99\n\taddl $64, %%esp"::"i"(index), "g"(arg1), "g"(arg2), "g"(arg3), "g"(arg4), "g"(arg5), "g"(arg6), "g"(arg7), "g"(arg8), "g"(arg9), "g"(arg10), "g"(arg11), "g"(arg12), "g"(arg13), "g"(arg14), "g"(arg15));
 
 /* Miscellaneous */
 GLAPI void APIENTRY glClearIndex( GLfloat c ) {
@@ -287,7 +319,7 @@ GLAPI void APIENTRY glPushAttrib( GLbitfield mask ) {
 }
 
 GLAPI void APIENTRY glPopAttrib( void ) {
-	CALL(PopAttrib);
+	CALL_0(PopAttrib);
 }
 
 GLAPI void APIENTRY glPushClientAttrib( GLbitfield mask ) {  /* 1.1 */
@@ -295,7 +327,7 @@ GLAPI void APIENTRY glPushClientAttrib( GLbitfield mask ) {  /* 1.1 */
 }
 
 GLAPI void APIENTRY glPopClientAttrib( void ) {  /* 1.1 */
-	CALL(PopClientAttrib);
+	CALL_0(PopClientAttrib);
 }
 
 GLAPI GLint APIENTRY glRenderMode( GLenum mode ) {
@@ -303,7 +335,7 @@ GLAPI GLint APIENTRY glRenderMode( GLenum mode ) {
 }
 
 GLAPI GLenum APIENTRY glGetError( void ) {
-	CALL(GetError);
+	CALL_0(GetError);
 }
 
 GLAPI const GLubyte* APIENTRY glGetString( GLenum name ) {
@@ -311,11 +343,11 @@ GLAPI const GLubyte* APIENTRY glGetString( GLenum name ) {
 }
 
 GLAPI void APIENTRY glFinish( void ) {
-	CALL(Finish);
+	CALL_0(Finish);
 }
 
 GLAPI void APIENTRY glFlush( void ) {
-	CALL(Flush);
+	CALL_0(Flush);
 }
 
 GLAPI void APIENTRY glHint( GLenum target, GLenum mode ) {
@@ -367,15 +399,15 @@ GLAPI void APIENTRY glViewport( GLint x, GLint y, GLsizei width, GLsizei height 
 }
 
 GLAPI void APIENTRY glPushMatrix( void ) {
-	CALL(PushMatrix);
+	CALL_0(PushMatrix);
 }
 
 GLAPI void APIENTRY glPopMatrix( void ) {
-	CALL(PopMatrix);
+	CALL_0(PopMatrix);
 }
 
 GLAPI void APIENTRY glLoadIdentity( void ) {
-	CALL(LoadIdentity);
+	CALL_0(LoadIdentity);
 }
 
 GLAPI void APIENTRY glLoadMatrixd( const GLdouble *m ) {
@@ -436,7 +468,7 @@ GLAPI void APIENTRY glNewList( GLuint list, GLenum mode ) {
 }
 
 GLAPI void APIENTRY glEndList( void ) {
-	CALL(EndList);
+	CALL_0(EndList);
 }
 
 GLAPI void APIENTRY glCallList( GLuint list ) {
@@ -457,7 +489,7 @@ GLAPI void APIENTRY glBegin( GLenum mode ) {
 }
 
 GLAPI void APIENTRY glEnd( void ) {
-	CALL(End);
+	CALL_0(End);
 }
 
 GLAPI void APIENTRY glVertex2d( GLdouble x, GLdouble y ) {
@@ -521,7 +553,7 @@ GLAPI void APIENTRY glVertex2iv( const GLint *v ) {
 }
 
 GLAPI void APIENTRY glVertex2sv( const GLshort *v ) {
-	CALL(Vertex2sv);
+	CALL_0(Vertex2sv);
 }
 
 GLAPI void APIENTRY glVertex3dv( const GLdouble *v ) {
@@ -749,7 +781,7 @@ GLAPI void APIENTRY glColor4iv( const GLint *v ) {
 }
 
 GLAPI void APIENTRY glColor4sv( const GLshort *v ) {
-	CALL(Color4sv);
+	CALL_0(Color4sv);
 }
 
 GLAPI void APIENTRY glColor4ubv( const GLubyte *v ) {
@@ -1400,7 +1432,7 @@ GLAPI void APIENTRY glSelectBuffer( GLsizei size, GLuint *buffer ) {
 }
 
 GLAPI void APIENTRY glInitNames( void ) {
-	CALL(InitNames);
+	CALL_0(InitNames);
 }
 
 GLAPI void APIENTRY glLoadName( GLuint name ) {
@@ -1412,7 +1444,7 @@ GLAPI void APIENTRY glPushName( GLuint name ) {
 }
 
 GLAPI void APIENTRY glPopName( void ) {
-	CALL(PopName);
+	CALL_0(PopName);
 }
 
 /* 1.1 functions */
@@ -1511,356 +1543,11 @@ GLAPI void APIENTRY glInterleavedArrays( GLenum format, GLsizei stride, const GL
 	CALL_3(InterleavedArrays, format, stride, P(pointer));
 }
 
-/* 1.2 functions */
-GLAPI void APIENTRY glDrawRangeElements( GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices ) {
-	CALL_6(DrawRangeElements, mode, start, end, count, type, P(indices));
-}
-
-GLAPI void APIENTRY glTexImage3D( GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels ) {
-	CALL_10(TexImage3D, target, level, internalFormat, width, height, depth, border, format, type, P(pixels));
-}
-
-GLAPI void APIENTRY glTexImage3DEXT(GLenum target, GLint level, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels) {
-    CALL_10(TexImage3D, target, level, internalFormat, width, height, depth, border, format, type, P(pixels));
-}
-
-GLAPI void APIENTRY glTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels) {
-	CALL_11(TexSubImage3D, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, P(pixels));
-}
-
-GLAPI void APIENTRY glTexSubImage3DEXT(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels) {
-    CALL_11(TexSubImage3D, target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, P(pixels));
-}
-
-GLAPI void APIENTRY glCopyTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height ) {
-	CALL_9(CopyTexSubImage3D, target, level, xoffset, yoffset, zoffset, x, y, width, height);
-}
-
-/* 1.2 imaging extension functions */
-GLAPI void APIENTRY glColorTable( GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *table ) {
-	CALL_6(ColorTable, target, internalformat, width, format, type, P(table));
-}
-
-GLAPI void APIENTRY glColorSubTable( GLenum target, GLsizei start, GLsizei count, GLenum format, GLenum type, const GLvoid *data ) {
-	CALL_6(ColorSubTable, target, start, count, format, type, P(data));
-}
-
-GLAPI void APIENTRY glColorTableParameteriv(GLenum target, GLenum pname, const GLint *params) {
-	CALL_3(ColorTableParameteriv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glColorTableParameterfv(GLenum target, GLenum pname, const GLfloat *params) {
-	CALL_3(ColorTableParameterfv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glCopyColorSubTable( GLenum target, GLsizei start, GLint x, GLint y, GLsizei width ) {
-	CALL_5(CopyColorSubTable, target, start, x, y, width);
-}
-
-GLAPI void APIENTRY glCopyColorTable( GLenum target, GLenum internalformat, GLint x, GLint y, GLsizei width ) {
-	CALL_5(CopyColorTable, target, internalformat, x, y, width);
-}
-
-GLAPI void APIENTRY glGetColorTable( GLenum target, GLenum format, GLenum type, GLvoid *table ) {
-	CALL_4(GetColorTable, target, format, type, P(table));
-}
-
-GLAPI void APIENTRY glGetColorTableParameterfv( GLenum target, GLenum pname, GLfloat *params ) {
-	CALL_3(GetColorTableParameterfv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glGetColorTableParameteriv( GLenum target, GLenum pname, GLint *params ) {
-	CALL_3(GetColorTableParameteriv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glBlendEquation( GLenum mode ) {
-	CALL_1(BlendEquation, mode);
-}
-
-GLAPI void APIENTRY glBlendColor( GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha ) {
-	CALL_4(BlendColor, F(red), F(green), F(blue), F(alpha));
-}
-
-GLAPI void APIENTRY glHistogram( GLenum target, GLsizei width, GLenum internalformat, GLboolean sink ) {
-	CALL_4(Histogram, target, width, internalformat, sink);
-}
-
-GLAPI void APIENTRY glResetHistogram( GLenum target ) {
-	CALL_1(ResetHistogram, target);
-}
-
-GLAPI void APIENTRY glGetHistogram( GLenum target, GLboolean reset, GLenum format, GLenum type, GLvoid *values ) {
-	CALL_5(GetHistogram, target, reset, format, type, P(values));
-}
-
-GLAPI void APIENTRY glGetHistogramParameterfv( GLenum target, GLenum pname, GLfloat *params ) {
-	CALL_3(GetHistogramParameterfv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glGetHistogramParameteriv( GLenum target, GLenum pname, GLint *params ) {
-	CALL_3(GetHistogramParameteriv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glMinmax( GLenum target, GLenum internalformat, GLboolean sink ) {
-	CALL_3(Minmax, target, internalformat, sink);
-}
-
-GLAPI void APIENTRY glResetMinmax( GLenum target ) {
-	CALL_1(ResetMinmax, target);
-}
-
-GLAPI void APIENTRY glGetMinmax( GLenum target, GLboolean reset, GLenum format, GLenum types, GLvoid *values ) {
-	CALL_5(GetMinmax, target, reset, format, types, P(values));
-}
-
-GLAPI void APIENTRY glGetMinmaxParameterfv( GLenum target, GLenum pname, GLfloat *params ) {
-	CALL_3(GetMinmaxParameterfv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glGetMinmaxParameteriv( GLenum target, GLenum pname, GLint *params ) {
-	CALL_3(GetMinmaxParameteriv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glConvolutionFilter1D( GLenum target, GLenum internalformat, GLsizei width, GLenum format, GLenum type, const GLvoid *image ) {
-	CALL_6(ConvolutionFilter1D, target, internalformat, width, format, type, P(image));
-}
-
-GLAPI void APIENTRY glConvolutionFilter2D( GLenum target, GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *image ) {
-	CALL_7(ConvolutionFilter2D, target, internalformat, width, height, format, type, P(image));
-}
-
-GLAPI void APIENTRY glConvolutionParameterf( GLenum target, GLenum pname, GLfloat params ) {
-	CALL_3(ConvolutionParameterf, target, pname, F(params));
-}
-
-GLAPI void APIENTRY glConvolutionParameterfv( GLenum target, GLenum pname, const GLfloat *params ) {
-	CALL_3(ConvolutionParameterfv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glConvolutionParameteri( GLenum target, GLenum pname, GLint params ) {
-	CALL_3(ConvolutionParameteri, target, pname, params);
-}
-
-GLAPI void APIENTRY glConvolutionParameteriv( GLenum target, GLenum pname, const GLint *params ) {
-	CALL_3(ConvolutionParameteriv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glCopyConvolutionFilter1D( GLenum target, GLenum internalformat, GLint x, GLint y, GLsizei width ) {
-	CALL_5(CopyConvolutionFilter1D, target, internalformat, x, y, width);
-}
-
-GLAPI void APIENTRY glCopyConvolutionFilter2D( GLenum target, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height) {
-	CALL_6(CopyConvolutionFilter2D, target, internalformat, x, y, width, height);
-}
-
-GLAPI void APIENTRY glGetConvolutionFilter( GLenum target, GLenum format, GLenum type, GLvoid *image ) {
-	CALL_4(GetConvolutionFilter, target, format, type, P(image));
-}
-
-GLAPI void APIENTRY glGetConvolutionParameterfv( GLenum target, GLenum pname, GLfloat *params ) {
-	CALL_3(GetConvolutionParameterfv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glGetConvolutionParameteriv( GLenum target, GLenum pname, GLint *params ) {
-	CALL_3(GetConvolutionParameteriv, target, pname, P(params));
-}
-
-GLAPI void APIENTRY glSeparableFilter2D( GLenum target, GLenum internalformat, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *row, const GLvoid *column ) {
-	CALL_8(SeparableFilter2D, target, internalformat, width, height, format, type, P(row), P(column));
-}
-
-GLAPI void APIENTRY glGetSeparableFilter( GLenum target, GLenum format, GLenum type, GLvoid *row, GLvoid *column, GLvoid *span ) {
-	CALL_6(GetSeparableFilter, target, format, type, P(row), P(column), P(span));
-}
-
-/* 1.3 functions */
-GLAPI void APIENTRY glActiveTexture( GLenum texture ) {
-	CALL_1(ActiveTexture, texture);
-}
-
-GLAPI void APIENTRY glClientActiveTexture( GLenum texture ) {
-	CALL_1(ClientActiveTexture, texture);
-}
-
-GLAPI void APIENTRY glCompressedTexImage1D( GLenum target, GLint level, GLenum internalformat, GLsizei width, GLint border, GLsizei imageSize, const GLvoid *data ) {
-	CALL_7(CompressedTexImage1D, target, level, internalformat, width, border, imageSize, P(data));
-}
-
-GLAPI void APIENTRY glCompressedTexImage2D( GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data ) {
-	CALL_8(CompressedTexImage2D, target, level, internalformat, width, height, border, imageSize, P(data));
-}
-
-GLAPI void APIENTRY glCompressedTexImage3D( GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const GLvoid *data ) {
-	CALL_9(CompressedTexImage3D, target, level, internalformat, width ,height, depth, border, imageSize, P(data));
-}
-
-GLAPI void APIENTRY glCompressedTexSubImage1D( GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLsizei imageSize, const GLvoid *data ) {
-	CALL_7(CompressedTexSubImage1D, target, level, xoffset, width, format, imageSize, P(data));
-}
-
-GLAPI void APIENTRY glCompressedTexSubImage2D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data ) {
-	CALL_9(CompressedTexSubImage2D, target, level, xoffset, yoffset, width, height, format, imageSize, P(data));
-}
-
-GLAPI void APIENTRY glCompressedTexSubImage3D( GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const GLvoid *data ) {
-	CALL_11(CompressedTexSubImage3D, target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, P(data));
-}
-
-GLAPI void APIENTRY glGetCompressedTexImage( GLenum target, GLint lod, GLvoid *img ) {
-	CALL_3(GetCompressedTexImage, target, lod, P(img));
-}
-
-GLAPI void APIENTRY glMultiTexCoord1d( GLenum target, GLdouble s ) {
-	CALL_2(MultiTexCoord1d, target, D(s));
-}
-
-GLAPI void APIENTRY glMultiTexCoord1dv( GLenum target, const GLdouble *v ) {
-	CALL_2(MultiTexCoord1dv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord1f( GLenum target, GLfloat s ) {
-	CALL_2(MultiTexCoord1f, target, F(s));
-}
-
-GLAPI void APIENTRY glMultiTexCoord1fv( GLenum target, const GLfloat *v ) {
-	CALL_2(MultiTexCoord1fv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord1i( GLenum target, GLint s ) {
-	CALL_2(MultiTexCoord1i, target, s);
-}
-
-GLAPI void APIENTRY glMultiTexCoord1iv( GLenum target, const GLint *v ) {
-	CALL_2(MultiTexCoord1iv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord1s( GLenum target, GLshort s ) {
-	CALL_2(MultiTexCoord1s, target, s);
-}
-
-GLAPI void APIENTRY glMultiTexCoord1sv( GLenum target, const GLshort *v ) {
-	CALL_2(MultiTexCoord1sv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord2d( GLenum target, GLdouble s, GLdouble t ) {
-	CALL_3(MultiTexCoord2d, target, D(s), D(t));
-}
-
-GLAPI void APIENTRY glMultiTexCoord2dv( GLenum target, const GLdouble *v ) {
-	CALL_2(MultiTexCoord2dv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord2f( GLenum target, GLfloat s, GLfloat t ) {
-	CALL_3(MultiTexCoord2f, target, F(s), F(t));
-}
-
-GLAPI void APIENTRY glMultiTexCoord2fv( GLenum target, const GLfloat *v ) {
-	CALL_2(MultiTexCoord2fv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord2i( GLenum target, GLint s, GLint t ) {
-	CALL_3(MultiTexCoord2i, target, s, t);
-}
-
-GLAPI void APIENTRY glMultiTexCoord2iv( GLenum target, const GLint *v ) {
-	CALL_2(MultiTexCoord2iv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord2s( GLenum target, GLshort s, GLshort t ) {
-	CALL_3(MultiTexCoord2s, target, s, t);
-}
-
-GLAPI void APIENTRY glMultiTexCoord2sv( GLenum target, const GLshort *v ) {
-	CALL_2(MultiTexCoord2sv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord3d( GLenum target, GLdouble s, GLdouble t, GLdouble r ) {
-	CALL_4(MultiTexCoord3d, target, D(s), D(t), D(r));
-}
-
-GLAPI void APIENTRY glMultiTexCoord3dv( GLenum target, const GLdouble *v ) {
-	CALL_2(MultiTexCoord3dv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord3f( GLenum target, GLfloat s, GLfloat t, GLfloat r ) {
-	CALL_4(MultiTexCoord3f, target, F(s), F(t), F(r));
-}
-
-GLAPI void APIENTRY glMultiTexCoord3fv( GLenum target, const GLfloat *v ) {
-	CALL_2(MultiTexCoord3fv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord3i( GLenum target, GLint s, GLint t, GLint r ) {
-	CALL_4(MultiTexCoord3i, target, s, t, r);
-}
-
-GLAPI void APIENTRY glMultiTexCoord3iv( GLenum target, const GLint *v ) {
-	CALL_2(MultiTexCoord3iv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord3s( GLenum target, GLshort s, GLshort t, GLshort r ) {
-	CALL_4(MultiTexCoord3s, target, s, t, r);
-}
-
-GLAPI void APIENTRY glMultiTexCoord3sv( GLenum target, const GLshort *v ) {
-	CALL_2(MultiTexCoord3sv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord4d( GLenum target, GLdouble s, GLdouble t, GLdouble r, GLdouble q ) {
-	CALL_5(MultiTexCoord4d, target, D(s), D(t), D(r), D(q));
-}
-
-GLAPI void APIENTRY glMultiTexCoord4dv( GLenum target, const GLdouble *v ) {
-	CALL_2(MultiTexCoord4dv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord4f( GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q ) {
-	CALL_5(MultiTexCoord4f, target, F(s), F(t), F(r), F(q));
-}
-
-GLAPI void APIENTRY glMultiTexCoord4fv( GLenum target, const GLfloat *v ) {
-	CALL_2(MultiTexCoord4fv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord4i( GLenum target, GLint s, GLint t, GLint r, GLint q ) {
-	CALL_5(MultiTexCoord4i, target, s, t, r, q);
-}
-
-GLAPI void APIENTRY glMultiTexCoord4iv( GLenum target, const GLint *v ) {
-	CALL_2(MultiTexCoord4iv, target, P(v));
-}
-
-GLAPI void APIENTRY glMultiTexCoord4s( GLenum target, GLshort s, GLshort t, GLshort r, GLshort q ) {
-	CALL_5(MultiTexCoord4s, target, s, t, r, q);
-}
-
-GLAPI void APIENTRY glMultiTexCoord4sv( GLenum target, const GLshort *v ) {
-	CALL_2(MultiTexCoord4sv, target, P(v));
-}
-
-GLAPI void APIENTRY glLoadTransposeMatrixd( const GLdouble m[16] ) {
-	CALL_1(LoadTransposeMatrixd, m);
-}
-
-GLAPI void APIENTRY glLoadTransposeMatrixf( const GLfloat m[16] ) {
-	CALL_1(LoadTransposeMatrixf, P(m));
-}
-
-GLAPI void APIENTRY glMultTransposeMatrixd( const GLdouble m[16] ) {
-	CALL_1(MultTransposeMatrixd, P(m));
-}
-
-GLAPI void APIENTRY glMultTransposeMatrixf( const GLfloat m[16] ) {
-	CALL_1(MultTransposeMatrixf, m);
-}
-
-GLAPI void APIENTRY glSampleCoverage( GLclampf value, GLboolean invert ) {
-	CALL_2(SampleCoverage, F(value), invert);
-}
-
 GLAPI void APIENTRY glSamplePass( GLenum pass ) {
 	CALL_1(SamplePass, pass);
 }
+
+#include "glfunctions.h"
 
 #ifdef USE_GLX
 typedef struct GLXFBConfigRecord {

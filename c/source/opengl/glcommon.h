@@ -48,6 +48,38 @@ struct long2Double {
 #define ARG8 peek32(cpu, 8)
 #define ARG9 peek32(cpu, 9)
 #define ARG10 peek32(cpu, 10)
+#define ARG11 peek32(cpu, 11)
+#define ARG12 peek32(cpu, 12)
+#define ARG13 peek32(cpu, 13)
+#define ARG14 peek32(cpu, 14)
+#define ARG15 peek32(cpu, 15)
+
+#define hARG1 ARG1
+#define hARG2 ARG2
+#define hARG3 ARG3
+#define hARG4 ARG4
+#define hARG5 ARG5
+#define hARG6 ARG6
+#define hARG7 ARG7
+#define hARG8 ARG8
+
+#define ipARG1 ARG1
+#define ipARG2 ARG2
+#define ipARG3 ARG3
+#define ipARG4 ARG4
+#define ipARG5 ARG5
+#define ipARG6 ARG6
+#define ipARG7 ARG7
+#define ipARG8 ARG8
+
+#define llARG1 readq(cpu->memory, ARG1)
+#define llARG2 readq(cpu->memory, ARG2)
+#define llARG3 readq(cpu->memory, ARG3)
+#define llARG4 readq(cpu->memory, ARG4)
+#define llARG5 readq(cpu->memory, ARG5)
+#define llARG6 readq(cpu->memory, ARG6)
+#define llARG7 readq(cpu->memory, ARG7)
+#define llARG8 readq(cpu->memory, ARG8)
 
 #define fARG1 fARG(cpu, ARG1)
 #define fARG2 fARG(cpu, ARG2)
@@ -56,6 +88,14 @@ struct long2Double {
 #define fARG5 fARG(cpu, ARG5)
 #define fARG6 fARG(cpu, ARG6)
 #define fARG7 fARG(cpu, ARG7)
+#define fARG8 fARG(cpu, ARG8)
+#define fARG9 fARG(cpu, ARG8)
+#define fARG10 fARG(cpu, ARG10)
+#define fARG11 fARG(cpu, ARG11)
+#define fARG12 fARG(cpu, ARG12)
+#define fARG13 fARG(cpu, ARG13)
+#define fARG14 fARG(cpu, ARG14)
+#define fARG15 fARG(cpu, ARG15)
 
 #define dARG1 dARG(cpu, ARG1)
 #define dARG2 dARG(cpu, ARG2)
@@ -64,6 +104,10 @@ struct long2Double {
 #define dARG5 dARG(cpu, ARG5)
 #define dARG6 dARG(cpu, ARG6)
 #define dARG7 dARG(cpu, ARG7)
+#define dARG8 dARG(cpu, ARG8)
+#define dARG9 dARG(cpu, ARG9)
+#define dARG10 dARG(cpu, ARG10)
+#define dARG11 dARG(cpu, ARG11)
 
 float fARG(struct CPU* cpu, U32 arg);
 double dARG(struct CPU* cpu, int address);
@@ -95,12 +139,11 @@ void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count);
 void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count);
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count);
 
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST)
+#define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) typedef RET (OPENGL_CALL_TYPE *gl##func##_func)PARAMS; gl##func##_func ext_gl##func;
 
-// 1.2
-typedef void (OPENGL_CALL_TYPE *glTexImage3D_func)( GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels );
-extern glTexImage3D_func ext_glTexImage3D;
+#include "glfunctions.h"
 
-typedef void (OPENGL_CALL_TYPE *glDrawRangeElements_func)( GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices );
-extern glDrawRangeElements_func ext_glDrawRangeElements;
 #endif
 #endif

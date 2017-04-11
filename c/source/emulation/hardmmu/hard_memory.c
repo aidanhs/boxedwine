@@ -161,6 +161,25 @@ BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCou
     return FALSE;
 }
 
+U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size) {
+    U32 i;
+    U32 result = 0;    
+    U32 pageCount = (size>>PAGE_SHIFT)+2; // 1 for size alignment, 1 for hostAddress alignment
+    U64 hostStart = (U64)hostAddress & 0xFFFFFFFFFFFFF000l;
+    U64 offset;
+
+    findFirstAvailablePage(memory, 0x10000, pageCount, &result, FALSE);
+    offset = hostStart - (result << PAGE_SHIFT);
+    // host = client + offset
+    for (i=0;i<pageCount;i++) {
+        memory->ids[result+i] = offset;
+    }
+    return (result << PAGE_SHIFT) + ((U32)hostAddress & PAGE_MASK);
+}
+
+void unmapNativeMemory(struct Memory* memory, U32 address, U32 size) {
+}
+
 void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
     freeNativeMemory(memory->process, startingPage, pageCount);
 }

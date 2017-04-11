@@ -40,10 +40,7 @@
 #include "devmixer.h"
 #include "sdlwindow.h"
 
-void mesa_init();
 void gl_init();
-void esgl_init();
-void sdlgl_init();
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
@@ -443,15 +440,6 @@ int main(int argc, char **argv) {
     initBlockCache();	
     initWine();
     gl_init();
-#ifdef MESA
-    mesa_init();
-#endif
-#ifdef BOXEDWINE_SDL
-    sdlgl_init();
-#endif
-#ifdef BOXEDWINE_ES
-    esgl_init();
-#endif
     strcpy(pwd, "PWD=");
     strcat(pwd, workingDir);
 
@@ -472,7 +460,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "WINELOADERNOEXEC=1";
     //ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
     ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
-    //ppenv[envc++] = "WINEDEBUG=+boxeddrv";
+    ppenv[envc++] = "WINEDEBUG=+opengl";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg

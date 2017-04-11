@@ -154,6 +154,7 @@ typedef struct
 #define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
 #define BOXED_CREATE_DESKTOP                        (BOXED_BASE+86)
 #define BOXED_HAS_WND                               (BOXED_BASE+87)
+#define BOXED_GET_VERSION                           (BOXED_BASE+88)
 
 #define CALL_0(index) __asm__("push %1\n\tint $0x98\n\taddl $4, %%esp": "=a" (result):"i"(index):); 
 #define CALL_1(index, arg1) __asm__("push %2\n\tpush %1\n\tint $0x98\n\taddl $8, %%esp": "=a" (result):"i"(index), "g"((DWORD)arg1):); 
@@ -1094,9 +1095,17 @@ static PROC boxeddrv_wglGetProcAddress(const char *proc) {
         glModule = dlopen("/lib/libGL.so.1", RTLD_LAZY);        
     } 
     if (glModule) {
-        PROC result = dlsym(glModule, proc);
-        TRACE("glModule=%p result=%p\n", glModule, result);
-        return result;
+        int result = 0;
+        PROC pfn;
+
+        CALL_1(BOXED_GL_GET_PROC_ADDRESS, proc);
+        if (!result) {
+            TRACE("    %s not found\n", proc);
+            return 0;
+        }
+        pfn = dlsym(glModule, proc);
+        TRACE("glModule=%p result=%p\n", glModule, pfn);
+        return pfn;
     }
     TRACE("could not find /lib/libGL.so.1\n");
     return NULL;
@@ -1471,9 +1480,16 @@ static BOOL boxeddrv_CreateCompatibleDC(PHYSDEV orig, PHYSDEV *pdev)
  */
 const struct gdi_dc_funcs * CDECL boxeddrv_get_gdi_driver(unsigned int version)
 {
+    int result;
+
     if (version != WINE_GDI_DRIVER_VERSION)
     {
         ERR("version mismatch, gdi32 wants %u but wineboxed has %u\n", version, WINE_GDI_DRIVER_VERSION);
+        return NULL;
+    }
+    CALL_0(BOXED_GET_VERSION)
+    if (result != 3) {
+        ERR("version mismatch, boxedwine wants %u but winex11.drv has %u\n", result, 3);
         return NULL;
     }
     return &boxeddrv_funcs;

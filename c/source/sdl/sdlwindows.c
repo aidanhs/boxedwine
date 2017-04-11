@@ -389,11 +389,15 @@ static void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
+void loadExtensions();
+
 U32 sdlMakeCurrent(U32 arg) {
 #ifdef SDL2
     if (arg == 0x100) {
-        if (SDL_GL_MakeCurrent(sdlWindow, sdlContext)==0)
+        if (SDL_GL_MakeCurrent(sdlWindow, sdlContext)==0) {
+            loadExtensions();
             return 1;
+        }
     } else if (arg == 0) {
         return 1;
     }

@@ -142,6 +142,7 @@ void notImplemented(const char* s) {
 #define BOXED_SET_CURSOR_BITS                       (BOXED_BASE+85)
 #define BOXED_CREATE_DESKTOP                        (BOXED_BASE+86)
 #define BOXED_HAS_WND                               (BOXED_BASE+87)
+#define BOXED_GET_VERSION                           (BOXED_BASE+88)
 
 # define __MSABI_LONG(x)         x
 
@@ -1197,9 +1198,14 @@ void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
         EAX = 0;
 }
 
+extern PblMap* glFunctionMap;
 void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
-    const char* name = getNativeString(MMU_PARAM_CPU ARG1);
-    notImplemented("boxeddrv_wglGetProcAddress not implemented");    
+    char* name = getNativeString(MMU_PARAM_CPU ARG1);
+
+    if (pblMapContainsKey(glFunctionMap, name, strlen(name)+1))
+        EAX = 1;
+    else
+        EAX = 0;
 }
 
 // HwND hwnd, void* context
@@ -1229,6 +1235,10 @@ void boxeddrv_HasWnd(struct CPU* cpu) {
     } else {
         EAX = 0;
     }
+}
+
+void boxeddrv_GetVersion(struct CPU* cpu) {
+    EAX = 3;
 }
 
 void boxeddrv_wglShareLists(struct CPU* cpu) {
@@ -1326,7 +1336,7 @@ Int99Callback* wine_callback;
 U32 wine_callbackSize;
 
 void initWine() {
-    wine_callback = malloc(sizeof(Int99Callback) * 88);
+    wine_callback = malloc(sizeof(Int99Callback) * 89);
     wine_callback[BOXED_ACQUIRE_CLIPBOARD] = boxeddrv_AcquireClipboard;
     wine_callback[BOXED_ACTIVATE_KEYBOARD_LAYOUT] = boxeddrv_ActivateKeyboardLayout;
     wine_callback[BOXED_BEEP] = boxeddrv_Beep;
@@ -1415,5 +1425,6 @@ void initWine() {
     wine_callback[BOXED_SET_CURSOR_BITS] = boxeddrv_SetCursorBits;
     wine_callback[BOXED_CREATE_DESKTOP] = boxeddrv_CreateDesktop;
     wine_callback[BOXED_HAS_WND] = boxeddrv_HasWnd;
-    wine_callbackSize = 88;
+    wine_callback[BOXED_GET_VERSION] = boxeddrv_GetVersion;
+    wine_callbackSize = 89;
 }

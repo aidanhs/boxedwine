@@ -27,14 +27,22 @@
 #include <SDL.h>
 
 int extLoaded = 0;
-extern glTexImage3D_func ext_glTexImage3D;
-extern glDrawRangeElements_func ext_glDrawRangeElements;
+
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST)
+
+#undef GL_FUNCTION_CUSTOM
+#define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
+
+#undef GL_EXT_FUNCTION
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) ext_gl##func = (gl##func##_func)SDL_GL_GetProcAddress("gl" #func);
+
+void glExtensionsLoaded();
 
 void loadExtensions() {
     if (!extLoaded) {
         extLoaded = 1;
-        ext_glTexImage3D = (glTexImage3D_func)SDL_GL_GetProcAddress("glTexImage3D");
-        ext_glDrawRangeElements = (glDrawRangeElements_func)SDL_GL_GetProcAddress("glDrawRangeElements");
+        #include "../glfunctions.h"
+        glExtensionsLoaded();
     }
 }
 
@@ -117,7 +125,6 @@ void sdlgl_init() {
     int99Callback[XMakeCurrent] = sdl_glXMakeCurrent;
     int99Callback[XDestroyContext] = sdl_glXDestroyContext;	
     int99Callback[XSwapBuffer] = sdl_glXSwapBuffers;
-    loadExtensions();
 }
 
 #endif

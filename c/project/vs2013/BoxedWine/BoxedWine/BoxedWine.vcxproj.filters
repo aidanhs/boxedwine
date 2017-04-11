@@ -223,6 +223,9 @@
     <ClCompile Include="..\..\..\..\source\kernel\kmmap.c">
       <Filter>source\kernel</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\glext.c">
+      <Filter>opengl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -488,6 +491,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\kernel\loader\kelf.h">
       <Filter>source\kernel\loader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\opengl\glfunctions.h">
+      <Filter>opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\opengl\glfunctions_ext.h">
+      <Filter>opengl</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
