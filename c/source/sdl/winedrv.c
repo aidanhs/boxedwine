@@ -1198,6 +1198,7 @@ void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
         EAX = 0;
 }
 
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 extern PblMap* glFunctionMap;
 void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
     char* name = getNativeString(MMU_PARAM_CPU ARG1);
@@ -1207,6 +1208,11 @@ void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
     else
         EAX = 0;
 }
+#else
+void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
+    EAX = 0;
+}
+#endif
 
 // HwND hwnd, void* context
 void boxeddrv_wglMakeCurrent(struct CPU* cpu) {

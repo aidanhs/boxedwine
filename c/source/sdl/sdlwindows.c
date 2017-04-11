@@ -389,13 +389,17 @@ static void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 void loadExtensions();
+#endif
 
 U32 sdlMakeCurrent(U32 arg) {
 #ifdef SDL2
     if (arg == 0x100) {
         if (SDL_GL_MakeCurrent(sdlWindow, sdlContext)==0) {
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
             loadExtensions();
+#endif
             return 1;
         }
     } else if (arg == 0) {
