@@ -24,6 +24,7 @@
 #include "kprocess.h"
 #include "ksystem.h"
 #include "sdlwindow.h"
+#include "kscheduler.h"
 
 int bits_per_pixel = 32;
 int default_horz_res = 800;
@@ -354,8 +355,9 @@ struct Wnd* getFirstVisibleWnd() {
 
 #ifdef SDL2
 SDL_Window *sdlWindow;
-SDL_GLContext sdlContext;
 SDL_Renderer *sdlRenderer;
+SDL_GLContext *sdlCurrentContext;
+int contextCount;
 
 static void destroySDL2() {
     PblIterator* it = pblMapIteratorNew(hwndToWnd);
@@ -376,14 +378,15 @@ static void destroySDL2() {
         SDL_DestroyRenderer(sdlRenderer);
         sdlRenderer = 0;
     }
-    if (sdlContext) {
-        SDL_GL_DeleteContext(sdlContext);
-        sdlContext = 0;
+    if (currentThread->glContext) {
+        SDL_GL_DeleteContext(currentThread->glContext);
+        currentThread->glContext = 0;
     }
     if (sdlWindow) {
         SDL_DestroyWindow(sdlWindow);
         sdlWindow = 0;
     }
+    contextCount = 0;
 }
 #else
 SDL_Surface* surface;
@@ -393,17 +396,43 @@ SDL_Surface* surface;
 void loadExtensions();
 #endif
 
+void sdlDeleteContext(U32 context) {
+    struct KThread* thread = processGetThreadById(currentThread->process, context);
+    if (thread && thread->glContext) {
+        SDL_GL_DeleteContext(thread->glContext);
+        thread->glContext = NULL;
+        contextCount--;
+        if (contextCount==0) {
+            displayChanged(); 
+        }
+    }
+}
+
+void sdlUpdateContextForThread(struct KThread* thread) {
+    if (thread->currentContext && thread->currentContext!=sdlCurrentContext) {
+        SDL_GL_MakeCurrent(sdlWindow, thread->glContext);
+        sdlCurrentContext = thread->glContext;        
+    }
+}
+
 U32 sdlMakeCurrent(U32 arg) {
 #ifdef SDL2
-    if (arg == 0x100) {
-        if (SDL_GL_MakeCurrent(sdlWindow, sdlContext)==0) {
+    if (arg == currentThread->id) {
+        if (SDL_GL_MakeCurrent(sdlWindow, currentThread->glContext)==0) {
+            currentThread->currentContext = currentThread->glContext;
+            sdlCurrentContext = currentThread->glContext;
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
             loadExtensions();
 #endif
             return 1;
         }
     } else if (arg == 0) {
+        SDL_GL_MakeCurrent(sdlWindow, 0);
+        currentThread->currentContext = 0;
+        sdlCurrentContext = NULL;
         return 1;
+    } else {
+        kpanic("Tried to make an OpenGL context current for a different thread?");
     }
     return 0;
 #else
@@ -411,8 +440,35 @@ U32 sdlMakeCurrent(U32 arg) {
 #endif
 }
 
+U32 sdlShareLists(U32 srcContext, U32 destContext) {
+    struct KThread* srcThread = processGetThreadById(currentThread->process, srcContext);
+    struct KThread* destThread = processGetThreadById(currentThread->process, destContext);
+    if (srcThread && destThread && srcThread->glContext && destThread->glContext) {
+        if (destThread->currentContext) {
+            kpanic("Wasn't expecting the OpenGL context that will share a list to already be current");
+        }
+        if (srcThread->currentContext != sdlCurrentContext) {
+            kpanic("Something went wrong with sdlShareLists");
+        }
+        //SDL_GL_DeleteContext(destThread->glContext);
+        //SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1); 
+        //destThread->glContext = SDL_GL_CreateContext(sdlWindow);
+        //SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0); 
+        return 1;
+    }
+    return 0;
+}
+
 U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
+    if (wnd->openGlContext) {
+        if (currentThread->glContext) {
+            kpanic("Not sure what to do, trying to create another OpenGL context on the same thread");
+        }
+        currentThread->glContext = SDL_GL_CreateContext(sdlWindow);
+        contextCount++;
+        return currentThread->id;
+    }
     destroySDL2();
 
     firstWindowCreated = 1;
@@ -433,7 +489,7 @@ U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, in
 
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, wnd->pixelFormat->dwFlags & 1);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, (wnd->pixelFormat->dwFlags & 0x40)?0:1);
-
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1); 
     firstWindowCreated = 1;
 #ifdef SDL2
     sdlWindow = SDL_CreateWindow("OpenGL Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
@@ -443,14 +499,16 @@ U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, in
         return 0;
     }
 
-    sdlContext = SDL_GL_CreateContext(sdlWindow);
-    if (!sdlContext) {
+    currentThread->glContext = SDL_GL_CreateContext(sdlWindow);
+    if (!currentThread->glContext) {
         fprintf(stderr, "Couldn't create context: %s\n", SDL_GetError());
         displayChanged();
         return 0;
     }
-    wnd->openGlContext = sdlContext;
-    return 0x100;
+    contextCount++;
+    if (!wnd->openGlContext)
+        wnd->openGlContext = currentThread->glContext;       
+    return currentThread->id;
 #else
     surface = NULL;
     SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);        
@@ -460,7 +518,7 @@ U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, in
 
 void screenResized() {
 #ifdef SDL2
-    if (sdlContext)
+    if (currentThread->glContext)
         SDL_SetWindowSize(sdlWindow, screenCx, screenCy);
     else
         displayChanged();

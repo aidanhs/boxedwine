@@ -1182,7 +1182,7 @@ void boxeddrv_wglCreateContext(struct CPU* cpu) {
 }
 
 void boxeddrv_wglDeleteContext(struct CPU* cpu) {
-    displayChanged(); // just guess, seems fine if we just support one context at a time
+    sdlDeleteContext(ARG1);
 }
 
 // HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr
@@ -1248,7 +1248,7 @@ void boxeddrv_GetVersion(struct CPU* cpu) {
 }
 
 void boxeddrv_wglShareLists(struct CPU* cpu) {
-    notImplemented("boxeddrv_wglShareLists not implemented");
+    EAX = sdlShareLists(ARG1, ARG2);
 }
 
 void boxeddrv_wglSwapBuffers(struct CPU* cpu) {

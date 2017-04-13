@@ -139,9 +139,9 @@ void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count);
 void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count);
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count);
 
-#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST)
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG)
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) typedef RET (OPENGL_CALL_TYPE *gl##func##_func)PARAMS; gl##func##_func ext_gl##func;
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) typedef RET (OPENGL_CALL_TYPE *gl##func##_func)PARAMS; gl##func##_func ext_gl##func;
 
 #include "glfunctions.h"
 

@@ -233,6 +233,8 @@ U64 elapsedTimeMIPS;
 U64 elapsedInstructionsMIPS;
 
 void dspCheck();
+void sdlUpdateContextForThread(struct KThread* thread);
+
 BOOL runSlice() {
     runTimers();
     dspCheck();
@@ -243,6 +245,7 @@ BOOL runSlice() {
         U64 diff;
 
         currentThread = (struct KThread*)nextThread->data;
+        sdlUpdateContextForThread(currentThread);
         nextThread = nextThread->next;						
         sysCallTime = 0;
 

@@ -76,6 +76,8 @@ struct KThread {
     U32     waitType;
     struct user_desc tls[TLS_ENTRIES];
 
+    void* glContext;
+    void* currentContext;
     struct OpenGLVetexPointer glVertextPointer;
     struct OpenGLVetexPointer glNormalPointer;
     struct OpenGLVetexPointer glColorPointer;

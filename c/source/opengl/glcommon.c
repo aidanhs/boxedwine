@@ -22,6 +22,7 @@
 #include "kalloc.h"
 #include "kprocess.h"
 #include "log.h"
+#include <inttypes.h>
 
 #ifdef HAS_64BIT_MMU
 #include "../emulation/hardmmu/hard_memory.h"
@@ -34,8 +35,8 @@
 #define GL_FUNC(name) name
 #endif
 
-//#define GL_LOG(name) printf(#name"\r\n");
-#define GL_LOG(name)
+//#define GL_LOG klog
+#define GL_LOG if (0) klog
 
 float fARG(struct CPU* cpu, U32 arg) {
     struct int2Float i;
@@ -1620,24 +1621,28 @@ void glcommon_glGetString(struct CPU* cpu) {
     U32 name = ARG1;
     U32 index = 0;
     const char* result = (const char*)GL_FUNC(glGetString)(name);
-
-    GL_LOG(glGetString);
+    
     if (name == GL_VENDOR) {
         index = STRING_GL_VENDOR;
+        GL_LOG("glGetString GLenum name=STRING_GL_VENDOR ret=%s", result);
     } else if (name == GL_RENDERER) {
         index = STRING_GL_RENDERER;
+        GL_LOG("glGetString GLenum name=GL_RENDERER ret=%s", result);
     } else if (name == GL_VERSION) {
         index = STRING_GL_VERSION;
 #ifndef HAS_64BIT_MMU
         result = "1.2 BoxedWine";
 #endif
+        GL_LOG("glGetString GLenum name=STRING_GL_VERSION ret=%s", result);
     } else if (name == GL_SHADING_LANGUAGE_VERSION) {
         index = STRING_GL_SHADING_LANGUAGE_VERSION;
+        GL_LOG("glGetString GLenum name=GL_SHADING_LANGUAGE_VERSION ret=%s", result);
     } else if (name == GL_EXTENSIONS) {
         index = STRING_GL_EXTENSIONS;
 #ifndef HAS_64BIT_MMU
         result = "GL_EXT_texture3D GL_VERSION_1_2 GL_VERSION_1_3";
 #endif
+        GL_LOG("glGetString GLenum name=GL_EXTENSIONS");
     }
     if (!cpu->thread->process->strings[index])
         addString(cpu->thread->process, index, result);
@@ -1656,7 +1661,7 @@ void glcommon_glGetTexImage(struct CPU* cpu) {
 
     GLvoid* pixels;
 
-    GL_LOG(glGetTexImage);
+    GL_LOG("glGetTexImage GLenum target=%d, GLint level=%d, GLenum format=%d, GLenum type=%d, GLvoid *pixels=%.08x", ARG1, ARG2, ARG3, ARG4, ARG5);
     
     GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
     GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
@@ -1687,7 +1692,7 @@ void glcommon_glGetMapdv(struct CPU* cpu) {
     GLenum target = ARG1;
     GLenum query = ARG2;
     
-    GL_LOG(glGetMapdv);
+    GL_LOG("glGetMapdv GLenum target=%d, GLenum query=%d, GLdouble *v=%.08x", ARG1, ARG2, ARG3);
 
     switch (query) {
     case GL_COEFF: {
@@ -1727,7 +1732,7 @@ void glcommon_glGetMapfv(struct CPU* cpu) {
     GLenum target = ARG1;
     GLenum query = ARG2;
     
-    GL_LOG(glGetMapfv);
+    GL_LOG("glGetMapfv GLenum target=%d, GLenum query=%d, GLfloat *v=%.08x", ARG1, ARG2, ARG3);
     switch (query) {
     case GL_COEFF: {
         GLfloat* buffer;
@@ -1766,7 +1771,7 @@ void glcommon_glGetMapiv(struct CPU* cpu) {
     GLenum target = ARG1;
     GLenum query = ARG2;
     
-    GL_LOG(glGetMapiv);
+    GL_LOG("glGetMapiv GLenum target=%d, GLenum query=%d, GLint *v=%.08x", ARG1, ARG2, ARG3);
     switch (query) {
     case GL_COEFF: {
         GLint* buffer;
@@ -1802,7 +1807,7 @@ void glcommon_glGetMapiv(struct CPU* cpu) {
 
 // GLAPI void APIENTRY glGetPointerv( GLenum pname, GLvoid **params ) {
 void glcommon_glGetPointerv(struct CPU* cpu) {
-    GL_LOG(glGetPointerv);
+    GL_LOG("glGetPointerv GLenum pname=%d, GLvoid **params=%.08x", ARG1, ARG2);
 #ifdef HAS_64BIT_MMU
     {
         GLvoid* params;
@@ -1835,21 +1840,24 @@ void glcommon_glReadPixels(struct CPU* cpu) {
     GLenum format = ARG5;
     GLenum type = ARG6;
 
-    GL_LOG(glReadPixels);
+    GL_LOG("glReadPixels GLint x=%d, GLint y=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLenum type=%d, GLvoid *pixels=%.08x", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
 
     pixels = marshalPixels(cpu, 0, width, height, 1, format, type, ARG7);
     GL_FUNC(glReadPixels)(ARG1, ARG2, width, height, format, type, pixels);
     marshalBackPixels(cpu, 0, width, height, 1, format, type, ARG7, pixels);
 }
 
+void OPENGL_CALL_TYPE debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
+}
+
 #undef GL_FUNCTION
-#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(gl##func)ARGS; POST GL_LOG(gl##func);} 
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(gl##func)ARGS; POST GL_LOG LOG;} 
 
 #undef GL_FUNCTION_CUSTOM
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
 
 #undef GL_EXT_FUNCTION
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(ext_gl##func)ARGS; POST GL_LOG(gl##func);} 
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(ext_gl##func)ARGS; POST GL_LOG LOG;} 
 
 #include "glfunctions.h"
 
@@ -1862,13 +1870,13 @@ void gl_init() {
     int99CallbackSize=GL_FUNC_COUNT;
 
 #undef GL_FUNCTION
-#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) gl_callback[func] = glcommon_gl##func;
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) gl_callback[func] = glcommon_gl##func;
 
 #undef GL_FUNCTION_CUSTOM
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS) gl_callback[func] = glcommon_gl##func;
 
 #undef GL_EXT_FUNCTION
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) gl_callback[func] = glcommon_gl##func;
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) gl_callback[func] = glcommon_gl##func;
 
 #include "glfunctions.h"
        

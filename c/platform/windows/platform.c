@@ -317,7 +317,7 @@ void seg_mapper(struct Memory* memory, U32 address) ;
 int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) {
-        U32 address = getHostAddress(currentThread->process->memory, ep->ExceptionRecord->ExceptionInformation[1]);
+        U32 address = getHostAddress(currentThread->process->memory, (void*)ep->ExceptionRecord->ExceptionInformation[1]);
         if (currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
             DWORD oldProtect;
             U32 page = address>>PAGE_SHIFT;

@@ -15,13 +15,13 @@ void glExtensionsLoaded() {
     glFunctionMap = pblMapNewHashMap();
 
 #undef GL_FUNCTION
-#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) glIsLoaded[func]="gl"#func;
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) glIsLoaded[func]="gl"#func;
 
 #undef GL_FUNCTION_CUSTOM
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS) glIsLoaded[func]="gl"#func;
 
 #undef GL_EXT_FUNCTION
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST) if (ext_gl##func) glIsLoaded[func]="gl"#func;
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) if (ext_gl##func) glIsLoaded[func]="gl"#func;
 
 #include "glfunctions.h"
     for (i=0;i<GL_FUNC_COUNT;i++) {
