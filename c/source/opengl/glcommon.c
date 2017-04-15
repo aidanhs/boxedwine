@@ -137,7 +137,7 @@ GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, 
 GLvoid** bufferpp;
 U32 bufferpp_len;
 
-GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count) {
+GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesPerCount) {
     U32 i;
 
     if (bufferpp && bufferpp_len<count) {
@@ -154,18 +154,18 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count) {
     return bufferpp;
 }
 
-GLvoid* marshalp(struct CPU* cpu, U32 buffer) {
+GLvoid* marshalp(struct CPU* cpu, U32 instance, U32 buffer, U32 len) {
     if (buffer == 0)
         return NULL;
     return (GLvoid*)getPhysicalAddress(cpu->memory, buffer);
 }
 
-#define marshalVetextPointer(cpu, size, type, stride, ptr) marshalp(cpu, ptr)    
-#define marshalNormalPointer(cpu, type, stride, ptr) marshalp(cpu, ptr)    
-#define marshalColorPointer(cpu, size, type, stride, ptr) marshalp(cpu, ptr)    
-#define marshalIndexPointer(cpu, type, stride, ptr) marshalp(cpu, ptr)    
-#define marshalTexCoordPointer(cpu, size, type, stride, ptr) marshalp(cpu, ptr)    
-#define marshalEdgeFlagPointer(cpu, stride, ptr) marshalp(cpu, ptr)    
+#define marshalVetextPointer(cpu, size, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalNormalPointer(cpu, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalColorPointer(cpu, size, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalIndexPointer(cpu, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalTexCoordPointer(cpu, size, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalEdgeFlagPointer(cpu, stride, ptr) marshalp(cpu, 0, ptr, 0)
 
 // this won't marshal the data, but rather map it into the address space, reserving "size" amount of address space
 U32 marshalBackp(struct CPU* cpu, GLvoid* buffer, U32 size) {
@@ -965,6 +965,15 @@ int getSize(GLenum pname) {
 #ifdef GL_MINOR_VERSION
       case GL_MINOR_VERSION:
 #endif
+      case 0x90bc: // GL_MIN_MAP_BUFFER_ALIGNMENT
+      case 0x8a28: // GL_UNIFORM_BUFFER_BINDING
+      case 0x8a29: // GL_UNIFORM_BUFFER_START
+      case 0x8a2a: // GL_UNIFORM_BUFFER_SIZE
+      case 0x8a2b: // GL_MAX_VERTEX_UNIFORM_BLOCKS
+      case 0x8a2c: // GL_MAX_GEOMETRY_UNIFORM_BLOCKS
+      case 0x8a2d: // GL_MAX_FRAGMENT_UNIFORM_BLOCKS
+      case 0x8a2e: // GL_MAX_COMBINED_UNIFORM_BLOCKS
+      case 0x8a2f: // GL_MAX_UNIFORM_BUFFER_BINDINGS
         return 1;
       case GL_DEPTH_BOUNDS_EXT:
       case GL_DEPTH_RANGE:
@@ -1589,7 +1598,8 @@ U32 marshalBackp(struct CPU* cpu, GLvoid* buffer, U32 size) {
     return 0;
 }
 
-GLvoid* marshalp(struct CPU* cpu, U32 buffer) {
+// instance is in the instance number within the function, so if the same function calls this 3 times, each call will have a difference instance
+GLvoid* marshalp(struct CPU* cpu, U32 instance, U32 buffer, U32 len) {
     if (buffer == 0)
         return NULL;
     return (GLvoid*)getPhysicalAddress(cpu->memory, buffer);
@@ -1605,9 +1615,37 @@ GLsync marshalSync(struct CPU* cpu, U32 sync) {
     return 0;
 }
 
-GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count) {
-    klog("marshalpp not implemented");
-    return 0;
+GLvoid** bufferpp;
+U32 bufferpp_len;
+
+GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesPerCount) {
+    U32 i;
+
+    if (bufferpp && bufferpp_len<count) {
+        kfree(bufferpp, KALLOC_OPENGL);
+        bufferpp=0;
+    }
+    if (!bufferpp) {
+        bufferpp = (GLvoid**)kalloc(sizeof(GLvoid*)*count, KALLOC_OPENGL);
+        bufferpp_len = count;
+    }
+    for (i=0;i<count;i++) {
+        U32 len = 0;
+        U32 p = readd(MMU_PARAM_CPU buffer+i*4);
+        if (sizes) {
+            U32 address = readd(MMU_PARAM_CPU sizes+i*4);
+            len = readd(MMU_PARAM_CPU address);
+        }
+        if (bytesPerCount) {
+            if (bytesPerCount==-1 && len==0) {
+                len = strlen(getNativeString(MMU_PARAM_CPU p));
+            } else {
+                len*=bytesPerCount;
+            }
+        }
+        bufferpp[i] = marshalp(cpu, i, p, len);
+    }
+    return bufferpp;
 }
 
 void* marshalunhandled(const char* func, const char* param, struct CPU* cpu, U32 address) {
