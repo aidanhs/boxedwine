@@ -153,6 +153,7 @@
         <script type='text/javascript'>
         var AUTO_RUN = true;
         var SOUND_ENABLED = true;
+        var ZIP_ENABLED = true;
         var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
         var SHOW_UPLOAD_DOWNLOAD = false;
         var RETRIEVE_REMOTE_DLL_FILES = false;
@@ -169,7 +170,7 @@
         var WorkingDir = getWorkingDirectory(); //MANUAL:"";
         var retrieveDlls = getRetrieveDlls();
         var isSoundEnabled = getSound();
-
+        var isZipEnabled = getZipParameter();
         var isRunning = false;
         var uniqueDirs = {};
         var timer = null;
@@ -227,7 +228,11 @@
             var retrieveEnabled =  getParameter("remote");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
                 retrieveEnabled = RETRIEVE_REMOTE_DLL_FILES;
-            }else if(!(retrieveEnabled == "true" || retrieveEnabled == "false")){
+            }else if(retrieveEnabled == "true") {
+                retrieveEnabled = true;
+            }else if(retrieveEnabled == "false"){
+                retrieveEnabled = false;
+            }else{
                 retrieveEnabled = RETRIEVE_REMOTE_DLL_FILES;
             }
             console.log("setting retrieve remote Dlls to: "+retrieveEnabled);
@@ -237,11 +242,29 @@
             var isSoundEnabled =  getParameter("sound");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
                 isSoundEnabled = SOUND_ENABLED;
-            }else if(!(isSoundEnabled == "true" || isSoundEnabled == "false")){
+            }else if(isSoundEnabled == "true") {
+                isSoundEnabled = true;
+            }else if(isSoundEnabled == "false"){
+                isSoundEnabled = false;
+            }else{
                 isSoundEnabled = SOUND_ENABLED;
             }
             console.log("setting sound to: "+isSoundEnabled);
             return isSoundEnabled;
+        }
+        function getZipParameter(){
+            var isZipEnabled =  getParameter("zip");
+            if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
+                isZipEnabled = ZIP_ENABLED;
+            }else if(isZipEnabled == "true") {
+                isZipEnabled = true;
+            }else if(isZipEnabled == "false"){
+                isZipEnabled = false;
+            }else{
+                isZipEnabled = ZIP_ENABLED;
+            }
+            console.log("setting use of internal boxedwine zip filesystem to: "+isZipEnabled);
+            return isZipEnabled;
         }
         function getFileDirectory(){
 
@@ -384,9 +407,14 @@
                         if(e){
                             console.log(e);
                         }
-                        Module.FS_createDataFile("/", rootZipFile, contents, true, true);
-                        contents = null;
-                        buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs);
+                        if(isZipEnabled) {
+                            Module.FS_createDataFile("/", rootZipFile, contents, true, true);
+                            contents = null;
+                            buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs);
+                        }else{
+                            var zipfs = new BrowserFS.FileSystem.ZipFS(new Buffer(contents));
+                            buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs, zipfs);
+                        }
                         rootMfs = null;
                     });
                 });
@@ -459,15 +487,18 @@
                 });
             });
         }
-
-        function buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs)
+        function buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs, zipfs)
         {
             FS.createFolder(FS.root, 'root', true, true);
-            var mainfs = new BrowserFS.FileSystem.InMemory();
-            createFolders(mainfs, dirPrefix.substring(ROOT.length).split("/"));
-            createFolders(mainfs, DLL_DIRECTORY.substring(ROOT.length).split("/"));
-
-            //i do not understand why i need the overlay
+            var mainfs = null;
+            if(isZipEnabled) {
+                mainfs = new BrowserFS.FileSystem.InMemory();
+                createFolders(mainfs, dirPrefix.substring(ROOT.length).split("/"));
+                createFolders(mainfs, DLL_DIRECTORY.substring(ROOT.length).split("/"));
+            }else{
+                mainfs = zipfs;
+            }
+            //i do not understand why i need the overlay when isZipEnabled = true
             var rootOverlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), mainfs);
             rootOverlay.initialize(function callback(e3){
                 if(e3){
@@ -505,7 +536,11 @@
         {
             var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
             var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-            mfs.mount('/root', rootFS);
+            if(isZipEnabled) {
+                mfs.mount('/root', rootFS);
+            }else{
+                mfs.mount('/', rootFS);
+            }
             mfs.mount(dirPrefixWithoutEndSlash, homeFS);
             if(dllFS != null) {
                 mfs.mount(DLL_DIRECTORY, dllFS);
@@ -518,7 +553,6 @@
                 recursiveCopy(extraFSs[i], extraZipFiles[i], '/');
             }
             extraFSs = null;
-
 
             if(SHOW_UPLOAD_DOWNLOAD){
                 document.getElementById('uploadbtn').style.display = "";
@@ -540,11 +574,10 @@
                     if(isSoundEnabled){
                         soundToggle.checked = true;
                     }
-                    //fixme: currently turning sound off breaks build. document.getElementById('sound-checkbox').style.display = "";
+                    document.getElementById('sound-checkbox').style.display = "";
                 }
             }        
         }
-
         function createFolders(mainfs, folders)
         {
             var directory = "";
@@ -800,11 +833,15 @@
             return false;
         }
         function getEmulatorParams() {
-            var params = ["-root", "/root", "-m", getMemoryAllocation(), "-zip", rootZipFile];
+            var params = ["-root", "/root", "-m", getMemoryAllocation()];
+            if(isZipEnabled) {
+                params.push("-zip");
+                params.push(rootZipFile);
+            }
             //fixme: currently turning sound off breaks build.
-            //if(!isSoundEnabled){
-            //    params.push("-nosound");
-            //}
+            if(!isSoundEnabled){
+                params.push("-nosound");
+            }
             if(WorkingDir.length > 0){
                 params.push("-w");
                 params.push(WorkingDir);
