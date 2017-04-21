@@ -964,7 +964,7 @@ U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size) {
         memory->nativeAddressStart = ((U8*)hostAddress - ((U32)hostAddress & 0xFFF)) - 0x08000000;
         for (i=0;i<0x10000;i++) {
             memory->mmu[i+ADDRESS_PROCESS_NATIVE] = &softNativePage;
-            memory->ramPage[i+ADDRESS_PROCESS_NATIVE] = (U8*)memory->nativeAddressStart + PAGE_SIZE*i;
+            memory->ramPage[i+ADDRESS_PROCESS_NATIVE] = PAGE_SIZE*i;
         }
         return mapNativeMemory(memory, hostAddress, size);
     }
