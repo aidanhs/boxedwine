@@ -51,6 +51,5 @@ INLINE U32 getHostAddress(MMU_ARG void* address) {
 void reserveNativeMemory(struct Memory* memory);
 void releaseNativeMemory(struct Memory* memory);
 void clearPageFromBlockCache(struct Memory* memory, U32 page);
-U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size);
 #endif
 #endif

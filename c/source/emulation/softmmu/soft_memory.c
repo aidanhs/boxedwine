@@ -31,6 +31,7 @@
 #include "kobject.h"
 #include "kobjectaccess.h"
 #include "soft_ram.h"
+#include "soft_native_page.h"
 
 #include <string.h>
 #include <setjmp.h>
@@ -341,6 +342,8 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
                 from->write[i] = 0;
             }
             incrementRamRef(memory->ramPage[i]);
+        } else if (page == &softNativePage) {
+            kpanic("softNativePage doesn't support clone");
         } else if (page == &ramCopyOnWritePage) {
             incrementRamRef(memory->ramPage[i]);
         } else if (IS_PAGE_SHARED(memory->flags[i])) {
@@ -489,7 +492,7 @@ void protectPage(struct Memory* memory, U32 i, U32 permissions) {
             memory->read[i] = TO_TLB(memory->ramPage[i], i << PAGE_SHIFT);
             memory->write[i] = 0;
         }
-    } else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage || page==&codePage) {
+    } else if (page==&ramCopyOnWritePage || page == &ramOnDemandPage || page==&ramOnDemandFilePage || page==&codePage || page==&softNativePage) {
     } else {
         kpanic("syscall_mprotect unknown page type");
     }
@@ -948,4 +951,27 @@ void unmapMappable(struct Memory* memory, U32 page, U32 pageCount) {
     }
 }
 
+U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size) {
+    U32 result = 0;
+
+    if (memory->nativeAddressStart && hostAddress>=memory->nativeAddressStart && (U8*)hostAddress+size<(U8*)memory->nativeAddressStart+0x10000000) {
+        return (ADDRESS_PROCESS_NATIVE<<PAGE_SHIFT) + ((U8*)hostAddress-(U8*)memory->nativeAddressStart);
+    }
+    if (!memory->nativeAddressStart) {
+        U32 i;
+
+        // just assume we are in the middle, hopefully OpenGL won't want more than 128MB before or after this initial address
+        memory->nativeAddressStart = ((U8*)hostAddress - ((U32)hostAddress & 0xFFF)) - 0x08000000;
+        for (i=0;i<0x10000;i++) {
+            memory->mmu[i+ADDRESS_PROCESS_NATIVE] = &softNativePage;
+            memory->ramPage[i+ADDRESS_PROCESS_NATIVE] = (U8*)memory->nativeAddressStart + PAGE_SIZE*i;
+        }
+        return mapNativeMemory(memory, hostAddress, size);
+    }
+    // hopefully this won't happen much, because it will leak address space
+    if (!findFirstAvailablePage(memory, 0xD0000000, (size+PAGE_MASK)>>PAGE_SHIFT, &result, FALSE)) {
+        kpanic("mapNativeMemory failed to map address: size=%d", size);
+    }
+    return result;
+}
 #endif

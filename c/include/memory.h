@@ -70,6 +70,8 @@ void unmapMappable(struct Memory* memory, U32 page, U32 pageCount);
 void* allocMappable(struct Memory* memory, U32 pageCount);
 void freeMappable(struct Memory* memory, void* address);
 
+U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size);
+
 // values in the upper byte of data
 #define PAGE_READ 0x01
 #define PAGE_WRITE 0x02

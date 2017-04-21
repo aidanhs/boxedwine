@@ -226,6 +226,9 @@
     <ClCompile Include="..\..\..\..\source\opengl\glext.c">
       <Filter>opengl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_native_page.c">
+      <Filter>source\emulation\softmmu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -497,6 +500,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\opengl\glfunctions_ext.h">
       <Filter>opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_native_page.h">
+      <Filter>source\emulation\softmmu</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -92,6 +92,7 @@
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -261,6 +262,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\shift_op.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_file_map.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_memory.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_native_page.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_page.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_ram.h" />
     <ClInclude Include="..\..\..\..\source\emulation\strings.h" />
@@ -300,6 +302,7 @@
     <ClCompile Include="..\..\..\..\source\emulation\shift.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_file_map.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_memory.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_native_page.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_ram.c" />
     <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
     <ClCompile Include="..\..\..\..\source\emulation\strings.c" />

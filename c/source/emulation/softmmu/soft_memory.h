@@ -31,6 +31,7 @@ struct Memory {
     U32 read[NUMBER_OF_PAGES];
     U32 write[NUMBER_OF_PAGES];
     U32 ramPage[NUMBER_OF_PAGES];
+    void* nativeAddressStart;
 #ifdef LOG_OPS
     U32 log;
 #endif

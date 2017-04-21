@@ -137,6 +137,8 @@ GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, 
 GLvoid** bufferpp;
 U32 bufferpp_len;
 
+#define getDataSize(x) 1
+
 GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesPerCount) {
     U32 i;
 
@@ -1026,8 +1028,8 @@ int getSize(GLenum pname) {
           return results;
       }      
       default:
-          kpanic("Unknow pname for get: %d", pname);
-          return 0;
+          klog("Unknow pname for get: %d", pname);
+          return 1;
    }
 }
 
@@ -1594,14 +1596,19 @@ GLvoid* marshalEdgeFlagPointer(struct CPU* cpu, GLsizei stride, U32 ptr) {
 }
 
 U32 marshalBackp(struct CPU* cpu, GLvoid* buffer, U32 size) { 
-    klog("marshalBackp not implemented");
-    return 0;
+    return mapNativeMemory(MMU_PARAM_CPU buffer, size);
 }
 
 // instance is in the instance number within the function, so if the same function calls this 3 times, each call will have a difference instance
 GLvoid* marshalp(struct CPU* cpu, U32 instance, U32 buffer, U32 len) {
     if (buffer == 0)
         return NULL;
+    if ((buffer & 0xFFF) + len > 0xFFF) {
+        int ii=0;
+        return marshalub(cpu, buffer, len);
+    }
+    // :TODO: a lot of work needs to be done here, marshalp needs to be removed and instead marshal the correct type of array, like marshalf.
+    // This is also important to make things work with UNALIGNED_MEMORY
     return (GLvoid*)getPhysicalAddress(cpu->memory, buffer);
 }
 
@@ -1630,15 +1637,15 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
         bufferpp_len = count;
     }
     for (i=0;i<count;i++) {
-        U32 len = 0;
+        S32 len = 0;
         U32 p = readd(MMU_PARAM_CPU buffer+i*4);
         if (sizes) {
             U32 address = readd(MMU_PARAM_CPU sizes+i*4);
-            len = readd(MMU_PARAM_CPU address);
+            len = (S32)readd(MMU_PARAM_CPU address);
         }
         if (bytesPerCount) {
-            if (bytesPerCount==-1 && len==0) {
-                len = strlen(getNativeString(MMU_PARAM_CPU p));
+            if (bytesPerCount==-1 && len<=0) {
+                len = strlen(getNativeString(MMU_PARAM_CPU p))+1;
             } else {
                 len*=bytesPerCount;
             }
@@ -1895,7 +1902,7 @@ void OPENGL_CALL_TYPE debugMessageCallback(GLenum source, GLenum type, GLuint id
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
 
 #undef GL_EXT_FUNCTION
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(ext_gl##func)ARGS; POST GL_LOG LOG;} 
+#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) void glcommon_gl##func(struct CPU* cpu) { if (!ext_gl##func) kpanic("%s is NULL", ext_gl##func); {PRE GL_FUNC(ext_gl##func)ARGS; POST GL_LOG LOG;}} 
 
 #include "glfunctions.h"
 
