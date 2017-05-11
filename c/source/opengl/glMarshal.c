@@ -660,3 +660,28 @@ void marshalBackhandle(struct CPU* cpu, U32 address, GLhandleARB* buffer, U32 co
         address+=4;
     }
 }
+
+GLubyte* marshalGetConvolutionFilter(struct CPU* cpu, U32 target, U32 format, U32 type, U32 image) {
+    GLint width = 0;
+    GLint height = 0;
+    U32 len = 0;
+
+    if (PIXEL_PACK_BUFFER())
+        return (GLubyte*)image;
+    if (ext_glGetConvolutionParameteriv) {
+        ext_glGetConvolutionParameteriv(target, GL_CONVOLUTION_WIDTH, &width);
+        ext_glGetConvolutionParameteriv(target, GL_CONVOLUTION_WIDTH, &height);
+    }
+    len = get_bytes_per_pixel(format, type)*width*height;
+    return marshalub(cpu, image, len);
+}
+
+GLint marshalGet(GLenum param) {
+    GLint result = 0;
+    glGetIntegerv(param, &result);
+    return result;
+}
+
+GLboolean PIXEL_PACK_BUFFER() {
+    return marshalGet(GL_PIXEL_PACK_BUFFER)!=0;
+}

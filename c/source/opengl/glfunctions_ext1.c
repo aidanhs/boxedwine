@@ -4956,8 +4956,8 @@ void glcommon_glGetColorTable(struct CPU* cpu) {
     if (!ext_glGetColorTable)
         kpanic("ext_glGetColorTable is NULL");
     {
-    static GLubyte* p;static U32 plen;U32 colors=components_in_format(ARG2)*marshalGetColorTableWidth(ARG1);U32 len=colors*getDataSize(ARG3);if (plen<len){if (p) kfree(p,KALLOC_OPENGL);p=kalloc(len, KALLOC_OPENGL);plen=len;}GL_FUNC(ext_glGetColorTable)(ARG1, ARG2, ARG3, p);
-    marshalBackType(cpu, ARG3, colors, p, ARG4);
+    static GLubyte* buffer;static U32 bufferLen; GLubyte* p; GLboolean b=PIXEL_PACK_BUFFER(); U32 colors; if (b)p=(GLubyte*)ARG4; else {U32 len;colors=components_in_format(ARG2)*marshalGetColorTableWidth(ARG1);len=colors*getDataSize(ARG3);if (bufferLen<len){if (buffer) kfree(buffer,KALLOC_OPENGL);buffer=kalloc(len, KALLOC_OPENGL);bufferLen=len;} p=buffer;}GL_FUNC(ext_glGetColorTable)(ARG1, ARG2, ARG3, p);
+    if (!b) marshalBackType(cpu, ARG3, colors, p, ARG4);
     GL_LOG ("glGetColorTable GLenum target=%d, GLenum format=%d, GLenum type=%d, void* table=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -4965,7 +4965,7 @@ void glcommon_glGetColorTableEXT(struct CPU* cpu) {
     if (!ext_glGetColorTableEXT)
         kpanic("ext_glGetColorTableEXT is NULL");
     {
-    static GLubyte* p;static U32 plen;U32 colors=components_in_format(ARG2)*marshalGetColorTableWidth(ARG1);U32 len=colors*getDataSize(ARG3);if (plen<len){if (p) kfree(p,KALLOC_OPENGL);p=kalloc(len, KALLOC_OPENGL);plen=len;}GL_FUNC(ext_glGetColorTableEXT)(ARG1, ARG2, ARG3, p);
+    static GLubyte* p;static U32 plen;U32 colors=components_in_format(ARG2)*marshalGetColorTableWidthEXT(ARG1);U32 len=colors*getDataSize(ARG3);if (plen<len){if (p) kfree(p,KALLOC_OPENGL);p=kalloc(len, KALLOC_OPENGL);plen=len;}GL_FUNC(ext_glGetColorTableEXT)(ARG1, ARG2, ARG3, p);
     marshalBackType(cpu, ARG3, colors, p, ARG4);
     GL_LOG ("glGetColorTableEXT GLenum target=%d, GLenum format=%d, GLenum type=%d, void* data=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
@@ -4974,7 +4974,8 @@ void glcommon_glGetColorTableParameterfv(struct CPU* cpu) {
     if (!ext_glGetColorTableParameterfv)
         kpanic("ext_glGetColorTableParameterfv is NULL");
     {
-    GL_FUNC(ext_glGetColorTableParameterfv)(ARG1, ARG2, (GLfloat*)marshalp(cpu, 0, ARG3, 0));
+    GLfloat* p1=marshalf(cpu, ARG3, 1);GL_FUNC(ext_glGetColorTableParameterfv)(ARG1, ARG2, p1);
+    marshalBackf(cpu, ARG3, p1, 1);
     GL_LOG ("glGetColorTableParameterfv GLenum target=%d, GLenum pname=%d, GLfloat* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -4982,7 +4983,8 @@ void glcommon_glGetColorTableParameterfvEXT(struct CPU* cpu) {
     if (!ext_glGetColorTableParameterfvEXT)
         kpanic("ext_glGetColorTableParameterfvEXT is NULL");
     {
-    GL_FUNC(ext_glGetColorTableParameterfvEXT)(ARG1, ARG2, (GLfloat*)marshalp(cpu, 0, ARG3, 0));
+    GLfloat* p1=marshalf(cpu, ARG3, 1);GL_FUNC(ext_glGetColorTableParameterfvEXT)(ARG1, ARG2, p1);
+    marshalBackf(cpu, ARG3, p1, 1);
     GL_LOG ("glGetColorTableParameterfvEXT GLenum target=%d, GLenum pname=%d, GLfloat* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -4990,7 +4992,8 @@ void glcommon_glGetColorTableParameterfvSGI(struct CPU* cpu) {
     if (!ext_glGetColorTableParameterfvSGI)
         kpanic("ext_glGetColorTableParameterfvSGI is NULL");
     {
-    GL_FUNC(ext_glGetColorTableParameterfvSGI)(ARG1, ARG2, (GLfloat*)marshalp(cpu, 0, ARG3, 0));
+    GLfloat* p1=marshalf(cpu, ARG3, 1);GL_FUNC(ext_glGetColorTableParameterfvSGI)(ARG1, ARG2, p1);
+    marshalBackf(cpu, ARG3, p1, 1);
     GL_LOG ("glGetColorTableParameterfvSGI GLenum target=%d, GLenum pname=%d, GLfloat* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -4998,7 +5001,8 @@ void glcommon_glGetColorTableParameteriv(struct CPU* cpu) {
     if (!ext_glGetColorTableParameteriv)
         kpanic("ext_glGetColorTableParameteriv is NULL");
     {
-    GL_FUNC(ext_glGetColorTableParameteriv)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetColorTableParameteriv)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetColorTableParameteriv GLenum target=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5006,7 +5010,8 @@ void glcommon_glGetColorTableParameterivEXT(struct CPU* cpu) {
     if (!ext_glGetColorTableParameterivEXT)
         kpanic("ext_glGetColorTableParameterivEXT is NULL");
     {
-    GL_FUNC(ext_glGetColorTableParameterivEXT)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetColorTableParameterivEXT)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetColorTableParameterivEXT GLenum target=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5014,7 +5019,8 @@ void glcommon_glGetColorTableParameterivSGI(struct CPU* cpu) {
     if (!ext_glGetColorTableParameterivSGI)
         kpanic("ext_glGetColorTableParameterivSGI is NULL");
     {
-    GL_FUNC(ext_glGetColorTableParameterivSGI)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetColorTableParameterivSGI)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetColorTableParameterivSGI GLenum target=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5022,7 +5028,8 @@ void glcommon_glGetColorTableSGI(struct CPU* cpu) {
     if (!ext_glGetColorTableSGI)
         kpanic("ext_glGetColorTableSGI is NULL");
     {
-    GL_FUNC(ext_glGetColorTableSGI)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    static GLubyte* p;static U32 plen;U32 colors=components_in_format(ARG2)*marshalGetColorTableWidthSGI(ARG1);U32 len=colors*getDataSize(ARG3);if (plen<len){if (p) kfree(p,KALLOC_OPENGL);p=kalloc(len, KALLOC_OPENGL);plen=len;}GL_FUNC(ext_glGetColorTableSGI)(ARG1, ARG2, ARG3, p);
+    marshalBackType(cpu, ARG3, colors, p, ARG4);
     GL_LOG ("glGetColorTableSGI GLenum target=%d, GLenum format=%d, GLenum type=%d, void* table=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5030,7 +5037,8 @@ void glcommon_glGetCombinerInputParameterfvNV(struct CPU* cpu) {
     if (!ext_glGetCombinerInputParameterfvNV)
         kpanic("ext_glGetCombinerInputParameterfvNV is NULL");
     {
-    GL_FUNC(ext_glGetCombinerInputParameterfvNV)(ARG1, ARG2, ARG3, ARG4, (GLfloat*)marshalp(cpu, 0, ARG5, 0));
+    GLfloat* p1=marshalf(cpu, ARG5, 1);GL_FUNC(ext_glGetCombinerInputParameterfvNV)(ARG1, ARG2, ARG3, ARG4, p1);
+    marshalBackf(cpu, ARG5, p1, 1);
     GL_LOG ("glGetCombinerInputParameterfvNV GLenum stage=%d, GLenum portion=%d, GLenum variable=%d, GLenum pname=%d, GLfloat* params=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -5038,7 +5046,8 @@ void glcommon_glGetCombinerInputParameterivNV(struct CPU* cpu) {
     if (!ext_glGetCombinerInputParameterivNV)
         kpanic("ext_glGetCombinerInputParameterivNV is NULL");
     {
-    GL_FUNC(ext_glGetCombinerInputParameterivNV)(ARG1, ARG2, ARG3, ARG4, (GLint*)marshalp(cpu, 0, ARG5, 0));
+    GLint* p1=marshali(cpu, ARG5, 1);GL_FUNC(ext_glGetCombinerInputParameterivNV)(ARG1, ARG2, ARG3, ARG4, p1);
+    marshalBacki(cpu, ARG5, p1, 1);
     GL_LOG ("glGetCombinerInputParameterivNV GLenum stage=%d, GLenum portion=%d, GLenum variable=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -5046,7 +5055,8 @@ void glcommon_glGetCombinerOutputParameterfvNV(struct CPU* cpu) {
     if (!ext_glGetCombinerOutputParameterfvNV)
         kpanic("ext_glGetCombinerOutputParameterfvNV is NULL");
     {
-    GL_FUNC(ext_glGetCombinerOutputParameterfvNV)(ARG1, ARG2, ARG3, (GLfloat*)marshalp(cpu, 0, ARG4, 0));
+    GLfloat* p1=marshalf(cpu, ARG4, 1);GL_FUNC(ext_glGetCombinerOutputParameterfvNV)(ARG1, ARG2, ARG3, p1);
+    marshalBackf(cpu, ARG4, p1, 1);
     GL_LOG ("glGetCombinerOutputParameterfvNV GLenum stage=%d, GLenum portion=%d, GLenum pname=%d, GLfloat* params=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5054,7 +5064,8 @@ void glcommon_glGetCombinerOutputParameterivNV(struct CPU* cpu) {
     if (!ext_glGetCombinerOutputParameterivNV)
         kpanic("ext_glGetCombinerOutputParameterivNV is NULL");
     {
-    GL_FUNC(ext_glGetCombinerOutputParameterivNV)(ARG1, ARG2, ARG3, (GLint*)marshalp(cpu, 0, ARG4, 0));
+    GLint* p1=marshali(cpu, ARG4, 1);GL_FUNC(ext_glGetCombinerOutputParameterivNV)(ARG1, ARG2, ARG3, p1);
+    marshalBacki(cpu, ARG4, p1, 1);
     GL_LOG ("glGetCombinerOutputParameterivNV GLenum stage=%d, GLenum portion=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5079,7 +5090,17 @@ void glcommon_glGetCompressedMultiTexImageEXT(struct CPU* cpu) {
     if (!ext_glGetCompressedMultiTexImageEXT)
         kpanic("ext_glGetCompressedMultiTexImageEXT is NULL");
     {
-    GL_FUNC(ext_glGetCompressedMultiTexImageEXT)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); 
+    int count; 
+    GLvoid* p; 
+    if (b) 
+        p=(GLvoid*)ARG4; 
+    else {
+        count = marshalGetCompressedImageSizeEXT(ARG1, ARG2, ARG3)/getDataSize(ARG2); 
+        p = marshalType(cpu, ARG2, count, ARG4);
+    }
+    GL_FUNC(ext_glGetCompressedMultiTexImageEXT)(ARG1, ARG2, ARG3, p);
+    if (!b) marshalBackType(cpu, ARG2, count, p, ARG4);
     GL_LOG ("glGetCompressedMultiTexImageEXT GLenum texunit=%d, GLenum target=%d, GLint lod=%d, void* img=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }

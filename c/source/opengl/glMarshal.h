@@ -70,7 +70,12 @@ GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, 
 #define getDataSize(x) 1
 #define components_in_format(format) 0
 #define marshalGetColorTableWidth(target) 0
-
+#define marshalGetColorTableWidthEXT(target) 0
+#define marshalGetColorTableWidthSGI(target) 0
+#define marshalGetCompressedImageSizeEXT(texunit, target, level) 0
+#define marshalGetCompressedImageSizeARB(target, level) 0
+#define marshalGetCompressedImageSize(target, level) 0
+#define marshalGetCompressedTextureSizeEXT(texture, target, lod) 0
 #else
 GLboolean* marshalbool(struct CPU* cpu, U32 address, U32 count);
 GLboolean* marshal2bool(struct CPU* cpu, U32 address, U32 count);
@@ -153,6 +158,12 @@ GLvoid* marshalEdgeFlagPointer(struct CPU* cpu, GLsizei stride, U32 ptr);
 U32 getDataSize(GLenum type);
 
 U32 marshalGetColorTableWidth(U32 target);
+U32 marshalGetColorTableWidthEXT(U32 target);
+U32 marshalGetColorTableWidthSGI(U32 target);
+U32 marshalGetCompressedImageSize(GLenum target, GLint level);
+U32 marshalGetCompressedImageSizeARB(GLenum target, GLint level);
+U32 marshalGetCompressedImageSizeEXT(GLenum texunit, GLenum target, GLint level);
+U32 marshalGetCompressedTextureSizeEXT(GLuint texture, GLenum target, GLint lod);
 GLint components_in_format(GLenum format );
 #endif
 
@@ -190,6 +201,8 @@ U32 getMap1Count(GLenum target);
 U32 getMap2Count(GLenum target);
 GLint glcommon_glGetPixelMap_size(GLenum map);
 GLint get_bytes_per_pixel(GLenum format, GLenum type);
+GLint marshalGet(GLenum param);
+GLboolean PIXEL_PACK_BUFFER();
 
 void OPENGL_CALL_TYPE debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam);
 

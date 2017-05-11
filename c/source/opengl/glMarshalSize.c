@@ -798,6 +798,52 @@ U32 marshalGetColorTableWidth(U32 target) {
     return i;
 }
 
+#ifndef GL_COLOR_TABLE_WIDTH_EXT
+#define GL_COLOR_TABLE_WIDTH_EXT          0x80D9
+#endif
+
+U32 marshalGetColorTableWidthEXT(U32 target) {
+    U32 i=0;
+    if (ext_glGetColorTableParameterivEXT)
+        ext_glGetColorTableParameterivEXT(target, GL_COLOR_TABLE_WIDTH_EXT, &i);
+    return i;
+}
+
+U32 marshalGetColorTableWidthSGI(U32 target) {
+    U32 i=0;
+    if (ext_glGetColorTableParameterivSGI)
+        ext_glGetColorTableParameterivSGI(target, GL_COLOR_TABLE_WIDTH_SGI, &i);
+    return i;
+}
+
+U32 marshalGetCompressedImageSize(GLenum target, GLint level) {
+    U32 i=0;
+    if (ext_glGetTextureLevelParameteriv)
+        ext_glGetTextureLevelParameteriv(target, level, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &i);
+    return i;
+}
+
+U32 marshalGetCompressedImageSizeARB(GLenum target, GLint level) {
+    U32 i=0;
+    if (ext_glGetTextureLevelParameteriv)
+        ext_glGetTextureLevelParameteriv(target, level, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &i);
+    return i;
+}
+
+U32 marshalGetCompressedImageSizeEXT(GLenum texunit, GLenum target, GLint level) {
+    U32 i=0;
+    if (ext_glGetMultiTexLevelParameterivEXT)
+        ext_glGetMultiTexLevelParameterivEXT(texunit, target, level, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &i);
+    return i;
+}
+
+U32 marshalGetCompressedTextureSizeEXT(GLuint texture, GLenum target, GLint lod) {
+    U32 i=0;
+    if (ext_glGetTextureLevelParameterivEXT)
+        ext_glGetTextureLevelParameterivEXT(texture, target, lod, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &i);
+    return i;
+}
+
 GLsizei floatPerTransformList(GLenum transformType)
 {
     switch (transformType) {

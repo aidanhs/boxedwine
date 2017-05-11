@@ -131,15 +131,19 @@ void glcommon_glGetTexImage(struct CPU* cpu) {
     GLenum type = ARG4;
 
     GLvoid* pixels;
+    GLboolean b = PIXEL_PACK_BUFFER();
 
     GL_LOG("glGetTexImage GLenum target=%d, GLint level=%d, GLenum format=%d, GLenum type=%d, GLvoid *pixels=%.08x", ARG1, ARG2, ARG3, ARG4, ARG5);
-    
-    GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
-    GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
-
-    pixels = marshalPixels(cpu, target == GL_TEXTURE_3D, width, height, 1, format, type, ARG5);
+    if (b) {
+        pixels = (GLvoid*)ARG5;
+    } else {
+        GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_WIDTH, &width);
+        GL_FUNC(glGetTexLevelParameteriv)(target, level, GL_TEXTURE_HEIGHT, &height);
+        pixels = marshalPixels(cpu, target == GL_TEXTURE_3D, width, height, 1, format, type, ARG5);
+    }
     GL_FUNC(glGetTexImage)(target, level, format, type, pixels);
-    marshalBackPixels(cpu, target == GL_TEXTURE_3D, width, height, 1, format, type, ARG5, pixels);
+    if (!b)
+        marshalBackPixels(cpu, target == GL_TEXTURE_3D, width, height, 1, format, type, ARG5, pixels);
 }
 
 U32 isMap2(GLenum target) {
@@ -310,12 +314,17 @@ void glcommon_glReadPixels(struct CPU* cpu) {
     GLsizei height = ARG4;
     GLenum format = ARG5;
     GLenum type = ARG6;
+    GLboolean b = PIXEL_PACK_BUFFER();
 
     GL_LOG("glReadPixels GLint x=%d, GLint y=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLenum type=%d, GLvoid *pixels=%.08x", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
 
-    pixels = marshalPixels(cpu, 0, width, height, 1, format, type, ARG7);
+    if (b)
+        pixels = (GLvoid*)ARG7;
+    else
+        pixels = marshalPixels(cpu, 0, width, height, 1, format, type, ARG7);
     GL_FUNC(glReadPixels)(ARG1, ARG2, width, height, format, type, pixels);
-    marshalBackPixels(cpu, 0, width, height, 1, format, type, ARG7, pixels);
+    if (!b)
+        marshalBackPixels(cpu, 0, width, height, 1, format, type, ARG7, pixels);
 }
 
 void OPENGL_CALL_TYPE debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
