@@ -111,7 +111,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAS_64BIT_MMU;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BOXEDWINE64;HAS_64BIT_MMU;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -271,6 +271,7 @@
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glfunctions.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glfunctions_ext.h" />
+    <ClInclude Include="..\..\..\..\source\opengl\glMarshal.h" />
     <ClInclude Include="..\..\..\..\source\sdl\sdlopengl.h" />
     <ClInclude Include="..\..\..\..\source\sdl\sdlwindow.h" />
     <ClInclude Include="..\..\..\..\source\sdl\wnd.h" />
@@ -342,6 +343,14 @@
     <ClCompile Include="..\..\..\..\source\opengl\glext.c">
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Default</InlineFunctionExpansion>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\glfunctions_ext1.c" />
+    <ClCompile Include="..\..\..\..\source\opengl\glfunctions_ext2.c" />
+    <ClCompile Include="..\..\..\..\source\opengl\glfunctions_ext3.c" />
+    <ClCompile Include="..\..\..\..\source\opengl\glMarshal.c">
+      <PreprocessToFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreprocessToFile>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\opengl\glMarshalSize.c" />
+    <ClCompile Include="..\..\..\..\source\opengl\glMarshalVertex.c" />
     <ClCompile Include="..\..\..\..\source\opengl\sdl\sdlgl.c" />
     <ClCompile Include="..\..\..\..\source\sdl\main.c" />
     <ClCompile Include="..\..\..\..\source\sdl\sdlopengl.c" />

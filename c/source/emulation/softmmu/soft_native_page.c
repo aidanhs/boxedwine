@@ -1,6 +1,8 @@
 #include "soft_page.h"
 #include "soft_memory.h"
 
+#ifndef HAS_64BIT_MMU
+
 static U8 native_readb(struct Memory* memory, U32 address) {	
     U8* result = (U8*)memory->nativeAddressStart+memory->ramPage[address >> PAGE_SHIFT]+(address & PAGE_MASK);
     return *result;
@@ -63,3 +65,5 @@ static U8* native_physicalAddress(struct Memory* memory, U32 address) {
 }
 
 struct Page softNativePage = {native_readb, native_writeb, native_readw, native_writew, native_readd, native_writed, native_clear, native_physicalAddress};
+
+#endif

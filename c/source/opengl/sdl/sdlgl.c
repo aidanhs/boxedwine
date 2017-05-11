@@ -34,7 +34,7 @@ int extLoaded = 0;
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
 
 #undef GL_EXT_FUNCTION
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) ext_gl##func = (gl##func##_func)SDL_GL_GetProcAddress("gl" #func);
+#define GL_EXT_FUNCTION(func, RET, PARAMS) ext_gl##func = (gl##func##_func)SDL_GL_GetProcAddress("gl" #func);
 
 void glExtensionsLoaded();
 

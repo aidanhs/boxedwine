@@ -22,6 +22,18 @@
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 #include "../../tools/opengl/gldef.h"
 #include "cpu.h"
+#include <inttypes.h>
+#include "kalloc.h"
+
+#define GL_LOG klog
+//#define GL_LOG if (0) klog
+
+#ifdef BOXEDWINE_ES
+#define GL_FUNC(name) es_##name
+#include "es/esopengl.h"
+#else
+#define GL_FUNC(name) name
+#endif
 
 struct int2Float {
     union {
@@ -111,37 +123,10 @@ struct long2Double {
 
 float fARG(struct CPU* cpu, U32 arg);
 double dARG(struct CPU* cpu, int address);
-GLdouble* marshald(struct CPU* cpu, U32 address, U32 count);
-GLfloat* marshalf(struct CPU* cpu, U32 address, U32 count);
-GLint* marshali(struct CPU* cpu, U32 address, U32 count);
-GLuint* marshalui(struct CPU* cpu, U32 address, U32 count);
-GLshort* marshals(struct CPU* cpu, U32 address, U32 count);
-GLushort* marshalus(struct CPU* cpu, U32 address, U32 count);
-GLbyte* marshalb(struct CPU* cpu, U32 address, U32 count);
-GLubyte* marshalub(struct CPU* cpu, U32 address, U32 count);
-GLboolean* marshalbool(struct CPU* cpu, U32 address, U32 count);
-GLdouble* marshal2d(struct CPU* cpu, U32 address, U32 count);
-GLfloat* marshal2f(struct CPU* cpu, U32 address, U32 count);
-GLint* marshal2i(struct CPU* cpu, U32 address, U32 count);
-GLuint* marshal2ui(struct CPU* cpu, U32 address, U32 count);
-GLshort* marshal2s(struct CPU* cpu, U32 address, U32 count);
-GLushort* marshal2us(struct CPU* cpu, U32 address, U32 count);
-GLbyte* marshal2b(struct CPU* cpu, U32 address, U32 count);
-GLubyte* marshal2ub(struct CPU* cpu, U32 address, U32 count);
-GLboolean* marshal2bool(struct CPU* cpu, U32 address, U32 count);
-void marshalBackd(struct CPU* cpu, U32 address, GLdouble* buffer, U32 count);
-void marshalBackf(struct CPU* cpu, U32 address, GLfloat* buffer, U32 count);
-void marshalBacki(struct CPU* cpu, U32 address, GLint* buffer, U32 count);
-void marshalBackui(struct CPU* cpu, U32 address, GLuint* buffer, U32 count);
-void marshalBackus(struct CPU* cpu, U32 address, GLushort* buffer, U32 count);
-void marshalBacks(struct CPU* cpu, U32 address, GLshort* buffer, U32 count);
-void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count);
-void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count);
-void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count);
 
 #define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG)
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS)
-#define GL_EXT_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) typedef RET (OPENGL_CALL_TYPE *gl##func##_func)PARAMS; gl##func##_func ext_gl##func;
+#define GL_EXT_FUNCTION(func, RET, PARAMS) typedef RET (OPENGL_CALL_TYPE *gl##func##_func)PARAMS; gl##func##_func ext_gl##func;
 
 #include "glfunctions.h"
 

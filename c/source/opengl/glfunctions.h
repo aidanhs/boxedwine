@@ -336,6 +336,6 @@ GL_FUNCTION(GetPixelMapfv, void, (GLenum map, GLfloat *values), (ARG1, buffer), 
 GL_FUNCTION(GetPixelMapuiv, void, (GLenum map, GLuint *values), (ARG1, buffer), GLint* buffer = marshali(cpu, ARG2, glcommon_glGetPixelMap_size(ARG1));, marshalBacki(cpu, ARG2, buffer, glcommon_glGetPixelMap_size(ARG1));,("glGetPixelMapuiv"))
 GL_FUNCTION(GetPixelMapusv, void, (GLenum map, GLushort *values), (ARG1, buffer), GLushort* buffer = marshalus(cpu, ARG2, glcommon_glGetPixelMap_size(ARG1));, marshalBackus(cpu, ARG2, buffer, glcommon_glGetPixelMap_size(ARG1));,("glGetPixelMapusv"))
 
-GL_EXT_FUNCTION(SamplePass, void, (GLenum pass), (ARG1),,,("SamplePass GLenum pass=%d", ARG1))
+GL_EXT_FUNCTION(SamplePass, void, (GLenum pass))
 
 #include "glfunctions_ext.h"
