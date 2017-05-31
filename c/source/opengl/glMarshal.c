@@ -131,31 +131,37 @@ MARSHAL_TYPE_CUSTOM(GLdouble, 2d, q, 8, long2Double, d.l, d.d)
 void marshalBackd(struct CPU* cpu, U32 address, GLdouble* buffer, U32 count) {
     U32 i;
 
-    for (i=0;i<count;i++) {
-        struct long2Double d;
-        d.d = buffer[i];
-        writeq(MMU_PARAM_CPU address, d.l);
-        address+=8;
+    if (address) {
+        for (i=0;i<count;i++) {
+            struct long2Double d;
+            d.d = buffer[i];
+            writeq(MMU_PARAM_CPU address, d.l);
+            address+=8;
+        }
     }
 }
 
 void marshalBackf(struct CPU* cpu, U32 address, GLfloat* buffer, U32 count) {
     U32 i;
 
-    for (i=0;i<count;i++) {
-        struct int2Float f;
-        f.f = buffer[i];
-        writed(MMU_PARAM_CPU address, f.i);
-        address+=4;
+    if (address) {
+        for (i=0;i<count;i++) {
+            struct int2Float f;
+            f.f = buffer[i];
+            writed(MMU_PARAM_CPU address, f.i);
+            address+=4;
+        }
     }
 }
 
 void marshalBacki(struct CPU* cpu, U32 address, GLint* buffer, U32 count) {
     U32 i;
 
-    for (i=0;i<count;i++) {
-        writed(MMU_PARAM_CPU address, buffer[i]);
-        address+=4;
+    if (address) {
+        for (i=0;i<count;i++) {
+            writed(MMU_PARAM_CPU address, buffer[i]);
+            address+=4;
+        }
     }
 }
 
@@ -166,9 +172,11 @@ void marshalBackui(struct CPU* cpu, U32 address, GLuint* buffer, U32 count) {
 void marshalBacki64(struct CPU* cpu, U32 address, GLint64* buffer, U32 count) {
     U32 i;
 
-    for (i=0;i<count;i++) {
-        writeq(MMU_PARAM_CPU address, buffer[i]);
-        address+=8;
+    if (address) {
+        for (i=0;i<count;i++) {
+            writeq(MMU_PARAM_CPU address, buffer[i]);
+            address+=8;
+        }
     }
 }
 
@@ -179,9 +187,11 @@ void marshalBackui64(struct CPU* cpu, U32 address, GLuint64* buffer, U32 count) 
 void marshalBackus(struct CPU* cpu, U32 address, GLushort* buffer, U32 count) {
     U32 i;
 
-    for (i=0;i<count;i++) {
-        writew(MMU_PARAM_CPU address, buffer[i]);
-        address+=2;
+    if (address) {
+        for (i=0;i<count;i++) {
+            writew(MMU_PARAM_CPU address, buffer[i]);
+            address+=2;
+        }
     }
 }
 
@@ -204,6 +214,8 @@ void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count)
 GLvoid* marshalType(struct CPU* cpu, U32 type, U32 count, U32 address) {
     GLvoid* data=0;
 
+    if (!address)
+        return NULL;
     switch (type) {
         case GL_UNSIGNED_BYTE:
             data = marshalub(cpu, address, count);
@@ -242,6 +254,8 @@ GLvoid* marshalType(struct CPU* cpu, U32 type, U32 count, U32 address) {
 }
 
 void marshalBackType(struct CPU* cpu, U32 type, U32 count, GLvoid* buffer, U32 address) {
+    if (!address)
+        return;
     switch (type) {
         case GL_UNSIGNED_BYTE:
             marshalBackub(cpu, address, buffer, count);
@@ -342,15 +356,16 @@ GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, 
     GLint pixels_per_row;
     GLint skipImages = 0;
 
+    if (!pixels)
+        return 0;
+
     GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
     if (is3d) {
         GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_IMAGES, &skipImages);
-    }
-    if (!pixels)
-        return 0;
+    }    
 
     if (!pixels_per_row)
         pixels_per_row = width;
@@ -449,15 +464,16 @@ void marshalBackPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height,
     GLint pixels_per_row;
     GLint skipImages = 0;
 
+    if (!pixels)
+        return;
+
     GL_FUNC(glGetIntegerv)(GL_UNPACK_ROW_LENGTH, &pixels_per_row);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_PIXELS, &skipPixels);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_SKIP_ROWS, &skipRows);
     GL_FUNC(glGetIntegerv)(GL_UNPACK_ALIGNMENT, &alignment);
     if (is3d) {
         GL_FUNC(glGetIntegerv)(GL_PACK_SKIP_IMAGES, &skipImages);
-    }
-    if (!pixels)
-        return;
+    }    
 
     if (!pixels_per_row)
         pixels_per_row = width;
@@ -551,6 +567,10 @@ U32 marshalBackp(struct CPU* cpu, GLvoid* buffer, U32 size) {
 GLvoid* marshalp(struct CPU* cpu, U32 instance, U32 buffer, U32 len) {
     if (buffer == 0)
         return NULL;
+    if (buffer <0x10000) {
+        int ii=0;
+        return (GLvoid*)buffer;
+    }
     if ((buffer & 0xFFF) + len > 0xFFF) {
         int ii=0;
         return marshalub(cpu, buffer, len);
@@ -575,6 +595,9 @@ U32 bufferpp_len;
 
 GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesPerCount) {
     U32 i;
+
+    if (!buffer)
+        return NULL;
 
     if (bufferpp && bufferpp_len<count) {
         kfree(bufferpp, KALLOC_OPENGL);
@@ -661,7 +684,7 @@ void marshalBackhandle(struct CPU* cpu, U32 address, GLhandleARB* buffer, U32 co
     }
 }
 
-GLubyte* marshalGetConvolutionFilter(struct CPU* cpu, U32 target, U32 format, U32 type, U32 image) {
+GLvoid* marshalGetConvolutionFilter(struct CPU* cpu, U32 target, U32 format, U32 type, U32 image) {
     GLint width = 0;
     GLint height = 0;
     U32 len = 0;
@@ -672,8 +695,7 @@ GLubyte* marshalGetConvolutionFilter(struct CPU* cpu, U32 target, U32 format, U3
         ext_glGetConvolutionParameteriv(target, GL_CONVOLUTION_WIDTH, &width);
         ext_glGetConvolutionParameteriv(target, GL_CONVOLUTION_WIDTH, &height);
     }
-    len = get_bytes_per_pixel(format, type)*width*height;
-    return marshalub(cpu, image, len);
+    return marshalType(cpu, type, components_in_format(format)*width*height, image);
 }
 
 GLint marshalGet(GLenum param) {
@@ -683,5 +705,17 @@ GLint marshalGet(GLenum param) {
 }
 
 GLboolean PIXEL_PACK_BUFFER() {
-    return marshalGet(GL_PIXEL_PACK_BUFFER)!=0;
+    return marshalGet(GL_PIXEL_PACK_BUFFER_BINDING)!=0;
+}
+
+GLboolean ARRAY_BUFFER() {
+    return marshalGet(GL_ARRAY_BUFFER_BINDING)!=0;
+}
+
+GLboolean ELEMENT_ARRAY_BUFFER() {
+    return marshalGet(GL_ELEMENT_ARRAY_BUFFER_BINDING)!=0;
+}
+
+GLboolean PIXEL_UNPACK_BUFFER() {
+    return marshalGet(GL_PIXEL_UNPACK_BUFFER_BINDING)!=0;
 }

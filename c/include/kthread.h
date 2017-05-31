@@ -41,6 +41,7 @@ struct OpenGLVetexPointer {
     U32 ptr;
     U8* marshal;
     U32 marshal_size;
+    U32 called;
 };
 
 struct KThread {
@@ -80,7 +81,9 @@ struct KThread {
     void* currentContext;
     struct OpenGLVetexPointer glVertextPointer;
     struct OpenGLVetexPointer glNormalPointer;
+    struct OpenGLVetexPointer glFogPointer;
     struct OpenGLVetexPointer glColorPointer;
+    struct OpenGLVetexPointer glSecondaryColorPointer;
     struct OpenGLVetexPointer glIndexPointer;
     struct OpenGLVetexPointer glTexCoordPointer;
     struct OpenGLVetexPointer glEdgeFlagPointer;

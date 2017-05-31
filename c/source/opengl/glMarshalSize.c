@@ -830,7 +830,7 @@ U32 marshalGetCompressedImageSizeARB(GLenum target, GLint level) {
     return i;
 }
 
-U32 marshalGetCompressedImageSizeEXT(GLenum texunit, GLenum target, GLint level) {
+U32 marshalGetCompressedMultiImageSizeEXT(GLenum texunit, GLenum target, GLint level) {
     U32 i=0;
     if (ext_glGetMultiTexLevelParameterivEXT)
         ext_glGetMultiTexLevelParameterivEXT(texunit, target, level, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &i);
@@ -841,6 +841,24 @@ U32 marshalGetCompressedTextureSizeEXT(GLuint texture, GLenum target, GLint lod)
     U32 i=0;
     if (ext_glGetTextureLevelParameterivEXT)
         ext_glGetTextureLevelParameterivEXT(texture, target, lod, GL_TEXTURE_COMPRESSED_IMAGE_SIZE, &i);
+    return i;
+}
+
+U32 marshalGetConvolutionWidth(U32 target) {
+    U32 i = 0;
+
+    if (ext_glGetConvolutionParameteriv) {
+        ext_glGetConvolutionParameteriv(target, GL_CONVOLUTION_WIDTH, &i);
+    }
+    return i;
+}
+
+U32 marshalGetConvolutionHeight(U32 target) {
+    U32 i = 0;
+
+    if (ext_glGetConvolutionParameteriv) {
+        ext_glGetConvolutionParameteriv(target, GL_CONVOLUTION_HEIGHT, &i);
+    }
     return i;
 }
 

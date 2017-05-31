@@ -5084,7 +5084,7 @@ void glcommon_glProgramStringARB(struct CPU* cpu) {
     if (!ext_glProgramStringARB)
         kpanic("ext_glProgramStringARB is NULL");
     {
-    GL_FUNC(ext_glProgramStringARB)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GL_FUNC(ext_glProgramStringARB)(ARG1, ARG2, ARG3, marshalub(cpu, ARG4, ARG3));
     GL_LOG ("glProgramStringARB GLenum target=%d, GLenum format=%d, GLsizei len=%d, const void* string=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -6772,7 +6772,7 @@ void glcommon_glSamplerParameterIiv(struct CPU* cpu) {
     if (!ext_glSamplerParameterIiv)
         kpanic("ext_glSamplerParameterIiv is NULL");
     {
-    GL_FUNC(ext_glSamplerParameterIiv)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glSamplerParameterIiv)(ARG1, ARG2, marshali(cpu, ARG3, (ARG2==GL_TEXTURE_BORDER_COLOR)?4:1));
     GL_LOG ("glSamplerParameterIiv GLuint sampler=%d, GLenum pname=%d, const GLint* param=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6780,7 +6780,7 @@ void glcommon_glSamplerParameterIuiv(struct CPU* cpu) {
     if (!ext_glSamplerParameterIuiv)
         kpanic("ext_glSamplerParameterIuiv is NULL");
     {
-    GL_FUNC(ext_glSamplerParameterIuiv)(ARG1, ARG2, (GLuint*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glSamplerParameterIuiv)(ARG1, ARG2, marshalui(cpu, ARG3, (ARG2==GL_TEXTURE_BORDER_COLOR)?4:1));
     GL_LOG ("glSamplerParameterIuiv GLuint sampler=%d, GLenum pname=%d, const GLuint* param=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6796,7 +6796,7 @@ void glcommon_glSamplerParameterfv(struct CPU* cpu) {
     if (!ext_glSamplerParameterfv)
         kpanic("ext_glSamplerParameterfv is NULL");
     {
-    GL_FUNC(ext_glSamplerParameterfv)(ARG1, ARG2, (GLfloat*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glSamplerParameterfv)(ARG1, ARG2, marshalf(cpu, ARG3, (ARG2==GL_TEXTURE_BORDER_COLOR)?4:1));
     GL_LOG ("glSamplerParameterfv GLuint sampler=%d, GLenum pname=%d, const GLfloat* param=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6812,7 +6812,7 @@ void glcommon_glSamplerParameteriv(struct CPU* cpu) {
     if (!ext_glSamplerParameteriv)
         kpanic("ext_glSamplerParameteriv is NULL");
     {
-    GL_FUNC(ext_glSamplerParameteriv)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glSamplerParameteriv)(ARG1, ARG2, marshali(cpu, ARG3, (ARG2==GL_TEXTURE_BORDER_COLOR)?4:1));
     GL_LOG ("glSamplerParameteriv GLuint sampler=%d, GLenum pname=%d, const GLint* param=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -7148,7 +7148,7 @@ void glcommon_glSecondaryColorPointer(struct CPU* cpu) {
     if (!ext_glSecondaryColorPointer)
         kpanic("ext_glSecondaryColorPointer is NULL");
     {
-    GL_FUNC(ext_glSecondaryColorPointer)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GL_FUNC(ext_glSecondaryColorPointer)(ARG1, ARG2, ARG3, marshalSecondaryColorPointer(cpu, ARG1, ARG2, ARG3, ARG4));
     GL_LOG ("glSecondaryColorPointer GLint size=%d, GLenum type=%d, GLsizei stride=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -7156,7 +7156,7 @@ void glcommon_glSecondaryColorPointerEXT(struct CPU* cpu) {
     if (!ext_glSecondaryColorPointerEXT)
         kpanic("ext_glSecondaryColorPointerEXT is NULL");
     {
-    GL_FUNC(ext_glSecondaryColorPointerEXT)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GL_FUNC(ext_glSecondaryColorPointerEXT)(ARG1, ARG2, ARG3, marshalSecondaryColorPointer(cpu, ARG1, ARG2, ARG3, ARG4));
     GL_LOG ("glSecondaryColorPointerEXT GLint size=%d, GLenum type=%d, GLsizei stride=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }

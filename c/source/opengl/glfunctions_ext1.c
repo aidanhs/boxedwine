@@ -1584,7 +1584,7 @@ void glcommon_glColorPointerEXT(struct CPU* cpu) {
     if (!ext_glColorPointerEXT)
         kpanic("ext_glColorPointerEXT is NULL");
     {
-    GL_FUNC(ext_glColorPointerEXT)(ARG1, ARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
+    GL_FUNC(ext_glColorPointerEXT)(ARG1, ARG2, ARG3, ARG4, marshalColorPointer(cpu, ARG1, ARG2, ARG3, ARG4));
     GL_LOG ("glColorPointerEXT GLint size=%d, GLenum type=%d, GLsizei stride=%d, GLsizei count=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -1608,7 +1608,7 @@ void glcommon_glColorSubTable(struct CPU* cpu) {
     if (!ext_glColorSubTable)
         kpanic("ext_glColorSubTable is NULL");
     {
-    GL_FUNC(ext_glColorSubTable)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
+    GL_FUNC(ext_glColorSubTable)(ARG1, ARG2, ARG3, ARG4, ARG5, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
     GL_LOG ("glColorSubTable GLenum target=%d, GLsizei start=%d, GLsizei count=%d, GLenum format=%d, GLenum type=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -1624,7 +1624,7 @@ void glcommon_glColorTable(struct CPU* cpu) {
     if (!ext_glColorTable)
         kpanic("ext_glColorTable is NULL");
     {
-    GL_FUNC(ext_glColorTable)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
+    GL_FUNC(ext_glColorTable)(ARG1, ARG2, ARG3, ARG4, ARG5, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
     GL_LOG ("glColorTable GLenum target=%d, GLenum internalformat=%d, GLsizei width=%d, GLenum format=%d, GLenum type=%d, const void* table=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -1632,7 +1632,7 @@ void glcommon_glColorTableEXT(struct CPU* cpu) {
     if (!ext_glColorTableEXT)
         kpanic("ext_glColorTableEXT is NULL");
     {
-    GL_FUNC(ext_glColorTableEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
+    GL_FUNC(ext_glColorTableEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
     GL_LOG ("glColorTableEXT GLenum target=%d, GLenum internalFormat=%d, GLsizei width=%d, GLenum format=%d, GLenum type=%d, const void* table=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -1672,7 +1672,7 @@ void glcommon_glColorTableSGI(struct CPU* cpu) {
     if (!ext_glColorTableSGI)
         kpanic("ext_glColorTableSGI is NULL");
     {
-    GL_FUNC(ext_glColorTableSGI)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
+    GL_FUNC(ext_glColorTableSGI)(ARG1, ARG2, ARG3, ARG4, ARG5, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
     GL_LOG ("glColorTableSGI GLenum target=%d, GLenum internalformat=%d, GLsizei width=%d, GLenum format=%d, GLenum type=%d, const void* table=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -1776,7 +1776,7 @@ void glcommon_glCompressedMultiTexImage1DEXT(struct CPU* cpu) {
     if (!ext_glCompressedMultiTexImage1DEXT)
         kpanic("ext_glCompressedMultiTexImage1DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedMultiTexImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, marshalub(cpu, ARG8, ARG7));
+    GL_FUNC(ext_glCompressedMultiTexImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG8:marshalub(cpu, ARG8, ARG7));
     GL_LOG ("glCompressedMultiTexImage1DEXT GLenum texunit=%d, GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLint border=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8);
     }
 }
@@ -1784,7 +1784,7 @@ void glcommon_glCompressedMultiTexImage2DEXT(struct CPU* cpu) {
     if (!ext_glCompressedMultiTexImage2DEXT)
         kpanic("ext_glCompressedMultiTexImage2DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedMultiTexImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedMultiTexImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedMultiTexImage2DEXT GLenum texunit=%d, GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLint border=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1792,7 +1792,7 @@ void glcommon_glCompressedMultiTexImage3DEXT(struct CPU* cpu) {
     if (!ext_glCompressedMultiTexImage3DEXT)
         kpanic("ext_glCompressedMultiTexImage3DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedMultiTexImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, marshalub(cpu, ARG10, ARG9));
+    GL_FUNC(ext_glCompressedMultiTexImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG10:marshalub(cpu, ARG10, ARG9));
     GL_LOG ("glCompressedMultiTexImage3DEXT GLenum texunit=%d, GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLint border=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10);
     }
 }
@@ -1800,7 +1800,7 @@ void glcommon_glCompressedMultiTexSubImage1DEXT(struct CPU* cpu) {
     if (!ext_glCompressedMultiTexSubImage1DEXT)
         kpanic("ext_glCompressedMultiTexSubImage1DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedMultiTexSubImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, marshalub(cpu, ARG8, ARG7));
+    GL_FUNC(ext_glCompressedMultiTexSubImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG8:marshalub(cpu, ARG8, ARG7));
     GL_LOG ("glCompressedMultiTexSubImage1DEXT GLenum texunit=%d, GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLsizei width=%d, GLenum format=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8);
     }
 }
@@ -1808,7 +1808,7 @@ void glcommon_glCompressedMultiTexSubImage2DEXT(struct CPU* cpu) {
     if (!ext_glCompressedMultiTexSubImage2DEXT)
         kpanic("ext_glCompressedMultiTexSubImage2DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedMultiTexSubImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, marshalub(cpu, ARG10, ARG9));
+    GL_FUNC(ext_glCompressedMultiTexSubImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG10:marshalub(cpu, ARG10, ARG9));
     GL_LOG ("glCompressedMultiTexSubImage2DEXT GLenum texunit=%d, GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10);
     }
 }
@@ -1816,7 +1816,7 @@ void glcommon_glCompressedMultiTexSubImage3DEXT(struct CPU* cpu) {
     if (!ext_glCompressedMultiTexSubImage3DEXT)
         kpanic("ext_glCompressedMultiTexSubImage3DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedMultiTexSubImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, ARG11, marshalub(cpu, ARG12, ARG11));
+    GL_FUNC(ext_glCompressedMultiTexSubImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, ARG11, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG12:marshalub(cpu, ARG12, ARG11));
     GL_LOG ("glCompressedMultiTexSubImage3DEXT GLenum texunit=%d, GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLint zoffset=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLenum format=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10,ARG11,ARG12);
     }
 }
@@ -1824,7 +1824,7 @@ void glcommon_glCompressedTexImage1D(struct CPU* cpu) {
     if (!ext_glCompressedTexImage1D)
         kpanic("ext_glCompressedTexImage1D is NULL");
     {
-    GL_FUNC(ext_glCompressedTexImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalub(cpu, ARG7, ARG6));
+    GL_FUNC(ext_glCompressedTexImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG7:marshalub(cpu, ARG7, ARG6));
     GL_LOG ("glCompressedTexImage1D GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLint border=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -1832,7 +1832,7 @@ void glcommon_glCompressedTexImage1DARB(struct CPU* cpu) {
     if (!ext_glCompressedTexImage1DARB)
         kpanic("ext_glCompressedTexImage1DARB is NULL");
     {
-    GL_FUNC(ext_glCompressedTexImage1DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalub(cpu, ARG7, ARG6));
+    GL_FUNC(ext_glCompressedTexImage1DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG7:marshalub(cpu, ARG7, ARG6));
     GL_LOG ("glCompressedTexImage1DARB GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLint border=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -1840,7 +1840,7 @@ void glcommon_glCompressedTexImage2D(struct CPU* cpu) {
     if (!ext_glCompressedTexImage2D)
         kpanic("ext_glCompressedTexImage2D is NULL");
     {
-    GL_FUNC(ext_glCompressedTexImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, marshalub(cpu, ARG8, ARG7));
+    GL_FUNC(ext_glCompressedTexImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG8:marshalub(cpu, ARG8, ARG7));
     GL_LOG ("glCompressedTexImage2D GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLint border=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8);
     }
 }
@@ -1848,7 +1848,7 @@ void glcommon_glCompressedTexImage2DARB(struct CPU* cpu) {
     if (!ext_glCompressedTexImage2DARB)
         kpanic("ext_glCompressedTexImage2DARB is NULL");
     {
-    GL_FUNC(ext_glCompressedTexImage2DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, marshalub(cpu, ARG8, ARG7));
+    GL_FUNC(ext_glCompressedTexImage2DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG8:marshalub(cpu, ARG8, ARG7));
     GL_LOG ("glCompressedTexImage2DARB GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLint border=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8);
     }
 }
@@ -1856,7 +1856,7 @@ void glcommon_glCompressedTexImage3D(struct CPU* cpu) {
     if (!ext_glCompressedTexImage3D)
         kpanic("ext_glCompressedTexImage3D is NULL");
     {
-    GL_FUNC(ext_glCompressedTexImage3D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedTexImage3D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTexImage3D GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLint border=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1864,7 +1864,7 @@ void glcommon_glCompressedTexImage3DARB(struct CPU* cpu) {
     if (!ext_glCompressedTexImage3DARB)
         kpanic("ext_glCompressedTexImage3DARB is NULL");
     {
-    GL_FUNC(ext_glCompressedTexImage3DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedTexImage3DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTexImage3DARB GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLint border=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1872,7 +1872,7 @@ void glcommon_glCompressedTexSubImage1D(struct CPU* cpu) {
     if (!ext_glCompressedTexSubImage1D)
         kpanic("ext_glCompressedTexSubImage1D is NULL");
     {
-    GL_FUNC(ext_glCompressedTexSubImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalub(cpu, ARG7, ARG6));
+    GL_FUNC(ext_glCompressedTexSubImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTexSubImage1D GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLsizei width=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -1880,7 +1880,7 @@ void glcommon_glCompressedTexSubImage1DARB(struct CPU* cpu) {
     if (!ext_glCompressedTexSubImage1DARB)
         kpanic("ext_glCompressedTexSubImage1DARB is NULL");
     {
-    GL_FUNC(ext_glCompressedTexSubImage1DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalub(cpu, ARG7, ARG6));
+    GL_FUNC(ext_glCompressedTexSubImage1DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG7:marshalub(cpu, ARG7, ARG6));
     GL_LOG ("glCompressedTexSubImage1DARB GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLsizei width=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -1888,7 +1888,7 @@ void glcommon_glCompressedTexSubImage2D(struct CPU* cpu) {
     if (!ext_glCompressedTexSubImage2D)
         kpanic("ext_glCompressedTexSubImage2D is NULL");
     {
-    GL_FUNC(ext_glCompressedTexSubImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedTexSubImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTexSubImage2D GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1896,7 +1896,7 @@ void glcommon_glCompressedTexSubImage2DARB(struct CPU* cpu) {
     if (!ext_glCompressedTexSubImage2DARB)
         kpanic("ext_glCompressedTexSubImage2DARB is NULL");
     {
-    GL_FUNC(ext_glCompressedTexSubImage2DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedTexSubImage2DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTexSubImage2DARB GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1904,7 +1904,7 @@ void glcommon_glCompressedTexSubImage3D(struct CPU* cpu) {
     if (!ext_glCompressedTexSubImage3D)
         kpanic("ext_glCompressedTexSubImage3D is NULL");
     {
-    GL_FUNC(ext_glCompressedTexSubImage3D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, marshalub(cpu, ARG11, ARG10));
+    GL_FUNC(ext_glCompressedTexSubImage3D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG11:marshalub(cpu, ARG11, ARG10));
     GL_LOG ("glCompressedTexSubImage3D GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLint zoffset=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10,ARG11);
     }
 }
@@ -1912,7 +1912,7 @@ void glcommon_glCompressedTexSubImage3DARB(struct CPU* cpu) {
     if (!ext_glCompressedTexSubImage3DARB)
         kpanic("ext_glCompressedTexSubImage3DARB is NULL");
     {
-    GL_FUNC(ext_glCompressedTexSubImage3DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, marshalub(cpu, ARG11, ARG10));
+    GL_FUNC(ext_glCompressedTexSubImage3DARB)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG11:marshalub(cpu, ARG11, ARG10));
     GL_LOG ("glCompressedTexSubImage3DARB GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLint zoffset=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10,ARG11);
     }
 }
@@ -1920,7 +1920,7 @@ void glcommon_glCompressedTextureImage1DEXT(struct CPU* cpu) {
     if (!ext_glCompressedTextureImage1DEXT)
         kpanic("ext_glCompressedTextureImage1DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, marshalub(cpu, ARG8, ARG7));
+    GL_FUNC(ext_glCompressedTextureImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG8:marshalub(cpu, ARG8, ARG7));
     GL_LOG ("glCompressedTextureImage1DEXT GLuint texture=%d, GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLint border=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8);
     }
 }
@@ -1928,7 +1928,7 @@ void glcommon_glCompressedTextureImage2DEXT(struct CPU* cpu) {
     if (!ext_glCompressedTextureImage2DEXT)
         kpanic("ext_glCompressedTextureImage2DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedTextureImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTextureImage2DEXT GLuint texture=%d, GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLint border=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1936,7 +1936,7 @@ void glcommon_glCompressedTextureImage3DEXT(struct CPU* cpu) {
     if (!ext_glCompressedTextureImage3DEXT)
         kpanic("ext_glCompressedTextureImage3DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, marshalub(cpu, ARG10, ARG9));
+    GL_FUNC(ext_glCompressedTextureImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG10:marshalub(cpu, ARG10, ARG9));
     GL_LOG ("glCompressedTextureImage3DEXT GLuint texture=%d, GLenum target=%d, GLint level=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLint border=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10);
     }
 }
@@ -1944,7 +1944,7 @@ void glcommon_glCompressedTextureSubImage1D(struct CPU* cpu) {
     if (!ext_glCompressedTextureSubImage1D)
         kpanic("ext_glCompressedTextureSubImage1D is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureSubImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalub(cpu, ARG7, ARG6));
+    GL_FUNC(ext_glCompressedTextureSubImage1D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalub(cpu, ARG7, ARG6));
     GL_LOG ("glCompressedTextureSubImage1D GLuint texture=%d, GLint level=%d, GLint xoffset=%d, GLsizei width=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -1952,7 +1952,7 @@ void glcommon_glCompressedTextureSubImage1DEXT(struct CPU* cpu) {
     if (!ext_glCompressedTextureSubImage1DEXT)
         kpanic("ext_glCompressedTextureSubImage1DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureSubImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, marshalub(cpu, ARG8, ARG7));
+    GL_FUNC(ext_glCompressedTextureSubImage1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG8:marshalub(cpu, ARG8, ARG7));
     GL_LOG ("glCompressedTextureSubImage1DEXT GLuint texture=%d, GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLsizei width=%d, GLenum format=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8);
     }
 }
@@ -1960,7 +1960,7 @@ void glcommon_glCompressedTextureSubImage2D(struct CPU* cpu) {
     if (!ext_glCompressedTextureSubImage2D)
         kpanic("ext_glCompressedTextureSubImage2D is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureSubImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, marshalub(cpu, ARG9, ARG8));
+    GL_FUNC(ext_glCompressedTextureSubImage2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG9:marshalub(cpu, ARG9, ARG8));
     GL_LOG ("glCompressedTextureSubImage2D GLuint texture=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9);
     }
 }
@@ -1968,7 +1968,7 @@ void glcommon_glCompressedTextureSubImage2DEXT(struct CPU* cpu) {
     if (!ext_glCompressedTextureSubImage2DEXT)
         kpanic("ext_glCompressedTextureSubImage2DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureSubImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, marshalub(cpu, ARG10, ARG9));
+    GL_FUNC(ext_glCompressedTextureSubImage2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG10:marshalub(cpu, ARG10, ARG9));
     GL_LOG ("glCompressedTextureSubImage2DEXT GLuint texture=%d, GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10);
     }
 }
@@ -1976,7 +1976,7 @@ void glcommon_glCompressedTextureSubImage3D(struct CPU* cpu) {
     if (!ext_glCompressedTextureSubImage3D)
         kpanic("ext_glCompressedTextureSubImage3D is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureSubImage3D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, marshalub(cpu, ARG11, ARG10));
+    GL_FUNC(ext_glCompressedTextureSubImage3D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG11:marshalub(cpu, ARG11, ARG10));
     GL_LOG ("glCompressedTextureSubImage3D GLuint texture=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLint zoffset=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLenum format=%d, GLsizei imageSize=%d, const void* data=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10,ARG11);
     }
 }
@@ -1984,7 +1984,7 @@ void glcommon_glCompressedTextureSubImage3DEXT(struct CPU* cpu) {
     if (!ext_glCompressedTextureSubImage3DEXT)
         kpanic("ext_glCompressedTextureSubImage3DEXT is NULL");
     {
-    GL_FUNC(ext_glCompressedTextureSubImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, ARG11, marshalub(cpu, ARG12, ARG11));
+    GL_FUNC(ext_glCompressedTextureSubImage3DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10, ARG11, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG12:marshalub(cpu, ARG12, ARG11));
     GL_LOG ("glCompressedTextureSubImage3DEXT GLuint texture=%d, GLenum target=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLint zoffset=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLenum format=%d, GLsizei imageSize=%d, const void* bits=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10,ARG11,ARG12);
     }
 }
@@ -2000,7 +2000,7 @@ void glcommon_glConvolutionFilter1D(struct CPU* cpu) {
     if (!ext_glConvolutionFilter1D)
         kpanic("ext_glConvolutionFilter1D is NULL");
     {
-    GL_FUNC(ext_glConvolutionFilter1D)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
+    GL_FUNC(ext_glConvolutionFilter1D)(ARG1, ARG2, ARG3, ARG4, ARG5, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
     GL_LOG ("glConvolutionFilter1D GLenum target=%d, GLenum internalformat=%d, GLsizei width=%d, GLenum format=%d, GLenum type=%d, const void* image=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -2008,7 +2008,7 @@ void glcommon_glConvolutionFilter1DEXT(struct CPU* cpu) {
     if (!ext_glConvolutionFilter1DEXT)
         kpanic("ext_glConvolutionFilter1DEXT is NULL");
     {
-    GL_FUNC(ext_glConvolutionFilter1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
+    GL_FUNC(ext_glConvolutionFilter1DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, components_in_format(ARG4)*ARG3, ARG6));
     GL_LOG ("glConvolutionFilter1DEXT GLenum target=%d, GLenum internalformat=%d, GLsizei width=%d, GLenum format=%d, GLenum type=%d, const void* image=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -2016,7 +2016,7 @@ void glcommon_glConvolutionFilter2D(struct CPU* cpu) {
     if (!ext_glConvolutionFilter2D)
         kpanic("ext_glConvolutionFilter2D is NULL");
     {
-    GL_FUNC(ext_glConvolutionFilter2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalType(cpu, ARG6, components_in_format(ARG5)*ARG4*ARG3, ARG7));
+    GL_FUNC(ext_glConvolutionFilter2D)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG7:marshalType(cpu, ARG6, components_in_format(ARG5)*ARG4*ARG3, ARG7));
     GL_LOG ("glConvolutionFilter2D GLenum target=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLenum type=%d, const void* image=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -2024,7 +2024,7 @@ void glcommon_glConvolutionFilter2DEXT(struct CPU* cpu) {
     if (!ext_glConvolutionFilter2DEXT)
         kpanic("ext_glConvolutionFilter2DEXT is NULL");
     {
-    GL_FUNC(ext_glConvolutionFilter2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, marshalType(cpu, ARG6, components_in_format(ARG5)*ARG4*ARG3, ARG7));
+    GL_FUNC(ext_glConvolutionFilter2DEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, PIXEL_UNPACK_BUFFER()?(GLvoid*)ARG7:marshalType(cpu, ARG6, components_in_format(ARG5)*ARG4*ARG3, ARG7));
     GL_LOG ("glConvolutionFilter2DEXT GLenum target=%d, GLenum internalformat=%d, GLsizei width=%d, GLsizei height=%d, GLenum format=%d, GLenum type=%d, const void* image=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -3320,7 +3320,7 @@ void glcommon_glDrawElementsBaseVertex(struct CPU* cpu) {
     if (!ext_glDrawElementsBaseVertex)
         kpanic("ext_glDrawElementsBaseVertex is NULL");
     {
-    GL_FUNC(ext_glDrawElementsBaseVertex)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
+    GL_FUNC(ext_glDrawElementsBaseVertex)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
     GL_LOG ("glDrawElementsBaseVertex GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLint basevertex=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -3336,7 +3336,7 @@ void glcommon_glDrawElementsInstanced(struct CPU* cpu) {
     if (!ext_glDrawElementsInstanced)
         kpanic("ext_glDrawElementsInstanced is NULL");
     {
-    GL_FUNC(ext_glDrawElementsInstanced)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
+    GL_FUNC(ext_glDrawElementsInstanced)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
     GL_LOG ("glDrawElementsInstanced GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLsizei instancecount=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -3344,7 +3344,7 @@ void glcommon_glDrawElementsInstancedARB(struct CPU* cpu) {
     if (!ext_glDrawElementsInstancedARB)
         kpanic("ext_glDrawElementsInstancedARB is NULL");
     {
-    GL_FUNC(ext_glDrawElementsInstancedARB)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
+    GL_FUNC(ext_glDrawElementsInstancedARB)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
     GL_LOG ("glDrawElementsInstancedARB GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLsizei primcount=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -3352,7 +3352,7 @@ void glcommon_glDrawElementsInstancedBaseInstance(struct CPU* cpu) {
     if (!ext_glDrawElementsInstancedBaseInstance)
         kpanic("ext_glDrawElementsInstancedBaseInstance is NULL");
     {
-    GL_FUNC(ext_glDrawElementsInstancedBaseInstance)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5, ARG6);
+    GL_FUNC(ext_glDrawElementsInstancedBaseInstance)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5, ARG6);
     GL_LOG ("glDrawElementsInstancedBaseInstance GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLsizei instancecount=%d, GLuint baseinstance=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -3360,7 +3360,7 @@ void glcommon_glDrawElementsInstancedBaseVertex(struct CPU* cpu) {
     if (!ext_glDrawElementsInstancedBaseVertex)
         kpanic("ext_glDrawElementsInstancedBaseVertex is NULL");
     {
-    GL_FUNC(ext_glDrawElementsInstancedBaseVertex)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5, ARG6);
+    GL_FUNC(ext_glDrawElementsInstancedBaseVertex)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5, ARG6);
     GL_LOG ("glDrawElementsInstancedBaseVertex GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLsizei instancecount=%d, GLint basevertex=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -3368,7 +3368,7 @@ void glcommon_glDrawElementsInstancedBaseVertexBaseInstance(struct CPU* cpu) {
     if (!ext_glDrawElementsInstancedBaseVertexBaseInstance)
         kpanic("ext_glDrawElementsInstancedBaseVertexBaseInstance is NULL");
     {
-    GL_FUNC(ext_glDrawElementsInstancedBaseVertexBaseInstance)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5, ARG6, ARG7);
+    GL_FUNC(ext_glDrawElementsInstancedBaseVertexBaseInstance)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5, ARG6, ARG7);
     GL_LOG ("glDrawElementsInstancedBaseVertexBaseInstance GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLsizei instancecount=%d, GLint basevertex=%d, GLuint baseinstance=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -3376,7 +3376,7 @@ void glcommon_glDrawElementsInstancedEXT(struct CPU* cpu) {
     if (!ext_glDrawElementsInstancedEXT)
         kpanic("ext_glDrawElementsInstancedEXT is NULL");
     {
-    GL_FUNC(ext_glDrawElementsInstancedEXT)(ARG1, ARG2, ARG3, marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
+    GL_FUNC(ext_glDrawElementsInstancedEXT)(ARG1, ARG2, ARG3, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG4:marshalType(cpu, ARG3, ARG2, ARG4), ARG5);
     GL_LOG ("glDrawElementsInstancedEXT GLenum mode=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLsizei primcount=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -3408,7 +3408,7 @@ void glcommon_glDrawRangeElements(struct CPU* cpu) {
     if (!ext_glDrawRangeElements)
         kpanic("ext_glDrawRangeElements is NULL");
     {
-    GL_FUNC(ext_glDrawRangeElements)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, ARG4, ARG6));
+    GL_FUNC(ext_glDrawRangeElements)(ARG1, ARG2, ARG3, ARG4, ARG5, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, ARG4, ARG6));
     GL_LOG ("glDrawRangeElements GLenum mode=%d, GLuint start=%d, GLuint end=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -3416,7 +3416,7 @@ void glcommon_glDrawRangeElementsBaseVertex(struct CPU* cpu) {
     if (!ext_glDrawRangeElementsBaseVertex)
         kpanic("ext_glDrawRangeElementsBaseVertex is NULL");
     {
-    GL_FUNC(ext_glDrawRangeElementsBaseVertex)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, ARG4, ARG6), ARG7);
+    GL_FUNC(ext_glDrawRangeElementsBaseVertex)(ARG1, ARG2, ARG3, ARG4, ARG5, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, ARG4, ARG6), ARG7);
     GL_LOG ("glDrawRangeElementsBaseVertex GLenum mode=%d, GLuint start=%d, GLuint end=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x, GLint basevertex=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
     }
 }
@@ -3424,7 +3424,7 @@ void glcommon_glDrawRangeElementsEXT(struct CPU* cpu) {
     if (!ext_glDrawRangeElementsEXT)
         kpanic("ext_glDrawRangeElementsEXT is NULL");
     {
-    GL_FUNC(ext_glDrawRangeElementsEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, marshalType(cpu, ARG5, ARG4, ARG6));
+    GL_FUNC(ext_glDrawRangeElementsEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ELEMENT_ARRAY_BUFFER()?(GLvoid*)ARG6:marshalType(cpu, ARG5, ARG4, ARG6));
     GL_LOG ("glDrawRangeElementsEXT GLenum mode=%d, GLuint start=%d, GLuint end=%d, GLsizei count=%d, GLenum type=%d, const void* indices=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -3938,7 +3938,7 @@ void glcommon_glFogCoordPointer(struct CPU* cpu) {
     if (!ext_glFogCoordPointer)
         kpanic("ext_glFogCoordPointer is NULL");
     {
-    GL_FUNC(ext_glFogCoordPointer)(ARG1, ARG2, (void*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glFogCoordPointer)(ARG1, ARG2, marshalFogPointer(cpu, ARG1, ARG2, ARG3));
     GL_LOG ("glFogCoordPointer GLenum type=%d, GLsizei stride=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -3946,7 +3946,7 @@ void glcommon_glFogCoordPointerEXT(struct CPU* cpu) {
     if (!ext_glFogCoordPointerEXT)
         kpanic("ext_glFogCoordPointerEXT is NULL");
     {
-    GL_FUNC(ext_glFogCoordPointerEXT)(ARG1, ARG2, (void*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glFogCoordPointerEXT)(ARG1, ARG2, marshalFogPointer(cpu, ARG1, ARG2, ARG3));
     GL_LOG ("glFogCoordPointerEXT GLenum type=%d, GLsizei stride=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5090,17 +5090,8 @@ void glcommon_glGetCompressedMultiTexImageEXT(struct CPU* cpu) {
     if (!ext_glGetCompressedMultiTexImageEXT)
         kpanic("ext_glGetCompressedMultiTexImageEXT is NULL");
     {
-    GLboolean b=PIXEL_PACK_BUFFER(); 
-    int count; 
-    GLvoid* p; 
-    if (b) 
-        p=(GLvoid*)ARG4; 
-    else {
-        count = marshalGetCompressedImageSizeEXT(ARG1, ARG2, ARG3)/getDataSize(ARG2); 
-        p = marshalType(cpu, ARG2, count, ARG4);
-    }
-    GL_FUNC(ext_glGetCompressedMultiTexImageEXT)(ARG1, ARG2, ARG3, p);
-    if (!b) marshalBackType(cpu, ARG2, count, p, ARG4);
+    GLboolean b=PIXEL_PACK_BUFFER(); int size = 0; GLvoid* p; if (b) p=(GLvoid*)ARG4; else {size = marshalGetCompressedMultiImageSizeEXT(ARG1, ARG2, ARG3); p = marshalui(cpu, ARG4, size);}GL_FUNC(ext_glGetCompressedMultiTexImageEXT)(ARG1, ARG2, ARG3, p);
+    if (!b) marshalBackui(cpu, ARG4, p, size);
     GL_LOG ("glGetCompressedMultiTexImageEXT GLenum texunit=%d, GLenum target=%d, GLint lod=%d, void* img=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5108,7 +5099,8 @@ void glcommon_glGetCompressedTexImage(struct CPU* cpu) {
     if (!ext_glGetCompressedTexImage)
         kpanic("ext_glGetCompressedTexImage is NULL");
     {
-    GL_FUNC(ext_glGetCompressedTexImage)(ARG1, ARG2, (void*)marshalp(cpu, 0, ARG3, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); int size = 0; GLvoid* p; if (b) p=(GLvoid*)ARG3; else {size = marshalGetCompressedImageSize(ARG1, ARG2); p = marshalui(cpu, ARG3, size);}GL_FUNC(ext_glGetCompressedTexImage)(ARG1, ARG2, p);
+    if (!b) marshalBackui(cpu, ARG3, p, size);
     GL_LOG ("glGetCompressedTexImage GLenum target=%d, GLint level=%d, void* img=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5116,7 +5108,8 @@ void glcommon_glGetCompressedTexImageARB(struct CPU* cpu) {
     if (!ext_glGetCompressedTexImageARB)
         kpanic("ext_glGetCompressedTexImageARB is NULL");
     {
-    GL_FUNC(ext_glGetCompressedTexImageARB)(ARG1, ARG2, (void*)marshalp(cpu, 0, ARG3, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); int size = 0; GLvoid* p; if (b) p=(GLvoid*)ARG3; else {size = marshalGetCompressedImageSizeARB(ARG1, ARG2); p = marshalui(cpu, ARG3, size);}GL_FUNC(ext_glGetCompressedTexImageARB)(ARG1, ARG2, p);
+    if (!b) marshalBackui(cpu, ARG3, p, size);
     GL_LOG ("glGetCompressedTexImageARB GLenum target=%d, GLint level=%d, void* img=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5124,7 +5117,8 @@ void glcommon_glGetCompressedTextureImage(struct CPU* cpu) {
     if (!ext_glGetCompressedTextureImage)
         kpanic("ext_glGetCompressedTextureImage is NULL");
     {
-    GL_FUNC(ext_glGetCompressedTextureImage)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); GLvoid* p; if (b) p=(GLvoid*)ARG4; else {p = marshalui(cpu, ARG4, ARG3);}GL_FUNC(ext_glGetCompressedTextureImage)(ARG1, ARG2, ARG3, p);
+    if (!b) marshalBackui(cpu, ARG4, p, ARG3);
     GL_LOG ("glGetCompressedTextureImage GLuint texture=%d, GLint level=%d, GLsizei bufSize=%d, void* pixels=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5132,7 +5126,8 @@ void glcommon_glGetCompressedTextureImageEXT(struct CPU* cpu) {
     if (!ext_glGetCompressedTextureImageEXT)
         kpanic("ext_glGetCompressedTextureImageEXT is NULL");
     {
-    GL_FUNC(ext_glGetCompressedTextureImageEXT)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); int size = 0; GLvoid* p; if (b) p=(GLvoid*)ARG4; else {size = marshalGetCompressedTextureSizeEXT(ARG1, ARG2, ARG3); p = marshalui(cpu, ARG4, size);}GL_FUNC(ext_glGetCompressedTextureImageEXT)(ARG1, ARG2, ARG3, p);
+    if (!b) marshalBackui(cpu, ARG4, p, size);
     GL_LOG ("glGetCompressedTextureImageEXT GLuint texture=%d, GLenum target=%d, GLint lod=%d, void* img=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5140,7 +5135,8 @@ void glcommon_glGetCompressedTextureSubImage(struct CPU* cpu) {
     if (!ext_glGetCompressedTextureSubImage)
         kpanic("ext_glGetCompressedTextureSubImage is NULL");
     {
-    GL_FUNC(ext_glGetCompressedTextureSubImage)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, (void*)marshalp(cpu, 0, ARG10, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); GLvoid* p; if (b) p=(GLvoid*)ARG9; else {p = marshalui(cpu, ARG9, ARG8);}GL_FUNC(ext_glGetCompressedTextureSubImage)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, p);
+    if (!b) marshalBackui(cpu, ARG9, p, ARG8);
     GL_LOG ("glGetCompressedTextureSubImage GLuint texture=%d, GLint level=%d, GLint xoffset=%d, GLint yoffset=%d, GLint zoffset=%d, GLsizei width=%d, GLsizei height=%d, GLsizei depth=%d, GLsizei bufSize=%d, void* pixels=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10);
     }
 }
@@ -5148,7 +5144,8 @@ void glcommon_glGetConvolutionFilter(struct CPU* cpu) {
     if (!ext_glGetConvolutionFilter)
         kpanic("ext_glGetConvolutionFilter is NULL");
     {
-    GL_FUNC(ext_glGetConvolutionFilter)(ARG1, ARG2, ARG3, (void*)marshalp(cpu, 0, ARG4, 0));
+    GLboolean b=PIXEL_PACK_BUFFER(); GLvoid* p; int count; if (b) p=(GLvoid*)ARG4; else {count = components_in_format(ARG2)*marshalGetConvolutionWidth(ARG1)*marshalGetConvolutionWidth(ARG2); p = marshalType(cpu, ARG3, count, ARG4);}GL_FUNC(ext_glGetConvolutionFilter)(ARG1, ARG2, ARG3, p);
+    if (!b) marshalBackType(cpu, ARG3, count, p, ARG4);
     GL_LOG ("glGetConvolutionFilter GLenum target=%d, GLenum format=%d, GLenum type=%d, void* image=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -5598,7 +5595,8 @@ void glcommon_glGetIntegerui64vNV(struct CPU* cpu) {
     if (!ext_glGetIntegerui64vNV)
         kpanic("ext_glGetIntegerui64vNV is NULL");
     {
-    GL_FUNC(ext_glGetIntegerui64vNV)(ARG1, (GLuint64EXT*)marshalp(cpu, 0, ARG2, 0));
+    GLuint64EXT* p1=marshalui64(cpu, ARG2, 1);GL_FUNC(ext_glGetIntegerui64vNV)(ARG1, p1);
+    marshalBackui64(cpu, ARG2, p1, 1);
     GL_LOG ("glGetIntegerui64vNV GLenum value=%d, GLuint64EXT* result=%.08x",ARG1,ARG2);
     }
 }
@@ -5606,7 +5604,8 @@ void glcommon_glGetInternalformatSampleivNV(struct CPU* cpu) {
     if (!ext_glGetInternalformatSampleivNV)
         kpanic("ext_glGetInternalformatSampleivNV is NULL");
     {
-    GL_FUNC(ext_glGetInternalformatSampleivNV)(ARG1, ARG2, ARG3, ARG4, ARG5, (GLint*)marshalp(cpu, 0, ARG6, 0));
+    GLint* p1=marshali(cpu, ARG6, ARG5);GL_FUNC(ext_glGetInternalformatSampleivNV)(ARG1, ARG2, ARG3, ARG4, ARG5, p1);
+    marshalBacki(cpu, ARG6, p1, ARG5);
     GL_LOG ("glGetInternalformatSampleivNV GLenum target=%d, GLenum internalformat=%d, GLsizei samples=%d, GLenum pname=%d, GLsizei bufSize=%d, GLint* params=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
@@ -5614,7 +5613,8 @@ void glcommon_glGetInternalformati64v(struct CPU* cpu) {
     if (!ext_glGetInternalformati64v)
         kpanic("ext_glGetInternalformati64v is NULL");
     {
-    GL_FUNC(ext_glGetInternalformati64v)(ARG1, ARG2, ARG3, ARG4, (GLint64*)marshalp(cpu, 0, ARG5, 0));
+    GLint64* p1=marshali64(cpu, ARG5, ARG4);GL_FUNC(ext_glGetInternalformati64v)(ARG1, ARG2, ARG3, ARG4, p1);
+    marshalBacki64(cpu, ARG5, p1, ARG4);
     GL_LOG ("glGetInternalformati64v GLenum target=%d, GLenum internalformat=%d, GLenum pname=%d, GLsizei bufSize=%d, GLint64* params=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -5622,7 +5622,8 @@ void glcommon_glGetInternalformativ(struct CPU* cpu) {
     if (!ext_glGetInternalformativ)
         kpanic("ext_glGetInternalformativ is NULL");
     {
-    GL_FUNC(ext_glGetInternalformativ)(ARG1, ARG2, ARG3, ARG4, (GLint*)marshalp(cpu, 0, ARG5, 0));
+    GLint* p1=marshali(cpu, ARG5, ARG4);GL_FUNC(ext_glGetInternalformativ)(ARG1, ARG2, ARG3, ARG4, p1);
+    marshalBacki(cpu, ARG5, p1, ARG4);
     GL_LOG ("glGetInternalformativ GLenum target=%d, GLenum internalformat=%d, GLenum pname=%d, GLsizei bufSize=%d, GLint* params=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
     }
 }
@@ -6136,7 +6137,8 @@ void glcommon_glGetObjectParameterfvARB(struct CPU* cpu) {
     if (!ext_glGetObjectParameterfvARB)
         kpanic("ext_glGetObjectParameterfvARB is NULL");
     {
-    GL_FUNC(ext_glGetObjectParameterfvARB)(hARG1, ARG2, (GLfloat*)marshalp(cpu, 0, ARG3, 0));
+    GLfloat* p1=marshalf(cpu, ARG3, 1);GL_FUNC(ext_glGetObjectParameterfvARB)(hARG1, ARG2, p1);
+    marshalBackf(cpu, ARG3, p1, 1);
     GL_LOG ("glGetObjectParameterfvARB GLhandleARB obj=%d, GLenum pname=%d, GLfloat* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6152,7 +6154,8 @@ void glcommon_glGetObjectParameterivARB(struct CPU* cpu) {
     if (!ext_glGetObjectParameterivARB)
         kpanic("ext_glGetObjectParameterivARB is NULL");
     {
-    GL_FUNC(ext_glGetObjectParameterivARB)(hARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetObjectParameterivARB)(hARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetObjectParameterivARB GLhandleARB obj=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6652,7 +6655,8 @@ void glcommon_glGetProgramiv(struct CPU* cpu) {
     if (!ext_glGetProgramiv)
         kpanic("ext_glGetProgramiv is NULL");
     {
-    GL_FUNC(ext_glGetProgramiv)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetProgramiv)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetProgramiv GLuint program=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6660,7 +6664,8 @@ void glcommon_glGetProgramivARB(struct CPU* cpu) {
     if (!ext_glGetProgramivARB)
         kpanic("ext_glGetProgramivARB is NULL");
     {
-    GL_FUNC(ext_glGetProgramivARB)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetProgramivARB)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetProgramivARB GLenum target=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6668,7 +6673,8 @@ void glcommon_glGetProgramivNV(struct CPU* cpu) {
     if (!ext_glGetProgramivNV)
         kpanic("ext_glGetProgramivNV is NULL");
     {
-    GL_FUNC(ext_glGetProgramivNV)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetProgramivNV)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetProgramivNV GLuint id=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6780,7 +6786,8 @@ void glcommon_glGetQueryiv(struct CPU* cpu) {
     if (!ext_glGetQueryiv)
         kpanic("ext_glGetQueryiv is NULL");
     {
-    GL_FUNC(ext_glGetQueryiv)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetQueryiv)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetQueryiv GLenum target=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6788,7 +6795,8 @@ void glcommon_glGetQueryivARB(struct CPU* cpu) {
     if (!ext_glGetQueryivARB)
         kpanic("ext_glGetQueryivARB is NULL");
     {
-    GL_FUNC(ext_glGetQueryivARB)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetQueryivARB)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetQueryivARB GLenum target=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6876,7 +6884,8 @@ void glcommon_glGetShaderSource(struct CPU* cpu) {
     if (!ext_glGetShaderSource)
         kpanic("ext_glGetShaderSource is NULL");
     {
-    GL_FUNC(ext_glGetShaderSource)(ARG1, ARG2, (GLsizei*)marshalp(cpu, 0, ARG3, 0), (GLchar*)marshalp(cpu, 0, ARG4, 0));
+    GLsizei* p1=marshali(cpu, ARG3, 1);GLchar* p2=marshalub(cpu, ARG4, ARG2);GL_FUNC(ext_glGetShaderSource)(ARG1, ARG2, p1, p2);
+    marshalBacki(cpu, ARG3, p1, 1);marshalBackub(cpu, ARG4, p2, ARG2);
     GL_LOG ("glGetShaderSource GLuint shader=%d, GLsizei bufSize=%d, GLsizei* length=%.08x, GLchar* source=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
