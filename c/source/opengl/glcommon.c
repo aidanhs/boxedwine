@@ -133,7 +133,7 @@ void glcommon_glGetTexImage(struct CPU* cpu) {
     GLvoid* pixels;
     GLboolean b = PIXEL_PACK_BUFFER();
 
-    GL_LOG("glGetTexImage GLenum target=%d, GLint level=%d, GLenum format=%d, GLenum type=%d, GLvoid *pixels=%.08x", ARG1, ARG2, ARG3, ARG4, ARG5);
+    //GL_LOG("glGetTexImage GLenum target=%d, GLint level=%d, GLenum format=%d, GLenum type=%d, GLvoid *pixels=%.08x", ARG1, ARG2, ARG3, ARG4, ARG5);
     if (b) {
         pixels = (GLvoid*)ARG5;
     } else {
@@ -328,6 +328,7 @@ void glcommon_glReadPixels(struct CPU* cpu) {
 }
 
 void OPENGL_CALL_TYPE debugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam) {
+    klog("%s", message);
 }
 
 void glcommon_glSamplePass(struct CPU* cpu) {
@@ -340,7 +341,7 @@ void glcommon_glSamplePass(struct CPU* cpu) {
 }
 
 #undef GL_FUNCTION
-#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(gl##func)ARGS; POST GL_LOG LOG;} 
+#define GL_FUNCTION(func, RET, PARAMS, ARGS, PRE, POST, LOG) void glcommon_gl##func(struct CPU* cpu) { PRE GL_FUNC(gl##func)ARGS; POST} 
 
 #undef GL_FUNCTION_CUSTOM
 #define GL_FUNCTION_CUSTOM(func, RET, PARAMS)

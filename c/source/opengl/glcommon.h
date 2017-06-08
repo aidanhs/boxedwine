@@ -66,6 +66,38 @@ struct long2Double {
 #define ARG14 peek32(cpu, 14)
 #define ARG15 peek32(cpu, 15)
 
+#define bARG1 (peek32(cpu, 1) & 0xFF)
+#define bARG2 (peek32(cpu, 2) & 0xFF)
+#define bARG3 (peek32(cpu, 3) & 0xFF)
+#define bARG4 (peek32(cpu, 4) & 0xFF)
+#define bARG5 (peek32(cpu, 5) & 0xFF)
+#define bARG6 (peek32(cpu, 6) & 0xFF)
+#define bARG7 (peek32(cpu, 7) & 0xFF)
+#define bARG8 (peek32(cpu, 8) & 0xFF)
+#define bARG9 (peek32(cpu, 9) & 0xFF)
+#define bARG10 (peek32(cpu, 10) & 0xFF)
+#define bARG11 (peek32(cpu, 11) & 0xFF)
+#define bARG12 (peek32(cpu, 12) & 0xFF)
+#define bARG13 (peek32(cpu, 13) & 0xFF)
+#define bARG14 (peek32(cpu, 14) & 0xFF)
+#define bARG15 (peek32(cpu, 15) & 0xFF)
+
+#define sARG1 (peek32(cpu, 1) & 0xFFFF)
+#define sARG2 (peek32(cpu, 2) & 0xFFFF)
+#define sARG3 (peek32(cpu, 3) & 0xFFFF)
+#define sARG4 (peek32(cpu, 4) & 0xFFFF)
+#define sARG5 (peek32(cpu, 5) & 0xFFFF)
+#define sARG6 (peek32(cpu, 6) & 0xFFFF)
+#define sARG7 (peek32(cpu, 7) & 0xFFFF)
+#define sARG8 (peek32(cpu, 8) & 0xFFFF)
+#define sARG9 (peek32(cpu, 9) & 0xFFFF)
+#define sARG10 (peek32(cpu, 10) & 0xFFFF)
+#define sARG11 (peek32(cpu, 11) & 0xFFFF)
+#define sARG12 (peek32(cpu, 12) & 0xFFFF)
+#define sARG13 (peek32(cpu, 13) & 0xFFFF)
+#define sARG14 (peek32(cpu, 14) & 0xFFFF)
+#define sARG15 (peek32(cpu, 15) & 0xFFFF)
+
 #define hARG1 ARG1
 #define hARG2 ARG2
 #define hARG3 ARG3

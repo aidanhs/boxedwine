@@ -67,6 +67,10 @@ GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, 
 #define marshalTexCoordPointer(cpu, size, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
 #define marshalEdgeFlagPointer(cpu, stride, ptr) marshalp(cpu, 0, ptr, 0)
 #define marshalFogPointer(cpu, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalSecondaryColorPointer(cpu, size, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalSecondaryColorPointerEXT(cpu, size, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalEdgeFlagPointerEXT(cpu, stride, count, ptr) marshalp(cpu, 0, ptr, 0)
+#define marshalFogPointerEXT(cpu, type, stride, ptr) marshalp(cpu, 0, ptr, 0)
 
 #define getDataSize(x) 1
 #define components_in_format(format) 0
@@ -157,8 +161,11 @@ GLvoid* marshalColorPointer(struct CPU* cpu, GLint size, GLenum type, GLsizei st
 GLvoid* marshalIndexPointer(struct CPU* cpu,  GLenum type, GLsizei stride, U32 ptr);
 GLvoid* marshalTexCoordPointer(struct CPU* cpu, GLint size, GLenum type, GLsizei stride, U32 ptr);
 GLvoid* marshalEdgeFlagPointer(struct CPU* cpu, GLsizei stride, U32 ptr);
+GLvoid* marshalEdgeFlagPointerEXT(struct CPU* cpu, GLsizei stride, GLsizei count, U32 ptr);
 GLvoid* marshalSecondaryColorPointer(struct CPU* cpu, GLint size, GLenum type, GLsizei stride, U32 ptr);
+GLvoid* marshalSecondaryColorPointerEXT(struct CPU* cpu, GLint size, GLenum type, GLsizei stride, U32 ptr);
 GLvoid* marshalFogPointer(struct CPU* cpu, GLenum type, GLsizei stride, U32 ptr);
+GLvoid* marshalFogPointerEXT(struct CPU* cpu, GLenum type, GLsizei stride, U32 ptr);
 
 U32 getDataSize(GLenum type);
 

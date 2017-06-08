@@ -974,4 +974,18 @@ U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size) {
     }
     return result;
 }
+
+U32 numberOfContiguousRamPages(struct Memory* memory, U32 page) {
+    U32 result = 0;
+    U32 i;
+    U32 ramPage = memory->ramPage[page];
+
+    for (i=page+1;i<NUMBER_OF_PAGES;i++) {
+        if (memory->ramPage[i]!=ramPage+1)
+            return result;
+        result++;
+        ramPage++;
+    }
+    return result;
+}
 #endif

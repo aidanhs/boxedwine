@@ -448,16 +448,16 @@ void glcommon_glBindImageTexture(struct CPU* cpu) {
     if (!ext_glBindImageTexture)
         kpanic("ext_glBindImageTexture is NULL");
     {
-    GL_FUNC(ext_glBindImageTexture)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
-    GL_LOG ("glBindImageTexture GLuint unit=%d, GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum access=%d, GLenum format=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
+    GL_FUNC(ext_glBindImageTexture)(ARG1, ARG2, ARG3, bARG4, ARG5, ARG6, ARG7);
+    GL_LOG ("glBindImageTexture GLuint unit=%d, GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum access=%d, GLenum format=%d",ARG1,ARG2,ARG3,bARG4,ARG5,ARG6,ARG7);
     }
 }
 void glcommon_glBindImageTextureEXT(struct CPU* cpu) {
     if (!ext_glBindImageTextureEXT)
         kpanic("ext_glBindImageTextureEXT is NULL");
     {
-    GL_FUNC(ext_glBindImageTextureEXT)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
-    GL_LOG ("glBindImageTextureEXT GLuint index=%d, GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum access=%d, GLint format=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
+    GL_FUNC(ext_glBindImageTextureEXT)(ARG1, ARG2, ARG3, bARG4, ARG5, ARG6, ARG7);
+    GL_LOG ("glBindImageTextureEXT GLuint index=%d, GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum access=%d, GLint format=%d",ARG1,ARG2,ARG3,bARG4,ARG5,ARG6,ARG7);
     }
 }
 void glcommon_glBindImageTextures(struct CPU* cpu) {
@@ -672,8 +672,8 @@ void glcommon_glBinormal3bEXT(struct CPU* cpu) {
     if (!ext_glBinormal3bEXT)
         kpanic("ext_glBinormal3bEXT is NULL");
     {
-    GL_FUNC(ext_glBinormal3bEXT)(ARG1, ARG2, ARG3);
-    GL_LOG ("glBinormal3bEXT GLbyte bx=%d, GLbyte by=%d, GLbyte bz=%d",ARG1,ARG2,ARG3);
+    GL_FUNC(ext_glBinormal3bEXT)(bARG1, bARG2, bARG3);
+    GL_LOG ("glBinormal3bEXT GLbyte bx=%d, GLbyte by=%d, GLbyte bz=%d",bARG1,bARG2,bARG3);
     }
 }
 void glcommon_glBinormal3bvEXT(struct CPU* cpu) {
@@ -736,8 +736,8 @@ void glcommon_glBinormal3sEXT(struct CPU* cpu) {
     if (!ext_glBinormal3sEXT)
         kpanic("ext_glBinormal3sEXT is NULL");
     {
-    GL_FUNC(ext_glBinormal3sEXT)(ARG1, ARG2, ARG3);
-    GL_LOG ("glBinormal3sEXT GLshort bx=%d, GLshort by=%d, GLshort bz=%d",ARG1,ARG2,ARG3);
+    GL_FUNC(ext_glBinormal3sEXT)(sARG1, sARG2, sARG3);
+    GL_LOG ("glBinormal3sEXT GLshort bx=%d, GLshort by=%d, GLshort bz=%d",sARG1,sARG2,sARG3);
     }
 }
 void glcommon_glBinormal3svEXT(struct CPU* cpu) {
@@ -1016,8 +1016,8 @@ void glcommon_glBufferPageCommitmentARB(struct CPU* cpu) {
     if (!ext_glBufferPageCommitmentARB)
         kpanic("ext_glBufferPageCommitmentARB is NULL");
     {
-    GL_FUNC(ext_glBufferPageCommitmentARB)(ARG1, ARG2, ARG3, ARG4);
-    GL_LOG ("glBufferPageCommitmentARB GLenum target=%d, GLintptr offset=%d, GLsizeiptr size=%d, GLboolean commit=%d",ARG1,ARG2,ARG3,ARG4);
+    GL_FUNC(ext_glBufferPageCommitmentARB)(ARG1, ARG2, ARG3, bARG4);
+    GL_LOG ("glBufferPageCommitmentARB GLenum target=%d, GLintptr offset=%d, GLsizeiptr size=%d, GLboolean commit=%d",ARG1,ARG2,ARG3,bARG4);
     }
 }
 void glcommon_glBufferParameteriAPPLE(struct CPU* cpu) {
@@ -1392,8 +1392,8 @@ void glcommon_glColor3hNV(struct CPU* cpu) {
     if (!ext_glColor3hNV)
         kpanic("ext_glColor3hNV is NULL");
     {
-    GL_FUNC(ext_glColor3hNV)(ARG1, ARG2, ARG3);
-    GL_LOG ("glColor3hNV GLhalfNV red=%d, GLhalfNV green=%d, GLhalfNV blue=%d",ARG1,ARG2,ARG3);
+    GL_FUNC(ext_glColor3hNV)(sARG1, sARG2, sARG3);
+    GL_LOG ("glColor3hNV GLhalfNV red=%d, GLhalfNV green=%d, GLhalfNV blue=%d",sARG1,sARG2,sARG3);
     }
 }
 void glcommon_glColor3hvNV(struct CPU* cpu) {
@@ -1440,8 +1440,8 @@ void glcommon_glColor4hNV(struct CPU* cpu) {
     if (!ext_glColor4hNV)
         kpanic("ext_glColor4hNV is NULL");
     {
-    GL_FUNC(ext_glColor4hNV)(ARG1, ARG2, ARG3, ARG4);
-    GL_LOG ("glColor4hNV GLhalfNV red=%d, GLhalfNV green=%d, GLhalfNV blue=%d, GLhalfNV alpha=%d",ARG1,ARG2,ARG3,ARG4);
+    GL_FUNC(ext_glColor4hNV)(sARG1, sARG2, sARG3, sARG4);
+    GL_LOG ("glColor4hNV GLhalfNV red=%d, GLhalfNV green=%d, GLhalfNV blue=%d, GLhalfNV alpha=%d",sARG1,sARG2,sARG3,sARG4);
     }
 }
 void glcommon_glColor4hvNV(struct CPU* cpu) {
@@ -1456,8 +1456,8 @@ void glcommon_glColor4ubVertex2fSUN(struct CPU* cpu) {
     if (!ext_glColor4ubVertex2fSUN)
         kpanic("ext_glColor4ubVertex2fSUN is NULL");
     {
-    GL_FUNC(ext_glColor4ubVertex2fSUN)(ARG1, ARG2, ARG3, ARG4, fARG5, fARG6);
-    GL_LOG ("glColor4ubVertex2fSUN GLubyte r=%d, GLubyte g=%d, GLubyte b=%d, GLubyte a=%d, GLfloat x=%f, GLfloat y=%f",ARG1,ARG2,ARG3,ARG4,fARG5,fARG6);
+    GL_FUNC(ext_glColor4ubVertex2fSUN)(bARG1, bARG2, bARG3, bARG4, fARG5, fARG6);
+    GL_LOG ("glColor4ubVertex2fSUN GLubyte r=%d, GLubyte g=%d, GLubyte b=%d, GLubyte a=%d, GLfloat x=%f, GLfloat y=%f",bARG1,bARG2,bARG3,bARG4,fARG5,fARG6);
     }
 }
 void glcommon_glColor4ubVertex2fvSUN(struct CPU* cpu) {
@@ -1472,8 +1472,8 @@ void glcommon_glColor4ubVertex3fSUN(struct CPU* cpu) {
     if (!ext_glColor4ubVertex3fSUN)
         kpanic("ext_glColor4ubVertex3fSUN is NULL");
     {
-    GL_FUNC(ext_glColor4ubVertex3fSUN)(ARG1, ARG2, ARG3, ARG4, fARG5, fARG6, fARG7);
-    GL_LOG ("glColor4ubVertex3fSUN GLubyte r=%d, GLubyte g=%d, GLubyte b=%d, GLubyte a=%d, GLfloat x=%f, GLfloat y=%f, GLfloat z=%f",ARG1,ARG2,ARG3,ARG4,fARG5,fARG6,fARG7);
+    GL_FUNC(ext_glColor4ubVertex3fSUN)(bARG1, bARG2, bARG3, bARG4, fARG5, fARG6, fARG7);
+    GL_LOG ("glColor4ubVertex3fSUN GLubyte r=%d, GLubyte g=%d, GLubyte b=%d, GLubyte a=%d, GLfloat x=%f, GLfloat y=%f, GLfloat z=%f",bARG1,bARG2,bARG3,bARG4,fARG5,fARG6,fARG7);
     }
 }
 void glcommon_glColor4ubVertex3fvSUN(struct CPU* cpu) {
@@ -1536,16 +1536,16 @@ void glcommon_glColorMaskIndexedEXT(struct CPU* cpu) {
     if (!ext_glColorMaskIndexedEXT)
         kpanic("ext_glColorMaskIndexedEXT is NULL");
     {
-    GL_FUNC(ext_glColorMaskIndexedEXT)(ARG1, ARG2, ARG3, ARG4, ARG5);
-    GL_LOG ("glColorMaskIndexedEXT GLuint index=%d, GLboolean r=%d, GLboolean g=%d, GLboolean b=%d, GLboolean a=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glColorMaskIndexedEXT)(ARG1, bARG2, bARG3, bARG4, bARG5);
+    GL_LOG ("glColorMaskIndexedEXT GLuint index=%d, GLboolean r=%d, GLboolean g=%d, GLboolean b=%d, GLboolean a=%d",ARG1,bARG2,bARG3,bARG4,bARG5);
     }
 }
 void glcommon_glColorMaski(struct CPU* cpu) {
     if (!ext_glColorMaski)
         kpanic("ext_glColorMaski is NULL");
     {
-    GL_FUNC(ext_glColorMaski)(ARG1, ARG2, ARG3, ARG4, ARG5);
-    GL_LOG ("glColorMaski GLuint index=%d, GLboolean r=%d, GLboolean g=%d, GLboolean b=%d, GLboolean a=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glColorMaski)(ARG1, bARG2, bARG3, bARG4, bARG5);
+    GL_LOG ("glColorMaski GLuint index=%d, GLboolean r=%d, GLboolean g=%d, GLboolean b=%d, GLboolean a=%d",ARG1,bARG2,bARG3,bARG4,bARG5);
     }
 }
 void glcommon_glColorP3ui(struct CPU* cpu) {
@@ -1688,8 +1688,8 @@ void glcommon_glCombinerOutputNV(struct CPU* cpu) {
     if (!ext_glCombinerOutputNV)
         kpanic("ext_glCombinerOutputNV is NULL");
     {
-    GL_FUNC(ext_glCombinerOutputNV)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, ARG8, ARG9, ARG10);
-    GL_LOG ("glCombinerOutputNV GLenum stage=%d, GLenum portion=%d, GLenum abOutput=%d, GLenum cdOutput=%d, GLenum sumOutput=%d, GLenum scale=%d, GLenum bias=%d, GLboolean abDotProduct=%d, GLboolean cdDotProduct=%d, GLboolean muxSum=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,ARG8,ARG9,ARG10);
+    GL_FUNC(ext_glCombinerOutputNV)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7, bARG8, bARG9, bARG10);
+    GL_LOG ("glCombinerOutputNV GLenum stage=%d, GLenum portion=%d, GLenum abOutput=%d, GLenum cdOutput=%d, GLenum sumOutput=%d, GLenum scale=%d, GLenum bias=%d, GLboolean abDotProduct=%d, GLboolean cdDotProduct=%d, GLboolean muxSum=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7,bARG8,bARG9,bARG10);
     }
 }
 void glcommon_glCombinerParameterfNV(struct CPU* cpu) {
@@ -2607,7 +2607,7 @@ void glcommon_glDebugMessageCallback(struct CPU* cpu) {
     if (!ext_glDebugMessageCallback)
         kpanic("ext_glDebugMessageCallback is NULL");
     {
-    GL_FUNC(ext_glDebugMessageCallback)(debugMessageCallback, (void*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glDebugMessageCallback)(debugMessageCallback, 0);
     GL_LOG ("glDebugMessageCallback void * callback=%.08x, const void* userParam=%.08x",ARG1,ARG2);
     }
 }
@@ -2615,7 +2615,7 @@ void glcommon_glDebugMessageCallbackAMD(struct CPU* cpu) {
     if (!ext_glDebugMessageCallbackAMD)
         kpanic("ext_glDebugMessageCallbackAMD is NULL");
     {
-    GL_FUNC(ext_glDebugMessageCallbackAMD)(debugMessageCallback, (void*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glDebugMessageCallbackAMD)(debugMessageCallback, 0);
     GL_LOG ("glDebugMessageCallbackAMD void * callback=%.08x, void* userParam=%.08x",ARG1,ARG2);
     }
 }
@@ -2623,7 +2623,7 @@ void glcommon_glDebugMessageCallbackARB(struct CPU* cpu) {
     if (!ext_glDebugMessageCallbackARB)
         kpanic("ext_glDebugMessageCallbackARB is NULL");
     {
-    GL_FUNC(ext_glDebugMessageCallbackARB)(debugMessageCallback, (void*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glDebugMessageCallbackARB)(debugMessageCallback, 0);
     GL_LOG ("glDebugMessageCallbackARB void * callback=%.08x, const void* userParam=%.08x",ARG1,ARG2);
     }
 }
@@ -2631,24 +2631,24 @@ void glcommon_glDebugMessageControl(struct CPU* cpu) {
     if (!ext_glDebugMessageControl)
         kpanic("ext_glDebugMessageControl is NULL");
     {
-    GL_FUNC(ext_glDebugMessageControl)(ARG1, ARG2, ARG3, ARG4, marshalui(cpu, ARG5, ARG4), ARG6);
-    GL_LOG ("glDebugMessageControl GLenum source=%d, GLenum type=%d, GLenum severity=%d, GLsizei count=%d, const GLuint* ids=%.08x, GLboolean enabled=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
+    GL_FUNC(ext_glDebugMessageControl)(ARG1, ARG2, ARG3, ARG4, marshalui(cpu, ARG5, ARG4), bARG6);
+    GL_LOG ("glDebugMessageControl GLenum source=%d, GLenum type=%d, GLenum severity=%d, GLsizei count=%d, const GLuint* ids=%.08x, GLboolean enabled=%d",ARG1,ARG2,ARG3,ARG4,ARG5,bARG6);
     }
 }
 void glcommon_glDebugMessageControlARB(struct CPU* cpu) {
     if (!ext_glDebugMessageControlARB)
         kpanic("ext_glDebugMessageControlARB is NULL");
     {
-    GL_FUNC(ext_glDebugMessageControlARB)(ARG1, ARG2, ARG3, ARG4, marshalui(cpu, ARG5, ARG4), ARG6);
-    GL_LOG ("glDebugMessageControlARB GLenum source=%d, GLenum type=%d, GLenum severity=%d, GLsizei count=%d, const GLuint* ids=%.08x, GLboolean enabled=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
+    GL_FUNC(ext_glDebugMessageControlARB)(ARG1, ARG2, ARG3, ARG4, marshalui(cpu, ARG5, ARG4), bARG6);
+    GL_LOG ("glDebugMessageControlARB GLenum source=%d, GLenum type=%d, GLenum severity=%d, GLsizei count=%d, const GLuint* ids=%.08x, GLboolean enabled=%d",ARG1,ARG2,ARG3,ARG4,ARG5,bARG6);
     }
 }
 void glcommon_glDebugMessageEnableAMD(struct CPU* cpu) {
     if (!ext_glDebugMessageEnableAMD)
         kpanic("ext_glDebugMessageEnableAMD is NULL");
     {
-    GL_FUNC(ext_glDebugMessageEnableAMD)(ARG1, ARG2, ARG3, marshalui(cpu, ARG4, ARG3), ARG5);
-    GL_LOG ("glDebugMessageEnableAMD GLenum category=%d, GLenum severity=%d, GLsizei count=%d, const GLuint* ids=%.08x, GLboolean enabled=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glDebugMessageEnableAMD)(ARG1, ARG2, ARG3, marshalui(cpu, ARG4, ARG3), bARG5);
+    GL_LOG ("glDebugMessageEnableAMD GLenum category=%d, GLenum severity=%d, GLsizei count=%d, const GLuint* ids=%.08x, GLboolean enabled=%d",ARG1,ARG2,ARG3,ARG4,bARG5);
     }
 }
 void glcommon_glDebugMessageInsert(struct CPU* cpu) {
@@ -3488,7 +3488,7 @@ void glcommon_glEdgeFlagPointerEXT(struct CPU* cpu) {
     if (!ext_glEdgeFlagPointerEXT)
         kpanic("ext_glEdgeFlagPointerEXT is NULL");
     {
-    GL_FUNC(ext_glEdgeFlagPointerEXT)(ARG1, ARG2, (GLboolean*)marshalp(cpu, 0, ARG3, 0));
+    GL_FUNC(ext_glEdgeFlagPointerEXT)(ARG1, ARG2, marshalEdgeFlagPointerEXT(cpu, ARG1, ARG2, ARG3));
     GL_LOG ("glEdgeFlagPointerEXT GLsizei stride=%d, GLsizei count=%d, const GLboolean* pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -3946,7 +3946,7 @@ void glcommon_glFogCoordPointerEXT(struct CPU* cpu) {
     if (!ext_glFogCoordPointerEXT)
         kpanic("ext_glFogCoordPointerEXT is NULL");
     {
-    GL_FUNC(ext_glFogCoordPointerEXT)(ARG1, ARG2, marshalFogPointer(cpu, ARG1, ARG2, ARG3));
+    GL_FUNC(ext_glFogCoordPointerEXT)(ARG1, ARG2, marshalFogPointerEXT(cpu, ARG1, ARG2, ARG3));
     GL_LOG ("glFogCoordPointerEXT GLenum type=%d, GLsizei stride=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -4026,8 +4026,8 @@ void glcommon_glFogCoordhNV(struct CPU* cpu) {
     if (!ext_glFogCoordhNV)
         kpanic("ext_glFogCoordhNV is NULL");
     {
-    GL_FUNC(ext_glFogCoordhNV)(ARG1);
-    GL_LOG ("glFogCoordhNV GLhalfNV fog=%d",ARG1);
+    GL_FUNC(ext_glFogCoordhNV)(sARG1);
+    GL_LOG ("glFogCoordhNV GLhalfNV fog=%d",sARG1);
     }
 }
 void glcommon_glFogCoordhvNV(struct CPU* cpu) {
@@ -5449,16 +5449,16 @@ void glcommon_glGetHistogram(struct CPU* cpu) {
     if (!ext_glGetHistogram)
         kpanic("ext_glGetHistogram is NULL");
     {
-    GL_FUNC(ext_glGetHistogram)(ARG1, ARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
-    GL_LOG ("glGetHistogram GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glGetHistogram)(ARG1, bARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
+    GL_LOG ("glGetHistogram GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,bARG2,ARG3,ARG4,ARG5);
     }
 }
 void glcommon_glGetHistogramEXT(struct CPU* cpu) {
     if (!ext_glGetHistogramEXT)
         kpanic("ext_glGetHistogramEXT is NULL");
     {
-    GL_FUNC(ext_glGetHistogramEXT)(ARG1, ARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
-    GL_LOG ("glGetHistogramEXT GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glGetHistogramEXT)(ARG1, bARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
+    GL_LOG ("glGetHistogramEXT GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,bARG2,ARG3,ARG4,ARG5);
     }
 }
 void glcommon_glGetHistogramParameterfv(struct CPU* cpu) {
@@ -5505,18 +5505,18 @@ void glcommon_glGetImageHandleARB(struct CPU* cpu) {
     if (!ext_glGetImageHandleARB)
         kpanic("ext_glGetImageHandleARB is NULL");
     {
-    U64 ret=GL_FUNC(ext_glGetImageHandleARB)(ARG1, ARG2, ARG3, ARG4, ARG5);
+    U64 ret=GL_FUNC(ext_glGetImageHandleARB)(ARG1, ARG2, bARG3, ARG4, ARG5);
     EAX = (U32)ret;EDX = (U32)(ret >> 32);
-    GL_LOG ("glGetImageHandleARB GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum format=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_LOG ("glGetImageHandleARB GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum format=%d",ARG1,ARG2,bARG3,ARG4,ARG5);
     }
 }
 void glcommon_glGetImageHandleNV(struct CPU* cpu) {
     if (!ext_glGetImageHandleNV)
         kpanic("ext_glGetImageHandleNV is NULL");
     {
-    U64 ret=GL_FUNC(ext_glGetImageHandleNV)(ARG1, ARG2, ARG3, ARG4, ARG5);
+    U64 ret=GL_FUNC(ext_glGetImageHandleNV)(ARG1, ARG2, bARG3, ARG4, ARG5);
     EAX = (U32)ret;EDX = (U32)(ret >> 32);
-    GL_LOG ("glGetImageHandleNV GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum format=%d",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_LOG ("glGetImageHandleNV GLuint texture=%d, GLint level=%d, GLboolean layered=%d, GLint layer=%d, GLenum format=%d",ARG1,ARG2,bARG3,ARG4,ARG5);
     }
 }
 void glcommon_glGetImageTransformParameterfvHP(struct CPU* cpu) {
@@ -5719,8 +5719,8 @@ void glcommon_glGetMapControlPointsNV(struct CPU* cpu) {
     if (!ext_glGetMapControlPointsNV)
         kpanic("ext_glGetMapControlPointsNV is NULL");
     {
-    GL_FUNC(ext_glGetMapControlPointsNV)(ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, (void*)marshalp(cpu, 0, ARG7, 0));
-    GL_LOG ("glGetMapControlPointsNV GLenum target=%d, GLuint index=%d, GLenum type=%d, GLsizei ustride=%d, GLsizei vstride=%d, GLboolean packed=%d, void* points=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6,ARG7);
+    GL_FUNC(ext_glGetMapControlPointsNV)(ARG1, ARG2, ARG3, ARG4, ARG5, bARG6, (void*)marshalp(cpu, 0, ARG7, 0));
+    GL_LOG ("glGetMapControlPointsNV GLenum target=%d, GLuint index=%d, GLenum type=%d, GLsizei ustride=%d, GLsizei vstride=%d, GLboolean packed=%d, void* points=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5,bARG6,ARG7);
     }
 }
 void glcommon_glGetMapParameterfvNV(struct CPU* cpu) {
@@ -5759,16 +5759,16 @@ void glcommon_glGetMinmax(struct CPU* cpu) {
     if (!ext_glGetMinmax)
         kpanic("ext_glGetMinmax is NULL");
     {
-    GL_FUNC(ext_glGetMinmax)(ARG1, ARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
-    GL_LOG ("glGetMinmax GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glGetMinmax)(ARG1, bARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
+    GL_LOG ("glGetMinmax GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,bARG2,ARG3,ARG4,ARG5);
     }
 }
 void glcommon_glGetMinmaxEXT(struct CPU* cpu) {
     if (!ext_glGetMinmaxEXT)
         kpanic("ext_glGetMinmaxEXT is NULL");
     {
-    GL_FUNC(ext_glGetMinmaxEXT)(ARG1, ARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
-    GL_LOG ("glGetMinmaxEXT GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,ARG2,ARG3,ARG4,ARG5);
+    GL_FUNC(ext_glGetMinmaxEXT)(ARG1, bARG2, ARG3, ARG4, (void*)marshalp(cpu, 0, ARG5, 0));
+    GL_LOG ("glGetMinmaxEXT GLenum target=%d, GLboolean reset=%d, GLenum format=%d, GLenum type=%d, void* values=%.08x",ARG1,bARG2,ARG3,ARG4,ARG5);
     }
 }
 void glcommon_glGetMinmaxParameterfv(struct CPU* cpu) {

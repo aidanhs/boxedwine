@@ -38,10 +38,11 @@ struct OpenGLVetexPointer {
     U32 size;
     U32 type;
     U32 stride;
+    U32 count; // used by marshalEdgeFlagPointerEXT
     U32 ptr;
     U8* marshal;
     U32 marshal_size;
-    U32 called;
+    U32 refreshEachCall;
 };
 
 struct KThread {
@@ -82,11 +83,14 @@ struct KThread {
     struct OpenGLVetexPointer glVertextPointer;
     struct OpenGLVetexPointer glNormalPointer;
     struct OpenGLVetexPointer glFogPointer;
+    struct OpenGLVetexPointer glFogPointerEXT;
     struct OpenGLVetexPointer glColorPointer;
     struct OpenGLVetexPointer glSecondaryColorPointer;
+    struct OpenGLVetexPointer glSecondaryColorPointerEXT;
     struct OpenGLVetexPointer glIndexPointer;
     struct OpenGLVetexPointer glTexCoordPointer;
     struct OpenGLVetexPointer glEdgeFlagPointer;
+    struct OpenGLVetexPointer glEdgeFlagPointerEXT;
 };
 
 #define RESTORE_SIGNAL_MASK 0xF000000000000000l

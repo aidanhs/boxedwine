@@ -48,5 +48,7 @@ void nopermission_writew(struct Memory* memory, U32 address, U16 value);
 U32 nopermission_readd(struct Memory* memory, U32 address);
 void nopermission_writed(struct Memory* memory, U32 address, U32 value);
 
+U32 numberOfContiguousRamPages(struct Memory* memory, U32 page);
+
 #endif
 #endif
