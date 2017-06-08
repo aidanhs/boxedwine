@@ -65,35 +65,35 @@ struct fb_cmap {
         U16 blue[256];
 };
 
-void readCMap(MMU_ARG U32 address, struct fb_cmap* cmap) {
-    U32 i = readd(MMU_PARAM address);
-    U32 stop = readd(MMU_PARAM address+4)+i;
-    U32 red = readd(MMU_PARAM address+8);
-    U32 green = readd(MMU_PARAM address+12);
-    U32 blue = readd(MMU_PARAM address+16);
+void readCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
+    U32 i = readd(memory, address);
+    U32 stop = readd(memory, address+4)+i;
+    U32 red = readd(memory, address+8);
+    U32 green = readd(memory, address+12);
+    U32 blue = readd(memory, address+16);
 
     for (;i<stop;i++) {
-        writew(MMU_PARAM red, cmap->red[i]); red+=2;
-        writew(MMU_PARAM green, cmap->green[i]); green+=2;
-        writew(MMU_PARAM blue, cmap->blue[i]); blue+=2;
+        writew(memory, red, cmap->red[i]); red+=2;
+        writew(memory, green, cmap->green[i]); green+=2;
+        writew(memory, blue, cmap->blue[i]); blue+=2;
     }
 }
 
-void writeFixInfo(MMU_ARG U32 address, struct fb_fix_screeninfo* info) {
-    memcopyFromNative(MMU_PARAM address, info->id, sizeof(info->id)); address+=16;
-    writed(MMU_PARAM address, info->smem_start); address+=4;
-    writed(MMU_PARAM address, info->smem_len); address+=4;
-    writed(MMU_PARAM address, info->type); address+=4;
-    writed(MMU_PARAM address, info->type_aux); address+=4;
-    writed(MMU_PARAM address, info->visual); address+=4;
-    writew(MMU_PARAM address, info->xpanstep); address+=2;
-    writew(MMU_PARAM address, info->ypanstep); address+=2;
-    writew(MMU_PARAM address, info->ywrapstep); address+=2;
-    writed(MMU_PARAM address, info->line_length); address+=4;
-    writed(MMU_PARAM address, info->mmio_start); address+=4;
-    writed(MMU_PARAM address, info->mmio_len); address+=4;
-    writed(MMU_PARAM address, info->accel); address+=4;
-    writew(MMU_PARAM address, info->capabilities);
+void writeFixInfo(struct Memory* memory, U32 address, struct fb_fix_screeninfo* info) {
+    memcopyFromNative(memory, address, info->id, sizeof(info->id)); address+=16;
+    writed(memory, address, info->smem_start); address+=4;
+    writed(memory, address, info->smem_len); address+=4;
+    writed(memory, address, info->type); address+=4;
+    writed(memory, address, info->type_aux); address+=4;
+    writed(memory, address, info->visual); address+=4;
+    writew(memory, address, info->xpanstep); address+=2;
+    writew(memory, address, info->ypanstep); address+=2;
+    writew(memory, address, info->ywrapstep); address+=2;
+    writed(memory, address, info->line_length); address+=4;
+    writed(memory, address, info->mmio_start); address+=4;
+    writed(memory, address, info->mmio_len); address+=4;
+    writed(memory, address, info->accel); address+=4;
+    writew(memory, address, info->capabilities);
 }
 
 struct fb_bitfield {
@@ -143,51 +143,51 @@ struct fb_var_screeninfo {
     U32 reserved[4];			  /* Reserved for future compatibility */
 };
 
-void writeVarInfo(MMU_ARG U32 address, struct fb_var_screeninfo* info) {
-    writed(MMU_PARAM address, info->xres); address+=4;
-    writed(MMU_PARAM address, info->yres); address+=4;
-    writed(MMU_PARAM address, info->xres_virtual); address+=4;
-    writed(MMU_PARAM address, info->yres_virtual); address+=4;
-    writed(MMU_PARAM address, info->xoffset); address+=4;
-    writed(MMU_PARAM address, info->yoffset); address+=4;
+void writeVarInfo(struct Memory* memory, U32 address, struct fb_var_screeninfo* info) {
+    writed(memory, address, info->xres); address+=4;
+    writed(memory, address, info->yres); address+=4;
+    writed(memory, address, info->xres_virtual); address+=4;
+    writed(memory, address, info->yres_virtual); address+=4;
+    writed(memory, address, info->xoffset); address+=4;
+    writed(memory, address, info->yoffset); address+=4;
 
-    writed(MMU_PARAM address, info->bits_per_pixel); address+=4;
-    writed(MMU_PARAM address, info->grayscale); address+=4;
+    writed(memory, address, info->bits_per_pixel); address+=4;
+    writed(memory, address, info->grayscale); address+=4;
 
-    writed(MMU_PARAM address, info->red.offset); address+=4;
-    writed(MMU_PARAM address, info->red.length); address+=4;
-    writed(MMU_PARAM address, info->red.msb_right); address+=4;
+    writed(memory, address, info->red.offset); address+=4;
+    writed(memory, address, info->red.length); address+=4;
+    writed(memory, address, info->red.msb_right); address+=4;
 
-    writed(MMU_PARAM address, info->green.offset); address+=4;
-    writed(MMU_PARAM address, info->green.length); address+=4;
-    writed(MMU_PARAM address, info->green.msb_right); address+=4;
+    writed(memory, address, info->green.offset); address+=4;
+    writed(memory, address, info->green.length); address+=4;
+    writed(memory, address, info->green.msb_right); address+=4;
 
-    writed(MMU_PARAM address, info->blue.offset); address+=4;
-    writed(MMU_PARAM address, info->blue.length); address+=4;
-    writed(MMU_PARAM address, info->blue.msb_right); address+=4;
+    writed(memory, address, info->blue.offset); address+=4;
+    writed(memory, address, info->blue.length); address+=4;
+    writed(memory, address, info->blue.msb_right); address+=4;
 
-    writed(MMU_PARAM address, info->transp.offset); address+=4;
-    writed(MMU_PARAM address, info->transp.length); address+=4;
-    writed(MMU_PARAM address, info->transp.msb_right); address+=4;
+    writed(memory, address, info->transp.offset); address+=4;
+    writed(memory, address, info->transp.length); address+=4;
+    writed(memory, address, info->transp.msb_right); address+=4;
 
-    writed(MMU_PARAM address, info->nonstd); address+=4;
-    writed(MMU_PARAM address, info->activate); address+=4;
-    writed(MMU_PARAM address, info->height); address+=4;
-    writed(MMU_PARAM address, info->width); address+=4;
-    writed(MMU_PARAM address, info->accel_flags); address+=4;
+    writed(memory, address, info->nonstd); address+=4;
+    writed(memory, address, info->activate); address+=4;
+    writed(memory, address, info->height); address+=4;
+    writed(memory, address, info->width); address+=4;
+    writed(memory, address, info->accel_flags); address+=4;
 
-    writed(MMU_PARAM address, info->pixclock); address+=4;
-    writed(MMU_PARAM address, info->left_margin); address+=4;
-    writed(MMU_PARAM address, info->right_margin); address+=4;
-    writed(MMU_PARAM address, info->upper_margin); address+=4;
-    writed(MMU_PARAM address, info->lower_margin); address+=4;
-    writed(MMU_PARAM address, info->hsync_len); address+=4;
-    writed(MMU_PARAM address, info->vsync_len); address+=4;
-    writed(MMU_PARAM address, info->sync); address+=4;
-    writed(MMU_PARAM address, info->vmode); address+=4;
-    writed(MMU_PARAM address, info->rotate); address+=4;
-    writed(MMU_PARAM address, info->colorspace); address+=4;
-    zeroMemory(MMU_PARAM address, 16);
+    writed(memory, address, info->pixclock); address+=4;
+    writed(memory, address, info->left_margin); address+=4;
+    writed(memory, address, info->right_margin); address+=4;
+    writed(memory, address, info->upper_margin); address+=4;
+    writed(memory, address, info->lower_margin); address+=4;
+    writed(memory, address, info->hsync_len); address+=4;
+    writed(memory, address, info->vsync_len); address+=4;
+    writed(memory, address, info->sync); address+=4;
+    writed(memory, address, info->vmode); address+=4;
+    writed(memory, address, info->rotate); address+=4;
+    writed(memory, address, info->colorspace); address+=4;
+    zeroMemory(memory, address, 16);
 }
 
 U32 GET_SHIFT(U32 n) {
@@ -214,50 +214,50 @@ U32 COUNT_BITS(U32 n) {
     return 0;
 }
 
-void readVarInfo(MMU_ARG int address, struct fb_var_screeninfo* info) {
-    info->xres = readd(MMU_PARAM address); address+=4;
-    info->yres = readd(MMU_PARAM address); address+=4;
-    info->xres_virtual = readd(MMU_PARAM address); address+=4;
-    info->yres_virtual = readd(MMU_PARAM address); address+=4;
-    info->xoffset = readd(MMU_PARAM address); address+=4;
-    info->yoffset = readd(MMU_PARAM address); address+=4;
+void readVarInfo(struct Memory* memory, int address, struct fb_var_screeninfo* info) {
+    info->xres = readd(memory, address); address+=4;
+    info->yres = readd(memory, address); address+=4;
+    info->xres_virtual = readd(memory, address); address+=4;
+    info->yres_virtual = readd(memory, address); address+=4;
+    info->xoffset = readd(memory, address); address+=4;
+    info->yoffset = readd(memory, address); address+=4;
 
-    info->bits_per_pixel = readd(MMU_PARAM address); address+=4;
-    info->grayscale = readd(MMU_PARAM address); address+=4;
+    info->bits_per_pixel = readd(memory, address); address+=4;
+    info->grayscale = readd(memory, address); address+=4;
 
-    info->red.offset = readd(MMU_PARAM address); address+=4;
-    info->red.length = readd(MMU_PARAM address); address+=4;
-    info->red.msb_right = readd(MMU_PARAM address); address+=4;
+    info->red.offset = readd(memory, address); address+=4;
+    info->red.length = readd(memory, address); address+=4;
+    info->red.msb_right = readd(memory, address); address+=4;
 
-    info->green.offset = readd(MMU_PARAM address); address+=4;
-    info->green.length = readd(MMU_PARAM address); address+=4;
-    info->green.msb_right = readd(MMU_PARAM address); address+=4;
+    info->green.offset = readd(memory, address); address+=4;
+    info->green.length = readd(memory, address); address+=4;
+    info->green.msb_right = readd(memory, address); address+=4;
 
-    info->blue.offset = readd(MMU_PARAM address); address+=4;
-    info->blue.length = readd(MMU_PARAM address); address+=4;
-    info->blue.msb_right = readd(MMU_PARAM address); address+=4;
+    info->blue.offset = readd(memory, address); address+=4;
+    info->blue.length = readd(memory, address); address+=4;
+    info->blue.msb_right = readd(memory, address); address+=4;
 
-    info->transp.offset = readd(MMU_PARAM address); address+=4;
-    info->transp.length = readd(MMU_PARAM address); address+=4;
-    info->transp.msb_right = readd(MMU_PARAM address); address+=4;
+    info->transp.offset = readd(memory, address); address+=4;
+    info->transp.length = readd(memory, address); address+=4;
+    info->transp.msb_right = readd(memory, address); address+=4;
 
-    info->nonstd = readd(MMU_PARAM address); address+=4;
-    info->activate = readd(MMU_PARAM address); address+=4;
-    info->height = readd(MMU_PARAM address); address+=4;
-    info->width = readd(MMU_PARAM address); address+=4;
-    info->accel_flags = readd(MMU_PARAM address); address+=4;
+    info->nonstd = readd(memory, address); address+=4;
+    info->activate = readd(memory, address); address+=4;
+    info->height = readd(memory, address); address+=4;
+    info->width = readd(memory, address); address+=4;
+    info->accel_flags = readd(memory, address); address+=4;
 
-    info->pixclock = readd(MMU_PARAM address); address+=4;
-    info->left_margin = readd(MMU_PARAM address); address+=4;
-    info->right_margin = readd(MMU_PARAM address); address+=4;
-    info->upper_margin = readd(MMU_PARAM address); address+=4;
-    info->lower_margin = readd(MMU_PARAM address); address+=4;
-    info->hsync_len = readd(MMU_PARAM address); address+=4;
-    info->vsync_len = readd(MMU_PARAM address); address+=4;
-    info->sync = readd(MMU_PARAM address); address+=4;
-    info->vmode = readd(MMU_PARAM address); address+=4;
-    info->rotate = readd(MMU_PARAM address); address+=4;
-    info->colorspace = readd(MMU_PARAM address); address+=4;	
+    info->pixclock = readd(memory, address); address+=4;
+    info->left_margin = readd(memory, address); address+=4;
+    info->right_margin = readd(memory, address); address+=4;
+    info->upper_margin = readd(memory, address); address+=4;
+    info->lower_margin = readd(memory, address); address+=4;
+    info->hsync_len = readd(memory, address); address+=4;
+    info->vsync_len = readd(memory, address); address+=4;
+    info->sync = readd(memory, address); address+=4;
+    info->vmode = readd(memory, address); address+=4;
+    info->rotate = readd(memory, address); address+=4;
+    info->colorspace = readd(memory, address); address+=4;	
 
     screenCx = info->xres;
     screenCy = info->yres;
@@ -296,17 +296,17 @@ void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
-void writeCMap(MMU_ARG U32 address, struct fb_cmap* cmap) {
-    U32 i = readd(MMU_PARAM address);
-    U32 stop = readd(MMU_PARAM address+4)+i;
-    U32 red = readd(MMU_PARAM address+8);
-    U32 green = readd(MMU_PARAM address+12);
-    U32 blue = readd(MMU_PARAM address+16);
+void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
+    U32 i = readd(memory, address);
+    U32 stop = readd(memory, address+4)+i;
+    U32 red = readd(memory, address+8);
+    U32 green = readd(memory, address+12);
+    U32 blue = readd(memory, address+16);
 
     for (;i<stop;i++) {
-        cmap->red[i] = readw(MMU_PARAM red); red+=2;
-        cmap->green[i] = readw(MMU_PARAM green); green+=2;
-        cmap->blue[i] = readw(MMU_PARAM blue); blue+=2;
+        cmap->red[i] = readw(memory, red); red+=2;
+        cmap->green[i] = readw(memory, green); green+=2;
+        cmap->blue[i] = readw(memory, blue); blue+=2;
     }
     paletteChanged = 1;	
 }
@@ -414,46 +414,46 @@ void fbSetupScreen() {
 }
 
 #ifndef HAS_64BIT_MMU
-static U8 fb_readb(MMU_ARG U32 address) {	
+static U8 fb_readb(struct Memory* memory, U32 address) {	
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
     return 0;
 }
 
-static void fb_writeb(MMU_ARG U32 address, U8 value) {
+static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
     updateAvailable=1;
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         ((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
-static U16 fb_readw(MMU_ARG U32 address) {
+static U16 fb_readw(struct Memory* memory, U32 address) {
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
     return 0;
 }
 
-static void fb_writew(MMU_ARG U32 address, U16 value) {
+static void fb_writew(struct Memory* memory, U32 address, U16 value) {
     updateAvailable=1;
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
-static U32 fb_readd(MMU_ARG U32 address) {
+static U32 fb_readd(struct Memory* memory, U32 address) {
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
     return 0;
 }
 
-static void fb_writed(MMU_ARG U32 address, U32 value) {
+static void fb_writed(struct Memory* memory, U32 address, U32 value) {
     updateAvailable=1;
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
 }
 
-static void fb_clear(MMU_ARG U32 page) {
+static void fb_clear(struct Memory* memory, U32 page) {
 }
 
-static U8* fb_physicalAddress(MMU_ARG U32 address) {
+static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
     updateAvailable=1;
     return &((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
@@ -507,18 +507,18 @@ S64 fb_seek(struct FsOpenNode* node, S64 pos) {
     return pos;
 }
 
-U32 fb_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 fb_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     if (node->idata+len>fb_fix_screeninfo.line_length)
         len = fb_fix_screeninfo.line_length-node->idata;
-    memcopyFromNative(MMU_PARAM address, screenPixels+node->idata, len);
+    memcopyFromNative(memory, address, screenPixels+node->idata, len);
     node->idata+=len;
     return len;
 }
 
-U32 fb_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 fb_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     if (node->idata+len>fb_fix_screeninfo.line_length)
         len = fb_fix_screeninfo.line_length-node->idata;
-    memcopyToNative(MMU_PARAM address, screenPixels+node->idata, len);
+    memcopyToNative(memory, address, screenPixels+node->idata, len);
     node->idata+=len;
     return len;
 }
@@ -532,24 +532,24 @@ U32 fb_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
 
     switch(request) {
         case 0x4600: // FBIOGET_VSCREENINFO
-            writeVarInfo(MMU_PARAM_THREAD IOCTL_ARG1, &fb_var_screeninfo);
+            writeVarInfo(thread->process->memory, IOCTL_ARG1, &fb_var_screeninfo);
             break;
         case 0x4601: // FBIOPUT_VSCREENINFO
-            readVarInfo(MMU_PARAM_THREAD IOCTL_ARG1, &fb_var_screeninfo);
+            readVarInfo(thread->process->memory, IOCTL_ARG1, &fb_var_screeninfo);
             fbSetupScreen();
             break;
         case 0x4602: // FBIOGET_FSCREENINFO
-            writeFixInfo(MMU_PARAM_THREAD IOCTL_ARG1, &fb_fix_screeninfo);
+            writeFixInfo(thread->process->memory, IOCTL_ARG1, &fb_fix_screeninfo);
             break;
         case 0x4604: // FBIOGETCMAP
-            readCMap(MMU_PARAM_THREAD IOCTL_ARG1, &fb_cmap);
+            readCMap(thread->process->memory, IOCTL_ARG1, &fb_cmap);
             break;
         case 0x4605: // FBIOPUTCMAP
-            writeCMap(MMU_PARAM_THREAD IOCTL_ARG1, &fb_cmap);
+            writeCMap(thread->process->memory, IOCTL_ARG1, &fb_cmap);
             break;
         case 0x4606: { // FBIOPAN_DISPLAY
             struct fb_var_screeninfo fb;
-            readVarInfo(MMU_PARAM_THREAD IOCTL_ARG1, &fb);
+            readVarInfo(thread->process->memory, IOCTL_ARG1, &fb);
             break;
         }
         case 0x4611: // FBIOBLANK
@@ -582,7 +582,7 @@ BOOL fb_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 fb_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 fb_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 #if 0
     U32 pageStart = fb_fix_screeninfo.smem_start >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;

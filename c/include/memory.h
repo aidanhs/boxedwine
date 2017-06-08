@@ -29,34 +29,28 @@
 
 extern char tmp64k[];
 
-
-#define MMU_ARG struct Memory* memory,
-#define MMU_PARAM memory,
-#define MMU_PARAM_THREAD thread->process->memory,
-#define MMU_PARAM_CPU cpu->memory,
-
 struct Memory;
 struct KProcess;
 
-U8 readb(MMU_ARG U32 address);
-void writeb(MMU_ARG U32 address, U8 value);
-U16 readw(MMU_ARG U32 address);
-void writew(MMU_ARG U32 address, U16 value);
-U32 readd(MMU_ARG U32 address);
-void writed(MMU_ARG U32 address, U32 value);
+U8 readb(struct Memory* memory, U32 address);
+void writeb(struct Memory* memory, U32 address, U8 value);
+U16 readw(struct Memory* memory, U32 address);
+void writew(struct Memory* memory, U32 address, U16 value);
+U32 readd(struct Memory* memory, U32 address);
+void writed(struct Memory* memory, U32 address, U32 value);
 
-INLINE U64 readq(MMU_ARG U32 address) {
-    return readd(MMU_PARAM address) | ((U64)readd(MMU_PARAM address + 4) << 32);
+INLINE U64 readq(struct Memory* memory, U32 address) {
+    return readd(memory, address) | ((U64)readd(memory, address + 4) << 32);
 }
 
-INLINE void writeq(MMU_ARG U32 address, U64 value) {
-    writed(MMU_PARAM address, (U32)value);
-    writed(MMU_PARAM address + 4, (U32)(value >> 32));
+INLINE void writeq(struct Memory* memory, U32 address, U64 value) {
+    writed(memory, address, (U32)value);
+    writed(memory, address + 4, (U32)(value >> 32));
 }
 
-void zeroMemory(MMU_ARG U32 address, int len);
-void readMemory(MMU_ARG U8* data, U32 address, int len);
-void writeMemory(MMU_ARG U32 address, U8* data, int len);
+void zeroMemory(struct Memory* memory, U32 address, int len);
+void readMemory(struct Memory* memory, U8* data, U32 address, int len);
+void writeMemory(struct Memory* memory, U32 address, U8* data, int len);
 
 struct Memory* allocMemory(struct KProcess* process);
 void initMemory(struct Memory* memory);
@@ -96,16 +90,16 @@ void freePage(struct Memory* memory, U32 page);
 
 U8* getPhysicalAddress(struct Memory* memory, U32 address);
 
-char* getNativeString(MMU_ARG U32 address);
-char* getNativeStringW(MMU_ARG U32 address);
-char* getNativeString2(MMU_ARG U32 address);
-char* getNativeStringW2(MMU_ARG U32 address);
-void writeNativeString(MMU_ARG U32 address, const char* str);
-U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len);
-void writeNativeStringW(MMU_ARG U32 address, const char* str);
+char* getNativeString(struct Memory* memory, U32 address);
+char* getNativeStringW(struct Memory* memory, U32 address);
+char* getNativeString2(struct Memory* memory, U32 address);
+char* getNativeStringW2(struct Memory* memory, U32 address);
+void writeNativeString(struct Memory* memory, U32 address, const char* str);
+U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len);
+void writeNativeStringW(struct Memory* memory, U32 address, const char* str);
 
-void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len);
-void memcopyToNative(MMU_ARG U32 address, char* p, U32 len);
+void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len);
+void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len);
 
 U32 getMemoryAllocated(struct Memory* memory);
 

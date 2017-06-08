@@ -2505,7 +2505,7 @@ void generateSource(struct CPU* cpu, U32 eip, struct Block* block);
 extern U32 gensrc;
 #endif
 #ifdef AOT
-OpCallback getCompiledFunction(U32 crc, const unsigned char* bytes, U32 byteLen, MMU_ARG U32 ip);
+OpCallback getCompiledFunction(U32 crc, const unsigned char* bytes, U32 byteLen, struct Memory* memory, U32 ip);
 #include "crc.h"
 U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
     U32 i;
@@ -2523,12 +2523,12 @@ U32 aot(struct CPU* cpu, struct Block* block, U32 eip) {
             if (!cpu->memory->read[ip>>12])
                 return 0;
 #endif
-            ops[opPos++] = readb(MMU_PARAM_CPU ip++);
+            ops[opPos++] = readb(cpu->memory, ip++);
         }
         op = op->next;
     }
     crc = crc32b(ops, opPos);
-    func = getCompiledFunction(crc, ops, opPos, MMU_PARAM_CPU ip);
+    func = getCompiledFunction(crc, ops, opPos, cpu->memory, ip);
     if (func) {
         block->ops->func = func;
         freeOp(block->ops->next);

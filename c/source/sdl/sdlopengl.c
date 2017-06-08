@@ -33,7 +33,7 @@ void initDisplayModes() {
     }
 }
 
-U32 sdl_wglDescribePixelFormat(MMU_ARG U32 hdc, U32 fmt, U32 size, U32 descr)
+U32 sdl_wglDescribePixelFormat(struct Memory* memory, U32 hdc, U32 fmt, U32 size, U32 descr)
 {
     initDisplayModes();
 
@@ -43,61 +43,61 @@ U32 sdl_wglDescribePixelFormat(MMU_ARG U32 hdc, U32 fmt, U32 size, U32 descr)
         return 0;
     }
 
-    writew(MMU_PARAM descr, pfs[fmt].nSize); descr+=2;
-    writew(MMU_PARAM descr, pfs[fmt].nVersion); descr+=2;
-    writed(MMU_PARAM descr, pfs[fmt].dwFlags); descr+=4;
-    writeb(MMU_PARAM descr, pfs[fmt].iPixelType); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cColorBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cRedBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cRedShift); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cGreenBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cGreenShift); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cBlueBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cBlueShift); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAlphaBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAlphaShift); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAccumBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAccumRedBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAccumGreenBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAccumBlueBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAccumAlphaBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cDepthBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cStencilBits); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].cAuxBuffers); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].iLayerType); descr++;
-    writeb(MMU_PARAM descr, pfs[fmt].bReserved); descr++;
-    writed(MMU_PARAM descr, pfs[fmt].dwLayerMask); descr+=4;
-    writed(MMU_PARAM descr, pfs[fmt].dwVisibleMask); descr+=4;
-    writed(MMU_PARAM descr, pfs[fmt].dwDamageMask);
+    writew(memory, descr, pfs[fmt].nSize); descr+=2;
+    writew(memory, descr, pfs[fmt].nVersion); descr+=2;
+    writed(memory, descr, pfs[fmt].dwFlags); descr+=4;
+    writeb(memory, descr, pfs[fmt].iPixelType); descr++;
+    writeb(memory, descr, pfs[fmt].cColorBits); descr++;
+    writeb(memory, descr, pfs[fmt].cRedBits); descr++;
+    writeb(memory, descr, pfs[fmt].cRedShift); descr++;
+    writeb(memory, descr, pfs[fmt].cGreenBits); descr++;
+    writeb(memory, descr, pfs[fmt].cGreenShift); descr++;
+    writeb(memory, descr, pfs[fmt].cBlueBits); descr++;
+    writeb(memory, descr, pfs[fmt].cBlueShift); descr++;
+    writeb(memory, descr, pfs[fmt].cAlphaBits); descr++;
+    writeb(memory, descr, pfs[fmt].cAlphaShift); descr++;
+    writeb(memory, descr, pfs[fmt].cAccumBits); descr++;
+    writeb(memory, descr, pfs[fmt].cAccumRedBits); descr++;
+    writeb(memory, descr, pfs[fmt].cAccumGreenBits); descr++;
+    writeb(memory, descr, pfs[fmt].cAccumBlueBits); descr++;
+    writeb(memory, descr, pfs[fmt].cAccumAlphaBits); descr++;
+    writeb(memory, descr, pfs[fmt].cDepthBits); descr++;
+    writeb(memory, descr, pfs[fmt].cStencilBits); descr++;
+    writeb(memory, descr, pfs[fmt].cAuxBuffers); descr++;
+    writeb(memory, descr, pfs[fmt].iLayerType); descr++;
+    writeb(memory, descr, pfs[fmt].bReserved); descr++;
+    writed(memory, descr, pfs[fmt].dwLayerMask); descr+=4;
+    writed(memory, descr, pfs[fmt].dwVisibleMask); descr+=4;
+    writed(memory, descr, pfs[fmt].dwDamageMask);
 
     return numberOfPfs;
 }
 
-void writePixelFormat(MMU_ARG PixelFormat* pf, U32 descr) {
-    pf->nSize = readw(MMU_PARAM descr); descr+=2;
-    pf->nVersion = readw(MMU_PARAM descr); descr+=2;
-    pf->dwFlags = readd(MMU_PARAM descr); descr+=4;
-    pf->iPixelType = readb(MMU_PARAM descr); descr++;
-    pf->cColorBits = readb(MMU_PARAM descr); descr++;
-    pf->cRedBits = readb(MMU_PARAM descr); descr++;
-    pf->cRedShift = readb(MMU_PARAM descr); descr++;
-    pf->cGreenBits = readb(MMU_PARAM descr); descr++;
-    pf->cGreenShift = readb(MMU_PARAM descr); descr++;
-    pf->cBlueBits = readb(MMU_PARAM descr); descr++;
-    pf->cBlueShift = readb(MMU_PARAM descr); descr++;
-    pf->cAlphaBits = readb(MMU_PARAM descr); descr++;
-    pf->cAlphaShift = readb(MMU_PARAM descr); descr++;
-    pf->cAccumBits = readb(MMU_PARAM descr); descr++;
-    pf->cAccumRedBits = readb(MMU_PARAM descr); descr++;
-    pf->cAccumGreenBits = readb(MMU_PARAM descr); descr++;
-    pf->cAccumBlueBits = readb(MMU_PARAM descr); descr++;
-    pf->cAccumAlphaBits = readb(MMU_PARAM descr); descr++;
-    pf->cDepthBits = readb(MMU_PARAM descr); descr++;
-    pf->cStencilBits = readb(MMU_PARAM descr); descr++;
-    pf->cAuxBuffers = readb(MMU_PARAM descr); descr++;
-    pf->iLayerType = readb(MMU_PARAM descr); descr++;
-    pf->bReserved = readb(MMU_PARAM descr); descr++;
-    pf->dwLayerMask = readd(MMU_PARAM descr); descr+=4;
-    pf->dwVisibleMask = readd(MMU_PARAM descr); descr+=4;
-    pf->dwDamageMask = readd(MMU_PARAM descr);
+void writePixelFormat(struct Memory* memory, PixelFormat* pf, U32 descr) {
+    pf->nSize = readw(memory, descr); descr+=2;
+    pf->nVersion = readw(memory, descr); descr+=2;
+    pf->dwFlags = readd(memory, descr); descr+=4;
+    pf->iPixelType = readb(memory, descr); descr++;
+    pf->cColorBits = readb(memory, descr); descr++;
+    pf->cRedBits = readb(memory, descr); descr++;
+    pf->cRedShift = readb(memory, descr); descr++;
+    pf->cGreenBits = readb(memory, descr); descr++;
+    pf->cGreenShift = readb(memory, descr); descr++;
+    pf->cBlueBits = readb(memory, descr); descr++;
+    pf->cBlueShift = readb(memory, descr); descr++;
+    pf->cAlphaBits = readb(memory, descr); descr++;
+    pf->cAlphaShift = readb(memory, descr); descr++;
+    pf->cAccumBits = readb(memory, descr); descr++;
+    pf->cAccumRedBits = readb(memory, descr); descr++;
+    pf->cAccumGreenBits = readb(memory, descr); descr++;
+    pf->cAccumBlueBits = readb(memory, descr); descr++;
+    pf->cAccumAlphaBits = readb(memory, descr); descr++;
+    pf->cDepthBits = readb(memory, descr); descr++;
+    pf->cStencilBits = readb(memory, descr); descr++;
+    pf->cAuxBuffers = readb(memory, descr); descr++;
+    pf->iLayerType = readb(memory, descr); descr++;
+    pf->bReserved = readb(memory, descr); descr++;
+    pf->dwLayerMask = readd(memory, descr); descr+=4;
+    pf->dwVisibleMask = readd(memory, descr); descr+=4;
+    pf->dwDamageMask = readd(memory, descr);
 }

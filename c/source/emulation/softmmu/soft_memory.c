@@ -174,7 +174,7 @@ static U8* invalid_physicalAddress(struct Memory* memory, U32 address) {
 
 struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear, invalid_physicalAddress};
 
-U8 readb(MMU_ARG U32 address) {
+U8 readb(struct Memory* memory, U32 address) {
     int index = address >> 12;
 #ifdef LOG_OPS
     U8 result;
@@ -192,7 +192,7 @@ U8 readb(MMU_ARG U32 address) {
 #endif
 }
 
-void writeb(MMU_ARG U32 address, U8 value) {
+void writeb(struct Memory* memory, U32 address, U8 value) {
     int index = address >> 12;
 #ifdef LOG_OPS
     if (memory->log)
@@ -205,7 +205,7 @@ void writeb(MMU_ARG U32 address, U8 value) {
     }
 }
 
-U16 readw(MMU_ARG U32 address) {
+U16 readw(struct Memory* memory, U32 address) {
 #ifdef LOG_OPS
     U16 result;
 
@@ -232,7 +232,7 @@ U16 readw(MMU_ARG U32 address) {
 #endif
 }
 
-void writew(MMU_ARG U32 address, U16 value) {
+void writew(struct Memory* memory, U32 address, U16 value) {
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writew %X @%X\n", value, address);
@@ -250,7 +250,7 @@ void writew(MMU_ARG U32 address, U16 value) {
     }
 }
 
-U32 readd(MMU_ARG U32 address) {
+U32 readd(struct Memory* memory, U32 address) {
 #ifdef LOG_OPS
     U32 result;
 
@@ -278,7 +278,7 @@ U32 readd(MMU_ARG U32 address) {
 #endif
 }
 
-void writed(MMU_ARG U32 address, U32 value) {
+void writed(struct Memory* memory, U32 address, U32 value) {
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writed %X @%X\n", value, address);
@@ -379,7 +379,7 @@ void freeMemory(struct Memory* memory) {
     kfree(memory, KALLOC_MEMORY);
 }
 
-void zeroMemory(MMU_ARG U32 address, int len) {
+void zeroMemory(struct Memory* memory, U32 address, int len) {
     int i;
     for (i=0;i<len;i++) {
         writeb(memory, address, 0);
@@ -387,7 +387,7 @@ void zeroMemory(MMU_ARG U32 address, int len) {
     }
 }
 
-void readMemory(MMU_ARG U8* data, U32 address, int len) {
+void readMemory(struct Memory* memory, U8* data, U32 address, int len) {
     int i;
     for (i=0;i<len;i++) {
         *data=readb(memory, address);
@@ -396,7 +396,7 @@ void readMemory(MMU_ARG U8* data, U32 address, int len) {
     }
 }
 
-void writeMemory(MMU_ARG U32 address, U8* data, int len) {
+void writeMemory(struct Memory* memory, U32 address, U8* data, int len) {
     int i;
     for (i=0;i<len;i++) {
         writeb(memory, address, *data);
@@ -555,7 +555,7 @@ U8* getPhysicalAddress(struct Memory* memory, U32 address) {
     return memory->mmu[index]->physicalAddress(memory, address);
 }
 
-void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
+void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {
 #ifdef UNALIGNED_MEMORY
     U32 i;
     for (i=0;i<len;i++) {
@@ -596,7 +596,7 @@ void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
 #endif
 }
 
-void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
+void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
 #ifdef UNALIGNED_MEMORY
     U32 i;
 
@@ -638,7 +638,7 @@ void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
 #endif
 }
 
-void writeNativeString(MMU_ARG U32 address, const char* str) {	
+void writeNativeString(struct Memory* memory, U32 address, const char* str) {	
     while (*str) {
         writeb(memory, address, *str);
         str++;
@@ -647,20 +647,20 @@ void writeNativeString(MMU_ARG U32 address, const char* str) {
     writeb(memory, address, 0);
 }
 
-U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len) {	
+U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len) {	
     U32 count=0;
 
     while (*str && count<len-1) {
-        writeb(MMU_PARAM address, *str);
+        writeb(memory, address, *str);
         str++;
         address++;
         count++;
     }
-    writeb(MMU_PARAM address, 0);
+    writeb(memory, address, 0);
     return count;
 }
 
-void writeNativeStringW(MMU_ARG U32 address, const char* str) {	
+void writeNativeStringW(struct Memory* memory, U32 address, const char* str) {	
     while (*str) {
         writew(memory, address, *str);
         str++;
@@ -671,7 +671,7 @@ void writeNativeStringW(MMU_ARG U32 address, const char* str) {
 
 static char tmpBuffer[64*1024];
 
-char* getNativeString(MMU_ARG U32 address) {
+char* getNativeString(struct Memory* memory, U32 address) {
     char c;
     int i=0;
 
@@ -687,7 +687,7 @@ char* getNativeString(MMU_ARG U32 address) {
     return tmpBuffer;
 }
 
-char* getNativeStringW(MMU_ARG U32 address) {
+char* getNativeStringW(struct Memory* memory, U32 address) {
     char c;
     int i=0;
 
@@ -696,7 +696,7 @@ char* getNativeStringW(MMU_ARG U32 address) {
         return tmpBuffer;
     }
     do {
-        c = (char)readw(MMU_PARAM address);
+        c = (char)readw(memory, address);
         address+=2;
         tmpBuffer[i++] = c;
     } while(c && i<sizeof(tmpBuffer));
@@ -706,7 +706,7 @@ char* getNativeStringW(MMU_ARG U32 address) {
 
 static char tmpBuffer2[64*1024];
 
-char* getNativeString2(MMU_ARG U32 address) {
+char* getNativeString2(struct Memory* memory, U32 address) {
     char c;
     int i=0;
 
@@ -722,7 +722,7 @@ char* getNativeString2(MMU_ARG U32 address) {
     return tmpBuffer2;
 }
 
-char* getNativeStringW2(MMU_ARG U32 address) {
+char* getNativeStringW2(struct Memory* memory, U32 address) {
     char c;
     int i=0;
 

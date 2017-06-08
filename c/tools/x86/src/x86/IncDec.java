@@ -64,20 +64,20 @@ public class IncDec extends Base {
 
     public void incDec8(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
         incDecBase(fos, name+"8_reg", "FLAGS_"+name.toUpperCase()+"8", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, "1", false, false, "8", flags);
-        incDecBase(fos, name+"8_mem16", "FLAGS_"+name.toUpperCase()+"8", "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", op, "3", true, false, "8", flags);
-        incDecBase(fos, name+"8_mem32", "FLAGS_"+name.toUpperCase()+"8", "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", op, "3", false, true, "8", flags);
+        incDecBase(fos, name+"8_mem16", "FLAGS_"+name.toUpperCase()+"8", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, "3", true, false, "8", flags);
+        incDecBase(fos, name+"8_mem32", "FLAGS_"+name.toUpperCase()+"8", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, "3", false, true, "8", flags);
     }
 
     public void incDec16(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
         incDecBase(fos, name+"16_reg", "FLAGS_"+name.toUpperCase()+"16", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, "1", false, false, "16", flags);
-        incDecBase(fos, name+"16_mem16", "FLAGS_"+name.toUpperCase()+"16", "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", op, "3", true, false, "16", flags);
-        incDecBase(fos, name+"16_mem32", "FLAGS_"+name.toUpperCase()+"16", "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", op, "3", false, true, "16", flags);
+        incDecBase(fos, name+"16_mem16", "FLAGS_"+name.toUpperCase()+"16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, "3", true, false, "16", flags);
+        incDecBase(fos, name+"16_mem32", "FLAGS_"+name.toUpperCase()+"16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, "3", false, true, "16", flags);
     }
 
     public void incDec32(FileOutputStream fos, String name, String op, boolean flags) throws IOException {
         incDecBase(fos, name+"32_reg", "FLAGS_"+name.toUpperCase()+"32", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, "1", false, false, "32", flags);
-        incDecBase(fos, name+"32_mem16", "FLAGS_"+name.toUpperCase()+"32", "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", op, "3", true, false, "32", flags);
-        incDecBase(fos, name+"32_mem32", "FLAGS_"+name.toUpperCase()+"32", "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", op, "3", false, true, "32", flags);
+        incDecBase(fos, name+"32_mem16", "FLAGS_"+name.toUpperCase()+"32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, "3", true, false, "32", flags);
+        incDecBase(fos, name+"32_mem32", "FLAGS_"+name.toUpperCase()+"32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, "3", false, true, "32", flags);
     }
 
     public void incDecBase(FileOutputStream fos, String name, String flagName, String destLoad, String destSave1, String destSave2, String op, String cycles, boolean eaa16, boolean eaa32, String bits, boolean flags) throws IOException {

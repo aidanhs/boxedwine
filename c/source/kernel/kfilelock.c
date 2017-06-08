@@ -21,35 +21,35 @@
 
 #include <string.h>
 
-void writeFileLock(MMU_ARG struct KFileLock* lock, U32 address, BOOL is64) {
+void writeFileLock(struct Memory* memory, struct KFileLock* lock, U32 address, BOOL is64) {
     if (!is64) {
-        writew(MMU_PARAM address, lock->l_type);address+=2;
-        writew(MMU_PARAM address, lock->l_whence); address += 2;
-        writed(MMU_PARAM address, (U32)lock->l_start); address += 4;
-        writed(MMU_PARAM address, (U32)lock->l_len); address += 4;
-        writed(MMU_PARAM address, (U32)lock->l_pid);
+        writew(memory, address, lock->l_type);address+=2;
+        writew(memory, address, lock->l_whence); address += 2;
+        writed(memory, address, (U32)lock->l_start); address += 4;
+        writed(memory, address, (U32)lock->l_len); address += 4;
+        writed(memory, address, (U32)lock->l_pid);
     } else {
-        writew(MMU_PARAM address, lock->l_type); address += 2;
-        writew(MMU_PARAM address, lock->l_whence); address += 2;
-        writeq(MMU_PARAM address, (U32)lock->l_start); address += 8;
-        writeq(MMU_PARAM address, (U32)lock->l_len); address += 8;
-        writed(MMU_PARAM address, lock->l_pid);
+        writew(memory, address, lock->l_type); address += 2;
+        writew(memory, address, lock->l_whence); address += 2;
+        writeq(memory, address, (U32)lock->l_start); address += 8;
+        writeq(memory, address, (U32)lock->l_len); address += 8;
+        writed(memory, address, lock->l_pid);
     }
 }
 
-void readFileLock(MMU_ARG struct KFileLock* lock, U32 address, BOOL is64) {
+void readFileLock(struct Memory* memory, struct KFileLock* lock, U32 address, BOOL is64) {
     if (!is64) {
-        lock->l_type = readw(MMU_PARAM address); address += 2;
-        lock->l_whence = readw(MMU_PARAM address); address += 2;
-        lock->l_start = readd(MMU_PARAM address); address += 4;
-        lock->l_len = readd(MMU_PARAM address); address += 4;
-        lock->l_pid = readd(MMU_PARAM address);
+        lock->l_type = readw(memory, address); address += 2;
+        lock->l_whence = readw(memory, address); address += 2;
+        lock->l_start = readd(memory, address); address += 4;
+        lock->l_len = readd(memory, address); address += 4;
+        lock->l_pid = readd(memory, address);
     } else {
-        lock->l_type = readw(MMU_PARAM address); address += 2;
-        lock->l_whence = readw(MMU_PARAM address); address += 2;
-        lock->l_start = readq(MMU_PARAM address); address += 8;
-        lock->l_len = readq(MMU_PARAM address); address += 8;
-        lock->l_pid = readd(MMU_PARAM address);
+        lock->l_type = readw(memory, address); address += 2;
+        lock->l_whence = readw(memory, address); address += 2;
+        lock->l_start = readq(memory, address); address += 8;
+        lock->l_len = readq(memory, address); address += 8;
+        lock->l_pid = readd(memory, address);
     }
 }
 

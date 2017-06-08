@@ -547,7 +547,7 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
     U32 bp_index=EBP & cpu->stackMask;
 
     sp_index-=4;
-    writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
+    writed(cpu->memory, cpu->segAddress[SS] + sp_index, EBP);
     EBP = ESP - 4;
     if (level!=0) {
         U32 i;
@@ -555,10 +555,10 @@ void cpu_enter32(struct CPU* cpu, U32 bytes, U32 level) {
         for (i=1;i<level;i++) {
             sp_index-=4;
             bp_index-=4;
-            writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readd(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
+            writed(cpu->memory, cpu->segAddress[SS] + sp_index, readd(cpu->memory, cpu->segAddress[SS] + bp_index));
         }
         sp_index-=4;
-        writed(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, EBP);
+        writed(cpu->memory, cpu->segAddress[SS] + sp_index, EBP);
     }
     sp_index-=bytes;
     ESP = (ESP & cpu->stackNotMask) | (sp_index & cpu->stackMask);
@@ -569,17 +569,17 @@ void cpu_enter16(struct CPU* cpu, U32 bytes, U32 level) {
     U32 bp_index=EBP & cpu->stackMask;
 
     sp_index-=2;
-    writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
+    writew(cpu->memory, cpu->segAddress[SS] + sp_index, BP);
     BP = SP - 2;
     if (level!=0) {
         U32 i;
 
         for (i=1;i<level;i++) {
             sp_index-=2;bp_index-=2;
-            writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, readw(MMU_PARAM_CPU cpu->segAddress[SS] + bp_index));
+            writew(cpu->memory, cpu->segAddress[SS] + sp_index, readw(cpu->memory, cpu->segAddress[SS] + bp_index));
         }
         sp_index-=2;
-        writew(MMU_PARAM_CPU cpu->segAddress[SS] + sp_index, BP);
+        writew(cpu->memory, cpu->segAddress[SS] + sp_index, BP);
     }
 
     sp_index-=bytes;
@@ -957,46 +957,46 @@ struct LazyFlags* FLAGS_SAR32 = &flagsSar32;
 
 void push16(struct CPU* cpu, U16 value) {
     U32 new_esp=(ESP & cpu->stackNotMask) | ((ESP - 2) & cpu->stackMask);
-    writew(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    writew(cpu->memory, cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
     ESP = new_esp;
 }
 
 U32 push16_r(struct CPU* cpu, U32 esp, U16 value) {
     U32 new_esp=(esp & cpu->stackNotMask) | ((esp - 2) & cpu->stackMask);
-    writew(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    writew(cpu->memory, cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
     return new_esp;
 }
 
 void push32(struct CPU* cpu, U32 value) {
     U32 new_esp=(ESP & cpu->stackNotMask) | ((ESP - 4) & cpu->stackMask);
-    writed(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    writed(cpu->memory, cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
     ESP = new_esp;
 }
 
 U32 push32_r(struct CPU* cpu, U32 esp, U32 value) {
     U32 new_esp=(esp & cpu->stackNotMask) | ((esp - 4) & cpu->stackMask);
-    writed(MMU_PARAM_CPU cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
+    writed(cpu->memory, cpu->segAddress[SS] + (new_esp & cpu->stackMask) ,value);
     return new_esp;
 }
 
 U16 pop16(struct CPU* cpu) {
-    U16 val = readw(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP & cpu->stackMask));
+    U16 val = readw(cpu->memory, cpu->segAddress[SS] + (ESP & cpu->stackMask));
     ESP = (ESP & cpu->stackNotMask) | ((ESP + 2 ) & cpu->stackMask);
     return val;
 }
 
 U32 pop32(struct CPU* cpu) {
-    U32 val = readd(MMU_PARAM_CPU cpu->segAddress[SS] + (ESP & cpu->stackMask));
+    U32 val = readd(cpu->memory, cpu->segAddress[SS] + (ESP & cpu->stackMask));
     ESP = (ESP & cpu->stackNotMask) | ((ESP + 4 ) & cpu->stackMask);
     return val;
 }
 
 U16 peek16(struct CPU* cpu, U32 index) {
-    return readw(MMU_PARAM_CPU cpu->segAddress[SS]+ ((ESP+index*2) & cpu->stackMask));
+    return readw(cpu->memory, cpu->segAddress[SS]+ ((ESP+index*2) & cpu->stackMask));
 }
 
 U32 peek32(struct CPU* cpu, U32 index) {
-    return readd(MMU_PARAM_CPU cpu->segAddress[SS] + ((ESP+index*4) & cpu->stackMask));
+    return readd(cpu->memory, cpu->segAddress[SS] + ((ESP+index*4) & cpu->stackMask));
 }
 
 void cpu_exception(struct CPU* cpu, int code, int error) {

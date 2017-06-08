@@ -183,13 +183,13 @@ S64 dsp_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 dsp_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 dsp_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
 extern struct KThread* currentThread;
 
-U32 dsp_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 l) {
+U32 dsp_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 l) {
     S32 len = (S32)l;
     S32 available;
     S32 result;
@@ -215,7 +215,7 @@ U32 dsp_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 l) {
         available = len;
 	if (available>DSP_BUFFER_SIZE - data->dspBufferLen)
 		available = DSP_BUFFER_SIZE - data->dspBufferLen;
-	memcopyToNative(MMU_PARAM address, (char*)data->dspBuffer + startPos, available);
+	memcopyToNative(memory, address, (char*)data->dspBuffer + startPos, available);
 	data->dspBufferLen += available;
     result = available;	
 	if (len != available && data->dspBufferLen< DSP_BUFFER_SIZE) {
@@ -233,7 +233,7 @@ U32 dsp_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 l) {
             available = len;
 		if (available>DSP_BUFFER_SIZE - data->dspBufferLen)
 			available = DSP_BUFFER_SIZE - data->dspBufferLen;
-		memcopyToNative(MMU_PARAM address, (char*)data->dspBuffer + startPos, available);
+		memcopyToNative(memory, address, (char*)data->dspBuffer + startPos, available);
 		data->dspBufferLen += available;
         result+=available;
     }
@@ -274,9 +274,9 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         if (len!=4) {
             kpanic("SNDCTL_DSP_SPEED was expecting a len of 4");
         }
-		data->want.freq = readd(MMU_PARAM_THREAD IOCTL_ARG1);
+		data->want.freq = readd(thread->process->memory, IOCTL_ARG1);
 		if (write)
-            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->want.freq);
+            writed(thread->process->memory, IOCTL_ARG1, data->want.freq);
         return 0;
     case 0x5003: { // SNDCTL_DSP_STEREO
         U32 fmt;
@@ -284,7 +284,7 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         if (len!=4) {
             kpanic("SNDCTL_DSP_STEREO was expecting a len of 4");
         }
-        fmt = readd(MMU_PARAM_THREAD IOCTL_ARG1);
+        fmt = readd(thread->process->memory, IOCTL_ARG1);
 		if (fmt != data->want.channels - 1) {
             closeAudio(data);
         }
@@ -296,7 +296,7 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             kpanic("SNDCTL_DSP_STEREO wasn't expecting a value of %d", fmt);
         }
         if (write)
-            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->want.channels - 1);
+            writed(thread->process->memory, IOCTL_ARG1, data->want.channels - 1);
         return 0;
     }
     case 0x5005: { // SNDCTL_DSP_SETFMT 
@@ -305,7 +305,7 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         if (len!=4) {
             kpanic("SNDCTL_DSP_SETFMT was expecting a len of 4");
         }
-        fmt = readd(MMU_PARAM_THREAD IOCTL_ARG1);
+        fmt = readd(thread->process->memory, IOCTL_ARG1);
 		if (fmt != AFMT_QUERY && fmt != data->dspFmt) {
             closeAudio(data);
         }
@@ -348,14 +348,14 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             break;
         }
         if (write)
-			writed(MMU_PARAM_THREAD IOCTL_ARG1, data->dspFmt);
+			writed(thread->process->memory, IOCTL_ARG1, data->dspFmt);
 		else if (data->dspFmt != fmt) {
             kpanic("SNDCTL_DSP_SETFMT dspFmt!=fmt and can't write result");
         }
         return 0;
         }
     case 0x5006: {// SOUND_PCM_WRITE_CHANNELS
-        U32 channels = readd(MMU_PARAM_THREAD IOCTL_ARG1);
+        U32 channels = readd(thread->process->memory, IOCTL_ARG1);
 		if (channels != data->want.channels) {
             closeAudio(data);
         }
@@ -367,14 +367,14 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             data->want.channels = 2;
         }
         if (write)
-            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->want.channels);
+            writed(thread->process->memory, IOCTL_ARG1, data->want.channels);
         return 0;
         }
     case 0x500A: // SNDCTL_DSP_SETFRAGMENT
-		data->dspFragSize = 1 << (readd(MMU_PARAM_THREAD IOCTL_ARG1) & 0xFFFF);
+		data->dspFragSize = 1 << (readd(thread->process->memory, IOCTL_ARG1) & 0xFFFF);
         return 0;
     case 0x500B: // SNDCTL_DSP_GETFMTS
-        writed(MMU_PARAM_THREAD IOCTL_ARG1, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE);
+        writed(thread->process->memory, IOCTL_ARG1, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE);
         return 0;
 
 		//typedef struct audio_buf_info {
@@ -389,16 +389,16 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
     case 0x500C: // SNDCTL_DSP_GETOSPACE
         if (!data->dspFragSize)
             data->dspFragSize = 1024;
-		writed(MMU_PARAM_THREAD IOCTL_ARG1, (DSP_BUFFER_SIZE - data->dspBufferLen) / data->dspFragSize); // fragments
-		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 4, DSP_BUFFER_SIZE / data->dspFragSize);
-		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, data->dspFragSize);
-		writed(MMU_PARAM_THREAD IOCTL_ARG1 + 12, DSP_BUFFER_SIZE - data->dspBufferLen);
+		writed(thread->process->memory, IOCTL_ARG1, (DSP_BUFFER_SIZE - data->dspBufferLen) / data->dspFragSize); // fragments
+		writed(thread->process->memory, IOCTL_ARG1 + 4, DSP_BUFFER_SIZE / data->dspFragSize);
+		writed(thread->process->memory, IOCTL_ARG1 + 8, data->dspFragSize);
+		writed(thread->process->memory, IOCTL_ARG1 + 12, DSP_BUFFER_SIZE - data->dspBufferLen);
         return 0;
     case 0x500F: // SNDCTL_DSP_GETCAPS
-        writed(MMU_PARAM_THREAD IOCTL_ARG1, DSP_CAP_TRIGGER);
+        writed(thread->process->memory, IOCTL_ARG1, DSP_CAP_TRIGGER);
         return 0;
     case 0x5010: // SNDCTL_DSP_SETTRIGGER
-        if (readd(MMU_PARAM_THREAD IOCTL_ARG1) & PCM_ENABLE_OUTPUT) {
+        if (readd(thread->process->memory, IOCTL_ARG1) & PCM_ENABLE_OUTPUT) {
             SDL_PauseAudio(0);
 			data->pauseAtLen = 0xFFFFFFFF;
         } else {            
@@ -409,59 +409,59 @@ U32 dsp_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         }
         return 0;
     case 0x5012: // SNDCTL_DSP_GETOPTR
-        writed(MMU_PARAM_THREAD IOCTL_ARG1, 0); // Total # of bytes processed
-        writed(MMU_PARAM_THREAD IOCTL_ARG1 + 4, 0); // # of fragment transitions since last time
+        writed(thread->process->memory, IOCTL_ARG1, 0); // Total # of bytes processed
+        writed(thread->process->memory, IOCTL_ARG1 + 4, 0); // # of fragment transitions since last time
         if (pauseEnabled()) {
-			writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, data->pauseAtLen); // Current DMA pointer value
+			writed(thread->process->memory, IOCTL_ARG1 + 8, data->pauseAtLen); // Current DMA pointer value
 			if (data->pauseAtLen == 0) {
                 SDL_PauseAudio(0);
             }
         } else {
-			writed(MMU_PARAM_THREAD IOCTL_ARG1 + 8, data->dspBufferLen); // Current DMA pointer value
+			writed(thread->process->memory, IOCTL_ARG1 + 8, data->dspBufferLen); // Current DMA pointer value
         }
         return 0;
     case 0x5016: // SNDCTL_DSP_SETDUPLEX
         return -K_EINVAL;
     case 0x5017: // SNDCTL_DSP_GETODELAY 
         if (write) {
-			writed(MMU_PARAM_THREAD IOCTL_ARG1, data->dspBufferLen);
+			writed(thread->process->memory, IOCTL_ARG1, data->dspBufferLen);
             return 0;
         }
     case 0x580C: // SNDCTL_ENGINEINFO
         if (write) {
             U32 p = IOCTL_ARG1;
             p+=4; // int dev; /* Audio device number */
-            writeNativeString(MMU_PARAM_THREAD p, "BoxedWine audio"); p+=64; // oss_devname_t name;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int busy; /* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
-            writed(MMU_PARAM_THREAD p, -1); p+=4; // int pid;
-            writed(MMU_PARAM_THREAD p, PCM_CAP_OUTPUT); p+=4; // int caps;			/* PCM_CAP_INPUT, PCM_CAP_OUTPUT */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int iformats
-            writed(MMU_PARAM_THREAD p, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE); p+=4; // int oformats;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int magic;			/* Reserved for internal use */
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=64; // oss_cmd_t cmd;		/* Command using the device (if known) */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int card_number;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int port_number;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int mixer_dev;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int legacy_device;		/* Obsolete field. Replaced by devnode */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // int enabled;			/* 1=enabled, 0=device not ready at this moment */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int flags;			/* For internal use only - no practical meaning */
-			writed(MMU_PARAM_THREAD p, 11025); p += 4; // int min_rate
-            writed(MMU_PARAM_THREAD p, 44100); p+=4; // max_rate;	/* Sample rate limits */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // int min_channels
-            writed(MMU_PARAM_THREAD p, 2); p+=4; // max_channels;	/* Number of channels supported */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int binding;			/* DSP_BIND_FRONT, etc. 0 means undefined */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int rate_source;
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=32; // oss_handle_t handle;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // unsigned int nrates
+            writeNativeString(thread->process->memory, p, "BoxedWine audio"); p+=64; // oss_devname_t name;
+            writed(thread->process->memory, p, 0); p+=4; // int busy; /* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
+            writed(thread->process->memory, p, -1); p+=4; // int pid;
+            writed(thread->process->memory, p, PCM_CAP_OUTPUT); p+=4; // int caps;			/* PCM_CAP_INPUT, PCM_CAP_OUTPUT */
+            writed(thread->process->memory, p, 0); p+=4; // int iformats
+            writed(thread->process->memory, p, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE); p+=4; // int oformats;
+            writed(thread->process->memory, p, 0); p+=4; // int magic;			/* Reserved for internal use */
+            writeNativeString(thread->process->memory, p, ""); p+=64; // oss_cmd_t cmd;		/* Command using the device (if known) */
+            writed(thread->process->memory, p, 0); p+=4; // int card_number;
+            writed(thread->process->memory, p, 0); p+=4; // int port_number;
+            writed(thread->process->memory, p, 0); p+=4; // int mixer_dev;
+            writed(thread->process->memory, p, 0); p+=4; // int legacy_device;		/* Obsolete field. Replaced by devnode */
+            writed(thread->process->memory, p, 1); p+=4; // int enabled;			/* 1=enabled, 0=device not ready at this moment */
+            writed(thread->process->memory, p, 0); p+=4; // int flags;			/* For internal use only - no practical meaning */
+			writed(thread->process->memory, p, 11025); p += 4; // int min_rate
+            writed(thread->process->memory, p, 44100); p+=4; // max_rate;	/* Sample rate limits */
+            writed(thread->process->memory, p, 1); p+=4; // int min_channels
+            writed(thread->process->memory, p, 2); p+=4; // max_channels;	/* Number of channels supported */
+            writed(thread->process->memory, p, 0); p+=4; // int binding;			/* DSP_BIND_FRONT, etc. 0 means undefined */
+            writed(thread->process->memory, p, 0); p+=4; // int rate_source;
+            writeNativeString(thread->process->memory, p, ""); p+=32; // oss_handle_t handle;
+            writed(thread->process->memory, p, 0); p+=4; // unsigned int nrates
             for (i=0;i<20;i++) {
-                writed(MMU_PARAM_THREAD p, 0); p+=4; // rates[20];	/* Please read the manual before using these */
+                writed(thread->process->memory, p, 0); p+=4; // rates[20];	/* Please read the manual before using these */
             }
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=64; // oss_longname_t song_name;	/* Song name (if given) */
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=16; // oss_label_t label;		/* Device label (if given) */
-            writed(MMU_PARAM_THREAD p, -1); p+=4; // int latency;			/* In usecs, -1=unknown */
-            writeNativeString(MMU_PARAM_THREAD p, "/dev/dsp"); p+=16; // oss_devnode_t devnode;	/* Device special file name (absolute path) */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int next_play_engine;		/* Read the documentation for more info */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int next_rec_engine;		/* Read the documentation for more info */
+            writeNativeString(thread->process->memory, p, ""); p+=64; // oss_longname_t song_name;	/* Song name (if given) */
+            writeNativeString(thread->process->memory, p, ""); p+=16; // oss_label_t label;		/* Device label (if given) */
+            writed(thread->process->memory, p, -1); p+=4; // int latency;			/* In usecs, -1=unknown */
+            writeNativeString(thread->process->memory, p, "/dev/dsp"); p+=16; // oss_devnode_t devnode;	/* Device special file name (absolute path) */
+            writed(thread->process->memory, p, 0); p+=4; // int next_play_engine;		/* Read the documentation for more info */
+            writed(thread->process->memory, p, 0); p+=4; // int next_rec_engine;		/* Read the documentation for more info */
             return 0;
         }        
     }
@@ -496,7 +496,7 @@ BOOL dsp_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 dsp_map(MMU_ARG struct FsOpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 dsp_map(struct Memory* memory, struct FsOpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 

@@ -57,28 +57,28 @@ struct TTYData {
     BOOL graphics;
 };
 
-void readTermios(MMU_ARG U32 address, struct TTYData* data) {
+void readTermios(struct Memory* memory, U32 address, struct TTYData* data) {
     int i;
-    data->c_iflag = readd(MMU_PARAM address);
-    data->c_oflag = readd(MMU_PARAM address+4);
-    data->c_cflag = readd(MMU_PARAM address+8);
-    data->c_lflag = readd(MMU_PARAM address+12);
-    data->c_line = readb(MMU_PARAM address+16);
+    data->c_iflag = readd(memory, address);
+    data->c_oflag = readd(memory, address+4);
+    data->c_cflag = readd(memory, address+8);
+    data->c_lflag = readd(memory, address+12);
+    data->c_line = readb(memory, address+16);
     for (i=0;i<19;i++) {
-        data->c_cc[i] = readb(MMU_PARAM address+17+i);
+        data->c_cc[i] = readb(memory, address+17+i);
     }
 }
 
-void writeTermios(MMU_ARG U32 address, struct TTYData* data) {
+void writeTermios(struct Memory* memory, U32 address, struct TTYData* data) {
     int i;
 
-    writed(MMU_PARAM address, data->c_iflag);
-    writed(MMU_PARAM address+4, data->c_oflag);
-    writed(MMU_PARAM address+8, data->c_cflag);
-    writed(MMU_PARAM address+12, data->c_lflag);
-    writeb(MMU_PARAM address+16, data->c_line);
+    writed(memory, address, data->c_iflag);
+    writed(memory, address+4, data->c_oflag);
+    writed(memory, address+8, data->c_cflag);
+    writed(memory, address+12, data->c_lflag);
+    writeb(memory, address+16, data->c_line);
     for (i=0;i<19;i++) {
-        writeb(MMU_PARAM address+17+i, data->c_cc[i]);
+        writeb(memory, address+17+i, data->c_cc[i]);
     }
 }
 
@@ -106,15 +106,15 @@ S64 tty_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 tty_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 tty_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
 static char buffer[PAGE_SIZE+1];
 
-U32 tty_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 tty_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
-        U8* ram = getPhysicalAddress(MMU_PARAM address);
+        U8* ram = getPhysicalAddress(memory, address);
         memcpy(buffer, ram, len);
         buffer[len]=0;
         fprintf(stdout, "%s", buffer);		
@@ -123,7 +123,7 @@ U32 tty_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
         U32 result = 0;
         while (len) {
             U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
-            U8* ram = getPhysicalAddress(MMU_PARAM address);
+            U8* ram = getPhysicalAddress(memory, address);
             if (todo>len)
                 todo = len;
             memcpy(buffer, ram, todo);
@@ -152,31 +152,31 @@ U32 tty_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             data->graphics = IOCTL_ARG1==1;
             break;
         case 0x4B44: // KDGKBMODE
-            writed(MMU_PARAM_THREAD IOCTL_ARG1, data->kbMode);
+            writed(thread->process->memory, IOCTL_ARG1, data->kbMode);
             break;
         case 0x4B45: // KDSKBMODE
             data->kbMode = IOCTL_ARG1;
             break;
         case 0x4B46: { // KDGKBENT
             U32 kbentry = IOCTL_ARG1;
-            U32 table = readb(MMU_PARAM_THREAD kbentry);
-            U32 index = readb(MMU_PARAM_THREAD kbentry + 1);
-            //U32 value = readw(MMU_PARAM_THREAD kbentry+2);
+            U32 table = readb(thread->process->memory, kbentry);
+            U32 index = readb(thread->process->memory, kbentry + 1);
+            //U32 value = readw(thread->process->memory, kbentry+2);
             switch (table) {
                 case 0: // K_NORMTAB
-                    writew(MMU_PARAM_THREAD kbentry + 2, index);
+                    writew(thread->process->memory, kbentry + 2, index);
                     break;
                 case 1: // K_SHIFTTAB
-                    writew(MMU_PARAM_THREAD kbentry + 2, toupper((char)index));
+                    writew(thread->process->memory, kbentry + 2, toupper((char)index));
                     break;
                 case 2: // K_ALTTAB
-                    writew(MMU_PARAM_THREAD kbentry + 2, index);
+                    writew(thread->process->memory, kbentry + 2, index);
                     break;
                 case 3: // K_ALTSHIFTTAB
-                    writew(MMU_PARAM_THREAD kbentry + 2, index);
+                    writew(thread->process->memory, kbentry + 2, index);
                     break;
                 default:
-                    writew(MMU_PARAM_THREAD kbentry + 2, index);
+                    writew(thread->process->memory, kbentry + 2, index);
                     break;
             }
             break;
@@ -184,36 +184,36 @@ U32 tty_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         case 0x4B51: // KDSKBMUTE
             return -1;
         case 0x5401: // TCGETS
-            writeTermios(MMU_PARAM_THREAD IOCTL_ARG1, data);
+            writeTermios(thread->process->memory, IOCTL_ARG1, data);
             break;
         case 0x5402: // TCSETS
-            readTermios(MMU_PARAM_THREAD IOCTL_ARG1, data);
+            readTermios(thread->process->memory, IOCTL_ARG1, data);
             break;
         case 0x5600: // VT_OPENQRY
-            writed(MMU_PARAM_THREAD IOCTL_ARG1, 2);
+            writed(thread->process->memory, IOCTL_ARG1, 2);
             break;
         case 0x5601: { // VT_GETMODE
             U32 address = IOCTL_ARG1;
-            writeb(MMU_PARAM_THREAD address, data->mode);
-            writeb(MMU_PARAM_THREAD address + 1, data->waitv); // waitv
-            writew(MMU_PARAM_THREAD address + 2, data->relsig); // relsig
-            writew(MMU_PARAM_THREAD address + 4, data->acqsig); // acqsig
-            writew(MMU_PARAM_THREAD address + 6, 0); // frsig
+            writeb(thread->process->memory, address, data->mode);
+            writeb(thread->process->memory, address + 1, data->waitv); // waitv
+            writew(thread->process->memory, address + 2, data->relsig); // relsig
+            writew(thread->process->memory, address + 4, data->acqsig); // acqsig
+            writew(thread->process->memory, address + 6, 0); // frsig
             break;
         }
         case 0x5602: { // VT_SETMODE
             U32 address = IOCTL_ARG1;
-            data->mode = readb(MMU_PARAM_THREAD address); // VT_AUTO
-            data->waitv = readb(MMU_PARAM_THREAD address + 1); // waitv
-            data->relsig = readw(MMU_PARAM_THREAD address + 2); // relsig
-            data->acqsig = readw(MMU_PARAM_THREAD address + 4); // acqsig
+            data->mode = readb(thread->process->memory, address); // VT_AUTO
+            data->waitv = readb(thread->process->memory, address + 1); // waitv
+            data->relsig = readw(thread->process->memory, address + 2); // relsig
+            data->acqsig = readw(thread->process->memory, address + 4); // acqsig
             break;
         }
         case 0x5603: { // VT_GETSTATE
             U32 address = IOCTL_ARG1;
-            writew(MMU_PARAM_THREAD address, 0); // v_active
-            writew(MMU_PARAM_THREAD address, 0); // v_signal
-            writew(MMU_PARAM_THREAD address, 1); // v_state
+            writew(thread->process->memory, address, 0); // v_active
+            writew(thread->process->memory, address, 0); // v_signal
+            writew(thread->process->memory, address, 1); // v_state
             break;
         }
         case 0x5605: { // VT_RELDISP
@@ -258,7 +258,7 @@ BOOL tty_isReadReady(struct FsOpenNode* node) {
     return 0;
 }
 
-U32 tty_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 tty_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 

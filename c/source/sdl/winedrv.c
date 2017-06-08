@@ -295,26 +295,26 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
     if (devmode)
     {
         U32 dmFields;
-        U32 dmSize = readw(MMU_PARAM_CPU devmode + 68);
+        U32 dmSize = readw(cpu->memory, devmode + 68);
 
         /* this is the minimal dmSize that XP accepts */
         if (dmSize < 44) {
-            writed(MMU_PARAM_CPU ARG6, DISP_CHANGE_FAILED);	
+            writed(cpu->memory, ARG6, DISP_CHANGE_FAILED);	
             return;
         }
 
-        dmFields = readd(MMU_PARAM_CPU devmode + 72);
+        dmFields = readd(cpu->memory, devmode + 72);
 
         if (dmFields & DM_BITSPERPEL) {
-            bits_per_pixel = readd(MMU_PARAM_CPU devmode + 168);
+            bits_per_pixel = readd(cpu->memory, devmode + 168);
             if (bits_per_pixel<=8)
                 bits_per_pixel = 32; // let the dib driver handle it
         }
         if (dmFields & DM_PELSWIDTH) {
-            screenCx = readd(MMU_PARAM_CPU devmode + 172);
+            screenCx = readd(cpu->memory, devmode + 172);
         }
         if (dmFields & DM_PELSHEIGHT) {
-            screenCy = readd(MMU_PARAM_CPU devmode + 176);
+            screenCy = readd(cpu->memory, devmode + 176);
         }
     }	
     if (!screenCx || !screenCy) {
@@ -325,10 +325,10 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
         bits_per_pixel = default_bits_per_pixel;
     }
     screenResized();
-    writed(MMU_PARAM_CPU ARG6, DISP_CHANGE_SUCCESSFUL);	
-    writed(MMU_PARAM_CPU ARG7, screenCx);	
-    writed(MMU_PARAM_CPU ARG8, screenCy);	
-    writed(MMU_PARAM_CPU ARG9, bits_per_pixel);	
+    writed(cpu->memory, ARG6, DISP_CHANGE_SUCCESSFUL);	
+    writed(cpu->memory, ARG7, screenCx);	
+    writed(cpu->memory, ARG8, screenCy);	
+    writed(cpu->memory, ARG9, bits_per_pixel);	
 }
 
 // BOOL CDECL drv_ClipCursor(LPCRECT clip)
@@ -413,84 +413,84 @@ void boxeddrv_EnumDisplaySettingsEx(struct CPU* cpu) {
     static const U16 dev_name[32] = { 'B','o','x','e','d','W','i','n','e',' ','d','r','i','v','e','r',0 };
     int i;
 
-    zeroMemory(MMU_PARAM_CPU devmode, 188);
+    zeroMemory(cpu->memory, devmode, 188);
 
-    writew(MMU_PARAM_CPU devmode + 64, 0x401); // dmSpecVersion
-    writew(MMU_PARAM_CPU devmode + 66, 0x401); // dmDriverVersion
-    writew(MMU_PARAM_CPU devmode + 68, 188); // dmSize
+    writew(cpu->memory, devmode + 64, 0x401); // dmSpecVersion
+    writew(cpu->memory, devmode + 66, 0x401); // dmDriverVersion
+    writew(cpu->memory, devmode + 68, 188); // dmSize
     for (i=0;i<17;i++) {
-        writew(MMU_PARAM_CPU devmode+i*2, dev_name[i]);
+        writew(cpu->memory, devmode+i*2, dev_name[i]);
     }
-    writed(MMU_PARAM_CPU devmode + 72, DM_POSITION | DM_DISPLAYORIENTATION | DM_DISPLAYFIXEDOUTPUT | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY);
+    writed(cpu->memory, devmode + 72, DM_POSITION | DM_DISPLAYORIENTATION | DM_DISPLAYFIXEDOUTPUT | DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY);
 
-    writed(MMU_PARAM_CPU devmode + 76, 0); // dmPosition.x
-    writed(MMU_PARAM_CPU devmode + 80, 0); // dmPosition.y
-    writed(MMU_PARAM_CPU devmode + 84, 0); // dmDisplayOrientation
-    writed(MMU_PARAM_CPU devmode + 88, DMDFO_CENTER); // dmDisplayFixedOutput
+    writed(cpu->memory, devmode + 76, 0); // dmPosition.x
+    writed(cpu->memory, devmode + 80, 0); // dmPosition.y
+    writed(cpu->memory, devmode + 84, 0); // dmDisplayOrientation
+    writed(cpu->memory, devmode + 88, DMDFO_CENTER); // dmDisplayFixedOutput
     
     switch (ARG2) {
     case 0:
-        writed(MMU_PARAM_CPU devmode + 168, 32);
-        writed(MMU_PARAM_CPU devmode + 172, 1024);
-        writed(MMU_PARAM_CPU devmode + 176, 768);
+        writed(cpu->memory, devmode + 168, 32);
+        writed(cpu->memory, devmode + 172, 1024);
+        writed(cpu->memory, devmode + 176, 768);
         break;
     case 1:
-        writed(MMU_PARAM_CPU devmode + 168, 32);
-        writed(MMU_PARAM_CPU devmode + 172, 800);
-        writed(MMU_PARAM_CPU devmode + 176, 600);
+        writed(cpu->memory, devmode + 168, 32);
+        writed(cpu->memory, devmode + 172, 800);
+        writed(cpu->memory, devmode + 176, 600);
         break;
     case 2:
-        writed(MMU_PARAM_CPU devmode + 168, 32);
-        writed(MMU_PARAM_CPU devmode + 172, 640);
-        writed(MMU_PARAM_CPU devmode + 176, 480);
+        writed(cpu->memory, devmode + 168, 32);
+        writed(cpu->memory, devmode + 172, 640);
+        writed(cpu->memory, devmode + 176, 480);
         break;
     case 3:
-        writed(MMU_PARAM_CPU devmode + 168, 16);
-        writed(MMU_PARAM_CPU devmode + 172, 1024);
-        writed(MMU_PARAM_CPU devmode + 176, 768);
+        writed(cpu->memory, devmode + 168, 16);
+        writed(cpu->memory, devmode + 172, 1024);
+        writed(cpu->memory, devmode + 176, 768);
         break;
     case 4:
-        writed(MMU_PARAM_CPU devmode + 168, 16);
-        writed(MMU_PARAM_CPU devmode + 172, 800);
-        writed(MMU_PARAM_CPU devmode + 176, 600);
+        writed(cpu->memory, devmode + 168, 16);
+        writed(cpu->memory, devmode + 172, 800);
+        writed(cpu->memory, devmode + 176, 600);
         break;
     case 5:
-        writed(MMU_PARAM_CPU devmode + 168, 16);
-        writed(MMU_PARAM_CPU devmode + 172, 640);
-        writed(MMU_PARAM_CPU devmode + 176, 480);
+        writed(cpu->memory, devmode + 168, 16);
+        writed(cpu->memory, devmode + 172, 640);
+        writed(cpu->memory, devmode + 176, 480);
         break;
     case 6:
-        writed(MMU_PARAM_CPU devmode + 168, 8);
-        writed(MMU_PARAM_CPU devmode + 172, 1024);
-        writed(MMU_PARAM_CPU devmode + 176, 768);
+        writed(cpu->memory, devmode + 168, 8);
+        writed(cpu->memory, devmode + 172, 1024);
+        writed(cpu->memory, devmode + 176, 768);
         break;
     case 7:
-        writed(MMU_PARAM_CPU devmode + 168, 8);
-        writed(MMU_PARAM_CPU devmode + 172, 800);
-        writed(MMU_PARAM_CPU devmode + 176, 600);
+        writed(cpu->memory, devmode + 168, 8);
+        writed(cpu->memory, devmode + 172, 800);
+        writed(cpu->memory, devmode + 176, 600);
         break;
     case 8:
-        writed(MMU_PARAM_CPU devmode + 168, 8);
-        writed(MMU_PARAM_CPU devmode + 172, 640);
-        writed(MMU_PARAM_CPU devmode + 176, 480);
+        writed(cpu->memory, devmode + 168, 8);
+        writed(cpu->memory, devmode + 172, 640);
+        writed(cpu->memory, devmode + 176, 480);
         break;
     default:
         if (ARG2 == ENUM_REGISTRY_SETTINGS) {
-            writed(MMU_PARAM_CPU devmode + 168, default_bits_per_pixel);
-            writed(MMU_PARAM_CPU devmode + 172, default_horz_res);
-            writed(MMU_PARAM_CPU devmode + 176, default_vert_res);
+            writed(cpu->memory, devmode + 168, default_bits_per_pixel);
+            writed(cpu->memory, devmode + 172, default_horz_res);
+            writed(cpu->memory, devmode + 176, default_vert_res);
         }
         else if (ARG2 == ENUM_CURRENT_SETTINGS) {
-            writed(MMU_PARAM_CPU devmode + 168, bits_per_pixel);
-            writed(MMU_PARAM_CPU devmode + 172, screenCx);
-            writed(MMU_PARAM_CPU devmode + 176, screenCy);
+            writed(cpu->memory, devmode + 168, bits_per_pixel);
+            writed(cpu->memory, devmode + 172, screenCx);
+            writed(cpu->memory, devmode + 176, screenCy);
         } else {
             EAX = 0;
             return;
         }
     }
-    writed(MMU_PARAM_CPU devmode + 180, 0); // dmDisplayFlags
-    writed(MMU_PARAM_CPU devmode + 184, 60); // dmDisplayFrequency
+    writed(cpu->memory, devmode + 180, 0); // dmDisplayFlags
+    writed(cpu->memory, devmode + 184, 60); // dmDisplayFrequency
     EAX = 1;
 }
 
@@ -506,10 +506,10 @@ void boxeddrv_GetClipboardData(struct CPU* cpu) {
         if (format == CF_TEXT) {
             if (len+1>(int)ARG3)
                 len = ARG3 - 1;
-            memcopyFromNative(MMU_PARAM_CPU ARG2, text, len+1);
+            memcopyFromNative(cpu->memory, ARG2, text, len+1);
             EAX = len+1;
         } else {
-            writeNativeStringW(MMU_PARAM_CPU ARG2, text);
+            writeNativeStringW(cpu->memory, ARG2, text);
             EAX = 2*(len+1);
         }        
     } else {    
@@ -525,8 +525,8 @@ void boxeddrv_GetCursorPos(struct CPU* cpu) {
 
     sdlGetMouseState(&x, &y);
 
-    writed(MMU_PARAM_CPU pos, x);
-    writed(MMU_PARAM_CPU pos+4, y);
+    writed(cpu->memory, pos, x);
+    writed(cpu->memory, pos+4, y);
     EAX = 1;
 }
 
@@ -538,7 +538,7 @@ void boxeddrv_GetKeyboardLayout(struct CPU* cpu) {
 
 // BOOL CDECL drv_GetKeyboardLayoutName(LPWSTR name)
 void boxeddrv_GetKeyboardLayoutName(struct CPU* cpu) {
-    writeNativeString(MMU_PARAM_CPU ARG1, "Unknown");
+    writeNativeString(cpu->memory, ARG1, "Unknown");
     EAX = 1;
     notImplemented("boxeddrv_GetKeyboardLayoutName not implemented");
 }
@@ -547,7 +547,7 @@ void boxeddrv_GetKeyboardLayoutName(struct CPU* cpu) {
 void boxeddrv_GetKeyNameText(struct CPU* cpu) {
     notImplemented("boxeddrv_GetKeyNameText not implemented");
     EAX = 6;
-    writeNativeString(MMU_PARAM_CPU ARG2, "bogus");
+    writeNativeString(cpu->memory, ARG2, "bogus");
 }
 
 // BOOL CDECL drv_GetMonitorInfo(HMONITOR monitor, LPMONITORINFO info)
@@ -590,9 +590,9 @@ void boxeddrv_SetClipboardData(struct CPU* cpu) {
     int len = ARG3;
 
     if (format == CF_TEXT) {
-        text = getNativeString(MMU_PARAM_CPU ARG2);
+        text = getNativeString(cpu->memory, ARG2);
     } else if (format == CF_UNICODETEXT) {
-        text = getNativeStringW(MMU_PARAM_CPU ARG2);
+        text = getNativeStringW(cpu->memory, ARG2);
     }
     if (text) {
         if (SDL_SetClipboardText(text)==0)
@@ -612,10 +612,10 @@ void boxeddrv_SetCursor(struct CPU* cpu) {
     U32 resId = ARG4;
     U32 pFound = ARG5;
 
-    if (sdlSetCursor(getNativeStringW(MMU_PARAM_CPU wModuleName), getNativeStringW2(MMU_PARAM_CPU wResName), resId))
-        writed(MMU_PARAM_CPU ARG5, 1);    
+    if (sdlSetCursor(getNativeStringW(cpu->memory, wModuleName), getNativeStringW2(cpu->memory, wResName), resId))
+        writed(cpu->memory, ARG5, 1);    
     else
-        writed(MMU_PARAM_CPU ARG5, 0);    
+        writed(cpu->memory, ARG5, 0);    
 }
 
 void boxeddrv_SetCursorBits(struct CPU* cpu) {
@@ -636,9 +636,9 @@ void boxeddrv_SetCursorBits(struct CPU* cpu) {
         klog("boxeddrv_SetCursorBits too large of cursor\n");
         return;
     }
-    memcopyToNative(MMU_PARAM_CPU bits, (S8*)data, size);
-    memcopyToNative(MMU_PARAM_CPU bits+size, (S8*)mask, size);
-    sdlCreateAndSetCursor(getNativeStringW(MMU_PARAM_CPU wModuleName), getNativeStringW2(MMU_PARAM_CPU wResName), resId, data, mask, width, height, hotX, hotY);
+    memcopyToNative(cpu->memory, bits, (S8*)data, size);
+    memcopyToNative(cpu->memory, bits+size, (S8*)mask, size);
+    sdlCreateAndSetCursor(getNativeStringW(cpu->memory, wModuleName), getNativeStringW2(cpu->memory, wResName), resId, data, mask, width, height, hotX, hotY);
 }
 
 // BOOL CDECL drv_SetCursorPos(INT x, INT y)
@@ -651,7 +651,7 @@ void boxeddrv_SetCursorPos(struct CPU* cpu) {
 void boxeddrv_SetFocus(struct CPU* cpu) {
     struct Wnd* wnd = getWnd(ARG1);
     if (wnd && wnd->activated==0) {
-        writed(MMU_PARAM_CPU ARG2, 1);
+        writed(cpu->memory, ARG2, 1);
         wnd->activated = 1;
     }
 }
@@ -680,14 +680,14 @@ void boxeddrv_SetWindowStyle(struct CPU* cpu) {
 void boxeddrv_SetWindowText(struct CPU* cpu) {
     struct Wnd* wnd = getWnd(ARG1);
     if (wnd)
-        setWndText(wnd,  getNativeStringW(MMU_PARAM_CPU ARG2));
+        setWndText(wnd,  getNativeStringW(cpu->memory, ARG2));
 }
 
 // void CDECL drv_ShowWindow(HWND hwnd, INT cmd, RECT *rect, UINT swp, UINT* result)
 void boxeddrv_ShowWindow(struct CPU* cpu) {
     U32 swp = ARG4;
     notImplemented("boxeddrv_ShowWindow not implemented");
-    writed(MMU_PARAM_CPU ARG5, swp);
+    writed(cpu->memory, ARG5, swp);
 }
 
 // LRESULT CDECL macdrv_SysCommand(HWND hwnd, WPARAM wparam, LPARAM lparam)
@@ -704,7 +704,7 @@ void boxeddrv_SystemParametersInfo(struct CPU* cpu) {
     {
     case SPI_GETSCREENSAVEACTIVE:
         if (ARG3)
-            writed(MMU_PARAM_CPU ARG3, FALSE);
+            writed(cpu->memory, ARG3, FALSE);
         EAX = 1;
         return;
     case SPI_SETSCREENSAVEACTIVE:
@@ -715,7 +715,7 @@ void boxeddrv_SystemParametersInfo(struct CPU* cpu) {
 
 // INT CDECL drv_ToUnicodeEx(UINT virtKey, UINT scanCode, const BYTE *lpKeyState, LPWSTR bufW, int bufW_size, UINT flags, HKL hkl)
 void boxeddrv_ToUnicodeEx(struct CPU* cpu) {
-    EAX = sdlToUnicodeEx(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
+    EAX = sdlToUnicodeEx(cpu->memory, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG7);
 }
 
 // BOOL CDECL drv_UpdateLayeredWindow(HWND hwnd, const UPDATELAYEREDWINDOWINFO *info, const RECT *window_rect)
@@ -744,8 +744,8 @@ void boxeddrv_WindowPosChanged(struct CPU* cpu) {
 
     if (!wnd)
         return;
-    writeRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
-    writeRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
+    writeRect(cpu->memory, ARG4, &wnd->windowRect);
+    writeRect(cpu->memory, ARG5, &wnd->clientRect);
     //wnd->surface = 0;
     if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
         showWnd(wnd, 0);
@@ -776,24 +776,24 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
     struct wRECT rect;
 
     if (!wnd) {
-        wnd = wndCreate(MMU_PARAM_CPU cpu->thread->process->id, ARG1, ARG4, ARG5);
+        wnd = wndCreate(cpu->memory, cpu->thread->process->id, ARG1, ARG4, ARG5);
     } else {
-        readRect(MMU_PARAM_CPU ARG4, &wnd->windowRect);
-        readRect(MMU_PARAM_CPU ARG5, &wnd->clientRect);
+        readRect(cpu->memory, ARG4, &wnd->windowRect);
+        readRect(cpu->memory, ARG5, &wnd->clientRect);
     }
 
     // *visible_rect = *window_rect;
-    readRect(MMU_PARAM_CPU ARG4, &rect);
-    writeRect(MMU_PARAM_CPU ARG6, &rect);
+    readRect(cpu->memory, ARG4, &rect);
+    writeRect(cpu->memory, ARG6, &rect);
 
     // *surface = wnd->surface;
-    writed(MMU_PARAM_CPU ARG7, wnd->surface);
+    writed(cpu->memory, ARG7, wnd->surface);
 }
 
-U32 getGammaRamp(MMU_ARG U32 ramp);
+U32 getGammaRamp(struct Memory* memory, U32 ramp);
 // BOOL drv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
 void boxeddrv_GetDeviceGammaRamp(struct CPU* cpu) {
-    EAX = getGammaRamp(MMU_PARAM_CPU ARG2);
+    EAX = getGammaRamp(cpu->memory, ARG2);
 }
 
 // BOOL drv_SetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
@@ -1187,7 +1187,7 @@ void boxeddrv_wglDeleteContext(struct CPU* cpu) {
 
 // HDC hdc, int fmt, UINT size, PIXELFORMATDESCRIPTOR *descr
 void boxeddrv_wglDescribePixelFormat(struct CPU* cpu) {
-    EAX = sdl_wglDescribePixelFormat(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4);
+    EAX = sdl_wglDescribePixelFormat(cpu->memory, ARG1, ARG2, ARG3, ARG4);
 }
 
 void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
@@ -1201,7 +1201,7 @@ void boxeddrv_wglGetPixelFormat(struct CPU* cpu) {
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 extern PblMap* glFunctionMap;
 void boxeddrv_wglGetProcAddress(struct CPU* cpu) {
-    char* name = getNativeString(MMU_PARAM_CPU ARG1);
+    char* name = getNativeString(cpu->memory, ARG1);
 
     if (pblMapContainsKey(glFunctionMap, name, strlen(name)+1))
         EAX = 1;
@@ -1273,9 +1273,9 @@ void boxeddrv_FlushSurface(struct CPU* cpu) {
     U32 i;
 
     for (i=0;i<ARG9;i++) {
-        wndBlt(MMU_PARAM_CPU ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG8+16*i);
+        wndBlt(cpu->memory, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG8+16*i);
     }
-    drawAllWindows(MMU_PARAM_CPU ARG7+4, readd(MMU_PARAM_CPU ARG7));
+    drawAllWindows(cpu->memory, ARG7+4, readd(cpu->memory, ARG7));
 }
 
 void boxeddrv_CreateDC(struct CPU* cpu) {
@@ -1297,7 +1297,7 @@ void boxeddrv_GetSystemPalette(struct CPU* cpu) {
         EAX = 0;
         return;
     }
-    sdlGetPalette(MMU_PARAM_CPU start, count, paletteEntries);
+    sdlGetPalette(cpu->memory, start, count, paletteEntries);
     EAX = count;
 }
 
@@ -1311,7 +1311,7 @@ void boxeddrv_RealizePalette(struct CPU* cpu) {
     U32 start = 0;
     if (numberOfEntries<=240)
         start=16;
-    EAX = sdlRealizePalette(MMU_PARAM_CPU start, numberOfEntries, entries);
+    EAX = sdlRealizePalette(cpu->memory, start, numberOfEntries, entries);
 }
 
 void boxeddrv_RealizeDefaultPalette(struct CPU* cpu) {
@@ -1319,8 +1319,8 @@ void boxeddrv_RealizeDefaultPalette(struct CPU* cpu) {
     U32 entries = ARG2;
 
     sdlRealizeDefaultPalette();
-    sdlRealizePalette(MMU_PARAM_CPU 0, 10, entries);
-    sdlRealizePalette(MMU_PARAM_CPU 246, 10, entries+40);
+    sdlRealizePalette(cpu->memory, 0, 10, entries);
+    sdlRealizePalette(cpu->memory, 246, 10, entries+40);
     EAX = 0;
 }
 

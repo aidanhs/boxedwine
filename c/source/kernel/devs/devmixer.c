@@ -42,13 +42,13 @@ S64 mixer_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 mixer_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 mixer_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
 extern struct KThread* currentThread;
 
-U32 mixer_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 l) {
+U32 mixer_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 l) {
     return 0;
 }
 
@@ -68,31 +68,31 @@ U32 mixer_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         if (write) {
             U32 p = IOCTL_ARG1;
             for (i=0;i<len/4;i++)
-                writed(MMU_PARAM_THREAD p+i*4, 2000+i);
-            writeNativeString(MMU_PARAM_THREAD p, "OSS/Linux"); p+=32; // char product[32];		/* For example OSS/Free, OSS/Linux or OSS/Solaris */
-            writeNativeString(MMU_PARAM_THREAD p, "4.0.0a"); p+=32; // char version[32];		/* For example 4.0a */
-            writed(MMU_PARAM_THREAD p, 0x040000); p+=4; // int versionnum;		/* See OSS_GETVERSION */
+                writed(thread->process->memory, p+i*4, 2000+i);
+            writeNativeString(thread->process->memory, p, "OSS/Linux"); p+=32; // char product[32];		/* For example OSS/Free, OSS/Linux or OSS/Solaris */
+            writeNativeString(thread->process->memory, p, "4.0.0a"); p+=32; // char version[32];		/* For example 4.0a */
+            writed(thread->process->memory, p, 0x040000); p+=4; // int versionnum;		/* See OSS_GETVERSION */
 
             for (i=0;i<128;i++) {
-                writeb(MMU_PARAM_THREAD p, i+100); p+=1; // char options[128];		/* Reserved */
+                writeb(thread->process->memory, p, i+100); p+=1; // char options[128];		/* Reserved */
             }
 
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // offset 196 int numaudios;		/* # of audio/dsp devices */
+            writed(thread->process->memory, p, 1); p+=4; // offset 196 int numaudios;		/* # of audio/dsp devices */
             for (i=0;i<8;i++) {
-                writed(MMU_PARAM_THREAD p, 200+i); p+=4; // int openedaudio[8];		/* Bit mask telling which audio devices are busy */
+                writed(thread->process->memory, p, 200+i); p+=4; // int openedaudio[8];		/* Bit mask telling which audio devices are busy */
             }
 
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // int numsynths;		/* # of availavle synth devices */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // int nummidis;			/* # of available MIDI ports */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // int numtimers;		/* # of available timer devices */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // offset 244 int nummixers;		/* # of mixer devices */
+            writed(thread->process->memory, p, 1); p+=4; // int numsynths;		/* # of availavle synth devices */
+            writed(thread->process->memory, p, 1); p+=4; // int nummidis;			/* # of available MIDI ports */
+            writed(thread->process->memory, p, 1); p+=4; // int numtimers;		/* # of available timer devices */
+            writed(thread->process->memory, p, 1); p+=4; // offset 244 int nummixers;		/* # of mixer devices */
 
             for (i=0;i<8;i++) {
-                writed(MMU_PARAM_THREAD p, 0); p+=4; // int openedmidi[8];		/* Bit mask telling which midi devices are busy */
+                writed(thread->process->memory, p, 0); p+=4; // int openedmidi[8];		/* Bit mask telling which midi devices are busy */
             }
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // offset 280 int numcards;			/* Number of sound cards in the system */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // offset 284 int numaudioengines;		/* Number of audio engines in the system */
-            writeNativeString(MMU_PARAM_THREAD p, "GPL"); p+=16; // char license[16];		/* For example "GPL" or "CDDL" */
+            writed(thread->process->memory, p, 1); p+=4; // offset 280 int numcards;			/* Number of sound cards in the system */
+            writed(thread->process->memory, p, 1); p+=4; // offset 284 int numaudioengines;		/* Number of audio engines in the system */
+            writeNativeString(thread->process->memory, p, "GPL"); p+=16; // char license[16];		/* For example "GPL" or "CDDL" */
             return 0;
         }
         break;
@@ -100,37 +100,37 @@ U32 mixer_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
         if (write) {
             U32 p = IOCTL_ARG1;
             p+=4; // int dev; /* Audio device number */
-            writeNativeString(MMU_PARAM_THREAD p, "BoxedWine mixer"); p+=64; // oss_devname_t name;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int busy; /* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
-            writed(MMU_PARAM_THREAD p, -1); p+=4; // int pid;
-            writed(MMU_PARAM_THREAD p, PCM_CAP_OUTPUT); p+=4; // int caps;			/* PCM_CAP_INPUT, PCM_CAP_OUTPUT */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int iformats
-            writed(MMU_PARAM_THREAD p, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE); p+=4; // int oformats;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int magic;			/* Reserved for internal use */
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=64; // oss_cmd_t cmd;		/* Command using the device (if known) */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int card_number;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int port_number;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int mixer_dev;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int legacy_device;		/* Obsolete field. Replaced by devnode */
-            writed(MMU_PARAM_THREAD p, 1); p+=4; // int enabled;			/* 1=enabled, 0=device not ready at this moment */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int flags;			/* For internal use only - no practical meaning */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int min_rate
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // max_rate;	/* Sample rate limits */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int min_channels
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // max_channels;	/* Number of channels supported */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int binding;			/* DSP_BIND_FRONT, etc. 0 means undefined */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int rate_source;
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=64; // oss_handle_t handle;
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // unsigned int nrates
+            writeNativeString(thread->process->memory, p, "BoxedWine mixer"); p+=64; // oss_devname_t name;
+            writed(thread->process->memory, p, 0); p+=4; // int busy; /* 0, OPEN_READ, OPEN_WRITE or OPEN_READWRITE */
+            writed(thread->process->memory, p, -1); p+=4; // int pid;
+            writed(thread->process->memory, p, PCM_CAP_OUTPUT); p+=4; // int caps;			/* PCM_CAP_INPUT, PCM_CAP_OUTPUT */
+            writed(thread->process->memory, p, 0); p+=4; // int iformats
+            writed(thread->process->memory, p, AFMT_U8 | AFMT_S16_LE | AFMT_S16_BE | AFMT_S8 | AFMT_U16_BE); p+=4; // int oformats;
+            writed(thread->process->memory, p, 0); p+=4; // int magic;			/* Reserved for internal use */
+            writeNativeString(thread->process->memory, p, ""); p+=64; // oss_cmd_t cmd;		/* Command using the device (if known) */
+            writed(thread->process->memory, p, 0); p+=4; // int card_number;
+            writed(thread->process->memory, p, 0); p+=4; // int port_number;
+            writed(thread->process->memory, p, 0); p+=4; // int mixer_dev;
+            writed(thread->process->memory, p, 0); p+=4; // int legacy_device;		/* Obsolete field. Replaced by devnode */
+            writed(thread->process->memory, p, 1); p+=4; // int enabled;			/* 1=enabled, 0=device not ready at this moment */
+            writed(thread->process->memory, p, 0); p+=4; // int flags;			/* For internal use only - no practical meaning */
+            writed(thread->process->memory, p, 0); p+=4; // int min_rate
+            writed(thread->process->memory, p, 0); p+=4; // max_rate;	/* Sample rate limits */
+            writed(thread->process->memory, p, 0); p+=4; // int min_channels
+            writed(thread->process->memory, p, 0); p+=4; // max_channels;	/* Number of channels supported */
+            writed(thread->process->memory, p, 0); p+=4; // int binding;			/* DSP_BIND_FRONT, etc. 0 means undefined */
+            writed(thread->process->memory, p, 0); p+=4; // int rate_source;
+            writeNativeString(thread->process->memory, p, ""); p+=64; // oss_handle_t handle;
+            writed(thread->process->memory, p, 0); p+=4; // unsigned int nrates
             for (i=0;i<20;i++) {
-                writed(MMU_PARAM_THREAD p, 0); p+=4; // rates[20];	/* Please read the manual before using these */
+                writed(thread->process->memory, p, 0); p+=4; // rates[20];	/* Please read the manual before using these */
             }
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=32; // oss_longname_t song_name;	/* Song name (if given) */
-            writeNativeString(MMU_PARAM_THREAD p, ""); p+=16; // oss_label_t label;		/* Device label (if given) */
-            writed(MMU_PARAM_THREAD p, -1); p+=4; // int latency;			/* In usecs, -1=unknown */
-            writeNativeString(MMU_PARAM_THREAD p, "/dev/dsp"); p+=16; // oss_devnode_t devnode;	/* Device special file name (absolute path) */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int next_play_engine;		/* Read the documentation for more info */
-            writed(MMU_PARAM_THREAD p, 0); p+=4; // int next_rec_engine;		/* Read the documentation for more info */
+            writeNativeString(thread->process->memory, p, ""); p+=32; // oss_longname_t song_name;	/* Song name (if given) */
+            writeNativeString(thread->process->memory, p, ""); p+=16; // oss_label_t label;		/* Device label (if given) */
+            writed(thread->process->memory, p, -1); p+=4; // int latency;			/* In usecs, -1=unknown */
+            writeNativeString(thread->process->memory, p, "/dev/dsp"); p+=16; // oss_devnode_t devnode;	/* Device special file name (absolute path) */
+            writed(thread->process->memory, p, 0); p+=4; // int next_play_engine;		/* Read the documentation for more info */
+            writed(thread->process->memory, p, 0); p+=4; // int next_rec_engine;		/* Read the documentation for more info */
             return 0;
         }        
     }
@@ -157,7 +157,7 @@ BOOL mixer_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 mixer_map(MMU_ARG struct FsOpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 mixer_map(struct Memory* memory, struct FsOpenNode* node,  U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 

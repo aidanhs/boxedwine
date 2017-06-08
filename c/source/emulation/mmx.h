@@ -161,7 +161,7 @@ void OPCALL mov_mmx_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL mov_mmx_e32_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* rmrq=&reg_mmx[op->r1];
-    rmrq->ud.d0 = readd(MMU_PARAM_CPU eaa16(cpu, op));
+    rmrq->ud.d0 = readd(cpu->memory, eaa16(cpu, op));
     rmrq->ud.d1 = 0;
     CYCLES(1);
     NEXT();
@@ -169,7 +169,7 @@ void OPCALL mov_mmx_e32_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL mov_mmx_e32_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* rmrq=&reg_mmx[op->r1];
-    rmrq->ud.d0 = readd(MMU_PARAM_CPU eaa32(cpu, op));
+    rmrq->ud.d0 = readd(cpu->memory, eaa32(cpu, op));
     rmrq->ud.d1 = 0;
     CYCLES(1);
     NEXT();
@@ -204,13 +204,13 @@ void OPCALL mov_reg_mmx(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mov_e32_mmx_16(struct CPU* cpu, struct Op* op) {
-    writed(MMU_PARAM_CPU eaa16(cpu, op), reg_mmx[op->r1].ud.d0);
+    writed(cpu->memory, eaa16(cpu, op), reg_mmx[op->r1].ud.d0);
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL mov_e32_mmx_32(struct CPU* cpu, struct Op* op) {
-    writed(MMU_PARAM_CPU eaa32(cpu, op), reg_mmx[op->r1].ud.d0);
+    writed(cpu->memory, eaa32(cpu, op), reg_mmx[op->r1].ud.d0);
     CYCLES(2);
     NEXT();
 }
@@ -244,13 +244,13 @@ void OPCALL mov_mmx_mmx(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mov_mmx_e64_16(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    reg_mmx[op->r1].q = readq(cpu->memory, eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL mov_mmx_e64_32(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    reg_mmx[op->r1].q = readq(cpu->memory, eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -278,13 +278,13 @@ void decode36f(struct DecodeData* data) {
 }
 
 void OPCALL mov_e64_mmx_16(struct CPU* cpu, struct Op* op) {
-    writeq(MMU_PARAM_CPU eaa16(cpu, op), reg_mmx[op->r1].q);
+    writeq(cpu->memory, eaa16(cpu, op), reg_mmx[op->r1].q);
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL mov_e64_mmx_32(struct CPU* cpu, struct Op* op) {
-    writeq(MMU_PARAM_CPU eaa32(cpu, op), reg_mmx[op->r1].q);
+    writeq(cpu->memory, eaa32(cpu, op), reg_mmx[op->r1].q);
     CYCLES(2);
     NEXT();
 }
@@ -320,13 +320,13 @@ void OPCALL xor_mmx_mmx(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL xor_mmx_e64_16(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q ^= readq(MMU_PARAM_CPU eaa16(cpu, op));
+    reg_mmx[op->r1].q ^= readq(cpu->memory, eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL xor_mmx_e64_32(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q ^= readq(MMU_PARAM_CPU eaa32(cpu, op));
+    reg_mmx[op->r1].q ^= readq(cpu->memory, eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -360,13 +360,13 @@ void OPCALL or_mmx_mmx(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL or_mmx_e64_16(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q |= readq(MMU_PARAM_CPU eaa16(cpu, op));
+    reg_mmx[op->r1].q |= readq(cpu->memory, eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL or_mmx_e64_32(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q |= readq(MMU_PARAM_CPU eaa32(cpu, op));
+    reg_mmx[op->r1].q |= readq(cpu->memory, eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -400,13 +400,13 @@ void OPCALL and_mmx_mmx(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL and_mmx_e64_16(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q &= readq(MMU_PARAM_CPU eaa16(cpu, op));
+    reg_mmx[op->r1].q &= readq(cpu->memory, eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL and_mmx_e64_32(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q &= readq(MMU_PARAM_CPU eaa32(cpu, op));
+    reg_mmx[op->r1].q &= readq(cpu->memory, eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -440,13 +440,13 @@ void OPCALL andn_mmx_mmx(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL andn_mmx_e64_16(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q = ~reg_mmx[op->r1].q & readq(MMU_PARAM_CPU eaa16(cpu, op));
+    reg_mmx[op->r1].q = ~reg_mmx[op->r1].q & readq(cpu->memory, eaa16(cpu, op));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL andn_mmx_e64_32(struct CPU* cpu, struct Op* op) {
-    reg_mmx[op->r1].q = ~reg_mmx[op->r1].q & readq(MMU_PARAM_CPU eaa32(cpu, op));
+    reg_mmx[op->r1].q = ~reg_mmx[op->r1].q & readq(cpu->memory, eaa32(cpu, op));
     CYCLES(2);
     NEXT();
 }
@@ -495,7 +495,7 @@ void OPCALL psllw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 15) {
         dest->q = 0;
@@ -514,7 +514,7 @@ void OPCALL psllw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 15) {
         dest->q = 0;
@@ -572,7 +572,7 @@ void OPCALL psrlw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 15) {
         dest->q = 0;
@@ -591,7 +591,7 @@ void OPCALL psrlw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 15) {
         dest->q = 0;
@@ -651,7 +651,7 @@ void OPCALL psraw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 15) {
         src.q = 16;
@@ -670,7 +670,7 @@ void OPCALL psraw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 15) {
         src.q = 16;
@@ -799,7 +799,7 @@ void OPCALL pslld_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 31) {
         dest->q = 0;
@@ -816,7 +816,7 @@ void OPCALL pslld_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 31) {
         dest->q = 0;
@@ -870,7 +870,7 @@ void OPCALL psrld_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 31) {
         dest->q = 0;
@@ -887,7 +887,7 @@ void OPCALL psrld_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 31) {
         dest->q = 0;
@@ -942,7 +942,7 @@ void OPCALL psrad_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 31) {
         src.q = 32;
@@ -958,7 +958,7 @@ void OPCALL psrad_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 31) {
         src.q = 32;
@@ -1071,7 +1071,7 @@ void OPCALL psllq_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 63) {
         dest->q = 0;
@@ -1087,7 +1087,7 @@ void OPCALL psllq_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 63) {
         dest->q = 0;
@@ -1139,7 +1139,7 @@ void OPCALL psrlq_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     if (src.q > 63) {
         dest->q = 0;
@@ -1155,7 +1155,7 @@ void OPCALL psrlq_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     if (src.q > 63) {
         dest->q = 0;
@@ -1253,7 +1253,7 @@ void OPCALL paddb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->ub.b0 += src.ub.b0;
 	dest->ub.b1 += src.ub.b1;
@@ -1272,7 +1272,7 @@ void OPCALL paddb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->ub.b0 += src.ub.b0;
 	dest->ub.b1 += src.ub.b1;
@@ -1326,7 +1326,7 @@ void OPCALL paddw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->uw.w0 += src.uw.w0;
 	dest->uw.w1 += src.uw.w1;
@@ -1341,7 +1341,7 @@ void OPCALL paddw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->uw.w0 += src.uw.w0;
 	dest->uw.w1 += src.uw.w1;
@@ -1389,7 +1389,7 @@ void OPCALL paddd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->ud.d0 += src.ud.d0;
 	dest->ud.d1 += src.ud.d1;
@@ -1402,7 +1402,7 @@ void OPCALL paddd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->ud.d0 += src.ud.d0;
 	dest->ud.d1 += src.ud.d1;
@@ -1454,7 +1454,7 @@ void OPCALL paddsb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->sb.b0 = SaturateWordSToByteS((S16)dest->sb.b0+(S16)src.sb.b0);
 	dest->sb.b1 = SaturateWordSToByteS((S16)dest->sb.b1+(S16)src.sb.b1);
@@ -1473,7 +1473,7 @@ void OPCALL paddsb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->sb.b0 = SaturateWordSToByteS((S16)dest->sb.b0+(S16)src.sb.b0);
 	dest->sb.b1 = SaturateWordSToByteS((S16)dest->sb.b1+(S16)src.sb.b1);
@@ -1527,7 +1527,7 @@ void OPCALL paddsw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->sw.w0 = SaturateDwordSToWordS((S32)dest->sw.w0+(S32)src.sw.w0);
 	dest->sw.w1 = SaturateDwordSToWordS((S32)dest->sw.w1+(S32)src.sw.w1);
@@ -1542,7 +1542,7 @@ void OPCALL paddsw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->sw.w0 = SaturateDwordSToWordS((S32)dest->sw.w0+(S32)src.sw.w0);
 	dest->sw.w1 = SaturateDwordSToWordS((S32)dest->sw.w1+(S32)src.sw.w1);
@@ -1596,7 +1596,7 @@ void OPCALL paddusb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->ub.b0 = SaturateWordSToByteU((S16)dest->ub.b0+(S16)src.ub.b0);
 	dest->ub.b1 = SaturateWordSToByteU((S16)dest->ub.b1+(S16)src.ub.b1);
@@ -1615,7 +1615,7 @@ void OPCALL paddusb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->ub.b0 = SaturateWordSToByteU((S16)dest->ub.b0+(S16)src.ub.b0);
 	dest->ub.b1 = SaturateWordSToByteU((S16)dest->ub.b1+(S16)src.ub.b1);
@@ -1669,7 +1669,7 @@ void OPCALL paddusw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->uw.w0 = SaturateDwordSToWordU((S32)dest->uw.w0+(S32)src.uw.w0);
 	dest->uw.w1 = SaturateDwordSToWordU((S32)dest->uw.w1+(S32)src.uw.w1);
@@ -1684,7 +1684,7 @@ void OPCALL paddusw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->uw.w0 = SaturateDwordSToWordU((S32)dest->uw.w0+(S32)src.uw.w0);
 	dest->uw.w1 = SaturateDwordSToWordU((S32)dest->uw.w1+(S32)src.uw.w1);
@@ -1738,7 +1738,7 @@ void OPCALL psubb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->ub.b0 -= src.ub.b0;
 	dest->ub.b1 -= src.ub.b1;
@@ -1757,7 +1757,7 @@ void OPCALL psubb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->ub.b0 -= src.ub.b0;
 	dest->ub.b1 -= src.ub.b1;
@@ -1811,7 +1811,7 @@ void OPCALL psubw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->uw.w0 -= src.uw.w0;
 	dest->uw.w1 -= src.uw.w1;
@@ -1826,7 +1826,7 @@ void OPCALL psubw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->uw.w0 -= src.uw.w0;
 	dest->uw.w1 -= src.uw.w1;
@@ -1874,7 +1874,7 @@ void OPCALL psubd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->ud.d0 -= src.ud.d0;
 	dest->ud.d1 -= src.ud.d1;
@@ -1887,7 +1887,7 @@ void OPCALL psubd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->ud.d0 -= src.ud.d0;
 	dest->ud.d1 -= src.ud.d1;
@@ -1939,7 +1939,7 @@ void OPCALL psubsb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->sb.b0 = SaturateWordSToByteS((S16)dest->sb.b0-(S16)src.sb.b0);
 	dest->sb.b1 = SaturateWordSToByteS((S16)dest->sb.b1-(S16)src.sb.b1);
@@ -1958,7 +1958,7 @@ void OPCALL psubsb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->sb.b0 = SaturateWordSToByteS((S16)dest->sb.b0-(S16)src.sb.b0);
 	dest->sb.b1 = SaturateWordSToByteS((S16)dest->sb.b1-(S16)src.sb.b1);
@@ -2012,7 +2012,7 @@ void OPCALL psubsw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     dest->sw.w0 = SaturateDwordSToWordS((S32)dest->sw.w0-(S32)src.sw.w0);
 	dest->sw.w1 = SaturateDwordSToWordS((S32)dest->sw.w1-(S32)src.sw.w1);
@@ -2027,7 +2027,7 @@ void OPCALL psubsw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     dest->sw.w0 = SaturateDwordSToWordS((S32)dest->sw.w0-(S32)src.sw.w0);
 	dest->sw.w1 = SaturateDwordSToWordS((S32)dest->sw.w1-(S32)src.sw.w1);
@@ -2085,7 +2085,7 @@ void OPCALL psubusb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg src;
     MMX_reg result;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     result.q = 0;
 	if (dest->ub.b0>src.ub.b0) result.ub.b0 = dest->ub.b0 - src.ub.b0;
@@ -2107,7 +2107,7 @@ void OPCALL psubusb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg src;
     MMX_reg result;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     result.q = 0;
 	if (dest->ub.b0>src.ub.b0) result.ub.b0 = dest->ub.b0 - src.ub.b0;
@@ -2171,7 +2171,7 @@ void OPCALL psubusw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg src;
     MMX_reg result;
     
-    src.q = readq(MMU_PARAM_CPU eaa16(cpu, op));
+    src.q = readq(cpu->memory, eaa16(cpu, op));
 
     result.q = 0;
 	if (dest->ub.b0>src.ub.b0) result.ub.b0 = dest->ub.b0 - src.ub.b0;
@@ -2193,7 +2193,7 @@ void OPCALL psubusw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg src;
     MMX_reg result;
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
     result.q = 0;
 	if (dest->uw.w0>src.uw.w0) result.uw.w0 = dest->uw.w0 - src.uw.w0;
@@ -2245,7 +2245,7 @@ void OPCALL pmulhw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = (U16)(((S32)dest->sw.w0 * (S32)src.sw.w0) >> 16);
 	dest->uw.w1 = (U16)(((S32)dest->sw.w1 * (S32)src.sw.w1) >> 16);
@@ -2260,7 +2260,7 @@ void OPCALL pmulhw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = (U16)(((S32)dest->sw.w0 * (S32)src.sw.w0) >> 16);
 	dest->uw.w1 = (U16)(((S32)dest->sw.w1 * (S32)src.sw.w1) >> 16);
@@ -2310,7 +2310,7 @@ void OPCALL pmullw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = (U16)((S32)dest->sw.w0 * (S32)src.sw.w0);
 	dest->uw.w1 = (U16)((S32)dest->sw.w1 * (S32)src.sw.w1);
@@ -2325,7 +2325,7 @@ void OPCALL pmullw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = (U16)((S32)dest->sw.w0 * (S32)src.sw.w0);
 	dest->uw.w1 = (U16)((S32)dest->sw.w1 * (S32)src.sw.w1);
@@ -2380,7 +2380,7 @@ void OPCALL pmaddwd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	if (dest->ud.d0 == 0x80008000 && src.ud.d0 == 0x80008000)
 		dest->ud.d0 = 0x80000000;
@@ -2400,7 +2400,7 @@ void OPCALL pmaddwd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	if (dest->ud.d0 == 0x80008000 && src.ud.d0 == 0x80008000)
 		dest->ud.d0 = 0x80000000;
@@ -2460,7 +2460,7 @@ void OPCALL pcmpeqb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = dest->ub.b0==src.ub.b0?0xff:0;
 	dest->ub.b1 = dest->ub.b1==src.ub.b1?0xff:0;
@@ -2479,7 +2479,7 @@ void OPCALL pcmpeqb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = dest->ub.b0==src.ub.b0?0xff:0;
 	dest->ub.b1 = dest->ub.b1==src.ub.b1?0xff:0;
@@ -2533,7 +2533,7 @@ void OPCALL pcmpeqw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = dest->uw.w0==src.uw.w0?0xffff:0;
 	dest->uw.w1 = dest->uw.w1==src.uw.w1?0xffff:0;
@@ -2548,7 +2548,7 @@ void OPCALL pcmpeqw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = dest->uw.w0==src.uw.w0?0xffff:0;
 	dest->uw.w1 = dest->uw.w1==src.uw.w1?0xffff:0;
@@ -2596,7 +2596,7 @@ void OPCALL pcmpeqd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d0 = dest->ud.d0==src.ud.d0?0xffffffff:0;
 	dest->ud.d1 = dest->ud.d1==src.ud.d1?0xffffffff:0;
@@ -2609,7 +2609,7 @@ void OPCALL pcmpeqd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d0 = dest->ud.d0==src.ud.d0?0xffffffff:0;
 	dest->ud.d1 = dest->ud.d1==src.ud.d1?0xffffffff:0;
@@ -2661,7 +2661,7 @@ void OPCALL pcmpgtb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = dest->sb.b0>src.sb.b0?0xff:0;
 	dest->ub.b1 = dest->sb.b1>src.sb.b1?0xff:0;
@@ -2680,7 +2680,7 @@ void OPCALL pcmpgtb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = dest->sb.b0>src.sb.b0?0xff:0;
 	dest->ub.b1 = dest->sb.b1>src.sb.b1?0xff:0;
@@ -2734,7 +2734,7 @@ void OPCALL pcmpgtw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = dest->sw.w0>src.sw.w0?0xffff:0;
 	dest->uw.w1 = dest->sw.w1>src.sw.w1?0xffff:0;
@@ -2749,7 +2749,7 @@ void OPCALL pcmpgtw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = dest->sw.w0>src.sw.w0?0xffff:0;
 	dest->uw.w1 = dest->sw.w1>src.sw.w1?0xffff:0;
@@ -2797,7 +2797,7 @@ void OPCALL pcmpgtd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d0 = dest->sd.d0>src.sd.d0?0xffffffff:0;
 	dest->ud.d1 = dest->sd.d1>src.sd.d1?0xffffffff:0;
@@ -2810,7 +2810,7 @@ void OPCALL pcmpgtd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d0 = dest->sd.d0>src.sd.d0?0xffffffff:0;
 	dest->ud.d1 = dest->sd.d1>src.sd.d1?0xffffffff:0;
@@ -2863,7 +2863,7 @@ void OPCALL packsswb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->sb.b0 = SaturateWordSToByteS(dest->sw.w0);
 	dest->sb.b1 = SaturateWordSToByteS(dest->sw.w1);
@@ -2882,7 +2882,7 @@ void OPCALL packsswb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->sb.b0 = SaturateWordSToByteS(dest->sw.w0);
 	dest->sb.b1 = SaturateWordSToByteS(dest->sw.w1);
@@ -2936,7 +2936,7 @@ void OPCALL packssdw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->sw.w0 = SaturateDwordSToWordS(dest->sd.d0);
 	dest->sw.w1 = SaturateDwordSToWordS(dest->sd.d1);
@@ -2951,7 +2951,7 @@ void OPCALL packssdw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->sw.w0 = SaturateDwordSToWordS(dest->sd.d0);
 	dest->sw.w1 = SaturateDwordSToWordS(dest->sd.d1);
@@ -3005,7 +3005,7 @@ void OPCALL packuswb_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = SaturateWordSToByteU(dest->sw.w0);
 	dest->ub.b1 = SaturateWordSToByteU(dest->sw.w1);
@@ -3024,7 +3024,7 @@ void OPCALL packuswb_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = SaturateWordSToByteU(dest->sw.w0);
 	dest->ub.b1 = SaturateWordSToByteU(dest->sw.w1);
@@ -3082,7 +3082,7 @@ void OPCALL punpckhbw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = dest->ub.b4;
 	dest->ub.b1 = src.ub.b4;
@@ -3101,7 +3101,7 @@ void OPCALL punpckhbw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b0 = dest->ub.b4;
 	dest->ub.b1 = src.ub.b4;
@@ -3155,7 +3155,7 @@ void OPCALL punpckhwd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = dest->uw.w2;
 	dest->uw.w1 = src.uw.w2;
@@ -3170,7 +3170,7 @@ void OPCALL punpckhwd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w0 = dest->uw.w2;
 	dest->uw.w1 = src.uw.w2;
@@ -3218,7 +3218,7 @@ void OPCALL punpckhdq_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d0 = dest->ud.d1;
 	dest->ud.d1 = src.ud.d1;
@@ -3231,7 +3231,7 @@ void OPCALL punpckhdq_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d0 = dest->ud.d1;
 	dest->ud.d1 = src.ud.d1;
@@ -3283,7 +3283,7 @@ void OPCALL punpcklbw_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b7 = src.ub.b3;
 	dest->ub.b6 = dest->ub.b3;
@@ -3302,7 +3302,7 @@ void OPCALL punpcklbw_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ub.b7 = src.ub.b3;
 	dest->ub.b6 = dest->ub.b3;
@@ -3356,7 +3356,7 @@ void OPCALL punpcklwd_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w3 = src.uw.w1;
 	dest->uw.w2 = dest->uw.w1;
@@ -3371,7 +3371,7 @@ void OPCALL punpcklwd_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->uw.w3 = src.uw.w1;
 	dest->uw.w2 = dest->uw.w1;
@@ -3418,7 +3418,7 @@ void OPCALL punpckldq_mmx_e64_16(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d1 = src.ud.d0;
 
@@ -3430,7 +3430,7 @@ void OPCALL punpckldq_mmx_e64_32(struct CPU* cpu, struct Op* op) {
     MMX_reg* dest=&reg_mmx[op->r1];
     MMX_reg src;    
     
-    src.q = readq(MMU_PARAM_CPU eaa32(cpu, op));
+    src.q = readq(cpu->memory, eaa32(cpu, op));
 
 	dest->ud.d1 = src.ud.d0;
 

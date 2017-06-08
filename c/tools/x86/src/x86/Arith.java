@@ -88,7 +88,7 @@ public class Arith extends Base {
                 "    out(data, bits);\n" +
                 "    out(data, \" = read\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU eaa); cpu->src.u\");\n" +
+                "    out(data, \"(cpu->memory, eaa); cpu->src.u\");\n" +
                 "    out(data, bits);\n" +
                 "    out(data, \" = \");\n" +
                 "    out(data, r1);\n" +
@@ -111,7 +111,7 @@ public class Arith extends Base {
                 "    if (useResult) {\n" +
                 "        out(data, \"; write\");\n" +
                 "        out(data, memWidth);\n" +
-                "        out(data, \"(MMU_PARAM_CPU eaa,  cpu->result.u\");\n" +
+                "        out(data, \"(cpu->memory, eaa,  cpu->result.u\");\n" +
                 "        out(data, bits);\n" +
                 "        out(data, \")\");\n" +
                 "    }\n" +
@@ -125,9 +125,9 @@ public class Arith extends Base {
                 "    out(data, address);\n" +
                 "    out(data, \"; write\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU eaa, read\");\n" +
+                "    out(data, \"(cpu->memory, eaa, read\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU eaa) \");\n" +
+                "    out(data, \"(cpu->memory, eaa) \");\n" +
                 "    out(data, op);\n" +
                 "    out(data, \" \");\n" +
                 "    out(data, r1);\n" +
@@ -156,7 +156,7 @@ public class Arith extends Base {
                 "    out(data, bits);\n" +
                 "    out(data, \" = read\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU \");\n" +
+                "    out(data, \"(cpu->memory, \");\n" +
                 "    out(data, address);\n" +
                 "    out(data, \"); cpu->result.u\");\n" +
                 "    out(data, bits);\n" +
@@ -193,7 +193,7 @@ public class Arith extends Base {
                 "    out(data, op);\n" +
                 "    out(data, \" read\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU \");\n" +
+                "    out(data, \"(cpu->memory, \");\n" +
                 "    out(data, address);\n" +
                 "    out(data, \")\");\n" +
                 "    if (useCF) {\n" +
@@ -287,7 +287,7 @@ public class Arith extends Base {
                 "    out(data, bits);\n" +
                 "    out(data, \" = read\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU eaa); cpu->src.u\");\n" +
+                "    out(data, \"(cpu->memory, eaa); cpu->src.u\");\n" +
                 "    out(data, bits);\n" +
                 "    out(data, \" = 0x\");\n" +
                 "    itoa(value, tmp, 16);\n" +
@@ -311,7 +311,7 @@ public class Arith extends Base {
                 "    if (useResult) {\n" +
                 "        out(data, \"; write\");\n" +
                 "        out(data, memWidth);\n" +
-                "        out(data, \"(MMU_PARAM_CPU eaa,  cpu->result.u\");\n" +
+                "        out(data, \"(cpu->memory, eaa,  cpu->result.u\");\n" +
                 "        out(data, bits);\n" +
                 "        out(data, \")\");\n" +
                 "    }\n" +
@@ -327,9 +327,9 @@ public class Arith extends Base {
                 "    out(data, address);\n" +
                 "    out(data, \"; write\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU eaa, read\");\n" +
+                "    out(data, \"(cpu->memory, eaa, read\");\n" +
                 "    out(data, memWidth);\n" +
-                "    out(data, \"(MMU_PARAM_CPU eaa) \");\n" +
+                "    out(data, \"(cpu->memory, eaa) \");\n" +
                 "    out(data, op);\n" +
                 "    out(data, \" 0x\");\n" +
                 "    itoa(value, tmp, 16);\n" +
@@ -514,35 +514,35 @@ public class Arith extends Base {
 
     public void arith32(FileOutputStream fos, String name, String op, boolean cf, boolean result, String bits, String rrCycles, String mrCycles, String rmCycles, String rdCycles, String mdCycles, boolean flags)  throws IOException {
         arithbase(fos, name + "r32r32", "FLAGS_" + name.toUpperCase() + bits, "cpu->reg[op->r2].u32", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, cf, result, false, false, bits, rrCycles, flags);
-        arithbase(fos, name + "e32r32_16", "FLAGS_" + name.toUpperCase() + bits, "cpu->reg[op->r1].u32", "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", op, cf, result, true, false, bits, mrCycles, flags);
-        arithbase(fos, name + "e32r32_32", "FLAGS_" + name.toUpperCase() + bits, "cpu->reg[op->r1].u32", "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", op, cf, result, false, true, bits, mrCycles, flags);
-        arithbase(fos, name + "r32e32_16", "FLAGS_" + name.toUpperCase() + bits, "readd(MMU_PARAM_CPU eaa16(cpu, op))", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
-        arithbase(fos, name + "r32e32_32", "FLAGS_" + name.toUpperCase() + bits, "readd(MMU_PARAM_CPU eaa32(cpu, op))", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
+        arithbase(fos, name + "e32r32_16", "FLAGS_" + name.toUpperCase() + bits, "cpu->reg[op->r1].u32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, cf, result, true, false, bits, mrCycles, flags);
+        arithbase(fos, name + "e32r32_32", "FLAGS_" + name.toUpperCase() + bits, "cpu->reg[op->r1].u32", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mrCycles, flags);
+        arithbase(fos, name + "r32e32_16", "FLAGS_" + name.toUpperCase() + bits, "readd(cpu->memory, eaa16(cpu, op))", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
+        arithbase(fos, name + "r32e32_32", "FLAGS_" + name.toUpperCase() + bits, "readd(cpu->memory, eaa32(cpu, op))", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
         arithbase(fos, name + "32_reg", "FLAGS_" + name.toUpperCase() + bits, "op->data1", "cpu->reg[op->r1].u32", "cpu->reg[op->r1].u32 = ", "", op, cf, result, false, false, bits, rdCycles, flags);
-        arithbase(fos, name + "32_mem16", "FLAGS_" + name.toUpperCase() + bits, "op->data1", "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", op, cf, result, true, false, bits, mdCycles, flags);
-        arithbase(fos, name + "32_mem32", "FLAGS_" + name.toUpperCase() + bits, "op->data1", "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", op, cf, result, false, true, bits, mdCycles, flags);
+        arithbase(fos, name + "32_mem16", "FLAGS_" + name.toUpperCase() + bits, "op->data1", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, cf, result, true, false, bits, mdCycles, flags);
+        arithbase(fos, name + "32_mem32", "FLAGS_" + name.toUpperCase() + bits, "op->data1", "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mdCycles, flags);
     }
 
     public void arith16(FileOutputStream fos, String name, String op, boolean cf, boolean result, String bits, String rrCycles, String mrCycles, String rmCycles, String rdCycles, String mdCycles, boolean flags)  throws IOException {
         arithbase(fos, name+"r16r16", "FLAGS_"+name.toUpperCase()+bits, "cpu->reg[op->r2].u16", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, cf, result, false, false, bits, rrCycles, flags);
-        arithbase(fos, name+"e16r16_16", "FLAGS_"+name.toUpperCase()+bits, "cpu->reg[op->r1].u16", "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", op, cf, result, true, false, bits, mrCycles, flags);
-        arithbase(fos, name+"e16r16_32", "FLAGS_"+name.toUpperCase()+bits, "cpu->reg[op->r1].u16", "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", op, cf, result, false, true, bits, mrCycles, flags);
-        arithbase(fos, name+"r16e16_16", "FLAGS_"+name.toUpperCase()+bits, "readw(MMU_PARAM_CPU eaa16(cpu, op))", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
-        arithbase(fos, name+"r16e16_32", "FLAGS_"+name.toUpperCase()+bits, "readw(MMU_PARAM_CPU eaa32(cpu, op))", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
+        arithbase(fos, name+"e16r16_16", "FLAGS_"+name.toUpperCase()+bits, "cpu->reg[op->r1].u16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, cf, result, true, false, bits, mrCycles, flags);
+        arithbase(fos, name+"e16r16_32", "FLAGS_"+name.toUpperCase()+bits, "cpu->reg[op->r1].u16", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mrCycles, flags);
+        arithbase(fos, name+"r16e16_16", "FLAGS_"+name.toUpperCase()+bits, "readw(cpu->memory, eaa16(cpu, op))", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
+        arithbase(fos, name+"r16e16_32", "FLAGS_"+name.toUpperCase()+bits, "readw(cpu->memory, eaa32(cpu, op))", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, cf, result, false, false, bits, rmCycles, flags);
         arithbase(fos, name+"16_reg", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "cpu->reg[op->r1].u16", "cpu->reg[op->r1].u16 = ", "", op, cf, result, false, false, bits, rdCycles, flags);
-        arithbase(fos, name+"16_mem16", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", op, cf, result, true, false, bits, mdCycles, flags);
-        arithbase(fos, name+"16_mem32", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", op, cf, result, false, true, bits, mdCycles, flags);
+        arithbase(fos, name+"16_mem16", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, cf, result, true, false, bits, mdCycles, flags);
+        arithbase(fos, name+"16_mem32", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mdCycles, flags);
     }
 
     public void arith8(FileOutputStream fos, String name, String op, boolean cf, boolean result, String bits, String rrCycles, String mrCycles, String rmCycles, String rdCycles, String mdCycles, boolean flags)  throws IOException {
         arithbase(fos, name+"r8r8", "FLAGS_"+name.toUpperCase()+bits, "*cpu->reg8[op->r2]", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, cf, result, false, false, bits, rrCycles, flags);
-        arithbase(fos, name+"e8r8_16", "FLAGS_"+name.toUpperCase()+bits, "*cpu->reg8[op->r1]", "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", op, cf, result, true, false, bits, mrCycles, flags);
-        arithbase(fos, name+"e8r8_32", "FLAGS_"+name.toUpperCase()+bits, "*cpu->reg8[op->r1]", "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", op, cf, result, false, true, bits, mrCycles, flags);
-        arithbase(fos, name+"r8e8_16", "FLAGS_"+name.toUpperCase()+bits, "readb(MMU_PARAM_CPU eaa16(cpu, op))", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, cf, result, false, false, bits, rmCycles, flags);
-        arithbase(fos, name+"r8e8_32", "FLAGS_"+name.toUpperCase()+bits, "readb(MMU_PARAM_CPU eaa32(cpu, op))", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, cf, result, false, false, bits, rmCycles, flags);
+        arithbase(fos, name+"e8r8_16", "FLAGS_"+name.toUpperCase()+bits, "*cpu->reg8[op->r1]", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, cf, result, true, false, bits, mrCycles, flags);
+        arithbase(fos, name+"e8r8_32", "FLAGS_"+name.toUpperCase()+bits, "*cpu->reg8[op->r1]", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mrCycles, flags);
+        arithbase(fos, name+"r8e8_16", "FLAGS_"+name.toUpperCase()+bits, "readb(cpu->memory, eaa16(cpu, op))", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, cf, result, false, false, bits, rmCycles, flags);
+        arithbase(fos, name+"r8e8_32", "FLAGS_"+name.toUpperCase()+bits, "readb(cpu->memory, eaa32(cpu, op))", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, cf, result, false, false, bits, rmCycles, flags);
         arithbase(fos, name+"8_reg", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "*cpu->reg8[op->r1]", "*cpu->reg8[op->r1] = ", "", op, cf, result, false, false, bits, rdCycles, flags);
-        arithbase(fos, name+"8_mem16", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", op, cf, result, true, false, bits, mdCycles, flags);
-        arithbase(fos, name+"8_mem32", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", op, cf, result, false, true, bits, mdCycles, flags);
+        arithbase(fos, name+"8_mem16", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, cf, result, true, false, bits, mdCycles, flags);
+        arithbase(fos, name+"8_mem32", "FLAGS_"+name.toUpperCase()+bits, "op->data1", "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", op, cf, result, false, true, bits, mdCycles, flags);
     }
 
     public void arithbase(FileOutputStream fos, String functionName, String flagName, String source, String loadDest, String saveDest1, String saveDest2, String op, boolean cf, boolean result, boolean eaa16, boolean eaa32, String bits, String cycles, boolean flags)  throws IOException {

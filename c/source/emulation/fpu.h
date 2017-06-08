@@ -204,9 +204,9 @@ void FPU_ST80(struct CPU* cpu, int addr, int reg) {
         //Ca-cyber doesn't like this when result is zero.
         exp80final += (BIAS80 - BIAS64);
     }
-    writed(MMU_PARAM_CPU addr, (U32) mant80final);
-    writed(MMU_PARAM_CPU addr + 4, (U32) (mant80final >> 32));
-    writew(MMU_PARAM_CPU addr + 8, ((sign80 << 15) | (exp80final)));
+    writed(cpu->memory, addr, (U32) mant80final);
+    writed(cpu->memory, addr + 4, (U32) (mant80final >> 32));
+    writew(cpu->memory, addr + 8, ((sign80 << 15) | (exp80final)));
 }
 
 
@@ -283,30 +283,30 @@ static void FPU_FBLD(struct FPU* fpu, U8 data[], int store_to) {
 }
 
 static void FPU_FLD_F32_EA(struct CPU* cpu, U32 address) {
-    FPU_FLD_F32(&cpu->fpu, readd(MMU_PARAM_CPU address), 8);
+    FPU_FLD_F32(&cpu->fpu, readd(cpu->memory, address), 8);
 }
 
 static void FPU_FLD_F64_EA(struct CPU* cpu, U32 address) {
-    FPU_FLD_F64(&cpu->fpu, readq(MMU_PARAM_CPU address), 8);
+    FPU_FLD_F64(&cpu->fpu, readq(cpu->memory, address), 8);
 }
 
 static void FPU_FLD_I32_EA(struct CPU* cpu, U32 address) {
-    FPU_FLD_I32(&cpu->fpu, readd(MMU_PARAM_CPU address), 8);
+    FPU_FLD_I32(&cpu->fpu, readd(cpu->memory, address), 8);
 }
 
 static void FPU_FLD_I16_EA(struct CPU* cpu, U32 address) {
-    FPU_FLD_I16(&cpu->fpu, readw(MMU_PARAM_CPU address), 8);
+    FPU_FLD_I16(&cpu->fpu, readw(cpu->memory, address), 8);
 }
 
 static void FPU_FST_F32(struct CPU* cpu, U32 addr) {
     //should depend on rounding method
     struct FPU_Float f;
     f.f = (float)cpu->fpu.regs[cpu->fpu.top].d;
-    writed(MMU_PARAM_CPU addr, f.i);
+    writed(cpu->memory, addr, f.i);
 }
 
 static void FPU_FST_F64(struct CPU* cpu, int addr) {
-    writeq(MMU_PARAM_CPU addr, cpu->fpu.regs[cpu->fpu.top].l);
+    writeq(cpu->memory, addr, cpu->fpu.regs[cpu->fpu.top].l);
 }
 
 static void FPU_FST_F80(struct CPU* cpu, int addr) {
@@ -315,7 +315,7 @@ static void FPU_FST_F80(struct CPU* cpu, int addr) {
 
 void FPU_FST_I16(struct CPU* cpu, int addr) {
     S16 value = (S16) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d));
-    writew(MMU_PARAM_CPU addr, value);
+    writew(cpu->memory, addr, value);
 #ifdef LOG_FPU
     LOG("FPU_FST_I16 %f -> %d", cpu->fpu.regs[cpu->fpu.top].d, value);
     LOG_STACK(&cpu->fpu);
@@ -324,7 +324,7 @@ void FPU_FST_I16(struct CPU* cpu, int addr) {
 
 void FPU_FST_I32(struct CPU* cpu, int addr) {
     S32 value = (S32) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d));
-    writed(MMU_PARAM_CPU addr, value);
+    writed(cpu->memory, addr, value);
 #ifdef LOG_FPU
     LOG("FPU_FST_I32 %f -> %d", cpu->fpu.regs[cpu->fpu.top].d, value);
     LOG_STACK(&cpu->fpu);
@@ -333,9 +333,9 @@ void FPU_FST_I32(struct CPU* cpu, int addr) {
 
 void FPU_FST_I64(struct CPU* cpu, int addr) {
     if (cpu->fpu.regs[cpu->fpu.top].isIntegerLoaded)
-        writeq(MMU_PARAM_CPU addr, cpu->fpu.regs[cpu->fpu.top].loadedInteger);
+        writeq(cpu->memory, addr, cpu->fpu.regs[cpu->fpu.top].loadedInteger);
     else
-        writeq(MMU_PARAM_CPU addr, (S64) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
+        writeq(cpu->memory, addr, (S64) (FROUND(&cpu->fpu, cpu->fpu.regs[cpu->fpu.top].d)));
 }
 
 void FPU_FBST(struct CPU* cpu, int addr) {
@@ -358,14 +358,14 @@ void FPU_FBST(struct CPU* cpu, int addr) {
         val.d=temp;
         temp = (double)((S64)(floor(val.d/10.0)));
         p |= ((int)(val.d - 10.0*temp)<<4);
-        writeb(MMU_PARAM_CPU addr+i,p);
+        writeb(cpu->memory, addr+i,p);
     }
     val.d=temp;
     temp = (double)((S64)(floor(val.d/10.0)));
     p = (int)(val.d - 10.0*temp);
     if(sign)
         p|=0x80;
-    writeb(MMU_PARAM_CPU addr+9,p); 
+    writeb(cpu->memory, addr+9,p); 
 }
 
 static void FPU_FADD(struct FPU* fpu, int op1, int op2) {
@@ -697,13 +697,13 @@ static int FPU_GetTag(struct FPU* fpu) {
 void FPU_FSTENV(struct CPU* cpu, int addr) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
     if (!cpu->big) {
-        writew(MMU_PARAM_CPU addr + 0, cpu->fpu.cw);
-        writew(MMU_PARAM_CPU addr + 2, cpu->fpu.sw);
-        writew(MMU_PARAM_CPU addr + 4, FPU_GetTag(&cpu->fpu));
+        writew(cpu->memory, addr + 0, cpu->fpu.cw);
+        writew(cpu->memory, addr + 2, cpu->fpu.sw);
+        writew(cpu->memory, addr + 4, FPU_GetTag(&cpu->fpu));
     } else {
-        writed(MMU_PARAM_CPU addr + 0, cpu->fpu.cw);
-        writed(MMU_PARAM_CPU addr + 4, cpu->fpu.sw);
-        writed(MMU_PARAM_CPU addr + 8, FPU_GetTag(&cpu->fpu));
+        writed(cpu->memory, addr + 0, cpu->fpu.cw);
+        writed(cpu->memory, addr + 4, cpu->fpu.sw);
+        writed(cpu->memory, addr + 8, FPU_GetTag(&cpu->fpu));
     }
 }
 
@@ -712,13 +712,13 @@ void FPU_FLDENV(struct CPU* cpu, int addr) {
     U32 cw;
         
     if (!cpu->big) {
-        cw = readw(MMU_PARAM_CPU addr + 0);
-        cpu->fpu.sw = readw(MMU_PARAM_CPU addr + 2);
-        tag = readw(MMU_PARAM_CPU addr + 4);
+        cw = readw(cpu->memory, addr + 0);
+        cpu->fpu.sw = readw(cpu->memory, addr + 2);
+        tag = readw(cpu->memory, addr + 4);
     } else {
-        cw = readd(MMU_PARAM_CPU addr + 0);
-        cpu->fpu.sw = readd(MMU_PARAM_CPU addr + 4);
-        tag = readd(MMU_PARAM_CPU addr + 4);
+        cw = readd(cpu->memory, addr + 0);
+        cpu->fpu.sw = readd(cpu->memory, addr + 4);
+        tag = readd(cpu->memory, addr + 4);
     }
     FPU_SetTag(&cpu->fpu, tag);
     FPU_SetCW(&cpu->fpu, cw);
@@ -745,7 +745,7 @@ void FPU_FRSTOR(struct CPU* cpu, int addr) {
     FPU_FLDENV(cpu, addr);
             
     for (i = 0; i < 8; i++) {
-        cpu->fpu.regs[STV(&cpu->fpu, i)].d = FPU_FLD80(readq(MMU_PARAM_CPU addr + start), readw(MMU_PARAM_CPU addr + start + 8));
+        cpu->fpu.regs[STV(&cpu->fpu, i)].d = FPU_FLD80(readq(cpu->memory, addr + start), readw(cpu->memory, addr + start + 8));
         start += 10;
     }
 }
@@ -845,7 +845,7 @@ static void FPU_FCOM_EA(struct FPU* fpu, int op1) {
 }
 
 static void FPU_FLDCW(struct CPU* cpu, int addr) {
-    U32 temp = readw(MMU_PARAM_CPU addr);
+    U32 temp = readw(cpu->memory, addr);
     FPU_SetCW(&cpu->fpu, temp);
 }    
 
@@ -1018,7 +1018,7 @@ void OPCALL FDIVR_ST0_STj(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FLD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
-    U32 value = readd(MMU_PARAM_CPU eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
+    U32 value = readd(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F32(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -1026,7 +1026,7 @@ void OPCALL FLD_SINGLE_REAL_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FLD_SINGLE_REAL_32(struct CPU* cpu, struct Op* op) {
-    U32 value = readd(MMU_PARAM_CPU eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
+    U32 value = readd(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F32(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -1096,13 +1096,13 @@ void OPCALL FNSTENV_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FNSTCW_16(struct CPU* cpu, struct Op* op) {
-    writew(MMU_PARAM_CPU eaa16(cpu, op), cpu->fpu.cw);
+    writew(cpu->memory, eaa16(cpu, op), cpu->fpu.cw);
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL FNSTCW_32(struct CPU* cpu, struct Op* op) {
-    writew(MMU_PARAM_CPU eaa32(cpu, op), cpu->fpu.cw);
+    writew(cpu->memory, eaa32(cpu, op), cpu->fpu.cw);
     CYCLES(2);
     NEXT();
 }
@@ -1485,7 +1485,7 @@ void OPCALL FUCOMPP(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FILD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
-    U32 value = readd(MMU_PARAM_CPU eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
+    U32 value = readd(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I32(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -1493,7 +1493,7 @@ void OPCALL FILD_DWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
-    U32 value = readd(MMU_PARAM_CPU eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
+    U32 value = readd(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I32(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -1501,14 +1501,14 @@ void OPCALL FILD_DWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FISTTP32_16(struct CPU* cpu, struct Op* op) {
-    writed(MMU_PARAM_CPU eaa16(cpu, op), (S32)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+    writed(cpu->memory, eaa16(cpu, op), (S32)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
     CYCLES(6);
     NEXT();
 }
 
 void OPCALL FISTTP32_32(struct CPU* cpu, struct Op* op) {
-    writed(MMU_PARAM_CPU eaa32(cpu, op), (S32)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+    writed(cpu->memory, eaa32(cpu, op), (S32)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
     CYCLES(6);
     NEXT();
@@ -1542,8 +1542,8 @@ void OPCALL FIST_DWORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
 
 void OPCALL FLD_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
-    U64 low = readq(MMU_PARAM_CPU address); // might generate PF, so do before we adjust the stack
-    U32 high = readw(MMU_PARAM_CPU address + 8);
+    U64 low = readq(cpu->memory, address); // might generate PF, so do before we adjust the stack
+    U32 high = readw(cpu->memory, address + 8);
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F80(&cpu->fpu, low, high);
     CYCLES(3);
@@ -1552,8 +1552,8 @@ void OPCALL FLD_EXTENDED_REAL_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL FLD_EXTENDED_REAL_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
-    U64 low = readq(MMU_PARAM_CPU address); // might generate PF, so do before we adjust the stack
-    U32 high = readw(MMU_PARAM_CPU address + 8);
+    U64 low = readq(cpu->memory, address); // might generate PF, so do before we adjust the stack
+    U32 high = readw(cpu->memory, address + 8);
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F80(&cpu->fpu, low, high);
     CYCLES(3);
@@ -1807,7 +1807,7 @@ void OPCALL FDIV_STi_ST0_Pop(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FLD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
-    U64 value = readq(MMU_PARAM_CPU eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
+    U64 value = readq(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F64(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -1815,7 +1815,7 @@ void OPCALL FLD_DOUBLE_REAL_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
-    U64 value = readq(MMU_PARAM_CPU eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
+    U64 value = readq(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_F64(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -1823,14 +1823,14 @@ void OPCALL FLD_DOUBLE_REAL_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FISTTP64_16(struct CPU* cpu, struct Op* op) {
-    writeq(MMU_PARAM_CPU eaa16(cpu, op), (S64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+    writeq(cpu->memory, eaa16(cpu, op), (S64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
     CYCLES(6);
     NEXT();
 }
 
 void OPCALL FISTTP64_32(struct CPU* cpu, struct Op* op) {
-    writeq(MMU_PARAM_CPU eaa32(cpu, op), (S64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+    writeq(cpu->memory, eaa32(cpu, op), (S64)cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
     CYCLES(6);
     NEXT();
@@ -1888,14 +1888,14 @@ void OPCALL FNSAVE_32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL FNSTSW_16(struct CPU* cpu, struct Op* op) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
-    writew(MMU_PARAM_CPU eaa16(cpu, op), cpu->fpu.sw);
+    writew(cpu->memory, eaa16(cpu, op), cpu->fpu.sw);
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL FNSTSW_32(struct CPU* cpu, struct Op* op) {
     FPU_SET_TOP(&cpu->fpu, cpu->fpu.top);
-    writew(MMU_PARAM_CPU eaa32(cpu, op), cpu->fpu.sw);
+    writew(cpu->memory, eaa32(cpu, op), cpu->fpu.sw);
     CYCLES(2);
     NEXT();
 }
@@ -2042,7 +2042,7 @@ void OPCALL FCOMPP(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
-    S16 value = (S16)readw(MMU_PARAM_CPU eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
+    S16 value = (S16)readw(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I16(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -2050,7 +2050,7 @@ void OPCALL FILD_WORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
-    S16 value = (S16)readw(MMU_PARAM_CPU eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
+    S16 value = (S16)readw(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I16(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -2058,14 +2058,14 @@ void OPCALL FILD_WORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FISTTP16_16(struct CPU* cpu, struct Op* op) {
-    writew(MMU_PARAM_CPU eaa16(cpu, op), (S16) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+    writew(cpu->memory, eaa16(cpu, op), (S16) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
     CYCLES(6);
     NEXT();
 }
 
 void OPCALL FISTTP16_32(struct CPU* cpu, struct Op* op) {
-    writew(MMU_PARAM_CPU eaa32(cpu, op), (S16) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
+    writew(cpu->memory, eaa32(cpu, op), (S16) cpu->fpu.regs[STV(&cpu->fpu, 0)].d);
     FPU_FPOP(&cpu->fpu);
     CYCLES(6);
     NEXT();
@@ -2099,7 +2099,7 @@ void OPCALL FIST_WORD_INTEGER_32_Pop(struct CPU* cpu, struct Op* op) {
 
 void FBLD_PACKED_BCD(struct CPU* cpu, U32 address) {
     U8 value[10];
-    readMemory(MMU_PARAM_CPU value, address, 10); // might generate PF, so do before we adjust the stack
+    readMemory(cpu->memory, value, address, 10); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FBLD(&cpu->fpu, value, cpu->fpu.top);
 }
@@ -2117,7 +2117,7 @@ void OPCALL FBLD_PACKED_BCD_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FILD_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
-    U64 value = readq(MMU_PARAM_CPU eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
+    U64 value = readq(cpu->memory, eaa16(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I64(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);
@@ -2125,7 +2125,7 @@ void OPCALL FILD_QWORD_INTEGER_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL FILD_QWORD_INTEGER_32(struct CPU* cpu, struct Op* op) {
-    U64 value = readq(MMU_PARAM_CPU eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
+    U64 value = readq(cpu->memory, eaa32(cpu, op)); // might generate PF, so do before we adjust the stack
     FPU_PREP_PUSH(&cpu->fpu);
     FPU_FLD_I64(&cpu->fpu, value, cpu->fpu.top);
     CYCLES(1);

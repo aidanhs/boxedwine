@@ -4,7 +4,7 @@
 #include "cpu.h"
 #include "glcommon.h"
 
-#define MARSHAL_TYPE(type, p, m, s) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {buffer##p[i] = read##m(MMU_PARAM_CPU address);address+=s;} return buffer##p;}
+#define MARSHAL_TYPE(type, p, m, s) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {buffer##p[i] = read##m(cpu->memory, address);address+=s;} return buffer##p;}
 
 #ifdef HAS_64BIT_MMU
 
@@ -32,7 +32,7 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
         bufferpp_len = count;
     }
     for (i=0;i<count;i++) {
-        bufferpp[i] = (GLvoid*)getPhysicalAddress(cpu->memory, readd(MMU_PARAM_CPU buffer+i*4));
+        bufferpp[i] = (GLvoid*)getPhysicalAddress(cpu->memory, readd(cpu->memory, buffer+i*4));
     }
     return bufferpp;
 }
@@ -57,7 +57,7 @@ GLsync marshalSync(struct CPU* cpu, U32 sync) {
 }
 
 #else 
-#define MARSHAL_TYPE_CUSTOM(type, p, m, s, conv, get, set) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {struct conv d; get = read##m(MMU_PARAM_CPU address);address+=s;buffer##p[i] = set;} return buffer##p;}
+#define MARSHAL_TYPE_CUSTOM(type, p, m, s, conv, get, set) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {struct conv d; get = read##m(cpu->memory, address);address+=s;buffer##p[i] = set;} return buffer##p;}
 
 MARSHAL_TYPE(GLbyte, b, b, 1)
 MARSHAL_TYPE(GLbyte, 2b, b, 1)
@@ -135,7 +135,7 @@ void marshalBackd(struct CPU* cpu, U32 address, GLdouble* buffer, U32 count) {
         for (i=0;i<count;i++) {
             struct long2Double d;
             d.d = buffer[i];
-            writeq(MMU_PARAM_CPU address, d.l);
+            writeq(cpu->memory, address, d.l);
             address+=8;
         }
     }
@@ -148,7 +148,7 @@ void marshalBackf(struct CPU* cpu, U32 address, GLfloat* buffer, U32 count) {
         for (i=0;i<count;i++) {
             struct int2Float f;
             f.f = buffer[i];
-            writed(MMU_PARAM_CPU address, f.i);
+            writed(cpu->memory, address, f.i);
             address+=4;
         }
     }
@@ -159,7 +159,7 @@ void marshalBacki(struct CPU* cpu, U32 address, GLint* buffer, U32 count) {
 
     if (address) {
         for (i=0;i<count;i++) {
-            writed(MMU_PARAM_CPU address, buffer[i]);
+            writed(cpu->memory, address, buffer[i]);
             address+=4;
         }
     }
@@ -174,7 +174,7 @@ void marshalBacki64(struct CPU* cpu, U32 address, GLint64* buffer, U32 count) {
 
     if (address) {
         for (i=0;i<count;i++) {
-            writeq(MMU_PARAM_CPU address, buffer[i]);
+            writeq(cpu->memory, address, buffer[i]);
             address+=8;
         }
     }
@@ -189,7 +189,7 @@ void marshalBackus(struct CPU* cpu, U32 address, GLushort* buffer, U32 count) {
 
     if (address) {
         for (i=0;i<count;i++) {
-            writew(MMU_PARAM_CPU address, buffer[i]);
+            writew(cpu->memory, address, buffer[i]);
             address+=2;
         }
     }
@@ -200,15 +200,15 @@ void marshalBacks(struct CPU* cpu, U32 address, GLshort* buffer, U32 count) {
 }
 
 void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-    memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
+    memcopyFromNative(cpu->memory, address, (char*)buffer, count);
 }
 
 void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-    memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
+    memcopyFromNative(cpu->memory, address, (char*)buffer, count);
 }
 
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count) {
-    memcopyFromNative(MMU_PARAM_CPU address, (char*)buffer, count);
+    memcopyFromNative(cpu->memory, address, (char*)buffer, count);
 }
 
 GLvoid* marshalType(struct CPU* cpu, U32 type, U32 count, U32 address) {
@@ -560,7 +560,7 @@ void marshalBackPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height,
 }
 
 U32 marshalBackp(struct CPU* cpu, GLvoid* buffer, U32 size) { 
-    return mapNativeMemory(MMU_PARAM_CPU buffer, size);
+    return mapNativeMemory(cpu->memory, buffer, size);
 }
 
 // instance is in the instance number within the function, so if the same function calls this 3 times, each call will have a difference instance
@@ -609,14 +609,14 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
     }
     for (i=0;i<count;i++) {
         S32 len = 0;
-        U32 p = readd(MMU_PARAM_CPU buffer+i*4);
+        U32 p = readd(cpu->memory, buffer+i*4);
         if (sizes) {
-            U32 address = readd(MMU_PARAM_CPU sizes+i*4);
-            len = (S32)readd(MMU_PARAM_CPU address);
+            U32 address = readd(cpu->memory, sizes+i*4);
+            len = (S32)readd(cpu->memory, address);
         }
         if (bytesPerCount) {
             if (bytesPerCount==-1 && len<=0) {
-                len = (U32)strlen(getNativeString(MMU_PARAM_CPU p))+1;
+                len = (U32)strlen(getNativeString(cpu->memory, p))+1;
             } else {
                 len*=bytesPerCount;
             }
@@ -627,7 +627,7 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
 }
 
 const GLchar* marshalsz(struct CPU* cpu, U32 address) {
-    return getNativeString(MMU_PARAM_CPU address);
+    return getNativeString(cpu->memory, address);
 }
 
 #endif
@@ -679,7 +679,7 @@ void marshalBackhandle(struct CPU* cpu, U32 address, GLhandleARB* buffer, U32 co
     if (sizeof(GLhandleARB)!=4)
         kpanic("marshalBackhandle not supported on this platform");
     for (i=0;i<count;i++) {
-        writed(MMU_PARAM_CPU address, buffer[i]);
+        writed(cpu->memory, address, buffer[i]);
         address+=4;
     }
 }

@@ -79,7 +79,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
             return -K_ENOMEM;
         if (pageStart == 0)
             pageStart = ADDRESS_PROCESS_MMAP_START;
-        if (!findFirstAvailablePage(MMU_PARAM_THREAD pageStart, pageCount, &pageStart, addr!=0)) {
+        if (!findFirstAvailablePage(thread->process->memory, pageStart, pageCount, &pageStart, addr!=0)) {
             // :TODO: what erro
             return -K_EINVAL;
         }
@@ -88,7 +88,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         addr = pageStart << PAGE_SHIFT;	
     }
     if (fd) {
-        U32 result = fd->kobject->access->map(MMU_PARAM_THREAD fd->kobject, addr, len, prot, flags, off);
+        U32 result = fd->kobject->access->map(thread->process->memory, fd->kobject, addr, len, prot, flags, off);
         if (result) {
             return result;
         }

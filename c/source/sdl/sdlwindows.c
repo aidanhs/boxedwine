@@ -558,14 +558,14 @@ void sdlSwapBuffers() {
 S8 b[1024*1024*4];
 #endif
 
-void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
+void wndBlt(struct Memory* memory, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
     struct Wnd* wnd = getWnd(hwnd);
     struct wRECT r;
     U32 y;    
     int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
     static int i;
 
-    readRect(MMU_PARAM rect, &r);
+    readRect(memory, rect, &r);
 
     if (!firstWindowCreated) {
         displayChanged();
@@ -602,7 +602,7 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
         }
 
         for (y = 0; y < height; y++) {
-            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, b+y*pitch, pitch);
+            memcopyToNative(memory, bits+(height-y-1)*pitch, b+y*pitch, pitch);
         } 
         if (bits_per_pixel!=32) {
             // SDL_ConvertPixels(width, height, )
@@ -641,7 +641,7 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
             SDL_LockSurface(s);
         }
         for (y = 0; y < height; y++) {
-            memcopyToNative(MMU_PARAM bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
+            memcopyToNative(memory, bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
         }   
         if (SDL_MUSTLOCK(s)) {
             SDL_UnlockSurface(s);
@@ -650,14 +650,14 @@ void wndBlt(MMU_ARG U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 heigh
 #endif
 }
 
-void drawAllWindows(MMU_ARG U32 hWnd, int count) {    
+void drawAllWindows(struct Memory* memory, U32 hWnd, int count) {    
     int i;
 
 #ifdef SDL2
     SDL_SetRenderDrawColor(sdlRenderer, 58, 110, 165, 255 );
     SDL_RenderClear(sdlRenderer);    
     for (i=count-1;i>=0;i--) {
-        struct Wnd* wnd = getWnd(readd(MMU_PARAM hWnd+i*4));
+        struct Wnd* wnd = getWnd(readd(memory, hWnd+i*4));
         if (wnd && wnd->sdlTextureWidth) {
             SDL_Rect dstrect;
             dstrect.x = wnd->windowRect.left;
@@ -672,7 +672,7 @@ void drawAllWindows(MMU_ARG U32 hWnd, int count) {
     if (surface) {
         SDL_FillRect(surface, NULL, SDL_MapRGB(surface->format, 58, 110, 165));
         for (i=count-1;i>=0;i--) {
-            struct Wnd* wnd = getWnd(readd(MMU_PARAM hWnd+i*4));
+            struct Wnd* wnd = getWnd(readd(memory, hWnd+i*4));
             if (wnd && wnd->sdlSurface) {
                 SDL_Rect dstrect;
                 dstrect.x = wnd->windowRect.left;
@@ -689,10 +689,10 @@ void drawAllWindows(MMU_ARG U32 hWnd, int count) {
 #endif
 }
 
-struct Wnd* wndCreate(MMU_ARG U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
+struct Wnd* wndCreate(struct Memory* memory, U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
     struct Wnd* wnd = kalloc(sizeof(struct Wnd), KALLOC_WND);
-    readRect(MMU_PARAM windowRect, &wnd->windowRect);
-    readRect(MMU_PARAM clientRect, &wnd->clientRect);
+    readRect(memory, windowRect, &wnd->windowRect);
+    readRect(memory, clientRect, &wnd->clientRect);
     wnd->processId = processId;
     wnd->hwnd = hwnd;
     pblMapAdd(hwndToWnd, &hwnd, sizeof(U32), &wnd, sizeof(void*));
@@ -703,21 +703,21 @@ void wndDestroy(U32 hwnd) {
     pblMapRemove(hwndToWnd, &hwnd, sizeof(U32), NULL);
 }
 
-void writeRect(MMU_ARG U32 address, struct wRECT* rect) {
+void writeRect(struct Memory* memory, U32 address, struct wRECT* rect) {
     if (address) {
-        writed(MMU_PARAM address, rect->left);
-        writed(MMU_PARAM address+4, rect->top);
-        writed(MMU_PARAM address+8, rect->right);
-        writed(MMU_PARAM address+12, rect->bottom);
+        writed(memory, address, rect->left);
+        writed(memory, address+4, rect->top);
+        writed(memory, address+8, rect->right);
+        writed(memory, address+12, rect->bottom);
     }
 }
 
-void readRect(MMU_ARG U32 address, struct wRECT* rect) {
+void readRect(struct Memory* memory, U32 address, struct wRECT* rect) {
     if (address) {
-        rect->left = readd(MMU_PARAM address);
-        rect->top = readd(MMU_PARAM address+4);
-        rect->right = readd(MMU_PARAM address+8);
-        rect->bottom = readd(MMU_PARAM address+12);
+        rect->left = readd(memory, address);
+        rect->top = readd(memory, address+4);
+        rect->right = readd(memory, address+8);
+        rect->bottom = readd(memory, address+12);
     }
 }
 
@@ -750,7 +750,7 @@ void updateScreen() {
     // this mechanism probably won't work well if multiple threads are updating the screen, there could be flickering
 }
 
-U32 getGammaRamp(MMU_ARG U32 ramp) {
+U32 getGammaRamp(struct Memory* memory, U32 ramp) {
     U16 r[256];
     U16 g[256];
     U16 b[256];
@@ -762,23 +762,23 @@ U32 getGammaRamp(MMU_ARG U32 ramp) {
 #endif
         int i;
         for (i=0;i<256;i++) {
-            writew(MMU_PARAM ramp+i*2, r[i]);
-            writew(MMU_PARAM ramp+i*2+512, g[i]);
-            writew(MMU_PARAM ramp+i*2+124, b[i]);
+            writew(memory, ramp+i*2, r[i]);
+            writew(memory, ramp+i*2+512, g[i]);
+            writew(memory, ramp+i*2+124, b[i]);
         }
         return 1;
     }
     return 0;
 }
 
-void sdlGetPalette(MMU_ARG U32 start, U32 count, U32 entries) {
+void sdlGetPalette(struct Memory* memory, U32 start, U32 count, U32 entries) {
     U32 i;
 
     for (i=0;i<count;i++) {
-        writeb(MMU_PARAM entries+4*i, sdlPalette[i+start].r);
-        writeb(MMU_PARAM entries+4*i+1, sdlPalette[i+start].g);
-        writeb(MMU_PARAM entries+4*i+2, sdlPalette[i+start].b);
-        writeb(MMU_PARAM entries+4*i+3, 0);
+        writeb(memory, entries+4*i, sdlPalette[i+start].r);
+        writeb(memory, entries+4*i+1, sdlPalette[i+start].g);
+        writeb(memory, entries+4*i+2, sdlPalette[i+start].b);
+        writeb(memory, entries+4*i+3, 0);
     }
 }
 
@@ -792,16 +792,16 @@ U32 sdlGetNearestColor(U32 color) {
 #endif
 }
 
-U32 sdlRealizePalette(MMU_ARG U32 start, U32 numberOfEntries, U32 entries) {
+U32 sdlRealizePalette(struct Memory* memory, U32 start, U32 numberOfEntries, U32 entries) {
     U32 i;
     int result = 0;
 
     if (numberOfEntries>256)
         numberOfEntries=256;
     for (i=0;i<numberOfEntries;i++) {
-        sdlPalette[i+start].r = readb(MMU_PARAM entries+4*i);
-        sdlPalette[i+start].g = readb(MMU_PARAM entries+4*i+1);
-        sdlPalette[i+start].b = readb(MMU_PARAM entries+4*i+2);
+        sdlPalette[i+start].r = readb(memory, entries+4*i);
+        sdlPalette[i+start].g = readb(memory, entries+4*i+1);
+        sdlPalette[i+start].b = readb(memory, entries+4*i+2);
 #ifdef SDL2
         sdlPalette[i+start].a = 0;
 #else
@@ -877,18 +877,18 @@ typedef struct tagINPUT
 #define MOUSEEVENTF_VIRTUALDESK     0x4000
 #define MOUSEEVENTF_ABSOLUTE        0x8000
 
-U32 unixsocket_write_native_nowait(MMU_ARG struct KObject* obj, U8 value);
+U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U8 value);
 
-void writeLittleEndian_4(MMU_ARG struct KFileDescriptor* fd, U32 value) {
-    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, value & 0xFF);
-    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 8) & 0xFF);
-    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 16) & 0xFF);
-    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 24) & 0xFF);
+void writeLittleEndian_4(struct Memory* memory, struct KFileDescriptor* fd, U32 value) {
+    unixsocket_write_native_nowait(memory, fd->kobject, value & 0xFF);
+    unixsocket_write_native_nowait(memory, fd->kobject, (value >> 8) & 0xFF);
+    unixsocket_write_native_nowait(memory, fd->kobject, (value >> 16) & 0xFF);
+    unixsocket_write_native_nowait(memory, fd->kobject, (value >> 24) & 0xFF);
 }
 
-void writeLittleEndian_2(MMU_ARG struct KFileDescriptor* fd, U16 value) {
-    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, value & 0xFF);
-    unixsocket_write_native_nowait(MMU_PARAM fd->kobject, (value >> 8) & 0xFF);
+void writeLittleEndian_2(struct Memory* memory, struct KFileDescriptor* fd, U16 value) {
+    unixsocket_write_native_nowait(memory, fd->kobject, value & 0xFF);
+    unixsocket_write_native_nowait(memory, fd->kobject, (value >> 8) & 0xFF);
 }
 
 int sdlMouseMouse(int x, int y) {
@@ -906,13 +906,13 @@ int sdlMouseMouse(int x, int y) {
             if (fd) {
                 struct Memory* memory = process->memory;
 
-                writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
-                writeLittleEndian_4(MMU_PARAM fd, x); // dx
-                writeLittleEndian_4(MMU_PARAM fd, y); // dy
-                writeLittleEndian_4(MMU_PARAM fd, 0); // mouseData
-                writeLittleEndian_4(MMU_PARAM fd, MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
-                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+                writeLittleEndian_4(memory, fd, 0); // INPUT_MOUSE
+                writeLittleEndian_4(memory, fd, x); // dx
+                writeLittleEndian_4(memory, fd, y); // dy
+                writeLittleEndian_4(memory, fd, 0); // mouseData
+                writeLittleEndian_4(memory, fd, MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE); // dwFlags
+                writeLittleEndian_4(memory, fd, getMilliesSinceStart()); // time
+                writeLittleEndian_4(memory, fd, 0); // dwExtraInfo
             }
         }
     }
@@ -933,13 +933,13 @@ int sdlMouseWheel(int amount, int x, int y) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
                 struct Memory* memory = process->memory;
-                writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
-                writeLittleEndian_4(MMU_PARAM fd, x); // dx
-                writeLittleEndian_4(MMU_PARAM fd, y); // dy
-                writeLittleEndian_4(MMU_PARAM fd, amount); // mouseData
-                writeLittleEndian_4(MMU_PARAM fd, MOUSEEVENTF_WHEEL | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
-                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+                writeLittleEndian_4(memory, fd, 0); // INPUT_MOUSE
+                writeLittleEndian_4(memory, fd, x); // dx
+                writeLittleEndian_4(memory, fd, y); // dy
+                writeLittleEndian_4(memory, fd, amount); // mouseData
+                writeLittleEndian_4(memory, fd, MOUSEEVENTF_WHEEL | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE); // dwFlags
+                writeLittleEndian_4(memory, fd, getMilliesSinceStart()); // time
+                writeLittleEndian_4(memory, fd, 0); // dwExtraInfo
             }
         }
     }
@@ -975,13 +975,13 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
                         case 2: flags |= MOUSEEVENTF_MIDDLEUP; break;
                     }
                 }
-                writeLittleEndian_4(MMU_PARAM fd, 0); // INPUT_MOUSE
-                writeLittleEndian_4(MMU_PARAM fd, x); // dx
-                writeLittleEndian_4(MMU_PARAM fd, y); // dy
-                writeLittleEndian_4(MMU_PARAM fd, 0); // mouseData
-                writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
-                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
+                writeLittleEndian_4(memory, fd, 0); // INPUT_MOUSE
+                writeLittleEndian_4(memory, fd, x); // dx
+                writeLittleEndian_4(memory, fd, y); // dy
+                writeLittleEndian_4(memory, fd, 0); // mouseData
+                writeLittleEndian_4(memory, fd, flags); // dwFlags
+                writeLittleEndian_4(memory, fd, getMilliesSinceStart()); // time
+                writeLittleEndian_4(memory, fd, 0); // dwExtraInfo
             }
         }
     }
@@ -1582,24 +1582,24 @@ int sdlKey(U32 key, U32 down) {
                 if (scan & 0x100)               
                     flags |= KEYEVENTF_EXTENDEDKEY;
 
-                writeLittleEndian_4(MMU_PARAM fd, 1); // INPUT_KEYBOARD
-                writeLittleEndian_2(MMU_PARAM fd, vKey); // wVk
-                writeLittleEndian_2(MMU_PARAM fd, scan & 0xFF); // wScan
-                writeLittleEndian_4(MMU_PARAM fd, flags); // dwFlags
-                writeLittleEndian_4(MMU_PARAM fd, getMilliesSinceStart()); // time
-                writeLittleEndian_4(MMU_PARAM fd, 0); // dwExtraInfo
-                writeLittleEndian_4(MMU_PARAM fd, 0); // pad
-                writeLittleEndian_4(MMU_PARAM fd, 0); // pad
+                writeLittleEndian_4(memory, fd, 1); // INPUT_KEYBOARD
+                writeLittleEndian_2(memory, fd, vKey); // wVk
+                writeLittleEndian_2(memory, fd, scan & 0xFF); // wScan
+                writeLittleEndian_4(memory, fd, flags); // dwFlags
+                writeLittleEndian_4(memory, fd, getMilliesSinceStart()); // time
+                writeLittleEndian_4(memory, fd, 0); // dwExtraInfo
+                writeLittleEndian_4(memory, fd, 0); // pad
+                writeLittleEndian_4(memory, fd, 0); // pad
             }
         }
     }
     return 1;
 }
 
-U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, U32 bufW_size, U32 flags, U32 hkl) {
+U32 sdlToUnicodeEx(struct Memory* memory, U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, U32 bufW_size, U32 flags, U32 hkl) {
     U32 ret = 0;
     U8 c = 0;
-    U32 shift = readb(MMU_PARAM lpKeyState+VK_SHIFT) & 0x80;
+    U32 shift = readb(memory, lpKeyState+VK_SHIFT) & 0x80;
 
     if (!virtKey)
         goto done;
@@ -1635,7 +1635,7 @@ U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, 
     if (shift && VK_MULTIPLY <= virtKey && virtKey <= VK_DIVIDE)
         goto done;
 
-    if (readb(MMU_PARAM lpKeyState+VK_CONTROL) & 0x80)
+    if (readb(memory, lpKeyState+VK_CONTROL) & 0x80)
     {
         /* Control-Tab, with or without other modifiers. */
         if (virtKey == VK_TAB)
@@ -1643,7 +1643,7 @@ U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, 
 
         /* Control-Shift-<key>, Control-Alt-<key>, and Control-Alt-Shift-<key>
            for these keys. */
-        if (shift || (readb(MMU_PARAM lpKeyState+VK_MENU)))
+        if (shift || (readb(memory, lpKeyState+VK_MENU)))
         {
             switch (virtKey)
             {
@@ -1723,14 +1723,14 @@ U32 sdlToUnicodeEx(MMU_ARG U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, 
         }
     }
     if (c) {
-        writew(MMU_PARAM bufW, c);
+        writew(memory, bufW, c);
         ret=1;
     }
 done:
     /* Null-terminate the buffer, if there's room.  MSDN clearly states that the
        caller must not assume this is done, but some programs (e.g. Audiosurf) do. */
     if (1 <= ret && ret < bufW_size)
-        writew(MMU_PARAM bufW+ret*2, 0);
+        writew(memory, bufW+ret*2, 0);
 
     return ret;
 }

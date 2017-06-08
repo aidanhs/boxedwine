@@ -239,8 +239,8 @@ void remotePathToLocal(char* path) {
 }
 
 U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path1, U32 path2) {
-    char* s1 = getNativeString(MMU_PARAM_THREAD path1);
-    char* s2 = getNativeString2(MMU_PARAM_THREAD path2);
+    char* s1 = getNativeString(thread->process->memory, path1);
+    char* s2 = getNativeString2(thread->process->memory, path2);
     char tmp[MAX_FILEPATH_LEN];
     struct FsNode* node;
     struct FsOpenNode* openNode;
@@ -268,7 +268,7 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
     if (!openNode) {
         return -K_EIO;
     }
-    openNode->func->write(MMU_PARAM_THREAD openNode, path1, (U32)strlen(s1));
+    openNode->func->write(thread->process->memory, openNode, path1, (U32)strlen(s1));
     openNode->func->close(openNode);
     pblMapClear(localSkipLinksMap);
     return 0;
@@ -470,9 +470,9 @@ static S64 openfile_seek(struct FsOpenNode* node, S64 pos) {
     return lseek(node->handle1, (U32)pos, SEEK_SET);
 }
 
-static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+static U32 openfile_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
 #ifdef HAS_64BIT_MMU
-    return node->func->readNative(node, getPhysicalAddress(MMU_PARAM address), len);
+    return node->func->readNative(node, getPhysicalAddress(memory, address), len);
 #else
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
         U8* ram = getPhysicalAddress(memory, address);
@@ -483,7 +483,7 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
             result = node->func->readNative(node, ram, len);	
         } else {
             result = node->func->readNative(node, (U8*)tmp, len);
-            memcopyFromNative(MMU_PARAM address, tmp, result);
+            memcopyFromNative(memory, address, tmp, result);
         }        
         // :TODO: why does this happen
         //
@@ -511,7 +511,7 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
                 didRead=node->func->readNative(node, ram, todo);		
             } else {
                 didRead = node->func->readNative(node, (U8*)tmp, todo);
-                memcopyFromNative(MMU_PARAM address, tmp, didRead);
+                memcopyFromNative(memory, address, tmp, didRead);
             }
             if (didRead<=0)
                 break;
@@ -524,9 +524,9 @@ static U32 openfile_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) 
 #endif
 }
 
-static U32 openfile_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+static U32 openfile_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
 #ifdef HAS_64BIT_MMU
-    return node->func->writeNative(node, getPhysicalAddress(MMU_PARAM address), len);
+    return node->func->writeNative(node, getPhysicalAddress(memory, address), len);
 #else	
     U32 wrote = 0;
     while (len) {
@@ -537,7 +537,7 @@ static U32 openfile_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len)
         if (ram)
             wrote+=node->func->writeNative(node, ram, todo);
         else {
-            memcopyToNative(MMU_PARAM address, tmp64k, todo);
+            memcopyToNative(memory, address, tmp64k, todo);
             wrote+=node->func->writeNative(node, (U8*)tmp64k, todo);		
         }
         len-=todo;
@@ -578,7 +578,7 @@ static BOOL openfile_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-static U32 openfile_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+static U32 openfile_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -716,7 +716,7 @@ static BOOL zipOpenFile_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-static U32 zipOpenFile_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+static U32 zipOpenFile_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -842,11 +842,11 @@ S64 dir_seek(struct FsOpenNode* node, S64 pos) {
     return data->pos;
 }
 
-U32 dir_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 dir_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
-U32 dir_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 dir_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
@@ -884,7 +884,7 @@ BOOL dir_isReadReady(struct FsOpenNode* node) {
     return FALSE;
 }
 
-U32 dir_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 dir_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -1404,8 +1404,8 @@ struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32
 
 
 U32 syscall_link(struct KThread* thread, U32 from, U32 to) {
-    struct FsNode* fromNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD from), TRUE);
-    struct FsNode* toNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD to), FALSE);
+    struct FsNode* fromNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, from), TRUE);
+    struct FsNode* toNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, to), FALSE);
     struct FsOpenNode* fromOpenNode;
     struct FsOpenNode* toOpenNode;
     U8 buffer[PAGE_SIZE];

@@ -41,10 +41,10 @@ struct Memory {
 #endif
 };
 
-INLINE void* getNativeAddress(MMU_ARG U32 address) {
+INLINE void* getNativeAddress(struct Memory* memory, U32 address) {
     return (void*)(address + memory->ids[address >> PAGE_SHIFT]);
 }
-INLINE U32 getHostAddress(MMU_ARG void* address) {
+INLINE U32 getHostAddress(struct Memory* memory, void* address) {
     return (U32)address;
 }
 

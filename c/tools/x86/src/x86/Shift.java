@@ -179,20 +179,20 @@ public class Shift extends Base {
 
     public void shiftInst8(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
         shiftBase(fos, fos_h, fos_op, name+"_reg", false, false, "8", source, "*cpu->reg8[reg]", "*cpu->reg8[reg] = ", "", rcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "8", source, "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "8", source, "readb(MMU_PARAM_CPU eaa)", "writeb(MMU_PARAM_CPU eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "8", source, "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "8", source, "readb(cpu->memory, eaa)", "writeb(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
     }
 
     public void shiftInst16(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
         shiftBase(fos, fos_h, fos_op, name+"_reg", false, false, "16", source, "cpu->reg[reg].u16", "cpu->reg[reg].u16 = ", "", rcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "16", source, "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "16", source, "readw(MMU_PARAM_CPU eaa)", "writew(MMU_PARAM_CPU eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "16", source, "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "16", source, "readw(cpu->memory, eaa)", "writew(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
     }
 
     public void shiftInst32(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, String source, String rcycles, String mcycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {
         shiftBase(fos, fos_h, fos_op, name+"_reg", false, false, "32", source, "cpu->reg[reg].u32", "cpu->reg[reg].u32 = ", "", rcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "32", source, "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
-        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "32", source, "readd(MMU_PARAM_CPU eaa)", "writed(MMU_PARAM_CPU eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem16", true, false, "32", source, "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
+        shiftBase(fos, fos_h, fos_op, name+"_mem32", false, true, "32", source, "readd(cpu->memory, eaa)", "writed(cpu->memory, eaa, ", ")", mcycles, inst, mask, mod, checkForZero);
     }
 
     public void shiftBase(FileOutputStream fos, FileOutputStream fos_h, FileOutputStream fos_op, String name, boolean eaa16, boolean eaa32, String bits, String shiftSource, String source, String destSave1, String destSave2, String cycles, String inst, int mask, int mod, boolean checkForZero) throws IOException {

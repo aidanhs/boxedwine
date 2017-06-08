@@ -206,12 +206,12 @@ void logsyscall(const char* fmt, ...) {
 #define ARG5 EDI
 #define ARG6 EBP
 
-#define SARG2 readd(MMU_PARAM_THREAD ARG2)
-#define SARG3 readd(MMU_PARAM_THREAD ARG2+4)
-#define SARG4 readd(MMU_PARAM_THREAD ARG2+8)
-#define SARG5 readd(MMU_PARAM_THREAD ARG2+12)
-#define SARG6 readd(MMU_PARAM_THREAD ARG2+16)
-#define SARG7 readd(MMU_PARAM_THREAD ARG2+20)
+#define SARG2 readd(thread->process->memory, ARG2)
+#define SARG3 readd(thread->process->memory, ARG2+4)
+#define SARG4 readd(thread->process->memory, ARG2+8)
+#define SARG5 readd(thread->process->memory, ARG2+12)
+#define SARG6 readd(thread->process->memory, ARG2+16)
+#define SARG7 readd(thread->process->memory, ARG2+20)
 
 void ksyscall(struct CPU* cpu, U32 eipCount) {
     struct KThread* thread = cpu->thread;
@@ -237,7 +237,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         break;
     case __NR_open:
         result=syscall_open(thread, process->currentDirectory, ARG1, ARG2);
-        //printf("open: name=%s flags=%x result=%d\n", getNativeString(MMU_PARAM_CPU ARG1), ARG2, result);
+        //printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->memory, ARG1), ARG2, result);
         break;		
     case __NR_close:
         result=syscall_close(thread, ARG1);
@@ -263,7 +263,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_time:
         result = (U32)(getSystemTimeAsMicroSeconds() / 1000000l);
         if (ARG1)
-            writed(MMU_PARAM_THREAD ARG1, result);
+            writed(thread->process->memory, ARG1, result);
         break;
     case __NR_chmod:
         result = 0;
@@ -304,7 +304,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_pipe:
         result = syscall_pipe(thread, ARG1);
 #ifdef LOG_SYSCALLS
-        sprintf(buffer+strlen(buffer), " (%d,%d)", readd(MMU_PARAM_THREAD ARG1), readd(MMU_PARAM_THREAD ARG1+4));
+        sprintf(buffer+strlen(buffer), " (%d,%d)", readd(thread->process->memory, ARG1), readd(thread->process->memory, ARG1+4));
 #endif
         break;
     case __NR_times:
@@ -379,7 +379,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         result = syscall_readlink(thread, ARG1, ARG2, ARG3);
         break;
     case __NR_mmap:
-        result = syscall_mmap64(thread, readd(MMU_PARAM_THREAD ARG1), readd(MMU_PARAM_THREAD ARG1+4), readd(MMU_PARAM_THREAD ARG1+8), readd(MMU_PARAM_THREAD ARG1+12), readd(MMU_PARAM_THREAD ARG1+16), readd(MMU_PARAM_THREAD ARG1+20));
+        result = syscall_mmap64(thread, readd(thread->process->memory, ARG1), readd(thread->process->memory, ARG1+4), readd(thread->process->memory, ARG1+8), readd(thread->process->memory, ARG1+12), readd(thread->process->memory, ARG1+16), readd(thread->process->memory, ARG1+20));
         break;
     case __NR_munmap:
         result = syscall_unmap(thread, ARG1, ARG2);
@@ -511,7 +511,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         S64 r64 = syscall_llseek(thread, ARG1, ((U64)ARG2)<<32|ARG3, ARG5);
         result = (S32)r64;
         if (ARG4) {
-            writeq(MMU_PARAM_THREAD ARG4, r64);
+            writeq(thread->process->memory, ARG4, r64);
         }
         break;
         }
@@ -552,7 +552,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_nanosleep:
         if (thread->waitStartTime) {
             U32 diff = getMilliesSinceStart()-thread->waitStartTime;
-            U32 amount = readd(MMU_PARAM_THREAD ARG1)*1000+readd(MMU_PARAM_THREAD ARG1+4)/1000000;
+            U32 amount = readd(thread->process->memory, ARG1)*1000+readd(thread->process->memory, ARG1+4)/1000000;
             if (diff >= amount) {
                 thread->waitStartTime = 0;
                 result = 0;
@@ -564,7 +564,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
             }
         } else {
             thread->waitStartTime = getMilliesSinceStart();
-            thread->timer.millies = thread->waitStartTime+readd(MMU_PARAM_THREAD ARG1)*1000+readd(MMU_PARAM_THREAD ARG1+4)/1000000;
+            thread->timer.millies = thread->waitStartTime+readd(thread->process->memory, ARG1)*1000+readd(thread->process->memory, ARG1+4)/1000000;
             thread->timer.process = process;
             thread->timer.thread = thread;
             addTimer(&thread->timer);
@@ -645,7 +645,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_getgroups32:
         result = 1;
         if (ARG2!=0) {
-            writed(MMU_PARAM_THREAD ARG2, process->groupId);
+            writed(thread->process->memory, ARG2, process->groupId);
         }
         break;
     case __NR_fchown32:
@@ -657,20 +657,20 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         */
     case __NR_getresuid32:
         if (ARG1)
-            writed(MMU_PARAM_THREAD ARG1, process->userId);
+            writed(thread->process->memory, ARG1, process->userId);
         if (ARG2)
-            writed(MMU_PARAM_THREAD ARG2, process->effectiveUserId);
+            writed(thread->process->memory, ARG2, process->effectiveUserId);
         if (ARG3)
-            writed(MMU_PARAM_THREAD ARG3, process->userId);
+            writed(thread->process->memory, ARG3, process->userId);
         result=0;
         break;
     case __NR_getresgid32:
         if (ARG1)
-            writed(MMU_PARAM_THREAD ARG1, process->groupId);
+            writed(thread->process->memory, ARG1, process->groupId);
         if (ARG2)
-            writed(MMU_PARAM_THREAD ARG2, process->effectiveGroupId);
+            writed(thread->process->memory, ARG2, process->effectiveGroupId);
         if (ARG3)
-            writed(MMU_PARAM_THREAD ARG3, process->groupId);
+            writed(thread->process->memory, ARG3, process->groupId);
         result=0;
         break;
     case __NR_chown32:
@@ -724,7 +724,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_set_thread_area: {
         struct user_desc desc;
 
-        readMemory(MMU_PARAM_THREAD (U8*)&desc, ARG1, sizeof(struct user_desc));
+        readMemory(thread->process->memory, (U8*)&desc, ARG1, sizeof(struct user_desc));
         if (desc.entry_number==-1) {
             U32 i;
 
@@ -739,7 +739,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
                 result = -K_ESRCH;
                 break;
             }
-            writeMemory(MMU_PARAM_THREAD ARG1, (U8*)&desc, sizeof(struct user_desc));
+            writeMemory(thread->process->memory, ARG1, (U8*)&desc, sizeof(struct user_desc));
         }
         if (desc.base_addr!=0) {
             if (desc.entry_number<TLS_ENTRY_START_INDEX || desc.entry_number>=TLS_ENTRIES+TLS_ENTRY_START_INDEX) {
@@ -772,8 +772,8 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         result = syscall_clock_gettime(thread, ARG1, ARG2);
         break;
     case __NR_clock_getres:
-        writed(MMU_PARAM_THREAD ARG2, 0);
-        writed(MMU_PARAM_THREAD ARG2+4, 1000000);
+        writed(thread->process->memory, ARG2, 0);
+        writed(thread->process->memory, ARG2+4, 1000000);
         result = 0;
         break;
     case __NR_statfs64:
@@ -879,25 +879,25 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_exit: sprintf(buffer, "exit: %d", ARG1); break;
     case __NR_read: sprintf(buffer, "read: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3); break;
     case __NR_write: sprintf(buffer, "write: fd=%d buf=0x%X len=%d", ARG1, ARG2, ARG3); break;
-    case __NR_open: sprintf(buffer, "open: name=%s flags=%x", getNativeString(MMU_PARAM_CPU ARG1), ARG2); break;		
+    case __NR_open: sprintf(buffer, "open: name=%s flags=%x", getNativeString(cpu->memory, ARG1), ARG2); break;		
     case __NR_close: sprintf(buffer, "close: fd=%d", ARG1); break;
     case __NR_waitpid: sprintf(buffer, "waitpid: pid=%d status=%d options=%x", ARG1, ARG2, ARG3); break;
-    case __NR_link: sprintf(buffer, "link: path1=%X(%s) path2=%X(%s)", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2, getNativeString2(MMU_PARAM_CPU ARG2)); break;
-    case __NR_unlink: sprintf(buffer, "unlink: path=%X(%s)", ARG1, getNativeString(MMU_PARAM_CPU ARG1)); break;
-    case __NR_execve: sprintf(buffer, "execve: path=%X(%s) argv=%X envp=%X", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2, ARG3); break;
-    case __NR_chdir: sprintf(buffer, "chdir: path=%X(%s)", ARG1, getNativeString(MMU_PARAM_CPU ARG1)); break;
+    case __NR_link: sprintf(buffer, "link: path1=%X(%s) path2=%X(%s)", ARG1, getNativeString(cpu->memory, ARG1), ARG2, getNativeString2(cpu->memory, ARG2)); break;
+    case __NR_unlink: sprintf(buffer, "unlink: path=%X(%s)", ARG1, getNativeString(cpu->memory, ARG1)); break;
+    case __NR_execve: sprintf(buffer, "execve: path=%X(%s) argv=%X envp=%X", ARG1, getNativeString(cpu->memory, ARG1), ARG2, ARG3); break;
+    case __NR_chdir: sprintf(buffer, "chdir: path=%X(%s)", ARG1, getNativeString(cpu->memory, ARG1)); break;
     case __NR_time: sprintf(buffer, "time: tloc=%X", ARG1); break;
-    case __NR_chmod: sprintf(buffer, "chmod: path=%X (%s) mode=%o", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2); break;
+    case __NR_chmod: sprintf(buffer, "chmod: path=%X (%s) mode=%o", ARG1, getNativeString(cpu->memory, ARG1), ARG2); break;
     case __NR_lseek: sprintf(buffer, "lseek: fildes=%d offset=%d whence=%d", ARG1, ARG2, ARG3); break;
     case __NR_getpid: sprintf(buffer, "getpid:"); break;
     case __NR_getuid: sprintf(buffer, "getuid:"); break;
     case __NR_alarm: sprintf(buffer, "alarm: seconds=%d", ARG1); break;
-    case __NR_utime: sprintf(buffer, "utime: filename=%s times=%X", getNativeString(MMU_PARAM_CPU ARG1), ARG2); break;
-    case __NR_access: sprintf(buffer, "access: filename=%s flags=0x%X", getNativeString(MMU_PARAM_CPU ARG1), ARG2); break;
+    case __NR_utime: sprintf(buffer, "utime: filename=%s times=%X", getNativeString(cpu->memory, ARG1), ARG2); break;
+    case __NR_access: sprintf(buffer, "access: filename=%s flags=0x%X", getNativeString(cpu->memory, ARG1), ARG2); break;
     case __NR_kill: sprintf(buffer, "kill: pid=%d signal=%d", ARG1, ARG2); break;
-    case __NR_rename: sprintf(buffer, "rename: oldName=%X(%s) newName=%X(%s)", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2, getNativeString2(MMU_PARAM_CPU ARG2)); break;
-    case __NR_mkdir: sprintf(buffer, "mkdir: path=%X (%s) mode=%X", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2); break;
-    case __NR_rmdir: sprintf(buffer, "rmdir: path=%X(%s)", ARG1, getNativeString(MMU_PARAM_CPU ARG1)); break;
+    case __NR_rename: sprintf(buffer, "rename: oldName=%X(%s) newName=%X(%s)", ARG1, getNativeString(cpu->memory, ARG1), ARG2, getNativeString2(cpu->memory, ARG2)); break;
+    case __NR_mkdir: sprintf(buffer, "mkdir: path=%X (%s) mode=%X", ARG1, getNativeString(cpu->memory, ARG1), ARG2); break;
+    case __NR_rmdir: sprintf(buffer, "rmdir: path=%X(%s)", ARG1, getNativeString(cpu->memory, ARG1)); break;
     case __NR_dup: sprintf(buffer, "dup: fildes=%d", ARG1); break;
     case __NR_pipe: sprintf(buffer, "pipe: fildes=%X", ARG1); break;
     case __NR_times: sprintf(buffer, "times: buf=%X", ARG1); break;
@@ -915,14 +915,14 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_setrlimit: sprintf(buffer, "setrlimit:"); break;
     case __NR_getrusage: sprintf(buffer, "getrusage: who=%d usuage=%X", ARG1, ARG2); break;
     case __NR_gettimeofday: sprintf(buffer, "gettimeofday: tv=%X tz=%X", ARG1, ARG2); break;
-    case __NR_symlink: sprintf(buffer, "symlink: path1=%X(%s) path2=%X(%s)", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2, getNativeString2(MMU_PARAM_CPU ARG2)); break;
-    case __NR_readlink: sprintf(buffer, "readlink: path=%X (%s) buffer=%X bufSize=%d", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG1, ARG3); break;
-    case __NR_mmap: sprintf(buffer, "mmap: address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d", readd(MMU_PARAM_CPU ARG1), readd(MMU_PARAM_CPU ARG1+4), readd(MMU_PARAM_CPU ARG1+8), readd(MMU_PARAM_CPU ARG1+12), readd(MMU_PARAM_CPU ARG1+16), readd(MMU_PARAM_CPU ARG1+20));
+    case __NR_symlink: sprintf(buffer, "symlink: path1=%X(%s) path2=%X(%s)", ARG1, getNativeString(cpu->memory, ARG1), ARG2, getNativeString2(cpu->memory, ARG2)); break;
+    case __NR_readlink: sprintf(buffer, "readlink: path=%X (%s) buffer=%X bufSize=%d", ARG1, getNativeString(cpu->memory, ARG1), ARG1, ARG3); break;
+    case __NR_mmap: sprintf(buffer, "mmap: address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d", readd(cpu->memory, ARG1), readd(cpu->memory, ARG1+4), readd(cpu->memory, ARG1+8), readd(cpu->memory, ARG1+12), readd(cpu->memory, ARG1+16), readd(cpu->memory, ARG1+20));
     case __NR_munmap: sprintf(buffer, "munmap: address=%X len=%d", ARG1, ARG2); break;
     case __NR_ftruncate: sprintf(buffer, "ftruncate: address=%X len=%d", ARG1, ARG2); break;
     case __NR_fchmod: sprintf(buffer, "fchmod: fd=%d mod=%X", ARG1, ARG2); break;
     case __NR_setpriority: sprintf(buffer, "setpriority: which=%d, who=%d, prio=%d", ARG1, ARG2, ARG3); break;
-    case __NR_statfs: sprintf(buffer, "fstatfs: path=%X(%s) buf=%X", ARG1, getNativeString(MMU_PARAM_CPU ARG1), ARG2); break;
+    case __NR_statfs: sprintf(buffer, "fstatfs: path=%X(%s) buf=%X", ARG1, getNativeString(cpu->memory, ARG1), ARG2); break;
     case __NR_socketcall:
         switch (ARG1) {
             case 1: sprintf(buffer, "SYS_SOCKET: domain=%d(%s) type=%d(%s) protocol=%d(%s)", SARG2, SARG2==K_AF_UNIX?"AF_UNIX":(SARG2==K_AF_INET)?"AF_INET":"", (SARG3 & 0xFF), (SARG3 & 0xFF)==K_SOCK_STREAM?"SOCK_STREAM":((SARG3 & 0xFF)==K_SOCK_DGRAM)?"AF_SOCK_DGRAM":"", SARG4, (SARG4 == 0)?"IPPROTO_IP":(SARG4==6)?"IPPROTO_TCP":(SARG4==17)?"IPPROTO_UDP":""); break;
@@ -947,7 +947,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
                 kpanic("Unknown socket syscall: %d",ARG1);
         }
         break;
-    case __NR_setitimer: sprintf(buffer, "setitimer :which=%d newValue=%d(%d.%.06d) oldValue=%d", ARG1, ARG2, (ARG2?readd(MMU_PARAM_THREAD ARG2+8):0), (ARG2?readd(MMU_PARAM_THREAD ARG2+12):0), ARG3); break;
+    case __NR_setitimer: sprintf(buffer, "setitimer :which=%d newValue=%d(%d.%.06d) oldValue=%d", ARG1, ARG2, (ARG2?readd(thread->process->memory, ARG2+8):0), (ARG2?readd(thread->process->memory, ARG2+12):0), ARG3); break;
     case __NR_wait4: sprintf(buffer, "wait4: pid=%d status=%d options=%x rusage=%X", ARG1, ARG2, ARG3, ARG4); break;
     case __NR_ipc:
         if (ARG1 == 21) { // IPCOP_shmat
@@ -966,7 +966,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_sigreturn: sprintf(buffer, "sigreturn:"); break;
     case __NR_clone: sprintf(buffer, "clone: flags=%X child_stack=%X ptid=%X tls=%X ctid=%X", ARG1, ARG2, ARG3, ARG4, ARG5); break;
     case __NR_uname: sprintf(buffer, "uname: name=%.8X", ARG1); break;
-    case __NR_modify_ldt: sprintf(buffer, "modify_ldt: func=%d ptr=%X(index=%d address=%X limit=%X flags=%X) count=%d", ARG1, ARG2, readd(MMU_PARAM_THREAD ARG2),  readd(MMU_PARAM_THREAD ARG2+4), readd(MMU_PARAM_THREAD ARG2+8), readd(MMU_PARAM_THREAD ARG2+12), ARG3); break;
+    case __NR_modify_ldt: sprintf(buffer, "modify_ldt: func=%d ptr=%X(index=%d address=%X limit=%X flags=%X) count=%d", ARG1, ARG2, readd(thread->process->memory, ARG2),  readd(thread->process->memory, ARG2+4), readd(thread->process->memory, ARG2+8), readd(thread->process->memory, ARG2+12), ARG3); break;
     case __NR_mprotect: sprintf(buffer, "mprotect: address=%X len=%d prot=%X", ARG1, ARG2, ARG3); break;
     case __NR_getpgid: sprintf(buffer, "getpgid: pid=%d", ARG1); break;
     case __NR_fchdir: sprintf(buffer, "fchdir: fd=%d", ARG1); break;
@@ -982,7 +982,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_sched_yield: sprintf(buffer, "yield:"); break;
     case __NR_sched_get_priority_max: sprintf(buffer, "sched_get_priority_max: policy=%d", ARG1);
     case __NR_sched_get_priority_min: sprintf(buffer, "sched_get_priority_min: policy=%d", ARG1);
-    case __NR_nanosleep: sprintf(buffer, "nanosleep: req=%X(%d.%.09d sec)", ARG1, readd(MMU_PARAM_THREAD ARG1), readd(MMU_PARAM_THREAD ARG1+4)); break;
+    case __NR_nanosleep: sprintf(buffer, "nanosleep: req=%X(%d.%.09d sec)", ARG1, readd(thread->process->memory, ARG1), readd(thread->process->memory, ARG1+4)); break;
     case __NR_mremap: sprintf(buffer, "mremap: oldaddress=%x oldsize=%d newsize=%d flags=%X", ARG1, ARG2, ARG3, ARG4); break;
     case __NR_poll: sprintf(buffer, "poll: pfds=%X nfds=%d timeout=%X", ARG1, ARG2, ARG3); break;
     case __NR_prctl: sprintf(buffer, "prctl: options=%d", ARG1); break;
@@ -997,10 +997,10 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_ugetrlimit: sprintf(buffer, "ugetrlimit: resource=%d rlim=%X", ARG1, ARG2); break;
     case __NR_mmap2: sprintf(buffer, "mmap2: address=%.8X len=%d prot=%X flags=%X fd=%d offset=%d", ARG1, ARG2, ARG3, ARG4, ARG5, ARG6); break;
     case __NR_ftruncate64: sprintf(buffer, "ftruncate64: fildes=%d length=%llu", ARG1, ARG2 | ((U64)ARG3 << 32)); break;    
-    case __NR_stat64: sprintf(buffer, "stat64: path=%s buf=%X", getNativeString(MMU_PARAM_THREAD ARG1), ARG2); break;
-    case __NR_lstat64: sprintf(buffer, "lstat64: path=%s buf=%X", getNativeString(MMU_PARAM_THREAD ARG1), ARG2); break;
+    case __NR_stat64: sprintf(buffer, "stat64: path=%s buf=%X", getNativeString(thread->process->memory, ARG1), ARG2); break;
+    case __NR_lstat64: sprintf(buffer, "lstat64: path=%s buf=%X", getNativeString(thread->process->memory, ARG1), ARG2); break;
     case __NR_fstat64: sprintf(buffer, "fstat64: fildes=%d buf=%X", ARG1, ARG2); break;
-    case __NR_lchown32: sprintf(buffer, "lchown32: path=%s owner=%d group=%d", getNativeString(MMU_PARAM_THREAD ARG1), ARG2, ARG3); break;
+    case __NR_lchown32: sprintf(buffer, "lchown32: path=%s owner=%d group=%d", getNativeString(thread->process->memory, ARG1), ARG2, ARG3); break;
     case __NR_getuid32: sprintf(buffer, "getuid32:"); break;
     case __NR_getgid32: sprintf(buffer, "getgid32:"); break;
     case __NR_geteuid32: sprintf(buffer, "geteuid32:"); break;
@@ -1009,7 +1009,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_fchown32: sprintf(buffer, "fchown32: fd=%d owner=%d group=%d", ARG1, ARG2, ARG3); break;
     case __NR_getresuid32: sprintf(buffer, "getresuid32: ruid=%X(%d) euid=%X(%d) suid=%X(%d)", ARG1, thread->process->userId, ARG2, thread->process->effectiveUserId, ARG3, thread->process->userId); break;
     case __NR_getresgid32: sprintf(buffer, "getresgid32: rgid=%X(%d) egid=%X(%d) sgid=%X(%d)", ARG1, thread->process->groupId, ARG2, thread->process->groupId, ARG3, thread->process->groupId); break;
-    case __NR_chown32: sprintf(buffer, "chown32: path=%s owner=%d group=%d", getNativeString(MMU_PARAM_THREAD ARG1), ARG2, ARG3); break;
+    case __NR_chown32: sprintf(buffer, "chown32: path=%s owner=%d group=%d", getNativeString(thread->process->memory, ARG1), ARG2, ARG3); break;
     case __NR_setuid32: sprintf(buffer, "setuid32: uid=%d", ARG1); break;
     case __NR_setgid32: sprintf(buffer, "setgid32: gid=%d", ARG1); break;
     case __NR_mincore: sprintf(buffer, "mincore: address=%X length=%d vec=%X", ARG1, ARG2, ARG3); break;
@@ -1030,21 +1030,21 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_set_tid_address: sprintf(buffer, "set_tid_address: address=%X", ARG1); break;
     case __NR_clock_gettime: sprintf(buffer, "clock_gettime: clock_id=%d tp=%X", ARG1, ARG2); break;
     case __NR_clock_getres: sprintf(buffer, "clock_getres: clock_id=%d res=%X", ARG1, ARG2); break;
-    case __NR_statfs64: sprintf(buffer, "fstatfs64: path=%X(%s) len=%d buf=%X", ARG1, getNativeString(MMU_PARAM_THREAD ARG1), ARG2, ARG3); break;
+    case __NR_statfs64: sprintf(buffer, "fstatfs64: path=%X(%s) len=%d buf=%X", ARG1, getNativeString(thread->process->memory, ARG1), ARG2, ARG3); break;
     case __NR_fstatfs64: sprintf(buffer, "fstatfs64: fd=%d len=%d buf=%X", ARG1, ARG2, ARG3); break;
     case __NR_tgkill: sprintf(buffer, "tgkill: threadGroupId=%d threadId=%d signal=%d", ARG1, ARG2, ARG3); break;
     case __NR_fadvise64_64: sprintf(buffer, "fadvise64_64: fd=%d", ARG1); break;
     case __NR_inotify_init: sprintf(buffer, "inotify_init: "); break;
-    case __NR_openat: sprintf(buffer, "openat: dirfd=%d name=%s flags=%x", ARG1, getNativeString(MMU_PARAM_THREAD ARG2), ARG3); break;	
-    case __NR_fchownat: sprintf(buffer, "fchown32: pathname=%X(%s) owner=%d group=%d flags=%d", ARG2, getNativeString(MMU_PARAM_THREAD ARG2), ARG3, ARG4, ARG5); break;	
-    case __NR_fstatat64: sprintf(buffer, "statat64: dirfd=%d path=%s buf=%X flags=%x", ARG1, getNativeString(MMU_PARAM_THREAD ARG2), ARG3, ARG4); break;
-    case __NR_unlinkat: sprintf(buffer, "unlinkat: dirfd=%d path=%s flags=%x", ARG1, getNativeString(MMU_PARAM_THREAD ARG2), ARG3); break;
-    case __NR_symlinkat: sprintf(buffer, "symlinkat: oldpath=%x(%s) dirfd=%d newpath=%X(%s)", ARG1, getNativeString(MMU_PARAM_THREAD ARG1), ARG2, ARG3, getNativeString2(MMU_PARAM_THREAD ARG3)); break;
-    case __NR_readlinkat: sprintf(buffer, "symlinkat: dirfd=%d pathname=%X(%s) buf=%X(%s) bufsiz=%d", ARG1, ARG2, getNativeString(MMU_PARAM_THREAD ARG2), ARG3, getNativeString2(MMU_PARAM_THREAD ARG3), ARG4); break;
-    case __NR_fchmodat: sprintf(buffer, "fchmodat pathname=%X(%s) mode=%X flags=%X", ARG2, getNativeString(MMU_PARAM_THREAD ARG2), ARG3, ARG4); break;
+    case __NR_openat: sprintf(buffer, "openat: dirfd=%d name=%s flags=%x", ARG1, getNativeString(thread->process->memory, ARG2), ARG3); break;	
+    case __NR_fchownat: sprintf(buffer, "fchown32: pathname=%X(%s) owner=%d group=%d flags=%d", ARG2, getNativeString(thread->process->memory, ARG2), ARG3, ARG4, ARG5); break;	
+    case __NR_fstatat64: sprintf(buffer, "statat64: dirfd=%d path=%s buf=%X flags=%x", ARG1, getNativeString(thread->process->memory, ARG2), ARG3, ARG4); break;
+    case __NR_unlinkat: sprintf(buffer, "unlinkat: dirfd=%d path=%s flags=%x", ARG1, getNativeString(thread->process->memory, ARG2), ARG3); break;
+    case __NR_symlinkat: sprintf(buffer, "symlinkat: oldpath=%x(%s) dirfd=%d newpath=%X(%s)", ARG1, getNativeString(thread->process->memory, ARG1), ARG2, ARG3, getNativeString2(thread->process->memory, ARG3)); break;
+    case __NR_readlinkat: sprintf(buffer, "symlinkat: dirfd=%d pathname=%X(%s) buf=%X(%s) bufsiz=%d", ARG1, ARG2, getNativeString(thread->process->memory, ARG2), ARG3, getNativeString2(thread->process->memory, ARG3), ARG4); break;
+    case __NR_fchmodat: sprintf(buffer, "fchmodat pathname=%X(%s) mode=%X flags=%X", ARG2, getNativeString(thread->process->memory, ARG2), ARG3, ARG4); break;
     case __NR_set_robust_list: sprintf(buffer, "set_robust_list:"); break;
     case __NR_sync_file_range: sprintf(buffer, "sync_file_range:"); break;
-    case __NR_utimensat: sprintf(buffer, "utimensat dirfd=%d path=%X(%s) times=%X flags=%X", ARG1, ARG2, getNativeString(MMU_PARAM_THREAD ARG2), ARG3, ARG4); break;
+    case __NR_utimensat: sprintf(buffer, "utimensat dirfd=%d path=%X(%s) times=%X flags=%X", ARG1, ARG2, getNativeString(thread->process->memory, ARG2), ARG3, ARG4); break;
     case __NR_pipe2: sprintf(buffer, "pipe2 fildes=%X", ARG1); break;
     case __NR_prlimit64: sprintf(buffer, "prlimit64 pid=%d resource=%d newlimit=%X oldlimit=%X", ARG1, ARG2, ARG3, ARG4); break;
     default: sprintf(buffer, "unknown syscal: %d", EAX); break;

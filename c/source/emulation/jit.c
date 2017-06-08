@@ -1884,14 +1884,14 @@ void OPCALL neg32_reg_noflags(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg32_mem16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(MMU_PARAM_CPU eaa, 0-readd(MMU_PARAM_CPU eaa));
+    writed(cpu->memory, eaa, 0-readd(cpu->memory, eaa));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL neg32_mem32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(MMU_PARAM_CPU eaa, 0-readd(MMU_PARAM_CPU eaa));
+    writed(cpu->memory, eaa, 0-readd(cpu->memory, eaa));
     CYCLES(3);
     NEXT();
 }
@@ -1905,7 +1905,7 @@ void OPCALL mul32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
-    U64 result = (U64)EAX * readd(MMU_PARAM_CPU eaa16(cpu, op));
+    U64 result = (U64)EAX * readd(cpu->memory, eaa16(cpu, op));
     EAX = (U32)result;
     EDX = (U32)(result >> 32);
     CYCLES(10);
@@ -1913,7 +1913,7 @@ void OPCALL mul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul32_mem32_noflags(struct CPU* cpu, struct Op* op) {
-    U64 result = (U64)EAX * readd(MMU_PARAM_CPU eaa32(cpu, op));
+    U64 result = (U64)EAX * readd(cpu->memory, eaa32(cpu, op));
     EAX = (U32)result;
     EDX = (U32)(result >> 32);
     CYCLES(10);
@@ -1929,7 +1929,7 @@ void OPCALL imul32_reg_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
-    S64 result = (S64)((S32)EAX) * (S32)readd(MMU_PARAM_CPU eaa16(cpu, op));
+    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa16(cpu, op));
     EAX = (S32)result;
     EDX = (S32)(result >> 32);
     CYCLES(10);
@@ -1937,7 +1937,7 @@ void OPCALL imul32_mem16_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul32_mem32_noflags(struct CPU* cpu, struct Op* op) {
-    S64 result = (S64)((S32)EAX) * (S32)readd(MMU_PARAM_CPU eaa32(cpu, op));
+    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa32(cpu, op));
     EAX = (S32)result;
     EDX = (S32)(result >> 32);
     CYCLES(10);
@@ -2039,13 +2039,13 @@ void OPCALL dimulr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa16(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
+    cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa16(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
     CYCLES(10);
     NEXT();
 }
 
 void OPCALL dimulr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa32(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
+    cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa32(cpu, op))) * ((S32)cpu->reg[op->r1].u32);
     CYCLES(10);
     NEXT();
 }
@@ -2072,13 +2072,13 @@ void OPCALL dimulcr32r32_noflags(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulcr32e32_16_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa16(cpu, op))) * ((S32)op->data1);
+    cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa16(cpu, op))) * ((S32)op->data1);
     CYCLES(10);
     NEXT();
 }
 
 void OPCALL dimulcr32e32_32_noflags(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S32)(readd(MMU_PARAM_CPU eaa32(cpu, op))) * ((S32)op->data1);
+    cpu->reg[op->r1].u32 = (S32)(readd(cpu->memory, eaa32(cpu, op))) * ((S32)op->data1);
     CYCLES(10);
     NEXT();
 }
@@ -2110,9 +2110,9 @@ void OPCALL cmpxchgr32r32_noflags(struct CPU* cpu, struct Op* op) {
 
 void OPCALL cmpxchge32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
-    U32 dst = readd(MMU_PARAM_CPU address);
+    U32 dst = readd(cpu->memory, address);
     if (EAX == dst) {
-        writed(MMU_PARAM_CPU address, cpu->reg[op->r1].u32);
+        writed(cpu->memory, address, cpu->reg[op->r1].u32);
     } else {
         EAX = dst;
     }
@@ -2122,9 +2122,9 @@ void OPCALL cmpxchge32r32_16_noflags(struct CPU* cpu, struct Op* op) {
 
 void OPCALL cmpxchge32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
-    U32 dst = readd(MMU_PARAM_CPU address);
+    U32 dst = readd(cpu->memory, address);
     if (EAX == dst) {
-        writed(MMU_PARAM_CPU address, cpu->reg[op->r1].u32);
+        writed(cpu->memory, address, cpu->reg[op->r1].u32);
     } else {
         EAX = dst;
     }
@@ -2155,14 +2155,14 @@ void OPCALL dshrr32r32_noflags(struct CPU* cpu, struct Op* op) {
 
 void OPCALL dshre32r32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
-    writed(MMU_PARAM_CPU address, (readd(MMU_PARAM_CPU address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
+    writed(cpu->memory, address, (readd(cpu->memory, address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
     CYCLES(4);
     NEXT();
 }
 
 void OPCALL dshre32r32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
-    writed(MMU_PARAM_CPU address, (readd(MMU_PARAM_CPU address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
+    writed(cpu->memory, address, (readd(cpu->memory, address) >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1)));
     CYCLES(4);
     NEXT();
 }
@@ -2192,8 +2192,8 @@ void OPCALL xadd32r32r32_noflags(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xadd32r32e32_16_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U32 tmp = readd(MMU_PARAM_CPU eaa);
-    writed(MMU_PARAM_CPU eaa, tmp + cpu->reg[op->r1].u32);
+    U32 tmp = readd(cpu->memory, eaa);
+    writed(cpu->memory, eaa, tmp + cpu->reg[op->r1].u32);
     cpu->reg[op->r1].u32 = tmp;
     CYCLES(4);
     NEXT();
@@ -2201,8 +2201,8 @@ void OPCALL xadd32r32e32_16_noflags(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xadd32r32e32_32_noflags(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U32 tmp = readd(MMU_PARAM_CPU eaa);
-    writed(MMU_PARAM_CPU eaa, tmp + cpu->reg[op->r1].u32);
+    U32 tmp = readd(cpu->memory, eaa);
+    writed(cpu->memory, eaa, tmp + cpu->reg[op->r1].u32);
     cpu->reg[op->r1].u32 = tmp;
     CYCLES(4);
     NEXT();

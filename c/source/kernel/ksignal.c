@@ -23,18 +23,18 @@
 #include "kthread.h"
 #include "kscheduler.h"
 
-void writeSigAction(MMU_ARG struct KSigAction* signal, U32 address) {
-    writed(MMU_PARAM address, signal->handlerAndSigAction);
-    writed(MMU_PARAM address + 4, signal->flags);
-    writed(MMU_PARAM address + 8, signal->restorer);
-    writed(MMU_PARAM address + 12, signal->mask);
+void writeSigAction(struct Memory* memory, struct KSigAction* signal, U32 address) {
+    writed(memory, address, signal->handlerAndSigAction);
+    writed(memory, address + 4, signal->flags);
+    writed(memory, address + 8, signal->restorer);
+    writed(memory, address + 12, signal->mask);
 }
 
-void readSigAction(MMU_ARG struct KSigAction* signal, U32 address) {
-    signal->handlerAndSigAction = readd(MMU_PARAM address);
-    signal->flags = readd(MMU_PARAM address + 4);
-    signal->restorer = readd(MMU_PARAM address + 8);
-    signal->mask = readd(MMU_PARAM address + 12);
+void readSigAction(struct Memory* memory, struct KSigAction* signal, U32 address) {
+    signal->handlerAndSigAction = readd(memory, address);
+    signal->flags = readd(memory, address + 4);
+    signal->restorer = readd(memory, address + 8);
+    signal->mask = readd(memory, address + 12);
 }
 
 U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
@@ -43,21 +43,21 @@ U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
     }
 
     if (oact!=0) {
-        writeSigAction(MMU_PARAM_THREAD &thread->process->sigActions[sig], oact);
+        writeSigAction(thread->process->memory, &thread->process->sigActions[sig], oact);
     }
     if (act!=0) {
-        readSigAction(MMU_PARAM_THREAD &thread->process->sigActions[sig], act);
+        readSigAction(thread->process->memory, &thread->process->sigActions[sig], act);
     }
     return 0;
 }
 
 U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
     if (oset!=0) {
-        writed(MMU_PARAM_THREAD oset, thread->sigMask);
+        writed(thread->process->memory, oset, thread->sigMask);
         //klog("syscall_sigprocmask oset=%X", thread->sigMask);
     }
     if (set!=0) {
-        set = readd(MMU_PARAM_THREAD set);
+        set = readd(thread->process->memory, set);
         if (how == K_SIG_BLOCK) {
             thread->sigMask|=set;
             //klog("syscall_sigprocmask block %X(%X)", set, thread->sigMask);
@@ -76,18 +76,18 @@ U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
 
 U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss) {
     if (oss!=0) {
-        writed(MMU_PARAM_THREAD oss, thread->alternateStack);
-        writed(MMU_PARAM_THREAD oss + 4, (thread->alternateStack && thread->inSignal) ? K_SS_ONSTACK : K_SS_DISABLE);
-        writed(MMU_PARAM_THREAD oss + 8, thread->alternateStackSize);
+        writed(thread->process->memory, oss, thread->alternateStack);
+        writed(thread->process->memory, oss + 4, (thread->alternateStack && thread->inSignal) ? K_SS_ONSTACK : K_SS_DISABLE);
+        writed(thread->process->memory, oss + 8, thread->alternateStackSize);
     }
     if (ss!=0) {
-        U32 flags = readd(MMU_PARAM_THREAD ss + 4);
+        U32 flags = readd(thread->process->memory, ss + 4);
         if (flags & K_SS_DISABLE) {
             thread->alternateStack = 0;
             thread->alternateStackSize = 0;
         } else {
-            thread->alternateStack = readd(MMU_PARAM_THREAD ss);
-            thread->alternateStackSize = readd(MMU_PARAM_THREAD ss + 8);
+            thread->alternateStack = readd(thread->process->memory, ss);
+            thread->alternateStackSize = readd(thread->process->memory, ss + 8);
         }
     }
     return 0;
@@ -99,7 +99,7 @@ U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask) {
         return -K_EINTR;
     }
     thread->waitingForSignalToEndMaskToRestore = thread->sigMask | RESTORE_SIGNAL_MASK;
-    thread->sigMask = readd(MMU_PARAM_THREAD mask);
+    thread->sigMask = readd(thread->process->memory, mask);
     waitThread(thread);			
     return -K_CONTINUE;
 }

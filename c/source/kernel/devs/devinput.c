@@ -108,17 +108,17 @@ S64 input_seek(struct FsOpenNode* node, S64 pos) {
 }
 
 // :TODO: can this be blocking
-U32 input_read(MMU_ARG struct InputEventQueue* queue, struct FsOpenNode* node, U32 address, U32 len) {
+U32 input_read(struct Memory* memory, struct InputEventQueue* queue, struct FsOpenNode* node, U32 address, U32 len) {
     U32 result = 0;
 
     while (queue->firstQueuedEvent && result+16<=len) {
         struct EventData* e = queue->firstQueuedEvent;
 
-        writed(MMU_PARAM address, (U32) (e->time / 1000000)); // seconds
-        writed(MMU_PARAM address+4, (U32) (e->time % 1000000)); // microseconds
-        writew(MMU_PARAM address+8, e->type);
-        writew(MMU_PARAM address+10, e->code);
-        writed(MMU_PARAM address+12, e->value);
+        writed(memory, address, (U32) (e->time / 1000000)); // seconds
+        writed(memory, address+4, (U32) (e->time % 1000000)); // microseconds
+        writew(memory, address+8, e->type);
+        writew(memory, address+10, e->code);
+        writed(memory, address+12, e->value);
         result+=16;
         address+=16;
         queue->firstQueuedEvent = e->next;
@@ -130,7 +130,7 @@ U32 input_read(MMU_ARG struct InputEventQueue* queue, struct FsOpenNode* node, U
     return result;
 }
 
-U32 input_write(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
+U32 input_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
     return len;
 }
 
@@ -158,12 +158,12 @@ void input_close(struct InputEventQueue* queue, struct FsOpenNode* node) {
     queue->asyncProcessFd = 0;
 }
 
-void writeBit(MMU_ARG U32 address, U32 bit) {
+void writeBit(struct Memory* memory, U32 address, U32 bit) {
     U32 b = bit/8;
     U32 p = bit % 8;
-    U32 value = readb(MMU_PARAM address+b);
+    U32 value = readb(memory, address+b);
     value|=(1<<p);
-    writeb(MMU_PARAM address+b, value);
+    writeb(memory, address+b, value);
 }
 
 //    struct input_absinfo {
@@ -174,13 +174,13 @@ void writeBit(MMU_ARG U32 address, U32 bit) {
 //        __s32 flat;
 //        __s32 resolution;
 //    };
-void writeAbs(MMU_ARG U32 address, U32 value, U32 min, U32 max) {
-    writed(MMU_PARAM address, value);
-    writed(MMU_PARAM address+4, min);
-    writed(MMU_PARAM address+8, max);
-    writed(MMU_PARAM address+12, 0);
-    writed(MMU_PARAM address+16, 0);
-    writed(MMU_PARAM address+20, 96);
+void writeAbs(struct Memory* memory, U32 address, U32 value, U32 min, U32 max) {
+    writed(memory, address, value);
+    writed(memory, address+4, min);
+    writed(memory, address+8, max);
+    writed(memory, address+12, 0);
+    writed(memory, address+16, 0);
+    writed(memory, address+20, 96);
 }
 
 U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct FsOpenNode* node, U32 request) {
@@ -198,23 +198,23 @@ U32 input_ioctl(struct InputEventQueue* queue, struct KThread* thread, struct Fs
             U32 buffer = IOCTL_ARG1;
             if (len!=8)
                 kpanic("Bad length for EVIOCGID: %d",len);
-            writew(MMU_PARAM_THREAD buffer, queue->bustype);
-            writew(MMU_PARAM_THREAD buffer + 2, queue->vendor);
-            writew(MMU_PARAM_THREAD buffer + 4, queue->product);
-            writew(MMU_PARAM_THREAD buffer + 6, queue->version);
+            writew(thread->process->memory, buffer, queue->bustype);
+            writew(thread->process->memory, buffer + 2, queue->vendor);
+            writew(thread->process->memory, buffer + 4, queue->product);
+            writew(thread->process->memory, buffer + 6, queue->version);
             return 0;
         }
         case 0x4506: { // EVIOCGNAME
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            return writeNativeString2(MMU_PARAM_THREAD buffer, queue->name, len);
+            return writeNativeString2(thread->process->memory, buffer, queue->name, len);
         }
         case 0x4520: { // EVIOCGBIT
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
             if (len<4)
                 kpanic("Bad length for EVIOCGBIT: %d", len);
-            writed(MMU_PARAM_THREAD buffer, queue->mask);
+            writed(thread->process->memory, buffer, queue->mask);
             return 4;
         }
         case 0x540B: // TCFLSH
@@ -251,7 +251,7 @@ BOOL input_isReadReady(struct InputEventQueue* queue, struct FsOpenNode* node) {
     return queue->firstQueuedEvent!=0;
 }
 
-U32 input_map(MMU_ARG struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 input_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -269,8 +269,8 @@ BOOL touch_init(struct KProcess* process, struct FsOpenNode* node) {
     return input_init(process, node);
 }
 
-U32 touch_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
-    return input_read(MMU_PARAM &touchEvents, node, address, len);
+U32 touch_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+    return input_read(memory, &touchEvents, node, address, len);
 }
 
 void touch_close(struct FsOpenNode* node) {
@@ -298,29 +298,29 @@ U32 touch_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             U32 buffer = IOCTL_ARG1;
             U32 result = K_BTN_MIDDLE;
             result = (result+7)/8;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
+            zeroMemory(thread->process->memory, buffer, len);
+            writeBit(thread->process->memory, buffer, K_BTN_LEFT);
+            writeBit(thread->process->memory, buffer, K_BTN_MIDDLE);
+            writeBit(thread->process->memory, buffer, K_BTN_RIGHT);
             return result;
         }
         case 0x4522: { // EVIOCGBIT, EV_REL
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(thread->process->memory, buffer, len);
             return 1;
         }
         case 0x4523: { // EVIOCGBIT, EV_ABS
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeb(MMU_PARAM_THREAD buffer, (1 << K_ABS_X) | (1 << K_ABS_Y));
+            zeroMemory(thread->process->memory, buffer, len);
+            writeb(thread->process->memory, buffer, (1 << K_ABS_X) | (1 << K_ABS_Y));
             return 1;
         }
         case 0x4531: { // EVIOCGBIT, EV_LED
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(thread->process->memory, buffer, len);
             return 1;
         }
         case 0x4540: { // EVIOCGABS (ABS_X)
@@ -328,7 +328,7 @@ U32 touch_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             U32 address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-            writeAbs(MMU_PARAM_THREAD address, lastX, 0, screenCx);
+            writeAbs(thread->process->memory, address, lastX, 0, screenCx);
             return 0;
         }
         case 0x4541: { // EVIOCGABS (ABS_Y)
@@ -336,7 +336,7 @@ U32 touch_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             int address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-            writeAbs(MMU_PARAM_THREAD address, lastY, 0, screenCy);
+            writeAbs(thread->process->memory, address, lastY, 0, screenCy);
             return 0;
         }
         default:
@@ -365,8 +365,8 @@ BOOL mouse_init(struct KProcess* process, struct FsOpenNode* node) {
     return input_init(process, node);
 }
 
-U32 mouse_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
-    return input_read(MMU_PARAM &mouseEvents, node, address, len);
+U32 mouse_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+    return input_read(memory, &mouseEvents, node, address, len);
 }
 
 void mouse_close(struct FsOpenNode* node) {
@@ -394,31 +394,31 @@ U32 mouse_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             U32 buffer = IOCTL_ARG1;
             U32 result = K_BTN_MIDDLE;
             result = (result+7)/8;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_LEFT);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MIDDLE);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_RIGHT);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MOUSEWHEEL_UP);
-            writeBit(MMU_PARAM_THREAD buffer, K_BTN_MOUSEWHEEL_DOWN);
+            zeroMemory(thread->process->memory, buffer, len);
+            writeBit(thread->process->memory, buffer, K_BTN_LEFT);
+            writeBit(thread->process->memory, buffer, K_BTN_MIDDLE);
+            writeBit(thread->process->memory, buffer, K_BTN_RIGHT);
+            writeBit(thread->process->memory, buffer, K_BTN_MOUSEWHEEL_UP);
+            writeBit(thread->process->memory, buffer, K_BTN_MOUSEWHEEL_DOWN);
             return result;
         }
         case 0x4522: { // EVIOCGBIT, EV_REL
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeb(MMU_PARAM_THREAD buffer, (1 << K_REL_X) | (1 << K_REL_Y));
+            zeroMemory(thread->process->memory, buffer, len);
+            writeb(thread->process->memory, buffer, (1 << K_REL_X) | (1 << K_REL_Y));
             return 1;
         }
         case 0x4523: { // EVIOCGBIT, EV_ABS
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(thread->process->memory, buffer, len);
             return 1;
         }
         case 0x4531: { // EVIOCGBIT, EV_LED
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(thread->process->memory, buffer, len);
             return 1;
         }
         case 0x4540: { // EVIOCGABS (ABS_X)
@@ -426,7 +426,7 @@ U32 mouse_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             U32 address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-            writeAbs(MMU_PARAM_THREAD address, 0, 0, 0);
+            writeAbs(thread->process->memory, address, 0, 0, 0);
             return 0;
         }
         case 0x4541: { // EVIOCGABS (ABS_Y)
@@ -434,7 +434,7 @@ U32 mouse_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
             int address = IOCTL_ARG1;
             if (len<24)
                 kpanic("Bad length for EVIOCGABS (ABS_X)");
-            writeAbs(MMU_PARAM_THREAD address, 0, 0, 0);
+            writeAbs(thread->process->memory, address, 0, 0, 0);
             return 0;
         }
         default:
@@ -463,8 +463,8 @@ BOOL keyboard_init(struct KProcess* process, struct FsOpenNode* node) {
     return input_init(process, node);
 }
 
-U32 keyboard_read(MMU_ARG struct FsOpenNode* node, U32 address, U32 len) {
-    return input_read(MMU_PARAM &keyboardEvents, node, address, len);
+U32 keyboard_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+    return input_read(memory, &keyboardEvents, node, address, len);
 }
 
 void keyboard_close(struct FsOpenNode* node) {
@@ -490,112 +490,112 @@ U32 keyboard_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request)
         case 0x4521: { // EVIOCGBIT, EV_KEY
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_ESC);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_1);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_2);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_3);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_4);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_5);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_6);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_7);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_8);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_9);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_0);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_MINUS);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_EQUAL);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_BACKSPACE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_TAB);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_Q);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_W);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_E);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_R);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_T);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_Y);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_U);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_I);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_O);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_P);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_LEFTBRACE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_RIGHTBRACE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_ENTER);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_LEFTCTRL);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_A);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_S);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_D);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_G);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_H);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_J);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_K);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_L);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_SEMICOLON);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_APOSTROPHE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_GRAVE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_LEFTSHIFT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_BACKSLASH);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_Z);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_X);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_C);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_V);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_B);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_N);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_M);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_COMMA);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_DOT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_SLASH);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_RIGHTSHIFT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_LEFTALT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_SPACE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_CAPSLOCK);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F1);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F2);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F3);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F4);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F5);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F6);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F7);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F8);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F9);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F10);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_NUMLOCK);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_SCROLLLOCK);
+            zeroMemory(thread->process->memory, buffer, len);
+            writeBit(thread->process->memory, buffer, K_KEY_ESC);
+            writeBit(thread->process->memory, buffer, K_KEY_1);
+            writeBit(thread->process->memory, buffer, K_KEY_2);
+            writeBit(thread->process->memory, buffer, K_KEY_3);
+            writeBit(thread->process->memory, buffer, K_KEY_4);
+            writeBit(thread->process->memory, buffer, K_KEY_5);
+            writeBit(thread->process->memory, buffer, K_KEY_6);
+            writeBit(thread->process->memory, buffer, K_KEY_7);
+            writeBit(thread->process->memory, buffer, K_KEY_8);
+            writeBit(thread->process->memory, buffer, K_KEY_9);
+            writeBit(thread->process->memory, buffer, K_KEY_0);
+            writeBit(thread->process->memory, buffer, K_KEY_MINUS);
+            writeBit(thread->process->memory, buffer, K_KEY_EQUAL);
+            writeBit(thread->process->memory, buffer, K_KEY_BACKSPACE);
+            writeBit(thread->process->memory, buffer, K_KEY_TAB);
+            writeBit(thread->process->memory, buffer, K_KEY_Q);
+            writeBit(thread->process->memory, buffer, K_KEY_W);
+            writeBit(thread->process->memory, buffer, K_KEY_E);
+            writeBit(thread->process->memory, buffer, K_KEY_R);
+            writeBit(thread->process->memory, buffer, K_KEY_T);
+            writeBit(thread->process->memory, buffer, K_KEY_Y);
+            writeBit(thread->process->memory, buffer, K_KEY_U);
+            writeBit(thread->process->memory, buffer, K_KEY_I);
+            writeBit(thread->process->memory, buffer, K_KEY_O);
+            writeBit(thread->process->memory, buffer, K_KEY_P);
+            writeBit(thread->process->memory, buffer, K_KEY_LEFTBRACE);
+            writeBit(thread->process->memory, buffer, K_KEY_RIGHTBRACE);
+            writeBit(thread->process->memory, buffer, K_KEY_ENTER);
+            writeBit(thread->process->memory, buffer, K_KEY_LEFTCTRL);
+            writeBit(thread->process->memory, buffer, K_KEY_A);
+            writeBit(thread->process->memory, buffer, K_KEY_S);
+            writeBit(thread->process->memory, buffer, K_KEY_D);
+            writeBit(thread->process->memory, buffer, K_KEY_F);
+            writeBit(thread->process->memory, buffer, K_KEY_G);
+            writeBit(thread->process->memory, buffer, K_KEY_H);
+            writeBit(thread->process->memory, buffer, K_KEY_J);
+            writeBit(thread->process->memory, buffer, K_KEY_K);
+            writeBit(thread->process->memory, buffer, K_KEY_L);
+            writeBit(thread->process->memory, buffer, K_KEY_SEMICOLON);
+            writeBit(thread->process->memory, buffer, K_KEY_APOSTROPHE);
+            writeBit(thread->process->memory, buffer, K_KEY_GRAVE);
+            writeBit(thread->process->memory, buffer, K_KEY_LEFTSHIFT);
+            writeBit(thread->process->memory, buffer, K_KEY_BACKSLASH);
+            writeBit(thread->process->memory, buffer, K_KEY_Z);
+            writeBit(thread->process->memory, buffer, K_KEY_X);
+            writeBit(thread->process->memory, buffer, K_KEY_C);
+            writeBit(thread->process->memory, buffer, K_KEY_V);
+            writeBit(thread->process->memory, buffer, K_KEY_B);
+            writeBit(thread->process->memory, buffer, K_KEY_N);
+            writeBit(thread->process->memory, buffer, K_KEY_M);
+            writeBit(thread->process->memory, buffer, K_KEY_COMMA);
+            writeBit(thread->process->memory, buffer, K_KEY_DOT);
+            writeBit(thread->process->memory, buffer, K_KEY_SLASH);
+            writeBit(thread->process->memory, buffer, K_KEY_RIGHTSHIFT);
+            writeBit(thread->process->memory, buffer, K_KEY_LEFTALT);
+            writeBit(thread->process->memory, buffer, K_KEY_SPACE);
+            writeBit(thread->process->memory, buffer, K_KEY_CAPSLOCK);
+            writeBit(thread->process->memory, buffer, K_KEY_F1);
+            writeBit(thread->process->memory, buffer, K_KEY_F2);
+            writeBit(thread->process->memory, buffer, K_KEY_F3);
+            writeBit(thread->process->memory, buffer, K_KEY_F4);
+            writeBit(thread->process->memory, buffer, K_KEY_F5);
+            writeBit(thread->process->memory, buffer, K_KEY_F6);
+            writeBit(thread->process->memory, buffer, K_KEY_F7);
+            writeBit(thread->process->memory, buffer, K_KEY_F8);
+            writeBit(thread->process->memory, buffer, K_KEY_F9);
+            writeBit(thread->process->memory, buffer, K_KEY_F10);
+            writeBit(thread->process->memory, buffer, K_KEY_NUMLOCK);
+            writeBit(thread->process->memory, buffer, K_KEY_SCROLLLOCK);
 
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F11);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_F12);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_RIGHTCTRL);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_RIGHTALT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_HOME);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_UP);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_PAGEUP);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_LEFT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_RIGHT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_END);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_DOWN);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_PAGEDOWN);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_INSERT);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_DELETE);
-            writeBit(MMU_PARAM_THREAD buffer, K_KEY_PAUSE);
+            writeBit(thread->process->memory, buffer, K_KEY_F11);
+            writeBit(thread->process->memory, buffer, K_KEY_F12);
+            writeBit(thread->process->memory, buffer, K_KEY_RIGHTCTRL);
+            writeBit(thread->process->memory, buffer, K_KEY_RIGHTALT);
+            writeBit(thread->process->memory, buffer, K_KEY_HOME);
+            writeBit(thread->process->memory, buffer, K_KEY_UP);
+            writeBit(thread->process->memory, buffer, K_KEY_PAGEUP);
+            writeBit(thread->process->memory, buffer, K_KEY_LEFT);
+            writeBit(thread->process->memory, buffer, K_KEY_RIGHT);
+            writeBit(thread->process->memory, buffer, K_KEY_END);
+            writeBit(thread->process->memory, buffer, K_KEY_DOWN);
+            writeBit(thread->process->memory, buffer, K_KEY_PAGEDOWN);
+            writeBit(thread->process->memory, buffer, K_KEY_INSERT);
+            writeBit(thread->process->memory, buffer, K_KEY_DELETE);
+            writeBit(thread->process->memory, buffer, K_KEY_PAUSE);
             return (K_KEY_PAUSE+7)/8;
         }
         case 0x4522: { // EVIOCGBIT, EV_REL
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeb(MMU_PARAM_THREAD buffer, 0);
+            zeroMemory(thread->process->memory, buffer, len);
+            writeb(thread->process->memory, buffer, 0);
             return 1;
         }
         case 0x4523: { // EVIOCGBIT, EV_ABS
             U32 len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
-            writeb(MMU_PARAM_THREAD buffer, 0);
+            zeroMemory(thread->process->memory, buffer, len);
+            writeb(thread->process->memory, buffer, 0);
             return 1;
         }
         case 0x4531: { // EVIOCGBIT, EV_LED
             int len = (request & 0x1fff0000) >> 16;
             U32 buffer = IOCTL_ARG1;
-            zeroMemory(MMU_PARAM_THREAD buffer, len);
+            zeroMemory(thread->process->memory, buffer, len);
             return 1;
         }
         default:

@@ -125,16 +125,16 @@ void freeMemory(struct Memory* memory) {
     kfree(memory, KALLOC_MEMORY);
 }
 
-void zeroMemory(MMU_ARG U32 address, int len) {
-    memset(getNativeAddress(MMU_PARAM address), 0, len);
+void zeroMemory(struct Memory* memory, U32 address, int len) {
+    memset(getNativeAddress(memory, address), 0, len);
 }
 
-void readMemory(MMU_ARG U8* data, U32 address, int len) {
-    memcpy(data, getNativeAddress(MMU_PARAM address), len);
+void readMemory(struct Memory* memory, U8* data, U32 address, int len) {
+    memcpy(data, getNativeAddress(memory, address), len);
 }
 
-void writeMemory(MMU_ARG U32 address, U8* data, int len) {
-    memcpy(getNativeAddress(MMU_PARAM address), data, len);
+void writeMemory(struct Memory* memory, U32 address, U8* data, int len) {
+    memcpy(getNativeAddress(memory, address), data, len);
 }
 
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeReMapped) {
@@ -216,32 +216,32 @@ void freePage(struct Memory* memory, U32 page) {
     freeNativeMemory(memory->process, page, 1);
 }
 
-void memcopyFromNative(MMU_ARG U32 address, const char* p, U32 len) {
-    memcpy(getNativeAddress(MMU_PARAM address), p, len);
+void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {
+    memcpy(getNativeAddress(memory, address), p, len);
 }
 
-void memcopyToNative(MMU_ARG U32 address, char* p, U32 len) {
-    memcpy(p, getNativeAddress(MMU_PARAM address), len);
+void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
+    memcpy(p, getNativeAddress(memory, address), len);
 }
 
-void writeNativeString(MMU_ARG U32 address, const char* str) {	
-    strcpy(getNativeAddress(MMU_PARAM address), str);
+void writeNativeString(struct Memory* memory, U32 address, const char* str) {	
+    strcpy(getNativeAddress(memory, address), str);
 }
 
-U32 writeNativeString2(MMU_ARG U32 address, const char* str, U32 len) {	
+U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len) {	
     U32 count=0;
 
     while (*str && count<len-1) {
-        writeb(MMU_PARAM address, *str);
+        writeb(memory, address, *str);
         str++;
         address++;
         count++;
     }
-    writeb(MMU_PARAM address, 0);
+    writeb(memory, address, 0);
     return count;
 }
 
-void writeNativeStringW(MMU_ARG U32 address, const char* str) {	
+void writeNativeStringW(struct Memory* memory, U32 address, const char* str) {	
     while (*str) {
         writew(memory, address, *str);
         str++;
@@ -252,15 +252,15 @@ void writeNativeStringW(MMU_ARG U32 address, const char* str) {
 
 static char tmpBuffer[64*1024];
 
-char* getNativeString(MMU_ARG U32 address) {
+char* getNativeString(struct Memory* memory, U32 address) {
     if (!address) {
         tmpBuffer[0]=0;
         return tmpBuffer;
     }
-    return (char*)getNativeAddress(MMU_PARAM address);
+    return (char*)getNativeAddress(memory, address);
 }
 
-char* getNativeStringW(MMU_ARG U32 address) {
+char* getNativeStringW(struct Memory* memory, U32 address) {
     char c;
     int i=0;
 
@@ -269,7 +269,7 @@ char* getNativeStringW(MMU_ARG U32 address) {
         return tmpBuffer;
     }
     do {
-        c = (char)readw(MMU_PARAM address);
+        c = (char)readw(memory, address);
         address+=2;
         tmpBuffer[i++] = c;
     } while(c && i<sizeof(tmpBuffer));
@@ -279,15 +279,15 @@ char* getNativeStringW(MMU_ARG U32 address) {
 
 static char tmpBuffer2[64*1024];
 
-char* getNativeString2(MMU_ARG U32 address) {
+char* getNativeString2(struct Memory* memory, U32 address) {
     if (!address) {
         tmpBuffer2[0]=0;
         return tmpBuffer2;
     }
-    return (char*)getNativeAddress(MMU_PARAM address);
+    return (char*)getNativeAddress(memory, address);
 }
 
-char* getNativeStringW2(MMU_ARG U32 address) {
+char* getNativeStringW2(struct Memory* memory, U32 address) {
     char c;
     int i=0;
 
@@ -304,61 +304,61 @@ char* getNativeStringW2(MMU_ARG U32 address) {
     return tmpBuffer2;
 }
 
-U8 readb(MMU_ARG U32 address) {
+U8 readb(struct Memory* memory, U32 address) {
 #ifdef LOG_OPS
-    U8 result = *(U8*)getNativeAddress(MMU_PARAM address);
+    U8 result = *(U8*)getNativeAddress(memory, address);
     if (memory->log)
         fprintf(logFile, "readb %X @%X\n", result, address);
     return result;
 #else
-    return *(U8*)getNativeAddress(MMU_PARAM address);
+    return *(U8*)getNativeAddress(memory, address);
 #endif
 }
 
-void writeb(MMU_ARG U32 address, U8 value) {
+void writeb(struct Memory* memory, U32 address, U8 value) {
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writeb %X @%X\n", value, address);
 #endif
-    *(U8*)getNativeAddress(MMU_PARAM address) = value;
+    *(U8*)getNativeAddress(memory, address) = value;
 }
 
-U16 readw(MMU_ARG U32 address) {
+U16 readw(struct Memory* memory, U32 address) {
 #ifdef LOG_OPS
-    U16 result = *(U16*)getNativeAddress(MMU_PARAM address);
+    U16 result = *(U16*)getNativeAddress(memory, address);
     if (memory->log)
         fprintf(logFile, "readw %X @%X\n", result, address);
     return result;
 #else
-    return *(U16*)getNativeAddress(MMU_PARAM address);
+    return *(U16*)getNativeAddress(memory, address);
 #endif
 }
 
-void writew(MMU_ARG U32 address, U16 value) {
+void writew(struct Memory* memory, U32 address, U16 value) {
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writew %X @%X\n", value, address);
 #endif
-    *(U16*)getNativeAddress(MMU_PARAM address) = value;
+    *(U16*)getNativeAddress(memory, address) = value;
 }
 
-U32 readd(MMU_ARG U32 address) {
+U32 readd(struct Memory* memory, U32 address) {
 #ifdef LOG_OPS
-    U32 result = *(U32*)getNativeAddress(MMU_PARAM address);
+    U32 result = *(U32*)getNativeAddress(memory, address);
     if (memory->log)
         fprintf(logFile, "readd %X @%X\n", result, address);
     return result;
 #else
-    return *(U32*)getNativeAddress(MMU_PARAM address);
+    return *(U32*)getNativeAddress(memory, address);
 #endif
 }
 
-void writed(MMU_ARG U32 address, U32 value) {
+void writed(struct Memory* memory, U32 address, U32 value) {
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writed %X @%X\n", value, address);
 #endif
-    *(U32*)getNativeAddress(MMU_PARAM address) = value;
+    *(U32*)getNativeAddress(memory, address) = value;
 }
 
 static U8* callbackAddress;

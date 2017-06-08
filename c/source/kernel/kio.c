@@ -42,7 +42,7 @@ U32 syscall_read(struct KThread* thread, FD handle, U32 buffer, U32 len) {
     if (!canReadFD(fd)) {
         return -K_EINVAL;
     }
-    return fd->kobject->access->read(MMU_PARAM_THREAD thread, fd->kobject, buffer, len);
+    return fd->kobject->access->read(thread->process->memory, thread, fd->kobject, buffer, len);
 }
 
 U32 syscall_write(struct KThread* thread, FD handle, U32 buffer, U32 len) {
@@ -53,11 +53,11 @@ U32 syscall_write(struct KThread* thread, FD handle, U32 buffer, U32 len) {
     if (!canWriteFD(fd)) {
         return -K_EINVAL;
     }
-    return fd->kobject->access->write(MMU_PARAM_THREAD thread, fd->kobject, buffer, len);
+    return fd->kobject->access->write(thread->process->memory, thread, fd->kobject, buffer, len);
 }
 
 U32 syscall_open(struct KThread* thread, const char* currentDirectory, U32 name, U32 flags) {
-    struct KFileDescriptor* fd = openFile(thread->process, currentDirectory, getNativeString(MMU_PARAM_THREAD name), flags);
+    struct KFileDescriptor* fd = openFile(thread->process, currentDirectory, getNativeString(thread->process->memory, name), flags);
     if (fd)
         return fd->handle;
     switch (errno) {
@@ -89,7 +89,7 @@ U32 getCurrentDirectoryFromDirFD(struct KThread* thread, FD dirfd, const char** 
 
 U32 syscall_openat(struct KThread* thread, FD dirfd, U32 name, U32 flags) {
     const char* currentDirectory=0;
-    const char* path = getNativeString(MMU_PARAM_THREAD name);
+    const char* path = getNativeString(thread->process->memory, name);
     U32 result = 0;
     
     if (path[0]!='/')
@@ -122,8 +122,8 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
         return -K_EINVAL;
     }
     for (i=start;i<iovcnt;i++) {
-        U32 buf = readd(MMU_PARAM_THREAD iov + i * 8) + startOffset;
-        U32 toWrite = readd(MMU_PARAM_THREAD iov + i * 8 + 4) - startOffset;
+        U32 buf = readd(thread->process->memory, iov + i * 8) + startOffset;
+        U32 toWrite = readd(thread->process->memory, iov + i * 8 + 4) - startOffset;
         BOOL blocking = fd->kobject->access->isBlocking(fd->kobject);
         S32 result;
 
@@ -131,16 +131,16 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
         if (blocking) {
             fd->kobject->access->setBlocking(fd->kobject, 0);
         }
-        result = fd->kobject->access->write(MMU_PARAM_THREAD thread, fd->kobject, buf, toWrite);
+        result = fd->kobject->access->write(thread->process->memory, thread, fd->kobject, buf, toWrite);
         if (blocking) {
             fd->kobject->access->setBlocking(fd->kobject, 1);
             if (result == -K_EWOULDBLOCK) {
-                return fd->kobject->access->write(MMU_PARAM_THREAD thread, fd->kobject, buf, toWrite);
+                return fd->kobject->access->write(thread->process->memory, thread, fd->kobject, buf, toWrite);
             }
             if (result > 0 && result!=toWrite) {
                 thread->waitData1 = i;
                 thread->waitData2 = result;
-                return fd->kobject->access->write(MMU_PARAM_THREAD thread, fd->kobject, buf + result, toWrite - result);
+                return fd->kobject->access->write(thread->process->memory, thread, fd->kobject, buf + result, toWrite - result);
             }			
         }
         if (result<0) {
@@ -189,13 +189,13 @@ U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf) {
     if (fd==0) {
         return -K_EBADF;
     }
-    return fd->kobject->access->stat(MMU_PARAM_THREAD thread->process, fd->kobject, buf, TRUE);
+    return fd->kobject->access->stat(thread->process->memory, thread->process, fd->kobject, buf, TRUE);
 }
 
 U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
     const char* currentDirectory=0;
     struct FsNode* node;	
-    const char* path = getNativeString(MMU_PARAM_THREAD address);
+    const char* path = getNativeString(thread->process->memory, address);
     U32 result = 0;
     
     if (path[0]!='/')
@@ -226,7 +226,7 @@ U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags) {
 U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U32 flag) {
     const char* currentDirectory=0;
     struct FsNode* node;	
-    const char* path = getNativeString(MMU_PARAM_THREAD address);
+    const char* path = getNativeString(thread->process->memory, address);
     U32 result = 0;
     
     if (path[0]!='/')
@@ -247,12 +247,12 @@ U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U3
                 safe_strcat(tmp, ".link", MAX_FILEPATH_LEN);
                 link = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
                 len = link->func->length(node);
-                writeStat(MMU_PARAM_THREAD buf, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
+                writeStat(thread->process->memory, buf, TRUE, 1, link->id, K__S_IFLNK, node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
                 return 0;
             }
         }
         len = node->func->length(node);
-        writeStat(MMU_PARAM_THREAD buf, TRUE, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
+        writeStat(thread->process->memory, buf, TRUE, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
         return 0;
     }
     return -K_ENOENT;
@@ -333,7 +333,7 @@ U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer) {
         }
     }
     len = node->func->length(node);
-    writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
+    writeStat(thread->process->memory, buffer, TRUE, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
     return 0;
 }
 
@@ -355,7 +355,7 @@ U32 syscall_lstat64(struct KThread* thread, U32 path, U32 buffer) {
     if (!link)
         return -K_ENOENT;
     len = link->func->length(link);
-    writeStat(MMU_PARAM_THREAD buffer, TRUE, 1, link->id, K__S_IFLNK | (node->func->getMode(thread->process, node) & 0xFFF), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
+    writeStat(thread->process->memory, buffer, TRUE, 1, link->id, K__S_IFLNK | (node->func->getMode(thread->process, node) & 0xFFF), node->rdev, len, 4096, (len + 4095) / 4096, node->func->lastModified(node), getHardLinkCount(node));
     return 0;
 }
 
@@ -425,12 +425,12 @@ U32 syscall_rename(struct KThread* thread, U32 oldName, U32 newName) {
     char path[MAX_FILEPATH_LEN];
     char oldPath[MAX_FILEPATH_LEN];
 
-    safe_strcpy(oldPath, getNativeString(MMU_PARAM_THREAD oldName), MAX_FILEPATH_LEN);
+    safe_strcpy(oldPath, getNativeString(thread->process->memory, oldName), MAX_FILEPATH_LEN);
     oldNode = getNodeFromLocalPath(thread->process->currentDirectory, oldPath, FALSE);
     if (!oldNode || (!oldNode->func->exists(oldNode) && !isLink(oldNode))) {
         return -K_ENOENT;
     }
-    safe_strcpy(path, getNativeString(MMU_PARAM_THREAD newName), MAX_FILEPATH_LEN);
+    safe_strcpy(path, getNativeString(thread->process->memory, newName), MAX_FILEPATH_LEN);
     newNode = getNodeFromLocalPath(thread->process->currentDirectory, path, FALSE);
     if (newNode->func->exists(newNode)) {
         if (newNode->func->isDirectory(newNode)) {
@@ -494,7 +494,7 @@ S64 syscall_llseek(struct KThread* thread, FD fildes, S64 offset, U32 whence) {
     return fd->kobject->access->seek(fd->kobject, pos);
 }
 
-U32 writeRecord(MMU_ARG U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const char* name, U32 id, U32 type) {
+U32 writeRecord(struct Memory* memory, U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const char* name, U32 id, U32 type) {
     U32 recordLen;
 
     if (is64) {
@@ -505,11 +505,11 @@ U32 writeRecord(MMU_ARG U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const 
                 return -K_EINVAL;
             return 0;
         }
-        writeq(MMU_PARAM dirp, id);
-        writeq(MMU_PARAM dirp + 8, pos);
-        writew(MMU_PARAM dirp + 16, recordLen);
-        writeb(MMU_PARAM dirp + 18, type);
-        writeNativeString(MMU_PARAM dirp + 19, name);
+        writeq(memory, dirp, id);
+        writeq(memory, dirp + 8, pos);
+        writew(memory, dirp + 16, recordLen);
+        writeb(memory, dirp + 18, type);
+        writeNativeString(memory, dirp + 19, name);
     } else {
         recordLen = 12+(U32)strlen(name);
         recordLen=(recordLen+3) / 4 * 4;
@@ -518,11 +518,11 @@ U32 writeRecord(MMU_ARG U32 dirp, U32 len, U32 count, U32 pos, BOOL is64, const 
                 return -K_EINVAL;
             return 0;
         }
-        writed(MMU_PARAM dirp, id);
-        writed(MMU_PARAM dirp + 4, pos);
-        writew(MMU_PARAM dirp + 8, recordLen);
-        writeNativeString(MMU_PARAM dirp + 10, name);
-        writeb(MMU_PARAM dirp + recordLen - 1, type);
+        writed(memory, dirp, id);
+        writed(memory, dirp + 4, pos);
+        writew(memory, dirp + 8, recordLen);
+        writeNativeString(memory, dirp + 10, name);
+        writeb(memory, dirp + recordLen - 1, type);
     }
     return recordLen;
 }
@@ -547,7 +547,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
     entries = openNode->func->getDirectoryEntryCount(openNode);
 
     if ((U32)openNode->func->getFilePointer(openNode)==0 && entries) {
-        U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->func->getType(openNode->node, 1));
+        U32 recordLen = writeRecord(thread->process->memory, dirp, len, count, 0, is64, ".", openNode->node->id, openNode->node->func->getType(openNode->node, 1));
         struct FsNode* entry;
 
         dirp+=recordLen;
@@ -555,7 +555,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 
         entry = getParentNode(openNode->node);
         if (entry) {
-            recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, 1, is64, "..", entry->id, entry->func->getType(entry, 1));
+            recordLen = writeRecord(thread->process->memory, dirp, len, count, 1, is64, "..", entry->id, entry->func->getType(entry, 1));
             dirp+=recordLen;
             len+=recordLen;
             openNode->func->seek(openNode, 2);
@@ -565,7 +565,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
     }
     for (i=(U32)openNode->func->getFilePointer(openNode);i<entries;i++) {
         struct FsNode* entry = openNode->func->getDirectoryEntry(openNode, i);
-        U32 recordLen = writeRecord(MMU_PARAM_THREAD dirp, len, count, i + 2, is64, entry->name, entry->id, entry->func->getType(entry, 1));
+        U32 recordLen = writeRecord(thread->process->memory, dirp, len, count, i + 2, is64, entry->name, entry->id, entry->func->getType(entry, 1));
         if (recordLen>0) {
             dirp+=recordLen;
             len+=recordLen;
@@ -580,7 +580,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 }
 
 U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path, U32 buffer, U32 bufSize) {
-    const char* s = getNativeString(MMU_PARAM_THREAD path);
+    const char* s = getNativeString(thread->process->memory, path);
     struct FsNode* node;
     char tmpPath[MAX_FILEPATH_LEN];
 
@@ -589,7 +589,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
         U32 len = (U32)strlen(thread->process->exe);
         if (len>bufSize)
             len=bufSize;
-        memcopyFromNative(MMU_PARAM_THREAD buffer, thread->process->exe, len);
+        memcopyFromNative(thread->process->memory, buffer, thread->process->exe, len);
         return len;
     } else if (!strncmp("/proc/self/fd/", s, 14)) {
         int h = atoi(s+14);
@@ -606,7 +606,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
         len = (int)strlen(openNode->node->path);
         if (len>(int)bufSize)
             len=bufSize;
-        memcopyFromNative(MMU_PARAM_THREAD buffer, openNode->node->path, len);
+        memcopyFromNative(thread->process->memory, buffer, openNode->node->path, len);
         return len;        
     }
     safe_strcpy(tmpPath, s, MAX_FILEPATH_LEN);
@@ -618,7 +618,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
         U32 len = (U32)strlen(tmpPath);
         if (len>bufSize)
             len=bufSize;
-        memcopyFromNative(MMU_PARAM_THREAD buffer, tmpPath, len);
+        memcopyFromNative(thread->process->memory, buffer, tmpPath, len);
         return len; 
     }
     return -K_EINVAL;
@@ -626,7 +626,7 @@ U32 readlinkInDirectory(struct KThread* thread, const char* currentDirectory, U3
 
 U32 syscall_readlinkat(struct KThread* thread, FD dirfd, U32 pathname, U32 buf, U32 bufsiz) {
     const char* currentDirectory = 0;
-    const char* path = getNativeString(MMU_PARAM_THREAD pathname);
+    const char* path = getNativeString(thread->process->memory, pathname);
     U32 result = 0;
     
     if (path[0]!='/')
@@ -642,7 +642,7 @@ U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) 
 }
 
 U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
-    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), FALSE);
 
     if (!node) {
         kpanic("Oops, syscall_mkdir couldn't find node");
@@ -656,7 +656,7 @@ U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
 }
 
 U32 syscall_rmdir(struct KThread* thread, U32 path) {
-    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), TRUE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), TRUE);
 
     if (!node || !node->func->exists(node)) {
         return -K_ENOENT;
@@ -673,40 +673,40 @@ U32 syscall_rmdir(struct KThread* thread, U32 path) {
 #define FS_FREE_SIZE 96636764160l
 
 U32 syscall_statfs(struct KThread* thread, U32 path, U32 address) {
-    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), FALSE);
     if (!node) {
         return -K_ENOENT;
     }
-    writed(MMU_PARAM_THREAD address, 0xEF53); // f_type (EXT3)
-    writed(MMU_PARAM_THREAD address + 4, FS_BLOCK_SIZE); // f_bsize
-    writed(MMU_PARAM_THREAD address + 8, FS_SIZE / FS_BLOCK_SIZE); // f_blocks
-    writed(MMU_PARAM_THREAD address + 16, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bfree
-    writed(MMU_PARAM_THREAD address + 24, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bavail
-    writed(MMU_PARAM_THREAD address + 32, 1024 * 1024); // f_files
-    writed(MMU_PARAM_THREAD address + 40, 1024 * 1024); // f_ffree
-    writed(MMU_PARAM_THREAD address + 48, 1278601602); // f_fsid
-    writed(MMU_PARAM_THREAD address + 56, MAX_FILEPATH_LEN); // f_namelen
-    writed(MMU_PARAM_THREAD address + 60, FS_BLOCK_SIZE); // f_frsize
-    writed(MMU_PARAM_THREAD address + 64, 4096); // f_flags
+    writed(thread->process->memory, address, 0xEF53); // f_type (EXT3)
+    writed(thread->process->memory, address + 4, FS_BLOCK_SIZE); // f_bsize
+    writed(thread->process->memory, address + 8, FS_SIZE / FS_BLOCK_SIZE); // f_blocks
+    writed(thread->process->memory, address + 16, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bfree
+    writed(thread->process->memory, address + 24, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bavail
+    writed(thread->process->memory, address + 32, 1024 * 1024); // f_files
+    writed(thread->process->memory, address + 40, 1024 * 1024); // f_ffree
+    writed(thread->process->memory, address + 48, 1278601602); // f_fsid
+    writed(thread->process->memory, address + 56, MAX_FILEPATH_LEN); // f_namelen
+    writed(thread->process->memory, address + 60, FS_BLOCK_SIZE); // f_frsize
+    writed(thread->process->memory, address + 64, 4096); // f_flags
     return 0;
 }
 
 U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address) {
-    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(MMU_PARAM_THREAD path), FALSE);
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), FALSE);
     if (!node) {
         return -K_ENOENT;
     }
-    writed(MMU_PARAM_THREAD address, 0xEF53); // f_type (EXT3)
-    writed(MMU_PARAM_THREAD address + 4, FS_BLOCK_SIZE); // f_bsize
-    writeq(MMU_PARAM_THREAD address + 8, FS_SIZE / FS_BLOCK_SIZE); // f_blocks
-    writeq(MMU_PARAM_THREAD address + 16, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bfree
-    writeq(MMU_PARAM_THREAD address + 24, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bavail
-    writeq(MMU_PARAM_THREAD address + 32, 1024 * 1024); // f_files
-    writeq(MMU_PARAM_THREAD address + 40, 1024 * 1024); // f_ffree
-    writeq(MMU_PARAM_THREAD address + 48, 1278601602); // f_fsid
-    writed(MMU_PARAM_THREAD address + 56, MAX_FILEPATH_LEN); // f_namelen
-    writed(MMU_PARAM_THREAD address + 60, FS_BLOCK_SIZE); // f_frsize
-    writed(MMU_PARAM_THREAD address + 64, 4096); // f_flags
+    writed(thread->process->memory, address, 0xEF53); // f_type (EXT3)
+    writed(thread->process->memory, address + 4, FS_BLOCK_SIZE); // f_bsize
+    writeq(thread->process->memory, address + 8, FS_SIZE / FS_BLOCK_SIZE); // f_blocks
+    writeq(thread->process->memory, address + 16, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bfree
+    writeq(thread->process->memory, address + 24, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bavail
+    writeq(thread->process->memory, address + 32, 1024 * 1024); // f_files
+    writeq(thread->process->memory, address + 40, 1024 * 1024); // f_ffree
+    writeq(thread->process->memory, address + 48, 1278601602); // f_fsid
+    writed(thread->process->memory, address + 56, MAX_FILEPATH_LEN); // f_namelen
+    writed(thread->process->memory, address + 60, FS_BLOCK_SIZE); // f_frsize
+    writed(thread->process->memory, address + 64, 4096); // f_flags
     return 0;
 }
 
@@ -716,17 +716,17 @@ U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address) {
     if (!fd) {
         return -K_EBADF;
     }
-    writed(MMU_PARAM_THREAD address, 0xEF53); // f_type (EXT3)
-    writed(MMU_PARAM_THREAD address + 4, FS_BLOCK_SIZE); // f_bsize
-    writeq(MMU_PARAM_THREAD address + 8, FS_SIZE / FS_BLOCK_SIZE); // f_blocks
-    writeq(MMU_PARAM_THREAD address + 16, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bfree
-    writeq(MMU_PARAM_THREAD address + 24, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bavail
-    writeq(MMU_PARAM_THREAD address + 32, 1024 * 1024); // f_files
-    writeq(MMU_PARAM_THREAD address + 40, 1024 * 1024); // f_ffree
-    writeq(MMU_PARAM_THREAD address + 48, 12719298601114463092ull); // f_fsid
-    writed(MMU_PARAM_THREAD address + 56, MAX_FILEPATH_LEN); // f_namelen
-    writed(MMU_PARAM_THREAD address + 60, FS_BLOCK_SIZE); // f_frsize
-    writed(MMU_PARAM_THREAD address + 64, 4096); // f_flags
+    writed(thread->process->memory, address, 0xEF53); // f_type (EXT3)
+    writed(thread->process->memory, address + 4, FS_BLOCK_SIZE); // f_bsize
+    writeq(thread->process->memory, address + 8, FS_SIZE / FS_BLOCK_SIZE); // f_blocks
+    writeq(thread->process->memory, address + 16, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bfree
+    writeq(thread->process->memory, address + 24, FS_FREE_SIZE / FS_BLOCK_SIZE); // f_bavail
+    writeq(thread->process->memory, address + 32, 1024 * 1024); // f_files
+    writeq(thread->process->memory, address + 40, 1024 * 1024); // f_ffree
+    writeq(thread->process->memory, address + 48, 12719298601114463092ull); // f_fsid
+    writed(thread->process->memory, address + 56, MAX_FILEPATH_LEN); // f_namelen
+    writed(thread->process->memory, address + 60, FS_BLOCK_SIZE); // f_frsize
+    writed(thread->process->memory, address + 64, 4096); // f_flags
     return 0;
 }
 
@@ -744,7 +744,7 @@ U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64
         return -K_EISDIR;
     }
     pos = fd->kobject->access->seek(fd->kobject, offset);
-    result = fd->kobject->access->read(MMU_PARAM_THREAD thread, fd->kobject, address, len);
+    result = fd->kobject->access->read(thread->process->memory, thread, fd->kobject, address, len);
     fd->kobject->access->seek(fd->kobject, pos);
     return result;
 }
@@ -763,7 +763,7 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
         return -K_EISDIR;
     }
     pos = fd->kobject->access->seek(fd->kobject, offset);
-    result = fd->kobject->access->write(MMU_PARAM_THREAD thread, fd->kobject, address, len);
+    result = fd->kobject->access->write(thread->process->memory, thread, fd->kobject, address, len);
     fd->kobject->access->seek(fd->kobject, pos);
     return result;
 }
@@ -774,7 +774,7 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
 U32 syscall_utimesat(struct KThread* thread, FD dirfd, U32 address, U32 times, U32 flags) {
     const char* currentDirectory=0;
     struct FsNode* node;	
-    const char* path = getNativeString(MMU_PARAM_THREAD address);
+    const char* path = getNativeString(thread->process->memory, address);
     U32 result = 0;
     
     if (path[0]!='/')
@@ -790,10 +790,10 @@ U32 syscall_utimesat(struct KThread* thread, FD dirfd, U32 address, U32 times, U
         U32 lastModifiedTimeNano = 0;
 
         if (times) {
-            lastAccessTime = readd(MMU_PARAM_THREAD times);
-            lastAccessTimeNano = readd(MMU_PARAM_THREAD times+4);
-            lastModifiedTime = readd(MMU_PARAM_THREAD times+8);
-            lastModifiedTimeNano = readd(MMU_PARAM_THREAD times+12);
+            lastAccessTime = readd(thread->process->memory, times);
+            lastAccessTimeNano = readd(thread->process->memory, times+4);
+            lastModifiedTime = readd(thread->process->memory, times+8);
+            lastModifiedTimeNano = readd(thread->process->memory, times+12);
         }
         if (lastAccessTimeNano != K_UTIME_OMIT) {
             if (lastAccessTimeNano == K_UTIME_NOW) {
