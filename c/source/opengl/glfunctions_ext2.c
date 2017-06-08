@@ -1,3 +1,5 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
+
 #include GLH
 #include "glcommon.h"
 #include "glmarshal.h"
@@ -7216,3 +7218,4 @@ void glcommon_glSetFenceAPPLE(struct CPU* cpu) {
     GL_LOG ("glSetFenceAPPLE GLuint fence=%d",ARG1);
     }
 }
+#endif

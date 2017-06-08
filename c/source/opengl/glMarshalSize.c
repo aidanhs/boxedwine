@@ -1,3 +1,5 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
+
 #include "glMarshal.h"
 #include "glcommon.h"
 
@@ -891,4 +893,5 @@ GLsizei floatPerTransformList(GLenum transformType)
     }
 }
 
+#endif
 #endif

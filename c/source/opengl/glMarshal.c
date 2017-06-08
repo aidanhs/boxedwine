@@ -1,3 +1,4 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 #include "glMarshal.h"
 #include "kalloc.h"
 #include "memory.h"
@@ -719,3 +720,4 @@ GLboolean ELEMENT_ARRAY_BUFFER() {
 GLboolean PIXEL_UNPACK_BUFFER() {
     return marshalGet(GL_PIXEL_UNPACK_BUFFER_BINDING)!=0;
 }
+#endif

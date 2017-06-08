@@ -1,3 +1,5 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
+
 #include GLH
 #include "glcommon.h"
 #include "glmarshal.h"
@@ -6034,3 +6036,4 @@ void glcommon_glWriteMaskEXT(struct CPU* cpu) {
     GL_LOG ("glWriteMaskEXT GLuint res=%d, GLuint in=%d, GLenum outX=%d, GLenum outY=%d, GLenum outZ=%d, GLenum outW=%d",ARG1,ARG2,ARG3,ARG4,ARG5,ARG6);
     }
 }
+#endif

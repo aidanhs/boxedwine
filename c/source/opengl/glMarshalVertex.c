@@ -1,3 +1,5 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
+
 #include "glMarshal.h"
 #include "cpu.h"
 #include "kthread.h"
@@ -289,4 +291,5 @@ GLvoid* marshalEdgeFlagPointerEXT(struct CPU* cpu, GLsizei stride, GLsizei count
     }
 }
 
+#endif
 #endif

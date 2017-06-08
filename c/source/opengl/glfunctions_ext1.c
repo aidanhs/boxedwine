@@ -1,3 +1,4 @@
+#if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 #include GLH
 #include "glcommon.h"
 #include "glmarshal.h"
@@ -7318,3 +7319,4 @@ void glcommon_glGetUniformdv(struct CPU* cpu) {
     GL_LOG ("glGetUniformdv GLuint program=%d, GLint location=%d, GLdouble* params=%.08x",ARG1,ARG2,ARG3);
     }
 }
+#endif
