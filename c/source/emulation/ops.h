@@ -3277,6 +3277,24 @@ void OPCALL lare16r16_32(struct CPU* cpu, struct Op* op) {
     NEXT();
 }
 
+void OPCALL lslr16r16(struct CPU* cpu, struct Op* op) {
+    cpu->reg[op->r1].u16 = cpu_lsl(cpu, cpu->reg[op->r2].u16, cpu->reg[op->r1].u16);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL lsle16r16_16(struct CPU* cpu, struct Op* op) {
+    cpu->reg[op->r1].u16 = cpu_lsl(cpu, readw(cpu->memory, eaa16(cpu, op)), cpu->reg[op->r1].u16);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL lsle16r16_32(struct CPU* cpu, struct Op* op) {
+    cpu->reg[op->r1].u16 = cpu_lsl(cpu, readw(cpu->memory, eaa32(cpu, op)), cpu->reg[op->r1].u16);
+    CYCLES(8);
+    NEXT();
+}
+
 void OPCALL jmpEp16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     U16 newip = readw(cpu->memory, eaa);

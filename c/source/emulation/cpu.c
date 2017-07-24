@@ -110,6 +110,23 @@ U32 cpu_lar(struct CPU* cpu, U32 selector, U32 ar) {
     return ar;
 }
 
+U32 cpu_lsl(struct CPU* cpu, U32 selector, U32 limit) {
+    struct user_desc* ldt;
+
+    fillFlags(cpu);
+    if (selector == 0 || selector>=LDT_ENTRIES) {
+        cpu->flags &=~ZF;
+        return limit;
+    }    
+    ldt = getLDT(cpu->thread, selector >> 3);
+    if (!ldt) {
+        cpu->flags &=~ZF;
+        return limit;
+    }
+    cpu->flags |= ZF;
+    return ldt->limit;
+}
+
 void cpu_ret(struct CPU* cpu, U32 big, U32 bytes, U32 eip) {
     if (cpu->flags & VM) {
         U32 new_ip;
