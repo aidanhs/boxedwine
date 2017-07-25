@@ -26,12 +26,17 @@
 #define marshal2d(cpu, address, count) (GLdouble*)getPhysicalAddress(cpu->memory, address)
 #define marshal2f(cpu, address, count) (GLfloat*)getPhysicalAddress(cpu->memory, address)
 #define marshal2i(cpu, address, count) (GLint*)getPhysicalAddress(cpu->memory, address)
+#define marshal3i(cpu, address, count) (GLint*)getPhysicalAddress(cpu->memory, address)
+#define marshal4i(cpu, address, count) (GLint*)getPhysicalAddress(cpu->memory, address)
+#define marshal5i(cpu, address, count) (GLint*)getPhysicalAddress(cpu->memory, address)
 #define marshal3f(cpu, address, count) (GLfloat*)getPhysicalAddress(cpu->memory, address)
 #define marshal3ui(cpu, address, count) (GLuint*)getPhysicalAddress(cpu->memory, address)
 #define marshali64(cpu, address, count) (GLint64*)getPhysicalAddress(cpu->memory, address)
 #define marshalui64(cpu, address, count) (GLuint64*)getPhysicalAddress(cpu->memory, address)
 
 #define marshal2ui(cpu, address, count) (GLuint*)getPhysicalAddress(cpu->memory, address)
+#define marshal3ui(cpu, address, count) (GLuint*)getPhysicalAddress(cpu->memory, address)
+#define marshal4ui(cpu, address, count) (GLuint*)getPhysicalAddress(cpu->memory, address)
 #define marshal2s(cpu, address, count) (GLshort*)getPhysicalAddress(cpu->memory, address)
 #define marshal2us(cpu, address, count) (GLushort*)getPhysicalAddress(cpu->memory, address)
 #define marshal2b(cpu, address, count) (GLbyte*)getPhysicalAddress(cpu->memory, address)
@@ -83,6 +88,7 @@ GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, 
 #define marshalGetCompressedTextureSizeEXT(texture, target, lod) 0
 #define marshalGetConvolutionWidth(target) 0
 #define marshalGetConvolutionHeight(target) 0
+#define marshalHistogramWidth(target)  0
 #else
 GLboolean* marshalbool(struct CPU* cpu, U32 address, U32 count);
 GLboolean* marshal2bool(struct CPU* cpu, U32 address, U32 count);
@@ -179,6 +185,7 @@ U32 marshalGetCompressedTextureSizeEXT(GLuint texture, GLenum target, GLint lod)
 U32 marshalGetConvolutionWidth(U32 target);
 U32 marshalGetConvolutionHeight(U32 target);
 GLint components_in_format(GLenum format );
+GLsizei marshalHistogramWidth(GLenum target);
 #endif
 
 GLintptr* marshalip(struct CPU* cpu, U32 address, U32 count);

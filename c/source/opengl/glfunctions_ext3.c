@@ -1,5 +1,4 @@
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
-
 #include GLH
 #include "glcommon.h"
 #include "glmarshal.h"

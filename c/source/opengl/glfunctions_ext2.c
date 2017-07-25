@@ -1,5 +1,4 @@
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
-
 #include GLH
 #include "glcommon.h"
 #include "glmarshal.h"
@@ -4566,7 +4565,7 @@ void glcommon_glPointParameterfv(struct CPU* cpu) {
     if (!ext_glPointParameterfv)
         kpanic("ext_glPointParameterfv is NULL");
     {
-    GL_FUNC(ext_glPointParameterfv)(ARG1, (GLfloat*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glPointParameterfv)(ARG1, marshalf(cpu, ARG2, ARG1==GL_POINT_DISTANCE_ATTENUATION?3:1));
     GL_LOG ("glPointParameterfv GLenum pname=%d, const GLfloat* params=%.08x",ARG1,ARG2);
     }
 }
@@ -4574,7 +4573,7 @@ void glcommon_glPointParameterfvARB(struct CPU* cpu) {
     if (!ext_glPointParameterfvARB)
         kpanic("ext_glPointParameterfvARB is NULL");
     {
-    GL_FUNC(ext_glPointParameterfvARB)(ARG1, (GLfloat*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glPointParameterfvARB)(ARG1, marshalf(cpu, ARG2, ARG1==GL_POINT_DISTANCE_ATTENUATION?3:1));
     GL_LOG ("glPointParameterfvARB GLenum pname=%d, const GLfloat* params=%.08x",ARG1,ARG2);
     }
 }
@@ -4582,7 +4581,7 @@ void glcommon_glPointParameterfvEXT(struct CPU* cpu) {
     if (!ext_glPointParameterfvEXT)
         kpanic("ext_glPointParameterfvEXT is NULL");
     {
-    GL_FUNC(ext_glPointParameterfvEXT)(ARG1, (GLfloat*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glPointParameterfvEXT)(ARG1, marshalf(cpu, ARG2, ARG1==GL_POINT_DISTANCE_ATTENUATION?3:1));
     GL_LOG ("glPointParameterfvEXT GLenum pname=%d, const GLfloat* params=%.08x",ARG1,ARG2);
     }
 }
@@ -4590,7 +4589,7 @@ void glcommon_glPointParameterfvSGIS(struct CPU* cpu) {
     if (!ext_glPointParameterfvSGIS)
         kpanic("ext_glPointParameterfvSGIS is NULL");
     {
-    GL_FUNC(ext_glPointParameterfvSGIS)(ARG1, (GLfloat*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glPointParameterfvSGIS)(ARG1, marshalf(cpu, ARG2, ARG1==GL_POINT_DISTANCE_ATTENUATION?3:1));
     GL_LOG ("glPointParameterfvSGIS GLenum pname=%d, const GLfloat* params=%.08x",ARG1,ARG2);
     }
 }
@@ -4614,7 +4613,7 @@ void glcommon_glPointParameteriv(struct CPU* cpu) {
     if (!ext_glPointParameteriv)
         kpanic("ext_glPointParameteriv is NULL");
     {
-    GL_FUNC(ext_glPointParameteriv)(ARG1, (GLint*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glPointParameteriv)(ARG1, marshali(cpu, ARG2, ARG1==GL_POINT_DISTANCE_ATTENUATION?3:1));
     GL_LOG ("glPointParameteriv GLenum pname=%d, const GLint* params=%.08x",ARG1,ARG2);
     }
 }
@@ -4622,7 +4621,7 @@ void glcommon_glPointParameterivNV(struct CPU* cpu) {
     if (!ext_glPointParameterivNV)
         kpanic("ext_glPointParameterivNV is NULL");
     {
-    GL_FUNC(ext_glPointParameterivNV)(ARG1, (GLint*)marshalp(cpu, 0, ARG2, 0));
+    GL_FUNC(ext_glPointParameterivNV)(ARG1, marshali(cpu, ARG2, ARG1==GL_POINT_DISTANCE_ATTENUATION?3:1));
     GL_LOG ("glPointParameterivNV GLenum pname=%d, const GLint* params=%.08x",ARG1,ARG2);
     }
 }

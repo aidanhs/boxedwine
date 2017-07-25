@@ -111,7 +111,7 @@ void glcommon_glGetString(struct CPU* cpu) {
     } else if (name == GL_EXTENSIONS) {
         index = STRING_GL_EXTENSIONS;
 #ifndef HAS_64BIT_MMU
-        //result = "GL_EXT_texture3D GL_VERSION_1_2 GL_VERSION_1_3";
+        result = "GL_EXT_texture3D GL_VERSION_1_2 GL_VERSION_1_3";
 #endif
         GL_LOG("glGetString GLenum name=GL_EXTENSIONS");
     }

@@ -893,5 +893,13 @@ GLsizei floatPerTransformList(GLenum transformType)
     }
 }
 
+GLsizei marshalHistogramWidth(GLenum target) {
+    GLint result = 0;
+    if (ext_glGetHistogramParameteriv) {
+        ext_glGetHistogramParameteriv(target, GL_HISTOGRAM_WIDTH, &result);
+    }
+    return result;
+}
+
 #endif
 #endif
