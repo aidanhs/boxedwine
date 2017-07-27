@@ -1547,6 +1547,10 @@ GLAPI void APIENTRY glSamplePass( GLenum pass ) {
 	CALL_1(SamplePass, pass);
 }
 
+GLAPI const GLubyte * APIENTRY glGetStringi(GLenum name, GLuint index) {
+    CALL_2_R(GetStringi, name, index);
+}
+
 #include "glfunctions.h"
 
 #ifdef USE_GLX

@@ -6948,7 +6948,8 @@ void glcommon_glGetShaderiv(struct CPU* cpu) {
     if (!ext_glGetShaderiv)
         kpanic("ext_glGetShaderiv is NULL");
     {
-    GL_FUNC(ext_glGetShaderiv)(ARG1, ARG2, (GLint*)marshalp(cpu, 0, ARG3, 0));
+    GLint* p1=marshali(cpu, ARG3, 1);GL_FUNC(ext_glGetShaderiv)(ARG1, ARG2, p1);
+    marshalBacki(cpu, ARG3, p1, 1);
     GL_LOG ("glGetShaderiv GLuint shader=%d, GLenum pname=%d, GLint* params=%.08x",ARG1,ARG2,ARG3);
     }
 }

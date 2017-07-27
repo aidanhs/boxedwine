@@ -87,6 +87,25 @@ GLintptr* marshal2ip(struct CPU* cpu, U32 address, U32 count) {
     return buffer2ip;
 }
 
+static char* extentions[] = {
+#include "glfunctions_ext_def.h"
+};
+
+// const GLubyte *glGetStringi(GLenum name, GLuint index);
+void glcommon_glGetStringi(struct CPU* cpu) { 
+    if (!ext_glGetStringi)
+        kpanic("ext_glGetStringi is NULL");
+    {
+    const GLubyte* result = GL_FUNC(ext_glGetStringi)(ARG1, ARG2);
+    if (result) {
+        EAX = mapNativeMemory(cpu->memory, (void*)result, (U32)strlen(result)+1);
+    } else {
+        EAX = 0;
+    }
+    GL_LOG ("glGetStringi GLenum name=%d GLuint index=%d", ARG1,ARG2);
+    }
+}
+
 // GLAPI const GLubyte* APIENTRY glGetString( GLenum name ) {
 void glcommon_glGetString(struct CPU* cpu) {
     U32 name = ARG1;
@@ -101,23 +120,31 @@ void glcommon_glGetString(struct CPU* cpu) {
         GL_LOG("glGetString GLenum name=GL_RENDERER ret=%s", result);
     } else if (name == GL_VERSION) {
         index = STRING_GL_VERSION;
-#ifndef HAS_64BIT_MMU
         result = "1.2 BoxedWine";
-#endif
         GL_LOG("glGetString GLenum name=STRING_GL_VERSION ret=%s", result);
     } else if (name == GL_SHADING_LANGUAGE_VERSION) {
         index = STRING_GL_SHADING_LANGUAGE_VERSION;
         GL_LOG("glGetString GLenum name=GL_SHADING_LANGUAGE_VERSION ret=%s", result);
     } else if (name == GL_EXTENSIONS) {
+        static char ext[8192]={0};
         index = STRING_GL_EXTENSIONS;
-#ifndef HAS_64BIT_MMU
-        result = "GL_EXT_texture3D GL_VERSION_1_2 GL_VERSION_1_3";
-#endif
-        GL_LOG("glGetString GLenum name=GL_EXTENSIONS");
+        if (ext[0]==0) {
+            int i;
+
+            for (i=0;i<sizeof(extentions)/sizeof(char*);i++) {
+                if (strstr(result, extentions[i])) {
+                    if (ext[0]!=0)
+                        strcat(ext, " ");
+                    strcat(ext, extentions[i]);
+                }
+            }
+        }
+        result = "GL_EXT_texture3D";
+        GL_LOG("glGetString GLenum name=GL_EXTENSIONS ret=%s", result);
     }
     if (!cpu->thread->process->strings[index])
         addString(cpu->thread->process, index, result);
-    EAX =  cpu->thread->process->strings[index];
+    EAX = cpu->thread->process->strings[index];
 }
 
 // GLAPI void APIENTRY glGetTexImage( GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels ) {

@@ -337,5 +337,6 @@ GL_FUNCTION(GetPixelMapuiv, void, (GLenum map, GLuint *values), (ARG1, buffer), 
 GL_FUNCTION(GetPixelMapusv, void, (GLenum map, GLushort *values), (ARG1, buffer), GLushort* buffer; GLboolean b = PIXEL_PACK_BUFFER(); if (b) buffer=(GLushort*)ARG2; else buffer = marshalus(cpu, ARG2, glcommon_glGetPixelMap_size(ARG1));, if (!b) marshalBackus(cpu, ARG2, buffer, glcommon_glGetPixelMap_size(ARG1));,("glGetPixelMapusv"))
 
 GL_EXT_FUNCTION(SamplePass, void, (GLenum pass))
+GL_EXT_FUNCTION(GetStringi, const GLubyte*, (GLenum name, GLuint index))
 
 #include "glfunctions_ext.h"

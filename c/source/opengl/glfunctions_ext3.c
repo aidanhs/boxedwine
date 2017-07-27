@@ -4871,7 +4871,7 @@ void glcommon_glVertexAttribPointer(struct CPU* cpu) {
     if (!ext_glVertexAttribPointer)
         kpanic("ext_glVertexAttribPointer is NULL");
     {
-    GL_FUNC(ext_glVertexAttribPointer)(ARG1, ARG2, ARG3, bARG4, ARG5, (void*)marshalp(cpu, 0, ARG6, 0));
+    GL_FUNC(ext_glVertexAttribPointer)(ARG1, ARG2, ARG3, bARG4, ARG5, (ARRAY_BUFFER()?(void*)ARG6:(void*)marshalp(cpu, 0, ARG6, 0)));
     GL_LOG ("glVertexAttribPointer GLuint index=%d, GLint size=%d, GLenum type=%d, GLboolean normalized=%d, GLsizei stride=%d, const void* pointer=%.08x",ARG1,ARG2,ARG3,bARG4,ARG5,ARG6);
     }
 }

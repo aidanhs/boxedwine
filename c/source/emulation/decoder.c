@@ -2575,7 +2575,7 @@ void OPCALL firstOp(struct CPU* cpu, struct Op* op) {
     // :TODO: should experiment more with different values here
     // Keeping code that isn't used much from being cached reduces memory, it also improves the start time since
     // malloc won't have to be called as much
-    if (block->count<20) {
+    if (block->count<20 && block->ops) {
         freeOp(block->ops->next);
         block->ops->func = restoreOps;
         block->ops->next = 0;
