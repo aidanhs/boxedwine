@@ -1,7 +1,6 @@
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
 
 #include "glMarshal.h"
-#include "cpu.h"
 #include "kthread.h"
 #include "glcommon.h"
 #include "../emulation/softmmu/soft_memory.h"

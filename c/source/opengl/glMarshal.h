@@ -3,6 +3,7 @@
 
 #include GLH
 #include "platform.h"
+#include "cpu.h"
 
 // The reason for multiple copies of the same marshal function, like marshalf, marshal2f, marshal3f, etc is
 // that each one will use a different temp buffer.  For a single OpenGL function, each marshalled pointer
