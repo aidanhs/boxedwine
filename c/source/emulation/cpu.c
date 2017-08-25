@@ -1080,13 +1080,13 @@ void OPCALL emptyInstruction(struct CPU* cpu, struct Op* op) {
 }
 
 void runCPU(struct CPU* cpu) {	
-    runBlock(cpu, getBlock(cpu));
+    runBlock(cpu, getBlock(cpu, cpu->eip.u32));
 }
 
 #ifndef __TEST
 struct Block* getBlock1(struct CPU* cpu) {
     if (!cpu->currentBlock->block1) {
-        cpu->currentBlock->block1 = getBlock(cpu);
+        cpu->currentBlock->block1 = getBlock(cpu, cpu->eip.u32);
         addBlockNode(&cpu->currentBlock->block1->referencedFrom, cpu->currentBlock);
     }
     return cpu->currentBlock->block1; 
@@ -1094,7 +1094,7 @@ struct Block* getBlock1(struct CPU* cpu) {
 
 struct Block* getBlock2(struct CPU* cpu) {
     if (!cpu->currentBlock->block2) {
-        cpu->currentBlock->block2 = getBlock(cpu);
+        cpu->currentBlock->block2 = getBlock(cpu, cpu->eip.u32);
         addBlockNode(&cpu->currentBlock->block2->referencedFrom, cpu->currentBlock);
     }
     return cpu->currentBlock->block2;

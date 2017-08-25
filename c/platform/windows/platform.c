@@ -270,13 +270,20 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
 
 static U64 nextMemoryId = 1;
 
-void reserveNativeMemory(struct Memory* memory) {    
+void* reserveNext4GBMemory() {
+    void* p;
+
     nextMemoryId++;
-    memory->id = nextMemoryId << 32;
-    while (VirtualAlloc((void*)memory->id, 0x100000000l, MEM_RESERVE, PAGE_READWRITE)==0) {
+    p = (void*)(nextMemoryId << 32);
+    while (VirtualAlloc(p, 0x100000000l, MEM_RESERVE, PAGE_READWRITE)==0) {
         nextMemoryId++;
-        memory->id = nextMemoryId << 32;
-    }    
+        p = (void*)(nextMemoryId << 32);
+    } 
+    return p;
+}
+
+void reserveNativeMemory(struct Memory* memory) {    
+    memory->id = (U64)reserveNext4GBMemory();    
 }
 
 void releaseNativeMemory(struct Memory* memory) {
@@ -331,12 +338,112 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
             seg_mapper(currentThread->process->memory, address);
+            // :TODO: for BOXEDWINE_VM
             return EXCEPTION_EXECUTE_HANDLER;
         }
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
+#ifdef BOXEDWINE_VM
+#include "x64dynamic.h"
+
+void getRegs(U64* regs) {
+    CONTEXT context;
+    
+    RtlCaptureContext(&context);
+    regs[0] = context.Rax;
+    regs[1] = context.Rcx;
+    regs[2] = context.Rdx;
+    regs[3] = context.Rbx;
+    regs[4] = context.Rsp;
+    regs[5] = context.Rbp;
+    regs[6] = context.Rsi;
+    regs[7] = context.Rdi;
+    regs[8] = context.R8;
+    regs[9] = context.R9;
+    regs[10] = context.R10;
+    regs[11] = context.R11;
+    regs[12] = context.R12;
+    regs[13] = context.R13;
+    regs[14] = context.R14;
+    regs[15] = context.R15;
+}
+
+void setRegs(U64* regs) {
+}
+
+void cmdEntry();
+DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
+    struct KThread* thread = (struct KThread*)lpParameter;
+    struct CPU* cpu = &thread->cpu;
+    CONTEXT context;
+    DWORD oldProtect;
+    
+    RtlCaptureContext(&context);
+    context.Rax = EAX;
+    context.Rcx = ECX;
+    context.Rdx = EDX;
+    context.Rbx = EBX;
+    //context.Rsp = ESP;
+    context.Rbp = EBP;
+    context.Rsi = ESI;
+    context.Rdi = EDI;
+    context.Rip = translateEip(cpu);
+    context.R9 = (U64)cpu;
+    context.R11 = ESP;
+
+    cpu->enterHost = cmdEntry;
+    cpu->hostSegAddress[0] = cpu->memory->id + cpu->segAddress[0];
+    cpu->hostSegAddress[1] = cpu->memory->id + cpu->segAddress[1];
+    cpu->hostSegAddress[2] = cpu->memory->id + cpu->segAddress[2];
+    cpu->hostSegAddress[3] = cpu->memory->id + cpu->segAddress[3];
+    cpu->hostSegAddress[4] = cpu->memory->id + cpu->segAddress[4];
+    cpu->hostSegAddress[5] = cpu->memory->id + cpu->segAddress[5];
+
+    context.R10 = cpu->hostSegAddress[GS];
+    context.R12 = cpu->hostSegAddress[FS];
+    context.R14 = cpu->hostSegAddress[SS];
+    context.R15 = cpu->hostSegAddress[DS];
+
+    __try {
+        RtlRestoreContext(&context, NULL);
+    } __except(seh_filter(GetExceptionCode(), GetExceptionInformation())) {
+        thread->cpu.nextBlock = 0;
+        thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
+    }
+    return 0;
+}
+
+void platformStartThread(struct KThread* thread) {
+    thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);
+}
+
+static U8* executableMemory;
+static U8 executablePages[0x10000];
+
+void* allocExecutable64kBlock() {
+    U32 i;
+
+    if (!executableMemory) {
+        executableMemory = reserveNext4GBMemory();
+    }
+    for (i=0;i<0x10000;i++) {
+        if (!executablePages[i]) {
+            executablePages[i]=1;
+            return VirtualAlloc(executableMemory+i*64*1024, 64*1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        }
+    }
+    kpanic("Ran out of code pages in x64dynamic");
+    return 0;
+}
+
+void freeExecutable64kBlock(U8* p) {
+    executablePages[(p-executableMemory)>>16]=0;
+    VirtualFree(p, 64*1024, MEM_DECOMMIT);
+}
+
+#endif
 void platformRunThreadSlice(struct KThread* thread) {
     __try {
         runThreadSlice(thread);
@@ -345,4 +452,5 @@ void platformRunThreadSlice(struct KThread* thread) {
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
     }
 }
+
 #endif

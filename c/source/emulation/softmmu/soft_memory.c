@@ -26,7 +26,7 @@
 #include "ksignal.h"
 #include "ksystem.h"
 #include "soft_memory.h"
-#include "../decodedata.h"
+#include "../cpu/decodedata.h"
 #include "decoder.h"
 #include "kobject.h"
 #include "kobjectaccess.h"
@@ -795,25 +795,25 @@ void initCallbacks() {
 void initBlockCache() {
 }
 
-struct Block* getBlock(struct CPU* cpu) {
+struct Block* getBlock(struct CPU* cpu, U32 eip) {
     struct Block* block;	
     U32 ip;
 
     if (cpu->big)
-        ip = cpu->segAddress[CS] + cpu->eip.u32;
+        ip = cpu->segAddress[CS] + eip;
     else
-        ip = cpu->segAddress[CS] + cpu->eip.u16;
+        ip = cpu->segAddress[CS] + (eip & 0xFFFF);
 
     U32 page = ip >> PAGE_SHIFT;
     U32 flags = cpu->memory->flags[page];
     if (IS_PAGE_IN_RAM(flags)) {
         block = getCode(cpu->memory->ramPage[page], ip & 0xFFF);
         if (!block) {
-            block = decodeBlock(cpu, cpu->eip.u32);
+            block = decodeBlock(cpu, eip);
             addCode(block, cpu, ip, block->eipCount);
         }
     } else {		
-        block = decodeBlock(cpu, cpu->eip.u32);
+        block = decodeBlock(cpu, eip);
         addCode(block, cpu, ip, block->eipCount);
     }
     cpu->memory->write[page]=0;

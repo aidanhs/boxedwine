@@ -518,7 +518,7 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
         cpu->thread->waitingForSignalToEndMaskToRestore = SIGSUSPEND_RETURN;
     }
 
-    cpu->nextBlock = getBlock(cpu);
+    cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     /*
     if (action->flags & K_SA_RESTORER) {
         push32(&thread->cpu, thread->cpu.eip.u32);

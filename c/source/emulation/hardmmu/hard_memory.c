@@ -24,7 +24,7 @@
 #include "ksignal.h"
 #include "ksystem.h"
 #include "hard_memory.h"
-#include "../decodedata.h"
+#include "../cpu/decodedata.h"
 #include "decoder.h"
 
 #include <string.h>
@@ -527,16 +527,16 @@ void clearPageFromBlockCache(struct Memory* memory, U32 page) {
     }    
 }
 
-struct Block* getBlock(struct CPU* cpu) {
+struct Block* getBlock(struct CPU* cpu, U32 eip) {
     U32 ip;
     struct Block* block;
     if (cpu->big)
-        ip = cpu->segAddress[CS] + cpu->eip.u32;
+        ip = cpu->segAddress[CS] + eip;
     else
-        ip = cpu->segAddress[CS] + cpu->eip.u16;
+        ip = cpu->segAddress[CS] + (eip & 0xFFFF);
     block = getBlockFromCache(cpu->memory, ip);
     if (!block) {
-        block = decodeBlock(cpu, cpu->eip.u32);
+        block = decodeBlock(cpu, eip);
         block->ip = ip;
         block->page[0] = (ip >> PAGE_SHIFT);
         addBlockToCache(cpu->memory, block, ip);
@@ -545,9 +545,9 @@ struct Block* getBlock(struct CPU* cpu) {
             U32 finished = PAGE_SIZE-(ip & PAGE_MASK);
                 
             if (cpu->big)
-                ip = cpu->segAddress[CS] + cpu->eip.u32 + finished;
+                ip = cpu->segAddress[CS] + eip + finished;
             else
-                ip = cpu->segAddress[CS] + ((cpu->eip.u16 + finished) & 0xFFFF);
+                ip = cpu->segAddress[CS] + (((eip & 0xFFFF) + finished) & 0xFFFF);
             makeCodePageReadOnly(cpu->memory, ip >> PAGE_SHIFT);
 
             // this page will never return this block because block->ip doesn't exist in the page, but we add it to the page 

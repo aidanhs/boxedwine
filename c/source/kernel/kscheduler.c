@@ -175,7 +175,7 @@ void runThreadSlice(struct KThread* thread) {
     cpu->blockInstructionCount = 0;
 
     if (!cpu->nextBlock || cpu->nextBlock == &emptyBlock) {
-        cpu->nextBlock = getBlock(cpu);
+        cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     }
 #ifdef SUPPORTS_SETJMP
     if (setjmp(runBlockJump)==0) {

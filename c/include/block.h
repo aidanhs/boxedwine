@@ -35,6 +35,10 @@ struct Block{
     U32 ip;
     U32 page[2];
 #endif
+#ifdef BOXEDWINE_VM
+    void* dynamicCode;
+    U32 dynamicCodeLen;
+#endif
     U32 jit;
     struct BlockNode* referencedFrom;
 };

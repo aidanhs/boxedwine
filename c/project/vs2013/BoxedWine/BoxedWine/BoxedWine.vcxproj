@@ -111,7 +111,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>HAS_64BIT_MMU;BOXEDWINE64;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LOG_OPS;HAS_64BIT_MMU;BOXEDWINE64;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;USE_MMU;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -241,32 +241,36 @@
     <ClInclude Include="..\..\..\..\include\reg.h" />
     <ClInclude Include="..\..\..\..\include\ringbuf.h" />
     <ClInclude Include="..\..\..\..\include\virtualfile.h" />
+    <ClInclude Include="..\..\..\..\include\x64dynamic.h" />
     <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\crypt.h" />
     <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\ioapi.h" />
     <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\mztools.h" />
     <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\unzip.h" />
     <ClInclude Include="..\..\..\..\lib\zlib\contrib\minizip\zip.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\arith.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\conditions.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\decode.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\decodedata.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\fpu.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\arith.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\conditions.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\decode.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\decodedata.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\decode_noflags.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\fpu.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\gensrc.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\incdec.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\instructions.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\mmx.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\ops.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\pushpop.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\setcc.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\shift.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\shift_op.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\strings.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\emulation\hardmmu\hard_memory.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\incdec.h" />
     <ClInclude Include="..\..\..\..\source\emulation\instructions.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\mmx.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\ops.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\pushpop.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\setcc.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\shift.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\shift_op.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_file_map.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_memory.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_native_page.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_page.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_ram.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\strings.h" />
-    <ClInclude Include="..\..\..\..\source\emulation\strings_op.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\kelf.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glfunctions.h" />
@@ -296,17 +300,18 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|x64'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\emulation\cpu.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\decoder.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\decoder.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\instructions.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\jit.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\shift.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\srcgen.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\strings.c" />
     <ClCompile Include="..\..\..\..\source\emulation\hardmmu\hard_memory.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\instructions.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\jit.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\shift.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_file_map.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_native_page.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_ram.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\srcgen.c" />
-    <ClCompile Include="..\..\..\..\source\emulation\strings.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64dynamic.c" />
     <ClCompile Include="..\..\..\..\source\io\fsapi.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />

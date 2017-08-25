@@ -507,10 +507,16 @@ int main(int argc, char **argv) {
 #else
         while (getProcessCount()>0) {
             SDL_Event e;
+#ifndef BOXEDWINE_VM
             BOOL ran = runSlice();
+#endif
             U32 t;
 
+#ifdef BOXEDWINE_VM
+            while (SDL_WaitEvent(&e)) {
+#else
             while (SDL_PollEvent(&e)) {
+#endif
                 if (e.type == SDL_QUIT) {
 #ifdef GENERATE_SOURCE
                     if (gensrc)
@@ -569,6 +575,7 @@ int main(int argc, char **argv) {
                 }
 #endif
             };
+#ifndef BOXEDWINE_VM
             t = getMilliesSinceStart();
             if (lastTitleUpdate+5000 < t) {
                 char tmp[256];
@@ -593,6 +600,7 @@ int main(int argc, char **argv) {
                 if (!checkWaitingNativeSockets(20))
                     SDL_Delay(20);
             }
+#endif
         }
 #endif
     }

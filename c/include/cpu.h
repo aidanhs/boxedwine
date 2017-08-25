@@ -83,6 +83,10 @@ struct CPU {
     U32 stackMask;
     U32 stackNotMask;
     U32 cr0;
+#ifdef BOXEDWINE_VM
+    U64 hostSegAddress[6];
+    void* enterHost;
+#endif
 };
 
 void threadDone(struct CPU* cpu);
@@ -216,7 +220,7 @@ INLINE void runBlock(struct CPU* cpu, struct Block* block) {
 	cpu->blockInstructionCount += block->instructionCount;
     block->ops->func(cpu, block->ops);	
 }
-struct Block* getBlock(struct CPU* cpu);
+struct Block* getBlock(struct CPU* cpu, U32 eip);
 #ifdef __TEST
 #define getBlock1(cpu) 0
 #define getBlock2(cpu) 0

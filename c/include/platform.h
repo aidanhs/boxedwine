@@ -30,7 +30,14 @@
 #define TRUE 1
 #define FALSE 0
 
-#ifdef HAS_64BIT_MMU
+#ifdef BOXEDWINE_VM
+void platformStartThread(struct KThread* thread);
+void* allocExecutable64kBlock();
+void freeExecutable64kBlock(void* p);
+void getRegs(U64* regs);
+#endif
+
+#if defined HAS_64BIT_MMU && !defined BOXEDWINE_VM
 void platformRunThreadSlice(struct KThread* thread);
 #endif
 

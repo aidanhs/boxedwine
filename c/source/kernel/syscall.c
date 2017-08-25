@@ -850,7 +850,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
 #endif
     if (result==-K_CONTINUE) {
         if (cpu->nextBlock!=&emptyBlock)
-            cpu->nextBlock = getBlock(cpu);
+            cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     } else if (result==-K_WAIT) {
         thread->waitSyscall = EAX;		
         waitThread(thread);		
@@ -862,7 +862,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
             runSignals(thread);
         }
         if (cpu->nextBlock!=&emptyBlock)
-            cpu->nextBlock = getBlock(cpu);
+            cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     }	
     thread->inSysCall = 0;
     sysCallTime+=(getMicroCounter()-startTime);        

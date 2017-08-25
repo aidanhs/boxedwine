@@ -485,11 +485,20 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
 
         safe_strcpy(process->currentDirectory, currentDirectory, MAX_FILEPATH_LEN);
 
+        if (openNode) {
+            openNode->func->close(openNode);
+        }
+#ifdef BOXEDWINE_VM
+        platformStartThread(thread);
+#else
         scheduleThread(thread);
+#endif
+    } else {
+        if (openNode) {
+            openNode->func->close(openNode);
+        }
     }
-    if (openNode) {
-        openNode->func->close(openNode);
-    }
+    
     return thread;
 }
 

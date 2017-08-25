@@ -2465,7 +2465,7 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         if (!block->block1) {
             U32 oldEIP = cpu->eip.u32;
             cpu->eip.u32 = blockEIP + blockCount;
-            block->block1 = getBlock(cpu);
+            block->block1 = getBlock(cpu, cpu->eip.u32);
             cpu->eip.u32 = oldEIP;
         }   
         if (block->block1->ops->func == restoreOps) {
@@ -2475,7 +2475,7 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         if (!block->block2) {
             U32 oldEIP = cpu->eip.u32;
             cpu->eip.u32 = blockEIP + blockCount + op->data1;
-            block->block2 = getBlock(cpu);
+            block->block2 = getBlock(cpu, cpu->eip.u32);
             cpu->eip.u32 = oldEIP;
         }
         if (block->block2->ops->func == restoreOps) {
@@ -2492,7 +2492,7 @@ U32 needsToSetFlag_r(struct CPU* cpu, struct Block* block, U32 blockEIP, struct 
         if (!block->block1) {
             U32 oldEIP = cpu->eip.u32;
             cpu->eip.u32 = blockEIP + blockCount + op->data1;
-            block->block1 = getBlock(cpu);
+            block->block1 = getBlock(cpu, cpu->eip.u32);
             cpu->eip.u32 = oldEIP;
         }   
         if (block->block1->ops->func == restoreOps) {

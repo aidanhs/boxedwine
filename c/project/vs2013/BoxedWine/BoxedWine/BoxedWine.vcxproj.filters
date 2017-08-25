@@ -4,12 +4,6 @@
     <ClCompile Include="..\..\..\..\platform\windows\platform.c">
       <Filter>platform\windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\decoder.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c">
       <Filter>source\kernel\devs</Filter>
     </ClCompile>
@@ -127,21 +121,6 @@
     <ClCompile Include="..\..\..\..\source\opengl\es\glshim.c">
       <Filter>opengl\es</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\jit.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\srcgen.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\instructions.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\strings.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\source\emulation\shift.c">
-      <Filter>source\emulation</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\..\source\util\crc.c">
       <Filter>source\util</Filter>
     </ClCompile>
@@ -246,6 +225,30 @@
     </ClCompile>
     <ClCompile Include="..\..\..\..\source\opengl\glMarshalVertex.c">
       <Filter>opengl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\decoder.c">
+      <Filter>source\emulation\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\instructions.c">
+      <Filter>source\emulation\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\jit.c">
+      <Filter>source\emulation\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\shift.c">
+      <Filter>source\emulation\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\srcgen.c">
+      <Filter>source\emulation\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu\strings.c">
+      <Filter>source\emulation\cpu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\cpu.c">
+      <Filter>source\emulation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64dynamic.c">
+      <Filter>source\emulation\x64dynamic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -393,36 +396,6 @@
     <ClInclude Include="..\..\..\..\include\virtualfile.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\arith.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\conditions.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\decode.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\fpu.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\incdec.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\ops.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\pushpop.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\shift.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\strings.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\setcc.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h">
       <Filter>opengl</Filter>
     </ClInclude>
@@ -431,12 +404,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\emulation\instructions.h">
       <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\strings_op.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\shift_op.h">
-      <Filter>source\emulation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\crc.h">
       <Filter>include</Filter>
@@ -504,12 +471,6 @@
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_memory.h">
       <Filter>source\emulation\softmmu</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\decodedata.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\..\source\emulation\mmx.h">
-      <Filter>source\emulation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\..\source\kernel\loader\kelf.h">
       <Filter>source\kernel\loader</Filter>
     </ClInclude>
@@ -524,6 +485,60 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\source\opengl\glMarshal.h">
       <Filter>opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\arith.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\conditions.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\decode.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\decode_noflags.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\decodedata.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\fpu.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\gensrc.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\incdec.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\instructions.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\mmx.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\ops.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\pushpop.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\setcc.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\shift.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\shift_op.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\strings.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\cpu\strings_op.h">
+      <Filter>source\emulation\cpu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\include\x64dynamic.h">
+      <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -586,6 +601,12 @@
     </Filter>
     <Filter Include="source\emulation\hardmmu">
       <UniqueIdentifier>{c453ca4f-3de0-498b-b001-428cfe7d89bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\emulation\cpu">
+      <UniqueIdentifier>{bd50481e-bf26-40ec-a17d-5be2c1ced3c8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\emulation\x64dynamic">
+      <UniqueIdentifier>{c5f90c9d-930b-499f-bf52-f541be0645f8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

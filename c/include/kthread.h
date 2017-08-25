@@ -77,7 +77,9 @@ struct KThread {
     U64 waitingForSignalToEndMaskToRestore;
     U32     waitType;
     struct user_desc tls[TLS_ENTRIES];
-
+#ifdef BOXEDWINE_VM
+    U64 nativeHandle;
+#endif
     void* glContext;
     void* currentContext;
     struct OpenGLVetexPointer glVertextPointer;
