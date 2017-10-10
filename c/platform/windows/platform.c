@@ -389,7 +389,7 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     context.Rbp = EBP;
     context.Rsi = ESI;
     context.Rdi = EDI;
-    context.Rip = translateEip(cpu);
+    context.Rip = translateEip(cpu, cpu->eip.u32);
     context.R9 = (U64)cpu;
     context.R11 = ESP;
 

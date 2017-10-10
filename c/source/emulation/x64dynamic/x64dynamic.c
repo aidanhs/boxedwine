@@ -3,6 +3,7 @@
 #include "cpu.h"
 #include "../hardmmu/hard_memory.h"
 #include <stddef.h>
+#include "block.h"
 
 // :TODO:
 // how to keep cpu->eip in sync when a memory exception happens
@@ -25,14 +26,14 @@
 #define CPU_OFFSET_FS (U32)(offsetof(struct CPU, segValue[FS]))
 #define CPU_OFFSET_GS (U32)(offsetof(struct CPU, segValue[GS]))
 
-#define CPU_OFFSET_EAX (U32)(offsetof(struct CPU, reg[0]))
-#define CPU_OFFSET_ECX (U32)(offsetof(struct CPU, reg[1]))
-#define CPU_OFFSET_EDX (U32)(offsetof(struct CPU, reg[2]))
-#define CPU_OFFSET_EBX (U32)(offsetof(struct CPU, reg[3]))
-#define CPU_OFFSET_ESP (U32)(offsetof(struct CPU, reg[4]))
-#define CPU_OFFSET_EBP (U32)(offsetof(struct CPU, reg[5]))
-#define CPU_OFFSET_ESI (U32)(offsetof(struct CPU, reg[6]))
-#define CPU_OFFSET_EDI (U32)(offsetof(struct CPU, reg[7]))
+#define CPU_OFFSET_EAX (U32)(offsetof(struct CPU, reg[0].u32))
+#define CPU_OFFSET_ECX (U32)(offsetof(struct CPU, reg[1].u32))
+#define CPU_OFFSET_EDX (U32)(offsetof(struct CPU, reg[2].u32))
+#define CPU_OFFSET_EBX (U32)(offsetof(struct CPU, reg[3].u32))
+#define CPU_OFFSET_ESP (U32)(offsetof(struct CPU, reg[4].u32))
+#define CPU_OFFSET_EBP (U32)(offsetof(struct CPU, reg[5].u32))
+#define CPU_OFFSET_ESI (U32)(offsetof(struct CPU, reg[6].u32))
+#define CPU_OFFSET_EDI (U32)(offsetof(struct CPU, reg[7].u32))
 
 #define CPU_OFFSET_ES_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[0]))
 #define CPU_OFFSET_CS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[1]))
@@ -42,7 +43,9 @@
 #define CPU_OFFSET_GS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[5]))
 #define CPU_OFFSET_STACK_MASK  (U32)(offsetof(struct CPU, stackMask))
 #define CPU_OFFSET_STACK_NOT_MASK (U32)(offsetof(struct CPU, stackNotMask))
-#define CPU_OFFSET_HOST_ENTRY (U64)(offsetof(struct CPU, enterHost))
+#define CPU_OFFSET_HOST_ENTRY (U32)(offsetof(struct CPU, enterHost))
+#define CPU_OFFSET_CMD (U32)(offsetof(struct CPU, cmd))
+#define CPU_OFFSET_EIP (U32)(offsetof(struct CPU, eip.u32))
 
 #define CMD_SET_ES 0
 #define CMD_SET_CS 1
@@ -110,8 +113,14 @@ struct Data {
 
     struct CPU* cpu;
 
-    U8 buffer[4096];
-    U8 bufferPos;
+    U8* memStart;
+    U32 memPos;
+    U32 availableMem;
+
+    U32* callTodo;
+    U32 callTodoCount;
+    U32 callTodoBuffer[8];
+    U32 callTodoSize;
 };
 
 static U8* mem;
@@ -131,12 +140,6 @@ static void* allocExecutableMemory(struct Data* data, U32 size) {
     result = mem + memPos;
     memPos+=size;
     return result;
-}
-
-static void* commitData(struct Data* data) {
-    void* p = allocExecutableMemory(data, data->bufferPos);
-    memcpy(p, data->buffer, data->bufferPos);
-    return p;
 }
 
 static U8 fetch8(struct Data* data) {
@@ -173,7 +176,12 @@ static U32 fetch32(struct Data* data) {
 }
 
 static void write8(struct Data* data, U8 value) {
-    data->buffer[data->bufferPos++] = value;
+    if (!data->availableMem) {
+        // :TODO: alloc continued memory
+        kpanic("Ran out of dynamic x64 memory");
+    }
+    data->memStart[data->memPos++] = value;
+    data->availableMem--;
 }
 
 static void write16(struct Data* data, U16 value) {
@@ -186,6 +194,18 @@ static void write32(struct Data* data, U32 value) {
     write8(data, value >> 8);
     write8(data, value >> 16);
     write8(data, value >> 24);
+}
+
+static void write32Buffer(U8* buffer, U32 value) {
+    buffer[0] = (U8)value;
+    buffer[1] = (U8)(value >> 8);
+    buffer[2] = (U8)(value >> 16);
+    buffer[3] = (U8)(value >> 24);
+
+}
+
+static U32 read32Buffer(U8* buffer) {
+    return buffer[0] | ((U32)buffer[1] << 8) | ((U32)buffer[2] << 16) | ((U32)buffer[3] << 24);
 }
 
 static void writeOp(struct Data* data) {
@@ -235,11 +255,18 @@ static void setRM(struct Data* data, U8 rm, BOOL checkG, BOOL checkE) {
     data->rm = rm;
 }
 
-static void setSib(struct Data* data, U8 sib) {
-    if ((sib & 7)==4) {
+static void setSib(struct Data* data, U8 sib, BOOL checkBase) {
+    if (checkBase && (sib & 7)==4) {
         data->rex |= REX_BASE | REX_MOD_RM;
         sib = (sib & ~7) | HOST_ESP;
     }
+    // will never convert index from ESP to HOST_ESP, because ESP indicates a 0 value
+    /*
+    if (checkIndex && ((sib >> 3) & 7)==4) {
+        data->rex |= REX_BASE | REX_SIB_INDEX;
+        sib = (sib & ~0x38) | (HOST_ESP << 3);
+    }
+    */
     data->has_sib = 1;
     data->sib = sib;
 }
@@ -300,6 +327,22 @@ static void cpuValueToRexReg64(struct Data* data, U32 offset, U32 reg) {
 #endif
     write8(data, 0x80 | (reg << 3) | HOST_CPU);
     write32(data, offset);
+}
+
+static void writeCpuValue32(struct Data* data, U32 offset, U32 value) {
+#if HOST_CPU == 4
+    bad value for HOST_CPU, we assume this is not sib
+#endif
+    write8(data, REX_BASE|REX_MOD_RM);
+    write8(data, 0xc7);// MOV ED,ID
+    if (offset<128) {
+        write8(data, 0x40 | HOST_CPU);
+        write8(data, offset);
+    } else {
+        write8(data, 0x80 | HOST_CPU);
+        write32(data, offset);
+    }
+    write32(data, value);
 }
 
 static U32 getRegForBase(struct Data* data, U32 base) {
@@ -416,7 +459,7 @@ static void readRexRegWithDisplacementToReg(struct Data* data, U32 bytes, U32 ba
         write8(data, 0x8a); // mov
     else
         write8(data, 0x8b); // mov
-    if (displacement && rexMemReg!=5) { // R13 Sib0 means [(index * s) + disp32] , so instead use Sib1 with displacement to 0
+    if (!displacement && rexMemReg!=5) { // R13 Sib0 means [(index * s) + disp32] , so instead use Sib1 with displacement to 0
         write8(data, 0x04 | (destReg << 3)); // rm
     } else if (oneByteDisplacement) {
         write8(data, 0x44 | (destReg << 3)); // rm
@@ -529,13 +572,8 @@ static void writeToRexReg(struct Data* data, U32 reg, U32 value) {
 }
 
 // returns 0 of eip changed
-void cmdEntry() {
-    U64 regs[16];
-    struct CPU* cpu;
-    getRegs(regs);
-    cpu = (struct CPU*)regs[8+HOST_CPU];
-    cpu->eip.u32 = regs[8+HOST_TMP] >> 32;
-    if (!handleCmd(cpu, (U32)(regs[8+HOST_TMP] & 0xFFFFFFFF), (U32)(regs[8+HOST_TMP2]))) {
+void cmdEntry(struct CPU* cpu) {
+    if (!handleCmd(cpu, cpu->cmd, cpu->cmdArg)) {
         kpanic("x64dynamic exception handling not implemented");
     }
 }
@@ -578,19 +616,80 @@ static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
 }
 
 static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
-    write8(data, REX_BASE | REX_64 | REX_MOD_RM);
-    write8(data, 0xBD); // R13 HOST_TMP
-    write32(data, cmd);
-    write32(data, eip);
+    writeCpuValue32(data, CPU_OFFSET_CMD, cmd);
+    writeCpuValue32(data, CPU_OFFSET_EIP, eip);
 
+    // can be changed by the function call, so store them
+    write8(data, 0x50);// push   rax
+    write8(data, 0x51);// push   rcx
+    write8(data, 0x52);// push   rdx
+    write8(data, 0x41);// push r8
+    write8(data, 0x50); 
+    write8(data, 0x41);// push r9
+    write8(data, 0x51); 
+    write8(data, 0x41);// push r10
+    write8(data, 0x52); 
+    write8(data, 0x41);// push r11
+    write8(data, 0x53); 
 
+#ifdef PLATFORM_MSVC
+    // shadow space
+    // sub RSP, 32 
+    write8(data, 0x48);
+    write8(data, 0x83);
+    write8(data, 0xec);
+    write8(data, 0x20);
+
+    // first agument for function call
+    // mov RCX, HOST_CPU
+    write8(data, REX_BASE|REX_MOD_REG|REX_64);
+    write8(data, 0x89);
+    write8(data, 0xc0 | 1 | (HOST_CPU<<3));
+#else
+
+    write8(data, 0x56);// push   rsi
+    write8(data, 0x57);// push   rdi
+    
+    // first agument for function call
+    // mov RDI, HOST_CPU
+    write8(data, REX_BASE|REX_MOD_REG|REX_64);
+    write8(data, 0x89);
+    write8(data, 0xc0 | 7 | (HOST_CPU<<3));
+#endif    
+    
+    // call cmdEntry
     write8(data, REX_BASE|REX_MOD_RM);
     write8(data, 0xff);
 #if HOST_CPU == 4
     bad value for HOST_CPU
 #endif
     write8(data, 0x90 | HOST_CPU);
-    write32(data, CPU_OFFSET_HOST_ENTRY);
+    write32(data, CPU_OFFSET_HOST_ENTRY);                       
+
+#ifdef PLATFORM_MSVC
+    // shadow space
+    // add RSP, 32
+    write8(data, 0x48);
+    write8(data, 0x83);
+    write8(data, 0xc4);
+    write8(data, 0x20);    
+#else
+    write8(data, 0x5f);// pop   rdi
+    write8(data, 0x5e);// pop   rsi
+#endif
+
+    // restore regs that are volitile
+    write8(data, 0x41);// pop r11
+    write8(data, 0x5b); 
+    write8(data, 0x41);// pop r10
+    write8(data, 0x5a); 
+    write8(data, 0x41);// pop r9
+    write8(data, 0x59); 
+    write8(data, 0x41);// pop r8
+    write8(data, 0x58); 
+    write8(data, 0x5b);// pop   rdx
+    write8(data, 0x59);// pop   rcx
+    write8(data, 0x58);// pop   rax
 
     if (cmd == CMD_SET_GS) {
         cpuValueToRexReg64(data, CPU_OFFSET_GS_PLUS_MEM, HOST_GS_PLUS_MEM);
@@ -600,7 +699,7 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
         cpuValueToRexReg64(data, CPU_OFFSET_SS_PLUS_MEM, HOST_SS_PLUS_MEM);
     }  else if (cmd == CMD_SET_DS) {
         cpuValueToRexReg64(data, CPU_OFFSET_DS_PLUS_MEM, HOST_DS_PLUS_MEM);
-    }  
+    }    
 }
 
 static void pushCpuOffset16(struct Data* data, U32 offset) {
@@ -656,19 +755,15 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                     // converts [reg] to [reg+MEM]
                     data->rex = REX_BASE | REX_SIB_INDEX;
                     setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
-                    setSib(data, (rm & 7) | (getRegForBase(data, data->ds) << 3));
+                    setSib(data, (rm & 7) | (getRegForBase(data, data->ds) << 3), TRUE); 
                 }
                 break;
             case 0x05:
                 // on x64 this is RIP/EIP + disp32 instead of DS:disp32
                 if (data->ds == SEG_ZERO) {                    
-                    // HOST_TMP = 0;
-                    writeToRexReg(data, HOST_TMP, 0);
-
-                    // converts [DS+disp32] to [HOST_TMP(0) + disp32]
-                    data->rex = REX_BASE | REX_SIB_INDEX;
+                    // converts [disp32] to [disp32]
                     setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
-                    setSib(data, (rm & 7) | (HOST_TMP << 3));
+                    setSib(data, 4 | (4 << 3), FALSE);
                 } else {
                     // converts [disp32] to [MEM + disp32]
                     data->rex = REX_BASE | REX_MOD_RM;
@@ -678,28 +773,39 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                 break;
             case 0x04: {
                     U8 sib = fetch8(data);
-                    U8 reg = (sib & 7);
-                    if (reg==5) {
+                    U8 base = (sib & 7);
+                    U8 index = (sib >> 3) & 7;
+
+                    if (base==5) { // no base, [index << shift + disp32]
                         if (data->ds == SEG_ZERO) {
                             setRM(data, rm, checkG, FALSE);
-                            setSib(data, sib);
+                            setSib(data, sib, TRUE); 
                         } else {
-                            // convert [0 + reg << index + disp32] to [MEM + reg << index + disp32];
-                            data->rex = REX_BASE | REX_MOD_RM;
+                            // convert [index << shift + disp32] to [MEM + index << shift + disp32];
+                            data->rex = REX_BASE | REX_MOD_RM; // MEM is rex
                             setRM(data, rm | 0x80, checkG, FALSE); // change from sib0 to sib2
-                            setSib(data, (sib & ~7) | getRegForBase(data, data->ds));
+                            // checkBase==FALSE because it will always be rex
+                            setSib(data, (sib & ~7) | getRegForBase(data, data->ds), FALSE);
                         }
                         setDisplacement32(data, fetch32(data));
-                    } else {
+                    } else { // [base + index << shift]
                         if (data->ds == SEG_ZERO) {
+                            // keep the same, but convert ESP to HOST_ESP
                             setRM(data, rm, checkG, FALSE);
-                            setSib(data, sib);
+                            setSib(data, sib, TRUE);
                         } else {
-                            // convert [reg1 + reg2 << index] to HOST_TMP=reg1+MEM;[HOST_TMP + reg2 << index];
-                            data->rex = REX_BASE | REX_MOD_RM;
-                            addBaseAndRegToReg(data, reg==4?data->ss:data->ds, FALSE, reg, TRUE, HOST_TMP);
-                            setRM(data, rm, checkG, FALSE);
-                            setSib(data, (sib & ~7) | HOST_TMP);
+                            if (index==4) { // index value will be 0
+                                // convert [base] to [base + MEM << 0];
+                                data->rex = REX_BASE | REX_SIB_INDEX;
+                                setRM(data, rm, checkG, FALSE); // change from sib0 to sib2
+                                setSib(data, (sib & ~0x38) | (getRegForBase(data, base==4?data->ss:data->ds) << 3), TRUE);
+                            } else {
+                                // convert [base + index << shift] to HOST_TMP=base+MEM;[HOST_TMP + index << shift];
+                                data->rex = REX_BASE | REX_MOD_RM;
+                                addBaseAndRegToReg(data, base==4?data->ss:data->ds, FALSE, base, TRUE, HOST_TMP);
+                                setRM(data, rm, checkG, FALSE);
+                                setSib(data, (sib & ~7) | HOST_TMP, FALSE);
+                            }
                         }
                     }    
                 }
@@ -717,24 +823,24 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                 if (data->ds == SEG_ZERO) {
                     setRM(data, rm, checkG, FALSE);
                 } else {
-                    // converts [reg + disp] to [reg + MEM + disp]
+                    // converts [reg + disp] to [reg + MEM<<1 + disp]
                     data->rex = REX_BASE | REX_SIB_INDEX;
                     setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
-                    setSib(data, (rm & 7) | (getRegForBase(data, (rm & 7)==5?data->ss:data->ds) << 3));
+                    setSib(data, (rm & 7) | (getRegForBase(data, (rm & 7)==5?data->ss:data->ds) << 3), TRUE);
                 }
                 break;
             case 0x04: {
-                    // convert [reg1 + reg2 << index + disp] to HOST_TMP=reg1+MEM;[HOST_TMP + reg2 << index + disp]
+                    // convert [reg1 + reg2 << shift + disp] to HOST_TMP=reg1+MEM;[HOST_TMP + reg2 << shift + disp]
                     U8 sib = fetch8(data);
                     if (data->ds == SEG_ZERO) {
                         setRM(data, rm, checkG, FALSE);
-                        setSib(data, sib);
+                        setSib(data, sib, TRUE);
                     } else {
                         U8 reg = (sib & 7);
                         data->rex = REX_BASE | REX_MOD_RM;
                         addBaseAndRegToReg(data, (reg==4 || reg==5)?data->ss:data->ds, FALSE, reg, TRUE, HOST_TMP);
                         setRM(data, rm, checkG, FALSE);
-                        setSib(data, (sib & ~7) | HOST_TMP);                
+                        setSib(data, (sib & ~7) | HOST_TMP, FALSE);                
                     }
                 }
                 break;
@@ -742,7 +848,7 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
             if (rm<0x80) {
                 setDisplacement8(data, fetch8(data));
             } else {
-                setDisplacement32(data, fetch8(data));
+                setDisplacement32(data, fetch32(data));
             }
         }
     }
@@ -753,6 +859,26 @@ static void resetDataForNewOp(struct Data* data) {
     data->ss = SS;
     data->rep = 0;
     data->rep_zero = 0;
+    data->rex = 0;
+    memset(data->prefix, 0, sizeof(data->prefix));
+    data->op = 0;
+    data->rm = 0;
+    data->has_rm = 0;
+    data->sib = 0;
+    data->has_sib = 0;
+    data->disp8 = 0;
+    data->has_disp8 = 0;
+    data->disp16 = 0;
+    data->has_disp16 = 0;
+    data->disp32 = 0;
+    data->has_disp32 = 0;
+    data->im8 = 0;
+    data->has_im8 = 0;
+    data->im16 = 0;
+    data->has_im16 = 0;
+    data->im32 = 0;
+    data->has_im32 = 0;
+
     if (data->cpu->big) {
         data->baseOp = 0x200;
         data->ea16 = 0;
@@ -763,11 +889,17 @@ static void resetDataForNewOp(struct Data* data) {
     data->startOfOpIp = data->ip;
 }
 
-static void initData(struct Data* data, struct CPU* cpu) {
+static void initData(struct Data* data, struct CPU* cpu, U32 eip) {
     memset(data, 0, sizeof(struct Data));    
-    data->start = data->ip = cpu->eip.u32;        
-    data->cpu = cpu;
-    data->bufferPos = 0;    
+    data->start = data->ip = eip;
+    data->cpu = cpu;    
+    // :TODO:
+    allocExecutableMemory(data, 1);
+    data->memStart = mem+memPos;
+    data->memPos = 0;
+    data->availableMem = 64*1024-memPos;
+    data->callTodo = &data->callTodoBuffer;
+    data->callTodoSize = sizeof(data->callTodoBuffer)/sizeof(U32);
     resetDataForNewOp(data);
 }
 
@@ -1695,8 +1827,6 @@ static U32 bound32(struct Data* data) {
 static U32 jump8(struct Data* data) {
     S8 offset;
     U32 eip;
-    U32 start = data->startOfOpIp;
-    U32 offsetPos = data->bufferPos;
 
     offset = (S8)fetch8(data);
     eip = data->ip+offset;
@@ -1735,12 +1865,14 @@ static U32 callJd(struct Data* data) {
     S32 offset = fetch32(data);
     struct Block* block = getBlock(data->cpu, data->ip+offset);
 
-    if (block->dynamicCode) {
-        // :TODO
+    write8(data, 0xe8);
+    if (block->dynamicCode) {        
+        write32(data, (U32)((U8*)block->dynamicCode-4-data->memStart[data->memPos]));
     } else {
-        writeCmd(data, CMD_CALL_JD, data->startOfOpIp);
+        data->callTodo[data->callTodoCount++]=data->memPos;
+        write32(data, data->ip+offset);
+        // :TODO: decode this after 
     }
-    data->done = 1;
     return 0;
 }
 
@@ -2294,6 +2426,7 @@ static U32 grp5d(struct Data* data) {
         kpanic("call far not implemented");
     } else if (g==4) { // jmp near Ed
         kpanic("jmp near not implemented");
+        data->done = 1;
     } else if (g==5) { // jmp far Ed
         kpanic("jmp far not implemented");
     } else if (g==6) { // push Ed
@@ -2551,7 +2684,7 @@ static DECODER decoder[1024] = {
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     // 280
-    inst8RMimm8, inst32RMimm32, instruction82, inst32RMimm8, inst8RM, inst32RM, inst8RM, inst32RM,
+    inst8RMimm8, inst32RMimm32, instruction82, inst32RMimm8SafeG, inst8RM, inst32RM, inst8RM, inst32RM,
     inst8RM, inst32RM, inst8RM, inst32RM, movEdSw, leaGd, movSwEw, popEd,
     // 290
     keepSame, keepSame, keepSame, keepSame, xchgEspEax, keepSame, keepSame, keepSame,
@@ -2628,14 +2761,20 @@ static DECODER decoder[1024] = {
 void OPCALL firstOp(struct CPU* cpu, struct Op* op);
 void translateData(struct Block* block, struct Data* data) {
     struct Op* op = block->ops;
+    U32 i;
+
     if (op->func==firstOp)
         op = op->next;
-
+    klog("Translating %X ... ", data->ip);
     while (1) {
+        klog("   %s", op->str);
         while (1) {
-            data->op = fetch8(data);
+            data->op = fetch8(data);            
             data->inst = data->baseOp + data->op;
             if (!decoder[data->inst](data)) {
+                if (data->inst != op->inst) {
+                    int ii=0;
+                }
                 break;
             }            
         }
@@ -2653,19 +2792,34 @@ void translateData(struct Block* block, struct Data* data) {
             if (op->func==firstOp)
                 op = op->next;
         }
-    }    
+    }   
+    printf("   Translated: ");
+    for (i=0;i<data->memPos;i++) {
+        printf("%.02X ", data->memStart[i]);
+    }
+    printf("\n");
+    for (i=0;i<data->callTodoCount;i++) {
+        U8* translatedOffset = (U8*)translateEip(data->cpu, read32Buffer(&data->memStart[data->callTodo[i]]));
+        U32 memPos = data->callTodo[i];
+        U8* offset = &data->memStart[memPos];
+
+        write32Buffer(offset, (U32)(translatedOffset - offset) - 4);
+    }
 }
 
-U64 translateEip(struct CPU* cpu) {
-    struct Block* block = getBlock(cpu, cpu->eip.u32);
+U64 translateEip(struct CPU* cpu, U32 ip) {
+    struct Block* block = getBlock(cpu, ip);
 
     if (!block->dynamicCode) {
         struct Data data;
 
-        initData(&data, cpu);
+        initData(&data, cpu, ip);
         translateData(block, &data);
-        block->dynamicCode = commitData(&data);
-        block->dynamicCodeLen = data.bufferPos;
+        block->dynamicCode = data.memStart;
+        block->dynamicCodeLen = data.memPos;
+        if (data.callTodoBuffer!=data.callTodo) {
+            free(data.callTodo);
+        }
     }
     return (U64)block->dynamicCode;
 }
