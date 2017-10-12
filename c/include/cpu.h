@@ -56,6 +56,9 @@ struct user_desc {
 };
 
 struct CPU {
+#ifdef BOXEDWINE_VM
+    void*** opToAddressPages; // must be first
+#endif
     struct Reg		reg[9]; // index 8 is 0
     U8*		reg8[8];
     U32		segAddress[7];

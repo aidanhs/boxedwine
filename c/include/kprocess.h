@@ -108,6 +108,9 @@ struct KProcess {
     struct user_desc ldt[LDT_ENTRIES];
     U32 usedTLS[TLS_ENTRIES];
     struct KThread* wakeOnExitOrExec;
+#ifdef BOXEDWINE_VM
+    void** opToAddressPages[0x100000];
+#endif
 };
 
 void processOnExitThread(struct KProcess* process);

@@ -4,6 +4,11 @@
 #include "../hardmmu/hard_memory.h"
 #include <stddef.h>
 #include "block.h"
+#include "kthread.h"
+#include "kprocess.h"
+#include "kalloc.h"
+
+void ksyscall(struct CPU* cpu, U32 eipCount);
 
 // :TODO:
 // how to keep cpu->eip in sync when a memory exception happens
@@ -60,7 +65,7 @@
 #define CMD_LOAD_DS 10
 #define CMD_LOAD_FS 11
 #define CMD_LOAD_GS 12
-#define CMD_CALL_JD 13
+#define CMD_SYSCALL 13
 
 #define REX_BASE 0x40
 #define REX_MOD_RM 0x1
@@ -84,6 +89,8 @@ struct Data {
     // Prefixes + Mandatory Prefix + REX Prefix + Opcode Bytes + ModR/M + SIB + Displacement (1,2 or 4 bytes) + Immediate (1,2 or 4 bytes)
 
     U8 prefix[4];
+    U32 prefixAddress[4];
+    U32 opIp;
     U8 rex;
     U8 op;
 
@@ -117,10 +124,14 @@ struct Data {
     U32 memPos;
     U32 availableMem;
 
-    U32* callTodo;
-    U32 callTodoCount;
-    U32 callTodoBuffer[8];
-    U32 callTodoSize;
+    U32* jmpTodoEip;
+    void** jmpTodoAddress;
+    U8*  jmpTodoOffsetSize;
+    U32 jmpTodoCount;
+    U32 jmpTodoEipBuffer[32];
+    void* jmpTodoAddressBuffer[32];
+    U8 jmpTodoOffsetSizeBuffer[32];
+    U32 jmpTodoSize;
 };
 
 static U8* mem;
@@ -204,20 +215,62 @@ static void write32Buffer(U8* buffer, U32 value) {
 
 }
 
+static void write16Buffer(U8* buffer, U32 value) {
+    buffer[0] = (U8)value;
+    buffer[1] = (U8)(value >> 8);
+}
+
+static void write8Buffer(U8* buffer, U32 value) {
+    buffer[0] = (U8)value;
+}
+
 static U32 read32Buffer(U8* buffer) {
     return buffer[0] | ((U32)buffer[1] << 8) | ((U32)buffer[2] << 16) | ((U32)buffer[3] << 24);
 }
 
+void* getTranslatedEip(struct Data* data, U32 ip) {
+    if (data->cpu->opToAddressPages[ip >> PAGE_SHIFT] && data->cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK]) {
+        return data->cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK];
+    }
+    return NULL;
+}
+
+static void mapAddress(struct Data* data, U32 ip, void* address) {
+    void** table = data->cpu->opToAddressPages[ip >> PAGE_SHIFT];
+    if (!table) {
+        table = kalloc(sizeof(void*)*PAGE_SIZE, KALLOC_IP_CACHE);
+        data->cpu->opToAddressPages[ip >> PAGE_SHIFT] = table;
+    }
+    table[ip & PAGE_MASK] = address;
+}
+
 static void writeOp(struct Data* data) {
     int i;
-
+    // make sure the lock, rep prefixes come before rex, since they can be jumped over
+    
     for (i=0;i<sizeof(data->prefix);i++) {
         if (data->prefix[i]!=0) {
-            write8(data, data->prefix[i]);
+            if (data->prefix[i]!=0x67 && data->prefix[i]!=0x66 && data->prefix[i]!=0x0f) {
+                if (data->prefixAddress[i]!=0) {
+                    mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
+                }
+                write8(data, data->prefix[i]);            
+            }
         }
     }
+    mapAddress(data, data->opIp, &data->memStart[data->memPos]);
     if (data->rex) {
         write8(data, data->rex);
+    }  
+    // These aren't really prefixes, they are part of the op code
+    for (i=0;i<sizeof(data->prefix);i++) {
+        if (data->prefix[i]==0x67 || data->prefix[i]==0x66 || data->prefix[i]==0x0f) {
+            if (data->prefixAddress[i]!=0) {
+                if (!data->rex) // don't allow jumping into the middle of a op after rex
+                    mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
+            }
+            write8(data, data->prefix[i]);            
+        }
     }
     write8(data, data->op);
     if (data->has_rm) {
@@ -247,7 +300,7 @@ static void setRM(struct Data* data, U8 rm, BOOL checkG, BOOL checkE) {
         data->rex |= REX_BASE | REX_MOD_REG;
         rm = (rm & ~0x38) | (HOST_ESP << 3);
     }
-    if (checkE && ((rm >> 3) & 7 )== 4) {
+    if (checkE && (rm & 7)== 4) {
         data->rex |= REX_BASE | REX_MOD_RM;
         rm = (rm & ~0x07) | HOST_ESP;
     }
@@ -296,21 +349,30 @@ static void setImmediate32(struct Data* data, U32 value) {
     data->im32 = value;
 }
 
-static void addPrefix(struct Data* data, U8 prefix) {
-    if (!data->prefix[0])
+static void addPrefix(struct Data* data, U8 prefix, U32 address) {
+    if (!data->prefix[0]) {
         data->prefix[0] = prefix;
-    else if (!data->prefix[1])
+        data->prefixAddress[0] = address;
+    } else if (!data->prefix[1]) {
         data->prefix[1] = prefix;
-    else if (!data->prefix[2])
+        data->prefixAddress[1] = address;
+    } else if (!data->prefix[2]) {
         data->prefix[2] = prefix;
-    else if (!data->prefix[3])
+        data->prefixAddress[2] = address;
+    } else if (!data->prefix[3]) {
         data->prefix[3] = prefix;
+        data->prefixAddress[3] = address;
+    }
 }
 
 
 // HOST_TMP = HOST_CPU[offset]
-static void cpuValueToRexReg(struct Data* data, U32 offset, U32 reg) {
-    write8(data, REX_BASE|REX_MOD_RM|REX_MOD_REG);
+static void cpuValueToReg(struct Data* data, U32 offset, U32 reg, U32 isRexReg) {
+    if (isRexReg) {
+        write8(data, REX_BASE|REX_MOD_RM|REX_MOD_REG);
+    } else {
+        write8(data, REX_BASE|REX_MOD_RM);
+    }
     write8(data, 0x8b);
 #if HOST_TMP == 4 || HOST_CPU == 4
     bad value for HOST_TMP or HOST_CPU
@@ -345,6 +407,25 @@ static void writeCpuValue32(struct Data* data, U32 offset, U32 value) {
     write32(data, value);
 }
 
+static void writeCpuReg32(struct Data* data, U32 offset, U32 reg, U32 isRexReg) {
+#if HOST_CPU == 4
+    bad value for HOST_CPU, we assume this is not sib
+#endif
+    if (isRexReg) {
+        write8(data, REX_BASE|REX_MOD_RM|REX_MOD_REG);
+    } else {
+        write8(data, REX_BASE|REX_MOD_RM);
+    }
+    write8(data, 0x89);// MOV ED,GD
+    if (offset<128) {
+        write8(data, 0x40 | HOST_CPU | (reg<<3));
+        write8(data, offset);
+    } else {
+        write8(data, 0x80 | HOST_CPU | (reg<<3));
+        write32(data, offset);
+    }
+}
+
 static U32 getRegForBase(struct Data* data, U32 base) {
     if (base == ES) {cpuValueToRexReg64(data, CPU_OFFSET_ES_PLUS_MEM, HOST_TMP); return HOST_TMP;}
     if (base == SS) {return HOST_SS_PLUS_MEM;}
@@ -375,7 +456,7 @@ static void subBaseFromReg(struct Data* data, U8 base, U32 isDestRex, U8 destReg
 
 // destRexReg = base + srcReg
 static void addBaseAndRegToReg(struct Data* data, U8 base, U32 isSrcRex, U8 srcReg, U32 isDestRex, U8 destReg) {
-    U32 rex = REX_BASE | REX_MOD_RM; // base is always rex
+    U32 rex = REX_BASE | REX_SIB_INDEX; // base is always rex
     // Get base
     base = getRegForBase(data, base);
     
@@ -388,10 +469,10 @@ static void addBaseAndRegToReg(struct Data* data, U8 base, U32 isSrcRex, U8 srcR
         rex|=REX_MOD_REG;
     }
     if (srcReg==4 && !isSrcRex) {
-        rex|=REX_SIB_INDEX;
+        rex|=REX_MOD_RM;
         srcReg = HOST_ESP;
     } else if (isSrcRex) {
-        rex|=REX_SIB_INDEX;
+        rex|=REX_MOD_RM;
     }
     write8(data, rex);
 
@@ -608,7 +689,8 @@ static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
         cpu_call(cpu, 0, value >> 16, value & 0xFFFF, cpu->eip.u32 + (cpu->big?6:5));
         // :TODO: sync back cs:eip -> block -> dynamic address
         return 1;
-    case CMD_CALL_JD:
+    case CMD_SYSCALL:
+        ksyscall(cpu, cpu->eip.u32);
         break;
     }    
     kpanic("Unknow x64dynamic cmd: %d", cmd);
@@ -703,14 +785,57 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
 }
 
 static void pushCpuOffset16(struct Data* data, U32 offset) {
-    cpuValueToRexReg(data, offset, HOST_TMP);
+    cpuValueToReg(data, offset, HOST_TMP, TRUE);
     readRexRegWithDisplacementToReg(data, 2, SS, HOST_ESP, -2, TRUE, HOST_TMP);
     addWithLeaRexReg(data, HOST_ESP, -2);
 }
 
+static void jmpReg(struct Data* data, U32 reg, U32 isRex) {
+    // mov HOST_TMP2, reg
+    if (isRex)
+        write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG);
+    else
+        write8(data, REX_BASE | REX_MOD_RM);
+    write8(data, 0x89);
+    write8(data, 0xC0 | HOST_TMP2 | (reg << 3));
+    // shr HOST_TMP2, 9  // 9 is from >> PAGE_SHIFT, << 3 (8 bytes per pointer)
+    write8(data, REX_BASE | REX_MOD_RM);
+    write8(data, 0xC1);
+    write8(data, 0xE8 | HOST_TMP2);
+    write8(data, 9);
+
+    // mov HOST_TMP, reg
+    if (reg!=HOST_TMP) {
+        if (isRex)
+            write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG);
+        else
+            write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0x89);
+        write8(data, 0xC0 | HOST_TMP | (reg << 3));
+    }
+    // and HOST_TMP, 0xFFF
+    write8(data, REX_BASE | REX_MOD_RM);
+    write8(data, 0x81);
+    write8(data, 0xE0 | HOST_TMP);
+    write32(data, 0xFFF);
+
+    // add HOST_TMP2, HOST_CPU
+    write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG);
+    write8(data, 0x01);
+    write8(data, 0xC0 | HOST_TMP2 | (HOST_CPU << 3));
+
+    // jmp [HOST_TMP2 + HOST_TMP << 3]
+    write8(data, REX_BASE | REX_MOD_RM | REX_SIB_INDEX);
+    write8(data, 0xff);
+    write8(data, 0x24);
+    write8(data, 0xC0 | HOST_TMP2 | (HOST_TMP << 3));
+
+    // if [HOST_TMP2 + HOST_TMP << 3] is not valid then we will catch the exception somewhere else
+}
+
 // :TODO: is stack mask necessary
 static void pushCpuOffset32(struct Data* data, U32 offset) {
-    cpuValueToRexReg(data, offset, HOST_TMP);
+    cpuValueToReg(data, offset, HOST_TMP, TRUE);
     readRexRegWithDisplacementToReg(data, 4, SS, HOST_ESP, -4, TRUE, HOST_TMP);
     addWithLeaRexReg(data, HOST_ESP, -4);
 }
@@ -755,6 +880,7 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                     // converts [reg] to [reg+MEM]
                     data->rex = REX_BASE | REX_SIB_INDEX;
                     setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
+                    // don't need to worry about (rm & 7) == 5, that is handled below
                     setSib(data, (rm & 7) | (getRegForBase(data, data->ds) << 3), TRUE); 
                 }
                 break;
@@ -763,7 +889,7 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                 if (data->ds == SEG_ZERO) {                    
                     // converts [disp32] to [disp32]
                     setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
-                    setSib(data, 4 | (4 << 3), FALSE);
+                    setSib(data, 5 | (4 << 3), FALSE); // 5 is for [disp32], 4 is for 0 value index
                 } else {
                     // converts [disp32] to [MEM + disp32]
                     data->rex = REX_BASE | REX_MOD_RM;
@@ -803,8 +929,10 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                                 // convert [base + index << shift] to HOST_TMP=base+MEM;[HOST_TMP + index << shift];
                                 data->rex = REX_BASE | REX_MOD_RM;
                                 addBaseAndRegToReg(data, base==4?data->ss:data->ds, FALSE, base, TRUE, HOST_TMP);
-                                setRM(data, rm, checkG, FALSE);
-                                setSib(data, (sib & ~7) | HOST_TMP, FALSE);
+                                // change to sib1 (0x40) because HOST_TMP is R13, which changes to no base and uses disp32
+                                setRM(data, rm | 0x40, FALSE, FALSE);                                
+                                setSib(data, (sib & ~7) | HOST_TMP, checkG);
+                                setImmediate8(data, 0);
                             }
                         }
                     }    
@@ -861,6 +989,8 @@ static void resetDataForNewOp(struct Data* data) {
     data->rep_zero = 0;
     data->rex = 0;
     memset(data->prefix, 0, sizeof(data->prefix));
+    memset(data->prefixAddress, 0, sizeof(data->prefixAddress));
+    data->startOfOpIp = 0;
     data->op = 0;
     data->rm = 0;
     data->has_rm = 0;
@@ -898,8 +1028,10 @@ static void initData(struct Data* data, struct CPU* cpu, U32 eip) {
     data->memStart = mem+memPos;
     data->memPos = 0;
     data->availableMem = 64*1024-memPos;
-    data->callTodo = &data->callTodoBuffer;
-    data->callTodoSize = sizeof(data->callTodoBuffer)/sizeof(U32);
+    data->jmpTodoEip = data->jmpTodoEipBuffer;
+    data->jmpTodoAddress = data->jmpTodoAddressBuffer;
+    data->jmpTodoOffsetSize = data->jmpTodoOffsetSizeBuffer;
+    data->jmpTodoSize = sizeof(data->jmpTodoEipBuffer)/sizeof(data->jmpTodoEipBuffer[0]);
     resetDataForNewOp(data);
 }
 
@@ -1088,6 +1220,18 @@ static U32 inst16RMimm8(struct Data* data) {
         translateMemory(data, rm, TRUE);
     } else {
         setRM(data, rm, TRUE, TRUE);
+    }
+    setImmediate8(data, fetch8(data));
+    writeOp(data);
+    return 0;
+}
+
+static U32 inst16RMimm8SafeG(struct Data* data) {
+    U8 rm = fetch8(data);
+    if (rm<0xC0) {
+        translateMemory(data, rm, FALSE);
+    } else {
+        setRM(data, rm, FALSE, TRUE);
     }
     setImmediate8(data, fetch8(data));
     writeOp(data);
@@ -1759,15 +1903,14 @@ static void pushw(struct Data* data, U16 value) {
     clearTop16RexReg(data, HOST_ESP);
 }
 
-static void pushd(struct Data* data, U16 value) {
+static void pushd(struct Data* data, U32 value) {
     // mov [SS_MEM+HOST_ESP-4], value
-    write8(data, 0x66);
     write8(data, 0x43); // rex
     write8(data, 0xc7); // mov
     write8(data, 0x44); // rm
     write8(data, (HOST_SS_PLUS_MEM << 3) | HOST_ESP); // sib
     write8(data, 0xFC); // -4
-    write16(data, value);
+    write32(data, value);
 
     addWithLeaRexReg(data, HOST_ESP, -4);
 }
@@ -1824,28 +1967,72 @@ static U32 bound32(struct Data* data) {
     return 0;
 }
 
+static void addTodoLinkJump(struct Data* data, U32 memPos, U32 eip, U8 offsetSize, BOOL doneIfDoesNotExist) {
+    if (data->cpu->opToAddressPages[eip >> PAGE_SHIFT] && data->cpu->opToAddressPages[eip >> PAGE_SHIFT][eip & PAGE_MASK]) {
+        U8* translatedOffset = data->cpu->opToAddressPages[eip >> PAGE_SHIFT][eip & PAGE_MASK];
+        U8* offset = &data->memStart[memPos];
+
+        if (offsetSize==4) {
+            write32Buffer(offset, (U32)(translatedOffset - offset) - 4);
+        } else if (offsetSize==2) {
+            write16Buffer(offset, (U32)(translatedOffset - offset) - 2);
+        } else if (offsetSize==1) {
+            write8Buffer(offset, (U32)(translatedOffset - offset) - 1);
+        }
+        return;
+    }
+    if (data->jmpTodoCount>=data->jmpTodoSize) {
+        kpanic("Need to grow todo jumps");
+    }
+    data->jmpTodoAddress[data->jmpTodoCount] = &data->memStart[memPos];
+    data->jmpTodoEip[data->jmpTodoCount] = eip;
+    data->jmpTodoOffsetSize[data->jmpTodoCount++] = offsetSize;
+    if (doneIfDoesNotExist) {
+        int i;
+        for (i=0;i<data->jmpTodoCount;i++) {
+            if (data->jmpTodoEip[i]>=eip)
+                return;
+        }
+        data->done = TRUE;
+    }
+}
+
 static U32 jump8(struct Data* data) {
     S8 offset;
     U32 eip;
 
     offset = (S8)fetch8(data);
     eip = data->ip+offset;
-    setImmediate8(data, offset);
+    setImmediate8(data, 0);
     writeOp(data);
 
-    // :TODO:
-    kpanic("jump8 not implemented");
-    // notify someone that we will need to change the offset
+    addTodoLinkJump(data, data->memPos-1, eip, 1, FALSE);
     return 0;
 }
 
 static U32 jump16(struct Data* data) {
-    kpanic("jump16 not implemented");
+    S16 offset;
+    U32 eip;
+
+    offset = (S16)fetch16(data);
+    eip = data->ip+offset;
+    setImmediate16(data, 0);
+    writeOp(data);
+
+    addTodoLinkJump(data, data->memPos-2, eip, 2, FALSE);
     return 0;
 }
 
 static U32 jump32(struct Data* data) {
-    kpanic("jump32 not implemented");
+    S32 offset;
+    U32 eip;
+
+    offset = (S32)fetch32(data);
+    eip = data->ip+offset;
+    setImmediate32(data, 0);
+    writeOp(data);
+
+    addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
     return 0;
 }
 
@@ -1863,34 +2050,46 @@ static U32 callJw(struct Data* data) {
 
 static U32 callJd(struct Data* data) {
     S32 offset = fetch32(data);
-    struct Block* block = getBlock(data->cpu, data->ip+offset);
+    U32 eip = data->ip+offset;
+    U8* translatedEip = (U8*)getTranslatedEip(data, eip);
 
-    write8(data, 0xe8);
-    if (block->dynamicCode) {        
-        write32(data, (U32)((U8*)block->dynamicCode-4-data->memStart[data->memPos]));
+    pushd(data, data->ip); // will return to next instruction
+
+    write8(data, 0xe9); // jmp jd
+    if (translatedEip) {        
+        write32(data, (U32)(translatedEip-4-data->memStart[data->memPos]));
     } else {
-        data->callTodo[data->callTodoCount++]=data->memPos;
-        write32(data, data->ip+offset);
-        // :TODO: decode this after 
+        write32(data, 0);
+        addTodoLinkJump(data, data->memPos, data->ip+offset-4, 4, FALSE);        
     }
+    data->done = 1;
     return 0;
 }
 
 static U32 jmpJw(struct Data* data) {
-    S16 offset = fetch16(data);
-    kpanic("jmpJw not implemented");
+    S16 offset = (S16)fetch16(data);
+    U32 eip = data->ip+offset;
+    setImmediate16(data, 0);
+    writeOp(data);
+    addTodoLinkJump(data, data->memPos-2, eip, 2, TRUE);
     return 0;
 }
 
 static U32 jmpJb(struct Data* data) {
-    S8 offset = fetch8(data);
-    kpanic("jmpJb not implemented");
+    S8 offset = (S8)fetch8(data);
+    U32 eip = data->ip+offset;
+    setImmediate8(data, 0);
+    writeOp(data);
+    addTodoLinkJump(data, data->memPos-1, eip, 1, TRUE);
     return 0;
 }
 
 static U32 jmpJd(struct Data* data) {
-    S32 offset = fetch32(data);
-    kpanic("jmpJd not implemented");
+    S32 offset = (S32)fetch32(data);
+    U32 eip = data->ip+offset;
+    setImmediate32(data, 0);
+    writeOp(data);
+    addTodoLinkJump(data, data->memPos-4, eip, 4, TRUE);
     return 0;
 }
 
@@ -1944,9 +2143,9 @@ static U32 retn16(struct Data* data) {
 }
 
 static U32 retn32(struct Data* data) {
-    // :TODO: pop32 eip
-    // :TODO:
-    kpanic("retn32 not implemented");
+    popRexReg32(data, HOST_TMP);
+    jmpReg(data, HOST_TMP, TRUE);
+    data->done = 1;
     return 0;
 }
 
@@ -1976,15 +2175,27 @@ static U32 iret(struct Data* data) {
 }
 
 static U32 intIb(struct Data* data) {
-    kpanic("intIb not implemented");
+    U8 i = fetch8(data);
+    if (i==0x80) {
+        writeCpuReg32(data, CPU_OFFSET_EAX, 0, FALSE);
+        writeCpuReg32(data, CPU_OFFSET_ECX, 1, FALSE);
+        writeCpuReg32(data, CPU_OFFSET_EDX, 2, FALSE);
+        writeCpuReg32(data, CPU_OFFSET_EBX, 3, FALSE);
+        writeCpuReg32(data, CPU_OFFSET_ESP, HOST_ESP, TRUE);
+        writeCpuReg32(data, CPU_OFFSET_EBP, 5, FALSE);
+        writeCpuReg32(data, CPU_OFFSET_ESI, 6, FALSE);
+        writeCpuReg32(data, CPU_OFFSET_EDI, 7, FALSE);
+        writeCmd(data, CMD_SYSCALL, data->startOfOpIp);        
+        cpuValueToReg(data, CPU_OFFSET_EAX, 0, FALSE);
+    }
     return 0;
 }
 
 static U32 movEwSw(struct Data* data) {
     U8 rm = fetch8(data);
-    cpuValueToRexReg(data, CPU_OFFSET_ES + ((rm >> 3) & 7) * 8, HOST_TMP);
+    cpuValueToReg(data, CPU_OFFSET_ES + ((rm >> 3) & 7) * 8, HOST_TMP, TRUE);
     data->inst = 0x89;
-    addPrefix(data, 0x66);
+    addPrefix(data, 0x66, 0);
     rm = (rm & ~0x38) | (HOST_TMP << 3);
     data->rex |= REX_MOD_REG|REX_BASE;
     if (rm<0xC0) {
@@ -1998,7 +2209,7 @@ static U32 movEwSw(struct Data* data) {
 
 static U32 movEdSw(struct Data* data) {
     U8 rm = fetch8(data);
-    cpuValueToRexReg(data, CPU_OFFSET_ES + ((rm >> 3) & 7) * 8, HOST_TMP);
+    cpuValueToReg(data, CPU_OFFSET_ES + ((rm >> 3) & 7) * 8, HOST_TMP, TRUE);
     data->inst = 0x89;
     rm = (rm & ~0x38) | (HOST_TMP << 3);
     data->rex |= REX_MOD_REG|REX_BASE;
@@ -2053,7 +2264,7 @@ static U32 popEw(struct Data* data) {
     // mov Ew, HOST_TMP
     data->inst = 0x89;
     data->rex |= REX_MOD_REG|REX_BASE;
-    addPrefix(data, 0x66);
+    addPrefix(data, 0x66, 0);
     setRM(data, (rm & ~ 0x7)|HOST_TMP, FALSE, FALSE);
     writeOp(data);
     // HOST_ESP = HOST_ESP + 2
@@ -2420,12 +2631,42 @@ static U32 grp5d(struct Data* data) {
             setRM(data, rm, FALSE, TRUE);
         }
         writeOp(data);
-    } else if (g==2) { // call near Dd
-        kpanic("call near not implemented");
-    } else if (g==3) { // call far Dd
+    } else if (g==2) { // call near Ed
+        if (rm<0xC0) {
+            translateMemory(data, rm, TRUE);
+            data->inst = 0x8b; // mov gd, ed
+            rm = (rm & ~0x38) | (HOST_TMP << 3);
+            data->rex |= REX_MOD_REG|REX_BASE;
+            writeOp(data);
+            pushd(data, data->ip); // will return to next instruction
+            jmpReg(data, HOST_TMP, TRUE);
+        } else {
+            U32 reg = rm & 7;
+
+            pushd(data, data->ip); // will return to next instruction
+            if (reg==4) 
+                jmpReg(data, HOST_ESP, TRUE);
+            else
+                jmpReg(data, reg, FALSE);
+        }     
+        data->done = 1;
+    } else if (g==3) { // call far Ed
         kpanic("call far not implemented");
     } else if (g==4) { // jmp near Ed
-        kpanic("jmp near not implemented");
+        if (rm<0xC0) {
+            translateMemory(data, rm, TRUE);
+            data->inst = 0x8b; // mov gd, ed
+            rm = (rm & ~0x38) | (HOST_TMP << 3);
+            data->rex |= REX_MOD_REG|REX_BASE;
+            writeOp(data);
+            jmpReg(data, HOST_TMP, TRUE);
+        } else {
+            U32 reg = rm & 7;
+            if (reg==4) 
+                jmpReg(data, HOST_ESP, TRUE);
+            else
+                jmpReg(data, reg, FALSE);
+        }
         data->done = 1;
     } else if (g==5) { // jmp far Ed
         kpanic("jmp far not implemented");
@@ -2439,7 +2680,7 @@ static U32 grp5d(struct Data* data) {
             writeRexRegWithDisplacementFromReg(data, 4, SS, HOST_ESP, -4, TRUE, HOST_TMP);
             addWithLeaRexReg(data, HOST_ESP, -4);
         } else {
-            U32 reg = rm & 7;
+            U32 reg = rm & 7;            
             if (reg==4) {
                 writeRexRegWithDisplacementFromReg(data, 4, SS, HOST_ESP, -4, TRUE, HOST_ESP);
             } else {
@@ -2512,19 +2753,19 @@ static U32 segGS(struct Data* data) {
 
 static U32 instruction0f(struct Data* data) {
     data->baseOp+=0x100;
-    addPrefix(data, 0x0f);
+    addPrefix(data, 0x0f, data->ip-1);
     return 1; // continue decoding current instruction
 }
 
 static U32 instruction66(struct Data* data) {
     data->baseOp+=0x200;
-    addPrefix(data, 0x66);
+    addPrefix(data, 0x66, data->ip-1);
     return 1; // continue decoding current instruction
 }
 
 static U32 instruction266(struct Data* data) {
     data->baseOp-=0x200;
-    addPrefix(data, 0x66);
+    addPrefix(data, 0x66, data->ip-1);
     return 1; // continue decoding current instruction
 }
 
@@ -2544,17 +2785,17 @@ static U32 addressSize16(struct Data* data) {
 }
 
 static U32 lock(struct Data* data) {
-    addPrefix(data, 0xf0);
+    addPrefix(data, 0xf0, data->ip-1);
     return 1;
 }
 
 static U32 repnz(struct Data* data) {
-    addPrefix(data, 0xf2);
+    addPrefix(data, 0xf2, data->ip-1);
     return 1;
 }
 
 static U32 repz(struct Data* data) {
-    addPrefix(data, 0xf3);
+    addPrefix(data, 0xf3, data->ip-1);
     return 1;
 }
 
@@ -2598,7 +2839,7 @@ static DECODER decoder[1024] = {
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
     keepSameImm16, keepSameImm16, keepSameImm16, keepSameImm16, movSpIw, keepSameImm16, keepSameImm16, keepSameImm16,
     // C0
-    inst8RMimm8, inst16RMimm8, retn16Iw, retn16, les, lds, inst8RMimm8, inst16RMimm8,
+    inst8RMimm8, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8, inst16RMimm8,
     enter16, leave16, retf16Iw, retf16, invalidOp, intIb, invalidOp, invalidOp,
     // D0
     inst8RM, inst16RM, inst8RM, inst16RM, aam, aad, salc, xlat,
@@ -2696,7 +2937,7 @@ static DECODER decoder[1024] = {
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
     keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32,
     // 2c0
-    inst8RMimm8, inst32RMimm8, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8, inst32RMimm32,
+    inst8RMimm8, inst32RMimm8SafeG, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8, inst32RMimm32,
     enter32, leave32, retf32Iw, retf32, invalidOp, intIb, invalidOp, iret,
     // 2d0
     inst8RM, inst32RM, inst8RM, inst32RM, aam, aad, salc, xlat,
@@ -2759,68 +3000,66 @@ static DECODER decoder[1024] = {
 };
 
 void OPCALL firstOp(struct CPU* cpu, struct Op* op);
-void translateData(struct Block* block, struct Data* data) {
-    struct Op* op = block->ops;
+void translateData(struct Data* data) {
     U32 i;
 
-    if (op->func==firstOp)
-        op = op->next;
-    klog("Translating %X ... ", data->ip);
-    while (1) {
-        klog("   %s", op->str);
-        while (1) {
+    while (1) {   
+        mapAddress(data, data->ip, &data->memStart[data->memPos]);
+        data->opIp = data->ip;        
+        while (1) {            
             data->op = fetch8(data);            
-            data->inst = data->baseOp + data->op;
-            if (!decoder[data->inst](data)) {
-                if (data->inst != op->inst) {
-                    int ii=0;
-                }
+            data->inst = data->baseOp + data->op;            
+            if (!decoder[data->inst](data)) {                
                 break;
             }            
+            if (data->op != 0x66 && data->op!=0x67 && data->op!=0x0F)
+                data->opIp = data->ip;
         }
         if (data->done) {
-            if (op->next) {
-                kpanic("translateData failed in x64dynamic");
-            }
             break;
         }
         resetDataForNewOp(data);
-        op = op->next;
-        if (!op) {
-            block = getBlock(data->cpu, data->ip-data->cpu->segAddress[CS]);
-            op = block->ops;
-            if (op->func==firstOp)
-                op = op->next;
-        }
     }   
+    memPos+=data->memPos;
+
     printf("   Translated: ");
     for (i=0;i<data->memPos;i++) {
         printf("%.02X ", data->memStart[i]);
     }
     printf("\n");
-    for (i=0;i<data->callTodoCount;i++) {
-        U8* translatedOffset = (U8*)translateEip(data->cpu, read32Buffer(&data->memStart[data->callTodo[i]]));
-        U32 memPos = data->callTodo[i];
-        U8* offset = &data->memStart[memPos];
+    for (i=0;i<data->jmpTodoCount;i++) {
+        U8* translatedOffset = (U8*)translateEip(data->cpu, data->jmpTodoEip[i]);
+        U8* offset = data->jmpTodoAddress[i];
+        U8 size = data->jmpTodoOffsetSize[i];
 
-        write32Buffer(offset, (U32)(translatedOffset - offset) - 4);
+        if (size==4) {
+            write32Buffer(offset, (U32)(translatedOffset - offset) - 4);
+        } else if (size==2) {
+            write16Buffer(offset, (U32)(translatedOffset - offset) - 2);
+        } else if (size==1) {
+            write8Buffer(offset, (U32)(translatedOffset - offset) - 1);
+        }
     }
 }
 
-U64 translateEip(struct CPU* cpu, U32 ip) {
-    struct Block* block = getBlock(cpu, ip);
+void* translateEip(struct CPU* cpu, U32 ip) {
+    cpu->opToAddressPages = cpu->thread->process->opToAddressPages;
 
-    if (!block->dynamicCode) {
+    if (!cpu->opToAddressPages[ip >> PAGE_SHIFT] || !cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK]) {
         struct Data data;
 
         initData(&data, cpu, ip);
-        translateData(block, &data);
-        block->dynamicCode = data.memStart;
-        block->dynamicCodeLen = data.memPos;
-        if (data.callTodoBuffer!=data.callTodo) {
-            free(data.callTodo);
+        translateData(&data);
+        if (data.jmpTodoEip!=data.jmpTodoEipBuffer) {
+            free(data.jmpTodoEip);
+        }
+        if (data.jmpTodoAddress!=data.jmpTodoAddressBuffer) {
+            free(data.jmpTodoAddress);
+        }
+        if (data.jmpTodoOffsetSize!=data.jmpTodoOffsetSizeBuffer) {
+            free(data.jmpTodoOffsetSize);
         }
     }
-    return (U64)block->dynamicCode;
+    return cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK];
 }
 #endif

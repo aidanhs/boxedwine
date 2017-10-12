@@ -4,7 +4,7 @@
 #include "platform.h"
 #include "cpu.h"
 
-U64 translateEip(struct CPU* cpu, U32 ip);
+void* translateEip(struct CPU* cpu, U32 ip);
 U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value);
 
 #endif
