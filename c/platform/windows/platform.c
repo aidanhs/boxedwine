@@ -24,6 +24,8 @@
 #include "../../source/emulation/hardmmu/hard_memory.h"
 #include "kthread.h"
 #include "ksystem.h"
+#include "x64dynamic.h"
+
 extern struct KThread* currentThread;
 
 LONGLONG PCFreq;
@@ -324,6 +326,19 @@ void seg_mapper(struct Memory* memory, U32 address) ;
 int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) {
+#ifdef BOXEDWINE_VM
+        if (*((U32*)ep->ContextRecord->Rip)==0x00688B4C) {
+            struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
+            U32 page = ep->ContextRecord->R8;
+            U32 offset = ep->ContextRecord->R13;
+
+            translateEip(cpu, (page << PAGE_SHIFT) | offset);
+            ep->ContextRecord->Rax = cpu->opToAddressPages[page][offset];
+            return EXCEPTION_CONTINUE_EXECUTION;
+        } else {
+            int ii=0;
+        }
+#else
         U32 address = getHostAddress(currentThread->process->memory, (void*)ep->ExceptionRecord->ExceptionInformation[1]);
         if (currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
             DWORD oldProtect;
@@ -341,6 +356,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
             // :TODO: for BOXEDWINE_VM
             return EXCEPTION_EXECUTE_HANDLER;
         }
+#endif
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -374,24 +390,12 @@ void setRegs(U64* regs) {
 }
 
 void cmdEntry();
+
+typedef void (*StartCPU)();
+
 DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     struct KThread* thread = (struct KThread*)lpParameter;
     struct CPU* cpu = &thread->cpu;
-    CONTEXT context;
-    DWORD oldProtect;
-    
-    RtlCaptureContext(&context);
-    context.Rax = EAX;
-    context.Rcx = ECX;
-    context.Rdx = EDX;
-    context.Rbx = EBX;
-    //context.Rsp = ESP;
-    context.Rbp = EBP;
-    context.Rsi = ESI;
-    context.Rdi = EDI;
-    context.Rip = translateEip(cpu, cpu->eip.u32);
-    context.R9 = (U64)cpu;
-    context.R11 = ESP;
 
     cpu->enterHost = cmdEntry;
     cpu->hostSegAddress[0] = cpu->memory->id + cpu->segAddress[0];
@@ -401,13 +405,10 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     cpu->hostSegAddress[4] = cpu->memory->id + cpu->segAddress[4];
     cpu->hostSegAddress[5] = cpu->memory->id + cpu->segAddress[5];
 
-    context.R10 = cpu->hostSegAddress[GS];
-    context.R12 = cpu->hostSegAddress[FS];
-    context.R14 = cpu->hostSegAddress[SS];
-    context.R15 = cpu->hostSegAddress[DS];
-
     __try {
-        RtlRestoreContext(&context, NULL);
+        StartCPU startCPU = (StartCPU)initCPUx64(cpu);
+        startCPU();
+        //RtlRestoreContext(&context, NULL);
     } __except(seh_filter(GetExceptionCode(), GetExceptionInformation())) {
         thread->cpu.nextBlock = 0;
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;

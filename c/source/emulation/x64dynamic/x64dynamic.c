@@ -15,6 +15,8 @@ void ksyscall(struct CPU* cpu, U32 eipCount);
 
 // R8-R15
 // code assumes 5 won't ever be a base 
+
+// if you change HOST_CPU, HOST_TMP2 or HOST_TMP then change it in platform.c
 #define HOST_TMP2         0
 #define HOST_CPU          1
 #define HOST_GS_PLUS_MEM  2
@@ -134,25 +136,6 @@ struct Data {
     U32 jmpTodoSize;
 };
 
-static U8* mem;
-static U32 memPos;
-
-// :TODO: needs work for deallocation
-static void* allocExecutableMemory(struct Data* data, U32 size) {
-    void* result;
-
-    if (!mem) {
-        mem = allocExecutable64kBlock();
-    }
-    if (memPos+size>64*1024) {
-        mem = allocExecutable64kBlock();
-        memPos = 0;
-    }
-    result = mem + memPos;
-    memPos+=size;
-    return result;
-}
-
 static U8 fetch8(struct Data* data) {
     U32 address;
 
@@ -205,6 +188,17 @@ static void write32(struct Data* data, U32 value) {
     write8(data, value >> 8);
     write8(data, value >> 16);
     write8(data, value >> 24);
+}
+
+static void write64(struct Data* data, U64 value) {
+    write8(data, (U8)value);
+    write8(data, (U8)(value >> 8));
+    write8(data, (U8)(value >> 16));
+    write8(data, (U8)(value >> 24));
+    write8(data, (U8)(value >> 32));
+    write8(data, (U8)(value >> 40));
+    write8(data, (U8)(value >> 48));
+    write8(data, (U8)(value >> 56));
 }
 
 static void write32Buffer(U8* buffer, U32 value) {
@@ -377,8 +371,13 @@ static void cpuValueToReg(struct Data* data, U32 offset, U32 reg, U32 isRexReg) 
 #if HOST_TMP == 4 || HOST_CPU == 4
     bad value for HOST_TMP or HOST_CPU
 #endif
-    write8(data, 0x40 | (reg << 3) | HOST_CPU);
-    write32(data, offset);
+    if (offset<=127) {
+        write8(data, 0x40 | (reg << 3) | HOST_CPU);
+        write8(data, offset);
+    } else {
+        write8(data, 0x80 | (reg << 3) | HOST_CPU);
+        write32(data, offset);
+    }
 }
 
 static void cpuValueToRexReg64(struct Data* data, U32 offset, U32 reg) {
@@ -652,6 +651,12 @@ static void writeToRexReg(struct Data* data, U32 reg, U32 value) {
     write32(data, value);
 }
 
+static void writeToRexReg64(struct Data* data, U32 reg, U64 value) {
+    write8(data, 0x49);
+    write8(data, 0xb8 + reg);
+    write64(data, value);
+}
+
 // returns 0 of eip changed
 void cmdEntry(struct CPU* cpu) {
     if (!handleCmd(cpu, cpu->cmd, cpu->cmdArg)) {
@@ -798,11 +803,11 @@ static void jmpReg(struct Data* data, U32 reg, U32 isRex) {
         write8(data, REX_BASE | REX_MOD_RM);
     write8(data, 0x89);
     write8(data, 0xC0 | HOST_TMP2 | (reg << 3));
-    // shr HOST_TMP2, 9  // 9 is from >> PAGE_SHIFT, << 3 (8 bytes per pointer)
+    // shr HOST_TMP2, 12
     write8(data, REX_BASE | REX_MOD_RM);
     write8(data, 0xC1);
     write8(data, 0xE8 | HOST_TMP2);
-    write8(data, 9);
+    write8(data, PAGE_SHIFT);
 
     // mov HOST_TMP, reg
     if (reg!=HOST_TMP) {
@@ -819,16 +824,50 @@ static void jmpReg(struct Data* data, U32 reg, U32 isRex) {
     write8(data, 0xE0 | HOST_TMP);
     write32(data, 0xFFF);
 
-    // add HOST_TMP2, HOST_CPU
-    write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG);
-    write8(data, 0x01);
-    write8(data, 0xC0 | HOST_TMP2 | (HOST_CPU << 3));
+    // push rax
+    write8(data, 0x50);
 
-    // jmp [HOST_TMP2 + HOST_TMP << 3]
-    write8(data, REX_BASE | REX_MOD_RM | REX_SIB_INDEX);
+    // rax=cpu->opToAddressPages
+    // mov rax, [HOST_CPU];
+    write8(data, REX_BASE | REX_64 | REX_MOD_RM);
+    write8(data, 0x8b);
+    write8(data, HOST_CPU);
+    
+    // rax = cpu->opToAddressPages[page]
+    // mov RAX, [RAX+HOST_TEMP2<<3] // 3 sizeof(void*)
+    write8(data, REX_BASE | REX_64 | REX_SIB_INDEX);
+    write8(data, 0x8b);
+    write8(data, 0x04); // sib
+    write8(data, 0xC0 | (HOST_TMP2 << 3));    
+
+    // will move address to RAX and test that it exists, if it doesn't then we
+    // will catch the exception.  We leave the address/index we need in HOST_TMP
+    // and HOST_TMP2
+
+    // mov RAX, [RAX + HOST_TMP << 3]
+    write8(data, REX_BASE | REX_SIB_INDEX | REX_64);
+    write8(data, 0x8b);
+    write8(data, 0x04);
+    write8(data, 0xC0 | (HOST_TMP << 3));
+
+    // mov HOST_TMP, [RAX]
+    write8(data, REX_BASE | REX_64 | REX_MOD_REG);
+    write8(data, 0x8b);
+    write8(data, 0x40 | (HOST_TMP << 3));
+    write8(data, 0);
+
+    // mov HOST_TMP, RAX
+    write8(data, REX_BASE | REX_64 | REX_MOD_RM);
+    write8(data, 0x89);
+    write8(data, 0xC0 | HOST_TMP);
+
+    // pop rax
+    write8(data, 0x58);
+
+    // jmp HOST_TMP
+    write8(data, REX_BASE | REX_MOD_RM);
     write8(data, 0xff);
-    write8(data, 0x24);
-    write8(data, 0xC0 | HOST_TMP2 | (HOST_TMP << 3));
+    write8(data, (0x04 << 3) | 0xC0 | HOST_TMP);
 
     // if [HOST_TMP2 + HOST_TMP << 3] is not valid then we will catch the exception somewhere else
 }
@@ -1019,15 +1058,21 @@ static void resetDataForNewOp(struct Data* data) {
     data->startOfOpIp = data->ip;
 }
 
+static U8* mem;
+static U32 memPos;
+static U32 availableMem;
+
 static void initData(struct Data* data, struct CPU* cpu, U32 eip) {
     memset(data, 0, sizeof(struct Data));    
     data->start = data->ip = eip;
     data->cpu = cpu;    
-    // :TODO:
-    allocExecutableMemory(data, 1);
+    if (!mem) {
+        mem = allocExecutable64kBlock();
+        availableMem = 64*1024;
+    }
     data->memStart = mem+memPos;
     data->memPos = 0;
-    data->availableMem = 64*1024-memPos;
+    data->availableMem = availableMem;
     data->jmpTodoEip = data->jmpTodoEipBuffer;
     data->jmpTodoAddress = data->jmpTodoAddressBuffer;
     data->jmpTodoOffsetSize = data->jmpTodoOffsetSizeBuffer;
@@ -2057,10 +2102,10 @@ static U32 callJd(struct Data* data) {
 
     write8(data, 0xe9); // jmp jd
     if (translatedEip) {        
-        write32(data, (U32)(translatedEip-4-data->memStart[data->memPos]));
+        write32(data, (U32)(translatedEip-data->memStart[data->memPos]));
     } else {
         write32(data, 0);
-        addTodoLinkJump(data, data->memPos, data->ip+offset-4, 4, FALSE);        
+        addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);        
     }
     data->done = 1;
     return 0;
@@ -3021,6 +3066,7 @@ void translateData(struct Data* data) {
         resetDataForNewOp(data);
     }   
     memPos+=data->memPos;
+    availableMem-=data->memPos;
 
     printf("   Translated: ");
     for (i=0;i<data->memPos;i++) {
@@ -3033,13 +3079,42 @@ void translateData(struct Data* data) {
         U8 size = data->jmpTodoOffsetSize[i];
 
         if (size==4) {
-            write32Buffer(offset, (U32)(translatedOffset - offset) - 4);
+            write32Buffer(offset, (U32)(translatedOffset - offset - 4));
         } else if (size==2) {
-            write16Buffer(offset, (U32)(translatedOffset - offset) - 2);
+            write16Buffer(offset, (U32)(translatedOffset - offset - 2));
         } else if (size==1) {
-            write8Buffer(offset, (U32)(translatedOffset - offset) - 1);
+            write8Buffer(offset, (U32)(translatedOffset - offset - 1));
         }
     }
+}
+
+void* initCPUx64(struct CPU* cpu) {
+    struct Data data;
+    void* result;
+
+    initData(&data, cpu, cpu->eip.u32);
+    result = data.memStart;
+
+    writeToRexReg64(&data, HOST_CPU, (U64)cpu);
+
+    cpuValueToRexReg64(&data, CPU_OFFSET_GS_PLUS_MEM, HOST_GS_PLUS_MEM);
+    cpuValueToRexReg64(&data, CPU_OFFSET_FS_PLUS_MEM, HOST_FS_PLUS_MEM);
+    cpuValueToRexReg64(&data, CPU_OFFSET_SS_PLUS_MEM, HOST_SS_PLUS_MEM);
+    cpuValueToRexReg64(&data, CPU_OFFSET_DS_PLUS_MEM, HOST_DS_PLUS_MEM);
+
+    cpuValueToReg(&data, CPU_OFFSET_EAX, 0, FALSE);
+    cpuValueToReg(&data, CPU_OFFSET_ECX, 1, FALSE);
+    cpuValueToReg(&data, CPU_OFFSET_EDX, 2, FALSE);
+    cpuValueToReg(&data, CPU_OFFSET_EBX, 3, FALSE);
+    cpuValueToReg(&data, CPU_OFFSET_ESP, HOST_ESP, TRUE);
+    cpuValueToReg(&data, CPU_OFFSET_EBP, 5, FALSE);
+    cpuValueToReg(&data, CPU_OFFSET_ESI, 6, FALSE);
+    cpuValueToReg(&data, CPU_OFFSET_EDI, 7, FALSE);
+
+    memPos+=data.memPos;
+    availableMem-=data.memPos;
+    translateEip(cpu, cpu->eip.u32);
+    return result;
 }
 
 void* translateEip(struct CPU* cpu, U32 ip) {
