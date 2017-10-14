@@ -861,8 +861,10 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         if (oldEAX == __NR_rt_sigprocmask) {
             runSignals(thread);
         }
+#ifndef BOXEDWINE_VM
         if (cpu->nextBlock!=&emptyBlock)
             cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
+#endif
     }	
     thread->inSysCall = 0;
     sysCallTime+=(getMicroCounter()-startTime);        

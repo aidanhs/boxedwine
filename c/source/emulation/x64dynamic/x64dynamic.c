@@ -52,6 +52,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount);
 #define CPU_OFFSET_STACK_NOT_MASK (U32)(offsetof(struct CPU, stackNotMask))
 #define CPU_OFFSET_HOST_ENTRY (U32)(offsetof(struct CPU, enterHost))
 #define CPU_OFFSET_CMD (U32)(offsetof(struct CPU, cmd))
+#define CPU_OFFSET_CMD_ARG (U32)(offsetof(struct CPU, cmdArg))
 #define CPU_OFFSET_EIP (U32)(offsetof(struct CPU, eip.u32))
 
 #define CMD_SET_ES 0
@@ -68,6 +69,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount);
 #define CMD_LOAD_FS 11
 #define CMD_LOAD_GS 12
 #define CMD_SYSCALL 13
+#define CMD_PRINT 14
 
 #define REX_BASE 0x40
 #define REX_MOD_RM 0x1
@@ -136,6 +138,10 @@ struct Data {
     U32 jmpTodoSize;
 };
 
+static U8* mem;
+static U32 memPos;
+static U32 availableMem;
+
 static U8 fetch8(struct Data* data) {
     U32 address;
 
@@ -171,8 +177,12 @@ static U32 fetch32(struct Data* data) {
 
 static void write8(struct Data* data, U8 value) {
     if (!data->availableMem) {
-        // :TODO: alloc continued memory
-        kpanic("Ran out of dynamic x64 memory");
+        U8* next = allocExecutable64kBlock();
+        data->availableMem = 64*1024;
+        availableMem += 64*1024;        
+        if (next!=mem+memPos+data->memPos) {
+            kpanic("Memory problem");
+        }
     }
     data->memStart[data->memPos++] = value;
     data->availableMem--;
@@ -241,24 +251,28 @@ static void mapAddress(struct Data* data, U32 ip, void* address) {
 static void writeOp(struct Data* data) {
     int i;
     // make sure the lock, rep prefixes come before rex, since they can be jumped over
-    
+    U32 hasPrefix = 0;
+
     for (i=0;i<sizeof(data->prefix);i++) {
         if (data->prefix[i]!=0) {
-            if (data->prefix[i]!=0x67 && data->prefix[i]!=0x66 && data->prefix[i]!=0x0f) {
+            if (data->prefix[i]!=0x0f) {
                 if (data->prefixAddress[i]!=0) {
                     mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
                 }
-                write8(data, data->prefix[i]);            
+                write8(data, data->prefix[i]);    
+                hasPrefix = 1;
             }
         }
     }
-    mapAddress(data, data->opIp, &data->memStart[data->memPos]);
+    // :TODO: currently don't handle mapping of ops that get split into two ops if they have a prefix
+    //if (hasPrefix)
+    //    mapAddress(data, data->opIp, &data->memStart[data->memPos]);
     if (data->rex) {
         write8(data, data->rex);
     }  
     // These aren't really prefixes, they are part of the op code
     for (i=0;i<sizeof(data->prefix);i++) {
-        if (data->prefix[i]==0x67 || data->prefix[i]==0x66 || data->prefix[i]==0x0f) {
+        if (data->prefix[i]==0x0f) {
             if (data->prefixAddress[i]!=0) {
                 if (!data->rex) // don't allow jumping into the middle of a op after rex
                     mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
@@ -455,7 +469,7 @@ static void subBaseFromReg(struct Data* data, U8 base, U32 isDestRex, U8 destReg
 
 // destRexReg = base + srcReg
 static void addBaseAndRegToReg(struct Data* data, U8 base, U32 isSrcRex, U8 srcReg, U32 isDestRex, U8 destReg) {
-    U32 rex = REX_BASE | REX_SIB_INDEX; // base is always rex
+    U32 rex = REX_BASE | REX_SIB_INDEX | REX_64; // base is always rex
     // Get base
     base = getRegForBase(data, base);
     
@@ -666,6 +680,7 @@ void cmdEntry(struct CPU* cpu) {
 
 static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
     switch (cmd) {
+    case CMD_PRINT: printf("%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, value, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); return 1;
     case CMD_SET_ES:
     case CMD_SET_CS:
     case CMD_SET_SS:
@@ -696,7 +711,7 @@ static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
         return 1;
     case CMD_SYSCALL:
         ksyscall(cpu, cpu->eip.u32);
-        break;
+        return 1;
     }    
     kpanic("Unknow x64dynamic cmd: %d", cmd);
     return 0;
@@ -718,6 +733,7 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
     write8(data, 0x52); 
     write8(data, 0x41);// push r11
     write8(data, 0x53); 
+    write8(data, 0x9c); // push flags
 
 #ifdef PLATFORM_MSVC
     // shadow space
@@ -766,6 +782,7 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
 #endif
 
     // restore regs that are volitile
+    write8(data, 0x9d);// pop flags
     write8(data, 0x41);// pop r11
     write8(data, 0x5b); 
     write8(data, 0x41);// pop r10
@@ -774,7 +791,7 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
     write8(data, 0x59); 
     write8(data, 0x41);// pop r8
     write8(data, 0x58); 
-    write8(data, 0x5b);// pop   rdx
+    write8(data, 0x5a);// pop   rdx
     write8(data, 0x59);// pop   rcx
     write8(data, 0x58);// pop   rax
 
@@ -786,7 +803,7 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
         cpuValueToRexReg64(data, CPU_OFFSET_SS_PLUS_MEM, HOST_SS_PLUS_MEM);
     }  else if (cmd == CMD_SET_DS) {
         cpuValueToRexReg64(data, CPU_OFFSET_DS_PLUS_MEM, HOST_DS_PLUS_MEM);
-    }    
+    }   
 }
 
 static void pushCpuOffset16(struct Data* data, U32 offset) {
@@ -912,7 +929,7 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
             case 0x02:
             case 0x03:
             case 0x06: 
-            case 0x07: 
+            case 0x07:                 
                 if (data->ds == SEG_ZERO) {
                     setRM(data, rm, checkG, FALSE);
                 } else {
@@ -945,14 +962,28 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                         if (data->ds == SEG_ZERO) {
                             setRM(data, rm, checkG, FALSE);
                             setSib(data, sib, TRUE); 
+                            setDisplacement32(data, fetch32(data));
                         } else {
-                            // convert [index << shift + disp32] to [MEM + index << shift + disp32];
-                            data->rex = REX_BASE | REX_MOD_RM; // MEM is rex
-                            setRM(data, rm | 0x80, checkG, FALSE); // change from sib0 to sib2
-                            // checkBase==FALSE because it will always be rex
-                            setSib(data, (sib & ~7) | getRegForBase(data, data->ds), FALSE);
-                        }
-                        setDisplacement32(data, fetch32(data));
+                            // convert [index << shift + disp32] to  HOST_TMP2 = index << shift + disp32; [MEM+HOST_TMP2];
+
+                            // lea HOST_TMP2, [index << shift + disp32];
+                            write8(data, 0x67); // 32-bit address calculation
+                            if ((sib & 7) == 4) {
+                                write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM);
+                                sib = (sib & ~7) | HOST_ESP;
+                            } else {
+                                write8(data, REX_BASE | REX_MOD_REG);
+                            }
+                            write8(data, 0x8d); // lea instruction
+                            write8(data, (HOST_TMP2 << 3) | 0x84); // rm, sib2
+                            write8(data, 0x80 | sib); // sib
+                            write32(data, fetch32(data)); // disp32
+
+                            data->rex = REX_BASE | REX_MOD_RM | REX_SIB_INDEX;
+                            setRM(data, rm | 0x40, checkG, FALSE); // change from sib0 to sib1 (that way we don't have to worry about getRegForBase or HOST_TMP2 being 5)
+                            setSib(data, getRegForBase(data, data->ds) | (HOST_TMP2 << 3), FALSE);
+                            setDisplacement8(data, 0);
+                        }                        
                     } else { // [base + index << shift]
                         if (data->ds == SEG_ZERO) {
                             // keep the same, but convert ESP to HOST_ESP
@@ -965,13 +996,24 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                                 setRM(data, rm, checkG, FALSE); // change from sib0 to sib2
                                 setSib(data, (sib & ~0x38) | (getRegForBase(data, base==4?data->ss:data->ds) << 3), TRUE);
                             } else {
-                                // convert [base + index << shift] to HOST_TMP=base+MEM;[HOST_TMP + index << shift];
-                                data->rex = REX_BASE | REX_MOD_RM;
-                                addBaseAndRegToReg(data, base==4?data->ss:data->ds, FALSE, base, TRUE, HOST_TMP);
-                                // change to sib1 (0x40) because HOST_TMP is R13, which changes to no base and uses disp32
-                                setRM(data, rm | 0x40, FALSE, FALSE);                                
-                                setSib(data, (sib & ~7) | HOST_TMP, checkG);
-                                setImmediate8(data, 0);
+                                // convert [base + index << shift] to HOST_TMP2=[base + index << shift];[HOST_TMP2+MEM]
+
+                                // lea HOST_TMP2, [base + index << shift];
+                                write8(data, 0x67); // 32-bit address calculation
+                                if ((sib & 7) == 4) {
+                                    write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM);
+                                    sib = (sib & ~7) | HOST_ESP;
+                                } else {
+                                    write8(data, REX_BASE | REX_MOD_REG);
+                                }
+                                write8(data, 0x8d); // lea instruction
+                                write8(data, (HOST_TMP2 << 3) | 0x04); // rm, sib0
+                                write8(data, sib); // sib0, don't need to worry about base==5, that is handled above
+
+                                data->rex = REX_BASE | REX_MOD_RM | REX_SIB_INDEX;
+                                setRM(data, rm | 0x40, checkG, FALSE); // change from sib0 to sib1 (that way we don't have to worry about getRegForBase or HOST_TMP2 being 5)
+                                setSib(data, getRegForBase(data, data->ds) | (HOST_TMP2 << 3), FALSE);
+                                setDisplacement8(data, 0);
                             }
                         }
                     }    
@@ -989,34 +1031,74 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
             case 0x07:
                 if (data->ds == SEG_ZERO) {
                     setRM(data, rm, checkG, FALSE);
+                    if (rm<0x80) {
+                        setDisplacement8(data, fetch8(data));
+                    } else {
+                        setDisplacement32(data, fetch32(data));
+                    }
                 } else {
-                    // converts [reg + disp] to [reg + MEM<<1 + disp]
-                    data->rex = REX_BASE | REX_SIB_INDEX;
-                    setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
-                    setSib(data, (rm & 7) | (getRegForBase(data, (rm & 7)==5?data->ss:data->ds) << 3), TRUE);
+                    // converts [reg + disp] to HOST_TMP2 = reg + disp; [HOST_TMP2+MEM];
+
+                    // lea HOST_TMP2, [base + index << shift];
+                    write8(data, 0x67); // 32-bit address calculation
+                    if (((rm >> 3) & 7) == 4) {
+                        write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM);
+                        rm = (rm & ~0x38) | (HOST_ESP << 3);
+                    } else {
+                        write8(data, REX_BASE | REX_MOD_REG);
+                    }
+                    write8(data, 0x8d); // lea instruction
+                    write8(data, (HOST_TMP2 << 3) | (rm & ~0x38)); // rm
+                    if (rm<0x80) {
+                        write8(data, fetch8(data));
+                    } else {
+                        write32(data, fetch32(data));
+                    }
+
+                    data->rex = REX_BASE | REX_MOD_RM | REX_SIB_INDEX;
+                    setRM(data, (rm & 0x38) | 0x44, checkG, FALSE); // sib1 (that way we don't have to worry about getRegForBase or HOST_TMP2 being 5)
+                    setSib(data, getRegForBase(data, data->ds) | (HOST_TMP2 << 3), FALSE);
+                    setDisplacement8(data, 0);
                 }
                 break;
             case 0x04: {
-                    // convert [reg1 + reg2 << shift + disp] to HOST_TMP=reg1+MEM;[HOST_TMP + reg2 << shift + disp]
-                    U8 sib = fetch8(data);
+                    // convert [base + index << shift + disp] to HOST_TMP2=base + index << shift + disp;[HOST_TMP2+MEM]
+                    U8 sib = fetch8(data);                    
+
                     if (data->ds == SEG_ZERO) {
                         setRM(data, rm, checkG, FALSE);
                         setSib(data, sib, TRUE);
+                        if (rm<0x80) {
+                            setDisplacement8(data, fetch8(data));
+                        } else {
+                            setDisplacement32(data, fetch32(data));
+                        }
                     } else {
-                        U8 reg = (sib & 7);
-                        data->rex = REX_BASE | REX_MOD_RM;
-                        addBaseAndRegToReg(data, (reg==4 || reg==5)?data->ss:data->ds, FALSE, reg, TRUE, HOST_TMP);
-                        setRM(data, rm, checkG, FALSE);
-                        setSib(data, (sib & ~7) | HOST_TMP, FALSE);                
+                        // lea HOST_TMP2, [base + index << shift + disp];
+                        write8(data, 0x67); // 32-bit address calculation
+                        if ((sib & 7) == 4) {
+                            write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM);
+                            sib = (sib & ~7) | HOST_ESP;
+                        } else {
+                            write8(data, REX_BASE | REX_MOD_REG);
+                        }
+                        write8(data, 0x8d); // lea instruction
+                        write8(data, (HOST_TMP2 << 3) | (rm & ~0x38)); // rm
+                        write8(data, sib);
+                        if (rm<0x80) {
+                            write8(data, fetch8(data));
+                        } else {
+                            write32(data, fetch32(data));
+                        }
+
+                        data->rex = REX_BASE | REX_MOD_RM | REX_SIB_INDEX;
+                        setRM(data, (rm & 0x38) | 0x44, checkG, FALSE); // sib1 (that way we don't have to worry about getRegForBase or HOST_TMP2 being 5)
+                        setSib(data, getRegForBase(data, data->ds) | (HOST_TMP2 << 3), FALSE);
+                        setDisplacement8(data, 0);         
                     }
                 }
                 break;
-            }
-            if (rm<0x80) {
-                setDisplacement8(data, fetch8(data));
-            } else {
-                setDisplacement32(data, fetch32(data));
-            }
+            }            
         }
     }
 }
@@ -1057,10 +1139,6 @@ static void resetDataForNewOp(struct Data* data) {
     } 
     data->startOfOpIp = data->ip;
 }
-
-static U8* mem;
-static U32 memPos;
-static U32 availableMem;
 
 static void initData(struct Data* data, struct CPU* cpu, U32 eip) {
     memset(data, 0, sizeof(struct Data));    
@@ -2032,14 +2110,6 @@ static void addTodoLinkJump(struct Data* data, U32 memPos, U32 eip, U8 offsetSiz
     data->jmpTodoAddress[data->jmpTodoCount] = &data->memStart[memPos];
     data->jmpTodoEip[data->jmpTodoCount] = eip;
     data->jmpTodoOffsetSize[data->jmpTodoCount++] = offsetSize;
-    if (doneIfDoesNotExist) {
-        int i;
-        for (i=0;i<data->jmpTodoCount;i++) {
-            if (data->jmpTodoEip[i]>=eip)
-                return;
-        }
-        data->done = TRUE;
-    }
 }
 
 static U32 jump8(struct Data* data) {
@@ -2048,10 +2118,16 @@ static U32 jump8(struct Data* data) {
 
     offset = (S8)fetch8(data);
     eip = data->ip+offset;
-    setImmediate8(data, 0);
+    data->op += 0x10;
+    if (data->baseOp==0x200) {
+        addPrefix(data, 0x0F, 0);
+    } else {
+        kpanic("jump8 in 16-bit mode not handled yet");
+    }
+    setImmediate32(data, 0);
     writeOp(data);
 
-    addTodoLinkJump(data, data->memPos-1, eip, 1, FALSE);
+    addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
     return 0;
 }
 
@@ -2102,7 +2178,7 @@ static U32 callJd(struct Data* data) {
 
     write8(data, 0xe9); // jmp jd
     if (translatedEip) {        
-        write32(data, (U32)(translatedEip-data->memStart[data->memPos]));
+        write32(data, (U32)(translatedEip-&data->memStart[data->memPos]-4));
     } else {
         write32(data, 0);
         addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);        
@@ -2116,16 +2192,23 @@ static U32 jmpJw(struct Data* data) {
     U32 eip = data->ip+offset;
     setImmediate16(data, 0);
     writeOp(data);
-    addTodoLinkJump(data, data->memPos-2, eip, 2, TRUE);
+    addTodoLinkJump(data, data->memPos-2, eip, 2, FALSE);
+    data->done = 1;
     return 0;
 }
 
 static U32 jmpJb(struct Data* data) {
     S8 offset = (S8)fetch8(data);
     U32 eip = data->ip+offset;
-    setImmediate8(data, 0);
+    data->op = 0xe9;
+    if (data->baseOp == 0x200) {
+        setImmediate32(data, 0);
+    } else {
+        kpanic("jmpJb 16-bit not handled yet");
+    }
     writeOp(data);
-    addTodoLinkJump(data, data->memPos-1, eip, 1, TRUE);
+    addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
+    data->done = 1;
     return 0;
 }
 
@@ -2134,7 +2217,8 @@ static U32 jmpJd(struct Data* data) {
     U32 eip = data->ip+offset;
     setImmediate32(data, 0);
     writeOp(data);
-    addTodoLinkJump(data, data->memPos-4, eip, 4, TRUE);
+    addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
+    data->done = 1;
     return 0;
 }
 
@@ -2677,12 +2761,13 @@ static U32 grp5d(struct Data* data) {
         }
         writeOp(data);
     } else if (g==2) { // call near Ed
-        if (rm<0xC0) {
-            translateMemory(data, rm, TRUE);
-            data->inst = 0x8b; // mov gd, ed
-            rm = (rm & ~0x38) | (HOST_TMP << 3);
+        if (rm<0xC0) {            
+            data->op = 0x8b; // mov gd, ed            
+            translateMemory(data, rm, FALSE);            
+            data->rm = (data->rm & ~0x38) | (HOST_TMP << 3);
             data->rex |= REX_MOD_REG|REX_BASE;
             writeOp(data);
+
             pushd(data, data->ip); // will return to next instruction
             jmpReg(data, HOST_TMP, TRUE);
         } else {
@@ -3050,6 +3135,19 @@ void translateData(struct Data* data) {
 
     while (1) {   
         mapAddress(data, data->ip, &data->memStart[data->memPos]);
+
+        if (0) { // will print out instructions as they are run
+            writeCpuReg32(data, CPU_OFFSET_EAX, 0, FALSE);
+            writeCpuReg32(data, CPU_OFFSET_ECX, 1, FALSE);
+            writeCpuReg32(data, CPU_OFFSET_EDX, 2, FALSE);
+            writeCpuReg32(data, CPU_OFFSET_EBX, 3, FALSE);
+            writeCpuReg32(data, CPU_OFFSET_ESP, HOST_ESP, TRUE);
+            writeCpuReg32(data, CPU_OFFSET_EBP, 5, FALSE);
+            writeCpuReg32(data, CPU_OFFSET_ESI, 6, FALSE);
+            writeCpuReg32(data, CPU_OFFSET_EDI, 7, FALSE);
+            writeCpuValue32(data, CPU_OFFSET_CMD_ARG, (U32)&data->memStart[data->memPos]);
+        writeCmd(data, CMD_PRINT, data->ip);
+        }
         data->opIp = data->ip;        
         while (1) {            
             data->op = fetch8(data);            
@@ -3068,11 +3166,13 @@ void translateData(struct Data* data) {
     memPos+=data->memPos;
     availableMem-=data->memPos;
 
+    /*
     printf("   Translated: ");
     for (i=0;i<data->memPos;i++) {
         printf("%.02X ", data->memStart[i]);
     }
     printf("\n");
+    */
     for (i=0;i<data->jmpTodoCount;i++) {
         U8* translatedOffset = (U8*)translateEip(data->cpu, data->jmpTodoEip[i]);
         U8* offset = data->jmpTodoAddress[i];

@@ -335,6 +335,14 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
             translateEip(cpu, (page << PAGE_SHIFT) | offset);
             ep->ContextRecord->Rax = cpu->opToAddressPages[page][offset];
             return EXCEPTION_CONTINUE_EXECUTION;
+        } else if (*((U32*)ep->ContextRecord->Rip)==0xe8048b4a) {
+            struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
+            U32 page = ep->ContextRecord->R8;
+            U32 offset = ep->ContextRecord->R13;
+
+            translateEip(cpu, (page << PAGE_SHIFT) | offset);
+            ep->ContextRecord->Rax = &cpu->opToAddressPages[page];
+            return EXCEPTION_CONTINUE_EXECUTION;
         } else {
             int ii=0;
         }
