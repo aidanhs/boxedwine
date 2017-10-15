@@ -42,12 +42,12 @@ void ksyscall(struct CPU* cpu, U32 eipCount);
 #define CPU_OFFSET_ESI (U32)(offsetof(struct CPU, reg[6].u32))
 #define CPU_OFFSET_EDI (U32)(offsetof(struct CPU, reg[7].u32))
 
-#define CPU_OFFSET_ES_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[0]))
-#define CPU_OFFSET_CS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[1]))
-#define CPU_OFFSET_SS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[2]))
-#define CPU_OFFSET_DS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[3]))
-#define CPU_OFFSET_FS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[4]))
-#define CPU_OFFSET_GS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[5]))
+#define CPU_OFFSET_ES_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[ES]))
+#define CPU_OFFSET_CS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[CS]))
+#define CPU_OFFSET_SS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[SS]))
+#define CPU_OFFSET_DS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[DS]))
+#define CPU_OFFSET_FS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[FS]))
+#define CPU_OFFSET_GS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[GS]))
 #define CPU_OFFSET_STACK_MASK  (U32)(offsetof(struct CPU, stackMask))
 #define CPU_OFFSET_STACK_NOT_MASK (U32)(offsetof(struct CPU, stackNotMask))
 #define CPU_OFFSET_HOST_ENTRY (U32)(offsetof(struct CPU, enterHost))
@@ -255,7 +255,7 @@ static void writeOp(struct Data* data) {
 
     for (i=0;i<sizeof(data->prefix);i++) {
         if (data->prefix[i]!=0) {
-            if (data->prefix[i]!=0x0f) {
+            if (data->prefix[i]!=0x0f && i!=0) { // i=0 is the beginning of the op and this is already mapped to the beginning             
                 if (data->prefixAddress[i]!=0) {
                     mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
                 }
@@ -273,7 +273,7 @@ static void writeOp(struct Data* data) {
     // These aren't really prefixes, they are part of the op code
     for (i=0;i<sizeof(data->prefix);i++) {
         if (data->prefix[i]==0x0f) {
-            if (data->prefixAddress[i]!=0) {
+            if (data->prefixAddress[i]!=0 && i!=0) { // i=0 is the beginning of the op and this is already mapped to the beginning
                 if (!data->rex) // don't allow jumping into the middle of a op after rex
                     mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
             }
