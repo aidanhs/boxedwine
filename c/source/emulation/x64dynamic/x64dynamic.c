@@ -463,8 +463,30 @@ static void addWithLeaRexReg(struct Data* data, U32 reg, S32 displacement) {
         write32(data, (U32)displacement);
 }
 
-static void subBaseFromReg(struct Data* data, U8 base, U32 isDestRex, U8 destReg) {
-    kpanic("x64dynamic: subBaseFromReg not implemented");
+static void subBaseFromReg(struct Data* data, U8 base, U8 destReg) {
+    U32 baseReg = getRegForBase(data, base);
+
+    // mov HOST_TMP2, base
+    write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM | REX_64);
+    write8(data, 0x89); // mov
+    write8(data, 0xC0 | HOST_TMP2 | (baseReg << 3));
+
+    // neg HOST_TMP2
+    write8(data, REX_BASE | REX_64 | REX_MOD_RM);
+    write8(data, 0xf7);
+    write8(data, 0xd8 | HOST_TMP2);
+    
+    // lea destReg, [destReg + HOST_TMP2]
+    write8(data, REX_BASE | REX_64 | REX_SIB_INDEX);
+    write8(data, 0x8d); // lea
+    if (destReg==5) {
+        write8(data, (destReg << 3) | 0x44); // sib1
+        write8(data, destReg | (HOST_TMP2 << 3));
+        write8(data, 0);
+    } else {
+        write8(data, (destReg << 3) | 0x04); // sib0
+        write8(data, destReg | (HOST_TMP2 << 3));
+    }
 }
 
 // destRexReg = base + srcReg
@@ -1039,14 +1061,10 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                 } else {
                     // converts [reg + disp] to HOST_TMP2 = reg + disp; [HOST_TMP2+MEM];
 
-                    // lea HOST_TMP2, [base + index << shift];
+                    // lea HOST_TMP2, reg + disp;
                     write8(data, 0x67); // 32-bit address calculation
-                    if (((rm >> 3) & 7) == 4) {
-                        write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM);
-                        rm = (rm & ~0x38) | (HOST_ESP << 3);
-                    } else {
-                        write8(data, REX_BASE | REX_MOD_REG);
-                    }
+                    // reg will not be ESP, that his handled in case 4 below
+                    write8(data, REX_BASE | REX_MOD_REG);
                     write8(data, 0x8d); // lea instruction
                     write8(data, (HOST_TMP2 << 3) | (rm & ~0x38)); // rm
                     if (rm<0x80) {
@@ -2574,8 +2592,8 @@ static U32 stringDiSi(struct Data* data) {
     addBaseAndRegToReg(data, ES, FALSE, 7, FALSE, 7);
     addBaseAndRegToReg(data, data->ds, FALSE, 6, FALSE, 6);
     writeOp(data);
-    subBaseFromReg(data, ES, FALSE, 7);
-    subBaseFromReg(data, data->ds, FALSE, 6);
+    subBaseFromReg(data, ES, 7);
+    subBaseFromReg(data, data->ds, 6);
     return 0;
 }
 
@@ -2583,7 +2601,7 @@ static U32 stringDiSi(struct Data* data) {
 static U32 stringDi(struct Data* data) {
     addBaseAndRegToReg(data, ES, FALSE, 7, FALSE, 7);
     writeOp(data);
-    subBaseFromReg(data, ES, FALSE, 7);
+    subBaseFromReg(data, ES, 7);
     return 0;
 }
 
@@ -2591,7 +2609,7 @@ static U32 stringDi(struct Data* data) {
 static U32 stringSi(struct Data* data) {
     addBaseAndRegToReg(data, data->ds, FALSE, 6, FALSE, 6);
     writeOp(data);
-    subBaseFromReg(data, data->ds, FALSE, 6);
+    subBaseFromReg(data, data->ds, 6);
     return 0;
 }
 
@@ -2784,9 +2802,9 @@ static U32 grp5d(struct Data* data) {
         kpanic("call far not implemented");
     } else if (g==4) { // jmp near Ed
         if (rm<0xC0) {
-            translateMemory(data, rm, TRUE);
-            data->inst = 0x8b; // mov gd, ed
-            rm = (rm & ~0x38) | (HOST_TMP << 3);
+            translateMemory(data, rm, FALSE);
+            data->op = 0x8b; // mov gd, ed
+            data->rm = (data->rm & ~0x38) | (HOST_TMP << 3);
             data->rex |= REX_MOD_REG|REX_BASE;
             writeOp(data);
             jmpReg(data, HOST_TMP, TRUE);
@@ -2803,8 +2821,8 @@ static U32 grp5d(struct Data* data) {
     } else if (g==6) { // push Ed
         if (rm<0xC0) {
             translateMemory(data, rm, TRUE);
-            data->inst = 0x8b;
-            rm = (rm & ~0x38) | (HOST_TMP << 3);
+            data->op = 0x8b;
+            data->rm = (rm & ~0x38) | (HOST_TMP << 3);
             data->rex |= REX_MOD_REG|REX_BASE;
             writeOp(data);
             writeRexRegWithDisplacementFromReg(data, 4, SS, HOST_ESP, -4, TRUE, HOST_TMP);
@@ -3062,7 +3080,7 @@ static DECODER decoder[1024] = {
     keepSame, keepSame, callFar32, keepSame, pushFlags32, popFlags32, keepSame, keepSame,
     // 2a0
     movAlOb, movEaxOd, movObAl, movOdEax, stringDiSi, stringDiSi, stringDiSi, stringDiSi,
-    inst8RMimm8, inst32RMimm32, stringDi, stringDi, stringSi, stringSi, stringDi, stringDi,
+    keepSameImm8, keepSameImm32, stringDi, stringDi, stringSi, stringSi, stringDi, stringDi,
     // 2b0
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
     keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32,
