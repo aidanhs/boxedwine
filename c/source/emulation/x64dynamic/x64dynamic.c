@@ -934,8 +934,8 @@ static void translateMemory(struct Data* data, U32 rm, BOOL checkG) {
                                 write8(data, REX_BASE | REX_MOD_REG);
                             }
                             write8(data, 0x8d); // lea instruction
-                            write8(data, (HOST_TMP2 << 3) | 0x84); // rm, sib2
-                            write8(data, 0x80 | sib); // sib
+                            write8(data, (HOST_TMP2 << 3) | 0x04); // rm, sib2
+                            write8(data, sib); // sib
                             write32(data, fetch32(data)); // disp32
 
                             data->rex = REX_BASE | REX_MOD_RM | REX_SIB_INDEX;
@@ -1147,6 +1147,18 @@ static U32 inst16RM(struct Data* data) {
     writeOp(data);
     return 0;
 }
+
+static U32 inst16RMSafeG(struct Data* data) {
+    U8 rm = fetch8(data);    
+    if (rm<0xC0) {
+        translateMemory(data, rm, FALSE);
+    } else {
+        setRM(data, rm, FALSE, TRUE);
+    }
+    writeOp(data);
+    return 0;
+}
+
 
 static U32 inst32RM(struct Data* data) {
     U8 rm = fetch8(data);    
@@ -2236,10 +2248,10 @@ static U32 retn16Iw(struct Data* data) {
 
 static U32 retn32Iw(struct Data* data) {
     U16 n = fetch16(data);
-    // :TODO: pop16 eip
-    // :TODO: sp+=n
-    // :TODO:
-    kpanic("retn32Iw not implemented");
+    popRexReg32(data, HOST_TMP);
+    addWithLeaRexReg(data, HOST_ESP, n);
+    jmpReg(data, HOST_TMP, TRUE);
+    data->done = 1;
     return 0;
 }
 
@@ -2951,7 +2963,7 @@ static DECODER decoder[1024] = {
     inst8RMimm8, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8, inst16RMimm8,
     enter16, leave16, retf16Iw, retf16, invalidOp, intIb, invalidOp, invalidOp,
     // D0
-    inst8RM, inst16RM, inst8RM, inst16RM, aam, aad, salc, xlat,
+    inst8RM, inst16RMSafeG, inst8RM, inst16RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // E0
     loop, loop, loop, loop, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -3049,7 +3061,7 @@ static DECODER decoder[1024] = {
     inst8RMimm8, inst32RMimm8SafeG, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8, inst32RMimm32,
     enter32, leave32, retf32Iw, retf32, invalidOp, intIb, invalidOp, iret,
     // 2d0
-    inst8RM, inst32RM, inst8RM, inst32RM, aam, aad, salc, xlat,
+    inst8RM, inst32RMSafeG, inst8RM, inst32RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // 2e0
     loop, loop, loop, loop, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -3114,7 +3126,6 @@ void translateData(struct Data* data) {
 
     while (1) {   
         mapAddress(data, data->ip, &data->memStart[data->memPos]);
-
         if (0) { // will print out instructions as they are run
             writeCpuReg32(data, CPU_OFFSET_EAX, 0, FALSE);
             writeCpuReg32(data, CPU_OFFSET_ECX, 1, FALSE);
