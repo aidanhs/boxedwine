@@ -48,6 +48,14 @@ void ksyscall(struct CPU* cpu, U32 eipCount);
 #define CPU_OFFSET_DS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[DS]))
 #define CPU_OFFSET_FS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[FS]))
 #define CPU_OFFSET_GS_PLUS_MEM (U32)(offsetof(struct CPU, hostSegAddress[GS]))
+
+#define CPU_OFFSET_NEG_ES_PLUS_MEM (U32)(offsetof(struct CPU, negHostSegAddress[ES]))
+#define CPU_OFFSET_NEG_CS_PLUS_MEM (U32)(offsetof(struct CPU, negHostSegAddress[CS]))
+#define CPU_OFFSET_NEG_SS_PLUS_MEM (U32)(offsetof(struct CPU, negHostSegAddress[SS]))
+#define CPU_OFFSET_NEG_DS_PLUS_MEM (U32)(offsetof(struct CPU, negHostSegAddress[DS]))
+#define CPU_OFFSET_NEG_FS_PLUS_MEM (U32)(offsetof(struct CPU, negHostSegAddress[FS]))
+#define CPU_OFFSET_NEG_GS_PLUS_MEM (U32)(offsetof(struct CPU, negHostSegAddress[GS]))
+
 #define CPU_OFFSET_STACK_MASK  (U32)(offsetof(struct CPU, stackMask))
 #define CPU_OFFSET_STACK_NOT_MASK (U32)(offsetof(struct CPU, stackNotMask))
 #define CPU_OFFSET_HOST_ENTRY (U32)(offsetof(struct CPU, enterHost))
@@ -255,8 +263,8 @@ static void writeOp(struct Data* data) {
 
     for (i=0;i<sizeof(data->prefix);i++) {
         if (data->prefix[i]!=0) {
-            if (data->prefix[i]!=0x0f && i!=0) { // i=0 is the beginning of the op and this is already mapped to the beginning             
-                if (data->prefixAddress[i]!=0) {
+            if (data->prefix[i]!=0x0f) { 
+                if (data->prefixAddress[i]!=0 && i!=0) { // i=0 is the beginning of the op and this is already mapped to the beginning             
                     mapAddress(data, data->prefixAddress[i], &data->memStart[data->memPos]);
                 }
                 write8(data, data->prefix[i]);    
@@ -450,6 +458,16 @@ static U32 getRegForBase(struct Data* data, U32 base) {
     return 0;
 }
 
+static void getRegForNegBase(struct Data* data, U32 base, U32 destRex) {
+    if (base == ES) {cpuValueToRexReg64(data, CPU_OFFSET_NEG_ES_PLUS_MEM, destRex); return;}
+    if (base == SS) {cpuValueToRexReg64(data, CPU_OFFSET_NEG_SS_PLUS_MEM, destRex); return;}
+    if (base == DS) {cpuValueToRexReg64(data, CPU_OFFSET_NEG_DS_PLUS_MEM, destRex); return;}
+    if (base == FS) {cpuValueToRexReg64(data, CPU_OFFSET_NEG_FS_PLUS_MEM, destRex); return;}
+    if (base == GS) {cpuValueToRexReg64(data, CPU_OFFSET_NEG_GS_PLUS_MEM, destRex); return;}
+    if (base == CS) {cpuValueToRexReg64(data, CPU_OFFSET_NEG_CS_PLUS_MEM, destRex); return;}
+    kpanic("unknown base in x64dynamic.c getRegForNegBase");
+}
+
 // rexReg = rexReg + amount
 static void addWithLeaRexReg(struct Data* data, U32 reg, S32 displacement) {
     U32 oneByteDisplacement = ((displacement & 0xFFFFFF00) !=0);
@@ -464,17 +482,7 @@ static void addWithLeaRexReg(struct Data* data, U32 reg, S32 displacement) {
 }
 
 static void subBaseFromReg(struct Data* data, U8 base, U8 destReg) {
-    U32 baseReg = getRegForBase(data, base);
-
-    // mov HOST_TMP2, base
-    write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM | REX_64);
-    write8(data, 0x89); // mov
-    write8(data, 0xC0 | HOST_TMP2 | (baseReg << 3));
-
-    // neg HOST_TMP2
-    write8(data, REX_BASE | REX_64 | REX_MOD_RM);
-    write8(data, 0xf7);
-    write8(data, 0xd8 | HOST_TMP2);
+    getRegForNegBase(data, base, HOST_TMP2);
     
     // lea destReg, [destReg + HOST_TMP2]
     write8(data, REX_BASE | REX_64 | REX_SIB_INDEX);
@@ -732,7 +740,7 @@ static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
         // :TODO: sync back cs:eip -> block -> dynamic address
         return 1;
     case CMD_SYSCALL:
-        ksyscall(cpu, cpu->eip.u32);
+        ksyscall(cpu, 0);
         return 1;
     }    
     kpanic("Unknow x64dynamic cmd: %d", cmd);
@@ -743,79 +751,8 @@ static void writeCmd(struct Data* data, U32 cmd, U32 eip) {
     writeCpuValue32(data, CPU_OFFSET_CMD, cmd);
     writeCpuValue32(data, CPU_OFFSET_EIP, eip);
 
-    // can be changed by the function call, so store them
-    write8(data, 0x50);// push   rax
-    write8(data, 0x51);// push   rcx
-    write8(data, 0x52);// push   rdx
-    write8(data, 0x41);// push r8
-    write8(data, 0x50); 
-    write8(data, 0x41);// push r9
-    write8(data, 0x51); 
-    write8(data, 0x41);// push r10
-    write8(data, 0x52); 
-    write8(data, 0x41);// push r11
-    write8(data, 0x53); 
-    write8(data, 0x9c); // push flags
-
-#ifdef PLATFORM_MSVC
-    // shadow space
-    // sub RSP, 32 
-    write8(data, 0x48);
-    write8(data, 0x83);
-    write8(data, 0xec);
-    write8(data, 0x20);
-
-    // first agument for function call
-    // mov RCX, HOST_CPU
-    write8(data, REX_BASE|REX_MOD_REG|REX_64);
-    write8(data, 0x89);
-    write8(data, 0xc0 | 1 | (HOST_CPU<<3));
-#else
-
-    write8(data, 0x56);// push   rsi
-    write8(data, 0x57);// push   rdi
-    
-    // first agument for function call
-    // mov RDI, HOST_CPU
-    write8(data, REX_BASE|REX_MOD_REG|REX_64);
-    write8(data, 0x89);
-    write8(data, 0xc0 | 7 | (HOST_CPU<<3));
-#endif    
-    
-    // call cmdEntry
-    write8(data, REX_BASE|REX_MOD_RM);
-    write8(data, 0xff);
-#if HOST_CPU == 4
-    bad value for HOST_CPU
-#endif
-    write8(data, 0x90 | HOST_CPU);
-    write32(data, CPU_OFFSET_HOST_ENTRY);                       
-
-#ifdef PLATFORM_MSVC
-    // shadow space
-    // add RSP, 32
-    write8(data, 0x48);
-    write8(data, 0x83);
-    write8(data, 0xc4);
-    write8(data, 0x20);    
-#else
-    write8(data, 0x5f);// pop   rdi
-    write8(data, 0x5e);// pop   rsi
-#endif
-
-    // restore regs that are volitile
-    write8(data, 0x9d);// pop flags
-    write8(data, 0x41);// pop r11
-    write8(data, 0x5b); 
-    write8(data, 0x41);// pop r10
-    write8(data, 0x5a); 
-    write8(data, 0x41);// pop r9
-    write8(data, 0x59); 
-    write8(data, 0x41);// pop r8
-    write8(data, 0x58); 
-    write8(data, 0x5a);// pop   rdx
-    write8(data, 0x59);// pop   rcx
-    write8(data, 0x58);// pop   rax
+    write8(data, 0xcd);
+    write8(data, 0x53);
 
     if (cmd == CMD_SET_GS) {
         cpuValueToRexReg64(data, CPU_OFFSET_GS_PLUS_MEM, HOST_GS_PLUS_MEM);
@@ -1331,12 +1268,36 @@ static U32 inst16RMimm16(struct Data* data) {
     return 0;
 }
 
+static U32 inst16RMimm16SafeG(struct Data* data) {
+    U8 rm = fetch8(data);
+    if (rm<0xC0) {
+        translateMemory(data, rm, FALSE);
+    } else {
+        setRM(data, rm, FALSE, TRUE);
+    }
+    setImmediate16(data, fetch16(data));
+    writeOp(data);
+    return 0;
+}
+
 static U32 inst32RMimm32(struct Data* data) {
     U8 rm = fetch8(data);
     if (rm<0xC0) {
         translateMemory(data, rm, TRUE);
     } else {
         setRM(data, rm, TRUE, TRUE);
+    }
+    setImmediate32(data, fetch32(data));
+    writeOp(data);
+    return 0;
+}
+
+static U32 inst32RMimm32SafeG(struct Data* data) {
+    U8 rm = fetch8(data);
+    if (rm<0xC0) {
+        translateMemory(data, rm, FALSE);
+    } else {
+        setRM(data, rm, FALSE, TRUE);
     }
     setImmediate32(data, fetch32(data));
     writeOp(data);
@@ -2975,7 +2936,7 @@ static DECODER decoder[1024] = {
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     // 80
-    inst8RMimm8, inst16RMimm16, instruction82, inst16RMimm8, inst8RM, inst16RM, inst8RM, inst16RM,
+    inst8RMimm8, inst16RMimm16SafeG, instruction82, inst16RMimm8SafeG, inst8RM, inst16RM, inst8RM, inst16RM,
     inst8RM, inst16RM, inst8RM, inst16RM, movEwSw, leaGw, movSwEw, popEw,
     // 90
     keepSame, keepSame, keepSame, keepSame, xchgSpAx, keepSame, keepSame, keepSame,
@@ -3073,7 +3034,7 @@ static DECODER decoder[1024] = {
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     // 280
-    inst8RMimm8, inst32RMimm32, instruction82, inst32RMimm8SafeG, inst8RM, inst32RM, inst8RM, inst32RM,
+    inst8RMimm8, inst32RMimm32SafeG, instruction82, inst32RMimm8SafeG, inst8RM, inst32RM, inst8RM, inst32RM,
     inst8RM, inst32RM, inst8RM, inst32RM, movEdSw, leaGd, movSwEw, popEd,
     // 290
     keepSame, keepSame, keepSame, keepSame, xchgEspEax, keepSame, keepSame, keepSame,

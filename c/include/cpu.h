@@ -88,6 +88,7 @@ struct CPU {
     U32 cr0;
 #ifdef BOXEDWINE_VM
     U64 hostSegAddress[6];
+    U64 negHostSegAddress[6];
     void* enterHost;
     U32 cmd;
     U32 cmdArg;

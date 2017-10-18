@@ -322,6 +322,7 @@ void makeCodePageReadOnly(struct Memory* memory, U32 page) {
 }
 
 void seg_mapper(struct Memory* memory, U32 address) ;
+void cmdEntry(struct CPU* cpu);
 
 int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 {
@@ -342,6 +343,17 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 
             translateEip(cpu, (page << PAGE_SHIFT) | offset);
             ep->ContextRecord->Rax = &cpu->opToAddressPages[page];
+            return EXCEPTION_CONTINUE_EXECUTION;
+        } else if (*((U16*)ep->ContextRecord->Rip)==0x53cd) { 
+            struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
+            U32 eip = cpu->eip.u32;
+            ep->ContextRecord->Rip+=2;
+            EAX = ep->ContextRecord->Rax;
+            cmdEntry(cpu);
+            ep->ContextRecord->Rax = EAX;
+            if (eip!=cpu->eip.u32) {
+                int ii=0;
+            }
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
             int ii=0;
@@ -404,14 +416,13 @@ typedef void (*StartCPU)();
 DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     struct KThread* thread = (struct KThread*)lpParameter;
     struct CPU* cpu = &thread->cpu;
+    U32 i;
 
     cpu->enterHost = cmdEntry;
-    cpu->hostSegAddress[0] = cpu->memory->id + cpu->segAddress[0];
-    cpu->hostSegAddress[1] = cpu->memory->id + cpu->segAddress[1];
-    cpu->hostSegAddress[2] = cpu->memory->id + cpu->segAddress[2];
-    cpu->hostSegAddress[3] = cpu->memory->id + cpu->segAddress[3];
-    cpu->hostSegAddress[4] = cpu->memory->id + cpu->segAddress[4];
-    cpu->hostSegAddress[5] = cpu->memory->id + cpu->segAddress[5];
+    for (i=0;i<6;i++) {
+        cpu->hostSegAddress[i] = cpu->memory->id + cpu->segAddress[i];
+        cpu->negHostSegAddress[i] = -((S64)(cpu->hostSegAddress[i]));
+    }
 
     __try {
         StartCPU startCPU = (StartCPU)initCPUx64(cpu);
@@ -425,6 +436,7 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
 }
 
 void platformStartThread(struct KThread* thread) {
+    //platformThreadProc(thread);
     thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);
 }
 

@@ -36,7 +36,7 @@
 U64 sysCallTime;
 extern struct Block emptyBlock;
 //#undef LOG_SYSCALLS
-//#undef LOG_OPS
+#undef LOG_OPS
 #ifdef LOG_OPS
 void logsyscall(const char* fmt, ...) {
     va_list args;
