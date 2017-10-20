@@ -604,19 +604,19 @@ static void readRexRegWithDisplacementToReg(struct Data* data, U32 bytes, U32 ba
 
 // [base + displacement] = srcReg
 static void writeWithDisplacementFromReg(struct Data* data, U32 bytes, U32 base, S32 displacement, U32 isSrcRegRex, U32 srcReg) {
-    U32 oneByteDisplacement = ((displacement & 0xFFFFFF00) !=0);
+    U32 oneByteDisplacement = displacement == (S8)displacement;
     U8 baseRexReg = getRegForBase(data, base); // this might insert an instruction, so call before we start writing this instruction
 
     if (bytes==2) {
         write8(data, 0x66);
     }
     if (!isSrcRegRex && srcReg == 4) { // sp
-        write8(data, REX_BASE | REX_MOD_RM | REX_SIB_INDEX | REX_MOD_REG); // rex
+        write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG); // rex
         srcReg = HOST_ESP;
     } else if (isSrcRegRex) {
-        write8(data, REX_BASE | REX_MOD_RM | REX_SIB_INDEX | REX_MOD_REG); // rex
+        write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG); // rex
     } else {
-        write8(data, REX_BASE | REX_MOD_RM | REX_SIB_INDEX); // rex
+        write8(data, REX_BASE | REX_MOD_RM); // rex
     }
     if (bytes == 1)
         write8(data, 0x88); // mov
@@ -726,6 +726,7 @@ static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
             return 0;
         } else {
             cpu->hostSegAddress[cmd - CMD_SET_ES] = cpu->memory->id + cpu->segAddress[cmd - CMD_SET_ES];
+            cpu->negHostSegAddress[cmd - CMD_SET_ES] = -(S64)(cpu->hostSegAddress[cmd - CMD_SET_ES]);
         }
         return 1;
     case CMD_LOAD_ES:
@@ -738,6 +739,7 @@ static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
             return 0;
         } else {
             cpu->hostSegAddress[cmd - CMD_SET_ES] = cpu->memory->id + cpu->segAddress[cmd - CMD_SET_ES];
+            cpu->negHostSegAddress[cmd - CMD_SET_ES] = -(S64)(cpu->hostSegAddress[cmd - CMD_SET_ES]);
         }
         return 1;
     case CMD_CALL_AP_16:
@@ -2350,9 +2352,10 @@ static U32 movEdSw(struct Data* data) {
 
 static U32 movSwEw(struct Data* data) {
     U8 rm = fetch8(data);
+    U8 seg = (rm >> 3) & 7;
 
     // mov HOST_TMP2, Ew
-    data->inst = 0x8b;
+    data->op = 0x8b;
     rm = (rm & ~0x38) | (HOST_TMP2 << 3);
     data->rex |= REX_MOD_REG|REX_BASE;
     if (rm<0xC0) {
@@ -2361,7 +2364,8 @@ static U32 movSwEw(struct Data* data) {
         setRM(data, rm, FALSE, TRUE);
     }
     writeOp(data);
-    writeCmd(data, ((rm & 7) >> 3) + CMD_SET_ES, data->startOfOpIp);
+    writeCpuReg32(data, CPU_OFFSET_CMD_ARG, HOST_TMP2, TRUE);
+    writeCmd(data, seg + CMD_SET_ES, data->startOfOpIp);
     return 0;
 }
 
