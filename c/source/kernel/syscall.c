@@ -871,7 +871,8 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
 }
 
 void OPCALL syscall_op(struct CPU* cpu, struct Op* op) {
-    ksyscall(cpu, op->eipCount);
+    DONE();
+    ksyscall(cpu, op->eipCount);    
 }
 
 void syscallToString(struct CPU* cpu, char* buffer) {

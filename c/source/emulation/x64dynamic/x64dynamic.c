@@ -707,10 +707,15 @@ void cmdEntry(struct CPU* cpu) {
         kpanic("x64dynamic exception handling not implemented");
     }
 }
+static FILE* logFile2;
 
 static U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value) {
     switch (cmd) {
-    case CMD_PRINT: printf("%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, value, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); return 1;
+    case CMD_PRINT: 
+        if (!logFile2)
+            logFile2 = fopen("log2.txt", "w");
+        fprintf(logFile2, "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, value, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
+        return 1;
     case CMD_SET_ES:
     case CMD_SET_CS:
     case CMD_SET_SS:
@@ -786,7 +791,7 @@ static void jmpReg(struct Data* data, U32 reg, U32 isRex) {
     write8(data, PAGE_SHIFT);
 
     // mov HOST_TMP, reg
-    if (reg!=HOST_TMP) {
+    if (reg!=HOST_TMP || !isRex) {
         if (isRex)
             write8(data, REX_BASE | REX_MOD_RM | REX_MOD_REG);
         else
@@ -826,6 +831,7 @@ static void jmpReg(struct Data* data, U32 reg, U32 isRex) {
     write8(data, 0x04);
     write8(data, 0xC0 | (HOST_TMP << 3));
 
+    // This will test that the value we are about to jump to exists
     // mov HOST_TMP, [RAX]
     write8(data, REX_BASE | REX_64 | REX_MOD_REG);
     write8(data, 0x8b);
@@ -2648,7 +2654,14 @@ static U32 leave16(struct Data* data) {
 }
 
 static U32 leave32(struct Data* data) {
-    kpanic("x64dynamic: leave32 not implemented");
+    //ESP = EBP;
+    write8(data, REX_BASE | REX_MOD_RM);
+    write8(data, 0x89);
+    write8(data, 0xC0 | HOST_ESP | (5 << 3));
+    
+    //pop EBP
+    popReg32(data, 5);
+
     return 0;
 }
 
@@ -3136,7 +3149,7 @@ void translateData(struct Data* data) {
             writeCpuReg32(data, CPU_OFFSET_ESI, 6, FALSE);
             writeCpuReg32(data, CPU_OFFSET_EDI, 7, FALSE);
             writeCpuValue32(data, CPU_OFFSET_CMD_ARG, (U32)&data->memStart[data->memPos]);
-        writeCmd(data, CMD_PRINT, data->ip);
+            writeCmd(data, CMD_PRINT, data->ip);
         }
         data->opIp = data->ip;        
         while (1) {            
