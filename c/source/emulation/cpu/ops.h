@@ -3456,3 +3456,148 @@ void OPCALL sgdt_mem32(struct CPU* cpu, struct Op* op) {
 #endif
     NEXT();
 }
+
+void OPCALL bt16_reg(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = cpu->reg[op->r1].u16;
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    if ((value & mask)==0) {
+        removeFlag(CF);
+    } else {
+        addFlag(CF);
+    }
+    CYCLES(4);
+    NEXT();
+}
+
+void OPCALL bt16_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    CYCLES(4);
+    NEXT();
+}
+
+void OPCALL bt16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    CYCLES(4);
+    NEXT();
+}
+
+void OPCALL bts16_reg(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = cpu->reg[op->r1].u16;
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    cpu->reg[op->r1].u16 |= mask;
+    CYCLES(7);
+    NEXT();
+}
+
+void OPCALL bts16_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    writew(cpu->memory, eaa, value | mask);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL bts16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    writew(cpu->memory, eaa, value | mask);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL btr16_reg(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = cpu->reg[op->r1].u16;
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    cpu->reg[op->r1].u16 &= ~mask;
+    CYCLES(7);
+    NEXT();
+}
+
+void OPCALL btr16_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    writew(cpu->memory, eaa, value & ~mask);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL btr16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    writew(cpu->memory, eaa, value & ~mask);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL btc16_reg(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = cpu->reg[op->r1].u16;
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    cpu->reg[op->r1].u16 ^= mask;
+    CYCLES(7);
+    NEXT();
+}
+
+void OPCALL btc16_mem16(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa16(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    writew(cpu->memory, eaa, value ^ mask);
+    CYCLES(8);
+    NEXT();
+}
+
+void OPCALL btc16_mem32(struct CPU* cpu, struct Op* op) {
+    U32 eaa = eaa32(cpu, op);
+    U16 value = readw(cpu->memory, eaa);
+    U16 mask = op->data1;
+
+    fillFlagsNoCF(cpu);
+    setCF(cpu, value & mask);
+    writew(cpu->memory, eaa, value ^ mask);
+    CYCLES(8);
+    NEXT();
+}

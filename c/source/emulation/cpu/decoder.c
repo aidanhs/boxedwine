@@ -2288,6 +2288,34 @@ void decode3ba(struct DecodeData* data) {
     NEXT_OP(data);
 }
 
+#define DECODE_BT16(r, m16, m32) DECODE_E(r, m16, m32); data->op->data1 = 1 << (FETCH8(data) & 15)
+
+void decode1ba(struct DecodeData* data) {
+    U8 rm=FETCH8(data);
+    switch ((rm>>3)&7) {
+        case 0x04: // BT 
+            DECODE_BT(bt16_reg, bt16_mem16, bt16_mem32);
+            LOG_E32("BT", rm, data);
+            break;
+        case 0x05: // BTS
+            DECODE_BT(bts16_reg, bts16_mem16, bts16_mem32);
+            LOG_E32("BTS", rm, data);
+            break;
+        case 0x06: // BTR
+            DECODE_BT(btr16_reg, btr16_mem16, btr16_mem32);
+            LOG_E32("BTR", rm, data);
+            break;
+        case 0x07: // BTC
+            DECODE_BT(btc16_reg, btc16_mem16, btc16_mem32);
+            LOG_E32("BTC", rm, data);
+            break;
+        default:
+            kpanic("GRP8 illegal call %d", (rm>>3)&7);
+            break;
+    }
+    NEXT_OP(data);
+}
+
 /* JMP Ap */
 void decode0ea(struct DecodeData* data) {
     data->op->func = jmpAp;
@@ -2411,7 +2439,7 @@ DECODER decoder[1024] = {
     decode1a8, decode1a9, invalidOp, decode1ab, decode1ac, decode1ad, invalidOp, decode1af,
     // 1b0
     invalidOp, decode1b1, decode1b2, invalidOp, decode1b4, decode1b5, decode1b6, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, decode1bd, decode1be, invalidOp,
+    invalidOp, decode1ba, invalidOp, invalidOp, invalidOp, decode1bd, decode1be, invalidOp,
     // 1c0
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
