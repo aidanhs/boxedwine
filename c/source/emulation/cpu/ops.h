@@ -3458,7 +3458,6 @@ void OPCALL sgdt_mem32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bt16_reg(struct CPU* cpu, struct Op* op) {
-    U32 eaa = eaa16(cpu, op);
     U16 value = cpu->reg[op->r1].u16;
     U16 mask = op->data1;
 
@@ -3495,7 +3494,6 @@ void OPCALL bt16_mem32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bts16_reg(struct CPU* cpu, struct Op* op) {
-    U32 eaa = eaa16(cpu, op);
     U16 value = cpu->reg[op->r1].u16;
     U16 mask = op->data1;
 
@@ -3531,7 +3529,6 @@ void OPCALL bts16_mem32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL btr16_reg(struct CPU* cpu, struct Op* op) {
-    U32 eaa = eaa16(cpu, op);
     U16 value = cpu->reg[op->r1].u16;
     U16 mask = op->data1;
 
@@ -3567,7 +3564,6 @@ void OPCALL btr16_mem32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL btc16_reg(struct CPU* cpu, struct Op* op) {
-    U32 eaa = eaa16(cpu, op);
     U16 value = cpu->reg[op->r1].u16;
     U16 mask = op->data1;
 

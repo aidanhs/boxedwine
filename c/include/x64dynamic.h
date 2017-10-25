@@ -4,8 +4,8 @@
 #include "platform.h"
 #include "cpu.h"
 
-void* translateEip(struct CPU* cpu, U32 ip);
-void* initCPUx64(struct CPU* cpu);
-U32 handleCmd(struct CPU* cpu, U32 cmd, U32 value);
+void* x64_translateEip(struct CPU* cpu, U32 ip);
+void* x64_initCPU(struct CPU* cpu);
+U32 x64_handleCmd(struct CPU* cpu, U32 cmd, U32 value);
 
 #endif

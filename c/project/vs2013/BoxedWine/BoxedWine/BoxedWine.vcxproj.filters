@@ -250,6 +250,12 @@
     <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64dynamic.c">
       <Filter>source\emulation\x64dynamic</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64ops.c">
+      <Filter>source\emulation\x64dynamic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64asm.c">
+      <Filter>source\emulation\x64dynamic</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">
@@ -539,6 +545,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\include\x64dynamic.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\source\emulation\x64dynamic\x64.h">
+      <Filter>source\emulation\x64dynamic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

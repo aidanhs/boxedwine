@@ -509,8 +509,8 @@ int main(int argc, char **argv) {
             SDL_Event e;
 #ifndef BOXEDWINE_VM
             BOOL ran = runSlice();
-#endif
             U32 t;
+#endif
 
 #ifdef BOXEDWINE_VM
             while (SDL_WaitEvent(&e)) {

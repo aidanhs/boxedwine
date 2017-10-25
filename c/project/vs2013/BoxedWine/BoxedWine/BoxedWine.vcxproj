@@ -271,6 +271,7 @@
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_native_page.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_page.h" />
     <ClInclude Include="..\..\..\..\source\emulation\softmmu\soft_ram.h" />
+    <ClInclude Include="..\..\..\..\source\emulation\x64dynamic\x64.h" />
     <ClInclude Include="..\..\..\..\source\kernel\loader\kelf.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glcommon.h" />
     <ClInclude Include="..\..\..\..\source\opengl\glfunctions.h" />
@@ -311,7 +312,9 @@
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_memory.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_native_page.c" />
     <ClCompile Include="..\..\..\..\source\emulation\softmmu\soft_ram.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64asm.c" />
     <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64dynamic.c" />
+    <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64ops.c" />
     <ClCompile Include="..\..\..\..\source\io\fsapi.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devdsp.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devfb.c" />

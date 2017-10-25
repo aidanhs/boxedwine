@@ -322,34 +322,30 @@ void makeCodePageReadOnly(struct Memory* memory, U32 page) {
 }
 
 void seg_mapper(struct Memory* memory, U32 address) ;
-void cmdEntry(struct CPU* cpu);
+void x64_cmdEntry(struct CPU* cpu);
 
 int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) {
-#ifdef BOXEDWINE_VM
-        if (*((U32*)ep->ContextRecord->Rip)==0x00688B4C) {
+#ifdef BOXEDWINE_VM           
+        if (*((U32*)ep->ContextRecord->Rip)==0x288B4466 || *((U32*)ep->ContextRecord->Rip)==0xE8048B4A) {
             struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
-            U32 page = ep->ContextRecord->R8;
-            U32 offset = ep->ContextRecord->R13;
+            U32 page = (U32)ep->ContextRecord->R8;
+            U32 offset = (U32)ep->ContextRecord->R13;
 
-            translateEip(cpu, (page << PAGE_SHIFT) | offset);
-            ep->ContextRecord->Rax = cpu->opToAddressPages[page][offset];
-            return EXCEPTION_CONTINUE_EXECUTION;
-        } else if (*((U32*)ep->ContextRecord->Rip)==0xe8048b4a) {
-            struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
-            U32 page = ep->ContextRecord->R8;
-            U32 offset = ep->ContextRecord->R13;
-
-            translateEip(cpu, (page << PAGE_SHIFT) | offset);
-            ep->ContextRecord->Rax = &cpu->opToAddressPages[page];
+            x64_translateEip(cpu, (page << PAGE_SHIFT) | offset);
+            if (*((U32*)ep->ContextRecord->Rip)==0xE8048B4A) {
+                ep->ContextRecord->Rax = (U64)(&cpu->opToAddressPages[page]);
+            } else {
+                ep->ContextRecord->Rax = (U64)(cpu->opToAddressPages[page][offset]);
+            }
             return EXCEPTION_CONTINUE_EXECUTION;
         } else if (*((U16*)ep->ContextRecord->Rip)==0x53cd) { 
             struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
             U32 eip = cpu->eip.u32;
             ep->ContextRecord->Rip+=2;
-            EAX = ep->ContextRecord->Rax;
-            cmdEntry(cpu);
+            EAX = (U32)ep->ContextRecord->Rax;
+            x64_cmdEntry(cpu);
             ep->ContextRecord->Rax = EAX;
             if (eip!=cpu->eip.u32) {
                 int ii=0;
@@ -409,8 +405,6 @@ void getRegs(U64* regs) {
 void setRegs(U64* regs) {
 }
 
-void cmdEntry();
-
 typedef void (*StartCPU)();
 
 DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
@@ -418,14 +412,15 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     struct CPU* cpu = &thread->cpu;
     U32 i;
 
-    cpu->enterHost = cmdEntry;
+    cpu->enterHost = x64_cmdEntry;
+    cpu->memOffset = cpu->memory->id;
+    cpu->negMemOffset = (U64)(-(S64)cpu->memOffset);
     for (i=0;i<6;i++) {
-        cpu->hostSegAddress[i] = cpu->memory->id + cpu->segAddress[i];
-        cpu->negHostSegAddress[i] = -((S64)(cpu->hostSegAddress[i]));
+        cpu->negSegAddress[i] = (U32)(-((S32)(cpu->segAddress[i])));
     }
 
     __try {
-        StartCPU startCPU = (StartCPU)initCPUx64(cpu);
+        StartCPU startCPU = (StartCPU)x64_initCPU(cpu);
         startCPU();
         //RtlRestoreContext(&context, NULL);
     } __except(seh_filter(GetExceptionCode(), GetExceptionInformation())) {

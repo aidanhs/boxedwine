@@ -61,7 +61,7 @@ struct CPU {
 #endif
     struct Reg		reg[9]; // index 8 is 0
     U8*		reg8[8];
-    U32		segAddress[7];
+    U32		segAddress[7];    
     U32		segValue[7]; // index 6 is for 0, used in LEA instruction	
     U32		flags;
     struct Reg		eip;	
@@ -87,11 +87,13 @@ struct CPU {
     U32 stackNotMask;
     U32 cr0;
 #ifdef BOXEDWINE_VM
-    U64 hostSegAddress[6];
-    U64 negHostSegAddress[6];
+    U64 memOffset;
+    U64 negMemOffset;
+    U32 negSegAddress[7];
     void* enterHost;
     U32 cmd;
     U32 cmdArg;
+    U32 cmdArg2;
 #endif
 };
 

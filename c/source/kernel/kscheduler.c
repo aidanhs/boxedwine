@@ -235,6 +235,10 @@ U64 elapsedInstructionsMIPS;
 void dspCheck();
 void sdlUpdateContextForThread(struct KThread* thread);
 
+#ifdef BOXEDWINE_VM
+void platformRunThreadSlice(struct KThread* thread);
+#endif
+
 BOOL runSlice() {
     runTimers();
     dspCheck();
