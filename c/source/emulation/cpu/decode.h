@@ -1552,7 +1552,7 @@ void decode257(struct DecodeData* data) {
     LOG_OP("PUSH EDI");
     NEXT_OP(data);
 }
-// PUSH AX
+// POP AX
 void decode058(struct DecodeData* data) {
     data->op->func = popReg16;
     data->op->r1 = 0;
@@ -4790,7 +4790,7 @@ void decode1b6(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
-// MOVXZ8 Gd,Ed
+// MOVXZ8 Gd,Eb
 void decode3b6(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
@@ -4811,7 +4811,7 @@ void decode3b6(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
-// MOVXZ16 Gd,Ed
+// MOVXZ16 Gd,Ew
 void decode3b7(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
@@ -4916,7 +4916,7 @@ void decode3bd(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
-// MOVSX8 Gw,Ew
+// MOVSX8 Gw,Eb
 void decode1be(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {
@@ -4937,7 +4937,7 @@ void decode1be(struct DecodeData* data) {
     }
     NEXT_OP(data);
 }
-// MOVSX8 Gd,Ed
+// MOVSX8 Gd,Eb
 void decode3be(struct DecodeData* data) {
     U8 rm = FETCH8(data);
     if (rm>=0xC0) {

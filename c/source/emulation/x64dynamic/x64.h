@@ -158,13 +158,13 @@ void x64_pushw(struct x64_Data* data, U16 value);
 void x64_pushd(struct x64_Data* data, U32 value);
 U32 x64_getRegForSeg(struct x64_Data* data, U32 base);
 U32 x64_getRegForNegSeg(struct x64_Data* data, U32 base);
-void x64_translateRM(struct x64_Data* data, U32 rm, U32 checkG, U32 checkE);
+void x64_translateRM(struct x64_Data* data, U32 rm, U32 checkG, U32 checkE, U32 isG8bit, U32 isE8bit);
 void x64_leaToReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 void x64_writeToRegFromE(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 void x64_writeToEFromReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 
 void x64_writeOp(struct x64_Data* data);
-void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE);
+void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8bit, U32 isE8bit);
 void x64_setSib(struct x64_Data* data, U8 sib, BOOL checkBase);
 void x64_setDisplacement32(struct x64_Data* data, U32 disp32);
 void x64_setDisplacement8(struct x64_Data* data, U8 disp8);

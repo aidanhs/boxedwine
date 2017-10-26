@@ -10,6 +10,9 @@
 #define REX_MOD_REG 0x4
 #define REX_64 0x8
 
+#define G(rm) ((rm >> 3) & 7)
+#define E(rm) (rm & 7)
+
 static void write8(struct x64_Data* data, U8 value) {
     if (!data->availableMem) {
         U8* next = allocExecutable64kBlock();
@@ -57,6 +60,7 @@ void x64_mapAddress(struct x64_Data* data, U32 ip, void* address) {
 
 void x64_writeOp(struct x64_Data* data) {
     // :TODO: map the prefixes to address so that they can be jumped over, libc sometimes jumps over the lock instruction
+
     if (data->lockPrefix)
         write8(data, 0xF0);
     if (data->operandPrefix)
@@ -96,12 +100,12 @@ void x64_writeOp(struct x64_Data* data) {
     }
 }
 
-void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE) {
-    if (checkG && ((rm >> 3) & 7) == 4) {
+void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8bit, U32 isE8bit) {
+    if (checkG && G(rm) == 4 && !isG8bit) {
         data->rex |= REX_BASE | REX_MOD_REG;
         rm = (rm & ~0x38) | (HOST_ESP << 3);
     }
-    if (checkE && (rm & 7)== 4) {
+    if (checkE && E(rm)== 4 && !isE8bit) {
         data->rex |= REX_BASE | REX_MOD_RM;
         rm = (rm & ~0x07) | HOST_ESP;
     }
@@ -505,21 +509,37 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip) {
 }
 
 void x64_pushReg16(struct x64_Data* data, U32 reg, U32 isRegRex) {
+    if (reg==4 && !isRegRex) {
+        reg = HOST_ESP;
+        isRegRex = TRUE;
+    }
     x64_writeToMemFromReg(data, reg, isRegRex, HOST_ESP, TRUE, HOST_SS, TRUE, 0, -2, 2, TRUE);
     x64_addWithLea(data, HOST_ESP, TRUE, HOST_ESP, TRUE, -1, FALSE, 0, -2, 2);
 }
 
 void x64_popReg16(struct x64_Data* data, U32 reg, U32 isRegRex) {
+    if (reg==4 && !isRegRex) {
+        reg = HOST_ESP;
+        isRegRex = TRUE;
+    }
     x64_writeToRegFromMem(data, reg, isRegRex, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 2, TRUE);
     x64_addWithLea(data, HOST_ESP, TRUE, HOST_ESP, TRUE, -1, FALSE, 0, 2, 2);
 }
 
 void x64_pushReg32(struct x64_Data* data, U32 reg, U32 isRegRex) {
+    if (reg==4 && !isRegRex) {
+        reg = HOST_ESP;
+        isRegRex = TRUE;
+    }
     x64_writeToMemFromReg(data, reg, isRegRex, HOST_ESP, TRUE, HOST_SS, TRUE, 0, -4, 4, TRUE);
     x64_addWithLea(data, HOST_ESP, TRUE, HOST_ESP, TRUE, -1, FALSE, 0, -4, 4);
 }
 
 void x64_popReg32(struct x64_Data* data, U32 reg, U32 isRegRex) {
+    if (reg==4 && !isRegRex) {
+        reg = HOST_ESP;
+        isRegRex = TRUE;
+    }
     x64_writeToRegFromMem(data, reg, isRegRex, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
     x64_addWithLea(data, HOST_ESP, TRUE, HOST_ESP, TRUE, -1, FALSE, 0, 4, 4);
 }
@@ -584,12 +604,31 @@ void x64_jmpReg(struct x64_Data* data, U32 reg, U32 isRex) {
     jmpNativeReg(data, HOST_TMP, TRUE);
 }
 
-void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
+void writeHostPlusTmp(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit, U32 isE8bit) {
+    data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
+    if (data->rex && isG8bit && G(rm)>=4) {
+        // mov HOST_TMP2, G(rm) & 4, this will move the reg, not just the high 8 bits
+        x64_writeToRegFromReg(data, HOST_TMP2, TRUE, G(rm) & 3, FALSE, 2);
+        // shr HOST_TMP2, 8
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0xc1);
+        write8(data, 0xC0 | (5 << 3) | HOST_TMP2);
+        write8 (data, 8);
+
+        data->rex |= REX_BASE | REX_MOD_REG;
+        rm &=~ (0x7 << 3);
+        rm |= (HOST_TMP2 << 3);
+    }
+    x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
+    x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
+}
+
+void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit, U32 isE8bit) {
     if (data->ea16) {
         kpanic("16-bit translate memory not implemented");
     } else {
         if (rm<0x40) {
-            switch (rm & 7) {
+            switch (E(rm)) {
             case 0x00: 
             case 0x01:
             case 0x02:
@@ -597,25 +636,23 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
             case 0x06: 
             case 0x07:                 
                 if (data->ds == SEG_ZERO) {
-                    x64_setRM(data, rm, checkG, FALSE);
+                    x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
                 } else {                    
                     // converts [reg] to HOST_TMP = reg+SEG; [HOST_TMP+HOST_MEM]
 
-                    // don't need to worry about (rm & 7) == 5, that is handled below
+                    // don't need to worry about E(rm) == 5, that is handled below
                     // HOST_TMP = reg + SEG
-                    x64_addWithLea(data, HOST_TMP, TRUE, rm & 7, FALSE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+                    x64_addWithLea(data, HOST_TMP, TRUE, E(rm), FALSE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
 
                     // [HOST_MEM + HOST_TMP]
-                    data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-                    x64_setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib                    
-                    x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
+                    writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
                 }
                 break;
             case 0x05:
                 // on x64 this is RIP/EIP + disp32 instead of DS:disp32
                 if (data->ds == SEG_ZERO) {                    
                     // converts [disp32] to [disp32]
-                    x64_setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib
+                    x64_setRM(data, (rm & ~(7)) | 4, checkG, FALSE, isG8bit, isE8bit); // 4=sib
                     x64_setSib(data, 5 | (4 << 3), FALSE); // 5 is for [disp32], 4 is for 0 value index
                     x64_setDisplacement32(data, x64_fetch32(data));
                 } else {
@@ -625,9 +662,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
                     x64_addWithLea(data, HOST_TMP, TRUE, x64_getRegForSeg(data, data->ds), TRUE, -1, FALSE, 0, x64_fetch32(data), 4);
 
                     // [HOST_MEM + HOST_TMP]
-                    data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-                    x64_setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib                    
-                    x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
+                    writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
                 }                
                 break;
             case 0x04: {
@@ -637,7 +672,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
 
                     if (base==5) { // no base, [index << shift + disp32]
                         if (data->ds == SEG_ZERO) {
-                            x64_setRM(data, rm, checkG, FALSE);
+                            x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
                             x64_setSib(data, sib, TRUE); 
                             x64_setDisplacement32(data, x64_fetch32(data));
                         } else {
@@ -647,14 +682,12 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
                             x64_addWithLea(data, HOST_TMP, TRUE, x64_getRegForSeg(data, data->ds), TRUE, (index==4?-1:index), FALSE, sib >> 6, x64_fetch32(data), 4);
 
                             // [HOST_MEM + HOST_TMP]
-                            data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-                            x64_setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib                    
-                            x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
+                            writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
                         }                        
                     } else { // [base + index << shift]
                         if (data->ds == SEG_ZERO) {
                             // keep the same, but convert ESP to HOST_ESP
-                            x64_setRM(data, rm, checkG, FALSE);
+                            x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
                             x64_setSib(data, sib, TRUE);
                         } else {
                             // convert [base + index << shift] to HOST_TMP=[base + index << shift];HOST_TMP=[HOST_TMP+SEG];[HOST_TMP+MEM]
@@ -668,16 +701,14 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
                             }
 
                             // [HOST_MEM + HOST_TMP]
-                            data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-                            x64_setRM(data, (rm & ~(7)) | 4, checkG, FALSE); // 4=sib                    
-                            x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
+                            writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
                         }
                     }    
                 }
                 break;
             }
         } else {		
-            switch (rm & 7) {
+            switch (E(rm)) {
             case 0x00: 
             case 0x01:
             case 0x02:
@@ -686,7 +717,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
             case 0x06:
             case 0x07:
                 if (data->ds == SEG_ZERO) {
-                    x64_setRM(data, rm, checkG, FALSE);
+                    x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
                     if (rm<0x80) {
                         x64_setDisplacement8(data, x64_fetch8(data));
                     } else {
@@ -696,19 +727,17 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
                     // converts [reg + disp] to HOST_TMP = [reg + SEG + disp]; [HOST_TMP+HOST_MEM];
 
                     // HOST_TMP = [reg + SEG + disp]
-                    x64_addWithLea(data, HOST_TMP, TRUE, rm & 7, FALSE, x64_getRegForSeg(data, (rm & 7)==5?data->ss:data->ds), TRUE, 0, (rm<0x80?(S8)x64_fetch8(data):x64_fetch32(data)), 4);
+                    x64_addWithLea(data, HOST_TMP, TRUE, E(rm), FALSE, x64_getRegForSeg(data, E(rm)==5?data->ss:data->ds), TRUE, 0, (rm<0x80?(S8)x64_fetch8(data):x64_fetch32(data)), 4);
 
                     // [HOST_MEM + HOST_TMP]
-                    data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-                    x64_setRM(data, (rm & ~(0xC7)) | 4, checkG, FALSE); // 4=sib                    
-                    x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
+                    writeHostPlusTmp(data, (rm & ~(0xC7)) | 4, checkG, isG8bit, isE8bit);
                 }
                 break;
             case 0x04: {                    
                     U8 sib = x64_fetch8(data);                    
 
                     if (data->ds == SEG_ZERO) {
-                        x64_setRM(data, rm, checkG, FALSE);
+                        x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
                         x64_setSib(data, sib, TRUE);
                         if (rm<0x80) {
                             x64_setDisplacement8(data, x64_fetch8(data));
@@ -721,7 +750,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
                         U8 index = (sib >> 3) & 7;
 
                         // HOST_TMP=SEG+base+disp
-                        x64_addWithLea(data, HOST_TMP, TRUE, base, FALSE, x64_getRegForSeg(data, base==4 || base==5?data->ss:data->ds), TRUE, 0, (rm<0x80?x64_fetch8(data):x64_fetch32(data)), 4);
+                        x64_addWithLea(data, HOST_TMP, TRUE, base, FALSE, x64_getRegForSeg(data, base==4 || base==5?data->ss:data->ds), TRUE, 0, (rm<0x80?(S8)x64_fetch8(data):x64_fetch32(data)), 4);
 
                         // HOST_TMP = HOST_TMP + index << shift
                         if (index!=4) {
@@ -729,9 +758,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG) {
                         }
 
                         // [HOST_MEM + HOST_TMP]
-                        data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-                        x64_setRM(data, (rm & ~(0xC7)) | 4, checkG, FALSE); // 4=sib                    
-                        x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE);        
+                        writeHostPlusTmp(data, (rm & ~(0xC7)) | 4, checkG, isG8bit, isE8bit);
                     }
                 }
                 break;
@@ -811,11 +838,11 @@ void x64_jumpTo(struct x64_Data* data,  U32 eip) {
     addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
 }
 
-void x64_translateRM(struct x64_Data* data, U32 rm, U32 checkG, U32 checkE) {
+void x64_translateRM(struct x64_Data* data, U32 rm, U32 checkG, U32 checkE, U32 isG8bit, U32 isE8bit) {
     if (rm<0xC0) {
-        x64_translateMemory(data, rm, checkG);
+        x64_translateMemory(data, rm, checkG, isG8bit, isE8bit);
     } else {
-        x64_setRM(data, rm, checkG, checkE);
+        x64_setRM(data, rm, checkG, checkE, isG8bit, isE8bit);
     }
 }
 
@@ -858,7 +885,7 @@ static void doInstructionWithE(U32 op, U32 oneByteOp, struct x64_Data* data, U32
         tmpData.rex |= REX_BASE | REX_MOD_REG;
     rm &= ~0x38;
     rm |= (reg << 3);
-    x64_translateMemory(&tmpData, rm, TRUE);
+    x64_translateMemory(&tmpData, rm, TRUE, bytes==1, bytes==1);
     x64_writeOp(&tmpData);
     popData(data, &tmpData);
 }
