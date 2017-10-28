@@ -15,14 +15,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-
-#include "kscheduler.h"
 #include "kprocess.h"
 #include "ksystem.h"
 #include "devfb.h"
 #include "kcircularlist.h"
 #include "klist.h"
 #include "log.h"
+#include "kerror.h"
+#include "kscheduler.h"
 
 #include <stdio.h>
 #include <setjmp.h>
@@ -224,8 +224,6 @@ void runTimers() {
     }
 }
 
-struct KThread* currentThread;
-
 U64 elapsedTimeMHz;
 U64 elapsedCyclesMHz;
 extern U64 sysCallTime;
@@ -248,7 +246,7 @@ BOOL runSlice() {
         U64 endTime;
         U64 diff;
 
-        currentThread = (struct KThread*)nextThread->data;
+        struct KThread* currentThread = (struct KThread*)nextThread->data;
         sdlUpdateContextForThread(currentThread);
         nextThread = nextThread->next;						
         sysCallTime = 0;
@@ -303,3 +301,35 @@ U32 getMIPS() {
     }
     return result;
 }
+
+#ifdef BOXEDWINE_VM
+#include <SDL.h>
+
+U32 threadSleep(struct KThread* thread, U32 ms) {
+    SDL_Delay(ms);
+    return 0; // :TODO: what about signal handlers using this thread while its sleep
+}
+#else
+U32 threadSleep(struct KThread* thread, U32 ms) {
+    if (thread->waitStartTime) {
+        U32 diff = getMilliesSinceStart()-thread->waitStartTime;
+        if (diff >= ms) {
+            thread->waitStartTime = 0;
+            return 0;
+        } else {
+            thread->timer.process = thread->process;
+            thread->timer.thread = thread;
+            addTimer(&thread->timer);
+            return -K_WAIT;
+        }
+    } else {
+        thread->waitStartTime = getMilliesSinceStart();
+        thread->timer.millies = thread->waitStartTime+ms;
+        thread->timer.process = thread->process;
+        thread->timer.thread = thread;
+        addTimer(&thread->timer);
+        return -K_WAIT;
+    }
+}
+
+#endif

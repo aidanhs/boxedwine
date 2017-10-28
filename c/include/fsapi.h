@@ -59,10 +59,10 @@ struct FsOpenNodeFunc {
     BOOL (*setLength)(struct FsOpenNode* node, S64 length);
     S64  (*getFilePointer)(struct FsOpenNode* node);
     S64  (*seek)(struct FsOpenNode* node, S64 pos);	
-    U32  (*read)(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len);
-    U32  (*write)(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len);
+    U32  (*read)(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len);
+    U32  (*write)(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len);
     void (*close)(struct FsOpenNode* node);
-    U32  (*map)(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off);
+    U32  (*map)(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off);
     BOOL (*canMap)(struct FsOpenNode* node);
     U32  (*ioctl)(struct KThread* thread, struct FsOpenNode* node, U32 request);	
     void (*setAsync)(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync);

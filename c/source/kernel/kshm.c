@@ -137,10 +137,10 @@ U32 syscall_shmat(struct KThread* thread, U32 shmid, U32 shmaddr, U32 shmflg, U3
     } else {
         permissions = PAGE_READ|PAGE_WRITE;
     }
-    mapMappable(thread->process->memory, result, (shm[shmid].len + PAGE_SIZE - 1), shm[shmid].address, permissions);    
+    mapMappable(thread, result, (shm[shmid].len + PAGE_SIZE - 1), shm[shmid].address, permissions);    
     incrementShmAttach(thread->process, shmid);
     thread->process->shms[shmid][attachSlot]=(result << PAGE_SHIFT);
-    writed(thread->process->memory, rtnAddr, thread->process->shms[shmid][attachSlot]);
+    writed(thread, rtnAddr, thread->process->shms[shmid][attachSlot]);
     return 0;
 }
 
@@ -171,7 +171,7 @@ U32 syscall_shmdt(struct KThread* thread, U32 shmaddr) {
     if (shmid<0) {
         return -K_EINVAL;
     }
-    unmapMappable(thread->process->memory, page, (shm[shmid].len + PAGE_SIZE - 1) / PAGE_SIZE);
+    unmapMappable(thread, page, (shm[shmid].len + PAGE_SIZE - 1) / PAGE_SIZE);
     decrementShmAttach(thread->process, shmid);
     return 0;
 }
@@ -200,26 +200,26 @@ U32 syscall_shmctl(struct KThread* thread, U32 shmid, U32 cmd, U32 buf) {
         return -K_EFAULT;
     if (cmd == (IPC_64 | IPC_STAT)) {
         // ipc_perm
-        writed(thread->process->memory, buf, shm[shmid].key); buf+=4;
-        writed(thread->process->memory, buf, shm[shmid].cuid); buf += 4;
-        writed(thread->process->memory, buf, shm[shmid].cgid); buf += 4;
-        writed(thread->process->memory, buf, shm[shmid].cuid); buf += 4;
-        writed(thread->process->memory, buf, shm[shmid].cgid); buf += 4;
-        writew(thread->process->memory, buf, 0777); buf += 2;
-        writew(thread->process->memory, buf, 0); buf += 2;
-        writew(thread->process->memory, buf, shmid); buf += 2;
-        writew(thread->process->memory, buf, 0); buf += 2;
-        writed(thread->process->memory, buf, 0); buf += 4;
-        writed(thread->process->memory, buf, 0); buf += 4;
-        writed(thread->process->memory, buf, shm[shmid].len); buf += 4;
-        writed(thread->process->memory, buf, (U32)(shm[shmid].atime / 1000000)); buf += 4;
-        writed(thread->process->memory, buf, (U32)(shm[shmid].dtime / 1000000)); buf += 4;
-        writed(thread->process->memory, buf, (U32)(shm[shmid].ctime / 1000000)); buf += 4;
-        writed(thread->process->memory, buf, shm[shmid].cpid); buf += 4;
-        writed(thread->process->memory, buf, shm[shmid].lpid); buf += 4;
-        writew(thread->process->memory, buf, shm[shmid].nattch); buf += 2;
-        writew(thread->process->memory, buf, 0); buf += 2;
-        writed(thread->process->memory, buf, 0);
+        writed(thread, buf, shm[shmid].key); buf+=4;
+        writed(thread, buf, shm[shmid].cuid); buf += 4;
+        writed(thread, buf, shm[shmid].cgid); buf += 4;
+        writed(thread, buf, shm[shmid].cuid); buf += 4;
+        writed(thread, buf, shm[shmid].cgid); buf += 4;
+        writew(thread, buf, 0777); buf += 2;
+        writew(thread, buf, 0); buf += 2;
+        writew(thread, buf, shmid); buf += 2;
+        writew(thread, buf, 0); buf += 2;
+        writed(thread, buf, 0); buf += 4;
+        writed(thread, buf, 0); buf += 4;
+        writed(thread, buf, shm[shmid].len); buf += 4;
+        writed(thread, buf, (U32)(shm[shmid].atime / 1000000)); buf += 4;
+        writed(thread, buf, (U32)(shm[shmid].dtime / 1000000)); buf += 4;
+        writed(thread, buf, (U32)(shm[shmid].ctime / 1000000)); buf += 4;
+        writed(thread, buf, shm[shmid].cpid); buf += 4;
+        writed(thread, buf, shm[shmid].lpid); buf += 4;
+        writew(thread, buf, shm[shmid].nattch); buf += 2;
+        writew(thread, buf, 0); buf += 2;
+        writed(thread, buf, 0);
     }  else if (cmd == (IPC_64 | IPC_RMID)) {
         shm[shmid].markedForDelete = 1;
     } else {

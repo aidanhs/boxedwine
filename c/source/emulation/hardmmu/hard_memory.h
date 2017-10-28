@@ -44,12 +44,12 @@ struct Memory {
 INLINE void* getNativeAddress(struct Memory* memory, U32 address) {
     return (void*)(address + memory->ids[address >> PAGE_SHIFT]);
 }
-INLINE U32 getHostAddress(struct Memory* memory, void* address) {
+INLINE U32 getHostAddress(struct KThread* thread, void* address) {
     return (U32)address;
 }
 
 void reserveNativeMemory(struct Memory* memory);
 void releaseNativeMemory(struct Memory* memory);
-void clearPageFromBlockCache(struct Memory* memory, U32 page);
+void clearPageFromBlockCache(struct Memory* memory, struct KThread* thread, U32 page);
 #endif
 #endif

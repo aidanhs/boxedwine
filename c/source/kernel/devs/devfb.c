@@ -65,35 +65,35 @@ struct fb_cmap {
         U16 blue[256];
 };
 
-void readCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
-    U32 i = readd(memory, address);
-    U32 stop = readd(memory, address+4)+i;
-    U32 red = readd(memory, address+8);
-    U32 green = readd(memory, address+12);
-    U32 blue = readd(memory, address+16);
+void readCMap(struct KThread* thread, U32 address, struct fb_cmap* cmap) {
+    U32 i = readd(thread, address);
+    U32 stop = readd(thread, address+4)+i;
+    U32 red = readd(thread, address+8);
+    U32 green = readd(thread, address+12);
+    U32 blue = readd(thread, address+16);
 
     for (;i<stop;i++) {
-        writew(memory, red, cmap->red[i]); red+=2;
-        writew(memory, green, cmap->green[i]); green+=2;
-        writew(memory, blue, cmap->blue[i]); blue+=2;
+        writew(thread, red, cmap->red[i]); red+=2;
+        writew(thread, green, cmap->green[i]); green+=2;
+        writew(thread, blue, cmap->blue[i]); blue+=2;
     }
 }
 
-void writeFixInfo(struct Memory* memory, U32 address, struct fb_fix_screeninfo* info) {
-    memcopyFromNative(memory, address, info->id, sizeof(info->id)); address+=16;
-    writed(memory, address, info->smem_start); address+=4;
-    writed(memory, address, info->smem_len); address+=4;
-    writed(memory, address, info->type); address+=4;
-    writed(memory, address, info->type_aux); address+=4;
-    writed(memory, address, info->visual); address+=4;
-    writew(memory, address, info->xpanstep); address+=2;
-    writew(memory, address, info->ypanstep); address+=2;
-    writew(memory, address, info->ywrapstep); address+=2;
-    writed(memory, address, info->line_length); address+=4;
-    writed(memory, address, info->mmio_start); address+=4;
-    writed(memory, address, info->mmio_len); address+=4;
-    writed(memory, address, info->accel); address+=4;
-    writew(memory, address, info->capabilities);
+void writeFixInfo(struct KThread* thread, U32 address, struct fb_fix_screeninfo* info) {
+    memcopyFromNative(thread, address, info->id, sizeof(info->id)); address+=16;
+    writed(thread, address, info->smem_start); address+=4;
+    writed(thread, address, info->smem_len); address+=4;
+    writed(thread, address, info->type); address+=4;
+    writed(thread, address, info->type_aux); address+=4;
+    writed(thread, address, info->visual); address+=4;
+    writew(thread, address, info->xpanstep); address+=2;
+    writew(thread, address, info->ypanstep); address+=2;
+    writew(thread, address, info->ywrapstep); address+=2;
+    writed(thread, address, info->line_length); address+=4;
+    writed(thread, address, info->mmio_start); address+=4;
+    writed(thread, address, info->mmio_len); address+=4;
+    writed(thread, address, info->accel); address+=4;
+    writew(thread, address, info->capabilities);
 }
 
 struct fb_bitfield {
@@ -143,51 +143,51 @@ struct fb_var_screeninfo {
     U32 reserved[4];			  /* Reserved for future compatibility */
 };
 
-void writeVarInfo(struct Memory* memory, U32 address, struct fb_var_screeninfo* info) {
-    writed(memory, address, info->xres); address+=4;
-    writed(memory, address, info->yres); address+=4;
-    writed(memory, address, info->xres_virtual); address+=4;
-    writed(memory, address, info->yres_virtual); address+=4;
-    writed(memory, address, info->xoffset); address+=4;
-    writed(memory, address, info->yoffset); address+=4;
+void writeVarInfo(struct KThread* thread, U32 address, struct fb_var_screeninfo* info) {
+    writed(thread, address, info->xres); address+=4;
+    writed(thread, address, info->yres); address+=4;
+    writed(thread, address, info->xres_virtual); address+=4;
+    writed(thread, address, info->yres_virtual); address+=4;
+    writed(thread, address, info->xoffset); address+=4;
+    writed(thread, address, info->yoffset); address+=4;
 
-    writed(memory, address, info->bits_per_pixel); address+=4;
-    writed(memory, address, info->grayscale); address+=4;
+    writed(thread, address, info->bits_per_pixel); address+=4;
+    writed(thread, address, info->grayscale); address+=4;
 
-    writed(memory, address, info->red.offset); address+=4;
-    writed(memory, address, info->red.length); address+=4;
-    writed(memory, address, info->red.msb_right); address+=4;
+    writed(thread, address, info->red.offset); address+=4;
+    writed(thread, address, info->red.length); address+=4;
+    writed(thread, address, info->red.msb_right); address+=4;
 
-    writed(memory, address, info->green.offset); address+=4;
-    writed(memory, address, info->green.length); address+=4;
-    writed(memory, address, info->green.msb_right); address+=4;
+    writed(thread, address, info->green.offset); address+=4;
+    writed(thread, address, info->green.length); address+=4;
+    writed(thread, address, info->green.msb_right); address+=4;
 
-    writed(memory, address, info->blue.offset); address+=4;
-    writed(memory, address, info->blue.length); address+=4;
-    writed(memory, address, info->blue.msb_right); address+=4;
+    writed(thread, address, info->blue.offset); address+=4;
+    writed(thread, address, info->blue.length); address+=4;
+    writed(thread, address, info->blue.msb_right); address+=4;
 
-    writed(memory, address, info->transp.offset); address+=4;
-    writed(memory, address, info->transp.length); address+=4;
-    writed(memory, address, info->transp.msb_right); address+=4;
+    writed(thread, address, info->transp.offset); address+=4;
+    writed(thread, address, info->transp.length); address+=4;
+    writed(thread, address, info->transp.msb_right); address+=4;
 
-    writed(memory, address, info->nonstd); address+=4;
-    writed(memory, address, info->activate); address+=4;
-    writed(memory, address, info->height); address+=4;
-    writed(memory, address, info->width); address+=4;
-    writed(memory, address, info->accel_flags); address+=4;
+    writed(thread, address, info->nonstd); address+=4;
+    writed(thread, address, info->activate); address+=4;
+    writed(thread, address, info->height); address+=4;
+    writed(thread, address, info->width); address+=4;
+    writed(thread, address, info->accel_flags); address+=4;
 
-    writed(memory, address, info->pixclock); address+=4;
-    writed(memory, address, info->left_margin); address+=4;
-    writed(memory, address, info->right_margin); address+=4;
-    writed(memory, address, info->upper_margin); address+=4;
-    writed(memory, address, info->lower_margin); address+=4;
-    writed(memory, address, info->hsync_len); address+=4;
-    writed(memory, address, info->vsync_len); address+=4;
-    writed(memory, address, info->sync); address+=4;
-    writed(memory, address, info->vmode); address+=4;
-    writed(memory, address, info->rotate); address+=4;
-    writed(memory, address, info->colorspace); address+=4;
-    zeroMemory(memory, address, 16);
+    writed(thread, address, info->pixclock); address+=4;
+    writed(thread, address, info->left_margin); address+=4;
+    writed(thread, address, info->right_margin); address+=4;
+    writed(thread, address, info->upper_margin); address+=4;
+    writed(thread, address, info->lower_margin); address+=4;
+    writed(thread, address, info->hsync_len); address+=4;
+    writed(thread, address, info->vsync_len); address+=4;
+    writed(thread, address, info->sync); address+=4;
+    writed(thread, address, info->vmode); address+=4;
+    writed(thread, address, info->rotate); address+=4;
+    writed(thread, address, info->colorspace); address+=4;
+    zeroMemory(thread, address, 16);
 }
 
 U32 GET_SHIFT(U32 n) {
@@ -214,50 +214,50 @@ U32 COUNT_BITS(U32 n) {
     return 0;
 }
 
-void readVarInfo(struct Memory* memory, int address, struct fb_var_screeninfo* info) {
-    info->xres = readd(memory, address); address+=4;
-    info->yres = readd(memory, address); address+=4;
-    info->xres_virtual = readd(memory, address); address+=4;
-    info->yres_virtual = readd(memory, address); address+=4;
-    info->xoffset = readd(memory, address); address+=4;
-    info->yoffset = readd(memory, address); address+=4;
+void readVarInfo(struct KThread* thread, int address, struct fb_var_screeninfo* info) {
+    info->xres = readd(thread, address); address+=4;
+    info->yres = readd(thread, address); address+=4;
+    info->xres_virtual = readd(thread, address); address+=4;
+    info->yres_virtual = readd(thread, address); address+=4;
+    info->xoffset = readd(thread, address); address+=4;
+    info->yoffset = readd(thread, address); address+=4;
 
-    info->bits_per_pixel = readd(memory, address); address+=4;
-    info->grayscale = readd(memory, address); address+=4;
+    info->bits_per_pixel = readd(thread, address); address+=4;
+    info->grayscale = readd(thread, address); address+=4;
 
-    info->red.offset = readd(memory, address); address+=4;
-    info->red.length = readd(memory, address); address+=4;
-    info->red.msb_right = readd(memory, address); address+=4;
+    info->red.offset = readd(thread, address); address+=4;
+    info->red.length = readd(thread, address); address+=4;
+    info->red.msb_right = readd(thread, address); address+=4;
 
-    info->green.offset = readd(memory, address); address+=4;
-    info->green.length = readd(memory, address); address+=4;
-    info->green.msb_right = readd(memory, address); address+=4;
+    info->green.offset = readd(thread, address); address+=4;
+    info->green.length = readd(thread, address); address+=4;
+    info->green.msb_right = readd(thread, address); address+=4;
 
-    info->blue.offset = readd(memory, address); address+=4;
-    info->blue.length = readd(memory, address); address+=4;
-    info->blue.msb_right = readd(memory, address); address+=4;
+    info->blue.offset = readd(thread, address); address+=4;
+    info->blue.length = readd(thread, address); address+=4;
+    info->blue.msb_right = readd(thread, address); address+=4;
 
-    info->transp.offset = readd(memory, address); address+=4;
-    info->transp.length = readd(memory, address); address+=4;
-    info->transp.msb_right = readd(memory, address); address+=4;
+    info->transp.offset = readd(thread, address); address+=4;
+    info->transp.length = readd(thread, address); address+=4;
+    info->transp.msb_right = readd(thread, address); address+=4;
 
-    info->nonstd = readd(memory, address); address+=4;
-    info->activate = readd(memory, address); address+=4;
-    info->height = readd(memory, address); address+=4;
-    info->width = readd(memory, address); address+=4;
-    info->accel_flags = readd(memory, address); address+=4;
+    info->nonstd = readd(thread, address); address+=4;
+    info->activate = readd(thread, address); address+=4;
+    info->height = readd(thread, address); address+=4;
+    info->width = readd(thread, address); address+=4;
+    info->accel_flags = readd(thread, address); address+=4;
 
-    info->pixclock = readd(memory, address); address+=4;
-    info->left_margin = readd(memory, address); address+=4;
-    info->right_margin = readd(memory, address); address+=4;
-    info->upper_margin = readd(memory, address); address+=4;
-    info->lower_margin = readd(memory, address); address+=4;
-    info->hsync_len = readd(memory, address); address+=4;
-    info->vsync_len = readd(memory, address); address+=4;
-    info->sync = readd(memory, address); address+=4;
-    info->vmode = readd(memory, address); address+=4;
-    info->rotate = readd(memory, address); address+=4;
-    info->colorspace = readd(memory, address); address+=4;	
+    info->pixclock = readd(thread, address); address+=4;
+    info->left_margin = readd(thread, address); address+=4;
+    info->right_margin = readd(thread, address); address+=4;
+    info->upper_margin = readd(thread, address); address+=4;
+    info->lower_margin = readd(thread, address); address+=4;
+    info->hsync_len = readd(thread, address); address+=4;
+    info->vsync_len = readd(thread, address); address+=4;
+    info->sync = readd(thread, address); address+=4;
+    info->vmode = readd(thread, address); address+=4;
+    info->rotate = readd(thread, address); address+=4;
+    info->colorspace = readd(thread, address); address+=4;	
 
     screenCx = info->xres;
     screenCy = info->yres;
@@ -296,17 +296,17 @@ void destroySDL2() {
 SDL_Surface* surface;
 #endif
 
-void writeCMap(struct Memory* memory, U32 address, struct fb_cmap* cmap) {
-    U32 i = readd(memory, address);
-    U32 stop = readd(memory, address+4)+i;
-    U32 red = readd(memory, address+8);
-    U32 green = readd(memory, address+12);
-    U32 blue = readd(memory, address+16);
+void writeCMap(struct KThread* thread, U32 address, struct fb_cmap* cmap) {
+    U32 i = readd(thread, address);
+    U32 stop = readd(thread, address+4)+i;
+    U32 red = readd(thread, address+8);
+    U32 green = readd(thread, address+12);
+    U32 blue = readd(thread, address+16);
 
     for (;i<stop;i++) {
-        cmap->red[i] = readw(memory, red); red+=2;
-        cmap->green[i] = readw(memory, green); green+=2;
-        cmap->blue[i] = readw(memory, blue); blue+=2;
+        cmap->red[i] = readw(thread, red); red+=2;
+        cmap->green[i] = readw(thread, green); green+=2;
+        cmap->blue[i] = readw(thread, blue); blue+=2;
     }
     paletteChanged = 1;	
 }
@@ -507,18 +507,18 @@ S64 fb_seek(struct FsOpenNode* node, S64 pos) {
     return pos;
 }
 
-U32 fb_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 fb_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     if (node->idata+len>fb_fix_screeninfo.line_length)
         len = fb_fix_screeninfo.line_length-node->idata;
-    memcopyFromNative(memory, address, screenPixels+node->idata, len);
+    memcopyFromNative(thread, address, screenPixels+node->idata, len);
     node->idata+=len;
     return len;
 }
 
-U32 fb_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 fb_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     if (node->idata+len>fb_fix_screeninfo.line_length)
         len = fb_fix_screeninfo.line_length-node->idata;
-    memcopyToNative(memory, address, screenPixels+node->idata, len);
+    memcopyToNative(thread, address, screenPixels+node->idata, len);
     node->idata+=len;
     return len;
 }
@@ -532,24 +532,24 @@ U32 fb_ioctl(struct KThread* thread, struct FsOpenNode* node, U32 request) {
 
     switch(request) {
         case 0x4600: // FBIOGET_VSCREENINFO
-            writeVarInfo(thread->process->memory, IOCTL_ARG1, &fb_var_screeninfo);
+            writeVarInfo(thread, IOCTL_ARG1, &fb_var_screeninfo);
             break;
         case 0x4601: // FBIOPUT_VSCREENINFO
-            readVarInfo(thread->process->memory, IOCTL_ARG1, &fb_var_screeninfo);
+            readVarInfo(thread, IOCTL_ARG1, &fb_var_screeninfo);
             fbSetupScreen();
             break;
         case 0x4602: // FBIOGET_FSCREENINFO
-            writeFixInfo(thread->process->memory, IOCTL_ARG1, &fb_fix_screeninfo);
+            writeFixInfo(thread, IOCTL_ARG1, &fb_fix_screeninfo);
             break;
         case 0x4604: // FBIOGETCMAP
-            readCMap(thread->process->memory, IOCTL_ARG1, &fb_cmap);
+            readCMap(thread, IOCTL_ARG1, &fb_cmap);
             break;
         case 0x4605: // FBIOPUTCMAP
-            writeCMap(thread->process->memory, IOCTL_ARG1, &fb_cmap);
+            writeCMap(thread, IOCTL_ARG1, &fb_cmap);
             break;
         case 0x4606: { // FBIOPAN_DISPLAY
             struct fb_var_screeninfo fb;
-            readVarInfo(thread->process->memory, IOCTL_ARG1, &fb);
+            readVarInfo(thread, IOCTL_ARG1, &fb);
             break;
         }
         case 0x4611: // FBIOBLANK
@@ -582,7 +582,7 @@ BOOL fb_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 fb_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 fb_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
 #if 0
     U32 pageStart = fb_fix_screeninfo.smem_start >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;

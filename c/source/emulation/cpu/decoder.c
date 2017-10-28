@@ -37,7 +37,7 @@
 #define FETCH_S16(data) (S16)FETCH16(data)
 #define FETCH_S32(data) (S32)FETCH32(data)
 
-void log_pf(struct KProcess* process, U32 address);
+void log_pf(struct KThread* thread, U32 address);
 
 struct Op* freeOps;
 int totalOpCount;
@@ -260,6 +260,7 @@ void NEXT_OP(struct DecodeData* data) {
     decoder[data->op->inst](data);
 }
 
+#ifdef LOG_OPS
 const char* RB(int r) {
     switch (r) {
     case 0: return "AL";
@@ -305,8 +306,6 @@ const char* RD(int r) {
 #define R8 RB
 #define R16 RW
 #define R32 RD
-
-char tmp[64];
 
 const char* EABASE(int base) {
     switch (base) {
@@ -394,105 +393,105 @@ void EAA32(char* s, int rm, struct Op* op) {
 }
 
 const char* M16(struct DecodeData* data, int rm, struct Op* op) {
-    strcpy(tmp, "WORD PTR [");
+    strcpy(data->tmp, "WORD PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
     if (data->ea16) {
-        EAA16(tmp, rm, op);
+        EAA16(data->tmp, rm, op);
     } else {
-        EAA32(tmp, rm, op);
+        EAA32(data->tmp, rm, op);
     }
-    strcat(tmp, "]");
-    return tmp;
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
 
-const char* O16(struct Op* op) {
-    strcpy(tmp, "WORD PTR [");
+const char* O16(struct DecodeData* data, struct Op* op) {
+    strcpy(data->tmp, "WORD PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
-    sprintf(tmp+strlen(tmp), "+%X", op->data1); 
-    strcat(tmp, "]");
-    return tmp;
+    sprintf(data->tmp+strlen(data->tmp), "+%X", op->data1); 
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
 
 const char* M8(struct DecodeData* data, int rm, struct Op* op) {
-    strcpy(tmp, "BYTE PTR [");
+    strcpy(data->tmp, "BYTE PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
     if (data->ea16) {
-        EAA16(tmp, rm, op);
+        EAA16(data->tmp, rm, op);
     } else {
-        EAA32(tmp, rm, op);
+        EAA32(data->tmp, rm, op);
     }
-    strcat(tmp, "]");
-    return tmp;
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
 
-const char* O8(struct Op* op) {
-    strcpy(tmp, "BYTE PTR [");
+const char* O8(struct DecodeData* data, struct Op* op) {
+    strcpy(data->tmp, "BYTE PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
-    sprintf(tmp+strlen(tmp), "+%X", op->data1); 
-    strcat(tmp, "]");
-    return tmp;
+    sprintf(data->tmp+strlen(data->tmp), "+%X", op->data1); 
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
 
 const char* M32(struct DecodeData* data, int rm, struct Op* op) {
-    strcpy(tmp, "DWORD PTR [");
+    strcpy(data->tmp, "DWORD PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
     if (data->ea16) {
-        EAA16(tmp, rm, op);
+        EAA16(data->tmp, rm, op);
     } else {
-        EAA32(tmp, rm, op);
+        EAA32(data->tmp, rm, op);
     }
-    strcat(tmp, "]");
-    return tmp;
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
 
 const char* M64(struct DecodeData* data, int rm, struct Op* op) {
-    strcpy(tmp, "QWORD PTR [");
+    strcpy(data->tmp, "QWORD PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
     if (data->ea16) {
-        EAA16(tmp, rm, op);
+        EAA16(data->tmp, rm, op);
     } else {
-        EAA32(tmp, rm, op);
+        EAA32(data->tmp, rm, op);
     }
-    strcat(tmp, "]");
-    return tmp;
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
 
-const char* O32(struct Op* op) {
-    strcpy(tmp, "DWORD PTR [");
+const char* O32(struct DecodeData* data, struct Op* op) {
+    strcpy(data->tmp, "DWORD PTR [");
     if (op->base != SEG_ZERO) {
-        strcat(tmp, EABASE(op->base));
-        strcat(tmp, ":");
+        strcat(data->tmp, EABASE(op->base));
+        strcat(data->tmp, ":");
     }
 
-    sprintf(tmp+strlen(tmp), "+%X", op->data1); 
-    strcat(tmp, "]");
-    return tmp;
+    sprintf(data->tmp+strlen(data->tmp), "+%X", op->data1); 
+    strcat(data->tmp, "]");
+    return data->tmp;
 }
-
+#endif
 void logOpCsEip(char* buffer, const char* name, U32 cs, U32 eip) {
     sprintf(buffer, "%s %04X:%04X", name, cs, eip);
 }
@@ -650,7 +649,6 @@ if (rm >= 0xc0 ) {					\
 #include "mmx.h"
 
 #ifdef LOG_OPS
-char tmpc[32];
 
 void LOG_E8(const char* name, int rm, struct DecodeData* data) {
     if (rm >= 0xc0 ) {
@@ -661,11 +659,11 @@ void LOG_E8(const char* name, int rm, struct DecodeData* data) {
 }
 
 void LOG_E8C(const char* name, int rm, struct DecodeData* data) {
-    sprintf(tmpc, "%X", data->op->data1);
+    sprintf(data->tmp, "%X", data->op->data1);
     if (rm >= 0xc0 ) {
-        LOG_OP2(name, RB(data->op->r1), tmpc);
+        LOG_OP2(name, RB(data->op->r1), data->tmp);
     } else {
-        LOG_OP2(name, M8(data, rm, data->op), tmpc);
+        LOG_OP2(name, M8(data, rm, data->op), data->tmp);
     }
 }
 
@@ -686,11 +684,11 @@ void LOG_E16(const char* name, int rm, struct DecodeData* data) {
 }
 
 void LOG_E16C(const char* name, int rm, struct DecodeData* data) {
-    sprintf(tmpc, "%X", data->op->data1);
+    sprintf(data->tmp, "%X", data->op->data1);
     if (rm >= 0xc0 ) {
-        LOG_OP2(name, RW(data->op->r1), tmpc);
+        LOG_OP2(name, RW(data->op->r1), data->tmp);
     } else {
-        LOG_OP2(name, M16(data, rm, data->op), tmpc);
+        LOG_OP2(name, M16(data, rm, data->op), data->tmp);
     }
 }
 
@@ -711,11 +709,11 @@ void LOG_E32(const char* name, int rm, struct DecodeData* data) {
 }
 
 void LOG_E32C(const char* name, int rm, struct DecodeData* data) {
-    sprintf(tmpc, "%X", data->op->data1);
+    sprintf(data->tmp, "%X", data->op->data1);
     if (rm >= 0xc0 ) {
-        LOG_OP2(name, RD(data->op->r1), tmpc);
+        LOG_OP2(name, RD(data->op->r1), data->tmp);
     } else {
-        LOG_OP2(name, M32(data, rm, data->op), tmpc);
+        LOG_OP2(name, M32(data, rm, data->op), data->tmp);
     }
 }
 
@@ -770,7 +768,7 @@ void decode262(struct DecodeData* data) {
 
 void invalidOp(struct DecodeData* data) {
     printf("Invalid instruction %x\n", data->op->inst);    
-    log_pf(data->cpu->thread->process, data->ip);
+    log_pf(data->cpu->thread, data->ip);
 }
 
 // Operand Size Prefix
@@ -1915,7 +1913,7 @@ void decode0e0(struct DecodeData* data) {
     else
         data->op->func = loopnz32;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("LOOPNZ", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("LOOPNZ", itoa(data->op->data1, data->tmp, 16));
     FINISH_OP(data);
 }
 
@@ -1926,7 +1924,7 @@ void decode0e1(struct DecodeData* data) {
     else
         data->op->func = loopz32;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("LOOPZ", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("LOOPZ", itoa(data->op->data1, data->tmp, 16));
     FINISH_OP(data);
 }
 
@@ -1937,7 +1935,7 @@ void decode0e2(struct DecodeData* data) {
     else
         data->op->func = loop32;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("LOOP", itoa(data->op->data1, tmp, 10));
+    LOG_OP1("LOOP", itoa(data->op->data1, data->tmp, 10));
     FINISH_OP(data);
 }
 
@@ -1948,7 +1946,7 @@ void decode0e3(struct DecodeData* data) {
     else
         data->op->func = jcxz32;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JCXZ", itoa(data->op->data1, tmp, 10));
+    LOG_OP1("JCXZ", itoa(data->op->data1, data->tmp, 10));
     FINISH_OP(data);
 }
 

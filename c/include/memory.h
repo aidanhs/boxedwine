@@ -27,40 +27,38 @@
 #define NUMBER_OF_PAGES 0x100000
 #define ROUND_UP_TO_PAGE(x) ((x + 0xFFF) & 0xFFFFF000)
 
-extern char tmp64k[];
-
 struct Memory;
 struct KProcess;
 
-U8 readb(struct Memory* memory, U32 address);
-void writeb(struct Memory* memory, U32 address, U8 value);
-U16 readw(struct Memory* memory, U32 address);
-void writew(struct Memory* memory, U32 address, U16 value);
-U32 readd(struct Memory* memory, U32 address);
-void writed(struct Memory* memory, U32 address, U32 value);
+U8 readb(struct KThread* thread, U32 address);
+void writeb(struct KThread* thread, U32 address, U8 value);
+U16 readw(struct KThread* thread, U32 address);
+void writew(struct KThread* thread, U32 address, U16 value);
+U32 readd(struct KThread* thread, U32 address);
+void writed(struct KThread* thread, U32 address, U32 value);
 
-INLINE U64 readq(struct Memory* memory, U32 address) {
-    return readd(memory, address) | ((U64)readd(memory, address + 4) << 32);
+INLINE U64 readq(struct KThread* thread, U32 address) {
+    return readd(thread, address) | ((U64)readd(thread, address + 4) << 32);
 }
 
-INLINE void writeq(struct Memory* memory, U32 address, U64 value) {
-    writed(memory, address, (U32)value);
-    writed(memory, address + 4, (U32)(value >> 32));
+INLINE void writeq(struct KThread* thread, U32 address, U64 value) {
+    writed(thread, address, (U32)value);
+    writed(thread, address + 4, (U32)(value >> 32));
 }
 
-void zeroMemory(struct Memory* memory, U32 address, int len);
-void readMemory(struct Memory* memory, U8* data, U32 address, int len);
-void writeMemory(struct Memory* memory, U32 address, U8* data, int len);
+void zeroMemory(struct KThread* thread, U32 address, int len);
+void readMemory(struct KThread* thread, U8* data, U32 address, int len);
+void writeMemory(struct KThread* thread, U32 address, U8* data, int len);
 
 struct Memory* allocMemory(struct KProcess* process);
 void initMemory(struct Memory* memory);
-void cloneMemory(struct Memory* memory, struct Memory* from);
+void cloneMemory(struct KThread* thread, struct KThread* from);
 void freeMemory(struct Memory* memory);
-void releaseMemory(struct Memory* memory, U32 page, U32 pageCount);
+void releaseMemory(struct KThread* thread, U32 page, U32 pageCount);
 void resetMemory(struct Memory* memory);
-BOOL isValidReadAddress(struct Memory* memory, U32 address);
-void mapMappable(struct Memory* memory, U32 page, U32 pageCount, void* p, U32 permissions);
-void unmapMappable(struct Memory* memory, U32 page, U32 pageCount);
+BOOL isValidReadAddress(struct KThread* thread, U32 address);
+void mapMappable(struct KThread* thread, U32 page, U32 pageCount, void* p, U32 permissions);
+void unmapMappable(struct KThread* thread, U32 page, U32 pageCount);
 void* allocMappable(struct Memory* memory, U32 pageCount);
 void freeMappable(struct Memory* memory, void* address);
 
@@ -84,22 +82,21 @@ U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size);
 
 BOOL findFirstAvailablePage(struct Memory* memory, U32 startingPage, U32 pageCount, U32* result, BOOL canBeMapped);
 
-void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fd, U64 offset, U32 cacheIndex);
-void protectPage(struct Memory* memory, U32 page, U32 permissions);
-void freePage(struct Memory* memory, U32 page);
+void allocPages(struct KThread* thread, U32 page, U32 pageCount, U8 permissions, U32 fd, U64 offset, U32 cacheIndex);
+void protectPage(struct KThread* thread, U32 page, U32 permissions);
+void freePage(struct KThread* thread, U32 page);
 
-U8* getPhysicalAddress(struct Memory* memory, U32 address);
+U8* getPhysicalAddress(struct KThread* thread, U32 address);
 
-char* getNativeString(struct Memory* memory, U32 address);
-char* getNativeStringW(struct Memory* memory, U32 address);
-char* getNativeString2(struct Memory* memory, U32 address);
-char* getNativeStringW2(struct Memory* memory, U32 address);
-void writeNativeString(struct Memory* memory, U32 address, const char* str);
-U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len);
-void writeNativeStringW(struct Memory* memory, U32 address, const char* str);
+char* getNativeString(struct KThread* thread, U32 address, char* buffer, U32 cbBuffer);
+char* getNativeStringW(struct KThread* thread, U32 address, char* buffer, U32 cbBuffer);
+void writeNativeString(struct KThread* thread, U32 address, const char* str);
+U32 writeNativeString2(struct KThread* thread, U32 address, const char* str, U32 len);
+void writeNativeStringW(struct KThread* thread, U32 address, const char* str);
+U32 getNativeStringLen(struct KThread* thread, U32 address);
 
-void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len);
-void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len);
+void memcopyFromNative(struct KThread* thread, U32 address, const char* p, U32 len);
+void memcopyToNative(struct KThread* thread, U32 address, char* p, U32 len);
 
 U32 getMemoryAllocated(struct Memory* memory);
 

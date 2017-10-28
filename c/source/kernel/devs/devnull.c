@@ -41,11 +41,11 @@ S64 null_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 null_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 null_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
-U32 null_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 null_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     return len;
 }
 
@@ -78,7 +78,7 @@ BOOL null_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 null_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 null_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 

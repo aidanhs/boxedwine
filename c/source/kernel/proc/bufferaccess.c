@@ -46,19 +46,19 @@ S64 buffer_seek(struct FsOpenNode* node, S64 pos) {
     return node->idata = (U32)pos;
 }
 
-U32 buffer_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 buffer_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     U32 pos = node->idata;
     if (pos+len>strlen((char*)node->func->data))
         len = (U32)strlen((char*)node->func->data)-pos;
-    memcopyFromNative(memory, address, ((char*)node->func->data)+pos, len);
+    memcopyFromNative(thread, address, ((char*)node->func->data)+pos, len);
     return len;
 }
 
-U32 buffer_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 buffer_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     U32 pos = node->idata;
     if (pos+len>node->func->dataLen)
         len = node->func->dataLen-pos;
-    memcopyToNative(memory, address, ((char*)node->func->data)+pos, len);
+    memcopyToNative(thread, address, ((char*)node->func->data)+pos, len);
     return len;
 }
 
@@ -91,7 +91,7 @@ BOOL buffer_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 buffer_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 buffer_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 

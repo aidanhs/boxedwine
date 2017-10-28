@@ -30,7 +30,8 @@
 
 // :TODO: what about sync'ing the writes back to the file?
 #ifndef HAS_64BIT_MMU
-static void ondemmandFile(struct Memory* memory, U32 address) {
+static void ondemmandFile(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
     U32 page = address >> PAGE_SHIFT;
     U32 flags = memory->flags[page];
     struct MapedFiles* mapped = &memory->process->mappedFiles[memory->ramPage[page] & 0xFFF];
@@ -76,7 +77,7 @@ static void ondemmandFile(struct Memory* memory, U32 address) {
     if (!inCache) {
         oldPos = mapped->file->access->getPos(mapped->file);
         mapped->file->access->seek(mapped->file, offset);
-        len = mapped->file->access->read(memory, 0, mapped->file, address, PAGE_SIZE);
+        len = mapped->file->access->read(thread, mapped->file, address, PAGE_SIZE);
         mapped->file->access->seek(mapped->file, oldPos);
         if (len<PAGE_SIZE) {
             // don't call zeroMemory because it might be read only
@@ -88,34 +89,34 @@ static void ondemmandFile(struct Memory* memory, U32 address) {
     closeMemoryMapped(mapped);
 }
 
-static U8 ondemandfile_readb(struct Memory* memory, U32 address) {	
-    ondemmandFile(memory, address);	
-    return readb(memory, address);
+static U8 ondemandfile_readb(struct KThread* thread, U32 address) {	
+    ondemmandFile(thread, address);	
+    return readb(thread, address);
 }
 
-static void ondemandfile_writeb(struct Memory* memory, U32 address, U8 value) {
-    ondemmandFile(memory, address);	
-    writeb(memory, address, value);
+static void ondemandfile_writeb(struct KThread* thread, U32 address, U8 value) {
+    ondemmandFile(thread, address);	
+    writeb(thread, address, value);
 }
 
-static U16 ondemandfile_readw(struct Memory* memory, U32 address) {
-    ondemmandFile(memory, address);	
-    return readw(memory, address);
+static U16 ondemandfile_readw(struct KThread* thread, U32 address) {
+    ondemmandFile(thread, address);	
+    return readw(thread, address);
 }
 
-static void ondemandfile_writew(struct Memory* memory, U32 address, U16 value) {
-    ondemmandFile(memory, address);	
-    writew(memory, address, value);
+static void ondemandfile_writew(struct KThread* thread, U32 address, U16 value) {
+    ondemmandFile(thread, address);	
+    writew(thread, address, value);
 }
 
-static U32 ondemandfile_readd(struct Memory* memory, U32 address) {
-    ondemmandFile(memory, address);	
-    return readd(memory, address);
+static U32 ondemandfile_readd(struct KThread* thread, U32 address) {
+    ondemmandFile(thread, address);	
+    return readd(thread, address);
 }
 
-static void ondemandfile_writed(struct Memory* memory, U32 address, U32 value) {
-    ondemmandFile(memory, address);	
-    writed(memory, address, value);
+static void ondemandfile_writed(struct KThread* thread, U32 address, U32 value) {
+    ondemmandFile(thread, address);	
+    writed(thread, address, value);
 }
 
 static void ondemandfile_clear(struct Memory* memory, U32 page) {
@@ -123,9 +124,9 @@ static void ondemandfile_clear(struct Memory* memory, U32 page) {
     closeMemoryMapped(mapped);
 }
 
-static U8* ondemandfile_physicalAddress(struct Memory* memory, U32 address) {
-    ondemmandFile(memory, address);
-    return getPhysicalAddress(memory, address);
+static U8* ondemandfile_physicalAddress(struct KThread* thread, U32 address) {
+    ondemmandFile(thread, address);
+    return getPhysicalAddress(thread, address);
 }
 
 struct Page ramOnDemandFilePage = {ondemandfile_readb, ondemandfile_writeb, ondemandfile_readw, ondemandfile_writew, ondemandfile_readd, ondemandfile_writed, ondemandfile_clear, ondemandfile_physicalAddress};

@@ -26,10 +26,10 @@ char pathSeperator;
 static char rootFileSystem[MAX_FILEPATH_LEN];
 static unzFile *zipfile;
 
-static char tmpPath[MAX_FILEPATH_LEN];
-static char tmpLocalPath[MAX_FILEPATH_LEN];
-static char tmpNativePath[MAX_FILEPATH_LEN];
-static char pathTmp[MAX_FILEPATH_LEN];
+//static char tmpPath[MAX_FILEPATH_LEN];
+//static char tmpLocalPath[MAX_FILEPATH_LEN];
+//static char tmpNativePath[MAX_FILEPATH_LEN];
+//static char pathTmp[MAX_FILEPATH_LEN];
 
 #define nativePath1 reserved1
 #define isLink1 reserved2
@@ -54,13 +54,12 @@ static char pathTmp[MAX_FILEPATH_LEN];
 static int nodeId = 1;
 static struct KHashmap nodeMap;
 static PblMap* localSkipLinksMap;
-static char tmp[4096];
 
 void initNodes() {
     initHashmap(&nodeMap);
 }
 
-const char* pathMakeWindowsHappy(const char* path) {
+static const char* pathMakeWindowsHappy(const char* path, char* pathTmp) {
     if (path[strlen(path)-1]==pathSeperator) {
         safe_strcpy(pathTmp, path, MAX_FILEPATH_LEN);
         pathTmp[strlen(path)-1]=0;
@@ -70,7 +69,8 @@ const char* pathMakeWindowsHappy(const char* path) {
 }
 
 BOOL doesPathExist(const char* path) {
-    path = pathMakeWindowsHappy(path);
+    char pathTmp[MAX_FILEPATH_LEN];
+    path = pathMakeWindowsHappy(path, pathTmp);
     if (access(path, 0)!=-1) {
         return TRUE;
     }
@@ -90,10 +90,11 @@ struct FsNode* getNodeFromNative(const char* nativePath) {
 
 BOOL doesLocalPathExist(const char* localPath) {
     char nativePath[MAX_FILEPATH_LEN];
+    char pathTmp[MAX_FILEPATH_LEN];
     const char* path;
     struct FsNode* node;
     localPathToRemote(localPath, nativePath, MAX_FILEPATH_LEN);
-    path = pathMakeWindowsHappy(nativePath);
+    path = pathMakeWindowsHappy(nativePath, pathTmp);
     if (access(path, 0)!=-1) {
         return TRUE;
     }
@@ -239,8 +240,10 @@ void remotePathToLocal(char* path) {
 }
 
 U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32 path1, U32 path2) {
-    char* s1 = getNativeString(thread->process->memory, path1);
-    char* s2 = getNativeString2(thread->process->memory, path2);
+    char tmp1[MAX_FILEPATH_LEN];
+    char tmp2[MAX_FILEPATH_LEN];
+    char* s1 = getNativeString(thread, path1, tmp1, sizeof(tmp1));
+    char* s2 = getNativeString(thread, path2, tmp2, sizeof(tmp2));
     char tmp[MAX_FILEPATH_LEN];
     struct FsNode* node;
     struct FsOpenNode* openNode;
@@ -268,7 +271,7 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
     if (!openNode) {
         return -K_EIO;
     }
-    openNode->func->write(thread->process->memory, openNode, path1, (U32)strlen(s1));
+    openNode->func->write(thread, openNode, path1, (U32)strlen(s1));
     openNode->func->close(openNode);
     pblMapClear(localSkipLinksMap);
     return 0;
@@ -470,20 +473,21 @@ static S64 openfile_seek(struct FsOpenNode* node, S64 pos) {
     return lseek(node->handle1, (U32)pos, SEEK_SET);
 }
 
-static U32 openfile_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+static U32 openfile_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
 #ifdef HAS_64BIT_MMU
-    return node->func->readNative(node, getPhysicalAddress(memory, address), len);
+    return node->func->readNative(node, getPhysicalAddress(thread, address), len);
 #else
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
-        U8* ram = getPhysicalAddress(memory, address);
+        U8* ram = getPhysicalAddress(thread, address);
         U32 result;
         S64 pos = node->func->getFilePointer(node);
 
         if (ram) {
             result = node->func->readNative(node, ram, len);	
         } else {
+            char tmp[PAGE_SIZE];
             result = node->func->readNative(node, (U8*)tmp, len);
-            memcopyFromNative(memory, address, tmp, result);
+            memcopyFromNative(thread, address, tmp, result);
         }        
         // :TODO: why does this happen
         //
@@ -503,15 +507,16 @@ static U32 openfile_read(struct Memory* memory, struct FsOpenNode* node, U32 add
         while (len) {
             U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
             S32 didRead;
-            U8* ram = getPhysicalAddress(memory, address);
+            U8* ram = getPhysicalAddress(thread, address);
 
             if (todo>len)
                 todo = len;
             if (ram) {
                 didRead=node->func->readNative(node, ram, todo);		
             } else {
+                char tmp[PAGE_SIZE];
                 didRead = node->func->readNative(node, (U8*)tmp, todo);
-                memcopyFromNative(memory, address, tmp, didRead);
+                memcopyFromNative(thread, address, tmp, didRead);
             }
             if (didRead<=0)
                 break;
@@ -524,21 +529,23 @@ static U32 openfile_read(struct Memory* memory, struct FsOpenNode* node, U32 add
 #endif
 }
 
-static U32 openfile_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+static U32 openfile_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
 #ifdef HAS_64BIT_MMU
-    return node->func->writeNative(node, getPhysicalAddress(memory, address), len);
+    return node->func->writeNative(node, getPhysicalAddress(thread, address), len);
 #else	
     U32 wrote = 0;
     while (len) {
         U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
-        U8* ram = getPhysicalAddress(memory, address);
+        U8* ram = getPhysicalAddress(thread, address);
+        char tmp[PAGE_SIZE];
+
         if (todo>len)
             todo = len;
         if (ram)
             wrote+=node->func->writeNative(node, ram, todo);
         else {
-            memcopyToNative(memory, address, tmp64k, todo);
-            wrote+=node->func->writeNative(node, (U8*)tmp64k, todo);		
+            memcopyToNative(thread, address, tmp, todo);
+            wrote+=node->func->writeNative(node, (U8*)tmp, todo);		
         }
         len-=todo;
         address+=todo;
@@ -578,7 +585,7 @@ static BOOL openfile_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-static U32 openfile_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+static U32 openfile_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -671,6 +678,8 @@ static U64 lastZipOffset = 0xFFFFFFFFFFFFFFFFl;
 static U64 lastZipFileOffset;
 
 static void setupZipRead(U64 zipOffset, U64 zipFileOffset) {
+    char tmp[4096];
+
     if (zipOffset != lastZipOffset || zipFileOffset < lastZipFileOffset) {
         unzCloseCurrentFile(zipfile);
         unzSetOffset64(zipfile, zipOffset);
@@ -716,7 +725,7 @@ static BOOL zipOpenFile_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-static U32 zipOpenFile_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+static U32 zipOpenFile_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -842,11 +851,11 @@ S64 dir_seek(struct FsOpenNode* node, S64 pos) {
     return data->pos;
 }
 
-U32 dir_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 dir_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
-U32 dir_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 dir_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
@@ -884,7 +893,7 @@ BOOL dir_isReadReady(struct FsOpenNode* node) {
     return FALSE;
 }
 
-U32 dir_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 dir_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -932,8 +941,9 @@ void deleteZipFile(struct FsNode* node) {
 BOOL file_isDirectory(struct FsNode* node) {
     struct stat buf;
     const char* path = node->nativePath1;
+    char pathTmp[MAX_FILEPATH_LEN];
 
-    path = pathMakeWindowsHappy(path);
+    path = pathMakeWindowsHappy(path, pathTmp);
     if (stat(path, &buf)==0) {
         return S_ISDIR(buf.st_mode);
     }
@@ -948,6 +958,7 @@ BOOL file_remove(struct FsNode* node) {
     BOOL result;
 
     if (node->isLink1) {
+        char tmpLocalPath[MAX_FILEPATH_LEN];
         safe_strcpy(tmpLocalPath, node->path, MAX_FILEPATH_LEN);
         safe_strcat(tmpLocalPath, ".link", MAX_FILEPATH_LEN);
         node = getNodeFromLocalPath("", tmpLocalPath, TRUE);
@@ -957,6 +968,9 @@ BOOL file_remove(struct FsNode* node) {
         struct FsOpenNode* openNode = node->openNodes1;
         int i;
         U32 isLink;
+        char tmpLocalPath[MAX_FILEPATH_LEN];
+        char tmpPath[MAX_FILEPATH_LEN];
+        char tmpNativePath[MAX_FILEPATH_LEN];
 
         while (openNode) {
             openNode->cachedPosDuringDelete1 = openNode->func->getFilePointer(openNode);
@@ -1015,8 +1029,9 @@ BOOL file_remove(struct FsNode* node) {
 U64 file_lastModified(struct FsNode* node) {
     struct stat buf;
     const char* path = node->nativePath1;
+    char pathTmp[MAX_FILEPATH_LEN];
 
-    path = pathMakeWindowsHappy(path);
+    path = pathMakeWindowsHappy(path, pathTmp);
     if (stat(path, &buf)==0) {
         return buf.st_mtime*1000l;
     }
@@ -1029,8 +1044,9 @@ U64 file_lastModified(struct FsNode* node) {
 U64 file_length(struct FsNode* node) {
     struct stat buf;
     const char* path = node->nativePath1;
+    char pathTmp[MAX_FILEPATH_LEN];
 
-    path = pathMakeWindowsHappy(path);
+    path = pathMakeWindowsHappy(path, pathTmp);
     if (stat(path, &buf)==0) {
         return buf.st_size;
     }
@@ -1222,7 +1238,7 @@ U32 getHardLinkCount(struct FsNode* node) {
 }
 
 struct FsNode* getParentNode(struct FsNode* node) {
-    static char tmp[MAX_FILEPATH_LEN];
+    char tmp[MAX_FILEPATH_LEN];
     const char* pos = strrchr(node->path, '/');
     if (pos) {
         safe_strcpy(tmp, node->path, MAX_FILEPATH_LEN);
@@ -1404,8 +1420,10 @@ struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32
 
 
 U32 syscall_link(struct KThread* thread, U32 from, U32 to) {
-    struct FsNode* fromNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, from), TRUE);
-    struct FsNode* toNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, to), FALSE);
+    char tmp1[MAX_FILEPATH_LEN];
+    char tmp2[MAX_FILEPATH_LEN];
+    struct FsNode* fromNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread, from, tmp1, sizeof(tmp1)), TRUE);
+    struct FsNode* toNode = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread, to, tmp2, sizeof(tmp2)), FALSE);
     struct FsOpenNode* fromOpenNode;
     struct FsOpenNode* toOpenNode;
     U8 buffer[PAGE_SIZE];

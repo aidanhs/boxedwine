@@ -18,6 +18,7 @@ struct DecodeData {
     U32 pagePos;
     struct Op* op;	
     int count;
+    char tmp[256];
 };
 
 U32 FETCH32(struct DecodeData* data);

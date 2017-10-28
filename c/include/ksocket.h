@@ -74,6 +74,6 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
 U32 syscall_pipe(struct KThread* thread, U32 address);
 U32 syscall_pipe2(struct KThread* thread, U32 address, U32 flags);
 
-const char* socketAddressName(struct KThread* thread, U32 address, U32 len);
+const char* socketAddressName(struct KThread* thread, U32 address, U32 len, char* result, U32 cbResult);
 U32 isNativeSocket(struct KThread* thread, int desc);
 #endif

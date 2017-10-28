@@ -521,13 +521,14 @@ void unixsocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 e
     }
 }
 
-U32 unixsocket_write(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     struct KSocket* s = obj->socket;
     U32 count=0;
 
     if (s->type == K_SOCK_DGRAM) {
         if (!strcmp(s->destAddress.data, "/dev/log")) {
-            printf("%s\n", getNativeString(thread->process->memory, buffer));
+            char tmp[MAX_FILEPATH_LEN];
+            printf("%s\n", getNativeString(thread, buffer, tmp, sizeof(tmp)));
         }
         return len;
     }
@@ -549,7 +550,7 @@ U32 unixsocket_write(struct Memory* memory, struct KThread* thread, struct KObje
             todo = 4096;
         if (todo>ringbuf_capacity(s->connection->recvBuffer))
             todo = (U32)ringbuf_capacity(s->connection->recvBuffer);
-        memcopyToNative(thread->process->memory, buffer, tmp, todo);
+        memcopyToNative(thread, buffer, tmp, todo);
         ringbuf_memcpy_into(s->connection->recvBuffer, tmp, todo);
         buffer+=todo;
         len-=todo;
@@ -581,7 +582,7 @@ U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U
     return count;
 }
 
-U32 unixsocket_read(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     struct KSocket* s = obj->socket;
     U32 count = 0;
     if (!s->inClosed && !s->connection)
@@ -598,7 +599,7 @@ U32 unixsocket_read(struct Memory* memory, struct KThread* thread, struct KObjec
     count = len;
     if (count>ringbuf_bytes_used(s->recvBuffer))
         count=(U32)ringbuf_bytes_used(s->recvBuffer);
-    ringbuf_memcpy_from(getPhysicalAddress(thread->process->memory, buffer), s->recvBuffer, count);
+    ringbuf_memcpy_from(getPhysicalAddress(thread, buffer), s->recvBuffer, count);
 #else
     while (len && !ringbuf_is_empty(s->recvBuffer)) {
         S8 tmp[4096];
@@ -611,7 +612,7 @@ U32 unixsocket_read(struct Memory* memory, struct KThread* thread, struct KObjec
 
         ringbuf_memcpy_from(tmp, s->recvBuffer, todo);
         
-        memcopyFromNative(thread->process->memory, buffer, tmp, todo);
+        memcopyFromNative(thread, buffer, tmp, todo);
 
         buffer += todo;
         count += todo;
@@ -623,13 +624,13 @@ U32 unixsocket_read(struct Memory* memory, struct KThread* thread, struct KObjec
     return count;
 }
 
-U32 unixsocket_stat(struct Memory* memory, struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
+U32 unixsocket_stat(struct KThread* thread, struct KObject* obj, U32 address, BOOL is64) {
     struct KSocket* s = obj->socket;	
-    writeStat(memory, address, is64, 1, (s->node?s->node->id:0), K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, (s->node?s->node->rdev:0), 0, 4096, 0, s->lastModifiedTime, 1);
+    writeStat(thread, address, is64, 1, (s->node?s->node->id:0), K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, (s->node?s->node->rdev:0), 0, 4096, 0, s->lastModifiedTime, 1);
     return 0;
 }
 
-U32 unixsocket_map(struct Memory* memory, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 unixsocket_map(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -769,19 +770,18 @@ void nativesocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32
     addWaitingNativeSocket(s);
 }
 
-char tmp64k[64*1024];
-
-U32 nativesocket_write(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 nativesocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     struct KSocket* s = obj->socket;
     U32 done = 0;
     S32 result = 0;
+    char tmp[PAGE_SIZE];
 
     while (len>0) {
         U32 todo = len;
-        if (todo>sizeof(tmp64k))
-            todo = sizeof(tmp64k);
-        memcopyToNative(thread->process->memory, buffer, tmp64k, todo);
-        result = send(s->nativeSocket, tmp64k, todo, s->flags);
+        if (todo>sizeof(tmp))
+            todo = sizeof(tmp);
+        memcopyToNative(thread, buffer, tmp, todo);
+        result = send(s->nativeSocket, tmp, todo, s->flags);
         if (result>0) {
             done+=result;
             len-=result;
@@ -797,18 +797,19 @@ U32 nativesocket_write(struct Memory* memory, struct KThread* thread, struct KOb
     return handleNativeSocketError(thread, s, 1);
 }
 
-U32 nativesocket_read(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 nativesocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     struct KSocket* s = obj->socket;	
     S32 result = 0;
     U32 done = 0;
+    char tmp[PAGE_SIZE];
 
     while (len>0) {      
         U32 todo = len;
-        if (todo>sizeof(tmp64k))
-            todo = sizeof(tmp64k);
-        result = recv(s->nativeSocket, tmp64k, todo, s->flags);
+        if (todo>sizeof(tmp))
+            todo = sizeof(tmp);
+        result = recv(s->nativeSocket, tmp, todo, s->flags);
         if (result>0) {
-            memcopyFromNative(thread->process->memory, buffer, tmp64k, result);
+            memcopyFromNative(thread, buffer, tmp, result);
             done+=result;
             len-=result;
             buffer+=result;
@@ -823,12 +824,12 @@ U32 nativesocket_read(struct Memory* memory, struct KThread* thread, struct KObj
     return handleNativeSocketError(thread, s, 0);
 }
 
-U32 nativesocket_stat(struct Memory* memory, struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
-    writeStat(memory, address, is64, 1, 0, K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, 0, 0, 4096, 0, 0, 1);
+U32 nativesocket_stat(struct KThread* thread, struct KObject* obj, U32 address, BOOL is64) {
+    writeStat(thread, address, is64, 1, 0, K_S_IFSOCK|K__S_IWRITE|K__S_IREAD, 0, 0, 4096, 0, 0, 1);
     return 0;
 }
 
-U32 nativesocket_map(struct Memory* memory, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 nativesocket_map(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -838,18 +839,18 @@ BOOL nativesocket_canMap(struct KObject* obj) {
 
 struct KObjectAccess nativesocketAccess = {nativesocket_ioctl, nativesocket_seek, nativesocket_klength, nativesocket_getPos, nativesocket_onDelete, nativesocket_setBlocking, nativesocket_isBlocking, nativesocket_setAsync, nativesocket_isAsync, nativesocket_getLock, nativesocket_setLock, nativesocket_supportsLocks, nativesocket_isOpen, nativesocket_isReadReady, nativesocket_isWriteReady, nativesocket_waitForEvents, nativesocket_write, nativesocket_read, nativesocket_stat, nativesocket_map, nativesocket_canMap};
 
-char tmpSocketName[32];
+//char tmpSocketName[32];
 
-const char* socketAddressName(struct KThread* thread, U32 address, U32 len) {
-    U16 family = readw(thread->process->memory, address);
+const char* socketAddressName(struct KThread* thread, U32 address, U32 len, char* result, U32 cbResult) {
+    U16 family = readw(thread, address);
     if (family == K_AF_UNIX) {
-        return getNativeString(thread->process->memory, address + 2);
+        return getNativeString(thread, address + 2, result, cbResult);
     } else if (family == K_AF_NETLINK) {
-        sprintf(tmpSocketName, "port %d", readd(thread->process->memory, address + 4));
-        return tmpSocketName;
+        sprintf(result, "port %d", readd(thread, address + 4));
+        return result;
     } else if (family == K_AF_INET) {
-        sprintf(tmpSocketName, "AF_INET %d.%d.%d.%d:%d", readb(thread->process->memory, address + 4), readb(thread->process->memory, address + 5), readb(thread->process->memory, address + 6), readb(thread->process->memory, address + 7), readb(thread->process->memory, address + 3) | (readb(thread->process->memory, address + 2) << 8));
-        return tmpSocketName;
+        sprintf(result, "AF_INET %d.%d.%d.%d:%d", readb(thread, address + 4), readb(thread, address + 5), readb(thread, address + 6), readb(thread, address + 7), readb(thread, address + 3) | (readb(thread, address + 2) << 8));
+        return result;
     }
     return "Unknown address family";
 }
@@ -993,9 +994,10 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
         return -K_ENOTSOCK;
     }
     s = fd->kobject->socket;
-    family = readw(thread->process->memory, address);
+    family = readw(thread, address);
     if (family==K_AF_UNIX) {
-        const char* name = socketAddressName(thread, address, len);
+        char tmp[MAX_FILEPATH_LEN];
+        const char* name = socketAddressName(thread, address, len, tmp, sizeof(tmp));
         struct FsNode* node;
 
         if (!name || !name[0]) {
@@ -1011,7 +1013,7 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
         s->node = node;
         return 0;
     } else if (family == K_AF_NETLINK) {
-        U32 port = readd(thread->process->memory, address + 4);
+        U32 port = readd(thread, address + 4);
         if (port == 0) {
             port = thread->process->id;
         }
@@ -1019,8 +1021,12 @@ U32 kbind(struct KThread* thread, U32 socket, U32 address, U32 len) {
         s->listening = 1;
         return 0;
     } else if (family == K_AF_INET) {
-        memcopyToNative(thread->process->memory, address, tmp64k, len);
-        if (bind(s->nativeSocket, (struct sockaddr*)tmp64k, len)==0) {
+        char tmp[4096];
+        if (len>sizeof(tmp)) {
+            kpanic("kbind: buffer not large enough: len=%d", len);
+        }
+        memcopyToNative(thread, address, tmp, len);
+        if (bind(s->nativeSocket, (struct sockaddr*)tmp, len)==0) {
             s->error = 0;
             return 0;
         }
@@ -1057,7 +1063,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
             }
             return -K_WAIT;
         }
-        memcopyToNative(thread->process->memory, address, buffer, len);
+        memcopyToNative(thread, address, buffer, len);
         if (connect(s->nativeSocket, (struct sockaddr*)buffer, len)==0) {
             int error;
             len = 4;
@@ -1078,8 +1084,8 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
     if (len-2>sizeof(s->destAddress.data)) {
         kpanic("Socket address is too big");
     }
-    s->destAddress.family = readw(thread->process->memory, address);
-    memcopyToNative(thread->process->memory, address + 2, s->destAddress.data, len - 2);
+    s->destAddress.family = readw(thread, address);
+    memcopyToNative(thread, address + 2, s->destAddress.data, len - 2);
     if (s->type==K_SOCK_DGRAM) {
         s->connected = 1;		
         return 0;
@@ -1211,9 +1217,9 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
             fcntl(result, F_SETFL, fcntl(result, F_GETFL, 0) | O_NONBLOCK);
 #endif
             if (address)
-                memcopyFromNative(thread->process->memory, address, (char*)&addr, addrlen);
+                memcopyFromNative(thread, address, (char*)&addr, addrlen);
             if (len) {
-                writed(thread->process->memory, len, addrlen);
+                writed(thread, len, addrlen);
             }
             return fd->handle;
         }
@@ -1259,7 +1265,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
 U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
     struct KSocket* s;
-    U32 len = readd(thread->process->memory, plen);
+    U32 len = readd(thread, plen);
     if (!fd) {
         return -K_EBADF;
     }
@@ -1270,18 +1276,18 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     if (s->domain == K_AF_NETLINK) {
         if (len>0 && len<12)
             kpanic("getsocketname: AF_NETLINK wrong address size");
-        writew(thread->process->memory, address, s->domain);
-        writew(thread->process->memory, address + 2, 0);
-        writed(thread->process->memory, address + 4, s->nl_port);
-        writed(thread->process->memory, address + 8, 0);
-        writed(thread->process->memory, plen, 12);
+        writew(thread, address, s->domain);
+        writew(thread, address + 2, 0);
+        writed(thread, address + 4, s->nl_port);
+        writed(thread, address + 8, 0);
+        writed(thread, plen, 12);
     } else if (s->domain == K_AF_UNIX) {
-        writew(thread->process->memory, address, s->destAddress.family);
+        writew(thread, address, s->destAddress.family);
         len-=2;
         if (len>sizeof(s->destAddress.data))
             len = sizeof(s->destAddress.data);
-        memcopyFromNative(thread->process->memory, address + 2, s->destAddress.data, len);
-        writed(thread->process->memory, plen, 2 + (U32)strlen(s->destAddress.data) + 1);
+        memcopyFromNative(thread, address + 2, s->destAddress.data, len);
+        writed(thread, plen, 2 + (U32)strlen(s->destAddress.data) + 1);
     }
     else if (s->nativeSocket && len<=256) {
         char buf[256];
@@ -1289,8 +1295,8 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
         if (result)
             result = handleNativeSocketError(thread, s, 0);
         else {
-            memcopyFromNative(thread->process->memory, address, buf, len);
-            writed(thread->process->memory, plen, len);
+            memcopyFromNative(thread, address, buf, len);
+            writed(thread, plen, len);
         }
         return result;
     } else {
@@ -1303,7 +1309,7 @@ U32 kgetsockname(struct KThread* thread, U32 socket, U32 address, U32 plen) {
 U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
     struct KSocket* s;
-    U32 len = readd(thread->process->memory, plen);
+    U32 len = readd(thread, plen);
     struct sockaddr a;
 
     if (!fd) {
@@ -1316,7 +1322,7 @@ U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     if (s->nativeSocket) {        
         S32 result = getpeername(s->nativeSocket, &a, &len);
         if (result==0) {
-            memcopyFromNative(thread->process->memory, address, (char*)&a, len);
+            memcopyFromNative(thread, address, (char*)&a, len);
             s->error = 0;
             return 0;
         }
@@ -1324,12 +1330,12 @@ U32 kgetpeername(struct KThread* thread, U32 socket, U32 address, U32 plen) {
     }
     if (!s->connection)
         return -K_ENOTCONN;
-    writew(thread->process->memory, address, s->destAddress.family);
+    writew(thread, address, s->destAddress.family);
     len-=2;
     if (len>sizeof(s->destAddress.data))
         len = sizeof(s->destAddress.data);
-    memcopyFromNative(thread->process->memory, address + 2, s->destAddress.data, len);
-    writed(thread->process->memory, plen, 2 + (U32)strlen(s->destAddress.data) + 1);
+    memcopyFromNative(thread, address + 2, s->destAddress.data, len);
+    writed(thread, plen, 2 + (U32)strlen(s->destAddress.data) + 1);
     return 0;
 }
 
@@ -1364,8 +1370,8 @@ U32 ksocketpair(struct KThread* thread, U32 af, U32 type, U32 protocol, U32 sock
     s2->connected = TRUE;
     f1->accessFlags = K_O_RDWR;
     f2->accessFlags = K_O_RDWR;
-    writed(thread->process->memory, socks, fd1);
-    writed(thread->process->memory, socks + 4, fd2);
+    writed(thread, socks, fd1);
+    writed(thread, socks + 4, fd2);
     return 0;
 }
 
@@ -1474,11 +1480,11 @@ U32 ksetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
             case K_SO_RCVBUF:
                 if (len!=4)
                     kpanic("setsockopt SO_RCVBUF expecting len of 4");
-                s->recvLen = readd(thread->process->memory, value);
+                s->recvLen = readd(thread, value);
             case K_SO_SNDBUF:
                 if (len != 4)
                     kpanic("setsockopt SO_SNDBUF expecting len of 4");
-                s->sendLen = readd(thread->process->memory, value);
+                s->sendLen = readd(thread, value);
             case K_SO_PASSCRED:
                 break;
             case K_SO_ATTACH_FILTER:
@@ -1504,24 +1510,24 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
         return -K_ENOTSOCK;
     }
     s = fd->kobject->socket;
-    len = readd(thread->process->memory, len_address);
+    len = readd(thread, len_address);
     if (level == K_SOL_SOCKET) {
         if (name == K_SO_RCVBUF) {
             if (len!=4)
                 kpanic("getsockopt SO_RCVBUF expecting len of 4");
-            writed(thread->process->memory, value, s->recvLen);
+            writed(thread, value, s->recvLen);
         } else if (name == K_SO_SNDBUF) {
             if (len != 4)
                 kpanic("getsockopt SO_SNDBUF expecting len of 4");
-            writed(thread->process->memory, value, s->sendLen);
+            writed(thread, value, s->sendLen);
         } else if (name == K_SO_ERROR) {
             if (len != 4)
                 kpanic("getsockopt SO_ERROR expecting len of 4");
-            writed(thread->process->memory, value, s->error);
+            writed(thread, value, s->error);
         } else if (name == K_SO_TYPE) { 
             if (len != 4)
                 kpanic("getsockopt K_SO_TYPE expecting len of 4");
-            writed(thread->process->memory, value, s->type);
+            writed(thread, value, s->type);
         } else if (name == K_SO_PEERCRED) {
             if (s->domain!=K_AF_UNIX) {
                 return -K_EINVAL; // :TODO: is this right
@@ -1531,9 +1537,9 @@ U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 val
             }
             if (len != 12)
                 kpanic("getsockopt SO_PEERCRED expecting len of 12");
-            writed(thread->process->memory, value, s->connection->pid);
-            writed(thread->process->memory, value + 4, UID);
-            writed(thread->process->memory, value + 8, GID);
+            writed(thread, value, s->connection->pid);
+            writed(thread, value + 4, UID);
+            writed(thread, value + 8, GID);
         } else {
             kwarn("getsockopt name %d not implemented", name);
             return -K_EINVAL;
@@ -1561,26 +1567,26 @@ struct CMsgHdr {
     U32 cmsg_type;
 };
 
-void readMsgHdr(struct Memory* memory, U32 address, struct MsgHdr* hdr) {
-    hdr->msg_name = readd(memory, address);address+=4;
-    hdr->msg_namelen = readd(memory, address); address += 4;
-    hdr->msg_iov = readd(memory, address); address += 4;
-    hdr->msg_iovlen = readd(memory, address); address += 4;
-    hdr->msg_control = readd(memory, address); address += 4;
-    hdr->msg_controllen = readd(memory, address); address += 4;
-    hdr->msg_flags = readd(memory, address);
+void readMsgHdr(struct KThread* thread, U32 address, struct MsgHdr* hdr) {
+    hdr->msg_name = readd(thread, address);address+=4;
+    hdr->msg_namelen = readd(thread, address); address += 4;
+    hdr->msg_iov = readd(thread, address); address += 4;
+    hdr->msg_iovlen = readd(thread, address); address += 4;
+    hdr->msg_control = readd(thread, address); address += 4;
+    hdr->msg_controllen = readd(thread, address); address += 4;
+    hdr->msg_flags = readd(thread, address);
 }
 
-void readCMsgHdr(struct Memory* memory, U32 address, struct CMsgHdr* hdr) {
-    hdr->cmsg_len = readd(memory, address); address += 4;
-    hdr->cmsg_level = readd(memory, address); address += 4;
-    hdr->cmsg_type = readd(memory, address);
+void readCMsgHdr(struct KThread* thread, U32 address, struct CMsgHdr* hdr) {
+    hdr->cmsg_len = readd(thread, address); address += 4;
+    hdr->cmsg_level = readd(thread, address); address += 4;
+    hdr->cmsg_type = readd(thread, address);
 }
 
-void writeCMsgHdr(struct Memory* memory, U32 address, U32 len, U32 level, U32 type) {
-    writed(memory, address, len); address += 4;
-    writed(memory, address, level); address += 4;
-    writed(memory, address, type);
+void writeCMsgHdr(struct KThread* thread, U32 address, U32 len, U32 level, U32 type) {
+    writed(thread, address, len); address += 4;
+    writed(thread, address, level); address += 4;
+    writed(thread, address, type);
 }
 
 #define K_SOL_SOCKET 1
@@ -1604,12 +1610,12 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     }
     s = fd->kobject->socket;
     msg = allocSocketMsg();
-    readMsgHdr(thread->process->memory, address, &hdr);
+    readMsgHdr(thread, address, &hdr);
 
     if (hdr.msg_control) {
         struct CMsgHdr cmsg;			
 
-        readCMsgHdr(thread->process->memory, hdr.msg_control, &cmsg);
+        readCMsgHdr(thread, hdr.msg_control, &cmsg);
         if (cmsg.cmsg_level != K_SOL_SOCKET) {
             kpanic("sendmsg control level %d not implemented", cmsg.cmsg_level);
         } else if (cmsg.cmsg_type != K_SCM_RIGHTS) {
@@ -1622,7 +1628,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             kpanic("Too many objects sent in sendmsg: %d", msg->objectCount);
         }
         for (i=0;i<msg->objectCount;i++) {
-            struct KFileDescriptor* f = getFileDescriptor(thread->process, readd(thread->process->memory, hdr.msg_control + 16 * i + 12));
+            struct KFileDescriptor* f = getFileDescriptor(thread->process, readd(thread, hdr.msg_control + 16 * i + 12));
             if (!f) {
                 kpanic("tried to sendmsg a bad file descriptor");
             } else {				
@@ -1633,10 +1639,10 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
         }				
     }
     for (i=0;i<hdr.msg_iovlen;i++) {
-        U32 p = readd(thread->process->memory, hdr.msg_iov + 8 * i);
-        U32 len = readd(thread->process->memory, hdr.msg_iov + 8 * i + 4);
+        U32 p = readd(thread, hdr.msg_iov + 8 * i);
+        U32 len = readd(thread, hdr.msg_iov + 8 * i + 4);
         if (s->nativeSocket) {
-            result+=nativesocket_write(thread->process->memory, thread, fd->kobject, p, len);
+            result+=nativesocket_write(thread, fd->kobject, p, len);
         } else {
             if (pos + len>4096) {
                 kpanic("sendmsg payload was larger than 4096 bytes");
@@ -1646,7 +1652,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             msg->data[pos++] = len >> 16;
             msg->data[pos++] = len >> 24;
             while (len) {
-                msg->data[pos++] = readb(thread->process->memory, p++);
+                msg->data[pos++] = readb(thread, p++);
                 len--;
                 result++;
             }
@@ -1689,25 +1695,27 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     }
     s = fd->kobject->socket;
     if (s->nativeSocket) {
-        msg_namelen = readd(thread->process->memory, address+4);
-        readMsgHdr(thread->process->memory, address, &hdr);        
+        char tmp[PAGE_SIZE];
+
+        msg_namelen = readd(thread, address+4);
+        readMsgHdr(thread, address, &hdr);        
         for (i = 0; i < hdr.msg_iovlen; i++) {
-            U32 p = readd(thread->process->memory, hdr.msg_iov + 8 * i);
-            U32 len = readd(thread->process->memory, hdr.msg_iov + 8 * i + 4);
+            U32 p = readd(thread, hdr.msg_iov + 8 * i);
+            U32 len = readd(thread, hdr.msg_iov + 8 * i + 4);
 
             if (s->type == K_SOCK_DGRAM && s->domain==K_AF_INET && msg_namelen>=sizeof(struct sockaddr_in)) {
                 struct sockaddr_in in;
                 S32 r;
                 U32 inLen = sizeof(struct sockaddr_in);
 
-                if (len>sizeof(tmp64k))
-                    len = sizeof(tmp64k);
-                r = recvfrom(s->nativeSocket, tmp64k, len, 0, (struct sockaddr*)&in, &inLen);
+                if (len>sizeof(tmp))
+                    len = sizeof(tmp);
+                r = recvfrom(s->nativeSocket, tmp, len, 0, (struct sockaddr*)&in, &inLen);
                 if (r>=0) {
-                    memcopyFromNative(thread->process->memory, p, tmp64k, r);
+                    memcopyFromNative(thread, p, tmp, r);
                     // :TODO: maybe copied fields to the expected location rather than assume the structures are the same
-                    memcopyFromNative(thread->process->memory, readd(thread->process->memory, address), (const char*)&in, sizeof(in));
-                    writed(thread->process->memory, address + 4, inLen);
+                    memcopyFromNative(thread, readd(thread, address), (const char*)&in, sizeof(in));
+                    writed(thread, address + 4, inLen);
                     result+=r;
                 }
                 else if (result)
@@ -1715,12 +1723,12 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
                 else
                     result = handleNativeSocketError(thread, s, 0);
             } else {
-                result += nativesocket_read(thread->process->memory, thread, fd->kobject, p, len);
+                result += nativesocket_read(thread, fd->kobject, p, len);
             }
         }
         if (s->type==K_SOCK_STREAM)
-            writed(thread->process->memory, address + 4, 0); // msg_namelen, set to 0 for connected sockets
-        writed(thread->process->memory, address + 20, 0); // msg_controllen
+            writed(thread, address + 4, 0); // msg_namelen, set to 0 for connected sockets
+        writed(thread, address + 20, 0); // msg_controllen
         return result;
     }
     if (s->domain==K_AF_NETLINK)
@@ -1734,25 +1742,25 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
         return -K_WAIT;
     }
     msg = s->msgs;
-    readMsgHdr(thread->process->memory, address, &hdr);
+    readMsgHdr(thread, address, &hdr);
     if (hdr.msg_control) {
         for (i=0;i<hdr.msg_controllen && i<msg->objectCount;i++) {
             struct KFileDescriptor* fd = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), msg->objects[i].object, msg->objects[i].accessFlags, 0);
-            writeCMsgHdr(thread->process->memory, hdr.msg_control + i * 16, 16, K_SOL_SOCKET, K_SCM_RIGHTS);
-            writed(thread->process->memory, hdr.msg_control + i * 16 + 12, fd->handle);
+            writeCMsgHdr(thread, hdr.msg_control + i * 16, 16, K_SOL_SOCKET, K_SCM_RIGHTS);
+            writed(thread, hdr.msg_control + i * 16 + 12, fd->handle);
             closeKObject(msg->objects[i].object);
         }
-        writed(thread->process->memory, address + 20, i * 20);
+        writed(thread, address + 20, i * 20);
     }
     for (i=0;i<hdr.msg_iovlen;i++) {
-        U32 p = readd(thread->process->memory, hdr.msg_iov + 8 * i);
-        U32 len = readd(thread->process->memory, hdr.msg_iov + 8 * i + 4);
+        U32 p = readd(thread, hdr.msg_iov + 8 * i);
+        U32 len = readd(thread, hdr.msg_iov + 8 * i + 4);
         U32 dataLen = msg->data[pos] | msg->data[pos + 1] | msg->data[pos + 2] | msg->data[pos + 3];
         pos+=4;
         if (len<dataLen) {
             kpanic("unhandled socket msg logic");
         }
-        memcopyFromNative(thread->process->memory, p, (S8*)msg->data + pos, dataLen);
+        memcopyFromNative(thread, p, (S8*)msg->data + pos, dataLen);
         result+=dataLen;
     }
     msg->objectCount=0; // we closed the KObjects, this will prevent freeSocketMsg from closing them again;	
@@ -1772,12 +1780,12 @@ U32 syscall_pipe2(struct KThread* thread, U32 address, U32 flags) {
     U32 result = syscall_pipe(thread, address);
     if (result==0) {
         if ((flags & K_O_CLOEXEC)!=0) {
-            syscall_fcntrl(thread, readd(thread->process->memory, address), K_F_SETFD, FD_CLOEXEC);
-            syscall_fcntrl(thread, readd(thread->process->memory, address + 4), K_F_SETFD, FD_CLOEXEC);
+            syscall_fcntrl(thread, readd(thread, address), K_F_SETFD, FD_CLOEXEC);
+            syscall_fcntrl(thread, readd(thread, address + 4), K_F_SETFD, FD_CLOEXEC);
         }
         if ((flags & K_O_NONBLOCK)!=0) {
-            syscall_fcntrl(thread, readd(thread->process->memory, address), K_F_SETFL, K_O_NONBLOCK);
-            syscall_fcntrl(thread, readd(thread->process->memory, address + 4), K_F_SETFL, K_O_NONBLOCK);
+            syscall_fcntrl(thread, readd(thread, address), K_F_SETFL, K_O_NONBLOCK);
+            syscall_fcntrl(thread, readd(thread, address + 4), K_F_SETFL, K_O_NONBLOCK);
         }
         if (flags & ~(K_O_CLOEXEC|K_O_NONBLOCK)) {
             kwarn("Unknow flags sent to pipe2: %X", flags);
@@ -1795,6 +1803,7 @@ U32 ksendto(struct KThread* thread, U32 socket, U32 message, U32 length, U32 fla
     S32 result;
     int f = 0;
     struct sockaddr dest;
+    char tmp[PAGE_SIZE];
 
     if (!fd) {
         return -K_EBADF;
@@ -1810,8 +1819,12 @@ U32 ksendto(struct KThread* thread, U32 socket, U32 message, U32 length, U32 fla
     if (flags & (~1)) {
         kwarn("ksendto unsupported flags: %d", flags);
     }
-    memcopyToNative(thread->process->memory, dest_addr, (char*)&dest, len);
-    result = sendto(s->nativeSocket, tmp64k, length, f, &dest, len);
+    memcopyToNative(thread, dest_addr, (char*)&dest, len);
+    if (length>sizeof(tmp)) {
+        kpanic("ksendto buffer not large enough: length = %d", length);
+    }
+    memcopyToNative(thread, message, tmp, length);
+    result = sendto(s->nativeSocket, tmp, length, f, &dest, len);
     if (result>=0) {
         s->error = 0;
         return result;
@@ -1827,6 +1840,7 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
     S32 result;
     int f = 0;
     struct sockaddr from;
+    char tmp[PAGE_SIZE];
 
     if (!fd) {
         return -K_EBADF;
@@ -1844,12 +1858,13 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
     if (flags & (~3)) {
         kwarn("krecvfrom unsupported flags: %d", flags);
     }
-    memcopyToNative(thread->process->memory, address, (char*)&from, len);
-    result = recvfrom(s->nativeSocket, tmp64k, length, f, &from, &len);
+    memcopyToNative(thread, address, (char*)&from, len);
+    // :TODO: what about tmp size
+    result = recvfrom(s->nativeSocket, tmp, length, f, &from, &len);
     if (result>=0) {
-        memcopyFromNative(thread->process->memory, buffer, tmp64k, result);
-        memcopyFromNative(thread->process->memory, address, (char*)&from, len);
-        writed(thread->process->memory, address_len, len);
+        memcopyFromNative(thread, buffer, tmp, result);
+        memcopyFromNative(thread, address, (char*)&from, len);
+        writed(thread, address_len, len);
         s->error = 0;
         return result;
     }

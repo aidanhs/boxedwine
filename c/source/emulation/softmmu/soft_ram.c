@@ -25,6 +25,7 @@
 #include "soft_memory.h"
 #include "kalloc.h"
 #include "kthread.h"
+#include "kprocess.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -277,117 +278,118 @@ int getRamRefCount(int page) {
     return ramRefCount[page];
 }
 
-static U8 ram_readb(struct Memory* memory, U32 address) {
+static U8 ram_readb(struct KThread* thread, U32 address) {
     int index = address >> PAGE_SHIFT;
-    return host_readb(address-memory->read[index]);
+    return host_readb(address-thread->process->memory->read[index]);
 }
 
-static void ram_writeb(struct Memory* memory, U32 address, U8 value) {
+static void ram_writeb(struct KThread* thread, U32 address, U8 value) {
     int index = address >> PAGE_SHIFT;
-    host_writeb(address-memory->write[index], value);
+    host_writeb(address-thread->process->memory->write[index], value);
 }
 
-static U16 ram_readw(struct Memory* memory, U32 address) {
+static U16 ram_readw(struct KThread* thread, U32 address) {
     int index = address >> PAGE_SHIFT;
-    return host_readw(address-memory->read[index]);
+    return host_readw(address-thread->process->memory->read[index]);
 }
 
-static void ram_writew(struct Memory* memory, U32 address, U16 value) {
+static void ram_writew(struct KThread* thread, U32 address, U16 value) {
     int index = address >> PAGE_SHIFT;
-    host_writew(address-memory->write[index], value);
+    host_writew(address-thread->process->memory->write[index], value);
 }
 
-static U32 ram_readd(struct Memory* memory, U32 address) {
+static U32 ram_readd(struct KThread* thread, U32 address) {
     int index = address >> PAGE_SHIFT;
-    return host_readd(address-memory->read[index]);
+    return host_readd(address-thread->process->memory->read[index]);
 }
 
-static void ram_writed(struct Memory* memory, U32 address, U32 value) {
+static void ram_writed(struct KThread* thread, U32 address, U32 value) {
     int index = address >> PAGE_SHIFT;
-    host_writed(address-memory->write[index], value);
+    host_writed(address-thread->process->memory->write[index], value);
 }
 
 static void ram_clear(struct Memory* memory, U32 page) {
     freeRamPage(memory->ramPage[page]);
 }
 
-static void ondemmand(struct Memory* memory, U32 address);
+static void ondemmand(struct KThread* thread, U32 address);
 
-static U8 ondemand_ram_readb(struct Memory* memory, U32 address) {
-    ondemmand(memory, address);
-    return ram_readb(memory, address);
+static U8 ondemand_ram_readb(struct KThread* thread, U32 address) {
+    ondemmand(thread, address);
+    return ram_readb(thread, address);
 }
 
-static void ondemand_ram_writeb(struct Memory* memory, U32 address, U8 value) {
-    ondemmand(memory, address);
-    ram_writeb(memory, address, value);
+static void ondemand_ram_writeb(struct KThread* thread, U32 address, U8 value) {
+    ondemmand(thread, address);
+    ram_writeb(thread, address, value);
 }
 
-U16 ondemand_ram_readw(struct Memory* memory, U32 address) {
-    ondemmand(memory, address);
-    return ram_readw(memory, address);
+U16 ondemand_ram_readw(struct KThread* thread, U32 address) {
+    ondemmand(thread, address);
+    return ram_readw(thread, address);
 }
 
-static void ondemand_ram_writew(struct Memory* memory, U32 address, U16 value) {
-    ondemmand(memory, address);
-    ram_writew(memory, address, value);
+static void ondemand_ram_writew(struct KThread* thread, U32 address, U16 value) {
+    ondemmand(thread, address);
+    ram_writew(thread, address, value);
 }
 
-static U32 ondemand_ram_readd(struct Memory* memory, U32 address) {
-    ondemmand(memory, address);
-    return ram_readd(memory, address);
+static U32 ondemand_ram_readd(struct KThread* thread, U32 address) {
+    ondemmand(thread, address);
+    return ram_readd(thread, address);
 }
 
-static void ondemand_ram_writed(struct Memory* memory, U32 address, U32 value) {
-    ondemmand(memory, address);
-    ram_writed(memory, address, value);
+static void ondemand_ram_writed(struct KThread* thread, U32 address, U32 value) {
+    ondemmand(thread, address);
+    ram_writed(thread, address, value);
 }
 
 static void ondemand_ram_clear(struct Memory* memory, U32 page) {
 }
 
-static U8* physicalAddress(struct Memory* memory, U32 address) {
+static U8* physicalAddress(struct KThread* thread, U32 address) {
     int index = address >> PAGE_SHIFT;
+    struct Memory* memory = thread->process->memory;
     if (memory->write[index])
         return &ram[address - memory->write[index]];
     return &ram[address - memory->read[index]];
 }
 
-static U8* ondemand_physicalAddress(struct Memory* memory, U32 address) {
-    ondemmand(memory, address);
-    return physicalAddress(memory, address);
+static U8* ondemand_physicalAddress(struct KThread* thread, U32 address) {
+    ondemmand(thread, address);
+    return physicalAddress(thread, address);
 }
 
-static void copyOnWrite(struct Memory* memory, U32 address);
+static void copyOnWrite(struct KThread* thread, U32 address);
 
-static void copyonwrite_ram_writeb(struct Memory* memory, U32 address, U8 value) {
-    copyOnWrite(memory, address);
-    ram_writeb(memory, address, value);
+static void copyonwrite_ram_writeb(struct KThread* thread, U32 address, U8 value) {
+    copyOnWrite(thread, address);
+    ram_writeb(thread, address, value);
 }
 
-static void copyonwrite_ram_writew(struct Memory* memory, U32 address, U16 value) {
-    copyOnWrite(memory, address);
-    ram_writew(memory, address, value);
+static void copyonwrite_ram_writew(struct KThread* thread, U32 address, U16 value) {
+    copyOnWrite(thread, address);
+    ram_writew(thread, address, value);
 }
 
-static void copyonwrite_ram_writed(struct Memory* memory, U32 address, U32 value) {
-    copyOnWrite(memory, address);
-    ram_writed(memory, address, value);
+static void copyonwrite_ram_writed(struct KThread* thread, U32 address, U32 value) {
+    copyOnWrite(thread, address);
+    ram_writed(thread, address, value);
 }
 
-static U8* copyonwrite_physicalAddress(struct Memory* memory, U32 address) {
-    copyOnWrite(memory, address);
-    return physicalAddress(memory, address);
+static U8* copyonwrite_physicalAddress(struct KThread* thread, U32 address) {
+    copyOnWrite(thread, address);
+    return physicalAddress(thread, address);
 }
 
-extern struct KThread* currentThread;
-void removeBlockAt(struct Memory* memory, U32 address) {
+void removeBlockAt(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
     struct Block* block = getBlockAt(memory, address, 1);
 
     while (block) {
         if (block) {
-            if (block==currentThread->cpu.currentBlock) {
-                if (address < currentThread->cpu.segAddress[CS] + currentThread->cpu.eip.u32) {
+            if (block==thread->cpu.currentBlock) {
+                if (address < thread->cpu.segAddress[CS] + thread->cpu.eip.u32) {
                     delayFreeBlock(block);
                 } else {
                     delayFreeBlockAndKillCurrentBlock(block);
@@ -400,37 +402,40 @@ void removeBlockAt(struct Memory* memory, U32 address) {
     }
 }
 
-static void code_writeb(struct Memory* memory, U32 address, U8 value) {
-    if (value!=readb(memory, address)) {
+static void code_writeb(struct KThread* thread, U32 address, U8 value) {    
+    if (value!=readb(thread, address)) {
+        struct Memory* memory = thread->process->memory;
         int index = address >> PAGE_SHIFT;
         U32 ram = memory->ramPage[index];
 
-        removeBlockAt(memory, address);
+        removeBlockAt(thread, address);
         host_writeb(address-TO_TLB(ram,  address), value);
     }
 }
 
-static void code_writew(struct Memory* memory, U32 address, U16 value) {
-    if (value!=readw(memory, address)) {
+static void code_writew(struct KThread* thread, U32 address, U16 value) {
+    if (value!=readw(thread, address)) {
+        struct Memory* memory = thread->process->memory;
         int index = address >> PAGE_SHIFT;
         U32 ram = memory->ramPage[index];
 
-        removeBlockAt(memory, address);
+        removeBlockAt(thread, address);
         host_writew(address-TO_TLB(ram,  address), value);
     }
 }
 
-static void code_writed(struct Memory* memory, U32 address, U32 value) {
-    if (value!=readd(memory, address)) {
+static void code_writed(struct KThread* thread, U32 address, U32 value) {
+    if (value!=readd(thread, address)) {
+        struct Memory* memory = thread->process->memory;
         int index = address >> PAGE_SHIFT;
         U32 ram = memory->ramPage[index];
 
-        removeBlockAt(memory, address);
+        removeBlockAt(thread, address);
         host_writed(address-TO_TLB(ram,  address), value);
     }
 }
 
-static U8* code_physicalAddress(struct Memory* memory, U32 address) {
+static U8* code_physicalAddress(struct KThread* thread, U32 address) {
     return NULL;
 }
 
@@ -441,7 +446,8 @@ struct Page ramOnDemandPage = {ondemand_ram_readb, ondemand_ram_writeb, ondemand
 struct Page ramCopyOnWritePage = {ram_readb, copyonwrite_ram_writeb, ram_readw, copyonwrite_ram_writew, ram_readd, copyonwrite_ram_writed, ram_clear, copyonwrite_physicalAddress};
 struct Page codePage = {ram_readb, code_writeb, ram_readw, code_writew, ram_readd, code_writed, ram_clear, code_physicalAddress};
 
-static void ondemmand(struct Memory* memory, U32 address) {
+static void ondemmand(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
     U32 ram = allocRamPage();
     U32 page = address >> PAGE_SHIFT;
     U32 flags = memory->flags[page];
@@ -467,7 +473,8 @@ static void ondemmand(struct Memory* memory, U32 address) {
     }
 }
 
-static void copyOnWrite(struct Memory* memory, U32 address) {	
+static void copyOnWrite(struct KThread* thread, U32 address) {	
+    struct Memory* memory = thread->process->memory;
     U32 page = address >> PAGE_SHIFT;
     U32 flags = memory->flags[page];
     BOOL read = IS_PAGE_READ(flags) | IS_PAGE_EXEC(flags);

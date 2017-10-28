@@ -4904,7 +4904,7 @@ void glcommon_glGetBufferPointerv(struct CPU* cpu) {
         kpanic("ext_glGetBufferPointerv is NULL");
     {
     GLint size;void* p;GL_FUNC(ext_glGetBufferPointerv)(ARG1, ARG2, &p);
-    ext_glGetBufferParameteriv(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->memory, ARG3, marshalBackp(cpu, p, size));
+    ext_glGetBufferParameteriv(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->thread, ARG3, marshalBackp(cpu, p, size));
     GL_LOG ("glGetBufferPointerv GLenum target=%d, GLenum pname=%d, void** params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -4913,7 +4913,7 @@ void glcommon_glGetBufferPointervARB(struct CPU* cpu) {
         kpanic("ext_glGetBufferPointervARB is NULL");
     {
     GLint size;void* p;GL_FUNC(ext_glGetBufferPointervARB)(ARG1, ARG2, &p);
-    ext_glGetBufferParameterivARB(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->memory, ARG3, marshalBackp(cpu, p, size));
+    ext_glGetBufferParameterivARB(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->thread, ARG3, marshalBackp(cpu, p, size));
     GL_LOG ("glGetBufferPointervARB GLenum target=%d, GLenum pname=%d, void** params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -5999,7 +5999,7 @@ void glcommon_glGetNamedBufferPointerv(struct CPU* cpu) {
         kpanic("ext_glGetNamedBufferPointerv is NULL");
     {
     GLint size;void* p;GL_FUNC(ext_glGetNamedBufferPointerv)(ARG1, ARG2, &p);
-    ext_glGetNamedBufferParameteriv(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->memory, ARG3, marshalBackp(cpu, p, size));
+    ext_glGetNamedBufferParameteriv(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->thread, ARG3, marshalBackp(cpu, p, size));
     GL_LOG ("glGetNamedBufferPointerv GLuint buffer=%d, GLenum pname=%d, void** params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6008,7 +6008,7 @@ void glcommon_glGetNamedBufferPointervEXT(struct CPU* cpu) {
         kpanic("ext_glGetNamedBufferPointervEXT is NULL");
     {
     GLint size;void* p;GL_FUNC(ext_glGetNamedBufferPointervEXT)(ARG1, ARG2, &p);
-    ext_glGetNamedBufferParameterivEXT(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->memory, ARG3, marshalBackp(cpu, p, size));
+    ext_glGetNamedBufferParameterivEXT(ARG1, GL_BUFFER_SIZE, &size); writed(cpu->thread, ARG3, marshalBackp(cpu, p, size));
     GL_LOG ("glGetNamedBufferPointervEXT GLuint buffer=%d, GLenum pname=%d, void** params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6460,7 +6460,7 @@ void glcommon_glGetPointerIndexedvEXT(struct CPU* cpu) {
         kpanic("ext_glGetPointerIndexedvEXT is NULL");
     {
     void* p;GL_FUNC(ext_glGetPointerIndexedvEXT)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetPointerIndexedvEXT GLenum target=%d, GLuint index=%d, void** data=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6469,7 +6469,7 @@ void glcommon_glGetPointeri_vEXT(struct CPU* cpu) {
         kpanic("ext_glGetPointeri_vEXT is NULL");
     {
     void* p;GL_FUNC(ext_glGetPointeri_vEXT)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetPointeri_vEXT GLenum pname=%d, GLuint index=%d, void** params=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -6478,7 +6478,7 @@ void glcommon_glGetPointervEXT(struct CPU* cpu) {
         kpanic("ext_glGetPointervEXT is NULL");
     {
     void* p;GL_FUNC(ext_glGetPointervEXT)(ARG1, &p);
-    writed(cpu->memory, ARG2, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG2, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetPointervEXT GLenum pname=%d, void** params=%.08x",ARG1,ARG2);
     }
 }
@@ -7078,7 +7078,7 @@ void glcommon_glGetTexParameterPointervAPPLE(struct CPU* cpu) {
         kpanic("ext_glGetTexParameterPointervAPPLE is NULL");
     {
     void* p;GL_FUNC(ext_glGetTexParameterPointervAPPLE)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetTexParameterPointervAPPLE GLenum target=%d, GLenum pname=%d, void** params=%.08x",ARG1,ARG2,ARG3);
     }
 }

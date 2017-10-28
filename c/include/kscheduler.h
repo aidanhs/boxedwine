@@ -21,14 +21,14 @@
 
 #include "kthread.h"
 
+U32 threadSleep(struct KThread* thread, U32 ms);
+
 struct KTimer;
 
-extern struct KThread* currentThread;
-
+void wakeThread(struct KThread* thread);
 void scheduleThread(struct KThread* thread);
 void unscheduleThread(struct KThread* thread);
 void waitThread(struct KThread* thread);
-void wakeThread(struct KThread* thread);
 void wakeThreads(U32 wakeType);
 BOOL runSlice();
 void runUntil(struct KThread* thread, U32 eip);

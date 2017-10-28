@@ -26,8 +26,6 @@
 #include "ksystem.h"
 #include "x64dynamic.h"
 
-extern struct KThread* currentThread;
-
 LONGLONG PCFreq;
 LONGLONG CounterStart;
 
@@ -239,7 +237,7 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     U32 granCount;
 
     for (i=0;i<pageCount;i++) {
-        clearPageFromBlockCache(process->memory, page+i);
+        clearPageFromBlockCache(process->memory, NULL, page+i);
         process->memory->flags[page+i] = 0;
         process->memory->ids[page+i] = 0;
     }    
@@ -297,7 +295,7 @@ void releaseNativeMemory(struct Memory* memory) {
         kpanic("failed to release memory: %s", messageBuffer);
     }
     for (i=0;i<NUMBER_OF_PAGES;i++) {
-        clearPageFromBlockCache(memory, i);
+        clearPageFromBlockCache(memory, NULL, i);
     }
     memset(memory->flags, 0, sizeof(memory->flags));
     memset(memory->nativeFlags, 0, sizeof(memory->nativeFlags));
@@ -324,7 +322,7 @@ void makeCodePageReadOnly(struct Memory* memory, U32 page) {
 void seg_mapper(struct Memory* memory, U32 address) ;
 void x64_cmdEntry(struct CPU* cpu);
 
-int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
+int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread* thread)
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) {
 #ifdef BOXEDWINE_VM           
@@ -355,20 +353,20 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep)
             int ii=0;
         }
 #else
-        U32 address = getHostAddress(currentThread->process->memory, (void*)ep->ExceptionRecord->ExceptionInformation[1]);
-        if (currentThread->process->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
+        U32 address = getHostAddress(thread, (void*)ep->ExceptionRecord->ExceptionInformation[1]);
+        if (thread->process->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
             DWORD oldProtect;
             U32 page = address>>PAGE_SHIFT;
-            if (!VirtualProtect(getNativeAddress(currentThread->process->memory, address & 0xFFFFF000), (1 << PAGE_SHIFT), PAGE_READWRITE, &oldProtect)) {
+            if (!VirtualProtect(getNativeAddress(thread->process->memory, address & 0xFFFFF000), (1 << PAGE_SHIFT), PAGE_READWRITE, &oldProtect)) {
                 LPSTR messageBuffer = NULL;
                 size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
                 kpanic("failed to unprotect memory: %s", messageBuffer);
             }
-            currentThread->process->memory->nativeFlags[page] &= ~NATIVE_FLAG_READONLY;
-            clearPageFromBlockCache(currentThread->process->memory, page);
+            thread->process->memory->nativeFlags[page] &= ~NATIVE_FLAG_READONLY;
+            clearPageFromBlockCache(thread->process->memory, thread, page);
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
-            seg_mapper(currentThread->process->memory, address);
+            seg_mapper(thread->process->memory, address);
             // :TODO: for BOXEDWINE_VM
             return EXCEPTION_EXECUTE_HANDLER;
         }
@@ -423,7 +421,7 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
         StartCPU startCPU = (StartCPU)x64_initCPU(cpu);
         startCPU();
         //RtlRestoreContext(&context, NULL);
-    } __except(seh_filter(GetExceptionCode(), GetExceptionInformation())) {
+    } __except(seh_filter(GetExceptionCode(), GetExceptionInformation(), thread)) {
         thread->cpu.nextBlock = 0;
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
     }
@@ -463,7 +461,7 @@ void freeExecutable64kBlock(U8* p) {
 void platformRunThreadSlice(struct KThread* thread) {
     __try {
         runThreadSlice(thread);
-    } __except(seh_filter(GetExceptionCode(), GetExceptionInformation())) {
+    } __except(seh_filter(GetExceptionCode(), GetExceptionInformation(), thread)) {
         thread->cpu.nextBlock = 0;
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
     }

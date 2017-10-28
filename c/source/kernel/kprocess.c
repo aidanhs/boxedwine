@@ -240,14 +240,14 @@ void cloneProcess(struct Memory* memory, struct KProcess* process, struct KProce
     process->entry = from->entry;
 }
 
-void writeStackString(struct Memory* memory, struct CPU* cpu, const char* s) {
+static void writeStackString(struct KThread* thread, struct CPU* cpu, const char* s) {
     int count = (int)((strlen(s)+4)/4);
     int i;
 
     for (i=0;i<count;i++) {
         push32(cpu, 0);
     }
-    writeNativeString(memory, ESP, s);
+    writeNativeString(thread, ESP, s);
 }
 
 void setupPath(struct KProcess* process, const char* str) {
@@ -294,7 +294,7 @@ void setupPath(struct KProcess* process, const char* str) {
 #define HWCAP_I386_XMM2  1 << 26
 #define HWCAP_I386_AMD3D 1 << 31
 
-void pushThreadStack(struct Memory* memory, struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
+void pushThreadStack(struct KThread* thread, struct CPU* cpu, int argc, U32* a, int envc, U32* e) {
     int i;
     struct KProcess* process = cpu->thread->process;
     U32 randomAddress;
@@ -307,7 +307,7 @@ void pushThreadStack(struct Memory* memory, struct CPU* cpu, int argc, U32* a, i
     randomAddress = ESP;
     push32(cpu, 0);
     push32(cpu, 0);
-    writeStackString(memory, cpu, "i686");
+    writeStackString(thread, cpu, "i686");
     platform = ESP;
 
     push32(cpu, 0);	
@@ -358,7 +358,7 @@ void pushThreadStack(struct Memory* memory, struct CPU* cpu, int argc, U32* a, i
     push32(cpu, argc);
 }
 
-void setupThreadStack(struct Memory* memory, struct CPU* cpu, const char* programName, int argc, const char** args, int envc, const char** env) {
+void setupThreadStack(struct KThread* thread, struct CPU* cpu, const char* programName, int argc, const char** args, int envc, const char** env) {
     U32 a[MAX_ARG_COUNT];
     U32 e[MAX_ARG_COUNT];
     int i;
@@ -366,14 +366,14 @@ void setupThreadStack(struct Memory* memory, struct CPU* cpu, const char* progra
     push32(cpu, 0);
     push32(cpu, 0);
     push32(cpu, 0);	
-    writeStackString(memory, cpu, programName);
+    writeStackString(thread, cpu, programName);
     if (argc>MAX_ARG_COUNT)
         kpanic("Too many args: %d is max", MAX_ARG_COUNT);
     if (envc>MAX_ARG_COUNT)
         kpanic("Too many env: %d is max", MAX_ARG_COUNT);
     //klog("env");
     for (i=0;i<envc;i++) {
-        writeStackString(memory, cpu, env[i]);
+        writeStackString(thread, cpu, env[i]);
         if (strncmp(env[i], "PATH=", 5)==0) {
             setupPath(cpu->thread->process, env[i]+5);
         }
@@ -381,11 +381,11 @@ void setupThreadStack(struct Memory* memory, struct CPU* cpu, const char* progra
         e[i]=ESP;
     }
     for (i=0;i<argc;i++) {
-        writeStackString(memory, cpu, args[i]);
+        writeStackString(thread, cpu, args[i]);
         a[i]=ESP;
     }
 
-    pushThreadStack(memory, cpu, argc, a, envc, e);
+    pushThreadStack(thread, cpu, argc, a, envc, e);
 }
 
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
@@ -481,7 +481,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
         }
         argc+=argIndex;
 
-        setupThreadStack(memory, &thread->cpu, process->name, argc, pArgs, envc, env);
+        setupThreadStack(thread, &thread->cpu, process->name, argc, pArgs, envc, env);
 
         safe_strcpy(process->currentDirectory, currentDirectory, MAX_FILEPATH_LEN);
 
@@ -502,7 +502,8 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
     return thread;
 }
 
-void processOnExitThread(struct KProcess* process) {
+void processOnExitThread(struct KThread* thread) {
+    struct KProcess* process = thread->process;
     if (!processGetThreadCount(process)) {
         struct KProcess* parent = getProcessById(process->parentId);
         if (parent && parent->sigActions[K_SIGCHLD].handlerAndSigAction!=K_SIG_DFL) {
@@ -587,7 +588,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
             s|=((process->exitCode & 0xFF) << 8);
             s|=(process->signaled & 0x7F);
         }
-        writed(thread->process->memory, status, s);
+        writed(thread, status, s);
     }
     result = process->id;
     removeProcess(process);
@@ -596,7 +597,8 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
 }
 
 struct FsNode* getNode(struct KThread* thread, U32 fileName) {
-    return getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, fileName), TRUE);
+    char tmp[MAX_FILEPATH_LEN];
+    return getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread, fileName, tmp, sizeof(tmp)), TRUE);
 }
 
 const char* getModuleName(struct CPU* cpu, U32 eip) {
@@ -627,7 +629,7 @@ U32 syscall_getcwd(struct KThread* thread, U32 buffer, U32 size) {
     U32 len = (U32)strlen(thread->process->currentDirectory);
     if (len+1>size)
         return -K_ERANGE;
-    writeNativeString(thread->process->memory, buffer, thread->process->currentDirectory);
+    writeNativeString(thread, buffer, thread->process->currentDirectory);
     return len;
 }
 
@@ -671,14 +673,16 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         struct KThread* newThread = allocThread();
 
         newProcess->parentId = thread->process->id;        
-        cloneMemory(memory, thread->process->memory);
+        newThread->process = newProcess;
+        newProcess->memory = memory;
+        cloneMemory(newThread, thread);
         cloneProcess(memory, newProcess, thread->process);
         cloneThread(newThread, thread, newProcess);
         initStdio(newProcess);
 
         if ((flags & K_CLONE_CHILD_SETTID)!=0) {
             if (ctid!=0) {
-                writed(memory, ctid, newThread->id);
+                writed(newThread, ctid, newThread->id);
             }
         }
         if ((flags & K_CLONE_CHILD_CLEARTID)!=0) {
@@ -686,8 +690,8 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         }
         if ((flags & K_CLONE_PARENT_SETTID)!=0) {
             if (ptid) {
-                writed(memory, ptid, newThread->id);
-                writed(memory, ptid, newThread->id);
+                writed(newThread, ptid, newThread->id);
+                writed(thread, ptid, newThread->id);
             }
         }
         if (child_stack!=0)
@@ -705,7 +709,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         struct KThread* newThread = allocThread();
         struct user_desc desc;
 
-        readMemory(thread->process->memory, (U8*)&desc, tls, sizeof(struct user_desc));
+        readMemory(thread, (U8*)&desc, tls, sizeof(struct user_desc));
 
         initThread(newThread, thread->process);		
 
@@ -715,7 +719,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
             cpu_setSegment(&newThread->cpu, GS, desc.entry_number << 3);
         }
         newThread->clear_child_tid = ctid;
-        writed(thread->process->memory, ptid, newThread->id);
+        writed(thread, ptid, newThread->id);
         newThread->cpu.reg[4].u32 = child_stack;
         newThread->cpu.reg[4].u32+=8;
         newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
@@ -769,14 +773,14 @@ U32 syscall_setitimer(struct KThread* thread, U32 which, U32 newValue, U32 oldVa
     if (oldValue) {
         U32 remaining = thread->process->timer.millies - getMilliesSinceStart();
 
-        writed(thread->process->memory, oldValue, thread->process->timer.resetMillies / 1000);
-        writed(thread->process->memory, oldValue, (thread->process->timer.resetMillies % 1000) * 1000);
-        writed(thread->process->memory, oldValue + 8, remaining / 1000);
-        writed(thread->process->memory, oldValue + 12, (remaining % 1000) * 1000);
+        writed(thread, oldValue, thread->process->timer.resetMillies / 1000);
+        writed(thread, oldValue, (thread->process->timer.resetMillies % 1000) * 1000);
+        writed(thread, oldValue + 8, remaining / 1000);
+        writed(thread, oldValue + 12, (remaining % 1000) * 1000);
     }
     if (newValue) {
-        U32 millies = readd(thread->process->memory, newValue + 8) * 1000 + readd(thread->process->memory, newValue + 12) / 1000;
-        U32 resetMillies = readd(thread->process->memory, newValue) * 1000 + readd(thread->process->memory, newValue + 4) / 1000;
+        U32 millies = readd(thread, newValue + 8) * 1000 + readd(thread, newValue + 12) / 1000;
+        U32 resetMillies = readd(thread, newValue) * 1000 + readd(thread, newValue + 4) / 1000;
 
         if (millies == 0) {
             if (thread->process->timer.millies!=0) {
@@ -839,10 +843,12 @@ struct FsNode* findInPath(struct KProcess* process, const char* arg) {
     return node;
 }
 
-U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size, unsigned int* count, char* tmp, int tmpSize, U32 tmpIndex) {
+U32 readStringArray(struct KThread* thread, U32 address, const char** a, int size, unsigned int* count, char* tmp, int tmpSize, U32 tmpIndex) {
+    char tmp2[MAX_FILEPATH_LEN];
+
     while (TRUE) {
-        U32 p = readd(memory, address);		
-        char* str = getNativeString(memory, p);
+        U32 p = readd(thread, address);		
+        char* str = getNativeString(thread, p, tmp2, sizeof(tmp2));
         address+=4;
 
         if (!str || !str[0])
@@ -859,7 +865,8 @@ U32 readStringArray(struct Memory* memory, U32 address, const char** a, int size
 
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     struct KProcess* process = thread->process;
-    char* first = getNativeString(thread->process->memory, readd(thread->process->memory, argv));
+    char tmp[MAX_FILEPATH_LEN];
+    char* first = getNativeString(thread, readd(thread, argv), tmp, sizeof(tmp));
     struct FsNode* node;
     struct FsOpenNode* openNode = 0;
     const char* interpreter = 0;
@@ -873,6 +880,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     const char* envs[MAX_ARG_COUNT];
     U32 envc=0;
     int tmpIndex = 0;
+    char* tmp128k;
 
     node = findInPath(process, first);
 
@@ -881,15 +889,15 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     }
                 
     process->commandLine[0]=0;
-    safe_strcpy(process->exe, getNativeString(thread->process->memory, readd(thread->process->memory, argv)), MAX_FILEPATH_LEN);
+    safe_strcpy(process->exe, getNativeString(thread, readd(thread, argv), tmp, sizeof(tmp)), MAX_FILEPATH_LEN);
     name = strrchr(process->exe, '/');
     if (name)
         safe_strcpy(process->name, name+1, MAX_FILEPATH_LEN);
     else
         safe_strcpy(process->name, process->exe, MAX_FILEPATH_LEN);
     i=0;
-    while (TRUE) {
-        char* arg = getNativeString(thread->process->memory, readd(thread->process->memory, argv + i * 4));
+    while (TRUE) {        
+        char* arg = getNativeString(thread, readd(thread, argv + i * 4), tmp, sizeof(tmp));
         if (!arg || !arg[0]) {
             break;
         }
@@ -924,8 +932,9 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
             
     args[argc++] = node->path;
     // copy args/env out of memory before memory is reset
-    tmpIndex = readStringArray(thread->process->memory, argv + 4, args, MAX_ARG_COUNT, &argc, tmp64k, 1024 * 64, tmpIndex);
-    readStringArray(thread->process->memory, envp, envs, MAX_ARG_COUNT, &envc, tmp64k, 1024 * 64, tmpIndex);
+    tmp128k = malloc(128*1024);
+    tmpIndex = readStringArray(thread, argv + 4, args, MAX_ARG_COUNT, &argc, tmp128k, 1024 * 128, tmpIndex);
+    readStringArray(thread, envp, envs, MAX_ARG_COUNT, &envc, tmp128k, 1024 * 128, tmpIndex);
 
     for (i=0;i<envc;i++) {
         if (strncmp(envs[i], "PATH=", 5)==0) {
@@ -988,18 +997,20 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         kpanic("program failed to load, but memory was already reset");
     }	
     // must come after loadProgram because of process->phdr
-    setupThreadStack(thread->process->memory, &thread->cpu, process->name, argc, args, envc, envs);
+    setupThreadStack(thread, &thread->cpu, process->name, argc, args, envc, envs);
     openNode->func->close(openNode);
 
     if (process->wakeOnExitOrExec) {
         wakeThread(process->wakeOnExitOrExec);
         process->wakeOnExitOrExec = 0;
     }
+    free(tmp128k);
     return -K_CONTINUE;
 }
 
 U32 syscall_chdir(struct KThread* thread, U32 path) {
-    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread->process->memory, path), TRUE);
+    char tmp[MAX_FILEPATH_LEN];
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread, path, tmp, sizeof(tmp)), TRUE);
     if (!node || !node->func->exists(node))
         return -K_ENOENT;
     if (!node->func->isDirectory(node))
@@ -1098,56 +1109,56 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
     switch (resource) {
         case 3: // RLIMIT_STACK
             if (oldlimit!=0) {
-                writeq(thread->process->memory, oldlimit, MAX_STACK_SIZE);
-                writeq(thread->process->memory, oldlimit + 8, MAX_STACK_SIZE);
+                writeq(thread, oldlimit, MAX_STACK_SIZE);
+                writeq(thread, oldlimit + 8, MAX_STACK_SIZE);
             }
 #ifdef _DEBUG
             if (newlimit!=0) {
-                klog("prlimit64 RLIMIT_STACK set=%d ignored", (U32)readq(thread->process->memory, newlimit));
+                klog("prlimit64 RLIMIT_STACK set=%d ignored", (U32)readq(thread, newlimit));
             }
 #endif
             break;
         case 4: // RLIMIT_CORE
             if (oldlimit!=0) {
-                writeq(thread->process->memory, oldlimit, K_RLIM_INFINITY);
-                writeq(thread->process->memory, oldlimit + 8, K_RLIM_INFINITY);
+                writeq(thread, oldlimit, K_RLIM_INFINITY);
+                writeq(thread, oldlimit + 8, K_RLIM_INFINITY);
             }
 #ifdef _DEBUG
             if (newlimit!=0) {
-                klog("prlimit64 RLIMIT_CORE set=%d ignored", (U32)readq(thread->process->memory, newlimit));
+                klog("prlimit64 RLIMIT_CORE set=%d ignored", (U32)readq(thread, newlimit));
             }
 #endif
             break;
         case 7: // RLIMIT_NOFILE
             if (oldlimit!=0) {
-                writeq(thread->process->memory, oldlimit, 603590);
-                writeq(thread->process->memory, oldlimit + 8, 603590);
+                writeq(thread, oldlimit, 603590);
+                writeq(thread, oldlimit + 8, 603590);
             }
 #ifdef _DEBUG
             if (newlimit!=0) {
-                klog("prlimit64 RLIMIT_NOFILE set=%d ignored", (U32)readq(thread->process->memory, newlimit));
+                klog("prlimit64 RLIMIT_NOFILE set=%d ignored", (U32)readq(thread, newlimit));
             }
 #endif
             break;
         case 9: // RLIMIT_AS
             if (oldlimit!=0) {
-                writeq(thread->process->memory, oldlimit, K_RLIM_INFINITY);
-                writeq(thread->process->memory, oldlimit + 8, K_RLIM_INFINITY);
+                writeq(thread, oldlimit, K_RLIM_INFINITY);
+                writeq(thread, oldlimit + 8, K_RLIM_INFINITY);
             }
 #ifdef _DEBUG
             if (newlimit!=0) {
-                klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(thread->process->memory, newlimit));
+                klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(thread, newlimit));
             }
 #endif
             break;
         case 15: // RLIMIT_RTTIME
             if (oldlimit!=0) {
-                writeq(thread->process->memory, oldlimit, 200);
-                writeq(thread->process->memory, oldlimit + 8, 200);
+                writeq(thread, oldlimit, 200);
+                writeq(thread, oldlimit + 8, 200);
             }
 #ifdef _DEBUG
             if (newlimit!=0) {
-                klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(thread->process->memory, newlimit));
+                klog("prlimit64 RLIMIT_AS set=%d ignored", (U32)readq(thread, newlimit));
             }
 #endif
             break;
@@ -1170,47 +1181,47 @@ U32 syscall_prlimit(struct KThread* thread, U32 pid, U32 resource, U32 newlimit,
     switch (resource) {
         case 3: // RLIMIT_STACK
             if (oldlimit!=0) {
-                writed(thread->process->memory, oldlimit, MAX_STACK_SIZE);
-                writed(thread->process->memory, oldlimit + 4, MAX_STACK_SIZE);
+                writed(thread, oldlimit, MAX_STACK_SIZE);
+                writed(thread, oldlimit + 4, MAX_STACK_SIZE);
             }
             if (newlimit!=0) {
-                klog("prlimit RLIMIT_STACK set=%d ignored", readd(thread->process->memory, newlimit));
+                klog("prlimit RLIMIT_STACK set=%d ignored", readd(thread, newlimit));
             }
             break;
         case 4: // RLIMIT_CORE
             if (oldlimit!=0) {
-                writed(thread->process->memory, oldlimit, K_RLIM_INFINITY);
-                writed(thread->process->memory, oldlimit + 4, K_RLIM_INFINITY);
+                writed(thread, oldlimit, K_RLIM_INFINITY);
+                writed(thread, oldlimit + 4, K_RLIM_INFINITY);
             }
             if (newlimit!=0) {
-                klog("prlimit RLIMIT_CORE set=%d ignored", readd(thread->process->memory, newlimit));
+                klog("prlimit RLIMIT_CORE set=%d ignored", readd(thread, newlimit));
             }
             break;
         case 7: // RLIMIT_NOFILE
             if (oldlimit!=0) {
-                writed(thread->process->memory, oldlimit, 603590);
-                writed(thread->process->memory, oldlimit + 4, 603590);
+                writed(thread, oldlimit, 603590);
+                writed(thread, oldlimit + 4, 603590);
             }
             if (newlimit!=0) {
-                klog("prlimit RLIMIT_NOFILE set=%d ignored", readd(thread->process->memory, newlimit));
+                klog("prlimit RLIMIT_NOFILE set=%d ignored", readd(thread, newlimit));
             }
             break;
         case 9: // RLIMIT_AS
             if (oldlimit!=0) {
-                writed(thread->process->memory, oldlimit, K_RLIM_INFINITY);
-                writed(thread->process->memory, oldlimit + 4, K_RLIM_INFINITY);
+                writed(thread, oldlimit, K_RLIM_INFINITY);
+                writed(thread, oldlimit + 4, K_RLIM_INFINITY);
             }
             if (newlimit!=0) {
-                klog("prlimit RLIMIT_AS set=%d ignored", readd(thread->process->memory, newlimit));
+                klog("prlimit RLIMIT_AS set=%d ignored", readd(thread, newlimit));
             }
             break;
         case 15: // RLIMIT_RTTIME
             if (oldlimit!=0) {
-                writed(thread->process->memory, oldlimit, 200);
-                writed(thread->process->memory, oldlimit + 4, 200);
+                writed(thread, oldlimit, 200);
+                writed(thread, oldlimit + 4, 200);
             }
             if (newlimit!=0) {
-                klog("prlimit RLIMIT_AS set=%d ignored", readd(thread->process->memory, newlimit));
+                klog("prlimit RLIMIT_AS set=%d ignored", readd(thread, newlimit));
             }
             break;
         default:
@@ -1241,7 +1252,8 @@ U32 syscall_prctl(struct KThread* thread, U32 option) {
     struct CPU* cpu = &thread->cpu;
 
     if (option == 15) { // PR_SET_NAME
-        safe_strcpy(thread->process->name, getNativeString(thread->process->memory, ECX), MAX_FILEPATH_LEN);
+        char tmp[MAX_FILEPATH_LEN];
+        safe_strcpy(thread->process->name, getNativeString(thread, ECX, tmp, sizeof(tmp)), sizeof(thread->process->name));
         return -1; // :TODO: why does returning 0 cause WINE to have a stack overflow
     } else {
         kwarn("prctl not implemented");
@@ -1312,27 +1324,19 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
     }
 }
 
-U32 allocPage(struct KProcess* process) {
-    U32 page = 0;
-    if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 1, &page, 0))
-        kpanic("Failed to allocate stack for thread");
-    allocPages(process->memory, page, 1, PAGE_READ|PAGE_WRITE, 0, 0, 0);
-    return page << PAGE_SHIFT;
-}
-
-void addString(struct KProcess* process, U32 index, const char* str) {
+void addString(struct KThread* thread, U32 index, const char* str) {
     U32 len = (U32)strlen(str);
     if (index<NUMBER_OF_STRINGS) {
-        if (!process->stringAddress) {
+        if (!thread->process->stringAddress) {
             U32 page = 0;
-            if (!findFirstAvailablePage(process->memory, ADDRESS_PROCESS_MMAP_START, 10, &page, 0))
+            if (!findFirstAvailablePage(thread->process->memory, ADDRESS_PROCESS_MMAP_START, 10, &page, 0))
                 kpanic("Failed to allocate stack for thread");
-            allocPages(process->memory, page, 10, PAGE_READ|PAGE_WRITE, 0, 0, 0);
-            process->stringAddress = page << PAGE_SHIFT;
+            allocPages(thread, page, 10, PAGE_READ|PAGE_WRITE, 0, 0, 0);
+            thread->process->stringAddress = page << PAGE_SHIFT;
         }
-        process->strings[index] = process->stringAddress+process->stringAddressIndex;
-        memcopyFromNative(process->memory, process->strings[index], str, len+1);
-        process->stringAddressIndex+=len+1;
+        thread->process->strings[index] = thread->process->stringAddress+thread->process->stringAddressIndex;
+        memcopyFromNative(thread, thread->process->strings[index], str, len+1);
+        thread->process->stringAddressIndex+=len+1;
     }
 }
 
@@ -1352,10 +1356,10 @@ struct user_desc {
 
 U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
     if (func == 1 || func == 0x11) {
-        int index = readd(thread->process->memory, ptr);
-        U32 address = readd(thread->process->memory, ptr + 4);
-        U32 limit = readd(thread->process->memory, ptr + 8);
-        U32 flags = readd(thread->process->memory, ptr + 12);
+        int index = readd(thread, ptr);
+        U32 address = readd(thread, ptr + 4);
+        U32 limit = readd(thread, ptr + 8);
+        U32 flags = readd(thread, ptr + 12);
 
         if (index>=0 && index<LDT_ENTRIES) {
             struct user_desc* ldt = getLDT(thread, index);;            
@@ -1369,13 +1373,13 @@ U32 syscall_modify_ldt(struct KThread* thread, U32 func, U32 ptr, U32 count) {
         }
         return 0;
     } else if (func == 0) {
-        int index = readd(thread->process->memory, ptr);
+        int index = readd(thread, ptr);
         if (index>=0 && index<LDT_ENTRIES) {
             struct user_desc* ldt = getLDT(thread, index);
 
-            writed(thread->process->memory, ptr + 4, ldt->base_addr);
-            writed(thread->process->memory, ptr + 8, ldt->limit);
-            writed(thread->process->memory, ptr + 12, ldt->flags);
+            writed(thread, ptr + 4, ldt->base_addr);
+            writed(thread, ptr + 8, ldt->limit);
+            writed(thread, ptr + 12, ldt->flags);
         } else {
             kpanic("syscall_modify_ldt invalid index: %d", index);
         }

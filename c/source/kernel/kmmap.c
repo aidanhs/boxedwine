@@ -88,7 +88,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
         addr = pageStart << PAGE_SHIFT;	
     }
     if (fd) {
-        U32 result = fd->kobject->access->map(thread->process->memory, fd->kobject, addr, len, prot, flags, off);
+        U32 result = fd->kobject->access->map(thread, fd->kobject, addr, len, prot, flags, off);
         if (result) {
             return result;
         }
@@ -127,9 +127,9 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
                 process->mappedFiles[index].file = fd->kobject;
                 process->mappedFiles[index].file->refCount++;
             }
-            allocPages(thread->process->memory, pageStart, pageCount, permissions, fildes, off, index);
+            allocPages(thread, pageStart, pageCount, permissions, fildes, off, index);
         } else {
-            allocPages(thread->process->memory, pageStart, pageCount, permissions, 0, 0, 0);
+            allocPages(thread, pageStart, pageCount, permissions, 0, 0, 0);
         }		
     }
     return addr;
@@ -141,7 +141,6 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
     BOOL exec = (prot & K_PROT_EXEC)!=0;
     U32 pageStart = address >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
-    struct Memory* memory = thread->process->memory;
     U32 permissions = 0;
     U32 i;
 
@@ -153,7 +152,7 @@ U32 syscall_mprotect(struct KThread* thread, U32 address, U32 len, U32 prot) {
         permissions|=PAGE_EXEC;
 
     for (i=pageStart;i<pageStart+pageCount;i++) {
-        protectPage(memory, i, permissions);
+        protectPage(thread, i, permissions);
     }
     return 0;
 }
@@ -162,10 +161,9 @@ U32 syscall_unmap(struct KThread* thread, U32 address, U32 len) {
     U32 pageStart = address >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
     U32 i;
-    struct Memory* memory = thread->process->memory;
 
     for (i=0;i<pageCount;i++) {
-        freePage(memory, pageStart+i);
+        freePage(thread, pageStart+i);
     }
     return 0;
 }

@@ -147,7 +147,7 @@ void decode004(struct DecodeData* data) {
     data->op->func = add8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("ADD", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("ADD", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // ADD Ax,Iw
@@ -155,7 +155,7 @@ void decode005(struct DecodeData* data) {
     data->op->func = add16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("ADD", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("ADD", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // ADD Eax,Id
@@ -163,7 +163,7 @@ void decode205(struct DecodeData* data) {
     data->op->func = add32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("ADD", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("ADD", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // OR Eb,Gb
@@ -297,7 +297,7 @@ void decode00c(struct DecodeData* data) {
     data->op->func = or8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("OR", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("OR", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // OR Ax,Iw
@@ -305,7 +305,7 @@ void decode00d(struct DecodeData* data) {
     data->op->func = or16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("OR", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("OR", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // OR Eax,Id
@@ -313,7 +313,7 @@ void decode20d(struct DecodeData* data) {
     data->op->func = or32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("OR", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("OR", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // ADC Eb,Gb
@@ -447,7 +447,7 @@ void decode014(struct DecodeData* data) {
     data->op->func = adc8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("ADC", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("ADC", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // ADC Ax,Iw
@@ -455,7 +455,7 @@ void decode015(struct DecodeData* data) {
     data->op->func = adc16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("ADC", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("ADC", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // ADC Eax,Id
@@ -463,7 +463,7 @@ void decode215(struct DecodeData* data) {
     data->op->func = adc32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("ADC", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("ADC", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // SBB Eb,Gb
@@ -597,7 +597,7 @@ void decode01c(struct DecodeData* data) {
     data->op->func = sbb8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("SBB", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("SBB", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // SBB Ax,Iw
@@ -605,7 +605,7 @@ void decode01d(struct DecodeData* data) {
     data->op->func = sbb16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("SBB", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("SBB", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // SBB Eax,Id
@@ -613,7 +613,7 @@ void decode21d(struct DecodeData* data) {
     data->op->func = sbb32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("SBB", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("SBB", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // AND Eb,Gb
@@ -747,7 +747,7 @@ void decode024(struct DecodeData* data) {
     data->op->func = and8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("AND", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("AND", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // AND Ax,Iw
@@ -755,7 +755,7 @@ void decode025(struct DecodeData* data) {
     data->op->func = and16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("AND", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("AND", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // AND Eax,Id
@@ -763,7 +763,7 @@ void decode225(struct DecodeData* data) {
     data->op->func = and32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("AND", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("AND", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // SUB Eb,Gb
@@ -897,7 +897,7 @@ void decode02c(struct DecodeData* data) {
     data->op->func = sub8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("SUB", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("SUB", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // SUB Ax,Iw
@@ -905,7 +905,7 @@ void decode02d(struct DecodeData* data) {
     data->op->func = sub16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("SUB", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("SUB", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // SUB Eax,Id
@@ -913,7 +913,7 @@ void decode22d(struct DecodeData* data) {
     data->op->func = sub32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("SUB", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("SUB", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // XOR Eb,Gb
@@ -1047,7 +1047,7 @@ void decode034(struct DecodeData* data) {
     data->op->func = xor8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("XOR", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("XOR", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // XOR Ax,Iw
@@ -1055,7 +1055,7 @@ void decode035(struct DecodeData* data) {
     data->op->func = xor16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("XOR", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("XOR", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // XOR Eax,Id
@@ -1063,7 +1063,7 @@ void decode235(struct DecodeData* data) {
     data->op->func = xor32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("XOR", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("XOR", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // CMP Eb,Gb
@@ -1197,7 +1197,7 @@ void decode03c(struct DecodeData* data) {
     data->op->func = cmp8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("CMP", R8(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("CMP", R8(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // CMP Ax,Iw
@@ -1205,7 +1205,7 @@ void decode03d(struct DecodeData* data) {
     data->op->func = cmp16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("CMP", R16(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("CMP", R16(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // CMP Eax,Id
@@ -1213,7 +1213,7 @@ void decode23d(struct DecodeData* data) {
     data->op->func = cmp32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("CMP", R32(0), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("CMP", R32(0), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // INC AX
@@ -2807,14 +2807,14 @@ void decode065(struct DecodeData* data) {
 void decode068(struct DecodeData* data) {
     data->op->func = push16data;
     data->op->data1 = FETCH16(data);
-    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("PUSH", itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // PUSH Id
 void decode268(struct DecodeData* data) {
     data->op->func = push32data;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("PUSH", itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // IMUL Gw,Ew,Iw
@@ -2865,14 +2865,14 @@ void decode269(struct DecodeData* data) {
 void decode06a(struct DecodeData* data) {
     data->op->func = push16data;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("PUSH", itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // PUSH Ib
 void decode26a(struct DecodeData* data) {
     data->op->func = push32data;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("PUSH", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("PUSH", itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // IMUL Gw,Ew,Ib
@@ -2923,112 +2923,112 @@ void decode26b(struct DecodeData* data) {
 void decode070(struct DecodeData* data) {
     data->op->func = jumpO;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JO", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JO", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNO
 void decode071(struct DecodeData* data) {
     data->op->func = jumpNO;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNO", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNO", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JB
 void decode072(struct DecodeData* data) {
     data->op->func = jumpB;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JB", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JB", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNB
 void decode073(struct DecodeData* data) {
     data->op->func = jumpNB;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNB", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNB", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JZ
 void decode074(struct DecodeData* data) {
     data->op->func = jumpZ;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JZ", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JZ", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNZ
 void decode075(struct DecodeData* data) {
     data->op->func = jumpNZ;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNZ", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNZ", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JBE
 void decode076(struct DecodeData* data) {
     data->op->func = jumpBE;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JBE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JBE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNBE
 void decode077(struct DecodeData* data) {
     data->op->func = jumpNBE;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNBE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNBE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JS
 void decode078(struct DecodeData* data) {
     data->op->func = jumpS;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JS", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JS", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNS
 void decode079(struct DecodeData* data) {
     data->op->func = jumpNS;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNS", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNS", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JP
 void decode07a(struct DecodeData* data) {
     data->op->func = jumpP;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JP", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JP", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNP
 void decode07b(struct DecodeData* data) {
     data->op->func = jumpNP;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNP", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNP", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JL
 void decode07c(struct DecodeData* data) {
     data->op->func = jumpL;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JL", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JL", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNL
 void decode07d(struct DecodeData* data) {
     data->op->func = jumpNL;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNL", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNL", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JLE
 void decode07e(struct DecodeData* data) {
     data->op->func = jumpLE;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JLE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JLE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNLE
 void decode07f(struct DecodeData* data) {
     data->op->func = jumpNLE;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JNLE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNLE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // TEST Eb,Gb
@@ -3450,7 +3450,7 @@ void decode0a0(struct DecodeData* data) {
         data->op->data1 = FETCH32(data);
     }
     data->op->base = data->ds;
-    LOG_OP2("MOV", "AL", O8(data->op));
+    LOG_OP2("MOV", "AL", O8(data, data->op));
     NEXT_OP(data);
 }
 // MOV AX,Ow
@@ -3462,7 +3462,7 @@ void decode0a1(struct DecodeData* data) {
         data->op->data1 = FETCH32(data);
     }
     data->op->base = data->ds;
-    LOG_OP2("MOV", "AX", O16(data->op));
+    LOG_OP2("MOV", "AX", O16(data, data->op));
     NEXT_OP(data);
 }
 // MOV EAX,Od
@@ -3474,7 +3474,7 @@ void decode2a1(struct DecodeData* data) {
         data->op->data1 = FETCH32(data);
     }
     data->op->base = data->ds;
-    LOG_OP2("MOV", "EAX", O32(data->op));
+    LOG_OP2("MOV", "EAX", O32(data, data->op));
     NEXT_OP(data);
 }
 // MOV Ob,Al
@@ -3486,7 +3486,7 @@ void decode0a2(struct DecodeData* data) {
         data->op->data1 = FETCH32(data);
     }
     data->op->base = data->ds;
-    LOG_OP2("MOV", O8(data->op), "AL");
+    LOG_OP2("MOV", O8(data, data->op), "AL");
     NEXT_OP(data);
 }
 // MOV Ow,Ax
@@ -3498,7 +3498,7 @@ void decode0a3(struct DecodeData* data) {
         data->op->data1 = FETCH32(data);
     }
     data->op->base = data->ds;
-    LOG_OP2("MOV", O16(data->op), "AX");
+    LOG_OP2("MOV", O16(data, data->op), "AX");
     NEXT_OP(data);
 }
 // MOV Od,Eax
@@ -3510,7 +3510,7 @@ void decode2a3(struct DecodeData* data) {
         data->op->data1 = FETCH32(data);
     }
     data->op->base = data->ds;
-    LOG_OP2("MOV", O32(data->op), "EAX");
+    LOG_OP2("MOV", O32(data, data->op), "EAX");
     NEXT_OP(data);
 }
 // TEST AL,Ib
@@ -3518,7 +3518,7 @@ void decode0a8(struct DecodeData* data) {
     data->op->func = test8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("TEST", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("TEST", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // TEST AX,Iw
@@ -3526,7 +3526,7 @@ void decode0a9(struct DecodeData* data) {
     data->op->func = test16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("TEST", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("TEST", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // TEST EAX,Id
@@ -3534,7 +3534,7 @@ void decode2a9(struct DecodeData* data) {
     data->op->func = test32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("TEST", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("TEST", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV AL,Ib
@@ -3542,7 +3542,7 @@ void decode0b0(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV CL,Ib
@@ -3550,7 +3550,7 @@ void decode0b1(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 1;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV DL,Ib
@@ -3558,7 +3558,7 @@ void decode0b2(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 2;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV BL,Ib
@@ -3566,7 +3566,7 @@ void decode0b3(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 3;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV AH,Ib
@@ -3574,7 +3574,7 @@ void decode0b4(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 4;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV CH,Ib
@@ -3582,7 +3582,7 @@ void decode0b5(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 5;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV DH,Ib
@@ -3590,7 +3590,7 @@ void decode0b6(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 6;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV BH,Ib
@@ -3598,7 +3598,7 @@ void decode0b7(struct DecodeData* data) {
     data->op->func = mov8_reg;
     data->op->r1 = 7;
     data->op->data1 = FETCH8(data);
-    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R8(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV AX,Iw
@@ -3606,7 +3606,7 @@ void decode0b8(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV EAX,Id
@@ -3614,7 +3614,7 @@ void decode2b8(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 0;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV CX,Iw
@@ -3622,7 +3622,7 @@ void decode0b9(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 1;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV ECX,Id
@@ -3630,7 +3630,7 @@ void decode2b9(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 1;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV DX,Iw
@@ -3638,7 +3638,7 @@ void decode0ba(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 2;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV EDX,Id
@@ -3646,7 +3646,7 @@ void decode2ba(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 2;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV BX,Iw
@@ -3654,7 +3654,7 @@ void decode0bb(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 3;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV EBX,Id
@@ -3662,7 +3662,7 @@ void decode2bb(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 3;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV SP,Iw
@@ -3670,7 +3670,7 @@ void decode0bc(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 4;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV ESP,Id
@@ -3678,7 +3678,7 @@ void decode2bc(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 4;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV BP,Iw
@@ -3686,7 +3686,7 @@ void decode0bd(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 5;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV EBP,Id
@@ -3694,7 +3694,7 @@ void decode2bd(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 5;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV SI,Iw
@@ -3702,7 +3702,7 @@ void decode0be(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 6;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV ESI,Id
@@ -3710,7 +3710,7 @@ void decode2be(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 6;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV DI,Iw
@@ -3718,7 +3718,7 @@ void decode0bf(struct DecodeData* data) {
     data->op->func = mov16_reg;
     data->op->r1 = 7;
     data->op->data1 = FETCH16(data);
-    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R16(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // MOV EDI,Id
@@ -3726,21 +3726,21 @@ void decode2bf(struct DecodeData* data) {
     data->op->func = mov32_reg;
     data->op->r1 = 7;
     data->op->data1 = FETCH32(data);
-    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, tmp, 16));
+    LOG_OP2("MOV", R32(data->op->r1), itoa(data->op->data1, data->tmp,16));
     NEXT_OP(data);
 }
 // RETN Iw
 void decode0c2(struct DecodeData* data) {
     data->op->func = retnIw16;
     data->op->data1 = FETCH16(data);
-    LOG_OP1("RETN", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("RETN", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // RETN Iw
 void decode2c2(struct DecodeData* data) {
     data->op->func = retnIw32;
     data->op->data1 = FETCH16(data);
-    LOG_OP1("RETN", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("RETN", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // RETN16
@@ -3801,35 +3801,35 @@ void decode0d6(struct DecodeData* data) {
 void decode0e8(struct DecodeData* data) {
     data->op->func = callJw;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("CALL", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("CALL", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // CALL Jd 
 void decode2e8(struct DecodeData* data) {
     data->op->func = callJd;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("CALL", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("CALL", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // JMP Jw 
 void decode0e9(struct DecodeData* data) {
     data->op->func = jump;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JMP", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("JMP", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // JMP Jd 
 void decode2e9(struct DecodeData* data) {
     data->op->func = jump;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JMP", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("JMP", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // JMP Jb 
 void decode0eb(struct DecodeData* data) {
     data->op->func = jump;
     data->op->data1 = FETCH_S8(data);
-    LOG_OP1("JMP", itoa(data->op->data1, tmp, 16));
+    LOG_OP1("JMP", itoa(data->op->data1, data->tmp,16));
     FINISH_OP(data);
 }
 // CMC
@@ -3998,224 +3998,224 @@ void decode131(struct DecodeData* data) {
 void decode180(struct DecodeData* data) {
     data->op->func = jumpO;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JO", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JO", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNO
 void decode181(struct DecodeData* data) {
     data->op->func = jumpNO;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNO", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNO", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JB
 void decode182(struct DecodeData* data) {
     data->op->func = jumpB;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JB", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JB", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNB
 void decode183(struct DecodeData* data) {
     data->op->func = jumpNB;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNB", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNB", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JZ
 void decode184(struct DecodeData* data) {
     data->op->func = jumpZ;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JZ", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JZ", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNZ
 void decode185(struct DecodeData* data) {
     data->op->func = jumpNZ;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNZ", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNZ", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JBE
 void decode186(struct DecodeData* data) {
     data->op->func = jumpBE;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JBE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JBE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNBE
 void decode187(struct DecodeData* data) {
     data->op->func = jumpNBE;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNBE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNBE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JS
 void decode188(struct DecodeData* data) {
     data->op->func = jumpS;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JS", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JS", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNS
 void decode189(struct DecodeData* data) {
     data->op->func = jumpNS;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNS", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNS", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JP
 void decode18a(struct DecodeData* data) {
     data->op->func = jumpP;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JP", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JP", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNP
 void decode18b(struct DecodeData* data) {
     data->op->func = jumpNP;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNP", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNP", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JL
 void decode18c(struct DecodeData* data) {
     data->op->func = jumpL;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JL", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JL", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNL
 void decode18d(struct DecodeData* data) {
     data->op->func = jumpNL;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNL", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNL", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JLE
 void decode18e(struct DecodeData* data) {
     data->op->func = jumpLE;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JLE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JLE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNLE
 void decode18f(struct DecodeData* data) {
     data->op->func = jumpNLE;
     data->op->data1 = FETCH_S16(data);
-    LOG_OP1("JNLE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNLE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JO
 void decode380(struct DecodeData* data) {
     data->op->func = jumpO;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JO", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JO", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNO
 void decode381(struct DecodeData* data) {
     data->op->func = jumpNO;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNO", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNO", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JB
 void decode382(struct DecodeData* data) {
     data->op->func = jumpB;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JB", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JB", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNB
 void decode383(struct DecodeData* data) {
     data->op->func = jumpNB;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNB", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNB", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JZ
 void decode384(struct DecodeData* data) {
     data->op->func = jumpZ;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JZ", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JZ", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNZ
 void decode385(struct DecodeData* data) {
     data->op->func = jumpNZ;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNZ", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNZ", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JBE
 void decode386(struct DecodeData* data) {
     data->op->func = jumpBE;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JBE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JBE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNBE
 void decode387(struct DecodeData* data) {
     data->op->func = jumpNBE;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNBE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNBE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JS
 void decode388(struct DecodeData* data) {
     data->op->func = jumpS;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JS", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JS", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNS
 void decode389(struct DecodeData* data) {
     data->op->func = jumpNS;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNS", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNS", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JP
 void decode38a(struct DecodeData* data) {
     data->op->func = jumpP;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JP", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JP", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNP
 void decode38b(struct DecodeData* data) {
     data->op->func = jumpNP;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNP", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNP", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JL
 void decode38c(struct DecodeData* data) {
     data->op->func = jumpL;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JL", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JL", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNL
 void decode38d(struct DecodeData* data) {
     data->op->func = jumpNL;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNL", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNL", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JLE
 void decode38e(struct DecodeData* data) {
     data->op->func = jumpLE;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JLE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JLE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // JNLE
 void decode38f(struct DecodeData* data) {
     data->op->func = jumpNLE;
     data->op->data1 = FETCH32(data);
-    LOG_OP1("JNLE", itoa((int)data->op->data1, tmp, 10));
+    LOG_OP1("JNLE", itoa((int)data->op->data1, data->tmp,10));
     FINISH_OP(data);
 }
 // SETO
@@ -5015,7 +5015,7 @@ void decode3c7(struct DecodeData* data) {
         }
     } else {
         printf("Invalid instruction %x\n", data->op->inst);
-        log_pf(data->cpu->thread->process, data->ip);
+        log_pf(data->cpu->thread, data->ip);
     }	
     NEXT_OP(data);
 };

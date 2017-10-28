@@ -475,8 +475,8 @@ void x64_cmdEntry(struct CPU* cpu) {
     case CMD_LOAD_DS:
     case CMD_LOAD_FS:
     case CMD_LOAD_GS:
-        if (cpu_setSegment(cpu, cpu->cmd - CMD_LOAD_ES, readw(cpu->memory, cpu->cmdArg+2))) {
-            cpu->reg[cpu->cmdArg2].u16 = readw(cpu->memory, cpu->cmdArg);
+        if (cpu_setSegment(cpu, cpu->cmd - CMD_LOAD_ES, readw(cpu->thread, cpu->cmdArg+2))) {
+            cpu->reg[cpu->cmdArg2].u16 = readw(cpu->thread, cpu->cmdArg);
         }
         break;
     case CMD_CALL_AP_16:

@@ -282,7 +282,7 @@ BOOL loadProgram(struct KProcess* process, struct KThread* thread, struct FsOpen
                     process->phdr = reloc+phdr.p_paddr+hdr->e_phoff-phdr.p_offset;
                 }
                 openNode->func->seek(openNode, phdr.p_offset);                
-                openNode->func->read(thread->process->memory, openNode, reloc+phdr.p_paddr, phdr.p_filesz);		
+                openNode->func->read(thread, openNode, reloc+phdr.p_paddr, phdr.p_filesz);		
             }
         }
     }

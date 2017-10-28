@@ -294,7 +294,7 @@ SDL_Color sdlSystemPalette[256] = {
     {0xFF,0xFF,0xFF},
 };
 
-void displayChanged();
+void displayChanged(struct KThread* thread);
 
 void initSDL() {
     default_horz_res = screenCx;
@@ -359,7 +359,7 @@ SDL_Renderer *sdlRenderer;
 SDL_GLContext *sdlCurrentContext;
 int contextCount;
 
-static void destroySDL2() {
+static void destroySDL2(struct KThread* thread) {
     PblIterator* it = pblMapIteratorNew(hwndToWnd);
     while (pblIteratorHasNext(it)) {
         struct Wnd** ppWnd = pblMapEntryValue((PblMapEntry*)pblIteratorNext(it));
@@ -378,9 +378,9 @@ static void destroySDL2() {
         SDL_DestroyRenderer(sdlRenderer);
         sdlRenderer = 0;
     }
-    if (currentThread->glContext) {
-        SDL_GL_DeleteContext(currentThread->glContext);
-        currentThread->glContext = 0;
+    if (thread->glContext) {
+        SDL_GL_DeleteContext(thread->glContext);
+        thread->glContext = 0;
     }
     if (sdlWindow) {
         SDL_DestroyWindow(sdlWindow);
@@ -396,14 +396,14 @@ SDL_Surface* surface;
 void loadExtensions();
 #endif
 
-void sdlDeleteContext(U32 context) {
-    struct KThread* thread = processGetThreadById(currentThread->process, context);
-    if (thread && thread->glContext) {
-        SDL_GL_DeleteContext(thread->glContext);
-        thread->glContext = NULL;
+void sdlDeleteContext(struct KThread* thread, U32 context) {
+    struct KThread* contextThread = processGetThreadById(thread->process, context);
+    if (contextThread && contextThread->glContext) {
+        SDL_GL_DeleteContext(contextThread->glContext);
+        contextThread->glContext = NULL;
         contextCount--;
         if (contextCount==0) {
-            displayChanged(); 
+            displayChanged(thread); 
         }
     }
 }
@@ -415,12 +415,12 @@ void sdlUpdateContextForThread(struct KThread* thread) {
     }
 }
 
-U32 sdlMakeCurrent(U32 arg) {
+U32 sdlMakeCurrent(struct KThread* thread, U32 arg) {
 #ifdef SDL2
-    if (arg == currentThread->id) {
-        if (SDL_GL_MakeCurrent(sdlWindow, currentThread->glContext)==0) {
-            currentThread->currentContext = currentThread->glContext;
-            sdlCurrentContext = currentThread->glContext;
+    if (arg == thread->id) {
+        if (SDL_GL_MakeCurrent(sdlWindow, thread->glContext)==0) {
+            thread->currentContext = thread->glContext;
+            sdlCurrentContext = thread->glContext;
 #if defined(BOXEDWINE_SDL) || defined(BOXEDWINE_ES)
             loadExtensions();
 #endif
@@ -428,7 +428,7 @@ U32 sdlMakeCurrent(U32 arg) {
         }
     } else if (arg == 0) {
         SDL_GL_MakeCurrent(sdlWindow, 0);
-        currentThread->currentContext = 0;
+        thread->currentContext = 0;
         sdlCurrentContext = NULL;
         return 1;
     } else {
@@ -440,9 +440,9 @@ U32 sdlMakeCurrent(U32 arg) {
 #endif
 }
 
-U32 sdlShareLists(U32 srcContext, U32 destContext) {
-    struct KThread* srcThread = processGetThreadById(currentThread->process, srcContext);
-    struct KThread* destThread = processGetThreadById(currentThread->process, destContext);
+U32 sdlShareLists(struct KThread* thread, U32 srcContext, U32 destContext) {
+    struct KThread* srcThread = processGetThreadById(thread->process, srcContext);
+    struct KThread* destThread = processGetThreadById(thread->process, destContext);
     if (srcThread && destThread && srcThread->glContext && destThread->glContext) {
         if (destThread->currentContext) {
             kpanic("Wasn't expecting the OpenGL context that will share a list to already be current");
@@ -459,17 +459,17 @@ U32 sdlShareLists(U32 srcContext, U32 destContext) {
     return 0;
 }
 
-U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, int flags) {
+U32 sdlCreateOpenglWindow(struct KThread* thread, struct Wnd* wnd, int major, int minor, int profile, int flags) {
 #ifdef SDL2
     if (wnd->openGlContext) {
-        if (currentThread->glContext) {
+        if (thread->glContext) {
             kpanic("Not sure what to do, trying to create another OpenGL context on the same thread");
         }
-        currentThread->glContext = SDL_GL_CreateContext(sdlWindow);
+        thread->glContext = SDL_GL_CreateContext(sdlWindow);
         contextCount++;
-        return currentThread->id;
+        return thread->id;
     }
-    destroySDL2();
+    destroySDL2(thread);
 
     firstWindowCreated = 1;
     SDL_GL_ResetAttributes();
@@ -495,20 +495,20 @@ U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, in
     sdlWindow = SDL_CreateWindow("OpenGL Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN);
     if (!sdlWindow) {
         fprintf(stderr, "Couldn't create window: %s\n", SDL_GetError());
-        displayChanged();
+        displayChanged(thread);
         return 0;
     }
 
-    currentThread->glContext = SDL_GL_CreateContext(sdlWindow);
-    if (!currentThread->glContext) {
+    thread->glContext = SDL_GL_CreateContext(sdlWindow);
+    if (!thread->glContext) {
         fprintf(stderr, "Couldn't create context: %s\n", SDL_GetError());
-        displayChanged();
+        displayChanged(thread);
         return 0;
     }
     contextCount++;
     if (!wnd->openGlContext)
-        wnd->openGlContext = currentThread->glContext;       
-    return currentThread->id;
+        wnd->openGlContext = thread->glContext;       
+    return thread->id;
 #else
     surface = NULL;
     SDL_SetVideoMode(wnd->windowRect.right-wnd->windowRect.left, wnd->windowRect.bottom-wnd->windowRect.top, wnd->pixelFormat->cDepthBits, SDL_OPENGL);        
@@ -516,24 +516,24 @@ U32 sdlCreateOpenglWindow(struct Wnd* wnd, int major, int minor, int profile, in
 #endif
 }
 
-void screenResized() {
+void screenResized(struct KThread* thread) {
 #ifdef SDL2
-    if (currentThread->glContext)
+    if (thread->glContext)
         SDL_SetWindowSize(sdlWindow, screenCx, screenCy);
     else
-        displayChanged();
+        displayChanged(thread);
 #else
-    displayChanged();
+    displayChanged(thread);
 #endif
 }
 
-void displayChanged() {
+void displayChanged(struct KThread* thread) {
 #ifndef SDL2
     U32 flags;
 #endif
     firstWindowCreated = 1;
 #ifdef SDL2
-    destroySDL2();
+    destroySDL2(thread);
     sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenCx, screenCy, SDL_WINDOW_SHOWN);
     sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);	
 #else
@@ -558,17 +558,17 @@ void sdlSwapBuffers() {
 S8 b[1024*1024*4];
 #endif
 
-void wndBlt(struct Memory* memory, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
+void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
     struct Wnd* wnd = getWnd(hwnd);
     struct wRECT r;
     U32 y;    
     int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
     static int i;
 
-    readRect(memory, rect, &r);
+    readRect(thread, rect, &r);
 
     if (!firstWindowCreated) {
-        displayChanged();
+        displayChanged(thread);
     }
 #ifndef SDL2
     if (!surface)
@@ -602,7 +602,7 @@ void wndBlt(struct Memory* memory, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 w
         }
 
         for (y = 0; y < height; y++) {
-            memcopyToNative(memory, bits+(height-y-1)*pitch, b+y*pitch, pitch);
+            memcopyToNative(thread, bits+(height-y-1)*pitch, b+y*pitch, pitch);
         } 
         if (bits_per_pixel!=32) {
             // SDL_ConvertPixels(width, height, )
@@ -650,14 +650,14 @@ void wndBlt(struct Memory* memory, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 w
 #endif
 }
 
-void drawAllWindows(struct Memory* memory, U32 hWnd, int count) {    
+void drawAllWindows(struct KThread* thread, U32 hWnd, int count) {    
     int i;
 
 #ifdef SDL2
     SDL_SetRenderDrawColor(sdlRenderer, 58, 110, 165, 255 );
     SDL_RenderClear(sdlRenderer);    
     for (i=count-1;i>=0;i--) {
-        struct Wnd* wnd = getWnd(readd(memory, hWnd+i*4));
+        struct Wnd* wnd = getWnd(readd(thread, hWnd+i*4));
         if (wnd && wnd->sdlTextureWidth) {
             SDL_Rect dstrect;
             dstrect.x = wnd->windowRect.left;
@@ -689,10 +689,10 @@ void drawAllWindows(struct Memory* memory, U32 hWnd, int count) {
 #endif
 }
 
-struct Wnd* wndCreate(struct Memory* memory, U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
+struct Wnd* wndCreate(struct KThread* thread, U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
     struct Wnd* wnd = kalloc(sizeof(struct Wnd), KALLOC_WND);
-    readRect(memory, windowRect, &wnd->windowRect);
-    readRect(memory, clientRect, &wnd->clientRect);
+    readRect(thread, windowRect, &wnd->windowRect);
+    readRect(thread, clientRect, &wnd->clientRect);
     wnd->processId = processId;
     wnd->hwnd = hwnd;
     pblMapAdd(hwndToWnd, &hwnd, sizeof(U32), &wnd, sizeof(void*));
@@ -703,21 +703,21 @@ void wndDestroy(U32 hwnd) {
     pblMapRemove(hwndToWnd, &hwnd, sizeof(U32), NULL);
 }
 
-void writeRect(struct Memory* memory, U32 address, struct wRECT* rect) {
+void writeRect(struct KThread* thread, U32 address, struct wRECT* rect) {
     if (address) {
-        writed(memory, address, rect->left);
-        writed(memory, address+4, rect->top);
-        writed(memory, address+8, rect->right);
-        writed(memory, address+12, rect->bottom);
+        writed(thread, address, rect->left);
+        writed(thread, address+4, rect->top);
+        writed(thread, address+8, rect->right);
+        writed(thread, address+12, rect->bottom);
     }
 }
 
-void readRect(struct Memory* memory, U32 address, struct wRECT* rect) {
+void readRect(struct KThread* thread, U32 address, struct wRECT* rect) {
     if (address) {
-        rect->left = readd(memory, address);
-        rect->top = readd(memory, address+4);
-        rect->right = readd(memory, address+8);
-        rect->bottom = readd(memory, address+12);
+        rect->left = readd(thread, address);
+        rect->top = readd(thread, address+4);
+        rect->right = readd(thread, address+8);
+        rect->bottom = readd(thread, address+12);
     }
 }
 
@@ -750,7 +750,7 @@ void updateScreen() {
     // this mechanism probably won't work well if multiple threads are updating the screen, there could be flickering
 }
 
-U32 getGammaRamp(struct Memory* memory, U32 ramp) {
+U32 getGammaRamp(struct KThread* thread, U32 ramp) {
     U16 r[256];
     U16 g[256];
     U16 b[256];
@@ -762,23 +762,23 @@ U32 getGammaRamp(struct Memory* memory, U32 ramp) {
 #endif
         int i;
         for (i=0;i<256;i++) {
-            writew(memory, ramp+i*2, r[i]);
-            writew(memory, ramp+i*2+512, g[i]);
-            writew(memory, ramp+i*2+124, b[i]);
+            writew(thread, ramp+i*2, r[i]);
+            writew(thread, ramp+i*2+512, g[i]);
+            writew(thread, ramp+i*2+124, b[i]);
         }
         return 1;
     }
     return 0;
 }
 
-void sdlGetPalette(struct Memory* memory, U32 start, U32 count, U32 entries) {
+void sdlGetPalette(struct KThread* thread, U32 start, U32 count, U32 entries) {
     U32 i;
 
     for (i=0;i<count;i++) {
-        writeb(memory, entries+4*i, sdlPalette[i+start].r);
-        writeb(memory, entries+4*i+1, sdlPalette[i+start].g);
-        writeb(memory, entries+4*i+2, sdlPalette[i+start].b);
-        writeb(memory, entries+4*i+3, 0);
+        writeb(thread, entries+4*i, sdlPalette[i+start].r);
+        writeb(thread, entries+4*i+1, sdlPalette[i+start].g);
+        writeb(thread, entries+4*i+2, sdlPalette[i+start].b);
+        writeb(thread, entries+4*i+3, 0);
     }
 }
 
@@ -792,16 +792,16 @@ U32 sdlGetNearestColor(U32 color) {
 #endif
 }
 
-U32 sdlRealizePalette(struct Memory* memory, U32 start, U32 numberOfEntries, U32 entries) {
+U32 sdlRealizePalette(struct KThread* thread, U32 start, U32 numberOfEntries, U32 entries) {
     U32 i;
     int result = 0;
 
     if (numberOfEntries>256)
         numberOfEntries=256;
     for (i=0;i<numberOfEntries;i++) {
-        sdlPalette[i+start].r = readb(memory, entries+4*i);
-        sdlPalette[i+start].g = readb(memory, entries+4*i+1);
-        sdlPalette[i+start].b = readb(memory, entries+4*i+2);
+        sdlPalette[i+start].r = readb(thread, entries+4*i);
+        sdlPalette[i+start].g = readb(thread, entries+4*i+1);
+        sdlPalette[i+start].b = readb(thread, entries+4*i+2);
 #ifdef SDL2
         sdlPalette[i+start].a = 0;
 #else
@@ -1596,10 +1596,10 @@ int sdlKey(U32 key, U32 down) {
     return 1;
 }
 
-U32 sdlToUnicodeEx(struct Memory* memory, U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, U32 bufW_size, U32 flags, U32 hkl) {
+U32 sdlToUnicodeEx(struct KThread* thread, U32 virtKey, U32 scanCode, U32 lpKeyState, U32 bufW, U32 bufW_size, U32 flags, U32 hkl) {
     U32 ret = 0;
     U8 c = 0;
-    U32 shift = readb(memory, lpKeyState+VK_SHIFT) & 0x80;
+    U32 shift = readb(thread, lpKeyState+VK_SHIFT) & 0x80;
 
     if (!virtKey)
         goto done;
@@ -1635,7 +1635,7 @@ U32 sdlToUnicodeEx(struct Memory* memory, U32 virtKey, U32 scanCode, U32 lpKeySt
     if (shift && VK_MULTIPLY <= virtKey && virtKey <= VK_DIVIDE)
         goto done;
 
-    if (readb(memory, lpKeyState+VK_CONTROL) & 0x80)
+    if (readb(thread, lpKeyState+VK_CONTROL) & 0x80)
     {
         /* Control-Tab, with or without other modifiers. */
         if (virtKey == VK_TAB)
@@ -1643,7 +1643,7 @@ U32 sdlToUnicodeEx(struct Memory* memory, U32 virtKey, U32 scanCode, U32 lpKeySt
 
         /* Control-Shift-<key>, Control-Alt-<key>, and Control-Alt-Shift-<key>
            for these keys. */
-        if (shift || (readb(memory, lpKeyState+VK_MENU)))
+        if (shift || (readb(thread, lpKeyState+VK_MENU)))
         {
             switch (virtKey)
             {
@@ -1723,14 +1723,14 @@ U32 sdlToUnicodeEx(struct Memory* memory, U32 virtKey, U32 scanCode, U32 lpKeySt
         }
     }
     if (c) {
-        writew(memory, bufW, c);
+        writew(thread, bufW, c);
         ret=1;
     }
 done:
     /* Null-terminate the buffer, if there's room.  MSDN clearly states that the
        caller must not assume this is done, but some programs (e.g. Audiosurf) do. */
     if (1 <= ret && ret < bufW_size)
-        writew(memory, bufW+ret*2, 0);
+        writew(thread, bufW+ret*2, 0);
 
     return ret;
 }

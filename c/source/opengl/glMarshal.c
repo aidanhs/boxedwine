@@ -4,18 +4,19 @@
 #include "memory.h"
 #include "cpu.h"
 #include "glcommon.h"
+#include "kthread.h"
 
-#define MARSHAL_TYPE(type, p, m, s) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {buffer##p[i] = read##m(cpu->memory, address);address+=s;} return buffer##p;}
+#define MARSHAL_TYPE(type, p, m, s) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {buffer##p[i] = read##m(cpu->thread, address);address+=s;} return buffer##p;}
 
 #ifdef HAS_64BIT_MMU
 
 #define getSize(pname) 0
 
-//#define marshalPixels(cpu, is3d, width, height, depth, format, type, pixels) (GLvoid*)getPhysicalAddress(cpu->memory, pixels)
+//#define marshalPixels(cpu, is3d, width, height, depth, format, type, pixels) (GLvoid*)getPhysicalAddress(cpu->thread, pixels)
 GLvoid* marshalPixels(struct CPU* cpu, U32 is3d, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type,  U32 pixels) {
     if (pixels == 0)
         return 0;
-    return (GLvoid*)getPhysicalAddress(cpu->memory, pixels);
+    return (GLvoid*)getPhysicalAddress(cpu->thread, pixels);
 }
 
 GLvoid** bufferpp;
@@ -33,7 +34,7 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
         bufferpp_len = count;
     }
     for (i=0;i<count;i++) {
-        bufferpp[i] = (GLvoid*)getPhysicalAddress(cpu->memory, readd(cpu->memory, buffer+i*4));
+        bufferpp[i] = (GLvoid*)getPhysicalAddress(cpu->thread, readd(cpu->thread, buffer+i*4));
     }
     return bufferpp;
 }
@@ -41,7 +42,7 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
 GLvoid* marshalp(struct CPU* cpu, U32 instance, U32 buffer, U32 len) {
     if (buffer == 0)
         return NULL;
-    return (GLvoid*)getPhysicalAddress(cpu->memory, buffer);
+    return (GLvoid*)getPhysicalAddress(cpu->thread, buffer);
 }
 
 // this won't marshal the data, but rather map it into the address space, reserving "size" amount of address space
@@ -58,7 +59,7 @@ GLsync marshalSync(struct CPU* cpu, U32 sync) {
 }
 
 #else 
-#define MARSHAL_TYPE_CUSTOM(type, p, m, s, conv, get, set) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {struct conv d; get = read##m(cpu->memory, address);address+=s;buffer##p[i] = set;} return buffer##p;}
+#define MARSHAL_TYPE_CUSTOM(type, p, m, s, conv, get, set) type* buffer##p; U32 buffer##p##_len; type* marshal##p(struct CPU* cpu, U32 address, U32 count) {U32 i; if (!address) return NULL; if (buffer##p && buffer##p##_len<count) { kfree(buffer##p, KALLOC_OPENGL); buffer##p=0;} if (!buffer##p) {buffer##p = (type*)kalloc(sizeof(type)*count, KALLOC_OPENGL); buffer##p##_len = count;}for (i=0;i<count;i++) {struct conv d; get = read##m(cpu->thread, address);address+=s;buffer##p[i] = set;} return buffer##p;}
 
 MARSHAL_TYPE(GLbyte, b, b, 1)
 MARSHAL_TYPE(GLbyte, 2b, b, 1)
@@ -136,7 +137,7 @@ void marshalBackd(struct CPU* cpu, U32 address, GLdouble* buffer, U32 count) {
         for (i=0;i<count;i++) {
             struct long2Double d;
             d.d = buffer[i];
-            writeq(cpu->memory, address, d.l);
+            writeq(cpu->thread, address, d.l);
             address+=8;
         }
     }
@@ -149,7 +150,7 @@ void marshalBackf(struct CPU* cpu, U32 address, GLfloat* buffer, U32 count) {
         for (i=0;i<count;i++) {
             struct int2Float f;
             f.f = buffer[i];
-            writed(cpu->memory, address, f.i);
+            writed(cpu->thread, address, f.i);
             address+=4;
         }
     }
@@ -160,7 +161,7 @@ void marshalBacki(struct CPU* cpu, U32 address, GLint* buffer, U32 count) {
 
     if (address) {
         for (i=0;i<count;i++) {
-            writed(cpu->memory, address, buffer[i]);
+            writed(cpu->thread, address, buffer[i]);
             address+=4;
         }
     }
@@ -175,7 +176,7 @@ void marshalBacki64(struct CPU* cpu, U32 address, GLint64* buffer, U32 count) {
 
     if (address) {
         for (i=0;i<count;i++) {
-            writeq(cpu->memory, address, buffer[i]);
+            writeq(cpu->thread, address, buffer[i]);
             address+=8;
         }
     }
@@ -190,7 +191,7 @@ void marshalBackus(struct CPU* cpu, U32 address, GLushort* buffer, U32 count) {
 
     if (address) {
         for (i=0;i<count;i++) {
-            writew(cpu->memory, address, buffer[i]);
+            writew(cpu->thread, address, buffer[i]);
             address+=2;
         }
     }
@@ -201,15 +202,15 @@ void marshalBacks(struct CPU* cpu, U32 address, GLshort* buffer, U32 count) {
 }
 
 void marshalBackb(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-    memcopyFromNative(cpu->memory, address, (char*)buffer, count);
+    memcopyFromNative(cpu->thread, address, (char*)buffer, count);
 }
 
 void marshalBackub(struct CPU* cpu, U32 address, GLubyte* buffer, U32 count) {
-    memcopyFromNative(cpu->memory, address, (char*)buffer, count);
+    memcopyFromNative(cpu->thread, address, (char*)buffer, count);
 }
 
 void marshalBackbool(struct CPU* cpu, U32 address, GLboolean* buffer, U32 count) {
-    memcopyFromNative(cpu->memory, address, (char*)buffer, count);
+    memcopyFromNative(cpu->thread, address, (char*)buffer, count);
 }
 
 GLvoid* marshalType(struct CPU* cpu, U32 type, U32 count, U32 address) {
@@ -578,7 +579,7 @@ GLvoid* marshalp(struct CPU* cpu, U32 instance, U32 buffer, U32 len) {
     }
     // :TODO: a lot of work needs to be done here, marshalp needs to be removed and instead marshal the correct type of array, like marshalf.
     // This is also important to make things work with UNALIGNED_MEMORY
-    return (GLvoid*)getPhysicalAddress(cpu->memory, buffer);
+    return (GLvoid*)getPhysicalAddress(cpu->thread, buffer);
 }
 
 U32 marshalBackSync(struct CPU* cpu, GLsync sync) {
@@ -610,25 +611,34 @@ GLvoid** marshalpp(struct CPU* cpu, U32 buffer, U32 count, U32 sizes, S32 bytesP
     }
     for (i=0;i<count;i++) {
         S32 len = 0;
-        U32 p = readd(cpu->memory, buffer+i*4);
+        U32 p = readd(cpu->thread, buffer+i*4);
         if (sizes) {
-            U32 address = readd(cpu->memory, sizes+i*4);
-            len = (S32)readd(cpu->memory, address);
+            U32 address = readd(cpu->thread, sizes+i*4);
+            len = (S32)readd(cpu->thread, address);
         }
         if (bytesPerCount) {
             if (bytesPerCount==-1 && len<=0) {
-                len = (U32)strlen(getNativeString(cpu->memory, p))+1;
+                len = getNativeStringLen(cpu->thread, p)+1;
             } else {
                 len*=bytesPerCount;
             }
         }
+        // :TODO: this is wrong if the host address isn't used directly
         bufferpp[i] = marshalp(cpu, i, p, len);
     }
     return bufferpp;
 }
 
+// :TODO: not thread safe
 const GLchar* marshalsz(struct CPU* cpu, U32 address) {
-    return getNativeString(cpu->memory, address);
+    static char* tmp;
+    static U32 tmpLen;
+    U32 len = getNativeStringLen(cpu->thread, address)+1;
+    if (len>tmpLen) {
+        tmp = malloc(tmpLen);
+        tmpLen = len;
+    }
+    return getNativeString(cpu->thread, address, tmp, tmpLen);
 }
 
 #endif
@@ -680,7 +690,7 @@ void marshalBackhandle(struct CPU* cpu, U32 address, GLhandleARB* buffer, U32 co
     if (sizeof(GLhandleARB)!=4)
         kpanic("marshalBackhandle not supported on this platform");
     for (i=0;i<count;i++) {
-        writed(cpu->memory, address, buffer[i]);
+        writed(cpu->thread, address, buffer[i]);
         address+=4;
     }
 }

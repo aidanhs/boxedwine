@@ -41,12 +41,12 @@ struct Memory {
 
 extern struct Page invalidPage;
 
-U8 nopermission_readb(struct Memory* memory, U32 address);
-void nopermission_writeb(struct Memory* memory, U32 address, U8 value);
-U16 nopermission_readw(struct Memory* memory, U32 address);
-void nopermission_writew(struct Memory* memory, U32 address, U16 value);
-U32 nopermission_readd(struct Memory* memory, U32 address);
-void nopermission_writed(struct Memory* memory, U32 address, U32 value);
+U8 nopermission_readb(struct KThread* thread, U32 address);
+void nopermission_writeb(struct KThread* thread, U32 address, U8 value);
+U16 nopermission_readw(struct KThread* thread, U32 address);
+void nopermission_writew(struct KThread* thread, U32 address, U16 value);
+U32 nopermission_readd(struct KThread* thread, U32 address);
+void nopermission_writed(struct KThread* thread, U32 address, U32 value);
 
 U32 numberOfContiguousRamPages(struct Memory* memory, U32 page);
 

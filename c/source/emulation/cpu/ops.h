@@ -136,7 +136,7 @@ void OPCALL bound_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
 
     CYCLES(8);
-    if (cpu->reg[op->r1].u16<readw(cpu->memory, eaa) || cpu->reg[op->r1].u16>readw(cpu->memory, eaa+2)) {
+    if (cpu->reg[op->r1].u16<readw(cpu->thread, eaa) || cpu->reg[op->r1].u16>readw(cpu->thread, eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
         return;
     }    
@@ -147,7 +147,7 @@ void OPCALL bound_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
 
     CYCLES(8);
-    if (cpu->reg[op->r1].u16<readw(cpu->memory, eaa) || cpu->reg[op->r1].u16>readw(cpu->memory, eaa+2)) {
+    if (cpu->reg[op->r1].u16<readw(cpu->thread, eaa) || cpu->reg[op->r1].u16>readw(cpu->thread, eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
         return;
     }    
@@ -158,7 +158,7 @@ void OPCALL boundd_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
 
     CYCLES(8);
-    if (cpu->reg[op->r1].u32<readd(cpu->memory, eaa) || cpu->reg[op->r1].u32>readd(cpu->memory, eaa+2)) {
+    if (cpu->reg[op->r1].u32<readd(cpu->thread, eaa) || cpu->reg[op->r1].u32>readd(cpu->thread, eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
         return;
     }    
@@ -169,7 +169,7 @@ void OPCALL boundd_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
 
     CYCLES(8);
-    if (cpu->reg[op->r1].u32<readd(cpu->memory, eaa) || cpu->reg[op->r1].u32>readd(cpu->memory, eaa+2)) {
+    if (cpu->reg[op->r1].u32<readd(cpu->thread, eaa) || cpu->reg[op->r1].u32>readd(cpu->thread, eaa+2)) {
         exception(cpu, EXCEPTION_BOUND);
         return;
     }    
@@ -202,7 +202,7 @@ void OPCALL dimulcr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulcr16e16_16(struct CPU* cpu, struct Op* op) {
-    S32 res=(S16)(readw(cpu->memory, eaa16(cpu, op))) * (S32)op->data1;
+    S32 res=(S16)(readw(cpu->thread, eaa16(cpu, op))) * (S32)op->data1;
     fillFlagsNoCFOF(cpu);
     if ((res >= -32767) && (res <= 32767)) {
         removeFlag(CF|OF);
@@ -215,7 +215,7 @@ void OPCALL dimulcr16e16_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulcr16e16_32(struct CPU* cpu, struct Op* op) {
-    S32 res=(S16)(readw(cpu->memory, eaa32(cpu, op))) * (S32)op->data1;
+    S32 res=(S16)(readw(cpu->thread, eaa32(cpu, op))) * (S32)op->data1;
     fillFlagsNoCFOF(cpu);
     if ((res >= -32767) && (res <= 32767)) {
         removeFlag(CF|OF);
@@ -241,7 +241,7 @@ void OPCALL dimulcr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulcr32e32_16(struct CPU* cpu, struct Op* op) {
-    S64 res=(S32)(readd(cpu->memory, eaa16(cpu, op))) * (S64)((S32)op->data1);
+    S64 res=(S32)(readd(cpu->thread, eaa16(cpu, op))) * (S64)((S32)op->data1);
     fillFlagsNoCFOF(cpu);
     if (res>=-2147483647l && res<=2147483647l) {
         removeFlag(CF|OF);
@@ -254,7 +254,7 @@ void OPCALL dimulcr32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulcr32e32_32(struct CPU* cpu, struct Op* op) {
-    S64 res=(S32)(readd(cpu->memory, eaa32(cpu, op))) * (S64)((S32)op->data1);
+    S64 res=(S32)(readd(cpu->thread, eaa32(cpu, op))) * (S64)((S32)op->data1);
     fillFlagsNoCFOF(cpu);
     if (res>=-2147483647l && res<=2147483647l) {
         removeFlag(CF|OF);
@@ -280,7 +280,7 @@ void OPCALL dimulr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulr16e16_16(struct CPU* cpu, struct Op* op) {
-    S32 res=(S16)(readw(cpu->memory, eaa16(cpu, op))) * (S32)cpu->reg[op->r1].u16;
+    S32 res=(S16)(readw(cpu->thread, eaa16(cpu, op))) * (S32)cpu->reg[op->r1].u16;
     fillFlagsNoCFOF(cpu);
     if ((res >= -32767) && (res <= 32767)) {
         removeFlag(CF|OF);
@@ -293,7 +293,7 @@ void OPCALL dimulr16e16_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulr16e16_32(struct CPU* cpu, struct Op* op) {
-    S32 res=(S16)(readw(cpu->memory, eaa32(cpu, op))) * (S32)cpu->reg[op->r1].u16;
+    S32 res=(S16)(readw(cpu->thread, eaa32(cpu, op))) * (S32)cpu->reg[op->r1].u16;
     fillFlagsNoCFOF(cpu);
     if ((res >= -32767) && (res <= 32767)) {
         removeFlag(CF|OF);
@@ -319,7 +319,7 @@ void OPCALL dimulr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulr32e32_16(struct CPU* cpu, struct Op* op) {
-    S64 res=(S32)(readd(cpu->memory, eaa16(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u32);
+    S64 res=(S32)(readd(cpu->thread, eaa16(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u32);
     fillFlagsNoCFOF(cpu);
     if (res>=-2147483647l && res<=2147483647l) {
         removeFlag(CF|OF);
@@ -332,7 +332,7 @@ void OPCALL dimulr32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dimulr32e32_32(struct CPU* cpu, struct Op* op) {
-    S64 res=(S32)(readd(cpu->memory, eaa32(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u32);
+    S64 res=(S32)(readd(cpu->thread, eaa32(cpu, op))) * (S64)((S32)cpu->reg[op->r1].u32);
     fillFlagsNoCFOF(cpu);
     if (res>=-2147483647l && res<=2147483647l) {
         removeFlag(CF|OF);
@@ -594,8 +594,8 @@ void OPCALL xchgr8r8(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xchge8r8_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U8 tmp = readb(cpu->memory, eaa);
-    writeb(cpu->memory, eaa, *cpu->reg8[op->r1]);
+    U8 tmp = readb(cpu->thread, eaa);
+    writeb(cpu->thread, eaa, *cpu->reg8[op->r1]);
     *cpu->reg8[op->r1] = tmp;
     CYCLES(4);
     NEXT();
@@ -603,8 +603,8 @@ void OPCALL xchge8r8_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xchge8r8_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U8 tmp = readb(cpu->memory, eaa);
-    writeb(cpu->memory, eaa, *cpu->reg8[op->r1]);
+    U8 tmp = readb(cpu->thread, eaa);
+    writeb(cpu->thread, eaa, *cpu->reg8[op->r1]);
     *cpu->reg8[op->r1] = tmp;
     CYCLES(4);
     NEXT();
@@ -620,8 +620,8 @@ void OPCALL xchgr16r16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xchge16r16_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 tmp = readw(cpu->memory, eaa);
-    writew(cpu->memory, eaa, cpu->reg[op->r1].u16);
+    U16 tmp = readw(cpu->thread, eaa);
+    writew(cpu->thread, eaa, cpu->reg[op->r1].u16);
     cpu->reg[op->r1].u16 = tmp;
     CYCLES(4);
     NEXT();
@@ -629,8 +629,8 @@ void OPCALL xchge16r16_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xchge16r16_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 tmp = readw(cpu->memory, eaa);
-    writew(cpu->memory, eaa, cpu->reg[op->r1].u16);
+    U16 tmp = readw(cpu->thread, eaa);
+    writew(cpu->thread, eaa, cpu->reg[op->r1].u16);
     cpu->reg[op->r1].u16 = tmp;
     CYCLES(4);
     NEXT();
@@ -646,8 +646,8 @@ void OPCALL xchgr32r32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xchge32r32_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U32 tmp = readd(cpu->memory, eaa);
-    writed(cpu->memory, eaa, cpu->reg[op->r1].u32);
+    U32 tmp = readd(cpu->thread, eaa);
+    writed(cpu->thread, eaa, cpu->reg[op->r1].u32);
     cpu->reg[op->r1].u32 = tmp;
     CYCLES(4);
     NEXT();
@@ -655,8 +655,8 @@ void OPCALL xchge32r32_16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL xchge32r32_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U32 tmp = readd(cpu->memory, eaa);
-    writed(cpu->memory, eaa, cpu->reg[op->r1].u32);
+    U32 tmp = readd(cpu->thread, eaa);
+    writed(cpu->thread, eaa, cpu->reg[op->r1].u32);
     cpu->reg[op->r1].u32 = tmp;
     CYCLES(4);
     NEXT();
@@ -675,37 +675,37 @@ void OPCALL mov8_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mov8_mem16(struct CPU* cpu, struct Op* op) {
-    writeb(cpu->memory, eaa16(cpu, op), op->data1);
+    writeb(cpu->thread, eaa16(cpu, op), op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL mov8_mem32(struct CPU* cpu, struct Op* op) {
-    writeb(cpu->memory, eaa32(cpu, op), op->data1);
+    writeb(cpu->thread, eaa32(cpu, op), op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movr8e8_16(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = readb(cpu->memory, eaa16(cpu, op));
+    *cpu->reg8[op->r1] = readb(cpu->thread, eaa16(cpu, op));
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movr8e8_32(struct CPU* cpu, struct Op* op) {
-    *cpu->reg8[op->r1] = readb(cpu->memory, eaa32(cpu, op));
+    *cpu->reg8[op->r1] = readb(cpu->thread, eaa32(cpu, op));
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move8r8_16(struct CPU* cpu, struct Op* op) {
-    writeb(cpu->memory, eaa16(cpu, op), *cpu->reg8[op->r1]);
+    writeb(cpu->thread, eaa16(cpu, op), *cpu->reg8[op->r1]);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move8r8_32(struct CPU* cpu, struct Op* op) {
-    writeb(cpu->memory, eaa32(cpu, op), *cpu->reg8[op->r1]);
+    writeb(cpu->thread, eaa32(cpu, op), *cpu->reg8[op->r1]);
     CYCLES(1);
     NEXT();
 }
@@ -723,37 +723,37 @@ void OPCALL mov16_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mov16_mem16(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa16(cpu, op), op->data1);
+    writew(cpu->thread, eaa16(cpu, op), op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL mov16_mem32(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa32(cpu, op), op->data1);
+    writew(cpu->thread, eaa32(cpu, op), op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movr16e16_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = readw(cpu->thread, eaa16(cpu, op));
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movr16e16_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = readw(cpu->thread, eaa32(cpu, op));
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move16r16_16(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa16(cpu, op), cpu->reg[op->r1].u16);
+    writew(cpu->thread, eaa16(cpu, op), cpu->reg[op->r1].u16);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move16r16_32(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa32(cpu, op), cpu->reg[op->r1].u16);
+    writew(cpu->thread, eaa32(cpu, op), cpu->reg[op->r1].u16);
     CYCLES(1);
     NEXT();
 }
@@ -771,37 +771,37 @@ void OPCALL mov32_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mov32_mem16(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, eaa16(cpu, op), op->data1);
+    writed(cpu->thread, eaa16(cpu, op), op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL mov32_mem32(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, eaa32(cpu, op), op->data1);
+    writed(cpu->thread, eaa32(cpu, op), op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movr32e32_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = readd(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = readd(cpu->thread, eaa16(cpu, op));
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movr32e32_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = readd(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = readd(cpu->thread, eaa32(cpu, op));
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move32r32_16(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, eaa16(cpu, op), cpu->reg[op->r1].u32);
+    writed(cpu->thread, eaa16(cpu, op), cpu->reg[op->r1].u32);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move32r32_32(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, eaa32(cpu, op), cpu->reg[op->r1].u32);
+    writed(cpu->thread, eaa32(cpu, op), cpu->reg[op->r1].u32);
     CYCLES(1);
     NEXT();
 }
@@ -819,13 +819,13 @@ void OPCALL movr32s16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL move16s16_16(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa16(cpu, op), cpu->segValue[op->r1]);
+    writew(cpu->thread, eaa16(cpu, op), cpu->segValue[op->r1]);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL move16s16_32(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa32(cpu, op), cpu->segValue[op->r1]);
+    writew(cpu->thread, eaa32(cpu, op), cpu->segValue[op->r1]);
     CYCLES(1);
     NEXT();
 }
@@ -837,13 +837,13 @@ void OPCALL movxz8r16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movxz8r16e16_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = readb(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = readb(cpu->thread, eaa16(cpu, op));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movxz8r16e16_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = readb(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = readb(cpu->thread, eaa32(cpu, op));
     CYCLES(3);
     NEXT();
 }
@@ -855,13 +855,13 @@ void OPCALL movxz8r32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movxz8r32e32_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = readb(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = readb(cpu->thread, eaa16(cpu, op));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movxz8r32e32_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = readb(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = readb(cpu->thread, eaa32(cpu, op));
     CYCLES(3);
     NEXT();
 }
@@ -873,13 +873,13 @@ void OPCALL movsx8r16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movsx8r16e16_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = (S8)readb(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u16 = (S8)readb(cpu->thread, eaa16(cpu, op));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movsx8r16e16_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = (S8)readb(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u16 = (S8)readb(cpu->thread, eaa32(cpu, op));
     CYCLES(3);
     NEXT();
 }
@@ -891,13 +891,13 @@ void OPCALL movsx8r32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movsx8r32e32_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S8)readb(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = (S8)readb(cpu->thread, eaa16(cpu, op));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movsx8r32e32_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S8)readb(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = (S8)readb(cpu->thread, eaa32(cpu, op));
     CYCLES(3);
     NEXT();
 }
@@ -909,13 +909,13 @@ void OPCALL movsx16r32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movsx16r32e32_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S16)readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = (S16)readw(cpu->thread, eaa16(cpu, op));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movsx16r32e32_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = (S16)readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = (S16)readw(cpu->thread, eaa32(cpu, op));
     CYCLES(3);
     NEXT();
 }
@@ -927,13 +927,13 @@ void OPCALL movxz16r32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movxz16r32e32_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = readw(cpu->memory, eaa16(cpu, op));
+    cpu->reg[op->r1].u32 = readw(cpu->thread, eaa16(cpu, op));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movxz16r32e32_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u32 = readw(cpu->memory, eaa32(cpu, op));
+    cpu->reg[op->r1].u32 = readw(cpu->thread, eaa32(cpu, op));
     CYCLES(3);
     NEXT();
 }
@@ -970,39 +970,39 @@ void OPCALL movs16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movs16e16_16(struct CPU* cpu, struct Op* op) {
-    if (!cpu_setSegment(cpu, op->r1, readw(cpu->memory, eaa16(cpu, op))))
+    if (!cpu_setSegment(cpu, op->r1, readw(cpu->thread, eaa16(cpu, op))))
         return;
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL movs16e16_32(struct CPU* cpu, struct Op* op) {
-    if (!cpu_setSegment(cpu, op->r1, readw(cpu->memory, eaa32(cpu, op))))
+    if (!cpu_setSegment(cpu, op->r1, readw(cpu->thread, eaa32(cpu, op))))
         return;
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL pope16_16(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa16(cpu, op), pop16(cpu));
+    writew(cpu->thread, eaa16(cpu, op), pop16(cpu));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL pope16_32(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, eaa32(cpu, op), pop16(cpu));
+    writew(cpu->thread, eaa32(cpu, op), pop16(cpu));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL pope32_16(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, eaa16(cpu, op), pop32(cpu));
+    writed(cpu->thread, eaa16(cpu, op), pop32(cpu));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL pope32_32(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, eaa32(cpu, op), pop32(cpu));
+    writed(cpu->thread, eaa32(cpu, op), pop32(cpu));
     CYCLES(3);
     NEXT();
 }
@@ -1080,37 +1080,37 @@ void OPCALL lahf(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL movAl(struct CPU* cpu, struct Op* op) {
-    AL = readb(cpu->memory, cpu->segAddress[op->base]+op->data1);
+    AL = readb(cpu->thread, cpu->segAddress[op->base]+op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movAx(struct CPU* cpu, struct Op* op) {
-    AX = readw(cpu->memory, cpu->segAddress[op->base]+op->data1);
+    AX = readw(cpu->thread, cpu->segAddress[op->base]+op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movEax(struct CPU* cpu, struct Op* op) {
-    EAX = readd(cpu->memory, cpu->segAddress[op->base]+op->data1);
+    EAX = readd(cpu->thread, cpu->segAddress[op->base]+op->data1);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movDirectAl(struct CPU* cpu, struct Op* op) {
-    writeb(cpu->memory, cpu->segAddress[op->base]+op->data1, AL);
+    writeb(cpu->thread, cpu->segAddress[op->base]+op->data1, AL);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movDirectAx(struct CPU* cpu, struct Op* op) {
-    writew(cpu->memory, cpu->segAddress[op->base]+op->data1, AX);
+    writew(cpu->thread, cpu->segAddress[op->base]+op->data1, AX);
     CYCLES(1);
     NEXT();
 }
 
 void OPCALL movDirectEax(struct CPU* cpu, struct Op* op) {
-    writed(cpu->memory, cpu->segAddress[op->base]+op->data1, EAX);
+    writed(cpu->thread, cpu->segAddress[op->base]+op->data1, EAX);
     CYCLES(1);
     NEXT();
 }
@@ -1198,13 +1198,13 @@ void OPCALL aad(struct CPU* cpu, struct Op* op) {
 
 
 void OPCALL xlat16(struct CPU* cpu, struct Op* op) {
-    AL = readb(cpu->memory, cpu->segAddress[op->base] + (U16)(BX + AL));
+    AL = readb(cpu->thread, cpu->segAddress[op->base] + (U16)(BX + AL));
     CYCLES(4);
     NEXT();
 }
 
 void OPCALL xlat32(struct CPU* cpu, struct Op* op) {
-    AL = readb(cpu->memory, cpu->segAddress[op->base] + EBX + AL);
+    AL = readb(cpu->thread, cpu->segAddress[op->base] + EBX + AL);
     CYCLES(4);
     NEXT();
 }
@@ -1352,9 +1352,9 @@ void OPCALL neg8_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg8_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    cpu->dst.u8 = readb(cpu->memory, eaa);
+    cpu->dst.u8 = readb(cpu->thread, eaa);
     cpu->result.u8 = 0-cpu->dst.u8;
-    writeb(cpu->memory, eaa, cpu->result.u8);
+    writeb(cpu->thread, eaa, cpu->result.u8);
     cpu->lazyFlags = FLAGS_NEG8;
     CYCLES(3);
     NEXT();
@@ -1362,9 +1362,9 @@ void OPCALL neg8_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg8_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    cpu->dst.u8 = readb(cpu->memory, eaa);
+    cpu->dst.u8 = readb(cpu->thread, eaa);
     cpu->result.u8 = 0-cpu->dst.u8;
-    writeb(cpu->memory, eaa, cpu->result.u8);
+    writeb(cpu->thread, eaa, cpu->result.u8);
     cpu->lazyFlags = FLAGS_NEG8;
     CYCLES(3);
     NEXT();
@@ -1383,7 +1383,7 @@ void OPCALL mul8_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul8_mem16(struct CPU* cpu, struct Op* op) {
-    AX = AL * readb(cpu->memory, eaa16(cpu, op));
+    AX = AL * readb(cpu->thread, eaa16(cpu, op));
     fillFlagsNoCFOF(cpu);
     if (AX>0xFF) {
         cpu->flags|=CF|OF;
@@ -1395,7 +1395,7 @@ void OPCALL mul8_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul8_mem32(struct CPU* cpu, struct Op* op) {
-    AX = AL * readb(cpu->memory, eaa32(cpu, op));
+    AX = AL * readb(cpu->thread, eaa32(cpu, op));
     fillFlagsNoCFOF(cpu);
     if (AX>0xFF) {
         cpu->flags|=CF|OF;
@@ -1419,7 +1419,7 @@ void OPCALL imul8_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul8_mem16(struct CPU* cpu, struct Op* op) {
-    AX = (S16)((S8)AL) * (S8)readb(cpu->memory, eaa16(cpu, op));
+    AX = (S16)((S8)AL) * (S8)readb(cpu->thread, eaa16(cpu, op));
     fillFlagsNoCFOF(cpu);
     if ((S16)AX<-128 || (S16)AX>127) {
         cpu->flags|=CF|OF;
@@ -1431,7 +1431,7 @@ void OPCALL imul8_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul8_mem32(struct CPU* cpu, struct Op* op) {
-    AX = (S16)((S8)AL) * (S8)readb(cpu->memory, eaa32(cpu, op));
+    AX = (S16)((S8)AL) * (S8)readb(cpu->thread, eaa32(cpu, op));
     fillFlagsNoCFOF(cpu);
     if ((S16)AX<-128 || (S16)AX>127) {
         cpu->flags|=CF|OF;
@@ -1472,14 +1472,14 @@ void OPCALL div8_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL div8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(17);
-    if (div8(cpu, readb(cpu->memory, eaa16(cpu, op)))) {
+    if (div8(cpu, readb(cpu->thread, eaa16(cpu, op)))) {
         NEXT();
     }
 }
 
 void OPCALL div8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(17);
-    if (div8(cpu, readb(cpu->memory, eaa32(cpu, op)))) {
+    if (div8(cpu, readb(cpu->thread, eaa32(cpu, op)))) {
         NEXT();
     }
 }
@@ -1516,14 +1516,14 @@ void OPCALL idiv8_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL idiv8_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(22);
-    if (idiv8(cpu, (S8)readb(cpu->memory, eaa16(cpu, op)))) {
+    if (idiv8(cpu, (S8)readb(cpu->thread, eaa16(cpu, op)))) {
         NEXT();
     }
 }
 
 void OPCALL idiv8_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(22);
-    if (idiv8(cpu, (S8)readb(cpu->memory, eaa32(cpu, op)))) {
+    if (idiv8(cpu, (S8)readb(cpu->thread, eaa32(cpu, op)))) {
         NEXT();
     }
 }
@@ -1536,14 +1536,14 @@ void OPCALL not8_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL not8_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writeb(cpu->memory, eaa, ~readb(cpu->memory, eaa));
+    writeb(cpu->thread, eaa, ~readb(cpu->thread, eaa));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL not8_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writeb(cpu->memory, eaa, ~readb(cpu->memory, eaa));
+    writeb(cpu->thread, eaa, ~readb(cpu->thread, eaa));
     CYCLES(3);
     NEXT();
 }
@@ -1559,9 +1559,9 @@ void OPCALL neg16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    cpu->dst.u16 = readw(cpu->memory, eaa);
+    cpu->dst.u16 = readw(cpu->thread, eaa);
     cpu->result.u16 = 0-cpu->dst.u16;
-    writew(cpu->memory, eaa, cpu->result.u16);
+    writew(cpu->thread, eaa, cpu->result.u16);
     cpu->lazyFlags = FLAGS_NEG16;
     CYCLES(3);
     NEXT();
@@ -1569,9 +1569,9 @@ void OPCALL neg16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    cpu->dst.u16 = readw(cpu->memory, eaa);
+    cpu->dst.u16 = readw(cpu->thread, eaa);
     cpu->result.u16 = 0-cpu->dst.u16;
-    writew(cpu->memory, eaa, cpu->result.u16);
+    writew(cpu->thread, eaa, cpu->result.u16);
     cpu->lazyFlags = FLAGS_NEG16;
     CYCLES(3);
     NEXT();
@@ -1592,7 +1592,7 @@ void OPCALL mul16_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul16_mem16(struct CPU* cpu, struct Op* op) {
-    U32 result = (U32)AX * readw(cpu->memory, eaa16(cpu, op));
+    U32 result = (U32)AX * readw(cpu->thread, eaa16(cpu, op));
     AX = (U16)result;
     DX = (U16)(result >> 16);
     fillFlagsNoCFOF(cpu);
@@ -1606,7 +1606,7 @@ void OPCALL mul16_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul16_mem32(struct CPU* cpu, struct Op* op) {
-    U32 result = (U32)AX * readw(cpu->memory, eaa32(cpu, op));
+    U32 result = (U32)AX * readw(cpu->thread, eaa32(cpu, op));
     AX = (U16)result;
     DX = (U16)(result >> 16);
     fillFlagsNoCFOF(cpu);
@@ -1634,7 +1634,7 @@ void OPCALL imul16_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul16_mem16(struct CPU* cpu, struct Op* op) {
-    S32 result = (S32)((S16)AX) * (S16)readw(cpu->memory, eaa16(cpu, op));
+    S32 result = (S32)((S16)AX) * (S16)readw(cpu->thread, eaa16(cpu, op));
     AX = (S16)result;
     DX = (S16)(result >> 16);
     fillFlagsNoCFOF(cpu);
@@ -1648,7 +1648,7 @@ void OPCALL imul16_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul16_mem32(struct CPU* cpu, struct Op* op) {
-    S32 result = (S32)((S16)AX) * (S16)readw(cpu->memory, eaa32(cpu, op));
+    S32 result = (S32)((S16)AX) * (S16)readw(cpu->thread, eaa32(cpu, op));
     AX = (S16)result;
     DX = (S16)(result >> 16);
     fillFlagsNoCFOF(cpu);
@@ -1692,14 +1692,14 @@ void OPCALL div16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL div16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(25);
-    if (div16(cpu, readw(cpu->memory, eaa16(cpu, op)))) {
+    if (div16(cpu, readw(cpu->thread, eaa16(cpu, op)))) {
         NEXT();
     }
 }
 
 void OPCALL div16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(25);
-    if (div16(cpu, readw(cpu->memory, eaa32(cpu, op)))) {
+    if (div16(cpu, readw(cpu->thread, eaa32(cpu, op)))) {
         NEXT();
     }
 }
@@ -1735,14 +1735,14 @@ void OPCALL idiv16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL idiv16_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(30);
-    if (idiv16(cpu, (S16)readw(cpu->memory, eaa16(cpu, op)))) {
+    if (idiv16(cpu, (S16)readw(cpu->thread, eaa16(cpu, op)))) {
         NEXT();
     }
 }
 
 void OPCALL idiv16_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(30);
-    if (idiv16(cpu, (S16)readw(cpu->memory, eaa32(cpu, op)))) {
+    if (idiv16(cpu, (S16)readw(cpu->thread, eaa32(cpu, op)))) {
         NEXT();
     }
 }
@@ -1755,14 +1755,14 @@ void OPCALL not16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL not16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writew(cpu->memory, eaa, ~readw(cpu->memory, eaa));
+    writew(cpu->thread, eaa, ~readw(cpu->thread, eaa));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL not16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writew(cpu->memory, eaa, ~readw(cpu->memory, eaa));
+    writew(cpu->thread, eaa, ~readw(cpu->thread, eaa));
     CYCLES(3);
     NEXT();
 }
@@ -1778,9 +1778,9 @@ void OPCALL neg32_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg32_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    cpu->dst.u32 = readd(cpu->memory, eaa);
+    cpu->dst.u32 = readd(cpu->thread, eaa);
     cpu->result.u32 = 0-cpu->dst.u32;
-    writed(cpu->memory, eaa, cpu->result.u32);
+    writed(cpu->thread, eaa, cpu->result.u32);
     cpu->lazyFlags = FLAGS_NEG32;
     CYCLES(3);
     NEXT();
@@ -1788,9 +1788,9 @@ void OPCALL neg32_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL neg32_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    cpu->dst.u32 = readd(cpu->memory, eaa);
+    cpu->dst.u32 = readd(cpu->thread, eaa);
     cpu->result.u32 = 0-cpu->dst.u32;
-    writed(cpu->memory, eaa, cpu->result.u32);
+    writed(cpu->thread, eaa, cpu->result.u32);
     cpu->lazyFlags = FLAGS_NEG32;
     CYCLES(3);
     NEXT();
@@ -1811,7 +1811,7 @@ void OPCALL mul32_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul32_mem16(struct CPU* cpu, struct Op* op) {
-    U64 result = (U64)EAX * readd(cpu->memory, eaa16(cpu, op));
+    U64 result = (U64)EAX * readd(cpu->thread, eaa16(cpu, op));
     EAX = (U32)result;
     EDX = (U32)(result >> 32);
     fillFlagsNoCFOF(cpu);
@@ -1825,7 +1825,7 @@ void OPCALL mul32_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL mul32_mem32(struct CPU* cpu, struct Op* op) {
-    U64 result = (U64)EAX * readd(cpu->memory, eaa32(cpu, op));
+    U64 result = (U64)EAX * readd(cpu->thread, eaa32(cpu, op));
     EAX = (U32)result;
     EDX = (U32)(result >> 32);
     fillFlagsNoCFOF(cpu);
@@ -1853,7 +1853,7 @@ void OPCALL imul32_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul32_mem16(struct CPU* cpu, struct Op* op) {
-    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa16(cpu, op));
+    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->thread, eaa16(cpu, op));
     EAX = (S32)result;
     EDX = (S32)(result >> 32);
     fillFlagsNoCFOF(cpu);
@@ -1867,7 +1867,7 @@ void OPCALL imul32_mem16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL imul32_mem32(struct CPU* cpu, struct Op* op) {
-    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->memory, eaa32(cpu, op));
+    S64 result = (S64)((S32)EAX) * (S32)readd(cpu->thread, eaa32(cpu, op));
     EAX = (S32)result;
     EDX = (S32)(result >> 32);
     fillFlagsNoCFOF(cpu);
@@ -1912,14 +1912,14 @@ void OPCALL div32_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL div32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(41);
-    if (div32(cpu, readd(cpu->memory, eaa16(cpu, op)))) {
+    if (div32(cpu, readd(cpu->thread, eaa16(cpu, op)))) {
         NEXT();
     }
 }
 
 void OPCALL div32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(41);
-    if (div32(cpu, readd(cpu->memory, eaa32(cpu, op)))) {
+    if (div32(cpu, readd(cpu->thread, eaa32(cpu, op)))) {
         NEXT();
     }
 }
@@ -1956,14 +1956,14 @@ void OPCALL idiv32_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL idiv32_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(46);
-    if (idiv32(cpu, (S32)readd(cpu->memory, eaa16(cpu, op)))) {
+    if (idiv32(cpu, (S32)readd(cpu->thread, eaa16(cpu, op)))) {
         NEXT();
     }
 }
 
 void OPCALL idiv32_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(46);
-    if (idiv32(cpu, (S32)readd(cpu->memory, eaa32(cpu, op)))) {
+    if (idiv32(cpu, (S32)readd(cpu->thread, eaa32(cpu, op)))) {
         NEXT();
     }
 }
@@ -1976,14 +1976,14 @@ void OPCALL not32_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL not32_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    writed(cpu->memory, eaa, ~readd(cpu->memory, eaa));
+    writed(cpu->thread, eaa, ~readd(cpu->thread, eaa));
     CYCLES(3);
     NEXT();
 }
 
 void OPCALL not32_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    writed(cpu->memory, eaa, ~readd(cpu->memory, eaa));
+    writed(cpu->thread, eaa, ~readd(cpu->thread, eaa));
     CYCLES(3);
     NEXT();
 }
@@ -2040,7 +2040,7 @@ void OPCALL callEv16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL callEv16_mem16(struct CPU* cpu, struct Op* op) {
     U32 oldeip = cpu->eip.u32+op->eipCount;	
-    U32 neweip = readw(cpu->memory, eaa16(cpu, op));
+    U32 neweip = readw(cpu->thread, eaa16(cpu, op));
     push16(cpu, oldeip);
     DONE();
     cpu->eip.u32 = neweip;
@@ -2050,7 +2050,7 @@ void OPCALL callEv16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL callEv16_mem32(struct CPU* cpu, struct Op* op) {
     U32 oldeip = cpu->eip.u32+op->eipCount;	
-    U32 neweip = readw(cpu->memory, eaa32(cpu, op));
+    U32 neweip = readw(cpu->thread, eaa32(cpu, op));
     push16(cpu, oldeip);
     DONE();
     cpu->eip.u32 = neweip;
@@ -2060,8 +2060,8 @@ void OPCALL callEv16_mem32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL callEp16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 newip = readw(cpu->memory, eaa);
-    U16 newcs = readw(cpu->memory, eaa+2);
+    U16 newip = readw(cpu->thread, eaa);
+    U16 newcs = readw(cpu->thread, eaa+2);
     fillFlags(cpu);
     DONE();
     cpu_call(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
@@ -2071,8 +2071,8 @@ void OPCALL callEp16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL callEp16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 newip = readw(cpu->memory, eaa);
-    U16 newcs = readw(cpu->memory, eaa+2);
+    U16 newip = readw(cpu->thread, eaa);
+    U16 newcs = readw(cpu->thread, eaa+2);
     fillFlags(cpu);
     DONE();
     cpu_call(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
@@ -2089,14 +2089,14 @@ void OPCALL jmpEv16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL jmpEv16_mem16(struct CPU* cpu, struct Op* op) {
     DONE();
-    cpu->eip.u32 = readw(cpu->memory, eaa16(cpu, op));
+    cpu->eip.u32 = readw(cpu->thread, eaa16(cpu, op));
     CYCLES(2);
     cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
 }
 
 void OPCALL jmpEv16_mem32(struct CPU* cpu, struct Op* op) {
     DONE();
-    cpu->eip.u32 = readw(cpu->memory, eaa32(cpu, op));
+    cpu->eip.u32 = readw(cpu->thread, eaa32(cpu, op));
     CYCLES(2);
     cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
 }
@@ -2108,13 +2108,13 @@ void OPCALL pushEv16_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL pushEv16_mem16(struct CPU* cpu, struct Op* op) {
-    push16(cpu, readw(cpu->memory, eaa16(cpu, op)));
+    push16(cpu, readw(cpu->thread, eaa16(cpu, op)));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL pushEv16_mem32(struct CPU* cpu, struct Op* op) {
-    push16(cpu, readw(cpu->memory, eaa32(cpu, op)));
+    push16(cpu, readw(cpu->thread, eaa32(cpu, op)));
     CYCLES(2);
     NEXT();
 }
@@ -2126,13 +2126,13 @@ void OPCALL pushEd_reg(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL pushEd_mem16(struct CPU* cpu, struct Op* op) {
-    push32(cpu, readd(cpu->memory, eaa16(cpu, op)));
+    push32(cpu, readd(cpu->thread, eaa16(cpu, op)));
     CYCLES(2);
     NEXT();
 }
 
 void OPCALL pushEd_mem32(struct CPU* cpu, struct Op* op) {
-    push32(cpu, readd(cpu->memory, eaa32(cpu, op)));
+    push32(cpu, readd(cpu->thread, eaa32(cpu, op)));
     CYCLES(2);
     NEXT();
 }
@@ -2148,7 +2148,7 @@ void OPCALL callNear32_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL callNear32_mem16(struct CPU* cpu, struct Op* op) {
     U32 eip = cpu->eip.u32+op->eipCount;	
-    U32 neweip = readd(cpu->memory, eaa16(cpu, op));
+    U32 neweip = readd(cpu->thread, eaa16(cpu, op));
     push32(cpu, eip);
     DONE();
     cpu->eip.u32 = neweip;
@@ -2159,7 +2159,7 @@ void OPCALL callNear32_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL callNear32_mem32(struct CPU* cpu, struct Op* op) {
     U32 eip = cpu->eip.u32+op->eipCount;	
-    U32 neweip = readd(cpu->memory, eaa32(cpu, op));
+    U32 neweip = readd(cpu->thread, eaa32(cpu, op));
     push32(cpu, eip);
     DONE();
     cpu->eip.u32 = neweip;
@@ -2177,14 +2177,14 @@ void OPCALL jmpNear32_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL jmpNear32_mem16(struct CPU* cpu, struct Op* op) {
     DONE();
-    cpu->eip.u32 = readd(cpu->memory, eaa16(cpu, op));
+    cpu->eip.u32 = readd(cpu->thread, eaa16(cpu, op));
     CYCLES(4);
     cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
 }
 
 void OPCALL jmpNear32_mem32(struct CPU* cpu, struct Op* op) {
     DONE();
-    cpu->eip.u32 = readd(cpu->memory, eaa32(cpu, op));
+    cpu->eip.u32 = readd(cpu->thread, eaa32(cpu, op));
     CYCLES(4);
     cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
 }
@@ -2249,7 +2249,7 @@ void OPCALL bte16r16_16(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
-    setCF(cpu, (readw(cpu->memory, address) & mask));
+    setCF(cpu, (readw(cpu->thread, address) & mask));
     CYCLES(9);
     NEXT();
 }
@@ -2260,7 +2260,7 @@ void OPCALL bte16r16_32(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
-    setCF(cpu, (readw(cpu->memory, address) & mask));
+    setCF(cpu, (readw(cpu->thread, address) & mask));
     CYCLES(9);
     NEXT();
 }
@@ -2279,7 +2279,7 @@ void OPCALL bte32r32_16(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S32)cpu->reg[op->r1].u32)>>5)*4;
-    setCF(cpu, readd(cpu->memory, address) & mask);
+    setCF(cpu, readd(cpu->thread, address) & mask);
     CYCLES(9);
     NEXT();
 }
@@ -2290,7 +2290,7 @@ void OPCALL bte32r32_32(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S32)cpu->reg[op->r1].u32)>>5)*4;
-    setCF(cpu, readd(cpu->memory, address) & mask);
+    setCF(cpu, readd(cpu->thread, address) & mask);
     CYCLES(9);
     NEXT();
 }
@@ -2317,13 +2317,13 @@ void OPCALL dshle16r16_16(struct CPU* cpu, struct Op* op) {
     U32 tmp;
 
     cpu->src.u32 = op->data1;
-    cpu->dst.u32 = readw(cpu->memory, address);
+    cpu->dst.u32 = readw(cpu->thread, address);
     cpu->dst2.u32 = cpu->reg[op->r1].u16;
     tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
     result=tmp << cpu->src.u8;
     if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (op->data1 - 16));
     cpu->result.u16=(U16)(result >> 16);
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHL16;
     CYCLES(4);
     NEXT();
@@ -2335,13 +2335,13 @@ void OPCALL dshle16r16_32(struct CPU* cpu, struct Op* op) {
     U32 tmp;
 
     cpu->src.u32 = op->data1;
-    cpu->dst.u32 = readw(cpu->memory, address);
+    cpu->dst.u32 = readw(cpu->thread, address);
     cpu->dst2.u32 = cpu->reg[op->r1].u16;
     tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
     result=tmp << cpu->src.u8;
     if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (op->data1 - 16));
     cpu->result.u16=(U16)(result >> 16);
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHL16;
     CYCLES(4);
     NEXT();
@@ -2361,9 +2361,9 @@ void OPCALL dshle32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=op->data1;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 << op->data1) | (cpu->reg[op->r1].u32 >> (32-op->data1));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(4);
     NEXT();
@@ -2373,9 +2373,9 @@ void OPCALL dshle32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=op->data1;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 << op->data1) | (cpu->reg[op->r1].u32 >> (32-op->data1));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(4);
     NEXT();
@@ -2404,13 +2404,13 @@ void OPCALL dshlcle16r16_16(struct CPU* cpu, struct Op* op) {
     U32 tmp;
 
     cpu->src.u32 = CL;
-    cpu->dst.u32 = readw(cpu->memory, address);
+    cpu->dst.u32 = readw(cpu->thread, address);
     cpu->dst2.u32 = cpu->reg[op->r1].u16;
     tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
     result=tmp << cpu->src.u8;
     if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (cpu->src.u32 - 16));
     cpu->result.u16=(U16)(result >> 16);
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHL16;
     CYCLES(5);
     NEXT();
@@ -2422,13 +2422,13 @@ void OPCALL dshlcle16r16_32(struct CPU* cpu, struct Op* op) {
     U32 tmp;
 
     cpu->src.u32 = CL;
-    cpu->dst.u32 = readw(cpu->memory, address);
+    cpu->dst.u32 = readw(cpu->thread, address);
     cpu->dst2.u32 = cpu->reg[op->r1].u16;
     tmp = (cpu->dst.u32<<16)|cpu->dst2.u32;
     result=tmp << cpu->src.u8;
     if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (cpu->src.u32 - 16));
     cpu->result.u16=(U16)(result >> 16);
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHL16;
     CYCLES(5);
     NEXT();
@@ -2448,9 +2448,9 @@ void OPCALL dshlcle32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=CL;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 << cpu->src.u32) | (cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(5);
     NEXT();
@@ -2460,9 +2460,9 @@ void OPCALL dshlcle32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=CL;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 << cpu->src.u32) | (cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(5);
     NEXT();
@@ -2484,9 +2484,9 @@ void OPCALL btse16r16_16(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
-    value = readw(cpu->memory, address);
+    value = readw(cpu->thread, address);
     setCF(cpu, value & mask);
-    writew(cpu->memory, address, value | mask);
+    writew(cpu->thread, address, value | mask);
     CYCLES(13);
     NEXT();
 }
@@ -2498,9 +2498,9 @@ void OPCALL btse16r16_32(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S16)cpu->reg[op->r1].u16)>>4)*2;
-    value = readw(cpu->memory, address);
+    value = readw(cpu->thread, address);
     setCF(cpu, value & mask);
-    writew(cpu->memory, address, value | mask);
+    writew(cpu->thread, address, value | mask);
     CYCLES(13);
     NEXT();
 }
@@ -2521,9 +2521,9 @@ void OPCALL btse32r32_16(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S32)cpu->reg[op->r1].u32)>>5)*4;
-    value = readd(cpu->memory, address);
+    value = readd(cpu->thread, address);
     setCF(cpu, value & mask);
-    writed(cpu->memory, address, value|mask);
+    writed(cpu->thread, address, value|mask);
     CYCLES(13);
     NEXT();
 }
@@ -2535,9 +2535,9 @@ void OPCALL btse32r32_32(struct CPU* cpu, struct Op* op) {
 
     fillFlagsNoCF(cpu);
     address+=(((S32)cpu->reg[op->r1].u32)>>5)*4;
-    value = readd(cpu->memory, address);
+    value = readd(cpu->thread, address);
     setCF(cpu, value & mask);
-    writed(cpu->memory, address, value|mask);
+    writed(cpu->thread, address, value|mask);
     CYCLES(13);
     NEXT();
 }
@@ -2561,11 +2561,11 @@ void OPCALL dshre16r16_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32 = op->data1;
-    cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
+    cpu->dst.u32 = readw(cpu->thread, address)|((U32)(cpu->reg[op->r1].u16)<<16);
     result=cpu->dst.u32 >> cpu->src.u8;
     if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - op->data1));
     cpu->result.u16=(U16)result;
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHR16;
     CYCLES(4);
     NEXT();
@@ -2576,11 +2576,11 @@ void OPCALL dshre16r16_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
 
     cpu->src.u32 = op->data1;
-    cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
+    cpu->dst.u32 = readw(cpu->thread, address)|((U32)(cpu->reg[op->r1].u16)<<16);
     result=cpu->dst.u32 >> cpu->src.u8;
     if (op->data1>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - op->data1));
     cpu->result.u16=(U16)result;
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHR16;
     CYCLES(4);
     NEXT();
@@ -2600,9 +2600,9 @@ void OPCALL dshre32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=op->data1;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);
     NEXT();
@@ -2612,9 +2612,9 @@ void OPCALL dshre32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
 
     cpu->src.u32=op->data1;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 >> op->data1) | (cpu->reg[op->r1].u32 << (32-op->data1));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);
     NEXT();
@@ -2639,11 +2639,11 @@ void OPCALL dshrcle16r16_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32 = CL;
-    cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
+    cpu->dst.u32 = readw(cpu->thread, address)|((U32)(cpu->reg[op->r1].u16)<<16);
     result=cpu->dst.u32 >> cpu->src.u8;
     if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - cpu->src.u32));
     cpu->result.u16=(U16)result;
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHR16;
     CYCLES(4);
     NEXT();
@@ -2654,11 +2654,11 @@ void OPCALL dshrcle16r16_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
 
     cpu->src.u32 = CL;
-    cpu->dst.u32 = readw(cpu->memory, address)|((U32)(cpu->reg[op->r1].u16)<<16);
+    cpu->dst.u32 = readw(cpu->thread, address)|((U32)(cpu->reg[op->r1].u16)<<16);
     result=cpu->dst.u32 >> cpu->src.u8;
     if (cpu->src.u32>16) result |= ((U32)(cpu->reg[op->r1].u16) << (32 - cpu->src.u32));
     cpu->result.u16=(U16)result;
-    writew(cpu->memory, address, cpu->result.u16);
+    writew(cpu->thread, address, cpu->result.u16);
     cpu->lazyFlags=FLAGS_DSHR16;
     CYCLES(4);
     NEXT();
@@ -2678,9 +2678,9 @@ void OPCALL dshrcle32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=CL;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32) | (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);
     NEXT();
@@ -2690,9 +2690,9 @@ void OPCALL dshrcle32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
     cpu->src.u32=CL;
-    cpu->dst.u32=readd(cpu->memory, address);
+    cpu->dst.u32=readd(cpu->thread, address);
     cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32) | (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
-    writed(cpu->memory, address, cpu->result.u32);
+    writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);
     NEXT();
@@ -2715,11 +2715,11 @@ void OPCALL cmpxchgr16r16(struct CPU* cpu, struct Op* op) {
 void OPCALL cmpxchge16r16_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
     cpu->dst.u16 = AX;
-    cpu->src.u16 = readw(cpu->memory, address);
+    cpu->src.u16 = readw(cpu->thread, address);
     cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
     cpu->lazyFlags = FLAGS_CMP16;
     if (AX == cpu->src.u16) {
-        writew(cpu->memory, address, cpu->reg[op->r1].u16);
+        writew(cpu->thread, address, cpu->reg[op->r1].u16);
     } else {
         AX = cpu->src.u16;
     }
@@ -2730,11 +2730,11 @@ void OPCALL cmpxchge16r16_16(struct CPU* cpu, struct Op* op) {
 void OPCALL cmpxchge16r16_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
     cpu->dst.u16 = AX;
-    cpu->src.u16 = readw(cpu->memory, address);
+    cpu->src.u16 = readw(cpu->thread, address);
     cpu->result.u16 = cpu->dst.u16 - cpu->src.u16;
     cpu->lazyFlags = FLAGS_CMP16;
     if (AX == cpu->src.u16) {
-        writew(cpu->memory, address, cpu->reg[op->r1].u16);
+        writew(cpu->thread, address, cpu->reg[op->r1].u16);
     } else {
         AX = cpu->src.u16;
     }
@@ -2759,11 +2759,11 @@ void OPCALL cmpxchgr32r32(struct CPU* cpu, struct Op* op) {
 void OPCALL cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
     cpu->dst.u32 = EAX;
-    cpu->src.u32 = readd(cpu->memory, address);
+    cpu->src.u32 = readd(cpu->thread, address);
     cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
     cpu->lazyFlags = FLAGS_CMP32;
     if (EAX == cpu->src.u32) {
-        writed(cpu->memory, address, cpu->reg[op->r1].u32);
+        writed(cpu->thread, address, cpu->reg[op->r1].u32);
     } else {
         EAX = cpu->src.u32;
     }
@@ -2774,11 +2774,11 @@ void OPCALL cmpxchge32r32_16(struct CPU* cpu, struct Op* op) {
 void OPCALL cmpxchge32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
     cpu->dst.u32 = EAX;
-    cpu->src.u32 = readd(cpu->memory, address);
+    cpu->src.u32 = readd(cpu->thread, address);
     cpu->result.u32 = cpu->dst.u32 - cpu->src.u32;
     cpu->lazyFlags = FLAGS_CMP32;
     if (EAX == cpu->src.u32) {
-        writed(cpu->memory, address, cpu->reg[op->r1].u32);
+        writed(cpu->thread, address, cpu->reg[op->r1].u32);
     } else {
         EAX = cpu->src.u32;
     }
@@ -2807,7 +2807,7 @@ void OPCALL bsrr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bsrr16e16_16(struct CPU* cpu, struct Op* op) {
-    U16 value = readw(cpu->memory, eaa16(cpu, op));
+    U16 value = readw(cpu->thread, eaa16(cpu, op));
     if (value==0) {
         addFlag(ZF);
     } else {
@@ -2822,7 +2822,7 @@ void OPCALL bsrr16e16_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bsrr16e16_32(struct CPU* cpu, struct Op* op) {
-    U16 value = readw(cpu->memory, eaa32(cpu, op));
+    U16 value = readw(cpu->thread, eaa32(cpu, op));
     if (value==0) {
         addFlag(ZF);
     } else {
@@ -2852,7 +2852,7 @@ void OPCALL bsrr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bsrr32e32_16(struct CPU* cpu, struct Op* op) {
-    U32 value = readd(cpu->memory, eaa16(cpu, op));
+    U32 value = readd(cpu->thread, eaa16(cpu, op));
     if (value==0) {
         addFlag(ZF);
     } else {
@@ -2867,7 +2867,7 @@ void OPCALL bsrr32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bsrr32e32_32(struct CPU* cpu, struct Op* op) {
-    U32 value = readd(cpu->memory, eaa32(cpu, op));
+    U32 value = readd(cpu->thread, eaa32(cpu, op));
     if (value==0) {
         addFlag(ZF);
     } else {
@@ -2890,14 +2890,14 @@ void OPCALL bt_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL bt_mem16(struct CPU* cpu, struct Op* op) {
     fillFlagsNoCF(cpu);
-    setCF(cpu, readd(cpu->memory, eaa16(cpu, op)) & op->data1);
+    setCF(cpu, readd(cpu->thread, eaa16(cpu, op)) & op->data1);
     CYCLES(4);
     NEXT();
 }
 
 void OPCALL bt_mem32(struct CPU* cpu, struct Op* op) {
     fillFlagsNoCF(cpu);
-    setCF(cpu, readd(cpu->memory, eaa32(cpu, op)) & op->data1);
+    setCF(cpu, readd(cpu->thread, eaa32(cpu, op)) & op->data1);
     CYCLES(4);
     NEXT();
 }
@@ -2912,22 +2912,22 @@ void OPCALL bts_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL bts_mem16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & op->data1);
-    writed(cpu->memory, address, value | op->data1);
+    writed(cpu->thread, address, value | op->data1);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL bts_mem32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & op->data1);
-    writed(cpu->memory, address, value | op->data1);
+    writed(cpu->thread, address, value | op->data1);
     CYCLES(8);
     NEXT();
 }
@@ -2942,22 +2942,22 @@ void OPCALL btr_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL btr_mem16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & op->data1);
-    writed(cpu->memory, address, value & ~op->data1);
+    writed(cpu->thread, address, value & ~op->data1);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL btr_mem32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & op->data1);
-    writed(cpu->memory, address, value & ~op->data1);
+    writed(cpu->thread, address, value & ~op->data1);
     CYCLES(8);
     NEXT();
 }
@@ -2975,11 +2975,11 @@ void OPCALL btrr32r32(struct CPU* cpu, struct Op* op) {
 void OPCALL btre32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
     U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writed(cpu->memory, address, value & ~mask);
+    writed(cpu->thread, address, value & ~mask);
     CYCLES(13);
     NEXT();
 }
@@ -2987,11 +2987,11 @@ void OPCALL btre32r32_16(struct CPU* cpu, struct Op* op) {
 void OPCALL btre32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
     U32 mask=1 << (cpu->reg[op->r1].u32 & 31);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writed(cpu->memory, address, value & ~mask);
+    writed(cpu->thread, address, value & ~mask);
     CYCLES(13);
     NEXT();
 }
@@ -3006,22 +3006,22 @@ void OPCALL btc_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL btc_mem16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & op->data1);
-    writed(cpu->memory, address, value ^ op->data1);
+    writed(cpu->thread, address, value ^ op->data1);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL btc_mem32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa32(cpu, op);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & op->data1);
-    writed(cpu->memory, address, value ^ op->data1);
+    writed(cpu->thread, address, value ^ op->data1);
     CYCLES(8);
     NEXT();
 }
@@ -3038,11 +3038,11 @@ void OPCALL btcr32r32(struct CPU* cpu, struct Op* op) {
 void OPCALL btce32r32_16(struct CPU* cpu, struct Op* op) {
     U32 mask = 1 << cpu->reg[op->r1].u32 & 31;
     U32 address = eaa16(cpu, op)+((((S32)cpu->reg[op->r1].u32)>>3) & ~3);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writed(cpu->memory, address, value ^ mask);
+    writed(cpu->thread, address, value ^ mask);
     CYCLES(13);
     NEXT();
 }
@@ -3050,11 +3050,11 @@ void OPCALL btce32r32_16(struct CPU* cpu, struct Op* op) {
 void OPCALL btce32r32_32(struct CPU* cpu, struct Op* op) {
     U32 mask = 1 << cpu->reg[op->r1].u32 & 31;
     U32 address = eaa32(cpu, op)+((((S32)cpu->reg[op->r1].u32)>>3) & ~3);
-    U32 value = readd(cpu->memory, address);
+    U32 value = readd(cpu->thread, address);
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writed(cpu->memory, address, value ^ mask);
+    writed(cpu->thread, address, value ^ mask);
     CYCLES(13);
     NEXT();
 }
@@ -3077,7 +3077,7 @@ void OPCALL bsfr32r32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bsfr32e32_16(struct CPU* cpu, struct Op* op) {
-    U32 value=readd(cpu->memory, eaa16(cpu, op));
+    U32 value=readd(cpu->thread, eaa16(cpu, op));
 
     fillFlagsNoZF(cpu);
     
@@ -3094,7 +3094,7 @@ void OPCALL bsfr32e32_16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL bsfr32e32_32(struct CPU* cpu, struct Op* op) {
-    U32 value=readd(cpu->memory, eaa32(cpu, op));
+    U32 value=readd(cpu->thread, eaa32(cpu, op));
 
     fillFlagsNoZF(cpu);
     
@@ -3113,13 +3113,13 @@ void OPCALL bsfr32e32_32(struct CPU* cpu, struct Op* op) {
 void OPCALL cmpxchgg8b_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     U64 value1 = ((U64)EDX) << 32 | EAX;
-    U64 value2 = readq(cpu->memory, eaa);
+    U64 value2 = readq(cpu->thread, eaa);
 
     fillFlags(cpu);
     if (value1 == value2) {
         addFlag(ZF);
-        writed(cpu->memory, eaa, EBX);
-        writed(cpu->memory, eaa+4, ECX);
+        writed(cpu->thread, eaa, EBX);
+        writed(cpu->thread, eaa+4, ECX);
     } else {
         removeFlag(ZF);
         EDX = (U32)(value2 >> 32);
@@ -3132,13 +3132,13 @@ void OPCALL cmpxchgg8b_16(struct CPU* cpu, struct Op* op) {
 void OPCALL cmpxchgg8b_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     U64 value1 = ((U64)EDX) << 32 | EAX;
-    U64 value2 = readq(cpu->memory, eaa);
+    U64 value2 = readq(cpu->thread, eaa);
 
     fillFlags(cpu);
     if (value1 == value2) {
         addFlag(ZF);
-        writed(cpu->memory, eaa, EBX);
-        writed(cpu->memory, eaa + 4, ECX);
+        writed(cpu->thread, eaa, EBX);
+        writed(cpu->thread, eaa + 4, ECX);
     }
     else {
         removeFlag(ZF);
@@ -3171,11 +3171,11 @@ void OPCALL xadd32r32r32(struct CPU* cpu, struct Op* op) {
 void OPCALL xadd32r32e32_16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     cpu->src.u32 = cpu->reg[op->r1].u32;
-    cpu->dst.u32 = readd(cpu->memory, eaa);
+    cpu->dst.u32 = readd(cpu->thread, eaa);
     cpu->result.u32 = cpu->dst.u32 + cpu->src.u32;
     cpu->lazyFlags = FLAGS_ADD32;
     cpu->reg[op->r1].u32 = cpu->dst.u32;
-    writed(cpu->memory, eaa, cpu->result.u32);
+    writed(cpu->thread, eaa, cpu->result.u32);
     CYCLES(4);
     NEXT();
 }
@@ -3183,11 +3183,11 @@ void OPCALL xadd32r32e32_16(struct CPU* cpu, struct Op* op) {
 void OPCALL xadd32r32e32_32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     cpu->src.u32 = cpu->reg[op->r1].u32;
-    cpu->dst.u32 = readd(cpu->memory, eaa);
+    cpu->dst.u32 = readd(cpu->thread, eaa);
     cpu->result.u32 = cpu->dst.u32 + cpu->src.u32;
     cpu->lazyFlags = FLAGS_ADD32;
     cpu->reg[op->r1].u32 = cpu->dst.u32;
-    writed(cpu->memory, eaa, cpu->result.u32);
+    writed(cpu->thread, eaa, cpu->result.u32);
     CYCLES(4);
     NEXT();
 }
@@ -3271,8 +3271,8 @@ void OPCALL iret32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL loadSegment16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U32 val = readw(cpu->memory, eaa); // make sure all reads are done before writing something in case of a PF
-    U32 selector = readw(cpu->memory, eaa+2);
+    U32 val = readw(cpu->thread, eaa); // make sure all reads are done before writing something in case of a PF
+    U32 selector = readw(cpu->thread, eaa+2);
 
     if (!cpu_setSegment(cpu, op->data1, selector))
         return;
@@ -3283,8 +3283,8 @@ void OPCALL loadSegment16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL loadSegment16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U32 val = readw(cpu->memory, eaa); // make sure all reads are done before writing something in case of a PF
-    U32 selector = readw(cpu->memory, eaa+2);
+    U32 val = readw(cpu->thread, eaa); // make sure all reads are done before writing something in case of a PF
+    U32 selector = readw(cpu->thread, eaa+2);
 
     if (!cpu_setSegment(cpu, op->data1, selector))
         return;
@@ -3314,13 +3314,13 @@ void OPCALL larr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL lare16r16_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(cpu->memory, eaa16(cpu, op)), cpu->reg[op->r1].u16);
+    cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(cpu->thread, eaa16(cpu, op)), cpu->reg[op->r1].u16);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL lare16r16_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(cpu->memory, eaa32(cpu, op)), cpu->reg[op->r1].u16);
+    cpu->reg[op->r1].u16 = cpu_lar(cpu, readw(cpu->thread, eaa32(cpu, op)), cpu->reg[op->r1].u16);
     CYCLES(8);
     NEXT();
 }
@@ -3332,21 +3332,21 @@ void OPCALL lslr16r16(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL lsle16r16_16(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu_lsl(cpu, readw(cpu->memory, eaa16(cpu, op)), cpu->reg[op->r1].u16);
+    cpu->reg[op->r1].u16 = cpu_lsl(cpu, readw(cpu->thread, eaa16(cpu, op)), cpu->reg[op->r1].u16);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL lsle16r16_32(struct CPU* cpu, struct Op* op) {
-    cpu->reg[op->r1].u16 = cpu_lsl(cpu, readw(cpu->memory, eaa32(cpu, op)), cpu->reg[op->r1].u16);
+    cpu->reg[op->r1].u16 = cpu_lsl(cpu, readw(cpu->thread, eaa32(cpu, op)), cpu->reg[op->r1].u16);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL jmpEp16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 newip = readw(cpu->memory, eaa);
-    U16 newcs = readw(cpu->memory, eaa+2);
+    U16 newip = readw(cpu->thread, eaa);
+    U16 newcs = readw(cpu->thread, eaa+2);
     fillFlags(cpu);
     DONE();
     cpu_jmp(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
@@ -3356,8 +3356,8 @@ void OPCALL jmpEp16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL jmpEp16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 newip = readw(cpu->memory, eaa);
-    U16 newcs = readw(cpu->memory, eaa+2);
+    U16 newip = readw(cpu->thread, eaa);
+    U16 newcs = readw(cpu->thread, eaa+2);
     fillFlags(cpu);
     DONE();
     cpu_jmp(cpu, 0, newcs, newip, cpu->eip.u32 + op->eipCount);
@@ -3377,7 +3377,7 @@ void OPCALL lmsw_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL lmsw_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
-    if (!cpu_lmsw(cpu, readw(cpu->memory, eaa16(cpu, op)))) {
+    if (!cpu_lmsw(cpu, readw(cpu->thread, eaa16(cpu, op)))) {
         DONE();
         cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     } else {
@@ -3387,7 +3387,7 @@ void OPCALL lmsw_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL lmsw_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(8);
-    if (!cpu_lmsw(cpu, readw(cpu->memory, eaa32(cpu, op)))) {
+    if (!cpu_lmsw(cpu, readw(cpu->thread, eaa32(cpu, op)))) {
         DONE();
         cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     } else {
@@ -3403,21 +3403,21 @@ void OPCALL smsw_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL smsw_mem16(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
-    writew(cpu->memory, eaa16(cpu, op), cpu->cr0);
+    writew(cpu->thread, eaa16(cpu, op), cpu->cr0);
     NEXT();
 }
 
 void OPCALL smsw_mem32(struct CPU* cpu, struct Op* op) {
     CYCLES(4);
-    writew(cpu->memory, eaa32(cpu, op), cpu->cr0);
+    writew(cpu->thread, eaa32(cpu, op), cpu->cr0);
     NEXT();
 }
 
 void OPCALL sidt_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     CYCLES(4);
-    writew(cpu->memory, eaa, 0); // limit
-    writed(cpu->memory, eaa+2, 0); // base
+    writew(cpu->thread, eaa, 0); // limit
+    writed(cpu->thread, eaa+2, 0); // base
 #ifdef _DEBUG
     klog("sidt not implemented");
 #endif
@@ -3427,8 +3427,8 @@ void OPCALL sidt_mem16(struct CPU* cpu, struct Op* op) {
 void OPCALL sidt_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     CYCLES(4);
-    writew(cpu->memory, eaa, 0); // limit
-    writed(cpu->memory, eaa+2, 0); // base
+    writew(cpu->thread, eaa, 0); // limit
+    writed(cpu->thread, eaa+2, 0); // base
 #ifdef _DEBUG
     klog("sidt not implemented");
 #endif
@@ -3438,8 +3438,8 @@ void OPCALL sidt_mem32(struct CPU* cpu, struct Op* op) {
 void OPCALL sgdt_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
     CYCLES(4);
-    writew(cpu->memory, eaa, 0); // limit
-    writed(cpu->memory, eaa+2, 0); // base
+    writew(cpu->thread, eaa, 0); // limit
+    writed(cpu->thread, eaa+2, 0); // base
 #ifdef _DEBUG
     klog("sgdt not implemented");
 #endif
@@ -3449,8 +3449,8 @@ void OPCALL sgdt_mem16(struct CPU* cpu, struct Op* op) {
 void OPCALL sgdt_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
     CYCLES(4);
-    writew(cpu->memory, eaa, 0); // limit
-    writed(cpu->memory, eaa+2, 0); // base
+    writew(cpu->thread, eaa, 0); // limit
+    writed(cpu->thread, eaa+2, 0); // base
 #ifdef _DEBUG
     klog("sgdt not implemented");
 #endif
@@ -3473,7 +3473,7 @@ void OPCALL bt16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL bt16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
@@ -3484,7 +3484,7 @@ void OPCALL bt16_mem16(struct CPU* cpu, struct Op* op) {
 
 void OPCALL bt16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
@@ -3506,24 +3506,24 @@ void OPCALL bts16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL bts16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writew(cpu->memory, eaa, value | mask);
+    writew(cpu->thread, eaa, value | mask);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL bts16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writew(cpu->memory, eaa, value | mask);
+    writew(cpu->thread, eaa, value | mask);
     CYCLES(8);
     NEXT();
 }
@@ -3541,24 +3541,24 @@ void OPCALL btr16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL btr16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writew(cpu->memory, eaa, value & ~mask);
+    writew(cpu->thread, eaa, value & ~mask);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL btr16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writew(cpu->memory, eaa, value & ~mask);
+    writew(cpu->thread, eaa, value & ~mask);
     CYCLES(8);
     NEXT();
 }
@@ -3576,24 +3576,24 @@ void OPCALL btc16_reg(struct CPU* cpu, struct Op* op) {
 
 void OPCALL btc16_mem16(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa16(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writew(cpu->memory, eaa, value ^ mask);
+    writew(cpu->thread, eaa, value ^ mask);
     CYCLES(8);
     NEXT();
 }
 
 void OPCALL btc16_mem32(struct CPU* cpu, struct Op* op) {
     U32 eaa = eaa32(cpu, op);
-    U16 value = readw(cpu->memory, eaa);
+    U16 value = readw(cpu->thread, eaa);
     U16 mask = op->data1;
 
     fillFlagsNoCF(cpu);
     setCF(cpu, value & mask);
-    writew(cpu->memory, eaa, value ^ mask);
+    writew(cpu->thread, eaa, value ^ mask);
     CYCLES(8);
     NEXT();
 }

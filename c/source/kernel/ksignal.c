@@ -23,18 +23,18 @@
 #include "kthread.h"
 #include "kscheduler.h"
 
-void writeSigAction(struct Memory* memory, struct KSigAction* signal, U32 address) {
-    writed(memory, address, signal->handlerAndSigAction);
-    writed(memory, address + 4, signal->flags);
-    writed(memory, address + 8, signal->restorer);
-    writed(memory, address + 12, signal->mask);
+void writeSigAction(struct KThread* thread, struct KSigAction* signal, U32 address) {
+    writed(thread, address, signal->handlerAndSigAction);
+    writed(thread, address + 4, signal->flags);
+    writed(thread, address + 8, signal->restorer);
+    writed(thread, address + 12, signal->mask);
 }
 
-void readSigAction(struct Memory* memory, struct KSigAction* signal, U32 address) {
-    signal->handlerAndSigAction = readd(memory, address);
-    signal->flags = readd(memory, address + 4);
-    signal->restorer = readd(memory, address + 8);
-    signal->mask = readd(memory, address + 12);
+void readSigAction(struct KThread* thread, struct KSigAction* signal, U32 address) {
+    signal->handlerAndSigAction = readd(thread, address);
+    signal->flags = readd(thread, address + 4);
+    signal->restorer = readd(thread, address + 8);
+    signal->mask = readd(thread, address + 12);
 }
 
 U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
@@ -43,21 +43,21 @@ U32 syscall_sigaction(struct KThread* thread, U32 sig, U32 act, U32 oact) {
     }
 
     if (oact!=0) {
-        writeSigAction(thread->process->memory, &thread->process->sigActions[sig], oact);
+        writeSigAction(thread, &thread->process->sigActions[sig], oact);
     }
     if (act!=0) {
-        readSigAction(thread->process->memory, &thread->process->sigActions[sig], act);
+        readSigAction(thread, &thread->process->sigActions[sig], act);
     }
     return 0;
 }
 
 U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
     if (oset!=0) {
-        writed(thread->process->memory, oset, thread->sigMask);
+        writed(thread, oset, thread->sigMask);
         //klog("syscall_sigprocmask oset=%X", thread->sigMask);
     }
     if (set!=0) {
-        set = readd(thread->process->memory, set);
+        set = readd(thread, set);
         if (how == K_SIG_BLOCK) {
             thread->sigMask|=set;
             //klog("syscall_sigprocmask block %X(%X)", set, thread->sigMask);
@@ -76,18 +76,18 @@ U32 syscall_sigprocmask(struct KThread* thread, U32 how, U32 set, U32 oset) {
 
 U32 syscall_signalstack(struct KThread* thread, U32 ss, U32 oss) {
     if (oss!=0) {
-        writed(thread->process->memory, oss, thread->alternateStack);
-        writed(thread->process->memory, oss + 4, (thread->alternateStack && thread->inSignal) ? K_SS_ONSTACK : K_SS_DISABLE);
-        writed(thread->process->memory, oss + 8, thread->alternateStackSize);
+        writed(thread, oss, thread->alternateStack);
+        writed(thread, oss + 4, (thread->alternateStack && thread->inSignal) ? K_SS_ONSTACK : K_SS_DISABLE);
+        writed(thread, oss + 8, thread->alternateStackSize);
     }
     if (ss!=0) {
-        U32 flags = readd(thread->process->memory, ss + 4);
+        U32 flags = readd(thread, ss + 4);
         if (flags & K_SS_DISABLE) {
             thread->alternateStack = 0;
             thread->alternateStackSize = 0;
         } else {
-            thread->alternateStack = readd(thread->process->memory, ss);
-            thread->alternateStackSize = readd(thread->process->memory, ss + 8);
+            thread->alternateStack = readd(thread, ss);
+            thread->alternateStackSize = readd(thread, ss + 8);
         }
     }
     return 0;
@@ -99,7 +99,7 @@ U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask) {
         return -K_EINTR;
     }
     thread->waitingForSignalToEndMaskToRestore = thread->sigMask | RESTORE_SIGNAL_MASK;
-    thread->sigMask = readd(thread->process->memory, mask);
+    thread->sigMask = readd(thread, mask);
     waitThread(thread);			
     return -K_CONTINUE;
 }

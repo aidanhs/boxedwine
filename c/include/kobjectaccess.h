@@ -42,10 +42,10 @@ struct KObjectAccess {
     BOOL (*isReadReady)(struct KObject* obj);
     BOOL (*isWriteReady)(struct KObject* obj);
     void (*waitForEvents)(struct KObject* obj, struct KThread* thread, U32 events);
-    U32  (*write)(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
-    U32  (*read)(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
-    U32  (*stat)(struct Memory* memory, struct KProcess* process,  struct KObject* obj, U32 address, BOOL is64);
-    U32  (*map)(struct Memory* memory, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off);
+    U32  (*write)(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
+    U32  (*read)(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
+    U32  (*stat)(struct KThread* thread,  struct KObject* obj, U32 address, BOOL is64);
+    U32  (*map)(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off);
     BOOL (*canMap)(struct KObject* obj);
 };
 

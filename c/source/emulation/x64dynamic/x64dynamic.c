@@ -20,7 +20,7 @@ U8 x64_fetch8(struct x64_Data* data) {
     else
         address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
     data->ip++;
-    return readb(data->cpu->memory, address);
+    return readb(data->cpu->thread, address);
 }
 
 U16 x64_fetch16(struct x64_Data* data) {
@@ -31,7 +31,7 @@ U16 x64_fetch16(struct x64_Data* data) {
     else
         address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
     data->ip+=2;
-    return readw(data->cpu->memory, address);
+    return readw(data->cpu->thread, address);
 }
 
 U32 x64_fetch32(struct x64_Data* data) {
@@ -42,7 +42,7 @@ U32 x64_fetch32(struct x64_Data* data) {
     else
         address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
     data->ip+=4;
-    return readd(data->cpu->memory, address);
+    return readd(data->cpu->thread, address);
 }
 
 void x64_write32Buffer(U8* buffer, U32 value) {

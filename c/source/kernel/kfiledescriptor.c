@@ -111,12 +111,12 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
             if (fd->kobject->access->supportsLocks(fd->kobject)) {
                 struct KFileLock lock;				
                 struct KFileLock* result;
-                readFileLock(thread->process->memory, &lock, arg, cmd==K_F_GETLK64);
+                readFileLock(thread, &lock, arg, cmd==K_F_GETLK64);
                 result = fd->kobject->access->getLock(fd->kobject, &lock);
                 if (!result) {
-                    writew(thread->process->memory, arg, K_F_UNLCK);
+                    writew(thread, arg, K_F_UNLCK);
                 } else {
-                    writeFileLock(thread->process->memory, result,  arg, K_F_GETLK64 == cmd);
+                    writeFileLock(thread, result,  arg, K_F_GETLK64 == cmd);
                 }
                 return 0;
             } else {
@@ -129,7 +129,7 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
             if (fd->kobject->access->supportsLocks(fd->kobject)) {
                 struct KFileLock lock;
 
-                readFileLock(thread->process->memory, &lock, arg, cmd == K_F_SETLK64 || cmd == K_F_SETLKW64);
+                readFileLock(thread, &lock, arg, cmd == K_F_SETLK64 || cmd == K_F_SETLKW64);
                 lock.l_pid = thread->process->id;
                 if ((lock.l_type == K_F_WRLCK && !canWriteFD(fd)) || (lock.l_type == K_F_RDLCK && !!canReadFD(fd))) {
                     return -K_EBADF;
@@ -157,9 +157,9 @@ U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout) {
 
     thread->pollCount = nfds;
     for (i=0;i<nfds;i++) {
-        thread->pollData[i].fd = readd(thread->process->memory, address); address += 4;
-        thread->pollData[i].events = readw(thread->process->memory, address); address += 2;
-        thread->pollData[i].revents = readw(thread->process->memory, address); address += 2;
+        thread->pollData[i].fd = readd(thread, address); address += 4;
+        thread->pollData[i].events = readw(thread, address); address += 2;
+        thread->pollData[i].revents = readw(thread, address); address += 2;
     }
 
     result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
@@ -167,7 +167,7 @@ U32 syscall_poll(struct KThread* thread, U32 pfds, U32 nfds, U32 timeout) {
         return result;
     pfds+=6;
     for (i=0;i<nfds;i++) {
-        writew(thread->process->memory, pfds, thread->pollData[i].revents);
+        writew(thread, pfds, thread->pollData[i].revents);
         pfds+=8;
     }
     return result;
@@ -186,13 +186,13 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
         U32 b;
 
         if (readfds!=0) {
-            readbits = readb(thread->process->memory, readfds + i / 8);
+            readbits = readb(thread, readfds + i / 8);
         }
         if (writefds!=0) {
-            writebits = readb(thread->process->memory, writefds + i / 8);
+            writebits = readb(thread, writefds + i / 8);
         }
         if (errorfds!=0) {
-            errorbits = readb(thread->process->memory, errorfds + i / 8);
+            errorbits = readb(thread, errorfds + i / 8);
         }
         for (b = 0; b < 8 && i < nfds; b++, i++) {
             U32 mask = 1 << b;
@@ -219,7 +219,7 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
     if (timeout==0)
         timeout = 0x7FFFFFFF;
     else {
-        timeout = readd(thread->process->memory, timeout) * 1000 + readd(thread->process->memory, timeout + 4) / 1000;
+        timeout = readd(thread, timeout) * 1000 + readd(thread, timeout + 4) / 1000;
     }
 
     result = kpoll(thread, thread->pollData, thread->pollCount, timeout);
@@ -227,11 +227,11 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
         return result;
 
     if (readfds)
-        zeroMemory(thread->process->memory, readfds, (nfds + 7) / 8);
+        zeroMemory(thread, readfds, (nfds + 7) / 8);
     if (writefds)
-        zeroMemory(thread->process->memory, writefds, (nfds + 7) / 8);
+        zeroMemory(thread, writefds, (nfds + 7) / 8);
     if (errorfds)
-        zeroMemory(thread->process->memory, errorfds, (nfds + 7) / 8);
+        zeroMemory(thread, errorfds, (nfds + 7) / 8);
 
     if (result <= 0)
         return result;
@@ -242,21 +242,21 @@ U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, 
         U32 revent = thread->pollData[i].revents;
 
         if (readfds!=0 && ((revent & K_POLLIN) || (revent & K_POLLHUP))) {
-            U8 v = readb(thread->process->memory, readfds + fd / 8);
+            U8 v = readb(thread, readfds + fd / 8);
             v |= 1 << (fd % 8);
-            writeb(thread->process->memory, readfds + fd / 8, v);
+            writeb(thread, readfds + fd / 8, v);
             found = 1;
         }
         if (writefds!=0 && (revent & K_POLLOUT)) {
-            U8 v = readb(thread->process->memory, writefds + fd / 8);
+            U8 v = readb(thread, writefds + fd / 8);
             v |= 1 << (fd % 8);
-            writeb(thread->process->memory, writefds + fd / 8, v);
+            writeb(thread, writefds + fd / 8, v);
             found = 1;
         }
         if (errorfds!=0 && (revent & K_POLLERR)) {
-            U8 v = readb(thread->process->memory, errorfds + fd / 8);
+            U8 v = readb(thread, errorfds + fd / 8);
             v |= 1 << (fd % 8);
-            writeb(thread->process->memory, errorfds + fd / 8, v);
+            writeb(thread, errorfds + fd / 8, v);
             found = 1;
         }
         if (found) {

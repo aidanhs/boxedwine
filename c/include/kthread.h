@@ -61,11 +61,7 @@ struct KThread {
     U32     interrupted;
     U32     inSignal;
     struct KThread** clearOnWake[MAX_POLL_DATA];
-    U32 clearOnWakeCount; // selects/poll can wait on more than one object
-    U32     waitSyscall;
-    U32	    waitStartTime;
-    U32     waitData1;
-    U32     waitData2;
+    U32 clearOnWakeCount; // selects/poll can wait on more than one object    
     U32     clear_child_tid;
     U64     userTime;
     U64     kernelTime;
@@ -80,6 +76,10 @@ struct KThread {
 #ifdef BOXEDWINE_VM
     U64 nativeHandle;
 #endif
+    U32     waitSyscall;
+    U32	    waitStartTime;
+    U32     waitData1;
+    U32     waitData2;
     void* glContext;
     void* currentContext;
     struct OpenGLVetexPointer glVertextPointer;

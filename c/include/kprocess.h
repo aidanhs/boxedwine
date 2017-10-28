@@ -113,7 +113,7 @@ struct KProcess {
 #endif
 };
 
-void processOnExitThread(struct KProcess* process);
+void processOnExitThread(struct KThread* thread);
 struct KThread* startProcess(const char* currentDirectory, U32 argc, const char** args, U32 envc, const char** env, int userId);
 void freeProcess(struct KProcess* process);
 struct KFileDescriptor* getFileDescriptor(struct KProcess* process, FD handle);
@@ -162,6 +162,6 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal);
 
 void runProcessTimer(struct KTimer* timer);
-void addString(struct KProcess* process, U32 index, const char* str);
+void addString(struct KThread* thread, U32 index, const char* str);
 
 #endif

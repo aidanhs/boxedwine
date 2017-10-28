@@ -128,7 +128,7 @@ void glcommon_glGetVariantPointervEXT(struct CPU* cpu) {
         kpanic("ext_glGetVariantPointervEXT is NULL");
     {
     void* p;GL_FUNC(ext_glGetVariantPointervEXT)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetVariantPointervEXT GLuint id=%d, GLenum value=%d, void** data=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -177,7 +177,7 @@ void glcommon_glGetVertexArrayPointeri_vEXT(struct CPU* cpu) {
         kpanic("ext_glGetVertexArrayPointeri_vEXT is NULL");
     {
     void* p;GL_FUNC(ext_glGetVertexArrayPointeri_vEXT)(ARG1, ARG2, ARG3, &p);
-    writed(cpu->memory, ARG4, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG4, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetVertexArrayPointeri_vEXT GLuint vaobj=%d, GLuint index=%d, GLenum pname=%d, void** param=%.08x",ARG1,ARG2,ARG3,ARG4);
     }
 }
@@ -186,7 +186,7 @@ void glcommon_glGetVertexArrayPointervEXT(struct CPU* cpu) {
         kpanic("ext_glGetVertexArrayPointervEXT is NULL");
     {
     void* p;GL_FUNC(ext_glGetVertexArrayPointervEXT)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetVertexArrayPointervEXT GLuint vaobj=%d, GLenum pname=%d, void** param=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -291,7 +291,7 @@ void glcommon_glGetVertexAttribPointerv(struct CPU* cpu) {
         kpanic("ext_glGetVertexAttribPointerv is NULL");
     {
     void* p;GL_FUNC(ext_glGetVertexAttribPointerv)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetVertexAttribPointerv GLuint index=%d, GLenum pname=%d, void** pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -300,7 +300,7 @@ void glcommon_glGetVertexAttribPointervARB(struct CPU* cpu) {
         kpanic("ext_glGetVertexAttribPointervARB is NULL");
     {
     void* p;GL_FUNC(ext_glGetVertexAttribPointervARB)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetVertexAttribPointervARB GLuint index=%d, GLenum pname=%d, void** pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }
@@ -309,7 +309,7 @@ void glcommon_glGetVertexAttribPointervNV(struct CPU* cpu) {
         kpanic("ext_glGetVertexAttribPointervNV is NULL");
     {
     void* p;GL_FUNC(ext_glGetVertexAttribPointervNV)(ARG1, ARG2, &p);
-    writed(cpu->memory, ARG3, marshalBackp(cpu, p, sizeof(void*)));
+    writed(cpu->thread, ARG3, marshalBackp(cpu, p, sizeof(void*)));
     GL_LOG ("glGetVertexAttribPointervNV GLuint index=%d, GLenum pname=%d, void** pointer=%.08x",ARG1,ARG2,ARG3);
     }
 }

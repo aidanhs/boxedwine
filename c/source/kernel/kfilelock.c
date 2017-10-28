@@ -21,35 +21,35 @@
 
 #include <string.h>
 
-void writeFileLock(struct Memory* memory, struct KFileLock* lock, U32 address, BOOL is64) {
+void writeFileLock(struct KThread* thread, struct KFileLock* lock, U32 address, BOOL is64) {
     if (!is64) {
-        writew(memory, address, lock->l_type);address+=2;
-        writew(memory, address, lock->l_whence); address += 2;
-        writed(memory, address, (U32)lock->l_start); address += 4;
-        writed(memory, address, (U32)lock->l_len); address += 4;
-        writed(memory, address, (U32)lock->l_pid);
+        writew(thread, address, lock->l_type);address+=2;
+        writew(thread, address, lock->l_whence); address += 2;
+        writed(thread, address, (U32)lock->l_start); address += 4;
+        writed(thread, address, (U32)lock->l_len); address += 4;
+        writed(thread, address, (U32)lock->l_pid);
     } else {
-        writew(memory, address, lock->l_type); address += 2;
-        writew(memory, address, lock->l_whence); address += 2;
-        writeq(memory, address, (U32)lock->l_start); address += 8;
-        writeq(memory, address, (U32)lock->l_len); address += 8;
-        writed(memory, address, lock->l_pid);
+        writew(thread, address, lock->l_type); address += 2;
+        writew(thread, address, lock->l_whence); address += 2;
+        writeq(thread, address, (U32)lock->l_start); address += 8;
+        writeq(thread, address, (U32)lock->l_len); address += 8;
+        writed(thread, address, lock->l_pid);
     }
 }
 
-void readFileLock(struct Memory* memory, struct KFileLock* lock, U32 address, BOOL is64) {
+void readFileLock(struct KThread* thread, struct KFileLock* lock, U32 address, BOOL is64) {
     if (!is64) {
-        lock->l_type = readw(memory, address); address += 2;
-        lock->l_whence = readw(memory, address); address += 2;
-        lock->l_start = readd(memory, address); address += 4;
-        lock->l_len = readd(memory, address); address += 4;
-        lock->l_pid = readd(memory, address);
+        lock->l_type = readw(thread, address); address += 2;
+        lock->l_whence = readw(thread, address); address += 2;
+        lock->l_start = readd(thread, address); address += 4;
+        lock->l_len = readd(thread, address); address += 4;
+        lock->l_pid = readd(thread, address);
     } else {
-        lock->l_type = readw(memory, address); address += 2;
-        lock->l_whence = readw(memory, address); address += 2;
-        lock->l_start = readq(memory, address); address += 8;
-        lock->l_len = readq(memory, address); address += 8;
-        lock->l_pid = readd(memory, address);
+        lock->l_type = readw(thread, address); address += 2;
+        lock->l_whence = readw(thread, address); address += 2;
+        lock->l_start = readq(thread, address); address += 8;
+        lock->l_len = readq(thread, address); address += 8;
+        lock->l_pid = readd(thread, address);
     }
 }
 

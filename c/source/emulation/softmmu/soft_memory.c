@@ -41,10 +41,11 @@
 extern jmp_buf runBlockJump;
 extern U8* ram;
 
-void log_pf(struct KProcess* process, U32 address) {
+void log_pf(struct KThread* thread, U32 address) {
     U32 start = 0;
     U32 i;
-    struct CPU* cpu = &currentThread->cpu;
+    struct CPU* cpu = &thread->cpu;
+    struct KProcess* process = thread->process;
 
     printf("%.8X EAX=%.8X ECX=%.8X EDX=%.8X EBX=%.8X ESP=%.8X EBP=%.8X ESI=%.8X EDI=%.8X %s at %.8X\n", cpu->segAddress[CS] + cpu->eip.u32, cpu->reg[0].u32, cpu->reg[1].u32, cpu->reg[2].u32, cpu->reg[3].u32, cpu->reg[4].u32, cpu->reg[5].u32, cpu->reg[6].u32, cpu->reg[7].u32, getModuleName(cpu, cpu->segAddress[CS]+cpu->eip.u32), getModuleEip(cpu, cpu->segAddress[CS]+cpu->eip.u32));
 
@@ -71,128 +72,134 @@ void log_pf(struct KProcess* process, U32 address) {
     kpanic("pf");
 }
 
-void seg_mapper(struct Memory* memory, U32 address) {
+void seg_mapper(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
+
     if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
-        U32 eip = currentThread->cpu.eip.u32;
+        U32 eip = thread->cpu.eip.u32;
 
         memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
         memory->process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
         memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 1; // SEGV_MAPERR
         memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
-        runSignal(currentThread, K_SIGSEGV, EXCEPTION_PAGE_FAULT, 0);
+        runSignal(thread, K_SIGSEGV, EXCEPTION_PAGE_FAULT, 0);
 #ifdef SUPPORTS_SETJMP
         longjmp(runBlockJump, 1);		
 #else
-        runUntil(currentThread, eip);
+        runUntil(thread, eip);
 #endif
     } else {
-        log_pf(memory->process, address);
+        log_pf(thread, address);
     }
 }
 
-void seg_access(struct Memory* memory, U32 address) {
+void seg_access(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
+
     if (memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_IGN && memory->process->sigActions[K_SIGSEGV].handlerAndSigAction!=K_SIG_DFL) {
-        U32 eip = currentThread->cpu.eip.u32;
+        U32 eip = thread->cpu.eip.u32;
 
         memory->process->sigActions[K_SIGSEGV].sigInfo[0] = K_SIGSEGV;		
         memory->process->sigActions[K_SIGSEGV].sigInfo[1] = 0;
         memory->process->sigActions[K_SIGSEGV].sigInfo[2] = 2; // SEGV_ACCERR
         memory->process->sigActions[K_SIGSEGV].sigInfo[3] = address;
-        runSignal(currentThread, K_SIGSEGV, EXCEPTION_PERMISSION, 0);
+        runSignal(thread, K_SIGSEGV, EXCEPTION_PERMISSION, 0);
         printf("seg fault %X\n", address);
 #ifdef SUPPORTS_SETJMP
         longjmp(runBlockJump, 1);		
 #else 
-        runUntil(currentThread, eip);
+        runUntil(thread, eip);
 #endif
     } else {
-        log_pf(memory->process, address);
+        log_pf(thread, address);
     }
 }
 
-U8 invalid_readb(struct Memory* memory, U32 address) {
-    seg_mapper(memory, address);
+U8 invalid_readb(struct KThread* thread, U32 address) {
+    seg_mapper(thread, address);
     return 0;
 }
 
-void invalid_writeb(struct Memory* memory, U32 address, U8 value) {
-    seg_mapper(memory, address);
+void invalid_writeb(struct KThread* thread, U32 address, U8 value) {
+    seg_mapper(thread, address);
 }
 
-U16 invalid_readw(struct Memory* memory, U32 address) {
-    seg_mapper(memory, address);
+U16 invalid_readw(struct KThread* thread, U32 address) {
+    seg_mapper(thread, address);
     return 0;
 }
 
-void invalid_writew(struct Memory* memory, U32 address, U16 value) {
-    seg_mapper(memory, address);
+void invalid_writew(struct KThread* thread, U32 address, U16 value) {
+    seg_mapper(thread, address);
 }
 
-U32 invalid_readd(struct Memory* memory, U32 address) {
-    seg_mapper(memory, address);
+U32 invalid_readd(struct KThread* thread, U32 address) {
+    seg_mapper(thread, address);
     return 0;
 }
 
-void invalid_writed(struct Memory* memory, U32 address, U32 value) {
-    seg_mapper(memory, address);
+void invalid_writed(struct KThread* thread, U32 address, U32 value) {
+    seg_mapper(thread, address);
 }
 
 
-U8 nopermission_readb(struct Memory* memory, U32 address) {
-    seg_access(memory, address);
+U8 nopermission_readb(struct KThread* thread, U32 address) {
+    seg_access(thread, address);
     return 0;
 }
 
-void nopermission_writeb(struct Memory* memory, U32 address, U8 value) {
-    seg_access(memory, address);
+void nopermission_writeb(struct KThread* thread, U32 address, U8 value) {
+    seg_access(thread, address);
 }
 
-U16 nopermission_readw(struct Memory* memory, U32 address) {
-    seg_access(memory, address);
+U16 nopermission_readw(struct KThread* thread, U32 address) {
+    seg_access(thread, address);
     return 0;
 }
 
-void nopermission_writew(struct Memory* memory, U32 address, U16 value) {
-    seg_access(memory, address);
+void nopermission_writew(struct KThread* thread, U32 address, U16 value) {
+    seg_access(thread, address);
 }
 
-U32 nopermission_readd(struct Memory* memory, U32 address) {
-    seg_access(memory, address);
+U32 nopermission_readd(struct KThread* thread, U32 address) {
+    seg_access(thread, address);
     return 0;
 }
 
-void nopermission_writed(struct Memory* memory, U32 address, U32 value) {
-    seg_access(memory, address);
+void nopermission_writed(struct KThread* thread, U32 address, U32 value) {
+    seg_access(thread, address);
 }
 
 void pf_clear(struct Memory* memory, U32 page) {
 }
 
-static U8* invalid_physicalAddress(struct Memory* memory, U32 address) {
+static U8* invalid_physicalAddress(struct KThread* thread, U32 address) {
     return 0;
 }
 
 struct Page invalidPage = {invalid_readb, invalid_writeb, invalid_readw, invalid_writew, invalid_readd, invalid_writed, pf_clear, invalid_physicalAddress};
 
-U8 readb(struct Memory* memory, U32 address) {
+U8 readb(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
     int index = address >> 12;
 #ifdef LOG_OPS
     U8 result;
     if (memory->read[index])
         result = host_readb(address-memory->read[index]);
     else
-        result = memory->mmu[index]->readb(memory, address);
+        result = memory->mmu[index]->readb(thread, address);
     if (memory->log)
         fprintf(logFile, "readb %X @%X\n", result, address);
     return result;
 #else
     if (memory->read[index])
         return host_readb(address-memory->read[index]);
-    return memory->mmu[index]->readb(memory, address);
+    return memory->mmu[index]->readb(thread, address);
 #endif
 }
 
-void writeb(struct Memory* memory, U32 address, U8 value) {
+void writeb(struct KThread* thread, U32 address, U8 value) {
+    struct Memory* memory = thread->process->memory;
     int index = address >> 12;
 #ifdef LOG_OPS
     if (memory->log)
@@ -201,11 +208,12 @@ void writeb(struct Memory* memory, U32 address, U8 value) {
     if (memory->write[index]) {
         host_writeb(address-memory->write[index], value);
     } else {
-        memory->mmu[index]->writeb(memory, address, value);
+        memory->mmu[index]->writeb(thread, address, value);
     }
 }
 
-U16 readw(struct Memory* memory, U32 address) {
+U16 readw(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
 #ifdef LOG_OPS
     U16 result;
 
@@ -214,9 +222,9 @@ U16 readw(struct Memory* memory, U32 address) {
         if (memory->read[index])
             result = host_readw(address-memory->read[index]);
         else 
-            result = memory->mmu[index]->readw(memory, address);
+            result = memory->mmu[index]->readw(thread, address);
     } else {
-        result = readb(memory, address) | (readb(memory, address+1) << 8);
+        result = readb(thread, address) | (readb(thread, address+1) << 8);
     }
     if (memory->log)
         fprintf(logFile, "readw %X @%X\n", result, address);
@@ -226,13 +234,14 @@ U16 readw(struct Memory* memory, U32 address) {
         int index = address >> 12;
         if (memory->read[index])
             return host_readw(address-memory->read[index]);
-        return memory->mmu[index]->readw(memory, address);
+        return memory->mmu[index]->readw(thread, address);
     }
-    return readb(memory, address) | (readb(memory, address+1) << 8);
+    return readb(thread, address) | (readb(thread, address+1) << 8);
 #endif
 }
 
-void writew(struct Memory* memory, U32 address, U16 value) {
+void writew(struct KThread* thread, U32 address, U16 value) {
+    struct Memory* memory = thread->process->memory;
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writew %X @%X\n", value, address);
@@ -242,15 +251,16 @@ void writew(struct Memory* memory, U32 address, U16 value) {
         if (memory->write[index]) {
             host_writew(address-memory->write[index], value);
         } else {
-            memory->mmu[index]->writew(memory, address, value);
+            memory->mmu[index]->writew(thread, address, value);
         }
     } else {
-        writeb(memory, address, (U8)value);
-        writeb(memory, address+1, (U8)(value >> 8));
+        writeb(thread, address, (U8)value);
+        writeb(thread, address+1, (U8)(value >> 8));
     }
 }
 
-U32 readd(struct Memory* memory, U32 address) {
+U32 readd(struct KThread* thread, U32 address) {
+    struct Memory* memory = thread->process->memory;
 #ifdef LOG_OPS
     U32 result;
 
@@ -259,9 +269,9 @@ U32 readd(struct Memory* memory, U32 address) {
         if (memory->read[index])
             result = host_readd(address-memory->read[index]);
         else
-            result = memory->mmu[index]->readd(memory, address);
+            result = memory->mmu[index]->readd(thread, address);
     } else {
-        result = readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
+        result = readb(thread, address) | (readb(thread, address+1) << 8) | (readb(thread, address+2) << 16) | (readb(thread, address+3) << 24);
     }
     if (memory->log)
         fprintf(logFile, "readd %X @%X\n", result, address);
@@ -271,14 +281,15 @@ U32 readd(struct Memory* memory, U32 address) {
         int index = address >> 12;
         if (memory->read[index])
             return host_readd(address-memory->read[index]);
-        return memory->mmu[index]->readd(memory, address);
+        return memory->mmu[index]->readd(thread, address);
     } else {
-        return readb(memory, address) | (readb(memory, address+1) << 8) | (readb(memory, address+2) << 16) | (readb(memory, address+3) << 24);
+        return readb(thread, address) | (readb(thread, address+1) << 8) | (readb(thread, address+2) << 16) | (readb(thread, address+3) << 24);
     }
 #endif
 }
 
-void writed(struct Memory* memory, U32 address, U32 value) {
+void writed(struct KThread* thread, U32 address, U32 value) {
+    struct Memory* memory = thread->process->memory;
 #ifdef LOG_OPS
     if (memory->log)
         fprintf(logFile, "writed %X @%X\n", value, address);
@@ -288,13 +299,13 @@ void writed(struct Memory* memory, U32 address, U32 value) {
         if (memory->write[index]) {
             host_writed(address-memory->write[index], value);
         } else {
-            memory->mmu[index]->writed(memory, address, value);
+            memory->mmu[index]->writed(thread, address, value);
         }		
     } else {
-        writeb(memory, address, value);
-        writeb(memory, address+1, value >> 8);
-        writeb(memory, address+2, value >> 16);
-        writeb(memory, address+3, value >> 24);
+        writeb(thread, address, value);
+        writeb(thread, address+1, value >> 8);
+        writeb(thread, address+2, value >> 16);
+        writeb(thread, address+3, value >> 24);
     }
 }
 
@@ -316,7 +327,6 @@ void initMemory(struct Memory* memory) {
 
 void resetMemory(struct Memory* memory) {
     U32 i=0;
-
     for (i=0;i<0x100000;i++) {
         memory->mmu[i]->clear(memory, i);
         memory->mmu[i] = &invalidPage;
@@ -327,9 +337,12 @@ void resetMemory(struct Memory* memory) {
     }
 }
 
-void cloneMemory(struct Memory* memory, struct Memory* from) {
+void cloneMemory(struct KThread* thread, struct KThread* fromThread) {
     int i=0;
-    struct KProcess* p = memory->process;
+    struct KProcess* p = thread->process;
+    struct Memory* from = fromThread->process->memory;
+    struct Memory* memory = thread->process->memory;
+
     memcpy(memory, from, sizeof(struct Memory));
     memory->process = p;
     for (i=0;i<0x100000;i++) {
@@ -348,7 +361,7 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
             incrementRamRef(memory->ramPage[i]);
         } else if (IS_PAGE_SHARED(memory->flags[i])) {
             if (page == &ramOnDemandPage) {
-                writeb(from, i << PAGE_SHIFT, 0); // this will map the address to a real page of ram
+                writeb(fromThread, i << PAGE_SHIFT, 0); // this will map the address to a real page of ram
                 memory->mmu[i] = from->mmu[i];
                 memory->flags[i] = from->flags[i];
                 memory->ramPage[i] = from->ramPage[i];
@@ -356,7 +369,7 @@ void cloneMemory(struct Memory* memory, struct Memory* from) {
                 memory->write[i] = from->write[i];
                 i--;
             } else if (page == &ramOnDemandFilePage) { 
-                readb(from, i << PAGE_SHIFT); // this will map the address to a real page of ram
+                readb(fromThread, i << PAGE_SHIFT); // this will map the address to a real page of ram
                 memory->mmu[i] = from->mmu[i];
                 memory->flags[i] = from->flags[i];
                 memory->ramPage[i] = from->ramPage[i];
@@ -379,36 +392,37 @@ void freeMemory(struct Memory* memory) {
     kfree(memory, KALLOC_MEMORY);
 }
 
-void zeroMemory(struct Memory* memory, U32 address, int len) {
+void zeroMemory(struct KThread* thread, U32 address, int len) {
     int i;
     for (i=0;i<len;i++) {
-        writeb(memory, address, 0);
+        writeb(thread, address, 0);
         address++;
     }
 }
 
-void readMemory(struct Memory* memory, U8* data, U32 address, int len) {
+void readMemory(struct KThread* thread, U8* data, U32 address, int len) {
     int i;
     for (i=0;i<len;i++) {
-        *data=readb(memory, address);
-        address++;
-        data++;
-    }
-}
-
-void writeMemory(struct Memory* memory, U32 address, U8* data, int len) {
-    int i;
-    for (i=0;i<len;i++) {
-        writeb(memory, address, *data);
+        *data=readb(thread, address);
         address++;
         data++;
     }
 }
 
-void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, U32 fildes, U64 offset, U32 cacheIndex) {
+void writeMemory(struct KThread* thread, U32 address, U8* data, int len) {
+    int i;
+    for (i=0;i<len;i++) {
+        writeb(thread, address, *data);
+        address++;
+        data++;
+    }
+}
+
+void allocPages(struct KThread* thread, U32 page, U32 pageCount, U8 permissions, U32 fildes, U64 offset, U32 cacheIndex) {
     U32 i;
     U32 address = page << PAGE_SHIFT;
     struct Page* pageType;
+    struct Memory* memory = thread->process->memory;
 
     if (fildes) {
         struct KFileDescriptor* fd = getFileDescriptor(memory->process, fildes);
@@ -467,7 +481,8 @@ void allocPages(struct Memory* memory, U32 page, U32 pageCount, U8 permissions, 
     }    
 }
 
-void protectPage(struct Memory* memory, U32 i, U32 permissions) {
+void protectPage(struct KThread* thread, U32 i, U32 permissions) {
+    struct Memory* memory = thread->process->memory;
     struct Page* page = memory->mmu[i];
     U32 flags = memory->flags[i];
 
@@ -498,7 +513,9 @@ void protectPage(struct Memory* memory, U32 i, U32 permissions) {
     }
 }
 
-void freePage(struct Memory* memory, U32 page) {
+void freePage(struct KThread* thread, U32 page) {
+    struct Memory* memory = thread->process->memory;
+
     memory->mmu[page]->clear(memory, page);
     memory->mmu[page]=&invalidPage;
     memory->flags[page]=0;
@@ -538,9 +555,10 @@ void reservePages(struct Memory* memory, U32 startingPage, U32 pageCount, U32 fl
     }
 }
 
-void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
+void releaseMemory(struct KThread* thread, U32 startingPage, U32 pageCount) {
     U32 i;
-    
+    struct Memory* memory = thread->process->memory;
+
     for (i=startingPage;i<startingPage+pageCount;i++) {
         memory->mmu[i]->clear(memory, i);
         memory->mmu[i] = &invalidPage;
@@ -550,22 +568,23 @@ void releaseMemory(struct Memory* memory, U32 startingPage, U32 pageCount) {
     }
 }
 
-U8* getPhysicalAddress(struct Memory* memory, U32 address) {
+U8* getPhysicalAddress(struct KThread* thread, U32 address) {
     int index = address >> 12;
-    return memory->mmu[index]->physicalAddress(memory, address);
+    return thread->process->memory->mmu[index]->physicalAddress(thread, address);
 }
 
-void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 len) {
+void memcopyFromNative(struct KThread* thread, U32 address, const char* p, U32 len) {
 #ifdef UNALIGNED_MEMORY
     U32 i;
     for (i=0;i<len;i++) {
-        writeb(memory, address+i, p[i]);
+        writeb(thread, address+i, p[i]);
     }
 #else
     U32 i;
+    struct Memory* memory = thread->process->memory;
 
     if (len>4) {
-        U8* ram = getPhysicalAddress(memory, address);
+        U8* ram = getPhysicalAddress(thread, address);
     
         if (ram) {
             U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
@@ -579,7 +598,7 @@ void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 le
                 }
                 address+=todo;
                 p+=todo;
-                ram = getPhysicalAddress(memory, address);
+                ram = getPhysicalAddress(thread, address);
                 if (!ram) {
                     break;
                 }
@@ -591,23 +610,24 @@ void memcopyFromNative(struct Memory* memory, U32 address, const char* p, U32 le
     }
 
     for (i=0;i<len;i++) {
-        writeb(memory, address+i, p[i]);
+        writeb(thread, address+i, p[i]);
     }
 #endif
 }
 
-void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
+void memcopyToNative(struct KThread* thread, U32 address, char* p, U32 len) {
 #ifdef UNALIGNED_MEMORY
     U32 i;
 
     for (i=0;i<len;i++) {
-        p[i] = readb(memory, address+i);
+        p[i] = readb(thread, address+i);
     }
 #else
     U32 i;
+    struct Memory* memory = thread->process->memory;
 
     if (len>4) {
-        U8* ram = getPhysicalAddress(memory, address);
+        U8* ram = getPhysicalAddress(thread, address);
     
         if (ram) {
             U32 todo = PAGE_SIZE-(address & (PAGE_SIZE-1));
@@ -621,7 +641,7 @@ void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
                 }
                 address+=todo;
                 p+=todo;
-                ram = getPhysicalAddress(memory, address);
+                ram = getPhysicalAddress(thread, address);
                 if (!ram) {
                     break;
                 }
@@ -633,114 +653,91 @@ void memcopyToNative(struct Memory* memory, U32 address, char* p, U32 len) {
     }
     
     for (i=0;i<len;i++) {
-        p[i] = readb(memory, address+i);
+        p[i] = readb(thread, address+i);
     }
 #endif
 }
 
-void writeNativeString(struct Memory* memory, U32 address, const char* str) {	
+void writeNativeString(struct KThread* thread, U32 address, const char* str) {	
     while (*str) {
-        writeb(memory, address, *str);
+        writeb(thread, address, *str);
         str++;
         address++;
     }
-    writeb(memory, address, 0);
+    writeb(thread, address, 0);
 }
 
-U32 writeNativeString2(struct Memory* memory, U32 address, const char* str, U32 len) {	
+U32 writeNativeString2(struct KThread* thread, U32 address, const char* str, U32 len) {	
     U32 count=0;
 
     while (*str && count<len-1) {
-        writeb(memory, address, *str);
+        writeb(thread, address, *str);
         str++;
         address++;
         count++;
     }
-    writeb(memory, address, 0);
+    writeb(thread, address, 0);
     return count;
 }
 
-void writeNativeStringW(struct Memory* memory, U32 address, const char* str) {	
+void writeNativeStringW(struct KThread* thread, U32 address, const char* str) {	
     while (*str) {
-        writew(memory, address, *str);
+        writew(thread, address, *str);
         str++;
         address+=2;
     }
-    writeb(memory, address, 0);
+    writew(thread, address, 0);
 }
 
-static char tmpBuffer[64*1024];
-
-char* getNativeString(struct Memory* memory, U32 address) {
+char* getNativeString(struct KThread* thread, U32 address, char* buffer, U32 cbBuffer) {
     char c;
-    int i=0;
+    U32 i=0;
 
     if (!address) {
-        tmpBuffer[0]=0;
-        return tmpBuffer;
+        buffer[0]=0;
+        return buffer;
     }
     do {
-        c = readb(memory, address++);
-        tmpBuffer[i++] = c;
-    } while(c && i<sizeof(tmpBuffer));
-    tmpBuffer[sizeof(tmpBuffer)-1]=0;
-    return tmpBuffer;
+        c = readb(thread, address++);
+        buffer[i++] = c;
+    } while(c && i<cbBuffer);
+    buffer[cbBuffer-1]=0;
+    return buffer;
 }
 
-char* getNativeStringW(struct Memory* memory, U32 address) {
+U32 getNativeStringLen(struct KThread* thread, U32 address) {
     char c;
-    int i=0;
+    U32 i=0;
 
     if (!address) {
-        tmpBuffer[0]=0;
-        return tmpBuffer;
+        return 0;
     }
     do {
-        c = (char)readw(memory, address);
+        c = readb(thread, address++);
+        i++;
+    } while(c);
+    return i;
+}
+
+char* getNativeStringW(struct KThread* thread, U32 address, char* buffer, U32 cbBuffer) {
+    char c;
+    U32 i=0;
+
+    if (!address) {
+        buffer[0]=0;
+        return buffer;
+    }
+    do {
+        c = (char)readw(thread, address);
         address+=2;
-        tmpBuffer[i++] = c;
-    } while(c && i<sizeof(tmpBuffer));
-    tmpBuffer[sizeof(tmpBuffer)-1]=0;
-    return tmpBuffer;
+        buffer[i++] = c;
+    } while(c && i<cbBuffer);
+    buffer[cbBuffer-1]=0;
+    return buffer;
 }
 
-static char tmpBuffer2[64*1024];
-
-char* getNativeString2(struct Memory* memory, U32 address) {
-    char c;
-    int i=0;
-
-    if (!address) {
-        tmpBuffer2[0]=0;
-        return tmpBuffer2;
-    }
-    do {
-        c = readb(memory, address++);
-        tmpBuffer2[i++] = c;
-    } while(c && i<sizeof(tmpBuffer2));
-    tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
-    return tmpBuffer2;
-}
-
-char* getNativeStringW2(struct Memory* memory, U32 address) {
-    char c;
-    int i=0;
-
-    if (!address) {
-        tmpBuffer2[0]=0;
-        return tmpBuffer2;
-    }
-    do {
-        c = (char)readw(memory, address);
-        address+=2;
-        tmpBuffer2[i++] = c;
-    } while(c && i<sizeof(tmpBuffer2));
-    tmpBuffer2[sizeof(tmpBuffer2)-1]=0;
-    return tmpBuffer2;
-}
-
-BOOL isValidReadAddress(struct Memory* memory, U32 address) {
-    return memory->read[address >> PAGE_SHIFT]!=0;
+BOOL isValidReadAddress(struct KThread* thread, U32 address) {
+    return thread->process->memory->read[address >> PAGE_SHIFT]!=0;
 }
 
 static U32 callbackPage;
@@ -829,7 +826,7 @@ void fillFetchPage(struct DecodeData* data) {
     else
         address = (data->ip & 0xFFFF) + data->cpu->segAddress[CS];
     data->pagePos = address & 0xFFF;
-    readb(data->memory, address);
+    readb(data->cpu->thread, address);
     data->page = &ram[(address & 0xFFFFF000) - data->memory->read[address>>12]];
 }
 
@@ -918,9 +915,10 @@ void freeMappable(struct Memory* memory, void* address) {
     kfree(address, 0);
 }
 
-void mapMappable(struct Memory* memory, U32 page, U32 pageCount, void* address, U32 permissions) {
+void mapMappable(struct KThread* thread, U32 page, U32 pageCount, void* address, U32 permissions) {
     U32 i;
     U32* p = (U32*)address;
+    struct Memory* memory = thread->process->memory;
 
     for (i=0;i<pageCount;i++) {
         if (permissions & PAGE_WRITE) {
@@ -940,8 +938,9 @@ void mapMappable(struct Memory* memory, U32 page, U32 pageCount, void* address, 
     }
 }
 
-void unmapMappable(struct Memory* memory, U32 page, U32 pageCount) {
+void unmapMappable(struct KThread* thread, U32 page, U32 pageCount) {
     U32 i;
+    struct Memory* memory = thread->process->memory;
 
     for (i=0;i<pageCount;i++) {
         memory->mmu[i + page]->clear(memory, i + page);

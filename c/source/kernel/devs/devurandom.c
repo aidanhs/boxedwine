@@ -50,23 +50,23 @@ S64 urandom_seek(struct FsOpenNode* node, S64 pos) {
     return 0;
 }
 
-U32 urandom_read(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 urandom_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     U32 result = len;
 
     while (len>=4) {
-        writed(memory, address, rand());
+        writed(thread, address, rand());
         address+=4;
         len-=4;
     }
     while (len>0) {
-        writeb(memory, address, rand());
+        writeb(thread, address, rand());
         address++;
         len--;
     }
     return result;
 }
 
-U32 urandom_write(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len) {
+U32 urandom_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     return 0;
 }
 
@@ -99,7 +99,7 @@ BOOL urandom_isReadReady(struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
-U32 urandom_map(struct Memory* memory, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 urandom_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 

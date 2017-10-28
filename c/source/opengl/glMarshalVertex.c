@@ -25,7 +25,7 @@ U32 updateVertexPointer(struct CPU* cpu, struct OpenGLVetexPointer* p, U32 count
             if (p->marshal_size) {
                 free(p->marshal);
             }            
-            p->marshal = getPhysicalAddress(cpu->memory, p->ptr);
+            p->marshal = getPhysicalAddress(cpu->thread, p->ptr);
             p->marshal_size = 0;
             
             if (p->marshal) {
@@ -46,7 +46,7 @@ U32 updateVertexPointer(struct CPU* cpu, struct OpenGLVetexPointer* p, U32 count
             p->marshal = malloc(datasize);
             p->marshal_size = datasize;
         }
-        memcopyToNative(cpu->memory, p->ptr, (S8*)p->marshal, datasize);
+        memcopyToNative(cpu->thread, p->ptr, (S8*)p->marshal, datasize);
     } else {
         if (p->marshal_size) {
             free(p->marshal);

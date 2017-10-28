@@ -102,25 +102,25 @@ void kfile_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events
     obj->openFile->func->waitForEvents(obj->openFile, thread, events);
 }
 
-U32  kfile_write(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    return obj->openFile->func->write(memory, obj->openFile, buffer, len);
+U32  kfile_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+    return obj->openFile->func->write(thread, obj->openFile, buffer, len);
 }
 
-U32  kfile_read(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
-    return obj->openFile->func->read(memory, obj->openFile, buffer, len);
+U32  kfile_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+    return obj->openFile->func->read(thread, obj->openFile, buffer, len);
 }
 
-U32 kfile_stat(struct Memory* memory, struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
+U32 kfile_stat(struct KThread* thread, struct KObject* obj, U32 address, BOOL is64) {
     struct FsOpenNode* openNode = obj->openFile;
     struct FsNode* node = openNode->node;
     U64 len = node->func->length(node);
 
-    writeStat(memory, address, is64, 1, node->id, node->func->getMode(process, node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->func->lastModified(node), getHardLinkCount(node));
+    writeStat(thread, address, is64, 1, node->id, node->func->getMode(thread->process, node), node->rdev, len, FS_BLOCK_SIZE, (len+FS_BLOCK_SIZE-1)/FS_BLOCK_SIZE, node->func->lastModified(node), getHardLinkCount(node));
     return 0;
 }
 
-U32 kfile_map(struct Memory* memory, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-    return obj->openFile->func->map(memory, obj->openFile, address, len, prot, flags, off);
+U32 kfile_map(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+    return obj->openFile->func->map(thread, obj->openFile, address, len, prot, flags, off);
 }
 
 BOOL kfile_canMap(struct KObject* obj) {

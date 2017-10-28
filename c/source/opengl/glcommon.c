@@ -36,7 +36,7 @@ float fARG(struct CPU* cpu, U32 arg) {
 
 double dARG(struct CPU* cpu, int address) {
     struct long2Double i;
-    i.l = readq(cpu->memory, address);
+    i.l = readq(cpu->thread, address);
     return i.d;
 }
 
@@ -58,7 +58,7 @@ GLintptr* marshalip(struct CPU* cpu, U32 address, U32 count) {
         bufferip_len = count;
     }
     for (i=0;i<count;i++) {
-        bufferip[i] = (GLintptr)readd(cpu->memory, address);
+        bufferip[i] = (GLintptr)readd(cpu->thread, address);
         address+=4;
     }
     return bufferip;
@@ -81,7 +81,7 @@ GLintptr* marshal2ip(struct CPU* cpu, U32 address, U32 count) {
         buffer2ip_len = count;
     }
     for (i=0;i<count;i++) {
-        buffer2ip[i] = (GLintptr)readd(cpu->memory, address);
+        buffer2ip[i] = (GLintptr)readd(cpu->thread, address);
         address+=4;
     }
     return buffer2ip;
@@ -143,7 +143,7 @@ void glcommon_glGetString(struct CPU* cpu) {
         GL_LOG("glGetString GLenum name=GL_EXTENSIONS ret=%s", result);
     }
     if (!cpu->thread->process->strings[index])
-        addString(cpu->thread->process, index, result);
+        addString(cpu->thread, index, result);
     EAX = cpu->thread->process->strings[index];
 }
 
@@ -314,17 +314,17 @@ void glcommon_glGetPointerv(struct CPU* cpu) {
     {
         GLvoid* params;
         GL_FUNC(glGetPointerv)(ARG1, &params);
-        writed(cpu->memory, ARG2, getHostAddress(cpu->memory, params));
+        writed(cpu->thread, ARG2, getHostAddress(cpu->thread, params));
     }
 #else
     switch (ARG1) {
-    case GL_COLOR_ARRAY_POINTER: writed(cpu->memory, readd(cpu->memory, ARG2), cpu->thread->glColorPointer.ptr); break;
-    case GL_EDGE_FLAG_ARRAY_POINTER: writed(cpu->memory, readd(cpu->memory, ARG2), cpu->thread->glEdgeFlagPointer.ptr); break;
-    case GL_INDEX_ARRAY_POINTER: writed(cpu->memory, readd(cpu->memory, ARG2), cpu->thread->glIndexPointer.ptr); break;
-    case GL_NORMAL_ARRAY_POINTER: writed(cpu->memory, readd(cpu->memory, ARG2), cpu->thread->glNormalPointer.ptr); break;
-    case GL_TEXTURE_COORD_ARRAY_POINTER: writed(cpu->memory, readd(cpu->memory, ARG2), cpu->thread->glTexCoordPointer.ptr); break;
-    case GL_VERTEX_ARRAY_POINTER: writed(cpu->memory, readd(cpu->memory, ARG2), cpu->thread->glVertextPointer.ptr); break;
-    default: writed(cpu->memory, readd(cpu->memory, ARG2), 0);
+    case GL_COLOR_ARRAY_POINTER: writed(cpu->thread, readd(cpu->thread, ARG2), cpu->thread->glColorPointer.ptr); break;
+    case GL_EDGE_FLAG_ARRAY_POINTER: writed(cpu->thread, readd(cpu->thread, ARG2), cpu->thread->glEdgeFlagPointer.ptr); break;
+    case GL_INDEX_ARRAY_POINTER: writed(cpu->thread, readd(cpu->thread, ARG2), cpu->thread->glIndexPointer.ptr); break;
+    case GL_NORMAL_ARRAY_POINTER: writed(cpu->thread, readd(cpu->thread, ARG2), cpu->thread->glNormalPointer.ptr); break;
+    case GL_TEXTURE_COORD_ARRAY_POINTER: writed(cpu->thread, readd(cpu->thread, ARG2), cpu->thread->glTexCoordPointer.ptr); break;
+    case GL_VERTEX_ARRAY_POINTER: writed(cpu->thread, readd(cpu->thread, ARG2), cpu->thread->glVertextPointer.ptr); break;
+    default: writed(cpu->thread, readd(cpu->thread, ARG2), 0);
     }
 #endif
 }

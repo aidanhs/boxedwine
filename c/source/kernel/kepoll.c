@@ -92,22 +92,22 @@ BOOL kepoll_isWriteReady(struct KObject* obj) {
     return FALSE;
 }
 
-U32 kepoll_write(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 kepoll_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     kpanic("kepoll_write not implemented yet");
     return 0;
 }
 
-U32 kepoll_read(struct Memory* memory, struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 kepoll_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     kpanic("kepoll_read not implemented yet");
     return 0;
 }
 
-U32 kepoll_stat(struct Memory* memory, struct KProcess* process, struct KObject* obj, U32 address, BOOL is64) {
+U32 kepoll_stat(struct KThread* thread, struct KObject* obj, U32 address, BOOL is64) {
     kpanic("kepoll_stat not implemented yet");
     return 0;
 }
 
-U32 kepoll_map(struct Memory* memory, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+U32 kepoll_map(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
     return 0;
 }
 
@@ -192,8 +192,8 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
             }
             existing = allocEpoll();
             existing->fd = fd;
-            existing->events = readd(thread->process->memory, address);
-            existing->data = readq(thread->process->memory, address + 4);
+            existing->events = readd(thread, address);
+            existing->data = readq(thread, address + 4);
             existing->next = (struct KEpoll*)epollFD->kobject->data;
             epollFD->kobject->data = existing;
             break;
@@ -210,8 +210,8 @@ U32 syscall_epollctl(struct KThread* thread, FD epfd, U32 op, FD fd, U32 address
         case K_EPOLL_CTL_MOD:
             if (!existing)
                 return -K_ENOENT;
-            existing->events = readd(thread->process->memory, address);
-            existing->data = readq(thread->process->memory, address + 4);
+            existing->events = readd(thread, address);
+            existing->data = readq(thread, address + 4);
             break;
         default:
             return -K_EINVAL;
@@ -245,11 +245,11 @@ U32 syscall_epollwait(struct KThread* thread, FD epfd, U32 events, U32 maxevents
         return result;
     result = 0;
     for (i=0;i<thread->pollCount;i++) {
-        writed(thread->process->memory, events + i * 12, thread->pollData[i].revents);
+        writed(thread, events + i * 12, thread->pollData[i].revents);
         if (thread->pollData[i].revents!=0) {
             result=i+1;
         }
-        writeq(thread->process->memory, events + i * 12 + 4, thread->pollData[i].data);
+        writeq(thread, events + i * 12 + 4, thread->pollData[i].data);
     }
     return result;
 }
