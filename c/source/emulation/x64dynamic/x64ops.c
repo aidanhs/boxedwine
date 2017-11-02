@@ -1753,7 +1753,7 @@ DECODER x64Decoder[1024] = {
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
     keepSameImm16, keepSameImm16, keepSameImm16, keepSameImm16, movSpIw, keepSameImm16, keepSameImm16, keepSameImm16,
     // C0
-    inst8RMimm8SafeG, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8SafeG, inst16RMimm8,
+    inst8RMimm8SafeG, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8SafeG, inst16RMimm16,
     enter16, leave16, retf16Iw, retf16, invalidOp, intIb, invalidOp, invalidOp,
     // D0
     inst8RMSafeG, inst16RMSafeG, inst8RMSafeG, inst16RMSafeG, aam, aad, salc, xlat,
