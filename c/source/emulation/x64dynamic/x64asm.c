@@ -497,11 +497,11 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip) {
     write8(data, 0x53);
 
     if (cmd == CMD_SET_FS) {
-        x64_writeToMemFromReg(data, HOST_FS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FS, 4, FALSE);
+        x64_writeToRegFromMem(data, HOST_FS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FS_ADDRESS, 4, FALSE);
     } else if (cmd == CMD_SET_SS) {
-        x64_writeToMemFromReg(data, HOST_SS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_SS, 4, FALSE);
+        x64_writeToRegFromMem(data, HOST_SS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_SS_ADDRESS, 4, FALSE);
     }  else if (cmd == CMD_SET_DS) {
-        x64_writeToMemFromReg(data, HOST_DS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_DS, 4, FALSE);
+        x64_writeToRegFromMem(data, HOST_DS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_DS_ADDRESS, 4, FALSE);
     }   
 }
 
