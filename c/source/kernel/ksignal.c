@@ -100,6 +100,19 @@ U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask) {
     }
     thread->waitingForSignalToEndMaskToRestore = thread->sigMask | RESTORE_SIGNAL_MASK;
     thread->sigMask = readd(thread, mask);
+#ifdef BOXEDWINE_VM
+    {
+        SDL_cond* cond = SDL_CreateCond();
+        SDL_mutex* mutex = SDL_CreateMutex();
+        BOXEDWINE_LOCK(thread, mutex);        
+        BOXEDWINE_WAIT(thread, cond, mutex);
+        BOXEDWINE_UNLOCK(thread, mutex);        
+        SDL_DestroyCond(cond);
+        SDL_DestroyMutex(mutex);
+        return 0;
+    }
+#else
     waitThread(thread);			
+#endif
     return -K_CONTINUE;
 }

@@ -830,7 +830,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     LOGSYS(buffer);
 #endif
 #ifdef BOXEDWINE_VM
-    {
+    if (result!=-K_CONTINUE) {
         U32 oldEAX = EAX;
         EAX = result;
         cpu->eip.u32+=eipCount;

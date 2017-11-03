@@ -54,9 +54,7 @@ struct KThread {
     struct CPU cpu;
     U32 stackPageStart;
     U32 stackPageCount;
-    struct KProcess* process;
-    struct KCNode* scheduledNode;
-    struct KListNode* waitNode;
+    struct KProcess* process;    
     struct KThread* nextFreeThread;
     U32     interrupted;
     U32     inSignal;
@@ -67,19 +65,27 @@ struct KThread {
     U64     kernelTime;
     U32     inSysCall;
     struct KPollData pollData[MAX_POLL_DATA];
-    U32 pollCount;
-    struct KTimer timer;
+    U32 pollCount;    
     struct KThread* waitingForSignalToEnd;
-    U64 waitingForSignalToEndMaskToRestore;
-    U32     waitType;
+    U64 waitingForSignalToEndMaskToRestore;    
     struct user_desc tls[TLS_ENTRIES];
+    U32     waitType;
 #ifdef BOXEDWINE_VM
     U64 nativeHandle;
-#endif
+    SDL_cond* waitingCondition;
+    SDL_mutex* waitingMutex;
+    U32 waitingMutexReferenceCount;
+    BOOL runSignal;
+    BOOL done;
+#else
     U32     waitSyscall;
     U32	    waitStartTime;
     U32     waitData1;
     U32     waitData2;
+    struct KTimer timer;
+    struct KCNode* scheduledNode;
+    struct KListNode* waitNode;    
+#endif
     void* glContext;
     void* currentContext;
     struct OpenGLVetexPointer glVertextPointer;
@@ -102,7 +108,7 @@ struct KThread {
 
 struct KThread* allocThread();
 void initThread(struct KThread* thread, struct KProcess* process);
-void freeThread(struct KThread* thread);
+void freeThread(struct KThread* currentThread, struct KThread* thread);
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process);
 void exitThread(struct KThread* thread, U32 status);
 U32 syscall_futex(struct KThread* thread, U32 address, U32 op, U32 value, U32 pTime);

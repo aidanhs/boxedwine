@@ -23,11 +23,136 @@
 #include "log.h"
 #include "kerror.h"
 #include "kscheduler.h"
+#include "kthread.h"
 
 #include <stdio.h>
 #include <setjmp.h>
 
 //#define LOG_SCHEDULER
+
+#ifdef BOXEDWINE_VM
+#include <SDL.h>
+
+void unscheduleThread(struct KThread* currentThread, struct KThread* thread) {
+    if (currentThread == thread)
+        thread->done = TRUE;
+    else
+        killThread(thread);
+}
+
+U32 threadSleep(struct KThread* thread, U32 ms) {
+    SDL_Delay(ms);
+    return 0; // :TODO: what about signal handlers using this thread while its sleep
+}
+
+void startThread(struct KThread* thread) {
+    platformStartThread(thread);
+}
+
+void wakeThread(struct KThread* currentThread, struct KThread* thread) {
+    if (thread->waitingMutex) {
+        BOXEDWINE_LOCK(currentThread, thread->waitingMutex);
+        BOXEDWINE_SIGNAL(thread->waitingCondition);
+        BOXEDWINE_UNLOCK(currentThread, thread->waitingMutex);
+    }
+}
+
+void wakeThreads(struct KThread* currentThread, U32 wakeType) {
+    if (wakeType == WAIT_PID) {
+        BOXEDWINE_LOCK(currentThread, mutexProcess);
+        BOXEDWINE_SIGNAL_ALL(condProcessPid);
+        BOXEDWINE_UNLOCK(currentThread, mutexProcess);
+    }
+}
+
+void addTimer(struct KTimer* timer) {
+    kpanic("addTimer not implemented");
+}
+
+void removeTimer(struct KTimer* timer) {
+    kpanic("removeTimer not implemented");
+}
+
+void BOXEDWINE_LOCK(struct KThread* thread, SDL_mutex* mutex) {
+    if (thread) {
+        if (thread->waitingMutex && thread->waitingMutex!=mutex) {
+            kpanic("BOXEDWINE_LOCK: tried to lock a 2nd mutex, this is not allowed");
+        }
+        thread->waitingMutex = mutex;
+        thread->waitingMutexReferenceCount++;
+    }
+    SDL_LockMutex(mutex);
+}
+
+void BOXEDWINE_UNLOCK(struct KThread* thread, SDL_mutex* mutex) {
+    if (thread) {
+        if (thread->waitingMutex != mutex) {
+            kpanic("BOXEDWINE_UNLOCK called with mutex that was not used for lock");
+        }
+        thread->waitingMutexReferenceCount--;
+        if (thread->waitingMutexReferenceCount==0) {
+            thread->waitingMutex = NULL;
+        }
+    }
+    SDL_UnlockMutex(mutex);
+}
+
+void BOXEDWINE_SIGNAL(SDL_cond* cond) {
+    SDL_CondSignal(cond);
+}
+
+void BOXEDWINE_SIGNAL_ALL(SDL_cond* cond) {
+    SDL_CondBroadcast(cond);
+}
+
+void BOXEDWINE_WAIT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mutex) {
+    if (thread->waitingCondition!=NULL) {
+        kpanic("BOXEDWINE_WAIT: waitingCondition not NULL");
+    }
+    thread->waitingCondition = cond;
+    while (1) {
+        SDL_CondWait(cond, mutex);
+        if (thread->runSignal) {
+            // Keep lock, this thread can re-enter this lock if necessary, this way the caller doesn't have to be way of this
+            runSignals(thread);
+            if (thread->interrupted) {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+    thread->waitingCondition = NULL;
+}
+
+U32 BOXEDWINE_WAIT_TIMEOUT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mutex, U32 ms) {
+    U32 startTime = getMilliesSinceStart();
+    U32 result = SDL_MUTEX_TIMEDOUT;
+    if (thread->waitingCondition!=NULL) {
+        kpanic("BOXEDWINE_WAIT_TIMEOUT: waitingCondition not NULL");
+    }
+    thread->waitingCondition = cond;
+    while (1) {
+        U32 elapsed = getMilliesSinceStart()-startTime;
+        if (elapsed > ms) {
+            result = SDL_CondWaitTimeout(cond, mutex, 0);
+            break;
+        }
+        result = SDL_CondWaitTimeout(cond, mutex, elapsed-ms);
+        if (thread->runSignal) {
+            // Keep lock, this thread can re-enter this lock if necessary, this way the caller doesn't have to be way of this
+            runSignals(thread);
+            if (thread->interrupted) {
+                break;
+            }
+        }
+    }    
+    thread->waitingCondition = NULL;
+    return result;
+};
+
+#else
+
 
 struct KCircularList scheduledThreads;
 struct KCNode* nextThread;
@@ -55,7 +180,7 @@ void removeTimer(struct KTimer* timer) {
     timer->active = 0;
 }
 
-void wakeThread(struct KThread* thread) {
+void wakeThread(struct KThread* currentThread, struct KThread* thread) {
     U32 i;
     if (!thread->waitNode) {
         kpanic("wakeThread: tried to wake a thread that is not asleep");
@@ -70,7 +195,7 @@ void wakeThread(struct KThread* thread) {
     scheduleThread(thread);
 }
 
-void wakeThreads(U32 wakeType) {
+void wakeThreads(struct KThread* currentThread, U32 wakeType) {
     struct KListNode* node = waitingThreads.first;
 #ifdef LOG_SCHEDULER
     klog("wakeThreads %d", wakeType);
@@ -80,10 +205,14 @@ void wakeThreads(U32 wakeType) {
         struct KThread* thread = (struct KThread*)node->data;
 
         if (thread->waitType == wakeType) {
-            wakeThread(thread);
+            wakeThread(currentThread, thread);
         }
         node = next;
     }
+}
+
+void startThread(struct KThread* thread) {
+    scheduleThread(thread);
 }
 
 void scheduleThread(struct KThread* thread) {
@@ -123,7 +252,10 @@ void scheduleThread(struct KThread* thread) {
 #endif
 }
 
-void unscheduleThread(struct KThread* thread) {	
+void unscheduleThread(struct KThread* currentThread, struct KThread* thread) {	
+    if (thread->waitNode) {
+        wakeThread(currentThread, thread);
+    }
     removeItemFromCircularList(&scheduledThreads, thread->scheduledNode);
     thread->scheduledNode = 0;
     threadDone(&thread->cpu);
@@ -158,7 +290,7 @@ void unscheduleThread(struct KThread* thread) {
 }
 
 void waitThread(struct KThread* thread) {
-    unscheduleThread(thread);
+    unscheduleThread(thread, thread);
     thread->waitNode = addItemToList(&waitingThreads, thread);
 }
 
@@ -214,7 +346,7 @@ void runTimers() {
             if (timer->millies<=millies) {
                 if (timer->thread) {
                     removeTimer(timer);
-                    wakeThread(timer->thread);
+                    wakeThread(NULL, timer->thread);
                 } else {
                     runProcessTimer(timer);
                 }
@@ -302,14 +434,6 @@ U32 getMIPS() {
     return result;
 }
 
-#ifdef BOXEDWINE_VM
-#include <SDL.h>
-
-U32 threadSleep(struct KThread* thread, U32 ms) {
-    SDL_Delay(ms);
-    return 0; // :TODO: what about signal handlers using this thread while its sleep
-}
-#else
 U32 threadSleep(struct KThread* thread, U32 ms) {
     if (thread->waitStartTime) {
         U32 diff = getMilliesSinceStart()-thread->waitStartTime;

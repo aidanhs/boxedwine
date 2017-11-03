@@ -25,6 +25,7 @@
 #include "kthread.h"
 #include "ksystem.h"
 #include "x64dynamic.h"
+#include "kalloc.h"
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -289,7 +290,7 @@ void reserveNativeMemory(struct Memory* memory) {
 void releaseNativeMemory(struct Memory* memory) {
     U32 i;
 
-    if (!VirtualFree((void*)memory->id, 0, MEM_DECOMMIT)) {
+    if (!VirtualFree((void*)memory->id, 0, MEM_RELEASE)) {
         LPSTR messageBuffer = NULL;
         size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
         kpanic("failed to release memory: %s", messageBuffer);
@@ -301,6 +302,25 @@ void releaseNativeMemory(struct Memory* memory) {
     memset(memory->nativeFlags, 0, sizeof(memory->nativeFlags));
     memset(memory->ids, 0, sizeof(memory->ids));
     memory->allocated = 0;
+#ifdef BOXEDWINE_VM
+    freeExecutableMemory(memory);
+    {
+        U32 i;
+        for (i=0;i<NUMBER_OF_PAGES;i++) {
+            if (memory->process->opToAddressPages[i]) {
+                kfree(memory->process->opToAddressPages[i], KALLOC_IP_CACHE);
+                memory->process->opToAddressPages[i] = 0;
+            }
+        }
+    }
+    memory->x64Mem = 0;
+    memory->x64MemPos = 0;
+    memory->x64AvailableMem = 0;
+    if (memory->executableMemoryMutex) {
+        SDL_DestroyMutex(memory->executableMemoryMutex);
+        memory->executableMemoryMutex = NULL;
+    }
+#endif
 }
 
 void makeCodePageReadOnly(struct Memory* memory, U32 page) {
@@ -345,8 +365,22 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             EAX = (U32)ep->ContextRecord->Rax;
             x64_cmdEntry(cpu);
             ep->ContextRecord->Rax = EAX;
+            if (cpu->thread->done)
+                return EXCEPTION_EXECUTE_HANDLER;
             if (eip!=cpu->eip.u32) {
-                int ii=0;
+                U32 page = cpu->eip.u32 >> PAGE_SHIFT;
+                U32 offset = cpu->eip.u32 & PAGE_MASK;
+
+                ep->ContextRecord->Rcx = ECX;
+                ep->ContextRecord->Rcx = EDX;
+                ep->ContextRecord->Rbx = EBX;
+                ep->ContextRecord->R11 = ESP;
+                ep->ContextRecord->Rbp = EBP;
+                ep->ContextRecord->Rsi = ESI;
+                ep->ContextRecord->Rdi = EDI;                     
+                x64_translateEip(cpu, (page << PAGE_SHIFT) | offset);
+                ep->ContextRecord->Rip = (U64)(cpu->opToAddressPages[page][offset]);                
+                ep->ContextRecord->R10 = (U64)cpu->memory->id;
             }
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
@@ -405,6 +439,26 @@ void setRegs(U64* regs) {
 
 typedef void (*StartCPU)();
 
+void pauseThread(struct KThread* thread) {
+    DWORD dwVal = SuspendThread((HANDLE)thread->nativeHandle);
+	if (INFINITE == dwVal) {
+	    kpanic("pauseThread failed");
+	}
+    // :TODO: capture context
+    //CONTEXT ctx;
+	//ctx.ContextFlags = CONTEXT_CONTROL;
+	//if (GetThreadContext(hThread, &ctx))
+}
+
+void resumeThread(struct KThread* thread) {
+    //SetThreadContext(thread->nativeHandle, &ctx)
+    ResumeThread((HANDLE)thread->nativeHandle);
+}
+
+void killThread(struct KThread* thread) {
+    kpanic("killThread not implemented yet");
+}
+
 DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     struct KThread* thread = (struct KThread*)lpParameter;
     struct CPU* cpu = &thread->cpu;
@@ -419,8 +473,8 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
 
     __try {
         StartCPU startCPU = (StartCPU)x64_initCPU(cpu);
+
         startCPU();
-        //RtlRestoreContext(&context, NULL);
     } __except(seh_filter(GetExceptionCode(), GetExceptionInformation(), thread)) {
         thread->cpu.nextBlock = 0;
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
@@ -433,31 +487,30 @@ void platformStartThread(struct KThread* thread) {
     thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);
 }
 
-static U8* executableMemory;
-static U8 executablePages[0x10000];
-
-void* allocExecutable64kBlock() {
+void* allocExecutable64kBlock(struct Memory* memory) {
     U32 i;
 
-    if (!executableMemory) {
-        executableMemory = reserveNext4GBMemory();
+    if (!memory->executableMemory) {
+        memory->executableMemory = reserveNext4GBMemory();
     }
     for (i=0;i<0x10000;i++) {
-        if (!executablePages[i]) {
-            executablePages[i]=1;
-            return VirtualAlloc(executableMemory+i*64*1024, 64*1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        if (!memory->executable64kBlocks[i]) {
+            memory->executable64kBlocks[i]=1;
+            memory->x64AvailableMem += 64*1024; 
+            return VirtualAlloc(memory->executableMemory+i*64*1024, 64*1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         }
     }
     kpanic("Ran out of code pages in x64dynamic");
     return 0;
 }
 
-void freeExecutable64kBlock(U8* p) {
-    executablePages[(p-executableMemory)>>16]=0;
-    VirtualFree(p, 64*1024, MEM_DECOMMIT);
+void freeExecutableMemory(struct Memory* memory) {
+    VirtualFree(memory->executableMemory, 0, MEM_RELEASE);
+    memset(memory->executable64kBlocks, 0, sizeof(memory->executable64kBlocks));
+    memory->executableMemory = NULL;
 }
 
-#endif
+#else
 void platformRunThreadSlice(struct KThread* thread) {
     __try {
         runThreadSlice(thread);
@@ -466,5 +519,5 @@ void platformRunThreadSlice(struct KThread* thread) {
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
     }
 }
-
+#endif
 #endif

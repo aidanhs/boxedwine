@@ -40,21 +40,18 @@ struct KThread* allocThread() {
     return (struct KThread*)kalloc(sizeof(struct KThread), KALLOC_KTHREAD);		
 }
 
-void freeThread(struct KThread* thread) {
-    processRemoveThread(thread->process, thread);
-    if (thread->waitNode) {
-        wakeThread(thread);
-    }	
+void freeThread(struct KThread* currentThread, struct KThread* thread) {
+    processRemoveThread(thread->process, thread);    	
     if (thread->waitingForSignalToEnd) {
-        wakeThread(thread->waitingForSignalToEnd);
+        wakeThread(currentThread, thread->waitingForSignalToEnd);
         thread->waitingForSignalToEnd = 0;
-    }
-    unscheduleThread(thread);	
+    }    
     threadClearFutexes(thread);
     releaseMemory(thread, thread->stackPageStart, thread->stackPageCount);
     processOnExitThread(thread);
     thread->nextFreeThread = freeThreads;	
     freeThreads = thread;
+    unscheduleThread(currentThread, thread); // will not return if thread is current thread and BOXEDWINE_VM
 }
 
 void setupStack(struct KThread* thread) {
@@ -112,7 +109,7 @@ void exitThread(struct KThread* thread, U32 status) {
         writed(thread, thread->clear_child_tid, 0);
         syscall_futex(thread, thread->clear_child_tid, 1, 1, 0);
     }
-    freeThread(thread);
+    freeThread(thread, thread);
 }
 
 #define FUTEX_WAIT 0
@@ -123,13 +120,20 @@ void exitThread(struct KThread* thread, U32 status) {
 struct futex {
     struct KThread* thread;
     U8* address;
+#ifdef BOXEDWINE_VM    
+    SDL_cond* cond;
+#else
     U32 expireTimeInMillies;
     BOOL wake;
+#endif
 };
 
 #define MAX_FUTEXES 128
 
 struct futex system_futex[MAX_FUTEXES];
+#ifdef BOXEDWINE_VM
+SDL_mutex* mutexFutex;
+#endif
 
 struct futex* getFutex(struct KThread* thread, U8* address) {
     int i=0;
@@ -148,8 +152,14 @@ struct futex* allocFutex(struct KThread* thread, U8* address, U32 millies) {
         if (system_futex[i].thread==0) {
             system_futex[i].thread = thread;
             system_futex[i].address = address;
+#ifdef BOXEDWINE_VM
+            if (!system_futex[i].cond) {
+                system_futex[i].cond = SDL_CreateCond();
+            }
+#else
             system_futex[i].expireTimeInMillies = millies;
             system_futex[i].wake = FALSE;
+#endif
             return &system_futex[i];
         }
     }
@@ -159,6 +169,7 @@ struct futex* allocFutex(struct KThread* thread, U8* address, U32 millies) {
 
 void freeFutex(struct futex* f) {
     f->thread = 0;
+    f->address = 0;
 }
 
 void threadClearFutexes(struct KThread* thread) {
@@ -174,6 +185,53 @@ void threadClearFutexes(struct KThread* thread) {
 U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
     U8* ramAddress = getPhysicalAddress(thread, addr);
 
+#ifdef BOXEDWINE_VM
+    if (!mutexFutex)
+        mutexFutex = SDL_CreateMutex();
+    BOXEDWINE_LOCK(thread, mutexFutex);    
+    if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
+        struct futex* f;
+        U32 result = 0;
+
+        if (readd(thread, addr) != value) {
+            BOXEDWINE_UNLOCK(thread, mutexFutex);
+            return -K_EWOULDBLOCK;
+        }
+        f=getFutex(thread, ramAddress);
+        
+        if (!f) {
+            f = allocFutex(thread, ramAddress, 0);            
+        }
+        if (pTime) {
+            U32 seconds = readd(thread, pTime);
+            U32 nano = readd(thread, pTime + 4);
+            U32 millies = seconds * 1000 + nano / 1000000 + getMilliesSinceStart();
+            if (BOXEDWINE_WAIT_TIMEOUT(thread, f->cond, mutexFutex, millies)!=0) {
+                result = K_ETIMEDOUT;
+            }
+        } else {
+            BOXEDWINE_WAIT(thread, f->cond, mutexFutex);
+        }
+        freeFutex(f);
+        BOXEDWINE_UNLOCK(thread, mutexFutex);
+        return result;
+    } else if (op==FUTEX_WAKE_PRIVATE || op==FUTEX_WAKE) {
+        int i;
+        U32 count = 0;
+        for (i=0;i<MAX_FUTEXES && count<value;i++) {
+            if (system_futex[i].address==ramAddress) {
+                BOXEDWINE_SIGNAL(system_futex[i].cond);
+                count++;
+            }
+        }
+        BOXEDWINE_UNLOCK(thread, mutexFutex);
+        return count;
+    } else {
+        kwarn("syscall __NR_futex op %d not implemented", op);
+        BOXEDWINE_UNLOCK(thread, mutexFutex);
+        return -1;
+    }
+#else
     if (op==FUTEX_WAIT || op==FUTEX_WAIT_PRIVATE) {
         struct futex* f=getFutex(thread, ramAddress);
         U32 millies;
@@ -220,7 +278,7 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         for (i=0;i<MAX_FUTEXES && count<value;i++) {
             if (system_futex[i].address==ramAddress && !system_futex[i].wake) {
                 system_futex[i].wake = TRUE;
-                wakeThread(system_futex[i].thread);				
+                wakeThread(thread, system_futex[i].thread);				
                 count++;
             }
         }
@@ -229,6 +287,7 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         kwarn("syscall __NR_futex op %d not implemented", op);
         return -1;
     }
+#endif
 }
 
 BOOL runSignals(struct KThread* thread) {
@@ -494,7 +553,9 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
     pop32(cpu); // signal
     pop32(cpu); // address
     context = pop32(cpu);
+#ifndef BOXEDWINE_VM
     cpu->thread->waitStartTime = pop32(cpu);
+#endif
     cpu->thread->interrupted = pop32(cpu);
 
 #ifdef LOG_OPS
@@ -510,7 +571,7 @@ void OPCALL onExitSignal(struct CPU* cpu, struct Op* op) {
     cpu->thread->inSignal--;
     
     if (cpu->thread->waitingForSignalToEnd) {
-        wakeThread(cpu->thread->waitingForSignalToEnd);
+        wakeThread(cpu->thread, cpu->thread->waitingForSignalToEnd);
         cpu->thread->waitingForSignalToEnd = 0;		
     }
     if (cpu->thread->waitingForSignalToEndMaskToRestore & RESTORE_SIGNAL_MASK) {
@@ -555,12 +616,18 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo, U32 errorNo) {
         } else if (!(action->flags & K_SA_NODEFER)) {
             thread->inSigMask|= 1 << (signal-1);
         }
+#ifdef BOXEDWINE_VM
+        if (thread->waitingMutex) {
+            if (!(action->flags & K_SA_RESTART))
+                interrupted = 1;
+        }
+#else
         if (thread->waitNode) {
             if (!(action->flags & K_SA_RESTART))
                 interrupted = 1;
-            wakeThread(thread);
+            wakeThread(thread, thread);
         }		
-                
+#endif           
 		if (altStack)
 			context = thread->alternateStack + thread->alternateStackSize - CONTEXT_SIZE;
 		else
@@ -584,7 +651,9 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo, U32 errorNo) {
             }
                         
             push32(&thread->cpu, interrupted);
+#ifndef BOXEDWINE_VM
             push32(&thread->cpu, thread->waitStartTime);
+#endif
             push32(&thread->cpu, context);
             push32(&thread->cpu, address);			
             push32(&thread->cpu, signal);
@@ -596,7 +665,9 @@ void runSignal(struct KThread* thread, U32 signal, U32 trapNo, U32 errorNo) {
             thread->cpu.reg[1].u32 = 0;
             thread->cpu.reg[2].u32 = 0;	
             push32(&thread->cpu, interrupted);
+#ifndef BOXEDWINE_VM
             push32(&thread->cpu, thread->waitStartTime);
+#endif
             push32(&thread->cpu, context);
             push32(&thread->cpu, 0);			
             push32(&thread->cpu, signal);

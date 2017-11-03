@@ -29,6 +29,13 @@
 #include "kshm.h"
 #include "pbl.h"
 
+#ifdef BOXEDWINE_VM
+#include <SDL.h>
+
+extern SDL_mutex *mutexProcess;
+extern SDL_cond *condProcessPid;
+#endif
+
 #define ADDRESS_PROCESS_MMAP_START		0xD0000
 #define ADDRESS_PROCESS_NATIVE          0xE0000
 #define ADDRESS_PROCESS_LOADER			0xF0000

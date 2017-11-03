@@ -18,13 +18,11 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <SDL.h>
 
 FILE* logFile;
 
 void kpanic(const char* msg, ...) {
-    int j = 0;
-    int i;
-
     va_list argptr;
     va_start(argptr, msg);
     vfprintf(stderr, msg, argptr);
@@ -38,8 +36,8 @@ void kpanic(const char* msg, ...) {
         fflush(logFile);
         fclose(logFile);
     }
-    i=1/j;
-    printf("%i\n", i); // just use it so it doesn't get optimized out
+    SDL_Delay(5000);
+    exit(1);
 }
 
 void kwarn(const char* msg, ...) {

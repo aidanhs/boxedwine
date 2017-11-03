@@ -709,7 +709,7 @@ void onMouseButtonUp(U32 button) {
             signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
     if (touchEvents.waitingToReadThread)
-        wakeThread(touchEvents.waitingToReadThread);
+        wakeThread(NULL, touchEvents.waitingToReadThread);
 }
 
 void onMouseButtonDown(U32 button) {
@@ -730,7 +730,7 @@ void onMouseButtonDown(U32 button) {
             signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
     }
     if (touchEvents.waitingToReadThread)
-        wakeThread(touchEvents.waitingToReadThread);
+        wakeThread(NULL, touchEvents.waitingToReadThread);
 }
 
 void onMouseWheel(S32 value) {
@@ -757,7 +757,7 @@ void onMouseWheel(S32 value) {
             signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);
     }
     if (touchEvents.waitingToReadThread)
-        wakeThread(touchEvents.waitingToReadThread);
+        wakeThread(NULL, touchEvents.waitingToReadThread);
 }
 
 void onMouseMove(U32 x, U32 y) {
@@ -782,7 +782,7 @@ void onMouseMove(U32 x, U32 y) {
                 signalIO(process, K_POLL_IN, 0, touchEvents.asyncProcessFd);		
         }
         if (touchEvents.waitingToReadThread)
-            wakeThread(touchEvents.waitingToReadThread);
+            wakeThread(NULL, touchEvents.waitingToReadThread);
     }
 }
 
@@ -799,7 +799,7 @@ void onKeyDown(U32 code) {
             signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
     if (keyboardEvents.waitingToReadThread)
-        wakeThread(keyboardEvents.waitingToReadThread);
+        wakeThread(NULL, keyboardEvents.waitingToReadThread);
 }
 
 void onKeyUp(U32 code) {
@@ -815,5 +815,5 @@ void onKeyUp(U32 code) {
             signalIO(process, K_POLL_IN, 0, keyboardEvents.asyncProcessFd);		
     }
     if (keyboardEvents.waitingToReadThread)
-        wakeThread(keyboardEvents.waitingToReadThread);
+        wakeThread(NULL, keyboardEvents.waitingToReadThread);
 }

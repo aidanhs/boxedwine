@@ -15,12 +15,9 @@
 
 static void write8(struct x64_Data* data, U8 value) {
     if (!data->availableMem) {
-        U8* next = allocExecutable64kBlock();
+        struct Memory* memory = data->cpu->memory;
+        allocExecutable64kBlock(memory);
         data->availableMem = 64*1024;
-        x64AvailableMem += 64*1024;        
-        if (next!=x64Mem+x64MemPos+data->memPos) {
-            kpanic("Memory problem");
-        }
     }
     data->memStart[data->memPos++] = value;
     data->availableMem--;

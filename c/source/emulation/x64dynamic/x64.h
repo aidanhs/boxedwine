@@ -142,10 +142,6 @@ typedef U32 (*DECODER)(struct x64_Data* data);
 
 extern DECODER x64Decoder[1024];
 
-extern U8* x64Mem;
-extern U32 x64MemPos;
-extern U32 x64AvailableMem;
-
 void x64_mapAddress(struct x64_Data* data, U32 ip, void* address);
 
 void x64_writeToRegFromMem(struct x64_Data* data, U32 toReg, U32 isToRegRex, U32 reg2, U32 isReg2Rex, S32 reg3, U32 isReg3Rex, U32 reg3Shift, S32 displacement, U32 bytes, U32 translateToHost);

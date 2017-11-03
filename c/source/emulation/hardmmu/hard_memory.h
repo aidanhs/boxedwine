@@ -39,6 +39,14 @@ struct Memory {
 #ifdef LOG_OPS
     U32 log;
 #endif
+#ifdef BOXEDWINE_VM
+    U8* x64Mem;
+    U32 x64MemPos;
+    U32 x64AvailableMem;
+    U8* executableMemory;
+    U8 executable64kBlocks[0x10000];
+    SDL_mutex* executableMemoryMutex;
+#endif
 };
 
 INLINE void* getNativeAddress(struct Memory* memory, U32 address) {

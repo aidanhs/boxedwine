@@ -52,6 +52,9 @@ void closesocket(int socket) { close(socket); }
 #include <string.h>
 #include <stdio.h>
 
+U32 wakeAndResetWaitingOnReadThreads(struct KSocket* s);
+U32 wakeAndResetWaitingOnWriteThreads(struct KSocket* s);
+
 #define MAX_BUFFER_SIZE 4*1024
 
 #define MAX_PENDING_CONNECTIONS 10
@@ -122,14 +125,82 @@ struct KSocket {
     BOOL outClosed;
     struct ringbuf* recvBuffer;
     struct KSocketMsg* msgs;	
-    struct KThread* waitingOnReadThread[MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET];
-    struct KThread* waitingOnWriteThread[MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET];
+#ifdef BOXEDWINE_VM
+    SDL_mutex* bufferMutex;
+    SDL_cond* bufferCond;
+    SDL_mutex* connectionMutex;
+    SDL_cond* connectionCond;
+#endif
     struct KThread* waitingOnConnectThread;
+    struct KThread* waitingOnReadThread[MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET];
+    struct KThread* waitingOnWriteThread[MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET];    
     S32 nativeSocket;
     U32 flags;
     int error;
 };
 
+#ifdef BOXEDWINE_VM
+void waitOnSocketRead(struct KSocket* s, struct KThread* thread) {    
+    // BOXEDWINE_LOCK(thread, s->bufferMutex);
+    // should already be locked
+    if (ringbuf_is_empty(s->recvBuffer) && !s->msgs) {
+        U32 i;
+        BOOL found = FALSE;
+
+        for (i=0;i<MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET;i++) {
+            if (!s->waitingOnReadThread[i]) {
+                s->waitingOnReadThread[i] = thread;
+                found = TRUE;
+                break;
+            }
+        }
+        if (!found) {
+            kpanic("%d tried to wait on a socket read, but the socket read queue is full.", thread->id);
+        }
+        while (ringbuf_is_empty(s->recvBuffer) && !s->msgs) {
+            BOXEDWINE_WAIT(thread, s->bufferCond, s->bufferMutex);
+        }
+        s->waitingOnReadThread[i] = NULL;
+    }
+    //BOXEDWINE_UNLOCK(thread, s->bufferMutex);
+}
+
+void waitOnSocketWrite(struct KSocket* s, struct KThread* thread) {
+    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
+    if (ringbuf_is_full(s->connection->recvBuffer)) {
+        U32 i;
+        BOOL found = FALSE;
+
+        for (i=0;i<MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET;i++) {
+            if (!s->waitingOnWriteThread[i]) {
+                s->waitingOnWriteThread[i] = thread;
+                found = TRUE;
+                break;
+            }
+        }
+        if (!found) {
+            kpanic("%d tried to wait on a socket write, but the socket write queue is full.", thread->id);
+        }
+        while (ringbuf_is_full(s->connection->recvBuffer)) {
+            BOXEDWINE_WAIT(thread, s->connection->bufferCond, s->connection->bufferMutex);
+        }
+        s->waitingOnWriteThread[i] = NULL;
+    }
+    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+}
+
+void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
+    if (!s->connectionMutex)
+        s->connectionMutex = SDL_CreateMutex();
+    if (!s->connectionCond)
+        s->connectionCond = SDL_CreateCond();
+    BOXEDWINE_LOCK(thread, s->connectionMutex);
+    s->waitingOnConnectThread = thread;
+    BOXEDWINE_WAIT(thread, s->connectionCond, s->connectionMutex);
+    BOXEDWINE_UNLOCK(thread, s->connectionMutex);
+}
+
+#else
 struct KSocket* waitingNativeSockets;
 fd_set waitingReadset;
 fd_set waitingWriteset;
@@ -154,34 +225,6 @@ U32 getWaitingOnWriteThreadCount(struct KSocket* s) {
         if (s->waitingOnWriteThread[i])
             result++;
     }
-    return result;
-}
-
-U32 wakeAndResetWaitingOnReadThreads(struct KSocket* s) {
-    U32 i;
-    U32 result = 0;
-
-    for (i=0;i<MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET;i++) {
-        if (s->waitingOnReadThread[i]) {
-            result++;
-            wakeThread(s->waitingOnReadThread[i]);
-            s->waitingOnReadThread[i] = 0;
-        }
-    } 
-    return result;
-}
-
-U32 wakeAndResetWaitingOnWriteThreads(struct KSocket* s) {
-    U32 i;
-    U32 result = 0;
-
-    for (i=0;i<MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET;i++) {
-        if (s->waitingOnWriteThread[i]) {
-            result++;
-            wakeThread(s->waitingOnWriteThread[i]);
-            s->waitingOnWriteThread[i] = 0;
-        }
-    }    
     return result;
 }
 
@@ -291,6 +334,42 @@ void waitOnSocketWrite(struct KSocket* s, struct KThread* thread) {
     kpanic("%d tried to wait on a socket write, but the socket write queue is full.", thread->id);
 }
 
+void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
+    if (s->waitingOnConnectThread)
+        kpanic("%d tried to wait on a socket connect, but %d is already waiting.", thread->id, s->waitingOnConnectThread->id);
+    s->waitingOnConnectThread = thread;
+    addClearOnWake(thread, &s->waitingOnConnectThread);
+}
+#endif
+
+U32 wakeAndResetWaitingOnReadThreads(struct KSocket* s) {
+    U32 i;
+    U32 result = 0;
+
+    for (i=0;i<MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET;i++) {
+        if (s->waitingOnReadThread[i]) {
+            result++;
+            wakeThread(NULL, s->waitingOnReadThread[i]);
+            s->waitingOnReadThread[i] = 0;
+        }
+    } 
+    return result;
+}
+
+U32 wakeAndResetWaitingOnWriteThreads(struct KSocket* s) {
+    U32 i;
+    U32 result = 0;
+
+    for (i=0;i<MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET;i++) {
+        if (s->waitingOnWriteThread[i]) {
+            result++;
+            wakeThread(NULL, s->waitingOnWriteThread[i]);
+            s->waitingOnWriteThread[i] = 0;
+        }
+    }    
+    return result;
+}
+
 S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write) {
     S32 result;
 
@@ -335,6 +414,7 @@ S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write
     else
         result = -K_EIO;
 #endif
+#ifndef BOXEDWINE_VM
     if (result == -K_EWOULDBLOCK) {
         if (write) {
             waitOnSocketWrite(s, thread);
@@ -344,15 +424,9 @@ S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write
         addWaitingNativeSocket(s);        
         result = -K_WAIT;
     }
+#endif
     s->error = -result;
     return result;
-}
-
-void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
-    if (s->waitingOnConnectThread)
-        kpanic("%d tried to wait on a socket connect, but %d is already waiting.", thread->id, s->waitingOnConnectThread->id);
-    s->waitingOnConnectThread = thread;
-    addClearOnWake(thread, &s->waitingOnConnectThread);
 }
 
 BOOL unixsocket_isDirectory(struct FsNode* node) {
@@ -435,7 +509,7 @@ void unixsocket_onDelete(struct KObject* obj) {
         wakeAndResetWaitingOnReadThreads(s->connection);
         wakeAndResetWaitingOnWriteThreads(s->connection);
         if (s->connection->waitingOnConnectThread)
-            wakeThread(s->connection->waitingOnConnectThread);
+            wakeThread(NULL, s->connection->waitingOnConnectThread);
     }
     if (s->connecting) {		
         for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
@@ -461,7 +535,7 @@ void unixsocket_onDelete(struct KObject* obj) {
     wakeAndResetWaitingOnWriteThreads(s);
     freeSocket(s);	
     if (s->waitingOnConnectThread)
-        wakeThread(s->waitingOnConnectThread);
+        wakeThread(NULL, s->waitingOnConnectThread);
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -534,12 +608,16 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     }
     if (s->outClosed || !s->connection)
         return -K_EPIPE;
+    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
     if (ringbuf_is_full(s->connection->recvBuffer)) {
-        if (s->blocking) {
-            waitOnSocketWrite(s, thread);
-            return -K_WAIT;
+        if (!s->blocking) {
+            BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+            return -K_EWOULDBLOCK;
         }
-        return -K_EWOULDBLOCK;
+        waitOnSocketWrite(s, thread);
+#ifndef BOXEDWINE_VM
+        return -K_WAIT;                
+#endif
     }
     //printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
     while (!ringbuf_is_full(s->connection->recvBuffer) && len) {
@@ -559,6 +637,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
     }
+    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
     return count;
 }
 
@@ -571,7 +650,9 @@ U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U
     }
     if (s->outClosed || !s->connection)
         return -K_EPIPE;
+    BOXEDWINE_LOCK(NULL, s->connection->bufferMutex);
     if (ringbuf_is_full(s->connection->recvBuffer)) {
+        BOXEDWINE_UNLOCK(NULL, s->connection->bufferMutex);
         return -K_EWOULDBLOCK;
     }
     //printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
@@ -579,6 +660,7 @@ U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U
     count++;
     if (s->connection)
         wakeAndResetWaitingOnReadThreads(s->connection);
+    BOXEDWINE_UNLOCK(NULL, s->connection->bufferMutex);
     return count;
 }
 
@@ -587,13 +669,20 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
     U32 count = 0;
     if (!s->inClosed && !s->connection)
         return -K_EPIPE;
+    BOXEDWINE_LOCK(thread, s->bufferMutex);
     if (ringbuf_is_empty(s->recvBuffer)) {
-        if (s->inClosed)
+        if (s->inClosed) {
+            BOXEDWINE_UNLOCK(thread, s->bufferMutex);
             return 0;
-        if (!s->blocking)
+        }
+        if (!s->blocking) {
+            BOXEDWINE_UNLOCK(thread, s->bufferMutex);
             return -K_EWOULDBLOCK;
+        }
         waitOnSocketRead(s, thread);
+#ifndef BOXEDWINE_VM
         return -K_WAIT;
+#endif
     }
 #ifdef HAS_64BIT_MMU
     count = len;
@@ -621,6 +710,7 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
 #endif
     if (s->connection)
         wakeAndResetWaitingOnWriteThreads(s->connection);
+    BOXEDWINE_UNLOCK(thread, s->bufferMutex);
     return count;
 }
 
@@ -691,12 +781,27 @@ void nativesocket_onDelete(struct KObject* obj) {
     struct KSocket* s = obj->socket;
     closesocket(s->nativeSocket);
     s->nativeSocket = 0;
+#ifndef BOXEDWINE_VM
     removeWaitingSocket(s);
+#endif
+}
+
+void setNativeBlocking(int nativeSocket, BOOL blocking) {
+#ifdef WIN32
+    u_long mode = blocking?0:1;
+    ioctlsocket(nativeSocket, FIONBIO, &mode);           
+#else
+    if (blocking)
+        fcntl(nativeSocket, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) & ~O_NONBLOCK);
+    else
+        fcntl(nativeSocket, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) | O_NONBLOCK);
+#endif
 }
 
 void nativesocket_setBlocking(struct KObject* obj, BOOL blocking) {
     struct KSocket* s = obj->socket;
     s->blocking = blocking;
+    setNativeBlocking(s->nativeSocket, blocking);
 }
 
 BOOL nativesocket_isBlocking(struct KObject* obj) {
@@ -760,7 +865,7 @@ BOOL nativesocket_isWriteReady(struct KObject* obj) {
 
 void nativesocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
     struct KSocket* s = obj->socket;
-
+#ifndef BOXEDWINE_VM
     if (events & K_POLLIN) {
         waitOnSocketRead(s, thread);
     }
@@ -768,6 +873,7 @@ void nativesocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32
         waitOnSocketWrite(s, thread);
     }
     addWaitingNativeSocket(s);
+#endif
 }
 
 U32 nativesocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
@@ -869,6 +975,12 @@ struct KSocket* allocSocket() {
     result->recvLen = 1048576;
     result->sendLen = 1048576;
     result->blocking = 1;
+#ifdef BOXEDWINE_VM
+    if (!result->bufferMutex)
+        result->bufferMutex = SDL_CreateMutex();
+    if (!result->bufferCond)
+        result->bufferCond = SDL_CreateCond();
+#endif
     if (!result->recvBuffer)
         result->recvBuffer = ringbuf_new(1024 * 1024);
     return result;
@@ -962,13 +1074,8 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
             s->protocol = protocol;
             s->type = type;
             s->nativeSocket = nativeSocket;
-#ifdef WIN32
-            {
-                u_long mode = 1;
-                ioctlsocket(nativeSocket, FIONBIO, &mode);
-            }
-#else
-            fcntl(nativeSocket, F_SETFL, fcntl(nativeSocket, F_GETFL, 0) | O_NONBLOCK);
+#ifndef BOXEDWINE_VM
+            setNativeBlocking(nativeSocket, FALSE);
 #endif
             if (returnSocket)
                 *returnSocket = s;
@@ -1058,7 +1165,9 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 s->error = 0;
                 s->connecting = 0;
                 s->connected = 1;
+#ifndef BOXEDWINE_VM
                 removeWaitingSocket(s);
+#endif
                 return 0;
             }
             return -K_WAIT;
@@ -1121,7 +1230,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                         destination->pendingConnectionsCount++;
                         s->connecting = destination;
                         if (destination->waitingOnConnectThread)
-                            wakeThread(destination->waitingOnConnectThread);
+                            wakeThread(NULL, destination->waitingOnConnectThread);
                         break;
                     }
                 }
@@ -1208,13 +1317,8 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
             newSocket->protocol = s->protocol;
             newSocket->type = s->type;
             newSocket->nativeSocket = result;
-#ifdef WIN32
-            {
-                u_long mode = 1;
-                ioctlsocket(result, FIONBIO, &mode);
-            }
-#else
-            fcntl(result, F_SETFL, fcntl(result, F_GETFL, 0) | O_NONBLOCK);
+#ifndef BOXEDWINE_VM
+            setNativeBlocking(result, FALSE);
 #endif
             if (address)
                 memcopyFromNative(thread, address, (char*)&addr, addrlen);
@@ -1258,7 +1362,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
     resultSocket->outClosed = FALSE;
     connection->connecting = 0;
     if (connection->waitingOnConnectThread)
-        wakeThread(connection->waitingOnConnectThread);
+        wakeThread(NULL, connection->waitingOnConnectThread);
     return result;
 }
 
@@ -1658,6 +1762,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             }
         }
     }
+    BOXEDWINE_LOCK(thread, s->bufferMutex);
     if (!s->nativeSocket) {
         msg->next = 0;
         if (s->connection) {
@@ -1674,6 +1779,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             wakeAndResetWaitingOnReadThreads(s->connection);
         }
     }
+    BOXEDWINE_UNLOCK(thread, s->bufferMutex);
     return result;
 }
 
@@ -1733,13 +1839,17 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     }
     if (s->domain==K_AF_NETLINK)
         return -K_EIO;
+    BOXEDWINE_LOCK(thread, s->bufferMutex);
     if (!s->msgs) {
         if (!s->blocking) {
+            BOXEDWINE_UNLOCK(thread, s->bufferMutex);
             return -K_EWOULDBLOCK;
         }
         // :TODO: what about a time out
-        waitOnSocketRead(s, thread);		
+        waitOnSocketRead(s, thread);	
+#ifndef BOXEDWINE_VM
         return -K_WAIT;
+#endif
     }
     msg = s->msgs;
     readMsgHdr(thread, address, &hdr);
@@ -1768,6 +1878,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     freeSocketMsg(msg);
     if (s->connection)
         wakeAndResetWaitingOnWriteThreads(s->connection);
+    BOXEDWINE_UNLOCK(thread, s->bufferMutex);
     return result;
 }
 

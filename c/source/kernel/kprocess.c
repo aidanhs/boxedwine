@@ -488,11 +488,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
         if (openNode) {
             openNode->func->close(openNode);
         }
-#ifdef BOXEDWINE_VM
-        platformStartThread(thread);
-#else
-        scheduleThread(thread);
-#endif
+        startThread(thread);
     } else {
         if (openNode) {
             openNode->func->close(openNode);
@@ -515,9 +511,9 @@ void processOnExitThread(struct KThread* thread) {
         }
         cleanupProcess(process); // release RAM, sockets, etc now.  No reason to wait to do that until waitpid is called
         process->terminated = TRUE;
-        wakeThreads(WAIT_PID);
+        wakeThreads(thread, WAIT_PID);
         if (process->wakeOnExitOrExec) {
-            wakeThread(process->wakeOnExitOrExec);
+            wakeThread(thread, process->wakeOnExitOrExec);
             process->wakeOnExitOrExec = 0;
         }
     }
@@ -541,43 +537,53 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
     struct KProcess* process = 0;
     U32 result;
 
-    if (pid>0) {
-        process = getProcessById(pid);		
-        if (!process) {
-            return -K_ECHILD;
-        }				
-        if (!isProcessStopped(process) && !isProcessTerminated(process)) {
-            process = 0;			
-        }
-    } else {
-        U32 index=0;
-        struct KProcess* p=0;
+    BOXEDWINE_LOCK(thread, mutexProcess);
+    while (1) {
+        if (pid>0) {
+            process = getProcessById(pid);		
+            if (!process) {
+                return -K_ECHILD;
+            }				
+            if (!isProcessStopped(process) && !isProcessTerminated(process)) {
+                process = 0;			
+            }
+        } else {
+            U32 index=0;
+            struct KProcess* p=0;
 
-        if (pid==0)
-            pid = thread->process->groupId;
-        while (getNextProcess(&index, &p)) {
-            if (p && (isProcessStopped(p) || isProcessTerminated(p))) {
-                if (pid == -1) {
-                    if (p->parentId == thread->process->id) {
-                        process = p;
-                        break;
-                    }
-                } else {
-                    if (p->groupId == -pid) {
-                        process = p;
-                        break;
+            if (pid==0)
+                pid = thread->process->groupId;
+            while (getNextProcess(&index, &p)) {
+                if (p && (isProcessStopped(p) || isProcessTerminated(p))) {
+                    if (pid == -1) {
+                        if (p->parentId == thread->process->id) {
+                            process = p;
+                            break;
+                        }
+                    } else {
+                        if (p->groupId == -pid) {
+                            process = p;
+                            break;
+                        }
                     }
                 }
             }
         }
-    }
-    if (!process) {
-        if (options & 1) { // WNOHANG
-            return 0;
+        if (process) {
+            break;
         } else {
-            thread->waitType = WAIT_PID;
-            return -K_WAIT;
-        }
+            if (options & 1) { // WNOHANG
+                BOXEDWINE_UNLOCK(thread, mutexProcess);
+                return 0;
+            } else {
+    #ifdef BOXEDWINE_VM
+                BOXEDWINE_WAIT(thread, condProcessPid, mutexProcess);
+    #else
+                thread->waitType = WAIT_PID;
+                return -K_WAIT;
+    #endif
+            }
+        }       
     }
     if (status!=0) {
         int s = 0;
@@ -593,6 +599,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
     result = process->id;
     removeProcess(process);
     freeProcess(process);
+    BOXEDWINE_UNLOCK(thread, mutexProcess);
     return result;
 }
 
@@ -698,11 +705,26 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
             newThread->cpu.reg[4].u32 = child_stack;
         newThread->cpu.eip.u32 += 2;
         newThread->cpu.reg[0].u32 = 0;
-        //runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first
-        scheduleThread(newThread);
+        //runThreadSlice(newThread); // if the new thread runs before the current thread, it will likely call exec which will prevent unnessary copy on write actions when running the current thread first        
         if (vFork) {
-            waitThread(thread);
             newProcess->wakeOnExitOrExec = thread;
+#ifdef BOXEDWINE_VM
+            {
+                SDL_cond* cond = SDL_CreateCond();
+                SDL_mutex* mutex = SDL_CreateMutex();
+                BOXEDWINE_LOCK(thread, mutex);
+                startThread(newThread);
+                BOXEDWINE_WAIT(thread, cond, mutex);
+                BOXEDWINE_UNLOCK(thread, mutex);
+                SDL_DestroyCond(cond);
+                SDL_DestroyMutex(mutex);
+            }
+#else
+            startThread(newThread);
+            waitThread(thread);            
+#endif            
+        } else {
+            startThread(newThread);
         }
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
@@ -723,7 +745,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         newThread->cpu.reg[4].u32 = child_stack;
         newThread->cpu.reg[4].u32+=8;
         newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
-        scheduleThread(newThread);
+        startThread(newThread);
         return thread->process->id;
     } else {
         kpanic("sys_clone does not implement flags: %X", flags);
@@ -947,11 +969,14 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     {
         struct KProcess* process = thread->process;
         U32 id = thread->id;
+#ifndef BOXEDWINE_VM
         struct KCNode* scheduledNode = thread->scheduledNode;
-
+#endif
         memset(thread, 0, sizeof(struct KThread));
         thread->id = id;
+#ifndef BOXEDWINE_VM
         thread->scheduledNode = scheduledNode;
+#endif
         thread->process = process;
         initCPU(&thread->cpu, process->memory);
     }
@@ -968,7 +993,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     thread->alternateStack = 0;
     while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
         if (processThread && processThread!=thread) {
-            freeThread(processThread);
+            freeThread(thread, processThread);
             threadIndex=0; // start the iterator over since we removed something
         }
     }
@@ -1001,7 +1026,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     openNode->func->close(openNode);
 
     if (process->wakeOnExitOrExec) {
-        wakeThread(process->wakeOnExitOrExec);
+        wakeThread(thread, process->wakeOnExitOrExec);
         process->wakeOnExitOrExec = 0;
     }
     free(tmp128k);
@@ -1026,17 +1051,17 @@ U32 syscall_exitgroup(struct KThread* thread, U32 code) {
 
     while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
         if (processThread && processThread!=thread) {
-            freeThread(processThread);
+            freeThread(thread, processThread);
             threadIndex=0; // start the iterator over since we removed something
         }
     }
     process->exitCode = code;
-    threadDone(&thread->cpu);
-    freeThread(thread);	
+    threadDone(&thread->cpu);    
     if (getProcessCount()==1) {
         // no one left to wait on this process
         removeProcess(process);
     }
+    freeThread(thread, thread);	 // will not return if BOXEDWINE_VM
     return -K_CONTINUE;
 }
 
@@ -1314,9 +1339,26 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
         // must set CPU state before runSignal since it will be stored
         thread->cpu.reg[0].u32 = 0; 
         thread->cpu.eip.u32+=2;
+#ifdef BOXEDWINE_VM
+        pauseThread(target);
+#endif
         runSignal(target, signal, -1, 0);
         target->waitingForSignalToEnd = thread;
+#ifdef BOXEDWINE_VM
+        {
+            SDL_cond* cond = SDL_CreateCond();
+            SDL_mutex* mutex = SDL_CreateMutex();
+            BOXEDWINE_LOCK(thread, mutex);
+            resumeThread(target);
+            BOXEDWINE_WAIT(thread, cond, mutex);
+            BOXEDWINE_UNLOCK(thread, mutex);
+            SDL_DestroyCond(cond);
+            SDL_DestroyMutex(mutex);
+        }
+        resumeThread(target);
+#else        
         waitThread(thread);			
+#endif
         return -K_CONTINUE;
     } else {
         process->pendingSignals |= (1 << (signal-1));

@@ -118,7 +118,7 @@ void audioCallback(void *userdata, U8* stream, S32 len) {
         return;
     }
 	if (data->dspWaitingToWriteThread)
-		wakeThread(data->dspWaitingToWriteThread);
+		wakeThread(NULL, data->dspWaitingToWriteThread);
     if (len) {
         memset(stream+result, data->got.silence, len);
         if (data->closePending)

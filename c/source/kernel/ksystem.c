@@ -30,6 +30,13 @@
 
 #include <time.h>
 
+#ifdef BOXEDWINE_VM
+
+SDL_mutex *mutexProcess;
+SDL_cond *condProcessPid;
+
+#endif
+
 U32 screenCx = 800;
 U32 screenCy = 600;
 
@@ -41,6 +48,11 @@ void initSystem() {
     initArray(&processes, 100);		
     //mappedFileCache = pblMapNewHashMap();
     initHashmap(&mappedFileCache);
+
+#ifdef BOXEDWINE_VM
+    mutexProcess = SDL_CreateMutex();
+    condProcessPid = SDL_CreateCond();
+#endif
 }
 
 #ifndef HAS_64BIT_MMU
@@ -219,6 +231,9 @@ U32 syscall_sysinfo(struct KThread* thread, U32 address) {
 }
 
 const char* getFunctionName(const char* name, U32 moduleEip) {
+#ifdef BOXEDWINE_VM
+    return "";
+#else
     struct KThread* thread;
     struct KProcess* process;
     const char* args[5];
@@ -264,6 +279,7 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
         }
     }
     return buffer;
+#endif
 }
 void walkStack(struct CPU* cpu, U32 eip, U32 ebp, U32 indent) {
     U32 prevEbp;
@@ -303,8 +319,8 @@ void printStacks() {
                 if (thread) {
                     struct CPU* cpu=&thread->cpu;
 
-                    klog("  thread %X %s", thread->id, (thread->waitNode?"WAITING":"RUNNING"));
-                    if (thread->waitNode) {
+                    klog("  thread %X %s", thread->id, (IS_THREAD_WAITING(thread)?"WAITING":"RUNNING"));
+                    if (IS_THREAD_WAITING(thread)) {
                         char buffer[1024];
                         syscallToString(&thread->cpu, buffer);
                         klog("    %s", buffer);                        

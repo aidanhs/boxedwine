@@ -21,21 +21,41 @@
 
 #include "kthread.h"
 
+void unscheduleThread(struct KThread* currentThread, struct KThread* thread); // will not return if thread is current thread and BOXEDWINE_VM
 U32 threadSleep(struct KThread* thread, U32 ms);
+void wakeThread(struct KThread* currentThread, struct KThread* thread);
+void startThread(struct KThread* thread);
+void wakeThreads(struct KThread* currentThread, U32 wakeType);
+void addTimer(struct KTimer* timer);
+void removeTimer(struct KTimer* timer);
+void pauseThread(struct KThread* thread);
+void resumeThread(struct KThread* thread);
+
+#ifdef BOXEDWINE_VM
+void BOXEDWINE_LOCK(struct KThread* thread, SDL_mutex* mutex);
+void BOXEDWINE_UNLOCK(struct KThread* thread, SDL_mutex* mutex);
+void BOXEDWINE_SIGNAL(SDL_cond* cond);
+void BOXEDWINE_SIGNAL_ALL(SDL_cond* cond);
+void BOXEDWINE_WAIT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mutex);
+U32 BOXEDWINE_WAIT_TIMEOUT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mutex, U32 ms);
+#else
+
+#define BOXEDWINE_LOCK(x,y)
+#define BOXEDWINE_UNLOCK(thread, x)
+#define BOXEDWINE_SIGNAL(cond)
+#define BOXEDWINE_SIGNAL_ALL(cond)
+#define BOXEDWINE_WAIT(thread, cond, lock)
+#define BOXEDWINE_WAIT_TIMEOUT(thread, cond, lock, ms)
 
 struct KTimer;
 
-void wakeThread(struct KThread* thread);
-void scheduleThread(struct KThread* thread);
-void unscheduleThread(struct KThread* thread);
-void waitThread(struct KThread* thread);
-void wakeThreads(U32 wakeType);
 BOOL runSlice();
 void runUntil(struct KThread* thread, U32 eip);
 void runThreadSlice(struct KThread* thread);
-void addTimer(struct KTimer* timer);
-void removeTimer(struct KTimer* timer);
+void waitThread(struct KThread* thread);
+void scheduleThread(struct KThread* thread);
 U32 getMHz();
 U32 getMIPS();
+#endif
 
 #endif

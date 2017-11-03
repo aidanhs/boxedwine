@@ -111,6 +111,29 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, handle);
     S32 i;
     U32 len = 0;
+
+#ifdef BOXEDWINE_VM
+    if (fd==0) {
+        return -K_EBADF;
+    }
+    if (!canWriteFD(fd)) {
+        return -K_EINVAL;
+    }
+    for (i=0;i<iovcnt;i++) {
+        U32 buf = readd(thread, iov + i * 8);
+        U32 toWrite = readd(thread, iov + i * 8 + 4);
+        S32 result;
+
+        result = fd->kobject->access->write(thread, fd->kobject, buf, toWrite);
+        if (result<0) {
+            if (i>0) {
+                kwarn("writev partial fail: TODO file pointer should not change");
+            }
+            return result;
+        }
+        len+=result;
+    }
+#else
     U32 start = thread->waitData1;
     U32 startOffset = thread->waitData2;
 
@@ -153,6 +176,7 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt) {
         }
         len+=result;
     }
+#endif
     return len;
 }
 

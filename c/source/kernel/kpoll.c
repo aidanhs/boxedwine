@@ -25,6 +25,44 @@
 #include "kscheduler.h"
 #include "log.h"
 
+#ifdef BOXEDWINE_VM
+S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout) {
+    S32 result = 0;
+    U32 i;
+    U32 startTime = getMilliesSinceStart();
+
+    while (1) {
+        for (i=0;i<count;i++) {
+            struct KFileDescriptor* fd = getFileDescriptor(thread->process, data[i].fd);
+            data[i].revents = 0;
+            if (fd) {
+                if (!fd->kobject->access->isOpen(fd->kobject)) {
+                    data[i].revents = K_POLLHUP;
+                } else {
+                    if ((data[i].events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(fd->kobject)) {
+                        data[i].revents |= K_POLLIN;
+                    } else if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(fd->kobject)) {
+                        data[i].revents |= K_POLLOUT;
+                    }
+                }
+                if (data[i].revents!=0) {
+                    result++;
+                }
+            }
+        }
+        if (!result) {
+            if (getMilliesSinceStart()-startTime>timeout) {
+                return 0;
+            }
+        }
+        if (result)
+            return result;
+        // :TODO: don't poll
+        threadSleep(thread, 10);
+    } 
+    return result;
+}
+#else
 S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout) {
     S32 result = 0;
     U32 i;
@@ -107,3 +145,4 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
     }	
     return -K_WAIT;
 }
+#endif
