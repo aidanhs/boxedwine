@@ -948,11 +948,25 @@ static U32 jump32(struct x64_Data* data) {
 
 // LOOPNZ
 // LOOPZ
-// LOOP
-// JCXZ
 static U32 loop(struct x64_Data* data) {
     S8 offset = x64_fetch8(data);
     kpanic("loop not implemented");
+    return 0;
+}
+
+// LOOP
+static U32 x64loop(struct x64_Data* data) {
+    S8 offset = x64_fetch8(data);
+    x64_cmpRegToValue(data, 1, FALSE, 0, data->ea16?2:4);
+    x64_jumpConditional(data, 4, data->ip+offset);  //jnz
+    return 0;
+}
+
+// JCXZ
+static U32 x64jcxz(struct x64_Data* data) {
+    S8 offset = x64_fetch8(data);
+    x64_cmpRegToValue(data, 1, FALSE, 0, data->ea16?2:4);
+    x64_jumpConditional(data, 4, data->ip+offset);  //jz
     return 0;
 }
 
@@ -1775,7 +1789,7 @@ DECODER x64Decoder[1024] = {
     inst8RMSafeG, inst16RMSafeG, inst8RMSafeG, inst16RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // E0
-    loop, loop, loop, loop, invalidOp, invalidOp, invalidOp, invalidOp,
+    loop, loop, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
     callJw, jmpJw, jmpAp, jmpJb, invalidOp, invalidOp, invalidOp, invalidOp,
     // F0
     lock, invalidOp, repnz, repz, hlt, keepSame, grp3b, grp3w,
@@ -1873,7 +1887,7 @@ DECODER x64Decoder[1024] = {
     inst8RM, inst32RMSafeG, inst8RM, inst32RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // 2e0
-    loop, loop, loop, loop, invalidOp, invalidOp, invalidOp, invalidOp,
+    loop, loop, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
     callJd, jmpJd, invalidOp, jmpJb, invalidOp, invalidOp, invalidOp, invalidOp,
     // 2f0
     lock, invalidOp, repnz, repz, hlt, keepSame, grp3b, grp3d,

@@ -189,6 +189,7 @@ void* x64_initCPU(struct CPU* cpu) {
     void* result;
     struct Memory* memory = cpu->memory;
 
+    SDL_LockMutex(cpu->memory->executableMemoryMutex);
     initData(&data, cpu, cpu->eip.u32);
     result = data.memStart;
 
@@ -211,6 +212,7 @@ void* x64_initCPU(struct CPU* cpu) {
     memory->x64MemPos+=data.memPos;
     memory->x64AvailableMem-=data.memPos;
     x64_translateEip(cpu, cpu->eip.u32);
+    SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
     return result;
 }
 

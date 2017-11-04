@@ -160,6 +160,7 @@ void x64_translateRM(struct x64_Data* data, U32 rm, U32 checkG, U32 checkE, U32 
 void x64_leaToReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 void x64_writeToRegFromE(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 void x64_writeToEFromReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
+void x64_cmpRegToValue(struct x64_Data* data, U32 reg, U32 isRegRex, U32 value, U32 bytes);
 
 void x64_writeOp(struct x64_Data* data);
 void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8bit, U32 isE8bit);

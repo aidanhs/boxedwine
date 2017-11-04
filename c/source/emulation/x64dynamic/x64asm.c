@@ -924,4 +924,31 @@ void x64_writeXchgSpAx(struct x64_Data* data) {
     x64_writeOp(data);
 }
 
+void x64_cmpRegToValue(struct x64_Data* data, U32 reg, U32 isRegRex, S32 value, U32 bytes) {
+    if (reg == 4 && !isRegRex) {
+        reg = HOST_ESP;
+        isRegRex = TRUE;
+    }    
+    if (bytes == 2) {
+        write8(data, 0x66);
+    }
+    if (isRegRex) {
+        write8(data, REX_BASE|REX_MOD_RM);
+    }
+    if (value>=-128 && value<=127) {
+        write8(data, 0x83);
+        write8(data, 0xC0 | (7 << 3) | reg);
+        write8(data, (U8)value);
+    } else {
+        write8(data, 0x81);
+        write8(data, 0xC0 | (7 << 3) | reg);
+        if (bytes == 4) {
+            write32(data, (U32)value);
+        } else if (bytes == 2) {
+            write16(data, (U16)value);
+        }
+    }    
+
+}
+
 #endif
