@@ -71,6 +71,8 @@
 #define CMD_LOAD_GS 12
 #define CMD_SYSCALL 13
 #define CMD_PRINT 14
+#define CMD_CPUID 15
+#define CMD_INVALID_OP 16
 
 struct x64_Data {
     U32 baseOp;

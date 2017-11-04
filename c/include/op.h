@@ -25,7 +25,7 @@ struct Op;
 struct CPU;
 struct Block;
 
-#define MAX_OP_STR 64
+#define MAX_OP_STR 128
 
 typedef void (OPCALL *OpCallback)(struct CPU* cpu, struct Op* op);
 

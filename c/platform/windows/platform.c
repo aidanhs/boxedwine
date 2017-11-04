@@ -346,19 +346,20 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
 {
     if (code == EXCEPTION_ACCESS_VIOLATION) {
 #ifdef BOXEDWINE_VM           
-        if (*((U32*)ep->ContextRecord->Rip)==0x288B4466 || *((U32*)ep->ContextRecord->Rip)==0xE8048B4A) {
+        U32 inst = *((U32*)ep->ContextRecord->Rip);
+        if (inst==0x288B4466 || inst==0xE8048B4A) {
             struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
             U32 page = (U32)ep->ContextRecord->R8;
             U32 offset = (U32)ep->ContextRecord->R13;
 
             x64_translateEip(cpu, (page << PAGE_SHIFT) | offset);
-            if (*((U32*)ep->ContextRecord->Rip)==0xE8048B4A) {
-                ep->ContextRecord->Rax = (U64)(&cpu->opToAddressPages[page]);
+            if (inst==0xE8048B4A) {
+                ep->ContextRecord->Rax = (U64)(cpu->opToAddressPages[page]);
             } else {
                 ep->ContextRecord->Rax = (U64)(cpu->opToAddressPages[page][offset]);
             }
             return EXCEPTION_CONTINUE_EXECUTION;
-        } else if (*((U16*)ep->ContextRecord->Rip)==0x53cd) { 
+        } else if ((U16)inst==0x53cd) { 
             struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
             U32 eip = cpu->eip.u32;
             ep->ContextRecord->Rip+=2;
@@ -372,7 +373,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
                 U32 offset = cpu->eip.u32 & PAGE_MASK;
 
                 ep->ContextRecord->Rcx = ECX;
-                ep->ContextRecord->Rcx = EDX;
+                ep->ContextRecord->Rdx = EDX;
                 ep->ContextRecord->Rbx = EBX;
                 ep->ContextRecord->R11 = ESP;
                 ep->ContextRecord->Rbp = EBP;

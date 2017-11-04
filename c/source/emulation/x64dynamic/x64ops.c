@@ -1078,6 +1078,13 @@ static U32 iret(struct x64_Data* data) {
     return 0;
 }
 
+// INT 3
+static U32 int3(struct x64_Data* data) {
+    x64_writeToMemFromValue(data, 0xcc, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
+    x64_writeCmd(data, CMD_INVALID_OP, data->startOfOpIp);  
+    return 0;
+}
+
 // INT Ib
 static U32 intIb(struct x64_Data* data) {
     U8 i = x64_fetch8(data);
@@ -1661,6 +1668,15 @@ static U32 segGS(struct x64_Data* data) {
     return 1;
 }
 
+static U32 x64cpuid(struct x64_Data* data) {
+    x64_writeCmd(data, CMD_CPUID, data->startOfOpIp);
+    x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+    x64_writeToRegFromMem(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
+    x64_writeToRegFromMem(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
+    x64_writeToRegFromMem(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
+    return 0;
+}
+
 // 2 byte opcodes
 static U32 instruction0f(struct x64_Data* data) {
     data->baseOp+=0x100;
@@ -1754,7 +1770,7 @@ DECODER x64Decoder[1024] = {
     keepSameImm16, keepSameImm16, keepSameImm16, keepSameImm16, movSpIw, keepSameImm16, keepSameImm16, keepSameImm16,
     // C0
     inst8RMimm8SafeG, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8SafeG, inst16RMimm16,
-    enter16, leave16, retf16Iw, retf16, invalidOp, intIb, invalidOp, invalidOp,
+    enter16, leave16, retf16Iw, retf16, int3, intIb, invalidOp, invalidOp,
     // D0
     inst8RMSafeG, inst16RMSafeG, inst8RMSafeG, inst16RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
@@ -1796,7 +1812,7 @@ DECODER x64Decoder[1024] = {
     inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM,
     inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM,
     // 1a0
-    push16FS, pop16FS, keepSame, inst16RM, inst16RMimm8, inst16RM, invalidOp, invalidOp,
+    push16FS, pop16FS, x64cpuid, inst16RM, inst16RMimm8, inst16RM, invalidOp, invalidOp,
     push16GS, pop16GS, invalidOp, inst16RM, inst16RMimm8, inst16RM, invalidOp, inst16RM,
     // 1b0
     invalidOp, inst16RM, lss, invalidOp, lfs, lgs, inst16E8RM, invalidOp,
@@ -1852,7 +1868,7 @@ DECODER x64Decoder[1024] = {
     keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32,
     // 2c0
     inst8RMimm8SafeG, inst32RMimm8SafeG, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8SafeG, inst32RMimm32,
-    enter32, leave32, retf32Iw, retf32, invalidOp, intIb, invalidOp, iret,
+    enter32, leave32, retf32Iw, retf32, int3, intIb, invalidOp, iret,
     // 2d0
     inst8RM, inst32RMSafeG, inst8RM, inst32RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
@@ -1894,8 +1910,8 @@ DECODER x64Decoder[1024] = {
     inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM,
     inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM, inst8RM,
     // 3a0
-    push32FS, pop32FS, keepSame, inst32RM, inst32RMimm8, inst32RM, invalidOp, invalidOp,
-    push32GS, pop32GS, invalidOp, inst32RM, inst32RMimm8, inst32RM, invalidOp, inst32RM,
+    push32FS, pop32FS, x64cpuid, inst32RM, inst32RMimm8, inst32RM, invalidOp, invalidOp,
+    push32GS, pop32GS, invalidOp, inst32RM, inst32RMimm8, inst32RM, inst32RM, inst32RM,
     // 3b0
     invalidOp, inst32RM, invalidOp, inst32RM, invalidOp, invalidOp, inst32E8RM, inst32E16RM,
     invalidOp, invalidOp, inst32RMimm8SafeG, inst32RM, inst32RM, inst32RM, inst32E8RM, inst32E16RM,

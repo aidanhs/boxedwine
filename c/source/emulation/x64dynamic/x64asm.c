@@ -448,6 +448,7 @@ static void jmpNativeReg(struct x64_Data* data, U32 reg, U32 isRegRex) {
 
 static FILE* logFile2;
 void ksyscall(struct CPU* cpu, U32 eipCount);
+void cpuid(struct CPU* cpu);
 
 // returns 0 of eip changed
 void x64_cmdEntry(struct CPU* cpu) {
@@ -482,6 +483,12 @@ void x64_cmdEntry(struct CPU* cpu) {
         break;
     case CMD_SYSCALL:
         ksyscall(cpu, 0);
+        break;
+    case CMD_CPUID:
+        cpuid(cpu);
+        break;
+    case CMD_INVALID_OP:
+        kpanic("invalid op: %X", cpu->cmdArg2);
         break;
     default:
         kpanic("Unknow x64dynamic cmd: %d", cpu->cmd);
@@ -538,7 +545,8 @@ void x64_popReg32(struct x64_Data* data, U32 reg, U32 isRegRex) {
         isRegRex = TRUE;
     }
     x64_writeToRegFromMem(data, reg, isRegRex, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
-    x64_addWithLea(data, HOST_ESP, TRUE, HOST_ESP, TRUE, -1, FALSE, 0, 4, 4);
+    if (reg != HOST_ESP || !isRegRex)
+        x64_addWithLea(data, HOST_ESP, TRUE, HOST_ESP, TRUE, -1, FALSE, 0, 4, 4);
 }
 
 void x64_pushCpuOffset16(struct x64_Data* data, U32 offset) {
