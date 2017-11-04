@@ -160,7 +160,11 @@ void x64_translateRM(struct x64_Data* data, U32 rm, U32 checkG, U32 checkE, U32 
 void x64_leaToReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 void x64_writeToRegFromE(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
 void x64_writeToEFromReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U32 bytes);
-void x64_cmpRegToValue(struct x64_Data* data, U32 reg, U32 isRegRex, U32 value, U32 bytes);
+void x64_cmpRegToValue(struct x64_Data* data, U32 reg, U32 isRegRex, S32 value, U32 bytes);
+void x64_jcxz(struct x64_Data* data, S8 offset, BOOL ea16);
+void x64_loop(struct x64_Data* data, S8 offset, BOOL ea16);
+void x64_loopz(struct x64_Data* data, S8 offset, BOOL ea16);
+void x64_loopnz(struct x64_Data* data, S8 offset, BOOL ea16);
 
 void x64_writeOp(struct x64_Data* data);
 void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8bit, U32 isE8bit);
@@ -194,8 +198,8 @@ void x64_writeXchgSpAx(struct x64_Data* data);
 void x64_writeXchgEspEax(struct x64_Data* data);
 
 void x64_write32Buffer(U8* buffer, U32 value);
-void x64_write16Buffer(U8* buffer, U32 value);
-void x64_write8Buffer(U8* buffer, U32 value);
+void x64_write16Buffer(U8* buffer, U16 value);
+void x64_write8Buffer(U8* buffer, U8 value);
 U32 x64_read32Buffer(U8* buffer);
 
 U8 x64_fetch8(struct x64_Data* data);

@@ -947,26 +947,30 @@ static U32 jump32(struct x64_Data* data) {
 }
 
 // LOOPNZ
-// LOOPZ
-static U32 loop(struct x64_Data* data) {
+static U32 x64loopnz(struct x64_Data* data) {
     S8 offset = x64_fetch8(data);
-    kpanic("loop not implemented");
+    x64_loopnz(data, offset, data->ea16);
+    return 0;
+}
+
+// LOOPZ
+static U32 x64loopz(struct x64_Data* data) {
+    S8 offset = x64_fetch8(data);
+    x64_loopz(data, offset, data->ea16);
     return 0;
 }
 
 // LOOP
 static U32 x64loop(struct x64_Data* data) {
     S8 offset = x64_fetch8(data);
-    x64_cmpRegToValue(data, 1, FALSE, 0, data->ea16?2:4);
-    x64_jumpConditional(data, 4, data->ip+offset);  //jnz
+    x64_loop(data, offset, data->ea16);
     return 0;
 }
 
 // JCXZ
 static U32 x64jcxz(struct x64_Data* data) {
     S8 offset = x64_fetch8(data);
-    x64_cmpRegToValue(data, 1, FALSE, 0, data->ea16?2:4);
-    x64_jumpConditional(data, 4, data->ip+offset);  //jz
+    x64_jcxz(data, offset, data->ea16);
     return 0;
 }
 
@@ -1789,7 +1793,7 @@ DECODER x64Decoder[1024] = {
     inst8RMSafeG, inst16RMSafeG, inst8RMSafeG, inst16RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // E0
-    loop, loop, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
+    x64loopnz, x64loopz, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
     callJw, jmpJw, jmpAp, jmpJb, invalidOp, invalidOp, invalidOp, invalidOp,
     // F0
     lock, invalidOp, repnz, repz, hlt, keepSame, grp3b, grp3w,
@@ -1887,7 +1891,7 @@ DECODER x64Decoder[1024] = {
     inst8RM, inst32RMSafeG, inst8RM, inst32RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // 2e0
-    loop, loop, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
+    x64loopnz, x64loopz, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
     callJd, jmpJd, invalidOp, jmpJb, invalidOp, invalidOp, invalidOp, invalidOp,
     // 2f0
     lock, invalidOp, repnz, repz, hlt, keepSame, grp3b, grp3d,

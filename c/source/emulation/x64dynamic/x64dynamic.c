@@ -49,12 +49,12 @@ void x64_write32Buffer(U8* buffer, U32 value) {
 
 }
 
-void x64_write16Buffer(U8* buffer, U32 value) {
+void x64_write16Buffer(U8* buffer, U16 value) {
     buffer[0] = (U8)value;
     buffer[1] = (U8)(value >> 8);
 }
 
-void x64_write8Buffer(U8* buffer, U32 value) {
+void x64_write8Buffer(U8* buffer, U8 value) {
     buffer[0] = (U8)value;
 }
 
@@ -177,9 +177,19 @@ void x64_translateData(struct x64_Data* data) {
         if (size==4) {
             x64_write32Buffer(offset, (U32)(translatedOffset - offset - 4));
         } else if (size==2) {
-            x64_write16Buffer(offset, (U32)(translatedOffset - offset - 2));
+            S32 off = (S32)(translatedOffset - offset - 2);
+            if (off>=-32,768 && off<=32,767) {
+                x64_write16Buffer(offset, (U16)off);
+            } else {
+                kpanic("x64:offset does not fit into 2 bytes");
+            } 
         } else if (size==1) {
-            x64_write8Buffer(offset, (U32)(translatedOffset - offset - 1));
+            S32 off = (S32)(translatedOffset - offset - 1);
+            if (off>=-128 && off<=127) {
+                x64_write8Buffer(offset, (U8)off);
+            } else {
+                kpanic("x64: offset does not fit into 1 bytes");
+            }            
         }
     }
 }

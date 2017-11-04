@@ -951,4 +951,33 @@ void x64_cmpRegToValue(struct x64_Data* data, U32 reg, U32 isRegRex, S32 value, 
 
 }
 
+// double jumps are to work around the fact that the offset we need in x64 may not fit in 1 signed byte
+void x64_jcxz(struct x64_Data* data, S8 offset, BOOL ea16) {
+    write8(data, 0xe3);
+    write8(data, 5);
+    x64_jumpTo(data, data->ip);   
+    x64_jumpTo(data, data->ip+offset);
+}
+
+void x64_loop(struct x64_Data* data, S8 offset, BOOL ea16) {
+    write8(data, 0xe2);
+    write8(data, 5);
+    x64_jumpTo(data, data->ip);   
+    x64_jumpTo(data, data->ip+offset);
+}
+
+void x64_loopz(struct x64_Data* data, S8 offset, BOOL ea16) {
+    write8(data, 0xe1);
+    write8(data, 5);
+    x64_jumpTo(data, data->ip);   
+    x64_jumpTo(data, data->ip+offset);
+}
+
+void x64_loopnz(struct x64_Data* data, S8 offset, BOOL ea16) {
+    write8(data, 0xe0);
+    write8(data, 5);
+    x64_jumpTo(data, data->ip);   
+    x64_jumpTo(data, data->ip+offset);
+}
+
 #endif
