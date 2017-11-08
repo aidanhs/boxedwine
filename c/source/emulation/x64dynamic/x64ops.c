@@ -319,13 +319,13 @@ static void popSeg16(struct x64_Data* data, U32 seg) {
     x64_writeToRegFromValue(data, HOST_TMP2, TRUE, 0, 4); // clear the upper 2 bytes, since pop16 won't
     x64_popReg16(data, HOST_TMP2, TRUE);
     x64_writeToMemFromReg(data, HOST_TMP2, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-    x64_writeCmd(data, CMD_SET_ES+seg, data->startOfOpIp);
+    x64_writeCmd(data, CMD_SET_ES+seg, data->startOfOpIp, TRUE);
 }
 
 static void popSeg32(struct x64_Data* data, U32 seg) {
     x64_popReg32(data, HOST_TMP2, TRUE);
     x64_writeToMemFromReg(data, HOST_TMP2, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-    x64_writeCmd(data, CMD_SET_ES+seg, data->startOfOpIp);
+    x64_writeCmd(data, CMD_SET_ES+seg, data->startOfOpIp, TRUE);
 }
 
 // POP ES
@@ -1024,7 +1024,7 @@ static U32 jmpAp(struct x64_Data* data) {
 // CALL Ap
 static U32 callAp(struct x64_Data* data) {
     x64_writeToMemFromValue(data, x64_fetch32(data), HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-    x64_writeCmd(data, CMD_CALL_AP_16, data->startOfOpIp);
+    x64_writeCmd(data, CMD_CALL_AP_16, data->startOfOpIp, FALSE);
     return 0;
 }
 
@@ -1099,7 +1099,7 @@ static U32 iret(struct x64_Data* data) {
 // INT 3
 static U32 int3(struct x64_Data* data) {
     x64_writeToMemFromValue(data, 0xcc, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-    x64_writeCmd(data, CMD_INVALID_OP, data->startOfOpIp);  
+    x64_writeCmd(data, CMD_INVALID_OP, data->startOfOpIp, FALSE);  
     return 0;
 }
 
@@ -1107,6 +1107,9 @@ static U32 int3(struct x64_Data* data) {
 static U32 intIb(struct x64_Data* data) {
     U8 i = x64_fetch8(data);
     if (i==0x80) {
+        U8 inst = readb(data->cpu->thread, data->ip-7);
+        U32 eax = readd(data->cpu->thread, data->ip-6);
+        
         x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
         x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
         x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
@@ -1115,8 +1118,25 @@ static U32 intIb(struct x64_Data* data) {
         x64_writeToMemFromReg(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
         x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
         x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
-        x64_writeCmd(data, CMD_SYSCALL, data->startOfOpIp);   
+        if (inst==0xb8) {
+            x64_writeCmd(data, CMD_SYSCALL, data->startOfOpIp, eax!=0xb && eax!=252); // execv, exit group
+        } else {
+            x64_writeCmd(data, CMD_SYSCALL, data->startOfOpIp, FALSE);   
+        }        
         x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+    } else if (i==0x98) {
+        x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+        x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
+        x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
+        x64_writeToMemFromReg(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
+        x64_writeToMemFromReg(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
+        x64_writeToMemFromReg(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
+        x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
+        x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
+        x64_writeCmd(data, CMD_WINE, data->startOfOpIp, TRUE);   
+        //x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+    } else {
+        kpanic("unknow int Ib: %d", i);
     }
     return 0;
 }
@@ -1167,7 +1187,7 @@ static U32 movSwEw(struct x64_Data* data) {
             x64_writeToMemFromReg(data, rm & 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0,  CPU_OFFSET_CMD_ARG, 2, FALSE);
         }
     }
-    x64_writeCmd(data, seg + CMD_SET_ES, data->startOfOpIp);
+    x64_writeCmd(data, seg + CMD_SET_ES, data->startOfOpIp, TRUE);
     return 0;
 }
 
@@ -1451,7 +1471,7 @@ static void loadSegment(struct x64_Data* data, U32 segment) {
     } else {
         kpanic("Invalid op: les");
     }
-    x64_writeCmd(data, CMD_LOAD_ES+segment, data->startOfOpIp);
+    x64_writeCmd(data, CMD_LOAD_ES+segment, data->startOfOpIp, TRUE);
     x64_writeToRegFromMem(data, (rm >> 3) & 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, regOffset[((rm >> 3) & 7)], 4, FALSE);
 }
 
@@ -1687,7 +1707,7 @@ static U32 segGS(struct x64_Data* data) {
 }
 
 static U32 x64cpuid(struct x64_Data* data) {
-    x64_writeCmd(data, CMD_CPUID, data->startOfOpIp);
+    x64_writeCmd(data, CMD_CPUID, data->startOfOpIp, TRUE);
     x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
     x64_writeToRegFromMem(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
     x64_writeToRegFromMem(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);

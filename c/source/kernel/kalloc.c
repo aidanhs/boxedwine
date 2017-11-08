@@ -21,6 +21,7 @@
 #include <string.h>
 #include "kalloc.h"
 #include "kprocess.h"
+#include "kscheduler.h"
 
 static U32 usage[KALLOC_COUNT];
 static U32 count[KALLOC_COUNT];
@@ -105,6 +106,7 @@ void printMemUsage() {
         U32 index=0;
         struct KProcess* process=0;
 
+        BOXEDWINE_LOCK(NULL, mutexProcess);
         while (getNextProcess(&index, &process)) {
             U32 threadIndex = 0;
             struct KThread* thread = 0;
@@ -113,5 +115,6 @@ void printMemUsage() {
                 printf("%8dMB %s\n", getMemoryAllocated(process->memory)/1024/1024, process->commandLine);
             }
         }
+        BOXEDWINE_UNLOCK(NULL, mutexProcess);
     }
 }

@@ -56,6 +56,8 @@
 #define CPU_OFFSET_CMD_ARG2 (U32)(offsetof(struct CPU, cmdArg2))
 #define CPU_OFFSET_EIP (U32)(offsetof(struct CPU, eip.u32))
 
+#define CPU_OFFSET_LOG (U32)(offsetof(struct CPU, log))
+
 #define CMD_SET_ES 0
 #define CMD_SET_CS 1
 #define CMD_SET_SS 2
@@ -73,6 +75,7 @@
 #define CMD_PRINT 14
 #define CMD_CPUID 15
 #define CMD_INVALID_OP 16
+#define CMD_WINE 17
 
 struct x64_Data {
     U32 baseOp;
@@ -138,6 +141,14 @@ struct x64_Data {
     void* jmpTodoAddressBuffer[64];
     U8 jmpTodoOffsetSizeBuffer[64];
     U32 jmpTodoSize;
+
+    U32* ipAddress;
+    void** hostAddress;
+    U32 ipAddressCount;
+    U32 ipAddressBufferSize;
+    U32 ipAddressBuffer[64];
+    void* hostAddressBuffer[64];
+    struct x64_Data* parent;
 };
 
 typedef U32 (*DECODER)(struct x64_Data* data);
@@ -145,6 +156,7 @@ typedef U32 (*DECODER)(struct x64_Data* data);
 extern DECODER x64Decoder[1024];
 
 void x64_mapAddress(struct x64_Data* data, U32 ip, void* address);
+void x64_commitMappedAddresses(struct x64_Data* data);
 
 void x64_writeToRegFromMem(struct x64_Data* data, U32 toReg, U32 isToRegRex, U32 reg2, U32 isReg2Rex, S32 reg3, U32 isReg3Rex, U32 reg3Shift, S32 displacement, U32 bytes, U32 translateToHost);
 void x64_writeToMemFromValue(struct x64_Data* data, U64 value, U32 reg2, U32 isReg2Rex, S32 reg3, U32 isReg3Rex, U32 reg3Shift, S32 displacement, U32 bytes, U32 translateToHost);
@@ -184,7 +196,7 @@ void x64_popReg32(struct x64_Data* data, U32 reg, U32 isRegRex);
 void x64_incReg(struct x64_Data* data, U32 reg, U32 isRegRex, U32 bytes);
 void x64_decReg(struct x64_Data* data, U32 reg, U32 isRegRex, U32 bytes);
 
-void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip);
+void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast);
 void x64_jumpConditional(struct x64_Data* data, U32 condition, U32 eip);
 void x64_jumpTo(struct x64_Data* data,  U32 eip);
 void x64_jmpReg(struct x64_Data* data, U32 reg, U32 isRex);

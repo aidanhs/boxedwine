@@ -77,7 +77,7 @@ void initProcess(struct Memory* memory, struct KProcess* process, U32 argc, cons
 
     memset(process, 0, sizeof(struct KProcess));	
     process->memory = memory;
-    process->id = addProcess(process);
+    process->id = addProcess(NULL, process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);	
     process->parentId = 1;
     process->userId = userId;
@@ -106,13 +106,18 @@ void initProcess(struct Memory* memory, struct KProcess* process, U32 argc, cons
 struct KProcess* freeProcesses;
 
 struct KProcess* allocProcess() {
+    struct KProcess* result;
     if (freeProcesses) {
         struct KProcess* result = freeProcesses;
         freeProcesses = freeProcesses->next;
         memset(result, 0, sizeof(struct KProcess));
         return result;
     }
-    return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
+    result = (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
+#ifdef BOXEDWINE_VM
+    result->threadsMutex = SDL_CreateMutex();
+#endif
+    return result;
 }
 
 void cleanupProcess(struct KProcess* process) {
@@ -158,28 +163,38 @@ void freeProcess(struct KProcess* process) {
     freeProcesses = process;
 }
 
-U32 processAddThread(struct KProcess* process, struct KThread* thread) {
-    return addObjecToArray(&process->threads, thread);
+U32 processAddThread(struct KThread* currentThread, struct KProcess* process, struct KThread* thread) {
+    U32 result;
+    BOXEDWINE_LOCK(currentThread, process->threadsMutex);
+    result = addObjecToArray(&process->threads, thread);
+    BOXEDWINE_UNLOCK(currentThread, process->threadsMutex);
+    return result;
 }
 
-void processRemoveThread(struct KProcess* process, struct KThread* thread) {
+void processRemoveThread(struct KThread* currentThread, struct KProcess* process, struct KThread* thread) {
+    BOXEDWINE_LOCK(currentThread, process->threadsMutex);
     removeObjectFromArray(&process->threads, thread->id);
+    BOXEDWINE_UNLOCK(currentThread, process->threadsMutex);
 }
 
-struct KThread* processGetThreadById(struct KProcess* process, U32 tid) {
-    return (struct KThread*)getObjectFromArray(&process->threads, tid);
+struct KThread* processGetThreadById(struct KThread* currentThread, struct KProcess* process, U32 tid) {
+    struct KThread* result;
+    BOXEDWINE_LOCK(currentThread, process->threadsMutex);
+    result = (struct KThread*)getObjectFromArray(&process->threads, tid);
+    BOXEDWINE_UNLOCK(currentThread, process->threadsMutex);
+    return result;
 }
 
 U32 processGetThreadCount(struct KProcess* process) {
     return getArrayCount(&process->threads);
 }
 
-void cloneProcess(struct Memory* memory, struct KProcess* process, struct KProcess* from) {
+void cloneProcess(struct KThread* thread, struct Memory* memory, struct KProcess* process, struct KProcess* from) {
     U32 i;
 
     memset(process, 0, sizeof(struct KProcess));	
     process->memory = memory;
-    process->id = addProcess(process);
+    process->id = addProcess(thread, process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
 
     process->parentId = from->id;;
@@ -461,7 +476,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
     BOOL result = FALSE;
         
     initProcess(memory, process, argc, args, userId);
-    initThread(thread, process);
+    initThread(NULL, thread, process);
     initStdio(process);
 
     if (!inspectNode(process, currentDirectory, node, &loader, &interpreter, pArgs, &argIndex, &openNode)) {
@@ -501,12 +516,12 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
 void processOnExitThread(struct KThread* thread) {
     struct KProcess* process = thread->process;
     if (!processGetThreadCount(process)) {
-        struct KProcess* parent = getProcessById(process->parentId);
+        struct KProcess* parent = getProcessById(thread, process->parentId);
         if (parent && parent->sigActions[K_SIGCHLD].handlerAndSigAction!=K_SIG_DFL) {
             if (parent->sigActions[K_SIGCHLD].handlerAndSigAction==K_SIG_IGN) {
                 freeProcess(process); 
             } else {
-                signalCHLD(parent, CLD_EXITED, process->id, process->userId, process->exitCode);
+                signalCHLD(thread, parent, CLD_EXITED, process->id, process->userId, process->exitCode);
             }
         }
         cleanupProcess(process); // release RAM, sockets, etc now.  No reason to wait to do that until waitpid is called
@@ -540,7 +555,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
     BOXEDWINE_LOCK(thread, mutexProcess);
     while (1) {
         if (pid>0) {
-            process = getProcessById(pid);		
+            process = getProcessById(thread, pid);		
             if (!process) {
                 return -K_ECHILD;
             }				
@@ -597,7 +612,7 @@ U32 syscall_waitpid(struct KThread* thread, S32 pid, U32 status, U32 options) {
         writed(thread, status, s);
     }
     result = process->id;
-    removeProcess(process);
+    removeProcess(thread, process);
     freeProcess(process);
     BOXEDWINE_UNLOCK(thread, mutexProcess);
     return result;
@@ -683,7 +698,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         newThread->process = newProcess;
         newProcess->memory = memory;
         cloneMemory(newThread, thread);
-        cloneProcess(memory, newProcess, thread->process);
+        cloneProcess(thread, memory, newProcess, thread->process);
         cloneThread(newThread, thread, newProcess);
         initStdio(newProcess);
 
@@ -719,11 +734,12 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
                 SDL_DestroyCond(cond);
                 SDL_DestroyMutex(mutex);
             }
-#else
+#else            
             startThread(newThread);
             waitThread(thread);            
 #endif            
         } else {
+            //klog("starting %d/%d", newThread->process->id, newThread->id);            
             startThread(newThread);
         }
         return newProcess->id;
@@ -733,7 +749,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
 
         readMemory(thread, (U8*)&desc, tls, sizeof(struct user_desc));
 
-        initThread(newThread, thread->process);		
+        initThread(thread, newThread, thread->process);		
 
         if (desc.base_addr!=0 && desc.entry_number!=0) {
             struct user_desc* ldt = getLDT(newThread, desc.entry_number);
@@ -745,6 +761,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         newThread->cpu.reg[4].u32 = child_stack;
         newThread->cpu.reg[4].u32+=8;
         newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
+        //klog("starting %d/%d", newThread->process->id, newThread->id);
         startThread(newThread);
         return thread->process->id;
     } else {
@@ -761,7 +778,7 @@ void runProcessTimer(struct KTimer* timer) {
     } else {
         timer->millies = timer->resetMillies + getMilliesSinceStart();
     }
-    signalALRM(timer->process);
+    signalALRM(NULL, timer->process);
 }
 
 U32 syscall_alarm(struct KThread* thread, U32 seconds) {
@@ -828,7 +845,7 @@ U32 syscall_getpgid(struct KThread* thread, U32 pid) {
     if (pid==0)
         process = thread->process;
     else
-        process = getProcessById(pid);
+        process = getProcessById(thread, pid);
     if (!process)
         return -K_ESRCH;
     return process->groupId;
@@ -839,7 +856,7 @@ U32 syscall_setpgid(struct KThread* thread, U32 pid, U32 gpid) {
     if (pid==0)
         process = thread->process;
     else
-        process = getProcessById(pid);
+        process = getProcessById(thread, pid);
     if (!process) {
         return 0; // :TODO:
         return -K_ESRCH;
@@ -884,7 +901,8 @@ U32 readStringArray(struct KThread* thread, U32 address, const char** a, int siz
     }
     return tmpIndex;
 }
-
+void x64_cmdEntry(struct CPU* cpu);
+#include "../../source/emulation/hardmmu/hard_memory.h"
 U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     struct KProcess* process = thread->process;
     char tmp[MAX_FILEPATH_LEN];
@@ -969,6 +987,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     {
         struct KProcess* process = thread->process;
         U32 id = thread->id;
+        U32 log = thread->cpu.log;
 #ifndef BOXEDWINE_VM
         struct KCNode* scheduledNode = thread->scheduledNode;
 #endif
@@ -979,6 +998,15 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
 #endif
         thread->process = process;
         initCPU(&thread->cpu, process->memory);
+        thread->cpu.log = log;
+#ifdef BOXEDWINE_VM        
+        thread->cpu.enterHost = x64_cmdEntry;
+        thread->cpu.memOffset = thread->cpu.memory->id;
+        thread->cpu.negMemOffset = (U64)(-(S64)thread->cpu.memOffset);
+        for (i=0;i<6;i++) {
+            thread->cpu.negSegAddress[i] = (U32)(-((S32)(thread->cpu.segAddress[i])));
+        }
+#endif
     }
 
     setupStack(thread);	
@@ -991,12 +1019,14 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     }
 
     thread->alternateStack = 0;
+    BOXEDWINE_LOCK(thread, process->threadsMutex);
     while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
         if (processThread && processThread!=thread) {
             freeThread(thread, processThread);
             threadIndex=0; // start the iterator over since we removed something
         }
     }
+    BOXEDWINE_UNLOCK(thread, process->threadsMutex);
     threadClearFutexes(thread);
     for (i=0;i<process->maxFds;i++) {
         if (process->fds[i] && (process->fds[i]->descriptorFlags)) {
@@ -1030,6 +1060,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         process->wakeOnExitOrExec = 0;
     }
     free(tmp128k);
+    //klog("%d/%d exec %s", thread->id, process->id, process->commandLine);
     return -K_CONTINUE;
 }
 
@@ -1049,63 +1080,67 @@ U32 syscall_exitgroup(struct KThread* thread, U32 code) {
     struct KThread* processThread = 0;
     struct KProcess* process = thread->process;
 
+    BOXEDWINE_LOCK(thread, process->threadsMutex);
     while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
         if (processThread && processThread!=thread) {
             freeThread(thread, processThread);
             threadIndex=0; // start the iterator over since we removed something
         }
     }
+    BOXEDWINE_UNLOCK(thread, process->threadsMutex);
     process->exitCode = code;
     threadDone(&thread->cpu);    
     if (getProcessCount()==1) {
         // no one left to wait on this process
-        removeProcess(process);
+        removeProcess(thread, process);
     }
     freeThread(thread, thread);	 // will not return if BOXEDWINE_VM
     return -K_CONTINUE;
 }
 
 // should only be called outside of runCPU (definitely not in a syscall)
-void signalProcess(struct KProcess* process, U32 signal) {	
+void signalProcess(struct KThread* currentThread, struct KProcess* process, U32 signal) {	
     struct KThread* thread = 0;
     U32 threadIndex = 0;
 
     process->pendingSignals |= (1 << (signal-1));
     // give each thread a chance to run a signal, some or all of them might have the signal masked off.  
     // In that case when the user unmasks the signal with sigprocmask it will be caught then
+    BOXEDWINE_LOCK(currentThread, process->threadsMutex);
     while (process->pendingSignals && getNextObjectFromArray(&process->threads, &threadIndex, (void**)&thread)) {
         if (thread) {
             runSignals(thread);
         }
     }
+    BOXEDWINE_UNLOCK(currentThread, process->threadsMutex);
 }
 
-void signalIO(struct KProcess* process, U32 code, S32 band, FD fd) {
+void signalIO(struct KThread* thread, struct KProcess* process, U32 code, S32 band, FD fd) {
     memset(process->sigActions[K_SIGIO].sigInfo, 0, sizeof(process->sigActions[K_SIGIO].sigInfo));
     process->sigActions[K_SIGIO].sigInfo[0] = K_SIGIO;
     process->sigActions[K_SIGIO].sigInfo[2] = code;
     process->sigActions[K_SIGIO].sigInfo[3] = band;
     process->sigActions[K_SIGIO].sigInfo[4] = fd;
-    signalProcess(process, K_SIGIO);
+    signalProcess(thread, process, K_SIGIO);
 }
 
-void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode) {
+void signalCHLD(struct KThread* thread, struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode) {
     memset(process->sigActions[K_SIGCHLD].sigInfo, 0, sizeof(process->sigActions[K_SIGCHLD].sigInfo));
     process->sigActions[K_SIGCHLD].sigInfo[0] = K_SIGCHLD;
     process->sigActions[K_SIGCHLD].sigInfo[2] = code;
     process->sigActions[K_SIGCHLD].sigInfo[3] = childPid;
     process->sigActions[K_SIGCHLD].sigInfo[4] = sendingUID;
     process->sigActions[K_SIGCHLD].sigInfo[5] = exitCode;
-    signalProcess(process, K_SIGCHLD);
+    signalProcess(thread, process, K_SIGCHLD);
 }
 
-void signalALRM(struct KProcess* process) {
+void signalALRM(struct KThread* thread, struct KProcess* process) {
     memset(process->sigActions[K_SIGALRM].sigInfo, 0, sizeof(process->sigActions[K_SIGALRM].sigInfo));
     process->sigActions[K_SIGALRM].sigInfo[0] = K_SIGALRM;
     process->sigActions[K_SIGALRM].sigInfo[2] = K_SI_USER;
     process->sigActions[K_SIGALRM].sigInfo[3] = process->id;
     process->sigActions[K_SIGALRM].sigInfo[4] = process->userId;
-    signalProcess(process, K_SIGALRM);
+    signalProcess(thread, process, K_SIGALRM);
 }
 
 void signalIllegalInstruction(struct KThread* thread, int code) {
@@ -1127,7 +1162,7 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
     if (pid==0) {
         process = thread->process;
     } else {
-        process = getProcessById(pid);
+        process = getProcessById(thread, pid);
         if (!process)
             return -K_ESRCH;
     }
@@ -1199,7 +1234,7 @@ U32 syscall_prlimit(struct KThread* thread, U32 pid, U32 resource, U32 newlimit,
     if (pid==0) {
         process = thread->process;
     } else {
-        process = getProcessById(pid);
+        process = getProcessById(thread, pid);
         if (!process)
             return -K_ESRCH;
     }
@@ -1290,7 +1325,7 @@ U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal) {
     struct KProcess* process = 0;
 
     if (pid>0)
-        process = getProcessById(pid);
+        process = getProcessById(thread, pid);
     else {
         kpanic("kill with pid = %d not implemented", pid);
     }
@@ -1313,12 +1348,12 @@ U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal) {
 }
 
 U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 signal) {
-    struct KProcess* process = getProcessById(threadId >> THREAD_ID_SHIFT);
+    struct KProcess* process = getProcessById(thread, threadId >> THREAD_ID_SHIFT);
     struct KThread* target;
 
     if (!process)
         return -K_ESRCH;
-    target = processGetThreadById(process, threadId);
+    target = processGetThreadById(thread, process, threadId);
     if (!target)
         return -K_ESRCH;
     if (target==thread) {

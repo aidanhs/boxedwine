@@ -397,7 +397,7 @@ void loadExtensions();
 #endif
 
 void sdlDeleteContext(struct KThread* thread, U32 context) {
-    struct KThread* contextThread = processGetThreadById(thread->process, context);
+    struct KThread* contextThread = processGetThreadById(thread, thread->process, context);
     if (contextThread && contextThread->glContext) {
         SDL_GL_DeleteContext(contextThread->glContext);
         contextThread->glContext = NULL;
@@ -441,8 +441,8 @@ U32 sdlMakeCurrent(struct KThread* thread, U32 arg) {
 }
 
 U32 sdlShareLists(struct KThread* thread, U32 srcContext, U32 destContext) {
-    struct KThread* srcThread = processGetThreadById(thread->process, srcContext);
-    struct KThread* destThread = processGetThreadById(thread->process, destContext);
+    struct KThread* srcThread = processGetThreadById(thread, thread->process, srcContext);
+    struct KThread* destThread = processGetThreadById(thread, thread->process, destContext);
     if (srcThread && destThread && srcThread->glContext && destThread->glContext) {
         if (destThread->currentContext) {
             kpanic("Wasn't expecting the OpenGL context that will share a list to already be current");
@@ -900,7 +900,7 @@ int sdlMouseMouse(int x, int y) {
     if (!wnd)
         wnd = getFirstVisibleWnd();
     if (wnd) {
-        struct KProcess* process = getProcessById(wnd->processId);        
+        struct KProcess* process = getProcessById(NULL, wnd->processId);        
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
@@ -928,7 +928,7 @@ int sdlMouseWheel(int amount, int x, int y) {
     if (!wnd)
         wnd = getFirstVisibleWnd();
     if (wnd) {
-        struct KProcess* process = getProcessById(wnd->processId);        
+        struct KProcess* process = getProcessById(NULL, wnd->processId);        
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
@@ -955,7 +955,7 @@ int sdlMouseButton(U32 down, U32 button, int x, int y) {
     if (!wnd)
         wnd = getFirstVisibleWnd();
     if (wnd) {
-        struct KProcess* process = getProcessById(wnd->processId);        
+        struct KProcess* process = getProcessById(NULL, wnd->processId);        
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {
@@ -1166,7 +1166,7 @@ int sdlKey(U32 key, U32 down) {
         return 0;
     wnd = getFirstVisibleWnd();
     if (wnd) {
-        struct KProcess* process = getProcessById(wnd->processId);        
+        struct KProcess* process = getProcessById(NULL, wnd->processId);        
         if (process) {
             struct KFileDescriptor* fd = getFileDescriptor(process, process->eventQueueFD);
             if (fd) {

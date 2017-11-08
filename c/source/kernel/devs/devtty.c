@@ -118,6 +118,7 @@ U32 tty_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 
         memcpy(buffer, ram, len);
         buffer[len]=0;
         fprintf(stdout, "%s", buffer);		
+        fflush(stdout);
         return len;
     } else {	
         U32 result = 0;
@@ -129,6 +130,7 @@ U32 tty_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 
             memcpy(buffer, ram, todo);
             buffer[todo]=0;
             fprintf(stdout, "%s", buffer);
+            fflush(stdout);
             len-=todo;
             address+=todo;
             result+=todo;

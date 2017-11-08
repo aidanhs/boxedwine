@@ -472,9 +472,10 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
         cpu->negSegAddress[i] = (U32)(-((S32)(cpu->segAddress[i])));
     }
 
+    // :TODO: hopefully this will eventually go away.  For now this prevents a signal from being generated which isn't handled yet
+    SDL_Delay(100); 
     __try {
-        StartCPU startCPU = (StartCPU)x64_initCPU(cpu);
-
+        StartCPU startCPU = (StartCPU)x64_initCPU(cpu);        
         startCPU();
     } __except(seh_filter(GetExceptionCode(), GetExceptionInformation(), thread)) {
         thread->cpu.nextBlock = 0;
@@ -484,7 +485,6 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
 }
 
 void platformStartThread(struct KThread* thread) {
-    //platformThreadProc(thread);
     thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);
 }
 

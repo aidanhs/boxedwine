@@ -107,7 +107,7 @@ struct KThread {
 #define addClearOnWake(thread, pTarget) if (thread->clearOnWakeCount >= MAX_POLL_DATA) kpanic("thread->clearOnWakeCount >= MAX_POLL_DATA"); thread->clearOnWake[thread->clearOnWakeCount++]=pTarget
 
 struct KThread* allocThread();
-void initThread(struct KThread* thread, struct KProcess* process);
+void initThread(struct KThread* currentThread, struct KThread* thread, struct KProcess* process);
 void freeThread(struct KThread* currentThread, struct KThread* thread);
 void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* process);
 void exitThread(struct KThread* thread, U32 status);

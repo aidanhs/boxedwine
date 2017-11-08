@@ -27,6 +27,7 @@
 #include "kstat.h"
 #include "kio.h"
 #include "fsapi.h"
+#include "kscheduler.h"
 
 #include <time.h>
 
@@ -74,16 +75,26 @@ void removeMappedFileInCache(struct MappedFileCache* file) {
     //pblMapRemove(mappedFileCache, file->name, strlen(file->name), NULL);
 }
 #endif
-U32 addProcess(struct KProcess* process) {
-    return addObjecToArray(&processes, process);
+U32 addProcess(struct KThread* thread, struct KProcess* process) {
+    BOOL result;
+    BOXEDWINE_LOCK(thread, mutexProcess);
+    result = addObjecToArray(&processes, process);
+    BOXEDWINE_UNLOCK(thread, mutexProcess);
+    return result;
 }
 
-void removeProcess(struct KProcess* process) {
+void removeProcess(struct KThread* thread, struct KProcess* process) {
+    BOXEDWINE_LOCK(thread, mutexProcess);
     removeObjectFromArray(&processes, process->id);
+    BOXEDWINE_UNLOCK(thread, mutexProcess);
 }
 
-struct KProcess* getProcessById(U32 pid) {
-    return (struct KProcess*)getObjectFromArray(&processes, pid);
+struct KProcess* getProcessById(struct KThread* thread, U32 pid) {
+    struct KProcess* result;
+    BOXEDWINE_LOCK(thread, mutexProcess);
+    result = (struct KProcess*)getObjectFromArray(&processes, pid);
+    BOXEDWINE_UNLOCK(thread, mutexProcess);
+    return result;
 }
 
 BOOL getNextProcess(U32* index, struct KProcess** process) {
@@ -268,7 +279,7 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
             runThreadSlice(thread);
         }
     }
-    removeProcess(process);
+    removeProcess(thread, process);
     freeProcess(process);
     removeNodeFromCache(node);
     kfree(node, KALLOC_NODE);
@@ -309,6 +320,7 @@ void printStacks() {
     U32 index=0;
     struct KProcess* process=0;
 
+    BOXEDWINE_LOCK(NULL, mutexProcess);
     while (getNextProcess(&index, &process)) {
         U32 threadIndex = 0;
         struct KThread* thread = 0;
@@ -334,4 +346,5 @@ void printStacks() {
             }
         }
     }
+    BOXEDWINE_LOCK(NULL, mutexProcess);
 }

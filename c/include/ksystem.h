@@ -41,9 +41,9 @@ void initCallbacks();
 void initCallbacksInProcess(struct KProcess* process);
 
 // returns pid
-U32 addProcess(struct KProcess* process);
-struct KProcess* getProcessById(U32 pid);
-void removeProcess(struct KProcess* process);
+U32 addProcess(struct KThread* thread, struct KProcess* process);
+struct KProcess* getProcessById(struct KThread* thread, U32 pid);
+void removeProcess(struct KThread* thread, struct KProcess* process);
 U32 getProcessCount();
 U32 syscall_uname(struct KThread* thread, U32 address);
 U32 syscall_ugetrlimit(struct KThread* thread, U32 resource, U32 rlim);

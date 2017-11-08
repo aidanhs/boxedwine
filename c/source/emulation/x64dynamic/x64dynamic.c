@@ -8,6 +8,8 @@
 #include "kalloc.h"
 #include "x64.h"
 
+void* x64_translateEipInternal(struct x64_Data* parent, struct CPU* cpu, U32 ip);
+
 U8 x64_fetch8(struct x64_Data* data) {
     U32 address;
 
@@ -126,6 +128,10 @@ static void initData(struct x64_Data* data, struct CPU* cpu, U32 eip) {
     data->jmpTodoAddress = data->jmpTodoAddressBuffer;
     data->jmpTodoOffsetSize = data->jmpTodoOffsetSizeBuffer;
     data->jmpTodoSize = sizeof(data->jmpTodoEipBuffer)/sizeof(data->jmpTodoEipBuffer[0]);
+    data->ipAddress = data->ipAddressBuffer;
+    data->hostAddress = data->hostAddressBuffer;
+    data->ipAddressCount = 0;
+    data->ipAddressBufferSize = sizeof(data->ipAddressBuffer)/sizeof(data->ipAddressBuffer[0]);
     resetDataForNewOp(data);
 }
 
@@ -136,9 +142,6 @@ void x64_translateData(struct x64_Data* data) {
 
     while (1) {           
         x64_mapAddress(data, data->ip, &data->memStart[data->memPos]);
-        if (&data->memStart[data->memPos] == 0x300041A11) {
-            int ii=0;
-        }
         if (0) { // will print out instructions as they are run
             x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
             x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
@@ -149,7 +152,7 @@ void x64_translateData(struct x64_Data* data) {
             x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
             x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
             x64_writeToMemFromValue(data, (U32)&data->memStart[data->memPos], HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-            x64_writeCmd(data, CMD_PRINT, data->ip);
+            x64_writeCmd(data, CMD_PRINT, data->ip, TRUE);
         }
         data->opIp = data->ip;        
         while (1) {            
@@ -170,7 +173,7 @@ void x64_translateData(struct x64_Data* data) {
     memory->x64AvailableMem-=data->memPos;
 
     for (i=0;i<data->jmpTodoCount;i++) {
-        U8* translatedOffset = (U8*)x64_translateEip(data->cpu, data->jmpTodoEip[i]);
+        U8* translatedOffset = (U8*)x64_translateEipInternal(data, data->cpu, data->jmpTodoEip[i]);
         U8* offset = data->jmpTodoAddress[i];
         U8 size = data->jmpTodoOffsetSize[i];
 
@@ -201,7 +204,7 @@ void* x64_initCPU(struct CPU* cpu) {
 
     SDL_LockMutex(cpu->memory->executableMemoryMutex);
     initData(&data, cpu, cpu->eip.u32);
-    result = data.memStart;
+    result = data.memStart;    
 
     x64_writeToRegFromValue(&data, HOST_CPU, TRUE, (U64)cpu, 8);
     x64_writeToRegFromValue(&data, HOST_MEM, TRUE, cpu->memOffset, 8);
@@ -217,25 +220,44 @@ void* x64_initCPU(struct CPU* cpu) {
     x64_writeToRegFromValue(&data, HOST_ESP, TRUE, ESP, 4);
     x64_writeToRegFromValue(&data, 5, FALSE, EBP, 4);
     x64_writeToRegFromValue(&data, 6, FALSE, ESI, 4);
-    x64_writeToRegFromValue(&data, 7, FALSE, EDI, 4);
+    x64_writeToRegFromValue(&data, 7, FALSE, EDI, 4);    
 
     memory->x64MemPos+=data.memPos;
     memory->x64AvailableMem-=data.memPos;
-    x64_translateEip(cpu, cpu->eip.u32);
+    cpu->opToAddressPages = cpu->thread->process->opToAddressPages;
+    if (!cpu->opToAddressPages[cpu->eip.u32 >> PAGE_SHIFT] || !cpu->opToAddressPages[cpu->eip.u32 >> PAGE_SHIFT][cpu->eip.u32 & PAGE_MASK]) {
+        x64_translateEip(cpu, cpu->eip.u32);
+    } else {
+        void* code = x64_translateEip(cpu, cpu->eip.u32);
+        data.memStart+=data.memPos;
+        data.memPos=0;
+        x64_jumpTo(&data, cpu->eip.u32);
+        memory->x64MemPos+=data.memPos;
+        memory->x64AvailableMem-=data.memPos;
+    }
     SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
     return result;
 }
 
-void* x64_translateEip(struct CPU* cpu, U32 ip) {
+void* x64_translateEipInternal(struct x64_Data* parent, struct CPU* cpu, U32 ip) {
     cpu->opToAddressPages = cpu->thread->process->opToAddressPages;
     if (!cpu->memory->executableMemoryMutex) {
         cpu->memory->executableMemoryMutex = SDL_CreateMutex();
     }    
     if (!cpu->opToAddressPages[ip >> PAGE_SHIFT] || !cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK]) {
         struct x64_Data data;
+        struct x64_Data* p = parent;
 
-        SDL_LockMutex(cpu->memory->executableMemoryMutex);
+        while (p) {
+            U32 i;
+            for (i=0;i<p->ipAddressCount;i++) {
+                if (p->ipAddress[i]==ip)
+                    return p->hostAddress[i];
+            }
+            p = p->parent;
+        }
         initData(&data, cpu, ip);
+        data.parent = parent;
         x64_translateData(&data);
         if (data.jmpTodoEip!=data.jmpTodoEipBuffer) {
             free(data.jmpTodoEip);
@@ -246,8 +268,16 @@ void* x64_translateEip(struct CPU* cpu, U32 ip) {
         if (data.jmpTodoOffsetSize!=data.jmpTodoOffsetSizeBuffer) {
             free(data.jmpTodoOffsetSize);
         }
-        SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
+        x64_commitMappedAddresses(&data);
     }
     return cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK];
+}
+
+void* x64_translateEip(struct CPU* cpu, U32 ip) {
+    void* result;
+    SDL_LockMutex(cpu->memory->executableMemoryMutex);
+    result = x64_translateEipInternal(NULL, cpu, ip);
+    SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
+    return result;
 }
 #endif

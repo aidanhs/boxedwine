@@ -13,6 +13,7 @@
 #include "kalloc.h"
 #include "khashmap.h"
 #include "kstring.h"
+#include "kscheduler.h"
 
 #undef OF
 #include "../../lib/zlib/contrib/minizip/unzip.h"
@@ -55,8 +56,15 @@ static int nodeId = 1;
 static struct KHashmap nodeMap;
 static PblMap* localSkipLinksMap;
 
+#ifdef BOXEDWINE_VM
+static SDL_mutex* fsMutex;
+#endif
+
 void initNodes() {
     initHashmap(&nodeMap);
+#ifdef BOXEDWINE_VM
+    fsMutex = SDL_CreateMutex();
+#endif
 }
 
 static const char* pathMakeWindowsHappy(const char* path, char* pathTmp) {
@@ -273,7 +281,9 @@ U32 symlinkInDirectory(struct KThread* thread, const char* currentDirectory, U32
     }
     openNode->func->write(thread, openNode, path1, (U32)strlen(s1));
     openNode->func->close(openNode);
+    BOXEDWINE_LOCK(NULL, fsMutex);
     pblMapClear(localSkipLinksMap);
+    BOXEDWINE_UNLOCK(NULL, fsMutex);
     return 0;
 }
 
@@ -339,7 +349,11 @@ BOOL followLinks(char* path, int pathSize, U32* isLink) {
 }
 
 struct FsNode* getNodeInCache(const char* localPath) {
-    return (struct FsNode*)getHashmapValue(&nodeMap, localPath);
+    struct FsNode* result;
+    BOXEDWINE_LOCK(NULL, fsMutex);
+    result = getHashmapValue(&nodeMap, localPath);
+    BOXEDWINE_UNLOCK(NULL, fsMutex);
+    return result;
 }
 
 
@@ -367,6 +381,7 @@ struct FsNode* getLocalAndNativePaths(const char* currentDirectory, const char* 
     stringReplace("//", "/", localPath, localPathSize);
     normalizePath(localPath);
 
+    BOXEDWINE_LOCK(NULL, fsMutex);
     found = pblMapGet(localSkipLinksMap, localPath, strlen(localPath)+1, NULL);
     if (found) {
         if (isLink)
@@ -392,6 +407,7 @@ struct FsNode* getLocalAndNativePaths(const char* currentDirectory, const char* 
         localEntry.isLink = tmp32;
         pblMapAdd(localSkipLinksMap, localPath, strlen(localPath)+1, &localEntry, sizeof(struct LocalPath));
     }
+    BOXEDWINE_UNLOCK(NULL, fsMutex);
     return getNodeInCache(localPath);
 }
 
@@ -751,13 +767,25 @@ U32 zipOpenFile_getDirectoryEntryCount(struct FsOpenNode* node) {
     return 0;
 }
 
+#ifdef BOXEDWINE_VM
+SDL_mutex* zipMutex;
+#endif
+
 U32 zipOpenFile_readNative(struct FsOpenNode* node, U8* buffer, U32 len) {
     U32 result;
-
+#ifdef BOXEDWINE_VM
+    if (!zipMutex) {
+        zipMutex = SDL_CreateMutex();
+    }
+    SDL_LockMutex(zipMutex);
+#endif
     setupZipRead(node->node->zipOffset1, node->zipFilePos1);    
     result = unzReadCurrentFile(zipfile, buffer, len);
     node->zipFilePos1+=result;
     lastZipFileOffset = node->zipFilePos1;
+#ifdef BOXEDWINE_VM
+    SDL_UnlockMutex(zipMutex);
+#endif
     return result;
 }
 
@@ -1277,12 +1305,16 @@ struct FsNode* allocNode(const char* localPath, const char* nativePath, struct F
         result->nativePath1 = 0;
     }
     result->name = strrchr(result->path, '/')+1;
+    BOXEDWINE_LOCK(NULL, fsMutex);
     putHashmapValue(&nodeMap, result->path, result);	
+    BOXEDWINE_UNLOCK(NULL, fsMutex);
     return result;
 }
 
 void removeNodeFromCache(struct FsNode* node) {
+    BOXEDWINE_LOCK(NULL, fsMutex);
     removeHashmapKey(&nodeMap, node->path);
+    BOXEDWINE_UNLOCK(NULL, fsMutex);
 }
 
 struct FsNode* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing) {

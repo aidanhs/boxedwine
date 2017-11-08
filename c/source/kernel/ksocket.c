@@ -618,8 +618,8 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
 #ifndef BOXEDWINE_VM
         return -K_WAIT;                
 #endif
-    }
-    //printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
+    }   
+    
     while (!ringbuf_is_full(s->connection->recvBuffer) && len) {
         S8 tmp[4096];
         U32 todo = len;
@@ -638,6 +638,10 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
         wakeAndResetWaitingOnReadThreads(s->connection);
     }
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+#ifdef BOXEDWINE_VM
+    // :TODO: hopefully this will eventually go away.  For now this prevents a signal from being generated which isn't handled yet
+    SDL_Delay(10);
+#endif
     return count;
 }
 
@@ -1762,7 +1766,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             }
         }
     }
-    BOXEDWINE_LOCK(thread, s->bufferMutex);
+    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
     if (!s->nativeSocket) {
         msg->next = 0;
         if (s->connection) {
@@ -1779,7 +1783,7 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             wakeAndResetWaitingOnReadThreads(s->connection);
         }
     }
-    BOXEDWINE_UNLOCK(thread, s->bufferMutex);
+    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
     return result;
 }
 

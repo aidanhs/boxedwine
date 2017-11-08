@@ -117,6 +117,7 @@ struct KProcess {
     struct KThread* wakeOnExitOrExec;
 #ifdef BOXEDWINE_VM
     void** opToAddressPages[0x100000];
+    SDL_mutex* threadsMutex;
 #endif
 };
 
@@ -133,9 +134,9 @@ const char* getModuleName(struct CPU* cpu, U32 eip);
 U32 getModuleEip(struct CPU* cpu, U32 eip);
 U32 getNextFileDescriptorHandle(struct KProcess* process, int after);
 //void signalProcess(struct KProcess* process, U32 signal);
-void signalIO(struct KProcess* process, U32 code, S32 band, FD fd);
-void signalCHLD(struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode);
-void signalALRM(struct KProcess* process);
+void signalIO(struct KThread* thread, struct KProcess* process, U32 code, S32 band, FD fd);
+void signalCHLD(struct KThread* thread, struct KProcess* process, U32 code, U32 childPid, U32 sendingUID, S32 exitCode);
+void signalALRM(struct KThread* thread, struct KProcess* process);
 void signalIllegalInstruction(struct KThread* thread, int code);
 void closeMemoryMapped(struct MapedFiles* mapped);
 
@@ -145,9 +146,9 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount);
 #endif
 
 // returns tid
-U32 processAddThread(struct KProcess* process, struct KThread* thread);
-void processRemoveThread(struct KProcess* process, struct KThread* thread);
-struct KThread* processGetThreadById(struct KProcess* process, U32 tid);
+U32 processAddThread(struct KThread* currentThread, struct KProcess* process, struct KThread* thread);
+void processRemoveThread(struct KThread* currentThread, struct KProcess* process, struct KThread* thread);
+struct KThread* processGetThreadById(struct KThread* currentThread, struct KProcess* process, U32 tid);
 U32 processGetThreadCount(struct KProcess* process);
 struct user_desc* getLDT(struct KThread* thread, U32 index);
 U32 isLdtEmpty(struct user_desc* desc);

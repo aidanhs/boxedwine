@@ -41,7 +41,7 @@ struct KThread* allocThread() {
 }
 
 void freeThread(struct KThread* currentThread, struct KThread* thread) {
-    processRemoveThread(thread->process, thread);    	
+    processRemoveThread(currentThread, thread->process, thread);    	
     if (thread->waitingForSignalToEnd) {
         wakeThread(currentThread, thread->waitingForSignalToEnd);
         thread->waitingForSignalToEnd = 0;
@@ -73,13 +73,13 @@ void setupStack(struct KThread* thread) {
     thread->cpu.thread = thread;
 }
 
-void initThread(struct KThread* thread, struct KProcess* process) {
+void initThread(struct KThread* currentThread, struct KThread* thread, struct KProcess* process) {
     int i;
 
     memset(thread, 0, sizeof(struct KThread));	
     initCPU(&thread->cpu, process->memory);	
     thread->process = process;
-    thread->id = processAddThread(process, thread);
+    thread->id = processAddThread(currentThread, process, thread);
     thread->sigMask = 0;
     for (i=0;i<TLS_ENTRIES;i++) {
         thread->tls[i].seg_not_present = 1;
@@ -101,7 +101,7 @@ void cloneThread(struct KThread* thread, struct KThread* from, struct KProcess* 
     thread->stackPageStart = from->stackPageStart;
     thread->stackPageCount = from->stackPageCount;
     thread->waitingForSignalToEndMaskToRestore = thread->waitingForSignalToEndMaskToRestore;
-    thread->id = processAddThread(process, thread);
+    thread->id = processAddThread(from, process, thread);
 }
 
 void exitThread(struct KThread* thread, U32 status) {
