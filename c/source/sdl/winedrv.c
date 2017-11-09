@@ -286,7 +286,6 @@ void boxeddrv_Beep(struct CPU* cpu) {
 #define DM_PANNINGHEIGHT        __MSABI_LONG(0x10000000)
 #define DM_DISPLAYFIXEDOUTPUT   __MSABI_LONG(0x20000000)
 
-void screenResized(struct KThread* thread);
 // LONG CDECL drv_ChangeDisplaySettingsEx(LPCWSTR devname, LPDEVMODEW devmode, HWND hwnd, DWORD flags, LPVOID lpvoid)
 void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
     U32 devmode = ARG2;
@@ -323,7 +322,7 @@ void boxeddrv_ChangeDisplaySettingsEx(struct CPU* cpu) {
     if (!bits_per_pixel) {
         bits_per_pixel = default_bits_per_pixel;
     }
-    screenResized(cpu->thread);
+    sdlScreenResized(cpu->thread);
     writed(cpu->thread, ARG6, DISP_CHANGE_SUCCESSFUL);	
     writed(cpu->thread, ARG7, screenCx);	
     writed(cpu->thread, ARG8, screenCy);	
@@ -522,7 +521,7 @@ void boxeddrv_GetCursorPos(struct CPU* cpu) {
     int x = 0;
     int y = 00;
 
-    sdlGetMouseState(&x, &y);
+    sdlGetMouseState(cpu->thread, &x, &y);
 
     writed(cpu->thread, pos, x);
     writed(cpu->thread, pos+4, y);
@@ -614,7 +613,7 @@ void boxeddrv_SetCursor(struct CPU* cpu) {
     char tmp[MAX_FILEPATH_LEN];
     char tmp2[MAX_FILEPATH_LEN];
 
-    if (sdlSetCursor(getNativeStringW(cpu->thread, wModuleName, tmp, sizeof(tmp)), getNativeStringW(cpu->thread, wResName, tmp2, sizeof(tmp2)), resId))
+    if (sdlSetCursor(cpu->thread, getNativeStringW(cpu->thread, wModuleName, tmp, sizeof(tmp)), getNativeStringW(cpu->thread, wResName, tmp2, sizeof(tmp2)), resId))
         writed(cpu->thread, ARG5, 1);    
     else
         writed(cpu->thread, ARG5, 0);    
@@ -643,7 +642,7 @@ void boxeddrv_SetCursorBits(struct CPU* cpu) {
     }
     memcopyToNative(cpu->thread, bits, (S8*)data, size);
     memcopyToNative(cpu->thread, bits+size, (S8*)mask, size);
-    sdlCreateAndSetCursor(getNativeStringW(cpu->thread, wModuleName, tmp, sizeof(tmp)), getNativeStringW(cpu->thread, wResName, tmp2, sizeof(tmp2)), resId, data, mask, width, height, hotX, hotY);
+    sdlCreateAndSetCursor(cpu->thread, getNativeStringW(cpu->thread, wModuleName, tmp, sizeof(tmp)), getNativeStringW(cpu->thread, wResName, tmp2, sizeof(tmp2)), resId, data, mask, width, height, hotX, hotY);
 }
 
 // BOOL CDECL drv_SetCursorPos(INT x, INT y)
@@ -755,9 +754,9 @@ void boxeddrv_WindowPosChanged(struct CPU* cpu) {
     writeRect(cpu->thread, ARG5, &wnd->clientRect);
     //wnd->surface = 0;
     if ((swp_flags & SWP_HIDEWINDOW) && !(style & WS_VISIBLE)) {
-        showWnd(wnd, 0);
+        sdlShowWnd(cpu->thread, wnd, 0);
     } else if (style & WS_VISIBLE) {
-        showWnd(wnd, 1);
+        sdlShowWnd(cpu->thread, wnd, 1);
     }
 }
 
@@ -797,10 +796,9 @@ void boxeddrv_WindowPosChanging(struct CPU* cpu) {
     writed(cpu->thread, ARG7, wnd->surface);
 }
 
-U32 getGammaRamp(struct KThread* thread, U32 ramp);
 // BOOL drv_GetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
 void boxeddrv_GetDeviceGammaRamp(struct CPU* cpu) {
-    EAX = getGammaRamp(cpu->thread, ARG2);
+    EAX = sdlGetGammaRamp(cpu->thread, ARG2);
 }
 
 // BOOL drv_SetDeviceGammaRamp(PHYSDEV dev, LPVOID ramp)
@@ -1260,7 +1258,7 @@ void boxeddrv_wglShareLists(struct CPU* cpu) {
 }
 
 void boxeddrv_wglSwapBuffers(struct CPU* cpu) {
-    sdlSwapBuffers();
+    sdlSwapBuffers(cpu->thread);
     EAX = 1;
 }
 
@@ -1283,7 +1281,7 @@ void boxeddrv_FlushSurface(struct CPU* cpu) {
     for (i=0;i<ARG9;i++) {
         wndBlt(cpu->thread, ARG1, ARG2, ARG3, ARG4, ARG5, ARG6, ARG8+16*i);
     }
-    drawAllWindows(cpu->thread, ARG7+4, readd(cpu->thread, ARG7));
+    sdlDrawAllWindows(cpu->thread, ARG7+4, readd(cpu->thread, ARG7));
 }
 
 void boxeddrv_CreateDC(struct CPU* cpu) {
@@ -1310,7 +1308,7 @@ void boxeddrv_GetSystemPalette(struct CPU* cpu) {
 }
 
 void boxeddrv_GetNearestColor(struct CPU* cpu) {
-    EAX = sdlGetNearestColor(ARG1);
+    EAX = sdlGetNearestColor(cpu->thread, ARG1);
 }
 
 void boxeddrv_RealizePalette(struct CPU* cpu) {

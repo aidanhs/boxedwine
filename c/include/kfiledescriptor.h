@@ -58,7 +58,7 @@ struct KFileDescriptor {
 BOOL canReadFD(struct KFileDescriptor* fd);
 BOOL canWriteFD(struct KFileDescriptor* fd);
 void closeFD(struct KFileDescriptor* fd);
-struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags);
+struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags, S32 handle, U32 afterHandle);
 
 U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg);
 U32 syscall_select(struct KThread* thread, U32 nfds, U32 readfds, U32 writefds, U32 errorfds, U32 timeout);

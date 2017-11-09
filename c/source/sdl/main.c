@@ -344,6 +344,11 @@ U32 gensrc;
 void writeSource();
 #endif
 
+#ifdef BOXEDWINE_VM
+U32 sdlCustomEvent;
+SDL_threadID sdlMainThreadId;
+#endif
+
 U32 checkWaitingNativeSockets(int timeout);
 void initWine();
 void initSDL();
@@ -460,7 +465,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "WINELOADERNOEXEC=1";
     //ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
     ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
-    //ppenv[envc++] = "WINEDEBUG=+all,+relay";
+    ppenv[envc++] = "WINEDEBUG=+service";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
@@ -513,6 +518,9 @@ int main(int argc, char **argv) {
 #endif
 
 #ifdef BOXEDWINE_VM
+            sdlCustomEvent = SDL_RegisterEvents(1);
+            sdlMainThreadId = SDL_ThreadID();
+
             while (SDL_WaitEvent(&e)) {
 #else
             while (SDL_PollEvent(&e)) {
@@ -572,6 +580,15 @@ int main(int argc, char **argv) {
                 else if (e.type == SDL_WINDOWEVENT) {
                     if (!isBoxedWineDriverActive())
                         flipFBNoCheck();
+                }
+#endif
+#ifdef BOXEDWINE_VM
+                else if (e.type == sdlCustomEvent) {
+                    struct SdlCallback* callback = e.user.data1;
+                    callback->func(callback);
+                    SDL_LockMutex(callback->mutex);
+                    SDL_CondSignal(callback->cond);
+                    SDL_UnlockMutex(callback->mutex);
                 }
 #endif
             };

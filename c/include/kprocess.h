@@ -118,6 +118,7 @@ struct KProcess {
 #ifdef BOXEDWINE_VM
     void** opToAddressPages[0x100000];
     SDL_mutex* threadsMutex;
+    SDL_mutex* fdMutex;
 #endif
 };
 

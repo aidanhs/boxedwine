@@ -26,6 +26,45 @@
 #include "sdlwindow.h"
 #include "kscheduler.h"
 
+#ifdef BOXEDWINE_VM
+extern U32 sdlCustomEvent;
+extern SDL_threadID sdlMainThreadId;
+
+static struct SdlCallback* freeSdlCallbacks;
+static SDL_mutex* freeSdlCallbacksMutex;
+
+struct SdlCallback* allocSdlCallback(struct KThread* thread) {
+    if (!freeSdlCallbacksMutex)
+        freeSdlCallbacksMutex = SDL_CreateMutex();
+    SDL_LockMutex(freeSdlCallbacksMutex);
+    if (freeSdlCallbacks) {
+        struct SdlCallback* result = freeSdlCallbacks;
+        freeSdlCallbacks = freeSdlCallbacks->next;
+        result->thread = thread;
+        SDL_UnlockMutex(freeSdlCallbacksMutex);
+        return result;
+    } else {
+        struct SdlCallback* result = malloc(sizeof(struct SdlCallback));
+        memset(result, 0, sizeof(struct SdlCallback));
+        result->sdlEvent.type = sdlCustomEvent;
+        result->thread = thread;
+        result->sdlEvent.user.data1 = result;
+        result->mutex = SDL_CreateMutex();
+        result->cond = SDL_CreateCond();
+        SDL_UnlockMutex(freeSdlCallbacksMutex);
+        return result;
+    }    
+}
+
+void freeSdlCallback(struct SdlCallback* callback) {
+    SDL_LockMutex(freeSdlCallbacksMutex);
+    callback->next = freeSdlCallbacks;
+    freeSdlCallbacks = callback;
+    SDL_UnlockMutex(freeSdlCallbacksMutex);
+}
+
+#endif
+
 int bits_per_pixel = 32;
 int default_horz_res = 800;
 int default_vert_res = 600;
@@ -315,7 +354,7 @@ struct Wnd* getWnd(U32 hwnd) {
     return NULL;
 }
 
-struct Wnd* getWndFromPoint(int x, int y) {
+static struct Wnd* getWndFromPoint(int x, int y) {
     PblIterator* it = pblMapIteratorNew(hwndToWnd);
     while (pblIteratorHasNext(it)) {
         struct Wnd** ppWnd = pblMapEntryValue((PblMapEntry*)pblIteratorNext(it));
@@ -332,7 +371,7 @@ struct Wnd* getWndFromPoint(int x, int y) {
     return NULL;
 }
 
-struct Wnd* getFirstVisibleWnd() {
+static struct Wnd* getFirstVisibleWnd() {
     PblIterator* it = pblMapIteratorNew(hwndToWnd);
     while (pblIteratorHasNext(it)) {
         struct Wnd** ppWnd = pblMapEntryValue((PblMapEntry*)pblIteratorNext(it));
@@ -396,7 +435,26 @@ SDL_Surface* surface;
 void loadExtensions();
 #endif
 
+#ifdef BOXEDWINE_VM
+static void mainThreadDeleteContext(struct SdlCallback* callback) {
+    sdlDeleteContext(callback->thread, callback->iArg1);
+}
+#endif
+
 void sdlDeleteContext(struct KThread* thread, U32 context) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainThreadDeleteContext;
+        callback->iArg1 = context;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);
+        return;
+    }
+#endif
     struct KThread* contextThread = processGetThreadById(thread, thread->process, context);
     if (contextThread && contextThread->glContext) {
         SDL_GL_DeleteContext(contextThread->glContext);
@@ -415,7 +473,29 @@ void sdlUpdateContextForThread(struct KThread* thread) {
     }
 }
 
+#ifdef BOXEDWINE_VM
+static void mainMakeCurrent(struct SdlCallback* callback) {
+    callback->result = sdlMakeCurrent(callback->thread, callback->iArg1);
+}
+#endif
+
 U32 sdlMakeCurrent(struct KThread* thread, U32 arg) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainMakeCurrent;
+        callback->iArg1 = arg;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        result = callback->result;
+        freeSdlCallback(callback);        
+        return result;
+    }
+#endif
 #ifdef SDL2
     if (arg == thread->id) {
         if (SDL_GL_MakeCurrent(sdlWindow, thread->glContext)==0) {
@@ -440,26 +520,77 @@ U32 sdlMakeCurrent(struct KThread* thread, U32 arg) {
 #endif
 }
 
+#ifdef BOXEDWINE_VM
+static void mainShareLists(struct SdlCallback* callback) {
+    callback->result = sdlShareLists(callback->thread, callback->iArg1, callback->iArg2);
+}
+#endif
+
 U32 sdlShareLists(struct KThread* thread, U32 srcContext, U32 destContext) {
-    struct KThread* srcThread = processGetThreadById(thread, thread->process, srcContext);
-    struct KThread* destThread = processGetThreadById(thread, thread->process, destContext);
-    if (srcThread && destThread && srcThread->glContext && destThread->glContext) {
-        if (destThread->currentContext) {
-            kpanic("Wasn't expecting the OpenGL context that will share a list to already be current");
-        }
-        if (srcThread->currentContext != sdlCurrentContext) {
-            kpanic("Something went wrong with sdlShareLists");
-        }
-        //SDL_GL_DeleteContext(destThread->glContext);
-        //SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1); 
-        //destThread->glContext = SDL_GL_CreateContext(sdlWindow);
-        //SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0); 
-        return 1;
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainShareLists;
+        callback->iArg1 = srcContext;
+        callback->iArg2 = destContext;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        result = callback->result;
+        freeSdlCallback(callback);        
+        return result;
     }
-    return 0;
+#endif
+    {
+        struct KThread* srcThread = processGetThreadById(thread, thread->process, srcContext);
+        struct KThread* destThread = processGetThreadById(thread, thread->process, destContext);
+        if (srcThread && destThread && srcThread->glContext && destThread->glContext) {
+            if (destThread->currentContext) {
+                kpanic("Wasn't expecting the OpenGL context that will share a list to already be current");
+            }
+            if (srcThread->currentContext != sdlCurrentContext) {
+                kpanic("Something went wrong with sdlShareLists");
+            }
+            //SDL_GL_DeleteContext(destThread->glContext);
+            //SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1); 
+            //destThread->glContext = SDL_GL_CreateContext(sdlWindow);
+            //SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0); 
+            return 1;
+        }
+        return 0;
+    }
 }
 
+#ifdef BOXEDWINE_VM
+static void mainCreateOpenglWindow(struct SdlCallback* callback) {
+    callback->result = sdlCreateOpenglWindow(callback->thread, callback->pArg1, callback->iArg1, callback->iArg2, callback->iArg3, callback->iArg4);
+}
+#endif
+
 U32 sdlCreateOpenglWindow(struct KThread* thread, struct Wnd* wnd, int major, int minor, int profile, int flags) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainCreateOpenglWindow;
+        callback->pArg1 = wnd;
+        callback->iArg1 = major;
+        callback->iArg2 = minor;
+        callback->iArg3 = profile;
+        callback->iArg4 = flags;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        result = callback->result;
+        freeSdlCallback(callback);        
+        return result;
+    }
+#endif
 #ifdef SDL2
     if (wnd->openGlContext) {
         if (thread->glContext) {
@@ -516,7 +647,25 @@ U32 sdlCreateOpenglWindow(struct KThread* thread, struct Wnd* wnd, int major, in
 #endif
 }
 
-void screenResized(struct KThread* thread) {
+#ifdef BOXEDWINE_VM
+static void mainScreenResized(struct SdlCallback* callback) {
+    sdlScreenResized(callback->thread);
+}
+#endif
+
+void sdlScreenResized(struct KThread* thread) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainScreenResized;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return;
+    }
+#endif
 #ifdef SDL2
     if (thread->glContext)
         SDL_SetWindowSize(sdlWindow, screenCx, screenCy);
@@ -527,7 +676,7 @@ void screenResized(struct KThread* thread) {
 #endif
 }
 
-void displayChanged(struct KThread* thread) {
+static void displayChanged(struct KThread* thread) {
 #ifndef SDL2
     U32 flags;
 #endif
@@ -546,7 +695,25 @@ void displayChanged(struct KThread* thread) {
 #endif
 }
 
-void sdlSwapBuffers() {
+#ifdef BOXEDWINE_VM
+static void mainSwapBuffers(struct SdlCallback* callback) {
+    sdlSwapBuffers(callback->thread);
+}
+#endif
+
+void sdlSwapBuffers(struct KThread* thread) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainSwapBuffers;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return;
+    }
+#endif
 #ifdef SDL2
     SDL_GL_SwapWindow(sdlWindow);
 #else
@@ -558,101 +725,147 @@ void sdlSwapBuffers() {
 S8 b[1024*1024*4];
 #endif
 
+#ifdef BOXEDWINE_VM
+static void mainWndBlt(struct SdlCallback* callback) {
+    wndBlt(callback->thread, callback->iArg1, callback->iArg2, callback->iArg3, callback->iArg4, callback->iArg5, callback->iArg6, callback->iArg7);
+}
+#endif
+
 void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
-    struct Wnd* wnd = getWnd(hwnd);
-    struct wRECT r;
-    U32 y;    
-    int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
-    static int i;
-
-    readRect(thread, rect, &r);
-
-    if (!firstWindowCreated) {
-        displayChanged(thread);
-    }
-#ifndef SDL2
-    if (!surface)
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainWndBlt;
+        callback->iArg1 = hwnd;
+        callback->iArg2 = bits;
+        callback->iArg3 = xOrg;
+        callback->iArg4 = yOrg;
+        callback->iArg5 = width;
+        callback->iArg6 = height;
+        callback->iArg7 = rect;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
         return;
-#endif
-    if (!wnd)
-        return;    
-#ifdef SDL2
-    {
-        SDL_Texture *sdlTexture = NULL;
-        
-        if (wnd->sdlTexture) {
-            sdlTexture = wnd->sdlTexture;
-            if (sdlTexture && (wnd->sdlTextureHeight != height || wnd->sdlTextureWidth != width)) {
-                SDL_DestroyTexture(wnd->sdlTexture);
-                wnd->sdlTexture = NULL;
-                sdlTexture = NULL;
-            }
-        }
-        if (!sdlTexture) {
-            U32 format = SDL_PIXELFORMAT_ARGB8888;
-            if (bits_per_pixel == 16) {
-                format = SDL_PIXELFORMAT_RGB565;
-            } else if (bits_per_pixel == 15) {
-                format = SDL_PIXELFORMAT_RGB555;
-            }
-            sdlTexture = SDL_CreateTexture(sdlRenderer, format, SDL_TEXTUREACCESS_STREAMING, width, height);
-            wnd->sdlTexture = sdlTexture;
-            wnd->sdlTextureHeight = height;
-            wnd->sdlTextureWidth = width;
-        }
-
-        for (y = 0; y < height; y++) {
-            memcopyToNative(thread, bits+(height-y-1)*pitch, b+y*pitch, pitch);
-        } 
-        if (bits_per_pixel!=32) {
-            // SDL_ConvertPixels(width, height, )
-        }
-        SDL_UpdateTexture(sdlTexture, NULL, b, pitch);
     }
-#else		
-    {     
-        SDL_Surface* s = NULL;
-        if (wnd->surface) {
-            s = wnd->sdlSurface;
-            if (s && (s->w!=width || s->h!=height || s->format->BitsPerPixel!=bits_per_pixel)) {
-                SDL_FreeSurface(s);
-                wnd->sdlSurface = NULL;
-                s = NULL;
-            }
-        }
-        if (!s) {
-            U32 rMask = 0x00FF0000;
-            U32 gMask = 0x0000FF00;
-            U32 bMask = 0x000000FF;
-
-            if (bits_per_pixel==15) {
-                rMask = 0x7C00;
-                gMask = 0x03E0;
-                bMask = 0x001F;
-            } else if (bits_per_pixel == 16) {
-                rMask = 0xF800;
-                gMask = 0x07E0;
-                bMask = 0x001F;
-            }
-            s = SDL_CreateRGBSurface(0, width, height, bits_per_pixel, rMask, gMask, bMask, 0);
-            wnd->sdlSurface = s;
-        }
-        if (SDL_MUSTLOCK(s)) {
-            SDL_LockSurface(s);
-        }
-        for (y = 0; y < height; y++) {
-            memcopyToNative(memory, bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
-        }   
-        if (SDL_MUSTLOCK(s)) {
-            SDL_UnlockSurface(s);
-        }      
-    }	
 #endif
+    {
+        struct Wnd* wnd = getWnd(hwnd);
+        struct wRECT r;
+        U32 y;    
+        int pitch = (width*((bits_per_pixel+7)/8)+3) & ~3;
+        static int i;
+
+        readRect(thread, rect, &r);
+
+        if (!firstWindowCreated) {
+            displayChanged(thread);
+        }
+    #ifndef SDL2
+        if (!surface)
+            return;
+    #endif
+        if (!wnd)
+            return;    
+    #ifdef SDL2
+        {
+            SDL_Texture *sdlTexture = NULL;
+        
+            if (wnd->sdlTexture) {
+                sdlTexture = wnd->sdlTexture;
+                if (sdlTexture && (wnd->sdlTextureHeight != height || wnd->sdlTextureWidth != width)) {
+                    SDL_DestroyTexture(wnd->sdlTexture);
+                    wnd->sdlTexture = NULL;
+                    sdlTexture = NULL;
+                }
+            }
+            if (!sdlTexture) {
+                U32 format = SDL_PIXELFORMAT_ARGB8888;
+                if (bits_per_pixel == 16) {
+                    format = SDL_PIXELFORMAT_RGB565;
+                } else if (bits_per_pixel == 15) {
+                    format = SDL_PIXELFORMAT_RGB555;
+                }
+                sdlTexture = SDL_CreateTexture(sdlRenderer, format, SDL_TEXTUREACCESS_STREAMING, width, height);
+                wnd->sdlTexture = sdlTexture;
+                wnd->sdlTextureHeight = height;
+                wnd->sdlTextureWidth = width;
+            }
+
+            for (y = 0; y < height; y++) {
+                memcopyToNative(thread, bits+(height-y-1)*pitch, b+y*pitch, pitch);
+            } 
+            if (bits_per_pixel!=32) {
+                // SDL_ConvertPixels(width, height, )
+            }
+            SDL_UpdateTexture(sdlTexture, NULL, b, pitch);
+        }
+    #else		
+        {     
+            SDL_Surface* s = NULL;
+            if (wnd->surface) {
+                s = wnd->sdlSurface;
+                if (s && (s->w!=width || s->h!=height || s->format->BitsPerPixel!=bits_per_pixel)) {
+                    SDL_FreeSurface(s);
+                    wnd->sdlSurface = NULL;
+                    s = NULL;
+                }
+            }
+            if (!s) {
+                U32 rMask = 0x00FF0000;
+                U32 gMask = 0x0000FF00;
+                U32 bMask = 0x000000FF;
+
+                if (bits_per_pixel==15) {
+                    rMask = 0x7C00;
+                    gMask = 0x03E0;
+                    bMask = 0x001F;
+                } else if (bits_per_pixel == 16) {
+                    rMask = 0xF800;
+                    gMask = 0x07E0;
+                    bMask = 0x001F;
+                }
+                s = SDL_CreateRGBSurface(0, width, height, bits_per_pixel, rMask, gMask, bMask, 0);
+                wnd->sdlSurface = s;
+            }
+            if (SDL_MUSTLOCK(s)) {
+                SDL_LockSurface(s);
+            }
+            for (y = 0; y < height; y++) {
+                memcopyToNative(memory, bits+(height-y-1)*pitch, (U8*)(s->pixels)+y*s->pitch, pitch);
+            }   
+            if (SDL_MUSTLOCK(s)) {
+                SDL_UnlockSurface(s);
+            }      
+        }	
+    #endif
+    }
 }
 
-void drawAllWindows(struct KThread* thread, U32 hWnd, int count) {    
-    int i;
+#ifdef BOXEDWINE_VM
+static void mainDrawAllWindows(struct SdlCallback* callback) {
+    sdlDrawAllWindows(callback->thread, callback->iArg1, callback->iArg2);
+}
+#endif
 
+void sdlDrawAllWindows(struct KThread* thread, U32 hWnd, int count) {    
+    int i;
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainDrawAllWindows;
+        callback->iArg1 = hWnd;
+        callback->iArg2 = count;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return;
+    }
+#endif
 #ifdef SDL2
     SDL_SetRenderDrawColor(sdlRenderer, 58, 110, 165, 255 );
     SDL_RenderClear(sdlRenderer);    
@@ -721,7 +934,27 @@ void readRect(struct KThread* thread, U32 address, struct wRECT* rect) {
     }
 }
 
-void showWnd(struct Wnd* wnd, U32 bShow) {
+#ifdef BOXEDWINE_VM
+static void mainSdlShowWnd(struct SdlCallback* callback) {
+    sdlShowWnd(callback->thread, callback->pArg1, callback->iArg1);
+}
+#endif
+
+void sdlShowWnd(struct KThread* thread, struct Wnd* wnd, U32 bShow) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainSdlShowWnd;
+        callback->pArg1 = wnd;
+        callback->iArg1 = bShow;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return;
+    }
+#endif
 #ifdef SDL2
     if (!bShow && wnd && wnd->sdlTexture) {
         SDL_DestroyTexture(wnd->sdlTexture);
@@ -750,11 +983,33 @@ void updateScreen() {
     // this mechanism probably won't work well if multiple threads are updating the screen, there could be flickering
 }
 
-U32 getGammaRamp(struct KThread* thread, U32 ramp) {
+#ifdef BOXEDWINE_VM
+static void mainGetGammaRamp(struct SdlCallback* callback) {
+    callback->result = sdlGetGammaRamp(callback->thread, callback->iArg1);
+}
+#endif
+
+U32 sdlGetGammaRamp(struct KThread* thread, U32 ramp) {
     U16 r[256];
     U16 g[256];
     U16 b[256];
 
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainGetGammaRamp;
+        callback->iArg1 = ramp;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        result = callback->result;
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return result;
+    }
+#endif
 #ifdef SDL2
     if (SDL_GetWindowGammaRamp(sdlWindow, r, g, b)==0) {
 #else
@@ -782,7 +1037,29 @@ void sdlGetPalette(struct KThread* thread, U32 start, U32 count, U32 entries) {
     }
 }
 
-U32 sdlGetNearestColor(U32 color) {
+#ifdef BOXEDWINE_VM
+static void mainGetNearestColor(struct SdlCallback* callback) {
+    callback->result = sdlGetNearestColor(callback->thread, callback->iArg1);
+}
+#endif
+
+U32 sdlGetNearestColor(struct KThread* thread, U32 color) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainGetNearestColor;
+        callback->iArg1 = color;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        result = callback->result;
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return result;
+    }
+#endif
 #ifdef SDL2
     return SDL_MapRGB(SDL_GetWindowSurface(sdlWindow)->format, color & 0xFF, (color >> 8) & 0xFF, (color >> 16) & 0xFF);
 #else
@@ -1003,7 +1280,31 @@ const char* getCursorName(char* moduleName, char* resourceName, int resource) {
     return cursorName;
 }
 
-U32 sdlSetCursor(char* moduleName, char* resourceName, int resource) {
+#ifdef BOXEDWINE_VM
+static void mainSetCursor(struct SdlCallback* callback) {
+    callback->result = sdlSetCursor(callback->thread, callback->pArg1, callback->pArg2, callback->iArg1);
+}
+#endif
+
+U32 sdlSetCursor(struct KThread* thread, char* moduleName, char* resourceName, int resource) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainSetCursor;
+        callback->pArg1 = moduleName;
+        callback->pArg2 = resourceName;
+        callback->iArg1 = resource;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        result = callback->result;
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return result;
+    }
+#endif
     if (cursors) {
         const char* name = getCursorName(moduleName, resourceName, resource);
         SDL_Cursor** cursor = pblMapGet(cursors, (void*)name, strlen(name), 0);
@@ -1015,61 +1316,91 @@ U32 sdlSetCursor(char* moduleName, char* resourceName, int resource) {
     return 0;
 }
 
-void sdlCreateAndSetCursor(char* moduleName, char* resourceName, int resource, U8* and_bits, U8* xor_bits, int width, int height, int hotX, int hotY) {
-    SDL_Cursor* cursor;
-    int byteCount = (width+31) / 31 * 4 * height;
-    int i;
-    U8 data_bits[64*64/8];
-    U8 mask_bits[64*64/8];
+#ifdef BOXEDWINE_VM
+static void mainCreateAndSetCursor(struct SdlCallback* callback) {
+    sdlCreateAndSetCursor(callback->thread, callback->pArg1, callback->pArg2, callback->iArg1, callback->pArg3, callback->pArg4, callback->iArg2, callback->iArg3, callback->iArg4, callback->iArg5);
+}
 
-    // AND | XOR | Windows cursor pixel | SDL
-    // --------------------------------------
-    // 0  |  0  | black                 | transparent
-    // 0  |  1  | white                 | White
-    // 1  |  0  | transparent           | Inverted color if possible, black if not
-    // 1  |  1  | invert                | Black
+#endif
 
-    // 0 0 -> 1 1
-    // 0 1 -> 0 1
-    // 1 0 -> 0 0
-    // 1 1 -> 1 0
-    for (i = 0; i < byteCount; i++) {
-        int j;
-
-        for (j=0;j<8;j++) {
-            U8 aBit = (and_bits[i] >> j) & 0x1;
-            U8 xBit = (xor_bits[i] >> j) & 0x1;
-
-            if (aBit && xBit) {
-                xBit = 0;
-            } else if (aBit && !xBit) {
-                aBit = 0;
-            } else if (!aBit && xBit) {
-                
-            } else if (!aBit && !xBit) {
-                aBit = 1;
-                xBit = 1;
-            }
-            if (aBit)
-                data_bits[i] |= (1 << j);
-            else
-                data_bits[i] &= ~(1 << j);
-
-            if (xBit)
-                mask_bits[i] |= (1 << j);
-            else
-                mask_bits[i] &= (1 << j);
-        }
+void sdlCreateAndSetCursor(struct KThread* thread, char* moduleName, char* resourceName, int resource, U8* and_bits, U8* xor_bits, int width, int height, int hotX, int hotY) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        callback->func = mainCreateAndSetCursor;
+        callback->pArg1 = moduleName;
+        callback->pArg2 = resourceName;
+        callback->iArg1 = resource;
+        callback->pArg3 = and_bits;
+        callback->pArg4 = xor_bits;
+        callback->iArg2 = width;
+        callback->iArg3 = height;
+        callback->iArg4 = hotX;
+        callback->iArg5 = hotY;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        freeSdlCallback(callback);        
+        return;
     }
+#endif
+    {
+        SDL_Cursor* cursor;
+        int byteCount = (width+31) / 31 * 4 * height;
+        int i;
+        U8 data_bits[64*64/8];
+        U8 mask_bits[64*64/8];
 
-    cursor = SDL_CreateCursor(data_bits, mask_bits, width, height, hotX, hotY);
-    if (cursor) {
-        const char* name = getCursorName(moduleName, resourceName, resource);
-        if (!cursors) {
-            cursors = pblMapNewHashMap();
+        // AND | XOR | Windows cursor pixel | SDL
+        // --------------------------------------
+        // 0  |  0  | black                 | transparent
+        // 0  |  1  | white                 | White
+        // 1  |  0  | transparent           | Inverted color if possible, black if not
+        // 1  |  1  | invert                | Black
+
+        // 0 0 -> 1 1
+        // 0 1 -> 0 1
+        // 1 0 -> 0 0
+        // 1 1 -> 1 0
+        for (i = 0; i < byteCount; i++) {
+            int j;
+
+            for (j=0;j<8;j++) {
+                U8 aBit = (and_bits[i] >> j) & 0x1;
+                U8 xBit = (xor_bits[i] >> j) & 0x1;
+
+                if (aBit && xBit) {
+                    xBit = 0;
+                } else if (aBit && !xBit) {
+                    aBit = 0;
+                } else if (!aBit && xBit) {
+                
+                } else if (!aBit && !xBit) {
+                    aBit = 1;
+                    xBit = 1;
+                }
+                if (aBit)
+                    data_bits[i] |= (1 << j);
+                else
+                    data_bits[i] &= ~(1 << j);
+
+                if (xBit)
+                    mask_bits[i] |= (1 << j);
+                else
+                    mask_bits[i] &= (1 << j);
+            }
         }
-        pblMapPut(cursors, (void*)name, strlen(name), &cursor, sizeof(SDL_Cursor*), NULL);
-        SDL_SetCursor(cursor);
+
+        cursor = SDL_CreateCursor(data_bits, mask_bits, width, height, hotX, hotY);
+        if (cursor) {
+            const char* name = getCursorName(moduleName, resourceName, resource);
+            if (!cursors) {
+                cursors = pblMapNewHashMap();
+            }
+            pblMapPut(cursors, (void*)name, strlen(name), &cursor, sizeof(SDL_Cursor*), NULL);
+            SDL_SetCursor(cursor);
+        }
     }
 }
 
@@ -1735,6 +2066,29 @@ done:
     return ret;
 }
 
-unsigned int sdlGetMouseState(int* x, int* y) {
+#ifdef BOXEDWINE_VM
+static void mainGetMouseState(struct SdlCallback* callback) {
+    callback->result = sdlGetMouseState(callback->thread, callback->pArg1, callback->pArg2);
+}
+#endif
+
+unsigned int sdlGetMouseState(struct KThread* thread,int* x, int* y) {
+#ifdef BOXEDWINE_VM
+    if (SDL_ThreadID()!=sdlMainThreadId) {
+        struct SdlCallback* callback = allocSdlCallback(thread);
+        U32 result;
+
+        callback->func = mainGetMouseState;
+        callback->pArg1 = x;
+        callback->pArg2 = y;
+        BOXEDWINE_LOCK(thread, callback->mutex);
+        SDL_PushEvent(&callback->sdlEvent);
+        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
+        BOXEDWINE_UNLOCK(thread, callback->mutex);
+        result = callback->result;
+        freeSdlCallback(callback);        
+        return result;
+    }
+#endif
     return SDL_GetMouseState(x, y);
 }

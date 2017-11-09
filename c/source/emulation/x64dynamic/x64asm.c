@@ -497,22 +497,23 @@ extern U32 wine_callbackSize;
 
 static SDL_mutex* printMutex;
 
-// returns 0 of eip changed
 void x64_cmdEntry(struct CPU* cpu) {
     switch (cpu->cmd) {
     case CMD_PRINT: 
         if (!printMutex) {
             printMutex = SDL_CreateMutex();
         }
-        BOXEDWINE_LOCK(cpu->thread, printMutex);
-        if (!logFile2[cpu->thread->process->id][cpu->thread->id-6400]) {
-            char buffer[MAX_FILEPATH_LEN];
-            sprintf(buffer, "log_%d_%d.txt", cpu->thread->process->id, cpu->thread->id);
-            logFile2[cpu->thread->process->id][cpu->thread->id-6400] = fopen(buffer, "w");
+        if (cpu->thread->id == 0x1900) {
+            BOXEDWINE_LOCK(cpu->thread, printMutex);
+            if (!logFile2[cpu->thread->process->id][cpu->thread->id-6400]) {
+                char buffer[MAX_FILEPATH_LEN];
+                sprintf(buffer, "log_%d_%d.txt", cpu->thread->process->id, cpu->thread->id);
+                logFile2[cpu->thread->process->id][cpu->thread->id-6400] = fopen(buffer, "w");
+            }
+            fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
+            fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
+            BOXEDWINE_UNLOCK(cpu->thread, printMutex);
         }
-        fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
-        fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
-        BOXEDWINE_UNLOCK(cpu->thread, printMutex);
         break;
     case CMD_SET_ES:
     case CMD_SET_CS:
@@ -665,12 +666,12 @@ void x64_popReg32(struct x64_Data* data, U32 reg, U32 isRegRex) {
 }
 
 void x64_pushCpuOffset16(struct x64_Data* data, U32 offset) {
-    x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, offset, 4, TRUE);
+    x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, offset, 4, FALSE);
     x64_pushReg16(data, HOST_TMP, TRUE);
 }
 
 void x64_pushCpuOffset32(struct x64_Data* data, U32 offset) {
-    x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, offset, 4, TRUE);
+    x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, offset, 4, FALSE);
     x64_pushReg32(data, HOST_TMP, TRUE);
 }
 

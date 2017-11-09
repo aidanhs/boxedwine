@@ -308,6 +308,7 @@ void runThreadSlice(struct KThread* thread) {
     cpu->blockCounter = 0;
     cpu->blockInstructionCount = 0;
 
+    cpu->log = thread->id==0x1900?1:0;
     if (!cpu->nextBlock || cpu->nextBlock == &emptyBlock) {
         cpu->nextBlock = getBlock(cpu, cpu->eip.u32);
     }

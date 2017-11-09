@@ -236,8 +236,15 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         result=syscall_write(thread, ARG1, ARG2, ARG3);
         break;
     case __NR_open:
+        // EAX=00000005 ECX=00008000 EDX=00000000 EBX=7BCAE52B ESP=F4400560 EBP=F44006B8 ESI=7BCB0C75 EDI=D01CF000
+        if (ECX==0x8000 && EDX==0 && EBX==0x7BCAE52) {
+            int ii=0;
+        }
         result=syscall_open(thread, process->currentDirectory, ARG1, ARG2);
-        //printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->thread, ARG1), ARG2, result);
+        {
+            char tmp[MAX_FILEPATH_LEN];
+            printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->thread, ARG1, tmp, MAX_FILEPATH_LEN), ARG2, result);
+        }
         break;		
     case __NR_close:
         result=syscall_close(thread, ARG1);

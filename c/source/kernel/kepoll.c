@@ -158,7 +158,7 @@ void freeEpoll(struct KEpoll* epoll) {
 
 U32 syscall_epollcreate(struct KThread* thread, U32 size) {
     struct KObject* o = allocKObject(&kepollAccess, KTYPE_EPOLL, 0, 0);
-    struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), o, K_O_RDWR, 0);
+    struct KFileDescriptor* result = allocFileDescriptor(thread->process, o, K_O_RDWR, 0, -1, 0);
     return result->handle;
 }
 

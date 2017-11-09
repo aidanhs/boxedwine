@@ -52,6 +52,11 @@ void closesocket(int socket) { close(socket); }
 #include <string.h>
 #include <stdio.h>
 
+#ifdef BOXEDWINE_VM
+extern SDL_mutex* pollMutex;
+extern SDL_cond* pollCond;
+#endif
+
 U32 wakeAndResetWaitingOnReadThreads(struct KSocket* s);
 U32 wakeAndResetWaitingOnWriteThreads(struct KSocket* s);
 
@@ -189,14 +194,12 @@ void waitOnSocketWrite(struct KSocket* s, struct KThread* thread) {
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
 }
 
-void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
-    if (!s->connectionMutex)
-        s->connectionMutex = SDL_CreateMutex();
-    if (!s->connectionCond)
-        s->connectionCond = SDL_CreateCond();
+void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {    
     BOXEDWINE_LOCK(thread, s->connectionMutex);
-    s->waitingOnConnectThread = thread;
-    BOXEDWINE_WAIT(thread, s->connectionCond, s->connectionMutex);
+    if (!s->connected) {
+        s->waitingOnConnectThread = thread;
+        BOXEDWINE_WAIT(thread, s->connectionCond, s->connectionMutex);
+    }
     BOXEDWINE_UNLOCK(thread, s->connectionMutex);
 }
 
@@ -510,6 +513,10 @@ void unixsocket_onDelete(struct KObject* obj) {
         wakeAndResetWaitingOnWriteThreads(s->connection);
         if (s->connection->waitingOnConnectThread)
             wakeThread(NULL, s->connection->waitingOnConnectThread);
+
+        BOXEDWINE_LOCK(NULL, pollMutex);
+        BOXEDWINE_SIGNAL(pollCond);
+        BOXEDWINE_UNLOCK(NULL, pollMutex);
     }
     if (s->connecting) {		
         for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
@@ -536,6 +543,10 @@ void unixsocket_onDelete(struct KObject* obj) {
     freeSocket(s);	
     if (s->waitingOnConnectThread)
         wakeThread(NULL, s->waitingOnConnectThread);
+
+    BOXEDWINE_LOCK(NULL, pollMutex);
+    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_UNLOCK(NULL, pollMutex);
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -638,10 +649,11 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
         wakeAndResetWaitingOnReadThreads(s->connection);
     }
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
-#ifdef BOXEDWINE_VM
-    // :TODO: hopefully this will eventually go away.  For now this prevents a signal from being generated which isn't handled yet
-    SDL_Delay(10);
-#endif
+
+    BOXEDWINE_LOCK(thread, pollMutex);
+    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_UNLOCK(thread, pollMutex);
+
     return count;
 }
 
@@ -665,6 +677,11 @@ U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U
     if (s->connection)
         wakeAndResetWaitingOnReadThreads(s->connection);
     BOXEDWINE_UNLOCK(NULL, s->connection->bufferMutex);
+
+    BOXEDWINE_LOCK(NULL, pollMutex);
+    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_UNLOCK(NULL, pollMutex);
+
     return count;
 }
 
@@ -715,6 +732,11 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
     if (s->connection)
         wakeAndResetWaitingOnWriteThreads(s->connection);
     BOXEDWINE_UNLOCK(thread, s->bufferMutex);
+
+    BOXEDWINE_LOCK(thread, pollMutex);
+    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_UNLOCK(thread, pollMutex);
+
     return count;
 }
 
@@ -999,7 +1021,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
     if (domain==K_AF_UNIX) {
         struct KSocket* s = allocSocket();
         struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, 0, s);
-        struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
+        struct KFileDescriptor* result = allocFileDescriptor(thread->process, kSocket, K_O_RDWR, 0, -1, 0);
         closeKObject(kSocket);
         s->pid = thread->process->id;
         s->domain = domain;
@@ -1012,7 +1034,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
         // just fake it so that libudev doesn't crash
         struct KSocket* s = allocSocket();
         struct KObject* kSocket = allocKObject(&unixsocketAccess, KTYPE_SOCK, 0, s);
-        struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
+        struct KFileDescriptor* result = allocFileDescriptor(thread->process, kSocket, K_O_RDWR, 0, -1, 0);
         closeKObject(kSocket);
         s->pid = thread->process->id;
         s->domain = domain;
@@ -1071,7 +1093,7 @@ U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct 
         } else {
             struct KSocket* s = allocSocket();
             struct KObject* kSocket = allocKObject(&nativesocketAccess, KTYPE_SOCK, 0, s);
-            struct KFileDescriptor* result = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
+            struct KFileDescriptor* result = allocFileDescriptor(thread->process, kSocket, K_O_RDWR, 0, -1, 0);
             closeKObject(kSocket);
             s->pid = thread->process->id;
             s->domain = domain;
@@ -1228,6 +1250,13 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 }
             } else {
                 U32 i;
+                BOOL found = FALSE;
+
+                if (!s->connectionMutex)
+                    s->connectionMutex = SDL_CreateMutex();
+                if (!s->connectionCond)
+                    s->connectionCond = SDL_CreateCond();
+
                 for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
                     if (!destination->pendingConnections[i]) {
                         destination->pendingConnections[i] = s;
@@ -1235,10 +1264,15 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                         s->connecting = destination;
                         if (destination->waitingOnConnectThread)
                             wakeThread(NULL, destination->waitingOnConnectThread);
+
+                        BOXEDWINE_LOCK(NULL, pollMutex);
+                        BOXEDWINE_SIGNAL(pollCond);
+                        BOXEDWINE_UNLOCK(NULL, pollMutex);
+                        found = TRUE;
                         break;
                     }
                 }
-                if (!s->connecting) {
+                if (!found) {
                     kwarn("connect: destination socket pending connections queue is full");
                     return -K_ECONNREFUSED;
                 }
@@ -1246,8 +1280,19 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                     return -K_EINPROGRESS;
                 }
                 // :TODO: what about a time out
+                
+#ifdef BOXEDWINE_VM
+                while (s->connecting) {
+                    waitOnSocketConnect(s, thread);
+                }
+                if (!s->connection) {
+                    return -K_ECONNREFUSED;
+                }
+                s->connected = 1;
+#else
                 waitOnSocketConnect(s, thread);
                 return -K_WAIT;
+#endif
             }
         } else {
             kpanic("connect not implemented for domain %d", s->domain);
@@ -1313,7 +1358,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
         if (result>=0) {
             struct KSocket* newSocket = allocSocket();
             struct KObject* kSocket = allocKObject(&nativesocketAccess, KTYPE_SOCK, 0, s);
-            struct KFileDescriptor* fd = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), kSocket, K_O_RDWR, 0);
+            struct KFileDescriptor* fd = allocFileDescriptor(thread->process, kSocket, K_O_RDWR, 0, -1, 0);
             closeKObject(kSocket);
 
             newSocket->pid = thread->process->id;
@@ -1356,6 +1401,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
         kpanic("ksocket2 failed to create a socket in accept");
     }
 
+    BOXEDWINE_LOCK(thread, connection->connectionMutex);
     connection->connection = resultSocket;
     //connection->connected = 1; this will be handled when the connecting thread is unblocked
     resultSocket->connected = 1;
@@ -1365,8 +1411,15 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
     resultSocket->inClosed = FALSE;
     resultSocket->outClosed = FALSE;
     connection->connecting = 0;
+    BOXEDWINE_UNLOCK(thread, connection->connectionMutex);
+
     if (connection->waitingOnConnectThread)
         wakeThread(NULL, connection->waitingOnConnectThread);
+
+    BOXEDWINE_LOCK(thread, pollMutex);
+    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_UNLOCK(thread, pollMutex);
+
     return result;
 }
 
@@ -1859,7 +1912,7 @@ U32 krecvmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
     readMsgHdr(thread, address, &hdr);
     if (hdr.msg_control) {
         for (i=0;i<hdr.msg_controllen && i<msg->objectCount;i++) {
-            struct KFileDescriptor* fd = allocFileDescriptor(thread->process, getNextFileDescriptorHandle(thread->process, 0), msg->objects[i].object, msg->objects[i].accessFlags, 0);
+            struct KFileDescriptor* fd = allocFileDescriptor(thread->process, msg->objects[i].object, msg->objects[i].accessFlags, 0, -1, 0);
             writeCMsgHdr(thread, hdr.msg_control + i * 16, 16, K_SOL_SOCKET, K_SCM_RIGHTS);
             writed(thread, hdr.msg_control + i * 16 + 12, fd->handle);
             closeKObject(msg->objects[i].object);

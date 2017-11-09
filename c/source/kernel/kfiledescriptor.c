@@ -41,7 +41,7 @@ BOOL canWriteFD(struct KFileDescriptor* fd) {
 
 static struct KFileDescriptor* freeFileDescriptors;
 
-struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags) {
+struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags, S32 handle, U32 afterHandle) {
     struct KFileDescriptor* result;
 
     if (freeFileDescriptors) {
@@ -51,6 +51,10 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle
     } else {
         result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor), KALLOC_KFILEDESCRIPTOR);
     }
+    BOXEDWINE_LOCK(NULL, process->fdMutex);
+    if (handle<0) {
+        handle = getNextFileDescriptorHandle(process, afterHandle);
+    }
     result->process = process;
     result->refCount = 1;
     result->handle = handle;
@@ -59,6 +63,7 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, U32 handle
     result->kobject = kobject;
     kobject->refCount++;
     process->fds[handle] = result;
+    BOXEDWINE_UNLOCK(NULL, process->fdMutex);
     return result;
 }
 
@@ -84,11 +89,8 @@ U32 syscall_fcntrl(struct KThread* thread, FD fildes, U32 cmd, U32 arg) {
                 kpanic("F_SETOWN not implemented: %d",fildes);
             }
             return 0;
-        case K_F_DUPFD: {
-            FD result = getNextFileDescriptorHandle(thread->process, arg);
-            allocFileDescriptor(thread->process, result, fd->kobject, fd->accessFlags, fd->descriptorFlags);
-            return result;
-        }
+        case K_F_DUPFD:
+            return allocFileDescriptor(thread->process, fd->kobject, fd->accessFlags, fd->descriptorFlags, -1, arg)->handle;        
         case K_F_GETFD:
             return fd->descriptorFlags;
         case K_F_SETFD:

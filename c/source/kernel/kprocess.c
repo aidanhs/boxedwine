@@ -101,6 +101,10 @@ void initProcess(struct Memory* memory, struct KProcess* process, U32 argc, cons
 	process->fds = kalloc(sizeof(struct KFileDescriptor*) * 64, KALLOC_KPROCESS);
 	process->maxFds = 64;
     initLDT(process);
+#ifdef BOXEDWINE_VM
+    process->threadsMutex = SDL_CreateMutex();
+    process->fdMutex = SDL_CreateMutex();
+#endif
 }
 
 struct KProcess* freeProcesses;
@@ -113,10 +117,7 @@ struct KProcess* allocProcess() {
         memset(result, 0, sizeof(struct KProcess));
         return result;
     }
-    result = (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
-#ifdef BOXEDWINE_VM
-    result->threadsMutex = SDL_CreateMutex();
-#endif
+    return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
     return result;
 }
 
@@ -158,6 +159,16 @@ void cleanupProcess(struct KProcess* process) {
 }
 
 void freeProcess(struct KProcess* process) {
+#ifdef BOXEDWINE_VM
+    if (process->threadsMutex) {
+        SDL_DestroyMutex(process->threadsMutex);
+        process->threadsMutex = NULL;
+    }
+    if (process->fdMutex) {
+        SDL_DestroyMutex(process->fdMutex);
+        process->fdMutex = NULL;
+    }
+#endif
     cleanupProcess(process);
     process->next = freeProcesses;	
     freeProcesses = process;
@@ -208,7 +219,7 @@ void cloneProcess(struct KThread* thread, struct Memory* memory, struct KProcess
 	process->fds = kalloc(sizeof(struct KFileDescriptor*)*process->maxFds, KALLOC_KPROCESS);
     for (i=0;i<process->maxFds;i++) {
         if (from->fds[i]) {
-            process->fds[i] = allocFileDescriptor(process, i, from->fds[i]->kobject, from->fds[i]->accessFlags, from->fds[i]->descriptorFlags);
+            process->fds[i] = allocFileDescriptor(process, from->fds[i]->kobject, from->fds[i]->accessFlags, from->fds[i]->descriptorFlags, i, 0);
             process->fds[i]->refCount = from->fds[i]->refCount;
         }
     }
@@ -420,7 +431,7 @@ U32 getNextFileDescriptorHandle(struct KProcess* process, int after) {
     return process->maxFds/2;
 }
 
-struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags, U32 descriptorFlags, U32 handle) {
+struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags, U32 descriptorFlags, S32 handle, U32 afterHandle) {
     struct FsNode* node;
     struct FsOpenNode* openNode;
     struct KFileDescriptor* result;
@@ -441,24 +452,24 @@ struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char*
             return 0;
         kobject = allocKFile(openNode);
     }
-    result = allocFileDescriptor(process, handle, kobject, accessFlags, descriptorFlags);
+    result = allocFileDescriptor(process, kobject, accessFlags, descriptorFlags, handle, afterHandle);
     closeKObject(kobject);	
     return result;
 }
 
 struct KFileDescriptor* openFile(struct KProcess* process, const char* currentDirectory, const char* localPath, U32 accessFlags) {
-    return openFileDescriptor(process, currentDirectory, localPath, accessFlags, (accessFlags & K_O_CLOEXEC)?FD_CLOEXEC:0, getNextFileDescriptorHandle(process, 0));
+    return openFileDescriptor(process, currentDirectory, localPath, accessFlags, (accessFlags & K_O_CLOEXEC)?FD_CLOEXEC:0, -1, 0);
 }
 
 void initStdio(struct KProcess* process) {
     if (!getFileDescriptor(process, 0)) {
-        openFileDescriptor(process, 0, "/dev/tty0", K_O_RDONLY, 0, 0);
+        openFileDescriptor(process, 0, "/dev/tty0", K_O_RDONLY, 0, 0, 0);
     }
     if (!getFileDescriptor(process, 1)) {
-        openFileDescriptor(process, 0, "/dev/tty0", K_O_WRONLY, 0, 1);
+        openFileDescriptor(process, 0, "/dev/tty0", K_O_WRONLY, 0, 1, 0);
     }
     if (!getFileDescriptor(process, 2)) {
-        openFileDescriptor(process, 0, "/dev/tty0", K_O_WRONLY, 0, 2);
+        openFileDescriptor(process, 0, "/dev/tty0", K_O_WRONLY, 0, 2, 0);
     }
 }
 
@@ -509,7 +520,7 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
             openNode->func->close(openNode);
         }
     }
-    
+    thread->cpu.log = 1;
     return thread;
 }
 

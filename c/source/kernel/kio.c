@@ -26,6 +26,7 @@
 #include "kstat.h"
 #include "kprocess.h"
 #include "fsapi.h"
+#include "kscheduler.h"
 
 #include <errno.h>
 #include <string.h>
@@ -406,6 +407,7 @@ U32 syscall_dup2(struct KThread* thread, FD fildes, FD fildes2) {
     if (fildes == fildes2) {
         return fildes;
     }
+    BOXEDWINE_LOCK(thread, thread->process->fdMutex);
     fd2 = getFileDescriptor(thread->process, fildes2);
     if (fd2) {
         if (fd2->refCount>1) {
@@ -413,20 +415,18 @@ U32 syscall_dup2(struct KThread* thread, FD fildes, FD fildes2) {
         }
         closeFD(fd2);			
     } 
-    allocFileDescriptor(thread->process, fildes2, fd->kobject, fd->accessFlags, fd->descriptorFlags);
+    allocFileDescriptor(thread->process, fd->kobject, fd->accessFlags, fd->descriptorFlags, fildes2, 0);
+    BOXEDWINE_UNLOCK(thread, thread->process->fdMutex);
     return fildes2;
 }
 
 U32 syscall_dup(struct KThread* thread, FD fildes) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, fildes);
-    U32 result;
 
     if (!fd) {
         return -K_EBADF;
     }
-    result = getNextFileDescriptorHandle(thread->process, 0);
-    allocFileDescriptor(thread->process, result, fd->kobject, fd->accessFlags, fd->descriptorFlags);
-    return result;
+    return allocFileDescriptor(thread->process, fd->kobject, fd->accessFlags, fd->descriptorFlags, -1, 0)->handle;
 }
 
 U32 syscall_unlink(struct KThread* thread, U32 path) {

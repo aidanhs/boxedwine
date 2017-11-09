@@ -56,7 +56,6 @@ void readRect(struct KThread* thread, U32 address, struct wRECT* rect);
 struct Wnd* getWnd(U32 hwnd);
 struct Wnd* wndCreate(struct KThread* thread, U32 processId, U32 hwnd, U32 windowRect, U32 clientRect);
 void wndDestroy(U32 hwnd);
-void showWnd(struct Wnd* wnd, U32 bShow);
 void setWndText(struct Wnd* wnd, const char* text);
 void updateScreen();
 

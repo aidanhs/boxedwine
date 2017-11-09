@@ -137,9 +137,9 @@ struct x64_Data {
     void** jmpTodoAddress;
     U8*  jmpTodoOffsetSize;
     U32 jmpTodoCount;
-    U32 jmpTodoEipBuffer[64];
-    void* jmpTodoAddressBuffer[64];
-    U8 jmpTodoOffsetSizeBuffer[64];
+    U32 jmpTodoEipBuffer[128];
+    void* jmpTodoAddressBuffer[128];
+    U8 jmpTodoOffsetSizeBuffer[128];
     U32 jmpTodoSize;
 
     U32* ipAddress;

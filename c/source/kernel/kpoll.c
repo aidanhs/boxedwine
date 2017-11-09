@@ -26,11 +26,21 @@
 #include "log.h"
 
 #ifdef BOXEDWINE_VM
+SDL_mutex* pollMutex;
+SDL_cond* pollCond;
+
 S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout) {
     S32 result = 0;
     U32 i;
     U32 startTime = getMilliesSinceStart();
 
+    if (!pollMutex) {
+        pollMutex = SDL_CreateMutex();
+    }
+    if (!pollCond) {
+        pollCond = SDL_CreateCond();
+    }
+    BOXEDWINE_LOCK(thread, pollMutex);
     while (1) {
         for (i=0;i<count;i++) {
             struct KFileDescriptor* fd = getFileDescriptor(thread->process, data[i].fd);
@@ -52,15 +62,16 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
         }
         if (!result) {
             if (getMilliesSinceStart()-startTime>timeout) {
+                BOXEDWINE_UNLOCK(thread, pollMutex);
                 return 0;
             }
         }
-        if (result)
+        if (result) {
+            BOXEDWINE_UNLOCK(thread, pollMutex);
             return result;
-        // :TODO: don't poll
-        threadSleep(thread, 10);
+        }
+        BOXEDWINE_WAIT_TIMEOUT(thread, pollCond, pollMutex, timeout-(getMilliesSinceStart()-startTime));
     } 
-    return result;
 }
 #else
 S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout) {
