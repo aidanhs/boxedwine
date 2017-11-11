@@ -223,6 +223,9 @@ void cpu_exception(struct CPU* cpu, int code, int error);
 void initCPU(struct CPU* cpu, struct Memory* memory);
 void onCreateCPU(struct CPU* cpu);
 INLINE void runBlock(struct CPU* cpu, struct Block* block) {
+#ifdef __TEST
+    return;
+#endif
     cpu->currentBlock = block;
     block->count++;	
 	cpu->blockInstructionCount += block->instructionCount;
