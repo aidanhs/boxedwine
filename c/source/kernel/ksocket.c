@@ -83,15 +83,26 @@ struct KSocketMsg {
     struct KSocketMsg* next;
 };
 
-struct KSocketMsg* freeSocketMsgs;
+static struct KSocketMsg* freeSocketMsgs;
+#ifdef BOXEDWINE_VM
+static SDL_mutex* freeSocketMsgsMutex;
+#endif
 
 struct KSocketMsg* allocSocketMsg() {
+#ifdef BOXEDWINE_VM
+    if (!freeSocketMsgsMutex) {
+        freeSocketMsgsMutex = SDL_CreateMutex();
+    }
+#endif
+    BOXEDWINE_LOCK(NULL, freeSocketMsgsMutex);
     if (freeSocketMsgs) {
         struct KSocketMsg* result = freeSocketMsgs;
         freeSocketMsgs = freeSocketMsgs->next;
         memset(result, 0, sizeof(struct KSocketMsg));
+        BOXEDWINE_UNLOCK(NULL, freeSocketMsgsMutex);
         return result;
     }
+    BOXEDWINE_UNLOCK(NULL, freeSocketMsgsMutex);
     return (struct KSocketMsg*)kalloc(sizeof(struct KSocketMsg), KALLOC_KSOCKETMSG);		
 }
 
@@ -100,8 +111,10 @@ void freeSocketMsg(struct KSocketMsg* msg) {
     for (i=0;i<msg->objectCount;i++) {
         closeKObject(msg->objects[i].object);
     }
+    BOXEDWINE_LOCK(NULL, freeSocketMsgsMutex);
     msg->next = freeSocketMsgs;	
     freeSocketMsgs = msg;
+    BOXEDWINE_UNLOCK(NULL, freeSocketMsgsMutex);
 }
 
 #define MAX_THREADS_THAT_CAN_WAIT_ON_SOCKET 5
@@ -652,8 +665,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
 
     BOXEDWINE_LOCK(thread, pollMutex);
     BOXEDWINE_SIGNAL(pollCond);
-    BOXEDWINE_UNLOCK(thread, pollMutex);
-
+    BOXEDWINE_UNLOCK(thread, pollMutex);    
     return count;
 }
 
@@ -987,10 +999,19 @@ const char* socketAddressName(struct KThread* thread, U32 address, U32 len, char
     return "Unknown address family";
 }
 
-struct KSocket* freeSockets;
+static struct KSocket* freeSockets;
+#ifdef BOXEDWINE_VM
+static SDL_mutex* freeSocketsMutex;
+#endif
 
 struct KSocket* allocSocket() {
     struct KSocket* result;
+#ifdef BOXEDWINE_VM
+    if (!freeSocketsMutex) {
+        freeSocketsMutex = SDL_CreateMutex();
+    }
+#endif
+    BOXEDWINE_LOCK(NULL, freeSocketsMutex);
     if (freeSockets) {
         result = freeSockets;
         freeSockets = result->next;		
@@ -998,6 +1019,7 @@ struct KSocket* allocSocket() {
     } else {
         result = (struct KSocket*)kalloc(sizeof(struct KSocket), KALLOC_KSOCKET);
     }	
+    BOXEDWINE_UNLOCK(NULL, freeSocketsMutex);
     result->recvLen = 1048576;
     result->sendLen = 1048576;
     result->blocking = 1;
@@ -1013,8 +1035,10 @@ struct KSocket* allocSocket() {
 }
 
 void freeSocket(struct KSocket* socket) {
+    BOXEDWINE_LOCK(NULL, freeSocketsMutex);
     socket->next = freeSockets;
     freeSockets = socket;
+    BOXEDWINE_UNLOCK(NULL, freeSocketsMutex);
 }
 
 U32 ksocket2(struct KThread* thread, U32 domain, U32 type, U32 protocol, struct KSocket** returnSocket) {
@@ -1252,11 +1276,12 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 U32 i;
                 BOOL found = FALSE;
 
+#ifdef BOXEDWINE_VM
                 if (!s->connectionMutex)
                     s->connectionMutex = SDL_CreateMutex();
                 if (!s->connectionCond)
                     s->connectionCond = SDL_CreateCond();
-
+#endif
                 for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
                     if (!destination->pendingConnections[i]) {
                         destination->pendingConnections[i] = s;

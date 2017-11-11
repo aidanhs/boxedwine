@@ -144,10 +144,16 @@ void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8b
     if (checkG && G(rm) == 4 && !isG8bit) {
         data->rex |= REX_BASE | REX_MOD_REG;
         rm = (rm & ~0x38) | (HOST_ESP << 3);
+        if (checkE && E(rm)>=4 && isE8bit) {
+            kpanic("x64_setRM unhandled E");
+        }
     }
     if (checkE && E(rm)== 4 && !isE8bit) {
         data->rex |= REX_BASE | REX_MOD_RM;
         rm = (rm & ~0x07) | HOST_ESP;
+        if (checkG && G(rm)>=4 && isG8bit) {
+            kpanic("x64_setRM unhandled G");
+        }
     }
     data->has_rm = 1;
     data->rm = rm;
@@ -503,17 +509,15 @@ void x64_cmdEntry(struct CPU* cpu) {
         if (!printMutex) {
             printMutex = SDL_CreateMutex();
         }
-        if (cpu->thread->id == 0x1900) {
-            BOXEDWINE_LOCK(cpu->thread, printMutex);
-            if (!logFile2[cpu->thread->process->id][cpu->thread->id-6400]) {
-                char buffer[MAX_FILEPATH_LEN];
-                sprintf(buffer, "log_%d_%d.txt", cpu->thread->process->id, cpu->thread->id);
-                logFile2[cpu->thread->process->id][cpu->thread->id-6400] = fopen(buffer, "w");
-            }
-            fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
-            fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
-            BOXEDWINE_UNLOCK(cpu->thread, printMutex);
+        BOXEDWINE_LOCK(cpu->thread, printMutex);
+        if (!logFile2[cpu->thread->process->id][cpu->thread->id-6400]) {
+            char buffer[MAX_FILEPATH_LEN];
+            sprintf(buffer, "log_%d_%d.txt", cpu->thread->process->id, cpu->thread->id);
+            logFile2[cpu->thread->process->id][cpu->thread->id-6400] = fopen(buffer, "w");
         }
+        fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
+        fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
+        BOXEDWINE_UNLOCK(cpu->thread, printMutex);
         break;
     case CMD_SET_ES:
     case CMD_SET_CS:
@@ -727,7 +731,7 @@ void x64_jmpReg(struct x64_Data* data, U32 reg, U32 isRex) {
 
 void writeHostPlusTmp(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit, U32 isE8bit) {
     data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-    if (data->rex && isG8bit && G(rm)>=4) {
+    if (data->rex && isG8bit && G(rm)>=4 && checkG) {
         // mov HOST_TMP2, G(rm) & 4, this will move the reg, not just the high 8 bits
         x64_writeToRegFromReg(data, HOST_TMP2, TRUE, G(rm) & 3, FALSE, 2);
         // shr HOST_TMP2, 8
@@ -1094,6 +1098,12 @@ void x64_loopnz(struct x64_Data* data, S8 offset, BOOL ea16) {
     write8(data, 5);
     x64_jumpTo(data, data->ip);   
     x64_jumpTo(data, data->ip+offset);
+}
+
+void x64_bswapEsp(struct x64_Data* data) {
+    data->rex = REX_BASE | REX_MOD_RM;
+    data->op = 0xC8+HOST_ESP;
+    x64_writeOp(data);
 }
 
 #endif

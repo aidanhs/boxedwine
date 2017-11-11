@@ -50,6 +50,29 @@ static U32 regOffset[] = {CPU_OFFSET_EAX, CPU_OFFSET_ECX, CPU_OFFSET_EDX, CPU_OF
 // XCHG Ew,Gw
 // MOV Ew,Gw
 // MOV Gw,Ew
+// CMOVO
+// CMOVNO
+// CMOVB
+// CMOVNB
+// CMOVZ
+// CMOVNZ
+// CMOVBE
+// CMOVNBE
+// CMOVS
+// CMOVNS
+// CMOVP
+// CMOVNP
+// CMOVL
+// CMOVNL
+// CMOVLE
+// CMOVNLE
+// BT Ew,Gw
+// DSHLCL Ew,Gw
+// BTS Ew,Gw
+// DSHRCL Ew,Gw
+// DIMUL Gw,Ew
+// CMPXCHG Ew,Gw
+// BSR Gw,Ew
 static U32 inst16RM(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);    
     x64_translateRM(data, rm, TRUE, TRUE, FALSE, FALSE);    
@@ -66,7 +89,36 @@ static U32 inst16RMSafeG(struct x64_Data* data) {
     return 0;
 }
 
-
+// ADD Ed,Gd
+// ADD Gd,Ed
+// OR Ed,Gd
+// OR Gd,Ed
+// ADC Ed,Gd
+// ADC Gd,Ed
+// SBB Ed,Gd
+// SBB Gd,Ed
+// AND Ed,Gd
+// AND Gd,Ed
+// SUB Ed,Gd
+// SUB Gd,Ed
+// XOR Ed,Gd
+// XOR Gd,Ed
+// CMP Ed,Gd
+// CMP Gd,Ed
+// TEST Ed,Gd
+// XCHG Ed,Gd
+// MOV Ed,Gd
+// MOV Gd,Ed
+// BT Ed,Gd
+// DSHLCL Ed,Gd
+// BTS Ed,Gd
+// DSHRCL Ed,Gd
+// DIMUL Gd,Ed
+// CMPXCHG Ed,Gd
+// BTR Ed,Gd
+// BTC Ed,Gd
+// BSF Gd,Ed
+// BSR Gd,Ed
 static U32 inst32RM(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);    
     x64_translateRM(data, rm, TRUE, TRUE, FALSE, FALSE);
@@ -140,9 +192,25 @@ static U32 instFPU(struct x64_Data* data) {
 // XCHG Eb,Gb
 // MOV Eb,Gb
 // MOV Gb,Eb
+// SETO
+// SETNO
+// SETB
+// SETNB
+// SETZ
+// SETNZ
+// SETBE
+// SETNBE
+// SETS
+// SETNS
+// SETP
+// SETNP
+// SETL
+// SETNL
+// SETLE
+// SETNLE
 static U32 inst8RM(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);    
-    x64_translateRM(data, rm, FALSE, FALSE, TRUE, TRUE);
+    x64_translateRM(data, rm, TRUE, TRUE, TRUE, TRUE);
     x64_writeOp(data);
     return 0;
 }
@@ -152,7 +220,7 @@ static U32 inst8RM(struct x64_Data* data) {
 // GRP4 Eb
 static U32 inst8RMSafeG(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);    
-    x64_translateRM(data, rm, FALSE, FALSE, FALSE, TRUE);
+    x64_translateRM(data, rm, FALSE, TRUE, FALSE, TRUE);
     x64_writeOp(data);
     return 0;
 }
@@ -161,7 +229,7 @@ static U32 inst8RMSafeG(struct x64_Data* data) {
 // MOVSX8 Gw,Eb
 static U32 inst16E8RM(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);   
-    x64_translateRM(data, rm, TRUE, FALSE, FALSE, TRUE);
+    x64_translateRM(data, rm, TRUE, TRUE, FALSE, TRUE);
     x64_writeOp(data);
     return 0;
 }
@@ -170,7 +238,7 @@ static U32 inst16E8RM(struct x64_Data* data) {
 // MOVSX8 Gd,Eb
 static U32 inst32E8RM(struct x64_Data* data) {
     U8 rm = x64_fetch8(data); 
-    x64_translateRM(data, rm, TRUE, FALSE, FALSE, TRUE);
+    x64_translateRM(data, rm, TRUE, TRUE, FALSE, TRUE);
     x64_writeOp(data);
     return 0;
 }
@@ -202,6 +270,8 @@ static U32 inst16RMimm16SafeG(struct x64_Data* data) {
     return 0;
 }
 
+// IMUL Gd,Ed,Id
+// MOV ED,ID
 static U32 inst32RMimm32(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     x64_translateRM(data, rm, TRUE, TRUE, FALSE, FALSE);
@@ -210,6 +280,7 @@ static U32 inst32RMimm32(struct x64_Data* data) {
     return 0;
 }
 
+// Grpl Ed,Id
 static U32 inst32RMimm32SafeG(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     x64_translateRM(data, rm, FALSE, TRUE, FALSE, FALSE);
@@ -220,10 +291,18 @@ static U32 inst32RMimm32SafeG(struct x64_Data* data) {
 
 // Grpl Eb,Ib
 // GRP2 Eb,Ib
-// MOV EB,IB
 static U32 inst8RMimm8SafeG(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
-    x64_translateRM(data, rm, FALSE, FALSE, FALSE, TRUE);
+    x64_translateRM(data, rm, FALSE, TRUE, FALSE, TRUE);
+    x64_setImmediate8(data, x64_fetch8(data));
+    x64_writeOp(data);
+    return 0;
+}
+
+// MOV EB,IB
+static U32 inst8RMimm8(struct x64_Data* data) {
+    U8 rm = x64_fetch8(data);
+    x64_translateRM(data, rm, FALSE, TRUE, FALSE, TRUE);
     x64_setImmediate8(data, x64_fetch8(data));
     x64_writeOp(data);
     return 0;
@@ -231,6 +310,8 @@ static U32 inst8RMimm8SafeG(struct x64_Data* data) {
 
 // IMUL Gw,Ew,Ib
 // MOV EW,IW
+// DSHL Ew,Gw
+// DSHR Ew,Gw
 static U32 inst16RMimm8(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     x64_translateRM(data, rm, TRUE, TRUE, FALSE, FALSE);
@@ -249,10 +330,16 @@ static U32 inst16RMimm8SafeG(struct x64_Data* data) {
     return 0;
 }
 
+// IMUL Gd,Ed,Ib
+// DSHL Ed,Gd
+// DSHR Ed,Gd
 static U32 inst32RMimm8(struct x64_Data* data) {
     return inst16RMimm8(data);
 }
 
+// Grpl Ed,Ix
+// GRP2 Ed,Ib
+// GRP8 Ed,Ib
 static U32 inst32RMimm8SafeG(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);  
     x64_translateRM(data, rm, FALSE, TRUE, FALSE, FALSE);
@@ -261,6 +348,8 @@ static U32 inst32RMimm8SafeG(struct x64_Data* data) {
     return 0;
 }
 
+// GRP2 Ed,1
+// GRP2 Ed,CL
 static U32 inst32RMSafeG(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);    
     x64_translateRM(data, rm, FALSE, TRUE, FALSE, FALSE);
@@ -296,6 +385,14 @@ static U32 arithR16Iw(struct x64_Data* data) {
     return 0;
 }
 
+// ADD Eax,Id
+// OR Eax,Id
+// ADC Eax,Id
+// SBB Eax,Id
+// AND Eax,Id
+// SUB Eax,Id
+// XOR Eax,Id
+// CMP Eax,Id
 static U32 arithR32Id(struct x64_Data* data) {
     x64_setImmediate32(data, x64_fetch32(data));
     x64_writeOp(data);
@@ -334,11 +431,13 @@ static U32 pop16ES(struct x64_Data* data) {
     return 0;
 }
 
+// PUSH ES
 static U32 push32ES(struct x64_Data* data) {
     x64_pushCpuOffset32(data, CPU_OFFSET_ES);
     return 0;
 }
 
+// POP ES
 static U32 pop32ES(struct x64_Data* data) {
     popSeg32(data, ES);
     return 0;
@@ -350,6 +449,7 @@ static U32 push16CS(struct x64_Data* data) {
     return 0;
 }
 
+// PUSH CS
 static U32 push32CS(struct x64_Data* data) {
     x64_pushCpuOffset32(data, CPU_OFFSET_CS);
     return 0;
@@ -367,11 +467,13 @@ static U32 pop16SS(struct x64_Data* data) {
     return 0;
 }
 
+// PUSH SS
 static U32 push32SS(struct x64_Data* data) {
     x64_pushCpuOffset32(data, CPU_OFFSET_SS);
     return 0;
 }
 
+// POP SS
 static U32 pop32SS(struct x64_Data* data) {
     popSeg32(data, SS);
     return 0;
@@ -389,51 +491,61 @@ static U32 pop16DS(struct x64_Data* data) {
     return 0;
 }
 
+// PUSH DS
 static U32 push32DS(struct x64_Data* data) {
     x64_pushCpuOffset32(data, CPU_OFFSET_DS);
     return 0;
 }
 
+// POP DS
 static U32 pop32DS(struct x64_Data* data) {
     popSeg32(data, DS);
     return 0;
 }
 
+// PUSH FS
 static U32 push16FS(struct x64_Data* data) {
     x64_pushCpuOffset16(data, CPU_OFFSET_FS);
     return 0;
 }
 
+// POP FS
 static U32 pop16FS(struct x64_Data* data) {
     popSeg16(data, FS);
     return 0;
 }
 
+// PUSH FS
 static U32 push32FS(struct x64_Data* data) {
     x64_pushCpuOffset32(data, CPU_OFFSET_FS);
     return 0;
 }
 
+// POP FS
 static U32 pop32FS(struct x64_Data* data) {
     popSeg32(data, FS);
     return 0;
 }
 
+// PUSH GS
 static U32 push16GS(struct x64_Data* data) {
     x64_pushCpuOffset16(data, CPU_OFFSET_GS);
     return 0;
 }
 
+// POP GS
 static U32 pop16GS(struct x64_Data* data) {
     popSeg16(data, GS);
     return 0;
 }
 
+// PUSH GS
 static U32 push32GS(struct x64_Data* data) {
     x64_pushCpuOffset32(data, CPU_OFFSET_GS);
     return 0;
 }
 
+// POP GS
 static U32 pop32GS(struct x64_Data* data) {
     popSeg32(data, GS);
     return 0;
@@ -577,81 +689,97 @@ static U32 decDI(struct x64_Data* data) {
     return 0;
 }
 
+// INC EAX
 static U32 incEAX(struct x64_Data* data) {
     x64_incReg(data, 0, FALSE, 4);
     return 0;
 }
 
+// INC ECX
 static U32 incECX(struct x64_Data* data) {
     x64_incReg(data, 1, FALSE, 4);
     return 0;
 }
 
+// INC EDX
 static U32 incEDX(struct x64_Data* data) {
     x64_incReg(data, 2, FALSE, 4);
     return 0;
 }
 
+// INC EBX
 static U32 incEBX(struct x64_Data* data) {
     x64_incReg(data, 3, FALSE, 4);
     return 0;
 }
 
+// INC ESP
 static U32 incESP(struct x64_Data* data) {
     x64_incReg(data, HOST_ESP, TRUE, 4);
     return 0;
 }
 
+// INC EBP
 static U32 incEBP(struct x64_Data* data) {
     x64_incReg(data, 5, FALSE, 4);
     return 0;
 }
 
+// INC ESI
 static U32 incESI(struct x64_Data* data) {
     x64_incReg(data, 6, FALSE, 4);
     return 0;
 }
 
+// INC EDI
 static U32 incEDI(struct x64_Data* data) {
     x64_incReg(data, 7, FALSE, 4);
     return 0;
 }
 
+// DEC EAX
 static U32 decEAX(struct x64_Data* data) {
     x64_decReg(data, 0, FALSE, 4);
     return 0;
 }
 
+// DEC ECX
 static U32 decECX(struct x64_Data* data) {
     x64_decReg(data, 1, FALSE, 4);
     return 0;
 }
 
+// DEC EDX
 static U32 decEDX(struct x64_Data* data) {
     x64_decReg(data, 2, FALSE, 4);
     return 0;
 }
 
+// DEC EBX
 static U32 decEBX(struct x64_Data* data) {
     x64_decReg(data, 3, FALSE, 4);
     return 0;
 }
 
+// DEC ESP
 static U32 decESP(struct x64_Data* data) {
     x64_decReg(data, HOST_ESP, TRUE, 4);
     return 0;
 }
 
+// DEC EBP
 static U32 decEBP(struct x64_Data* data) {
     x64_decReg(data, 5, FALSE, 4);
     return 0;
 }
 
+// DEC ESI
 static U32 decESI(struct x64_Data* data) {
     x64_decReg(data, 6, FALSE, 4);
     return 0;
 }
 
+// DEC EDI
 static U32 decEDI(struct x64_Data* data) {
     x64_decReg(data, 7, FALSE, 4);
     return 0;
@@ -753,81 +881,97 @@ static U32 popDI(struct x64_Data* data) {
     return 0;
 }
 
+// PUSH EAX
 static U32 pushEAX(struct x64_Data* data) {
     x64_pushReg32(data, 0, FALSE);
     return 0;
 }
 
+// PUSH ECX
 static U32 pushECX(struct x64_Data* data) {
     x64_pushReg32(data, 1, FALSE);
     return 0;
 }
 
+// PUSH EDX
 static U32 pushEDX(struct x64_Data* data) {
     x64_pushReg32(data, 2, FALSE);
     return 0;
 }
 
+// PUSH EBX
 static U32 pushEBX(struct x64_Data* data) {
     x64_pushReg32(data, 3, FALSE);
     return 0;
 }
 
+// PUSH ESP
 static U32 pushESP(struct x64_Data* data) {
     x64_pushReg32(data, HOST_ESP, TRUE);
     return 0;
 }
 
+// PUSH EBP
 static U32 pushEBP(struct x64_Data* data) {
     x64_pushReg32(data, 5, FALSE);
     return 0;
 }
 
+// PUSH ESI
 static U32 pushESI(struct x64_Data* data) {
     x64_pushReg32(data, 6, FALSE);
     return 0;
 }
 
+// PUSH EDI
 static U32 pushEDI(struct x64_Data* data) {
     x64_pushReg32(data, 7, FALSE);
     return 0;
 }
 
+// POP EAX
 static U32 popEAX(struct x64_Data* data) {
     x64_popReg32(data, 0, FALSE);
     return 0;
 }
 
+// POP ECX
 static U32 popECX(struct x64_Data* data) {
     x64_popReg32(data, 1, FALSE);
     return 0;
 }
 
+// POP EDX
 static U32 popEDX(struct x64_Data* data) {
     x64_popReg32(data, 2, FALSE);
     return 0;
 }
 
+// POP EBX
 static U32 popEBX(struct x64_Data* data) {
     x64_popReg32(data, 3, FALSE);
     return 0;
 }
 
+// POP ESP
 static U32 popESP(struct x64_Data* data) {
     x64_popReg32(data, HOST_ESP, TRUE);
     return 0;
 }
 
+// POP EBP
 static U32 popEBP(struct x64_Data* data) {
     x64_popReg32(data, 5, FALSE);
     return 0;
 }
 
+// POP ESI
 static U32 popESI(struct x64_Data* data) {
     x64_popReg32(data, 6, FALSE);
     return 0;
 }
 
+// POP EDI
 static U32 popEDI(struct x64_Data* data) {
     x64_popReg32(data, 7, FALSE);
     return 0;
@@ -864,6 +1008,7 @@ static U32 popA16(struct x64_Data* data) {
     return 0;
 }
 
+// PUSHAD
 static U32 pushA32(struct x64_Data* data) {
     x64_writeToMemFromReg(data, 0, FALSE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, -4, 4, TRUE);
     x64_writeToMemFromReg(data, 1, FALSE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, -8, 4, TRUE);
@@ -879,6 +1024,7 @@ static U32 pushA32(struct x64_Data* data) {
     return 0;
 }
 
+// POPAD
 static U32 popA32(struct x64_Data* data) {
     x64_writeToRegFromMem(data, 7, FALSE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
     x64_writeToRegFromMem(data, 6, FALSE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 4, 4, TRUE);
@@ -906,11 +1052,13 @@ static U32 pushIb16(struct x64_Data* data) {
     return 0;
 }
 
+// PUSH Id
 static U32 pushId32(struct x64_Data* data) {
     x64_pushd(data, x64_fetch32(data));
     return 0;
 }
 
+// PUSH Ib
 static U32 pushIb32(struct x64_Data* data) {
     x64_pushd(data, (S8)x64_fetch8(data));
     return 0;
@@ -922,6 +1070,7 @@ static U32 bound16(struct x64_Data* data) {
     return 0;
 }
 
+// BOUND
 static U32 bound32(struct x64_Data* data) {
     kpanic("bound32 not implemented");
     return 0;
@@ -934,6 +1083,7 @@ static U32 jump8(struct x64_Data* data) {
     return 0;
 }
 
+// JO, JNO, JB, JNB, JZ, JNZ, JBE, JNBE, JS, JNS, JP, JNP, JL, JNL, JNLE
 static U32 jump16(struct x64_Data* data) {
     S16 offset = (S16)x64_fetch16(data);
     x64_jumpConditional(data, data->op & 0xf, data->ip+offset); 
@@ -981,6 +1131,7 @@ static U32 callJw(struct x64_Data* data) {
     return 0;
 }
 
+// CALL Jd 
 static U32 callJd(struct x64_Data* data) {
     S32 offset = x64_fetch32(data);
     U32 eip = data->ip+offset;    
@@ -1006,6 +1157,7 @@ static U32 jmpJb(struct x64_Data* data) {
     return 0;
 }
 
+// JMP Jd 
 static U32 jmpJd(struct x64_Data* data) {
     S32 offset = (S32)x64_fetch32(data);
     x64_jumpTo(data, data->ip+offset);
@@ -1045,6 +1197,7 @@ static U32 retn16Iw(struct x64_Data* data) {
     return 0;
 }
 
+// RETN Iw
 static U32 retn32Iw(struct x64_Data* data) {
     U16 n = x64_fetch16(data);
     x64_popReg32(data, HOST_TMP, TRUE);
@@ -1062,6 +1215,7 @@ static U32 retn16(struct x64_Data* data) {
     return 0;
 }
 
+// RETN32
 static U32 retn32(struct x64_Data* data) {
     x64_popReg32(data, HOST_TMP, TRUE);
     x64_jmpReg(data, HOST_TMP, TRUE);
@@ -1075,6 +1229,7 @@ static U32 retf16Iw(struct x64_Data* data) {
     return 0;
 }
 
+// RETF Iw
 static U32 retf32Iw(struct x64_Data* data) {
     kpanic("retf32Iw not implemented");
     return 0;
@@ -1086,12 +1241,20 @@ static U32 retf16(struct x64_Data* data) {
     return 0;
 }
 
+// RETF
 static U32 retf32(struct x64_Data* data) {
     kpanic("retf32 not implemented");
     return 0;
 }
 
+// IRET
 static U32 iret(struct x64_Data* data) {
+    kpanic("iret not implemented");
+    return 0;
+}
+
+// IRET
+static U32 iret32(struct x64_Data* data) {
     kpanic("iret not implemented");
     return 0;
 }
@@ -1157,6 +1320,7 @@ static U32 movEwSw(struct x64_Data* data) {
     return 0;
 }
 
+// Mov Ed,Sw
 static U32 movEdSw(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {
@@ -1201,6 +1365,7 @@ static U32 leaGw(struct x64_Data* data) {
     return 0;
 }
 
+// LEA Gd
 static U32 leaGd(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     data->ds = SEG_ZERO;
@@ -1213,20 +1378,21 @@ static U32 leaGd(struct x64_Data* data) {
 // POP Ew
 static U32 popEw(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
-    if (rm<0xC0) {
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 2, TRUE);
+    if (rm<0xC0) {        
         x64_popReg16(data, HOST_TMP, TRUE);
+        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 2, TRUE);
     } else {
         x64_popReg16(data, rm & 7, FALSE);
     }
     return 0;
 }
 
+// POP Ed
 static U32 popEd(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
-    if (rm<0xC0) {
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
+    if (rm<0xC0) {        
         x64_popReg32(data, HOST_TMP, TRUE);
+        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
     } else {
         x64_popReg32(data, rm & 7, FALSE);
     }
@@ -1252,6 +1418,16 @@ static U32 popEd(struct x64_Data* data) {
 // STI
 // CLD
 // STD
+// RDTSC
+// XCHG ECX,EAX
+// XCHG EDX,EAX
+// XCHG EBX,EAX
+// XCHG ESP,EAX
+// XCHG EBP,EAX
+// XCHG ESI,EAX
+// XCHG EDI,EAX
+// CBWE
+// CWQ
 static U32 keepSame(struct x64_Data* data) {
     x64_writeOp(data);
     return 0;
@@ -1286,6 +1462,15 @@ static U32 keepSameImm16(struct x64_Data* data) {
     return 0;
 }
 
+// TEST EAX,Id
+// MOV EAX,Id
+// MOV ECX,Id
+// MOV EDX,Id
+// MOV EBX,Id
+// MOV ESP,Id
+// MOV EBP,Id
+// MOV ESI,Id
+// MOV EDI,Id
 static U32 keepSameImm32(struct x64_Data* data) {
     x64_setImmediate32(data, x64_fetch32(data));
     x64_writeOp(data);
@@ -1311,6 +1496,7 @@ static U32 pushFlags16(struct x64_Data* data) {
     return 0;
 }
 
+// PUSHF32
 static U32 pushFlags32(struct x64_Data* data) {
     x64_pushNativeFlags(data);
     x64_popNative(data, HOST_TMP, TRUE);
@@ -1326,6 +1512,7 @@ static U32 popFlags16(struct x64_Data* data) {
     return 0;
 }
 
+// POPF32
 static U32 popFlags32(struct x64_Data* data) {
     x64_popReg32(data, HOST_TMP, TRUE);
     x64_pushNative(data, HOST_TMP, TRUE);
@@ -1357,6 +1544,7 @@ static U32 movAxOw(struct x64_Data* data) {
     return 0;
 }
 
+// MOV EAX,Od
 static U32 movEaxOd(struct x64_Data* data) {
     U32 disp;
     if (data->ea16) {
@@ -1392,6 +1580,7 @@ static U32 movOwAx(struct x64_Data* data) {
     return 0;
 }
 
+// MOV Od,Eax
 static U32 movOdEax(struct x64_Data* data) {
     U32 disp;
     if (data->ea16) {
@@ -1403,10 +1592,22 @@ static U32 movOdEax(struct x64_Data* data) {
     return 0;
 }
 
+static U32 bswapSp(struct x64_Data* data) {
+    x64_bswapEsp(data);
+    return 0;
+}
+
+static U32 bswapEsp(struct x64_Data* data) {
+    x64_bswapEsp(data);
+    return 0;
+}
+
 // MOVSB
 // MOVSW
 // CMPSB
 // CMPSW
+// MOVSD
+// CMPSD
 // :TODO: if an exception happens during a string, esi and edi should be adjusted before passing the exception to Linux/Wine
 static U32 stringDiSi(struct x64_Data* data) {
     x64_addWithLea(data, 7, FALSE, 7, FALSE, x64_getRegForSeg(data, ES), TRUE, 0, 0, 4);
@@ -1428,6 +1629,8 @@ static U32 stringDiSi(struct x64_Data* data) {
 // STOSW
 // SCASB
 // SCASW
+// STOSD
+// SCASD
 // :TODO: if an exception happens during a string, esi and edi should be adjusted before passing the exception to Linux/Wine
 static U32 stringDi(struct x64_Data* data) {
     x64_addWithLea(data, 7, FALSE, 7, FALSE, x64_getRegForSeg(data, ES), TRUE, 0, 0, 4);
@@ -1443,6 +1646,7 @@ static U32 stringDi(struct x64_Data* data) {
 
 // LODSB
 // LODSW
+// LODSD
 // :TODO: if an exception happens during a string, esi and edi should be adjusted before passing the exception to Linux/Wine
 static U32 stringSi(struct x64_Data* data) {
     x64_addWithLea(data, 6, FALSE, 6, FALSE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
@@ -1481,16 +1685,19 @@ static U32 les(struct x64_Data* data) {
     return 1;
 }
 
+// LSS
 static U32 lss(struct x64_Data* data) {
     loadSegment(data, SS);
     return 1;
 }
 
+// LFS
 static U32 lfs(struct x64_Data* data) {
     loadSegment(data, FS);
     return 1;
 }
 
+// LGS
 static U32 lgs(struct x64_Data* data) {
     loadSegment(data, GS);
     return 1;
@@ -1508,6 +1715,7 @@ static U32 enter16(struct x64_Data* data) {
     return 0;
 }
 
+// ENTER
 static U32 enter32(struct x64_Data* data) {
     kpanic("x64dynamic: enter32 not implemented");
     return 0;
@@ -1519,6 +1727,7 @@ static U32 leave16(struct x64_Data* data) {
     return 0;
 }
 
+// LEAVE32
 static U32 leave32(struct x64_Data* data) {
     //ESP = EBP;
     x64_writeToRegFromReg(data, HOST_ESP, TRUE, 5, FALSE, 4);
@@ -1533,7 +1742,7 @@ static U32 leave32(struct x64_Data* data) {
 static U32 grp3b(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     U8 g = (rm >> 3) & 7;   
-    x64_translateRM(data, rm, FALSE, FALSE, FALSE, TRUE);
+    x64_translateRM(data, rm, FALSE, TRUE, FALSE, TRUE);
     if (g==0 || g==1) {
         x64_setImmediate8(data, x64_fetch8(data));
     }
@@ -1553,6 +1762,7 @@ static U32 grp3w(struct x64_Data* data) {
     return 0;
 }
 
+// GRP3 Ed(,Id)
 static U32 grp3d(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     U8 g = (rm >> 3) & 7;    
@@ -1592,6 +1802,7 @@ static U32 grp5w(struct x64_Data* data) {
     return 0;
 }
 
+// GRP5 Ed
 static U32 grp5d(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     U8 g = (rm >> 3) & 7;
@@ -1642,11 +1853,13 @@ static U32 grp5d(struct x64_Data* data) {
     return 0;
 }
 
+// LSL
 static U32 lsl(struct x64_Data* data) {
     kpanic("lsl not implemented");
     return 0;
 }
 
+// LAR
 static U32 lar(struct x64_Data* data) {
     kpanic("lar not implemented");
     return 0;
@@ -1661,6 +1874,16 @@ static U32 hlt(struct x64_Data* data) {
 
 static U32 invalidOp(struct x64_Data* data) {
     kpanic("Invalid op: %x", data->inst);
+    return 0;
+}
+
+static U32 outb(struct x64_Data* data) {
+    U8 port = x64_fetch8(data);
+    return 0;
+}
+
+static U32 inb(struct x64_Data* data) {
+    U8 port = x64_fetch8(data);
     return 0;
 }
 
@@ -1706,6 +1929,7 @@ static U32 segGS(struct x64_Data* data) {
     return 1;
 }
 
+// CPUID
 static U32 x64cpuid(struct x64_Data* data) {
     x64_writeCmd(data, CMD_CPUID, data->startOfOpIp, TRUE);
     x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
@@ -1729,6 +1953,7 @@ static U32 instruction66(struct x64_Data* data) {
     return 1; // continue decoding current instruction
 }
 
+// Operand Size Prefix
 static U32 instruction266(struct x64_Data* data) {
     data->baseOp-=0x200;
     data->operandPrefix = 1;
@@ -1746,6 +1971,7 @@ static U32 addressSize32(struct x64_Data* data) {
     return 1;
 }
 
+// Address Size Prefix
 static U32 addressSize16(struct x64_Data* data) {
     data->ea16 = 1;
     return 1;
@@ -1807,13 +2033,13 @@ DECODER x64Decoder[1024] = {
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
     keepSameImm16, keepSameImm16, keepSameImm16, keepSameImm16, movSpIw, keepSameImm16, keepSameImm16, keepSameImm16,
     // C0
-    inst8RMimm8SafeG, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8SafeG, inst16RMimm16,
+    inst8RMimm8SafeG, inst16RMimm8SafeG, retn16Iw, retn16, les, lds, inst8RMimm8, inst16RMimm16,
     enter16, leave16, retf16Iw, retf16, int3, intIb, invalidOp, invalidOp,
     // D0
     inst8RMSafeG, inst16RMSafeG, inst8RMSafeG, inst16RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // E0
-    x64loopnz, x64loopz, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
+    x64loopnz, x64loopz, x64loop, x64jcxz, inb, invalidOp, outb, invalidOp,
     callJw, jmpJw, jmpAp, jmpJb, invalidOp, invalidOp, invalidOp, invalidOp,
     // F0
     lock, invalidOp, repnz, repz, hlt, keepSame, grp3b, grp3w,
@@ -1854,10 +2080,10 @@ DECODER x64Decoder[1024] = {
     push16GS, pop16GS, invalidOp, inst16RM, inst16RMimm8, inst16RM, invalidOp, inst16RM,
     // 1b0
     invalidOp, inst16RM, lss, invalidOp, lfs, lgs, inst16E8RM, invalidOp,
-    invalidOp, invalidOp, inst16RMimm8SafeG, invalidOp, invalidOp, inst16RM, inst16E8RM, invalidOp,
+    invalidOp, inst16RMimm8SafeG, invalidOp, invalidOp, invalidOp, inst16RM, inst16E8RM, invalidOp,
     // 1c0
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    keepSame, keepSame, keepSame, keepSame, keepSame, keepSame, keepSame, keepSame,
+    keepSame, keepSame, keepSame, keepSame, bswapSp, keepSame, keepSame, keepSame,
     // 1d0
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -1905,20 +2131,20 @@ DECODER x64Decoder[1024] = {
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
     keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32,
     // 2c0
-    inst8RMimm8SafeG, inst32RMimm8SafeG, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8SafeG, inst32RMimm32,
-    enter32, leave32, retf32Iw, retf32, int3, intIb, invalidOp, iret,
+    inst8RMimm8SafeG, inst32RMimm8SafeG, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8, inst32RMimm32,
+    enter32, leave32, retf32Iw, retf32, int3, intIb, invalidOp, iret32,
     // 2d0
-    inst8RM, inst32RMSafeG, inst8RM, inst32RMSafeG, aam, aad, salc, xlat,
+    inst8RMSafeG, inst32RMSafeG, inst8RMSafeG, inst32RMSafeG, aam, aad, salc, xlat,
     instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU, instFPU,
     // 2e0
-    x64loopnz, x64loopz, x64loop, x64jcxz, invalidOp, invalidOp, invalidOp, invalidOp,
+    x64loopnz, x64loopz, x64loop, x64jcxz, inb, invalidOp, outb, invalidOp,
     callJd, jmpJd, invalidOp, jmpJb, invalidOp, invalidOp, invalidOp, invalidOp,
     // 2f0
     lock, invalidOp, repnz, repz, hlt, keepSame, grp3b, grp3d,
-    keepSame, keepSame, keepSame, keepSame, keepSame, keepSame, inst8RM, grp5d,
+    keepSame, keepSame, keepSame, keepSame, keepSame, keepSame, inst8RMSafeG, grp5d,
 
     // 300
-    invalidOp, inst32RM, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, inst32RMSafeG, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 310
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
@@ -1955,7 +2181,7 @@ DECODER x64Decoder[1024] = {
     invalidOp, invalidOp, inst32RMimm8SafeG, inst32RM, inst32RM, inst32RM, inst32E8RM, inst32E16RM,
     // 3c0
     invalidOp, inst32RM, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, inst32RMSafeG,
-    keepSame, keepSame, keepSame, keepSame, keepSame, keepSame, keepSame, keepSame,
+    keepSame, keepSame, keepSame, keepSame, bswapEsp, keepSame, keepSame, keepSame,
     // 3d0
     invalidOp, mmx, mmx, mmx, invalidOp, mmx, invalidOp, invalidOp,
     mmx, mmx, invalidOp, mmx, mmx, mmx, invalidOp, mmx,

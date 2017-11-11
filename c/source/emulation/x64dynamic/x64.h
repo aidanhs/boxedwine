@@ -177,6 +177,7 @@ void x64_jcxz(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_loop(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_loopz(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_loopnz(struct x64_Data* data, S8 offset, BOOL ea16);
+void x64_bswapEsp(struct x64_Data* data);
 
 void x64_writeOp(struct x64_Data* data);
 void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8bit, U32 isE8bit);

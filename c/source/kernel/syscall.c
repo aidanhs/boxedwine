@@ -242,8 +242,8 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         }
         result=syscall_open(thread, process->currentDirectory, ARG1, ARG2);
         {
-            char tmp[MAX_FILEPATH_LEN];
-            printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->thread, ARG1, tmp, MAX_FILEPATH_LEN), ARG2, result);
+            //char tmp[MAX_FILEPATH_LEN];
+            //printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->thread, ARG1, tmp, MAX_FILEPATH_LEN), ARG2, result);
         }
         break;		
     case __NR_close:
