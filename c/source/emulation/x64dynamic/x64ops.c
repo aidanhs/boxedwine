@@ -1315,8 +1315,8 @@ static U32 intIb(struct x64_Data* data) {
 static U32 movEwSw(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, segOffset[((rm >> 3) & 7)], 2, FALSE);
-        x64_writeToEFromReg(data, rm, HOST_TMP, TRUE, 2);
+        x64_writeToRegFromMem(data, HOST_TMP2, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, segOffset[((rm >> 3) & 7)], 2, FALSE);
+        x64_writeToEFromReg(data, rm, HOST_TMP2, TRUE, 2);
     } else {
         if ((rm & 7) == 4) {
             x64_writeToRegFromMem(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, segOffset[((rm >> 3) & 7)], 2, FALSE);
@@ -1331,8 +1331,8 @@ static U32 movEwSw(struct x64_Data* data) {
 static U32 movEdSw(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, segOffset[((rm >> 3) & 7)], 4, FALSE);
-        x64_writeToEFromReg(data, rm, HOST_TMP, TRUE, 2);
+        x64_writeToRegFromMem(data, HOST_TMP2, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, segOffset[((rm >> 3) & 7)], 4, FALSE);
+        x64_writeToEFromReg(data, rm, HOST_TMP2, TRUE, 2);
     } else {
         if ((rm & 7) == 4) {
             x64_writeToRegFromMem(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, segOffset[((rm >> 3) & 7)], 4, FALSE);
@@ -1349,8 +1349,8 @@ static U32 movSwEw(struct x64_Data* data) {
     U8 seg = (rm >> 3) & 7;
     x64_writeToMemFromValue(data, 0, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE); // zero out top 2 bytes
     if (rm<0xC0) {
-        x64_writeToRegFromE(data, rm, HOST_TMP, TRUE, 2);
-        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0,  CPU_OFFSET_CMD_ARG, 2, FALSE);
+        x64_writeToRegFromE(data, rm, HOST_TMP2, TRUE, 2);
+        x64_writeToMemFromReg(data, HOST_TMP2, TRUE, HOST_CPU, TRUE, -1, FALSE, 0,  CPU_OFFSET_CMD_ARG, 2, FALSE);
     } else {        
         if ((rm & 7) == 4) {
             x64_writeToMemFromReg(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0,  CPU_OFFSET_CMD_ARG, 2, FALSE);
@@ -1386,8 +1386,8 @@ static U32 leaGd(struct x64_Data* data) {
 static U32 popEw(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {        
-        x64_popReg16(data, HOST_TMP, TRUE);
-        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 2, TRUE);
+        x64_popReg16(data, HOST_TMP2, TRUE);
+        x64_writeToEFromReg(data, rm, HOST_TMP2, TRUE, 2);
     } else {
         x64_popReg16(data, rm & 7, FALSE);
     }
@@ -1398,8 +1398,8 @@ static U32 popEw(struct x64_Data* data) {
 static U32 popEd(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {        
-        x64_popReg32(data, HOST_TMP, TRUE);
-        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
+        x64_popReg32(data, HOST_TMP2, TRUE);
+        x64_writeToEFromReg(data, rm, HOST_TMP2, TRUE, 4);
     } else {
         x64_popReg32(data, rm & 7, FALSE);
     }
@@ -1474,7 +1474,6 @@ static U32 keepSameImm16(struct x64_Data* data) {
 // MOV ECX,Id
 // MOV EDX,Id
 // MOV EBX,Id
-// MOV ESP,Id
 // MOV EBP,Id
 // MOV ESI,Id
 // MOV EDI,Id
@@ -1672,6 +1671,12 @@ static U32 movSpIw(struct x64_Data* data) {
     return 0;
 }
 
+// MOV ESP,Id
+static U32 movEspId(struct x64_Data* data) {
+    x64_writeToRegFromValue(data, HOST_ESP, TRUE, x64_fetch32(data), 4);
+    return 0;
+}
+
 static void loadSegment(struct x64_Data* data, U32 segment) {
     U32 rm = x64_fetch8(data);
     if (rm<0xC0) {
@@ -1798,8 +1803,8 @@ static U32 grp5w(struct x64_Data* data) {
         kpanic("jmp Ep not implemented");
     } else if (g==6) { // push Ev
         if (rm<0xC0) {
-            x64_writeToRegFromE(data, rm, HOST_TMP, TRUE, 2);
-            x64_pushReg16(data, HOST_TMP, TRUE);
+            x64_writeToRegFromE(data, rm, HOST_TMP2, TRUE, 2);
+            x64_pushReg16(data, HOST_TMP2, TRUE);
         } else {
             x64_pushReg16(data, rm & 7, FALSE);
         }
@@ -1835,8 +1840,8 @@ static U32 grp5d(struct x64_Data* data) {
         kpanic("call far not implemented");
     } else if (g==4) { // jmp near Ed
         if (rm<0xC0) {
-            x64_writeToRegFromE(data, rm, HOST_TMP, TRUE, 4);
-            x64_jmpReg(data, HOST_TMP, TRUE);
+            x64_writeToRegFromE(data, rm, HOST_TMP2, TRUE, 4);
+            x64_jmpReg(data, HOST_TMP2, TRUE);
         } else {
             U32 reg = rm & 7;
             if (reg==4) 
@@ -1849,8 +1854,8 @@ static U32 grp5d(struct x64_Data* data) {
         kpanic("jmp far not implemented");
     } else if (g==6) { // push Ed
         if (rm<0xC0) {
-            x64_writeToRegFromE(data, rm, HOST_TMP, TRUE, 4);
-            x64_pushReg32(data, HOST_TMP, TRUE);
+            x64_writeToRegFromE(data, rm, HOST_TMP2, TRUE, 4);
+            x64_pushReg32(data, HOST_TMP2, TRUE);
         } else {
             x64_pushReg32(data, rm & 7, FALSE);
         }
@@ -2136,7 +2141,7 @@ DECODER x64Decoder[1024] = {
     keepSameImm8, keepSameImm32, stringDi, stringDi, stringSi, stringSi, stringDi, stringDi,
     // 2b0
     keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8, keepSameImm8,
-    keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32,
+    keepSameImm32, keepSameImm32, keepSameImm32, keepSameImm32, movEspId, keepSameImm32, keepSameImm32, keepSameImm32,
     // 2c0
     inst8RMimm8SafeG, inst32RMimm8SafeG, retn32Iw, retn32, invalidOp, invalidOp, inst8RMimm8, inst32RMimm32,
     enter32, leave32, retf32Iw, retf32, int3, intIb, invalidOp, iret32,

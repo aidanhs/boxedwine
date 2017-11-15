@@ -1074,7 +1074,7 @@ void OPCALL sahf(struct CPU* cpu, struct Op* op) {
 
 void OPCALL lahf(struct CPU* cpu, struct Op* op) {
     fillFlags(cpu);
-    AH = cpu->flags & (SF|ZF|AF|PF|CF);
+    AH = (cpu->flags & (SF|ZF|AF|PF|CF)) | 2;
     CYCLES(2);
     NEXT();
 }

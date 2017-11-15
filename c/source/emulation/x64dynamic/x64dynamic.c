@@ -216,7 +216,7 @@ void* x64_initCPU(struct CPU* cpu) {
     x64_writeToRegFromValue(&data, HOST_SS, TRUE, (U32)cpu->segAddress[SS], 4);
     x64_writeToRegFromValue(&data, HOST_DS, TRUE, (U32)cpu->segAddress[DS], 4);
 
-    x64_setFlags(&data, cpu->flags, CF | PF | AF | ZF | SF | OF);
+    x64_setFlags(&data, cpu->flags, FMASK_TEST);
 
     x64_writeToRegFromValue(&data, 0, FALSE, EAX, 4);
     x64_writeToRegFromValue(&data, 1, FALSE, ECX, 4);

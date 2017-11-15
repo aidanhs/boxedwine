@@ -465,7 +465,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "WINELOADERNOEXEC=1";
     //ppenv[envc++] = "WINEDLLOVERRIDES=mscoree,mshtml=";
     ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
-    ppenv[envc++] = "WINEDEBUG=+service";
+    //ppenv[envc++] = "WINEDEBUG=+service";
 
     addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
