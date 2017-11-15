@@ -29,6 +29,7 @@
 
 struct Memory;
 struct KProcess;
+struct KThread;
 
 U8 readb(struct KThread* thread, U32 address);
 void writeb(struct KThread* thread, U32 address, U8 value);

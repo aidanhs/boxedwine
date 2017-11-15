@@ -333,7 +333,7 @@ SDL_Color sdlSystemPalette[256] = {
     {0xFF,0xFF,0xFF},
 };
 
-void displayChanged(struct KThread* thread);
+static void displayChanged(struct KThread* thread);
 
 void initSDL() {
     default_horz_res = screenCx;

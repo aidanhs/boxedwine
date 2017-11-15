@@ -24,6 +24,7 @@
 #include "platform.h"
 
 struct Memory;
+struct KThread;
 
 struct Page {
     U8 (*readb)(struct KThread* thread, U32 address);
