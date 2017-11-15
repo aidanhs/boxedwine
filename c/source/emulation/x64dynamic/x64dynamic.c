@@ -141,7 +141,7 @@ void x64_translateData(struct x64_Data* data) {
     struct Memory* memory = data->cpu->memory;
 
     while (1) {           
-        x64_mapAddress(data, data->ip, &data->memStart[data->memPos]);
+        x64_mapAddress(data, data->cpu->segAddress[CS]+data->ip, &data->memStart[data->memPos]);
         if (0) { // will print out instructions as they are run
             x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
             x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
@@ -167,6 +167,9 @@ void x64_translateData(struct x64_Data* data) {
         if (data->done) {
             break;
         }
+#ifdef __TEST
+        break;
+#endif
         resetDataForNewOp(data);
     }   
     memory->x64MemPos+=data->memPos;
@@ -213,6 +216,8 @@ void* x64_initCPU(struct CPU* cpu) {
     x64_writeToRegFromValue(&data, HOST_SS, TRUE, (U32)cpu->segAddress[SS], 4);
     x64_writeToRegFromValue(&data, HOST_DS, TRUE, (U32)cpu->segAddress[DS], 4);
 
+    x64_setFlags(&data, cpu->flags, CF | PF | AF | ZF | SF | OF);
+
     x64_writeToRegFromValue(&data, 0, FALSE, EAX, 4);
     x64_writeToRegFromValue(&data, 1, FALSE, ECX, 4);
     x64_writeToRegFromValue(&data, 2, FALSE, EDX, 4);
@@ -240,11 +245,13 @@ void* x64_initCPU(struct CPU* cpu) {
 }
 
 void* x64_translateEipInternal(struct x64_Data* parent, struct CPU* cpu, U32 ip) {
+    U32 address = cpu->segAddress[CS]+ip;
+
     cpu->opToAddressPages = cpu->thread->process->opToAddressPages;
     if (!cpu->memory->executableMemoryMutex) {
         cpu->memory->executableMemoryMutex = SDL_CreateMutex();
     }    
-    if (!cpu->opToAddressPages[ip >> PAGE_SHIFT] || !cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK]) {
+    if (!cpu->opToAddressPages[address >> PAGE_SHIFT] || !cpu->opToAddressPages[address >> PAGE_SHIFT][address & PAGE_MASK]) {
         struct x64_Data data;
         struct x64_Data* p = parent;
 
@@ -270,7 +277,7 @@ void* x64_translateEipInternal(struct x64_Data* parent, struct CPU* cpu, U32 ip)
         }
         x64_commitMappedAddresses(&data);
     }
-    return cpu->opToAddressPages[ip >> PAGE_SHIFT][ip & PAGE_MASK];
+    return cpu->opToAddressPages[address >> PAGE_SHIFT][address & PAGE_MASK];
 }
 
 void* x64_translateEip(struct CPU* cpu, U32 ip) {
@@ -280,4 +287,25 @@ void* x64_translateEip(struct CPU* cpu, U32 ip) {
     SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
     return result;
 }
+
+#ifdef __TEST
+void addReturnFromTest(struct CPU* cpu) {
+    struct x64_Data data;
+    initData(&data, cpu, cpu->eip.u32);
+    x64_pushNativeFlags(&data);
+    x64_popNative(&data, HOST_TMP, TRUE);
+
+    x64_writeToMemFromReg(&data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+    x64_writeToMemFromReg(&data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
+    x64_writeToMemFromReg(&data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
+    x64_writeToMemFromReg(&data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
+    x64_writeToMemFromReg(&data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
+    x64_writeToMemFromReg(&data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
+    x64_writeToMemFromReg(&data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
+    x64_writeToMemFromReg(&data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
+    x64_writeToMemFromReg(&data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
+    x64_retn(&data);
+    x64_commitMappedAddresses(&data);
+}
+#endif
 #endif

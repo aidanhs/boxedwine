@@ -99,20 +99,54 @@ void x64_mapAddress(struct x64_Data* data, U32 ip, void* address) {
 }
 
 void x64_writeOp(struct x64_Data* data) {
+    x64_writeOp8(data, FALSE, FALSE);
+}
+
+void x64_writeOp8(struct x64_Data* data, BOOL isG8bit, BOOL isGWritten) {
     // :TODO: map the prefixes to address so that they can be jumped over, libc sometimes jumps over the lock instruction
+    U32 g8 = 0;
+    U32 g8Temp = 0;
+
+    if (data->rex && data->has_rm && isG8bit && G(data->rm)>=4) {
+        if (((data->rex & REX_MOD_RM) && E(data->rm)==HOST_TMP2) || 
+            ((!data->has_sib && data->rex & REX_MOD_REG) && G(data->rm)==HOST_TMP2) ||
+            ((data->has_sib && data->rex & REX_MOD_REG) && E(data->rm)==HOST_TMP2) ||
+            ((data->has_sib && data->rex & REX_SIB_INDEX) && G(data->rm)==HOST_TMP2)) {
+            kpanic("x64: Tried to use HOST_TMP2 twice in the same instruction");
+        }
+        g8=G(data->rm);
+        g8Temp = (g8==4?1:0);
+
+        // push rax
+        x64_pushNative(data, g8Temp, FALSE);
+
+        // mov al, g8
+        x64_writeToRegFromReg(data, g8Temp, FALSE, g8, FALSE, 1);
+
+        // mov HOST_TMP2, eax
+        x64_writeToRegFromReg(data, HOST_TMP2, TRUE, g8Temp, FALSE, 4);
+
+        // pop rax
+        x64_popNative(data, g8Temp, FALSE);
+
+        data->rex |= REX_BASE | REX_MOD_REG;
+        data->rm &=~ (0x7 << 3);
+        data->rm |= (HOST_TMP2 << 3);
+    }
 
     if (data->lockPrefix)
         write8(data, 0xF0);
-    if (data->operandPrefix)
+    if (data->cpu->big && data->operandPrefix)
+        write8(data, 0x66);
+    else if (!data->cpu->big && !data->operandPrefix)
         write8(data, 0x66);
     if (data->repZeroPrefix)
         write8(data, 0xF3);
     if (data->repNotZeroPrefix)
         write8(data, 0xF2);
 
-    if (data->rex) {
-        write8(data, data->rex);
-    }  
+    if (data->rex)
+        write8(data, data->rex);           
     
     if (data->multiBytePrefix)
         write8(data, 0x0F);
@@ -137,6 +171,19 @@ void x64_writeOp(struct x64_Data* data) {
         write16(data, data->im16);
     } else if (data, data->has_im32) {
         write32(data, data->im32);
+    }
+    if (isGWritten && g8) {
+        // push rax
+        x64_pushNative(data, g8Temp, FALSE);
+
+        // mov eax, HOST_TMP2
+        x64_writeToRegFromReg(data, g8Temp, FALSE, HOST_TMP2, TRUE, 4);
+
+        // mov g8, al
+        x64_writeToRegFromReg(data, g8, FALSE, g8Temp, FALSE, 1);
+
+        // pop rax
+        x64_popNative(data, g8Temp, FALSE);
     }
 }
 
@@ -373,8 +420,14 @@ void x64_writeToMemFromValue(struct x64_Data* data, U64 value, U32 reg2, U32 isR
 // displacement is optional, pass 0 to ignore it
 void x64_writeToRegFromMem(struct x64_Data* data, U32 toReg, U32 isToRegRex, U32 reg2, U32 isReg2Rex, S32 reg3, U32 isReg3Rex, U32 reg3Shift, S32 displacement, U32 bytes, U32 translateToHost) {
     if (translateToHost) {
-        x64_addWithLea(data, toReg, isToRegRex, reg2, isReg2Rex, reg3, isReg3Rex, reg3Shift, displacement, 4);
-        x64_writeToRegFromMem(data, toReg, isToRegRex, toReg, isToRegRex, HOST_MEM, TRUE, 0, 0, bytes, FALSE);
+        U32 tmp = toReg;
+        U32 tmpIsRex = isToRegRex;
+        if (bytes<4) {
+            tmp = HOST_TMP2;
+            tmpIsRex = TRUE;
+        }
+        x64_addWithLea(data, tmp, tmpIsRex, reg2, isReg2Rex, reg3, isReg3Rex, reg3Shift, displacement, 4);
+        x64_writeToRegFromMem(data, toReg, isToRegRex, tmp, tmpIsRex, HOST_MEM, TRUE, 0, 0, bytes, FALSE);
     } else {
         doMemoryInstruction(bytes==1?0x8a:0x8b, data, toReg, isToRegRex, reg2, isReg2Rex, reg3, isReg3Rex, reg3Shift, displacement, bytes);
     }
@@ -415,11 +468,11 @@ void x64_writeToRegFromValue(struct x64_Data* data, U32 reg, U32 isRexReg, U64 v
 void x64_writeToRegFromReg(struct x64_Data* data, U32 toReg, U32 isToReg1Rex, U32 fromReg, U32 isFromRegRex, U32 bytes) {
     U8 rex = 0;
 
-    if (toReg==4 && !isToReg1Rex) {
+    if (toReg==4 && !isToReg1Rex && bytes!=1) {
         toReg = HOST_ESP;
         isToReg1Rex = TRUE;
     }
-    if (fromReg==4 && !isFromRegRex) {
+    if (fromReg==4 && !isFromRegRex && bytes!=1) {
         fromReg = HOST_ESP;
         isFromRegRex = TRUE;
     }
@@ -730,27 +783,205 @@ void x64_jmpReg(struct x64_Data* data, U32 reg, U32 isRex) {
 }
 
 void writeHostPlusTmp(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit, U32 isE8bit) {
-    data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;
-    if (data->rex && isG8bit && G(rm)>=4 && checkG) {
-        // mov HOST_TMP2, G(rm) & 4, this will move the reg, not just the high 8 bits
-        x64_writeToRegFromReg(data, HOST_TMP2, TRUE, G(rm) & 3, FALSE, 2);
-        // shr HOST_TMP2, 8
-        write8(data, REX_BASE | REX_MOD_RM);
-        write8(data, 0xc1);
-        write8(data, 0xC0 | (5 << 3) | HOST_TMP2);
-        write8 (data, 8);
-
-        data->rex |= REX_BASE | REX_MOD_REG;
-        rm &=~ (0x7 << 3);
-        rm |= (HOST_TMP2 << 3);
-    }
+    data->rex |= REX_BASE | REX_SIB_INDEX|REX_MOD_RM;    
     x64_setRM(data, rm, checkG, FALSE, isG8bit, isE8bit);
     x64_setSib(data, HOST_MEM | (HOST_TMP << 3), TRUE); 
 }
 
 void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit, U32 isE8bit) {
     if (data->ea16) {
-        kpanic("16-bit translate memory not implemented");
+        S16 disp = 0;
+        U32 leaDisp = 0;
+
+        if (rm<0x40) {
+            // no disp
+        } else if (rm<0x80) {
+            disp = (S8)x64_fetch8(data);
+            leaDisp = 0x40;
+        } else {
+            disp = (S16)x64_fetch16(data);
+            leaDisp = 0x80;
+        }
+
+        // if changing this, make sure you take into account lea eax, [bx+si]
+        switch (E(rm)) {
+        case 0x00:             
+            if (data->ds==SEG_ZERO) {
+                x64_setRM(data, leaDisp | G(rm) | 0x04, checkG, FALSE, isG8bit, FALSE);
+                x64_setSib(data, 0x33, FALSE); // rbx+rsi
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {           
+                // HOST_TMP2 = BX+SI+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 3, FALSE, 6, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + DS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        case 0x01:            
+            if (data->ds==SEG_ZERO) {
+                x64_setRM(data, leaDisp | G(rm) | 0x04, checkG, FALSE, isG8bit, FALSE);
+                x64_setSib(data, 0x3b, FALSE); // rbx+rdi
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {          
+                // HOST_TMP2 = BX+DI+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 3, FALSE, 7, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + DS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        case 0x02:            
+            if (data->ds==SEG_ZERO) {
+                if (!leaDisp) {
+                    leaDisp = 0x40;
+                }
+                x64_setRM(data, leaDisp | G(rm) | 0x04, checkG, FALSE, isG8bit, FALSE);
+                x64_setSib(data, 0x35, FALSE); // rbp+rsi
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {          
+                // HOST_TMP2 = BP+SI+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 5, FALSE, 6, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + SS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ss), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        case 0x03:            
+            if (data->ds==SEG_ZERO) {
+                if (!leaDisp) {
+                    leaDisp = 0x40;
+                }
+                x64_setRM(data, leaDisp | G(rm) | 0x04, checkG, FALSE, isG8bit, FALSE);
+                x64_setSib(data, 0x3d, FALSE); // rbp+rdi
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {             
+                // HOST_TMP2 = BP+DI+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 5, FALSE, 7, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + SS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ss), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        case 0x04:              
+            if (data->ds==SEG_ZERO) {
+                x64_setRM(data, leaDisp | G(rm) | 0x06, checkG, FALSE, isG8bit, FALSE);
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {            
+                // HOST_TMP2 = SI+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 6, FALSE, -1, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + DS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        case 0x05:              
+            if (data->ds==SEG_ZERO) {
+                x64_setRM(data, leaDisp | G(rm) | 0x07, checkG, FALSE, isG8bit, FALSE);
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {            
+                // HOST_TMP2 = DI+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 7, FALSE, -1, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + DS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        case 0x06:  
+        {
+            U32 seg = data->ss;
+            
+            if (seg==SEG_ZERO) {
+                if (leaDisp==0) {
+                    x64_setRM(data, G(rm) | 0x04, checkG, FALSE, isG8bit, FALSE);
+                    x64_setSib(data, 0x25, FALSE);
+                    x64_setDisplacement32(data, disp);
+                } else {
+                    x64_setRM(data, leaDisp | G(rm) | 0x05, checkG, FALSE, isG8bit, FALSE);
+                    if (leaDisp==0x40) {
+                        x64_setDisplacement8(data, (U8)disp);
+                    } else if (leaDisp==0x80) {
+                        x64_setDisplacement32(data, x64_fetch16(data));
+                    }
+                }
+            } else {  
+                if (rm<0x40) {
+                    x64_writeToRegFromValue(data, HOST_TMP2, TRUE, (S16)x64_fetch16(data), 2);
+                    seg = data->ds;
+                } else {
+                    // HOST_TMP2 = BP+disp
+                    x64_addWithLea(data, HOST_TMP2, TRUE, 5, FALSE, -1, FALSE, 0, disp, 2);
+                }
+                // HOST_TMP = HOST_TMP2 + SS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, seg), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        }
+        case 0x07:              
+            if (data->ds==SEG_ZERO) {
+                x64_setRM(data, leaDisp | G(rm) | 0x03, checkG, FALSE, isG8bit, FALSE);
+                if (leaDisp==0x40) {
+                    x64_setDisplacement8(data, (U8)disp);
+                } else if (leaDisp==0x80) {
+                    x64_setDisplacement32(data, disp);
+                }
+            } else {            
+                // HOST_TMP2 = BX+disp
+                x64_addWithLea(data, HOST_TMP2, TRUE, 3, FALSE, -1, FALSE, 0, disp, 2);
+
+                // HOST_TMP = HOST_TMP2 + DS
+                x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+
+                // [HOST_MEM + HOST_TMP]
+                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+            }
+            break;
+        }
     } else {
         if (rm<0x40) {
             switch (E(rm)) {
@@ -1031,17 +1262,14 @@ void x64_writeToEFromReg(struct x64_Data* data, U32 rm, U32 reg, U32 isRegRex, U
 }
 
 void x64_writeXchgEspEax(struct x64_Data* data) {
-    write8(data, REX_MOD_REG|REX_BASE);
+    write8(data, REX_MOD_RM|REX_BASE);
     write8(data, 0x90+HOST_ESP);
-    x64_writeOp(data);
 }
 
 void x64_writeXchgSpAx(struct x64_Data* data) {
-    write8(data, REX_MOD_REG|REX_BASE);
-    if (data->cpu->big)
-        write8(data, 0x66);
+    write8(data, 0x66);
+    write8(data, REX_MOD_RM|REX_BASE);    
     write8(data, 0x90+HOST_ESP);
-    x64_writeOp(data);
 }
 
 void x64_cmpRegToValue(struct x64_Data* data, U32 reg, U32 isRegRex, S32 value, U32 bytes) {
@@ -1106,4 +1334,23 @@ void x64_bswapEsp(struct x64_Data* data) {
     x64_writeOp(data);
 }
 
+void x64_retn(struct x64_Data* data) {
+    write8(data, 0xc3);
+}
+
+void x64_setFlags(struct x64_Data* data, U32 flags, U32 mask) {
+    x64_pushNative(data, 0, FALSE);
+    x64_pushNativeFlags(data);
+    x64_popNative(data, 0, FALSE);
+
+    write8(data, 0x25);
+    write32(data, ~mask);
+
+    write8(data, 0x0d);
+    write32(data, (flags & mask));
+
+    x64_pushNative(data, 0, FALSE);
+    x64_popNativeFlags(data);
+    x64_popNative(data, 0, FALSE);
+}
 #endif

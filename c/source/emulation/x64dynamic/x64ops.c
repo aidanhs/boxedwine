@@ -173,25 +173,16 @@ static U32 instFPU(struct x64_Data* data) {
 }
 
 // ADD Eb,Gb
-// ADD Gb,Eb
 // OR Eb,Gb
-// OR Gb,Eb
 // ADC Eb,Gb
-// ADC Gb,Eb
 // SBB Eb,Gb
-// SBB Gb,Eb
 // AND Eb,Gb
-// AND Gb,Eb
 // SUB Eb,Gb
-// SUB Gb,Eb
 // XOR Eb,Gb
-// XOR Gb,Eb
 // CMP Eb,Gb
 // CMP Gb,Eb
 // TEST Eb,Gb
-// XCHG Eb,Gb
 // MOV Eb,Gb
-// MOV Gb,Eb
 // SETO
 // SETNO
 // SETB
@@ -211,7 +202,23 @@ static U32 instFPU(struct x64_Data* data) {
 static U32 inst8RM(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);    
     x64_translateRM(data, rm, TRUE, TRUE, TRUE, TRUE);
-    x64_writeOp(data);
+    x64_writeOp8(data, TRUE, FALSE);
+    return 0;
+}
+
+// ADD Gb,Eb
+// OR Gb,Eb
+// ADC Gb,Eb
+// SBB Gb,Eb
+// AND Gb,Eb
+// SUB Gb,Eb
+// XOR Gb,Eb
+// MOV Gb,Eb
+// XCHG Eb,Gb
+static U32 inst8RMGWritten(struct x64_Data* data) {
+    U8 rm = x64_fetch8(data);    
+    x64_translateRM(data, rm, TRUE, TRUE, TRUE, TRUE);
+    x64_writeOp8(data, TRUE, TRUE);
     return 0;
 }
 
@@ -1380,7 +1387,7 @@ static U32 popEw(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {        
         x64_popReg16(data, HOST_TMP, TRUE);
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 2, TRUE);
+        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 2, TRUE);
     } else {
         x64_popReg16(data, rm & 7, FALSE);
     }
@@ -1392,7 +1399,7 @@ static U32 popEd(struct x64_Data* data) {
     U8 rm = x64_fetch8(data);
     if (rm<0xC0) {        
         x64_popReg32(data, HOST_TMP, TRUE);
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
+        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_ESP, TRUE, HOST_SS, TRUE, 0, 0, 4, TRUE);
     } else {
         x64_popReg32(data, rm & 7, FALSE);
     }
@@ -1997,16 +2004,16 @@ static U32 repz(struct x64_Data* data) {
 
 DECODER x64Decoder[1024] = {
     // 00
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, push16ES, pop16ES,
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, push16CS, instruction0f,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, push16ES, pop16ES,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, push16CS, instruction0f,
     // 10
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, push16SS, pop16SS,
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, push16DS, pop16DS,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, push16SS, pop16SS,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, push16DS, pop16DS,
     // 20
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, segES, daa,
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, segCS, das,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, segES, daa,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, segCS, das,
     // 30
-    inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, segSS, aaa,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, arithR8Ib, arithR16Iw, segSS, aaa,
     inst8RM, inst16RM, inst8RM, inst16RM, arithR8Ib, arithR16Iw, segDS, aas,
     // 40
     incAX, incCX, incDX, incBX, incSP, incBP, incSI, incDI,
@@ -2021,8 +2028,8 @@ DECODER x64Decoder[1024] = {
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     // 80
-    inst8RMimm8SafeG, inst16RMimm16SafeG, instruction82, inst16RMimm8SafeG, inst8RM, inst16RM, inst8RM, inst16RM,
-    inst8RM, inst16RM, inst8RM, inst16RM, movEwSw, leaGw, movSwEw, popEw,
+    inst8RMimm8SafeG, inst16RMimm16SafeG, instruction82, inst16RMimm8SafeG, inst8RM, inst16RM, inst8RMGWritten, inst16RM,
+    inst8RM, inst16RM, inst8RMGWritten, inst16RM, movEwSw, leaGw, movSwEw, popEw,
     // 90
     keepSame, keepSame, keepSame, keepSame, xchgSpAx, keepSame, keepSame, keepSame,
     keepSame, keepSame, callAp, keepSame, pushFlags16, popFlags16, keepSame, keepSame,
@@ -2095,16 +2102,16 @@ DECODER x64Decoder[1024] = {
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
 
     // 200
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, push32ES, pop32ES,
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, push32CS, instruction0f,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, push32ES, pop32ES,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, push32CS, instruction0f,
     // 210
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, push32SS, pop32SS,
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, push32DS, pop32DS,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, push32SS, pop32SS,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, push32DS, pop32DS,
     // 220
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, segES, daa,
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, segCS, das,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, segES, daa,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, segCS, das,
     // 230
-    inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, segSS, aaa,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, arithR8Ib, arithR32Id, segSS, aaa,
     inst8RM, inst32RM, inst8RM, inst32RM, arithR8Ib, arithR32Id, segDS, aas,
     // 240
     incEAX, incECX, incEDX, incEBX, incESP, incEBP, incESI, incEDI,
@@ -2119,8 +2126,8 @@ DECODER x64Decoder[1024] = {
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     jump8, jump8, jump8, jump8, jump8, jump8, jump8, jump8,
     // 280
-    inst8RMimm8SafeG, inst32RMimm32SafeG, instruction82, inst32RMimm8SafeG, inst8RM, inst32RM, inst8RM, inst32RM,
-    inst8RM, inst32RM, inst8RM, inst32RM, movEdSw, leaGd, movSwEw, popEd,
+    inst8RMimm8SafeG, inst32RMimm32SafeG, instruction82, inst32RMimm8SafeG, inst8RM, inst32RM, inst8RMGWritten, inst32RM,
+    inst8RM, inst32RM, inst8RMGWritten, inst32RM, movEdSw, leaGd, movSwEw, popEd,
     // 290
     keepSame, keepSame, keepSame, keepSame, xchgEspEax, keepSame, keepSame, keepSame,
     keepSame, keepSame, callFar32, keepSame, pushFlags32, popFlags32, keepSame, keepSame,

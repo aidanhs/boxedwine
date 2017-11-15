@@ -22,6 +22,7 @@
 #include "decoder.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "kalloc.h"
 
 #include "..\emulation\softmmu\soft_memory.h"
 #include "..\emulation\hardmmu\hard_memory.h"
@@ -122,7 +123,31 @@ void newInstructionWithRM(int instruction, int rm, int flags) {
     pushCode8(rm);
 }
 
-void runTestCPU() {
+typedef void (*StartCPU)();
+void* x64_initCPU(struct CPU* cpu);
+void addReturnFromTest(struct CPU* cpu);
+
+void runTestCPU() {    
+#ifdef BOXEDWINE_VM
+    struct CPU* cpu = &thread->cpu;
+    StartCPU startCPU;
+    U32 i;
+
+    cpu->memOffset = cpu->memory->id;
+    cpu->negMemOffset = (U64)(-(S64)cpu->memOffset);
+    for (i=0;i<6;i++) {
+        cpu->negSegAddress[i] = (U32)(-((S32)(cpu->segAddress[i])));
+    }
+    //cpu->memory->x64MemPos = 0;
+    startCPU = (StartCPU)x64_initCPU(cpu);
+    addReturnFromTest(cpu);    
+    startCPU();
+
+    memset(memory->process->opToAddressPages[CODE_ADDRESS>>PAGE_SHIFT], 0, sizeof(void*)*PAGE_SIZE);
+    cpu->memory->x64MemPos = 0;
+    cpu->memory->x64AvailableMem = 64*1024;
+    memset(memory->id+CODE_ADDRESS, 0, PAGE_SIZE);
+#else
     struct Block* block;
 
     pushCode8(0x70); // jump causes the decoder to stop building the block
@@ -131,6 +156,7 @@ void runTestCPU() {
     cpu->currentBlock = block;
     block->ops->func(cpu, block->ops);
     freeBlock(block);
+#endif
 }
 
 struct Data {
@@ -3407,7 +3433,8 @@ void testXchgDxAx0x092() {cpu->big = false;Reg16Reg16(0x92, xchgw, &cpu->reg[0],
 void testXchgEdxEax0x292() {cpu->big = true;Reg32Reg32(0x92, xchgd, &cpu->reg[0], &cpu->reg[2]);}
 void testXchgBxAx0x093() {cpu->big = false;Reg16Reg16(0x93, xchgw, &cpu->reg[0], &cpu->reg[3]);}
 void testXchgEbxEax0x293() {cpu->big = true;Reg32Reg32(0x93, xchgd, &cpu->reg[0], &cpu->reg[3]);}
-void testXchgSpAx0x094() {cpu->big = false;Reg16Reg16(0x94, xchgw, &cpu->reg[0], &cpu->reg[4]);}
+void testXchgSpAx0x094() {cpu->big = false;
+Reg16Reg16(0x94, xchgw, &cpu->reg[0], &cpu->reg[4]);}
 void testXchgEspEax0x294() {cpu->big = true;Reg32Reg32(0x94, xchgd, &cpu->reg[0], &cpu->reg[4]);}
 void testXchgBpAx0x095() {cpu->big = false;Reg16Reg16(0x95, xchgw, &cpu->reg[0], &cpu->reg[5]);}
 void testXchgEbpEax0x295() {cpu->big = true;Reg32Reg32(0x95, xchgd, &cpu->reg[0], &cpu->reg[5]);}

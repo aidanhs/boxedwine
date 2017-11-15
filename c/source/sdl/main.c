@@ -50,6 +50,11 @@ extern int bits_per_pixel;
 
 U32 lastTitleUpdate = 0;
 
+#ifdef BOXEDWINE_VM
+U32 sdlCustomEvent;
+SDL_threadID sdlMainThreadId;
+#endif
+
 #ifndef __TEST
 
 char curdir[1024];
@@ -342,11 +347,6 @@ U32 gensrc;
 
 #ifdef GENERATE_SOURCE
 void writeSource();
-#endif
-
-#ifdef BOXEDWINE_VM
-U32 sdlCustomEvent;
-SDL_threadID sdlMainThreadId;
 #endif
 
 U32 checkWaitingNativeSockets(int timeout);

@@ -30,6 +30,7 @@
 #define CPU_OFFSET_EBP (U32)(offsetof(struct CPU, reg[5].u32))
 #define CPU_OFFSET_ESI (U32)(offsetof(struct CPU, reg[6].u32))
 #define CPU_OFFSET_EDI (U32)(offsetof(struct CPU, reg[7].u32))
+#define CPU_OFFSET_FLAGS (U32)(offsetof(struct CPU, flags))
 
 #define CPU_OFFSET_ES_ADDRESS (U32)(offsetof(struct CPU, segAddress[ES]))
 #define CPU_OFFSET_CS_ADDRESS (U32)(offsetof(struct CPU, segAddress[CS]))
@@ -178,8 +179,12 @@ void x64_loop(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_loopz(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_loopnz(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_bswapEsp(struct x64_Data* data);
+void x64_retn(struct x64_Data* data);
 
 void x64_writeOp(struct x64_Data* data);
+void x64_writeOp8(struct x64_Data* data, BOOL isG8bit, BOOL isGWritten);
+void x64_setFlags(struct x64_Data* data, U32 flags, U32 mask);
+
 void x64_setRM(struct x64_Data* data, U8 rm, BOOL checkG, BOOL checkE, U32 isG8bit, U32 isE8bit);
 void x64_setSib(struct x64_Data* data, U8 sib, BOOL checkBase);
 void x64_setDisplacement32(struct x64_Data* data, U32 disp32);
