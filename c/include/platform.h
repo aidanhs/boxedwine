@@ -19,7 +19,12 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
+#ifdef __EMSCRIPTEN__
+#define MAX_FILEPATH_LEN 256
+#else
 #define MAX_FILEPATH_LEN 1024
+#endif
+
 // maximum number of files per directory
 #define MAX_DIR_LISTING 4096
 
