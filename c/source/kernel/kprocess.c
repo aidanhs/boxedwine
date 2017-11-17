@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 #define THREAD_ID_SHIFT 6
 #define MAX_ARG_COUNT 1024
@@ -441,6 +442,7 @@ struct KFileDescriptor* openFileDescriptor(struct KProcess* process, const char*
         currentDirectory = process->currentDirectory;
     node = getNodeFromLocalPath(currentDirectory, localPath, (accessFlags & K_O_CREAT)==0);
     if (!node) {
+        errno = ENOENT;
         return 0;
     }
     if (node->kobject) {
@@ -520,7 +522,6 @@ struct KThread* startProcess(const char* currentDirectory, U32 argc, const char*
             openNode->func->close(openNode);
         }
     }
-    thread->cpu.log = 1;
     return thread;
 }
 
@@ -1071,7 +1072,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         process->wakeOnExitOrExec = 0;
     }
     free(tmp128k);
-    //klog("%d/%d exec %s", thread->id, process->id, process->commandLine);
+    //klog("%d/%d exec %s (cwd=%s)", thread->id, process->id, process->commandLine, process->currentDirectory);
     return -K_CONTINUE;
 }
 
@@ -1142,7 +1143,7 @@ void signalCHLD(struct KThread* thread, struct KProcess* process, U32 code, U32 
     process->sigActions[K_SIGCHLD].sigInfo[3] = childPid;
     process->sigActions[K_SIGCHLD].sigInfo[4] = sendingUID;
     process->sigActions[K_SIGCHLD].sigInfo[5] = exitCode;
-    signalProcess(thread, process, K_SIGCHLD);
+    //signalProcess(thread, process, K_SIGCHLD);
 }
 
 void signalALRM(struct KThread* thread, struct KProcess* process) {

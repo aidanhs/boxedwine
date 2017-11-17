@@ -590,6 +590,10 @@ BOOL isValidReadAddress(struct KThread* thread, U32 address) {
     return (thread->process->memory->flags[address >> PAGE_SHIFT] & PAGE_IN_RAM)!=0;
 }
 
+BOOL isPageInMemory(struct Memory* memory, U32 page) {
+    return (thread->process->memory->flags[page] & PAGE_IN_RAM)!=0;
+}
+
 void* allocMappable(struct Memory* memory, U32 pageCount) {
     kpanic("Shared memory not supported with HAS_64BIT_MMU yet");
     return 0;

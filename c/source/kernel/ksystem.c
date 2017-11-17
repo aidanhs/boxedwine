@@ -198,8 +198,13 @@ U32 syscall_gettimeofday(struct KThread* thread, U32 tv, U32 tz) {
 U32 syscall_mincore(struct KThread* thread, U32 address, U32 length, U32 vec) {
     U32 i;
     U32 pages = (length+PAGE_SIZE+1)/PAGE_SIZE;
+    U32 page = address >> PAGE_SHIFT;
+
     for (i=0;i<pages;i++) {
-        writeb(thread, vec, 1);
+        if (isPageInMemory(thread->process->memory, page+i))
+            writeb(thread, vec, 1);
+        else
+            writeb(thread, vec, 0);
         vec++;
     }
     return 0;

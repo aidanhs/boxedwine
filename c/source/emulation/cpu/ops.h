@@ -2435,9 +2435,11 @@ void OPCALL dshlcle16r16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dshlclr32r32(struct CPU* cpu, struct Op* op) {
-    cpu->src.u32=CL;
+    cpu->src.u32=CL & 0x1f;
     cpu->dst.u32=cpu->reg[op->r1].u32;
-    cpu->result.u32=(cpu->reg[op->r1].u32 << cpu->src.u32) | (cpu->reg[op->r2].u32 >> (32-cpu->src.u32));
+    cpu->result.u32=(cpu->dst.u32 << cpu->src.u32);
+    if (cpu->src.u32)
+        cpu->result.u32|=(cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
     cpu->reg[op->r1].u32 = cpu->result.u32;	
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(4);
@@ -2447,9 +2449,11 @@ void OPCALL dshlclr32r32(struct CPU* cpu, struct Op* op) {
 void OPCALL dshlcle32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
-    cpu->src.u32=CL;
+    cpu->src.u32=CL & 0x1f;
     cpu->dst.u32=readd(cpu->thread, address);
-    cpu->result.u32=(cpu->dst.u32 << cpu->src.u32) | (cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
+    cpu->result.u32=(cpu->dst.u32 << cpu->src.u32);
+    if (cpu->src.u32)
+        cpu->result.u32|=(cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
     writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(5);
@@ -2459,9 +2463,11 @@ void OPCALL dshlcle32r32_16(struct CPU* cpu, struct Op* op) {
 void OPCALL dshlcle32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
-    cpu->src.u32=CL;
+    cpu->src.u32=CL & 0x1f;
     cpu->dst.u32=readd(cpu->thread, address);
-    cpu->result.u32=(cpu->dst.u32 << cpu->src.u32) | (cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
+    cpu->result.u32=(cpu->dst.u32 << cpu->src.u32);
+    if (cpu->src.u32)
+        cpu->result.u32|=(cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
     writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHL32;
     CYCLES(5);
@@ -2665,9 +2671,11 @@ void OPCALL dshrcle16r16_32(struct CPU* cpu, struct Op* op) {
 }
 
 void OPCALL dshrclr32r32(struct CPU* cpu, struct Op* op) {
-    cpu->src.u32=CL;
+    cpu->src.u32=CL & 0x1f;
     cpu->dst.u32=cpu->reg[op->r1].u32;
-    cpu->result.u32=(cpu->reg[op->r1].u32 >> cpu->src.u32) | (cpu->reg[op->r2].u32 << (32-cpu->src.u32));
+    cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32);
+    if (cpu->src.u32)
+        cpu->result.u32 |= (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
     cpu->reg[op->r1].u32 = cpu->result.u32;	
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);
@@ -2677,9 +2685,11 @@ void OPCALL dshrclr32r32(struct CPU* cpu, struct Op* op) {
 void OPCALL dshrcle32r32_16(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
-    cpu->src.u32=CL;
+    cpu->src.u32=CL & 0x1f;
     cpu->dst.u32=readd(cpu->thread, address);
-    cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32) | (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
+    cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32);
+    if (cpu->src.u32)
+        cpu->result.u32 |= (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
     writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);
@@ -2689,9 +2699,11 @@ void OPCALL dshrcle32r32_16(struct CPU* cpu, struct Op* op) {
 void OPCALL dshrcle32r32_32(struct CPU* cpu, struct Op* op) {
     U32 address = eaa16(cpu, op);
 
-    cpu->src.u32=CL;
+    cpu->src.u32=CL & 0x1f;
     cpu->dst.u32=readd(cpu->thread, address);
-    cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32) | (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
+    cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32);
+    if (cpu->src.u32)
+        cpu->result.u32 |= (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
     writed(cpu->thread, address, cpu->result.u32);
     cpu->lazyFlags=FLAGS_DSHR32;
     CYCLES(4);

@@ -31,6 +31,7 @@ U32 syscall_writev(struct KThread* thread, FD handle, U32 iov, S32 iovcnt);
 S32 syscall_seek(struct KThread* thread, FD handle, S32 offset, U32 whence);
 U32 syscall_fstat64(struct KThread* thread, FD handle, U32 buf);
 U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags);
+U32 syscall_faccessat(struct KThread* thread, U32 dirfd, U32 pathname, U32 mode, U32 flags);
 U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length);
 U32 syscall_stat64(struct KThread* thread, U32 path, U32 buffer);
 U32 syscall_ioctl(struct KThread* thread, FD fildes, U32 request);
@@ -45,6 +46,7 @@ U32 syscall_getdents(struct KThread* thread, FD fildes, U32 dirp, U32 count, BOO
 U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize);
 U32 syscall_readlinkat(struct KThread* thread, FD dirfd, U32 pathname, U32 buf, U32 bufsiz);
 U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode);
+U32 syscall_mkdirat(struct KThread* thread, U32 dirfd, U32 path, U32 mode);
 U32 syscall_fstatfs64(struct KThread* thread, FD fildes, U32 len, U32 address);
 U32 syscall_statfs64(struct KThread* thread, U32 path, U32 len, U32 address);
 U32 syscall_statfs(struct KThread* thread, U32 path,U32 address);
@@ -54,4 +56,5 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
 U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U32 flag);
 U32 syscall_unlinkat(struct KThread* thread, FD dirfd, U32 address, U32 flags);
 U32 syscall_utimesat(struct KThread* thread, FD dirfd, U32 path, U32 times, U32 flags);
+U32 syscall_utimes(struct KThread* thread, U32 path, U32 times);
 #endif

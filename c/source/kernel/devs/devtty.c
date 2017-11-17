@@ -115,7 +115,11 @@ static char buffer[PAGE_SIZE+1];
 U32 tty_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
         U8* ram = getPhysicalAddress(thread, address);
-        memcpy(buffer, ram, len);
+        if (!ram) {
+            readMemory(thread, buffer, address, len);
+        } else {
+            memcpy(buffer, ram, len);
+        }
         buffer[len]=0;
         fprintf(stdout, "%s", buffer);		
         fflush(stdout);
@@ -127,7 +131,11 @@ U32 tty_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 
             U8* ram = getPhysicalAddress(thread, address);
             if (todo>len)
                 todo = len;
-            memcpy(buffer, ram, todo);
+            if (!ram) {
+                readMemory(thread, buffer, address, todo);
+            } else {
+                memcpy(buffer, ram, todo);
+            }
             buffer[todo]=0;
             fprintf(stdout, "%s", buffer);
             fflush(stdout);

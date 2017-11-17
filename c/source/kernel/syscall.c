@@ -181,17 +181,20 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_statfs64 268
 #define __NR_fstatfs64 269
 #define __NR_tgkill 270
+#define __NR_utimes	271
 #define __NR_fadvise64_64 272
 #define __NR_inotify_init 291
 #define __NR_inotify_add_watch 292
 #define __NR_inotify_rm_watch 293
 #define __NR_openat 295
+#define __NR_mkdirat 296
 #define __NR_fchownat 298
 #define __NR_fstatat64 300
 #define __NR_unlinkat 301
 #define __NR_symlinkat 304
 #define __NR_readlinkat 305
 #define __NR_fchmodat 306
+#define __NR_faccessat 307
 #define __NR_set_robust_list 311
 #define __NR_sync_file_range 314
 #define __NR_getcpu 318
@@ -236,15 +239,13 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         result=syscall_write(thread, ARG1, ARG2, ARG3);
         break;
     case __NR_open:
-        // EAX=00000005 ECX=00008000 EDX=00000000 EBX=7BCAE52B ESP=F4400560 EBP=F44006B8 ESI=7BCB0C75 EDI=D01CF000
-        if (ECX==0x8000 && EDX==0 && EBX==0x7BCAE52) {
-            int ii=0;
-        }
         result=syscall_open(thread, process->currentDirectory, ARG1, ARG2);
+        /*
         {
-            //char tmp[MAX_FILEPATH_LEN];
-            //printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->thread, ARG1, tmp, MAX_FILEPATH_LEN), ARG2, result);
+            char tmp[MAX_FILEPATH_LEN];
+            printf("open: name=%s flags=%x result=%d\n", getNativeString(cpu->thread, ARG1, tmp, MAX_FILEPATH_LEN), ARG2, result);
         }
+        */
         break;		
     case __NR_close:
         result=syscall_close(thread, ARG1);
@@ -773,6 +774,9 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_tgkill:
         result = syscall_tgkill(thread, ARG1, ARG2, ARG3);
         break;
+    case __NR_utimes:
+        result = syscall_utimes(thread, ARG1, ARG2);
+        break;
     case __NR_fadvise64_64:
         result = 0;
         break;
@@ -788,6 +792,9 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
     case __NR_openat:
         result=syscall_openat(thread, ARG1, ARG2, ARG3);
         break;	
+    case __NR_mkdirat:
+        result = syscall_mkdirat(thread, ARG1, ARG2, ARG3);
+        break;
     case __NR_fchownat:
         result=0;
         break;	
@@ -805,6 +812,9 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         break;
     case __NR_fchmodat:
         result = 0;
+        break;
+    case __NR_faccessat:
+        result = syscall_faccessat(thread, ARG1, ARG2, ARG3, ARG4);
         break;
     case __NR_set_robust_list:
 #ifdef _DEBUG
@@ -1037,9 +1047,11 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_statfs64: sprintf(buffer, "fstatfs64: path=%X(%s) len=%d buf=%X", ARG1, getNativeString(thread, ARG1, tmp, sizeof(tmp)), ARG2, ARG3); break;
     case __NR_fstatfs64: sprintf(buffer, "fstatfs64: fd=%d len=%d buf=%X", ARG1, ARG2, ARG3); break;
     case __NR_tgkill: sprintf(buffer, "tgkill: threadGroupId=%d threadId=%d signal=%d", ARG1, ARG2, ARG3); break;
+    case __NR_utimes: sprintf(buffer, "utimes: fileName=%s times=%X", getNativeString(thread, ARG1, tmp, sizeof(tmp)), ARG2);
     case __NR_fadvise64_64: sprintf(buffer, "fadvise64_64: fd=%d", ARG1); break;
     case __NR_inotify_init: sprintf(buffer, "inotify_init: "); break;
     case __NR_openat: sprintf(buffer, "openat: dirfd=%d name=%s flags=%x", ARG1, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3); break;	
+    case __NR_mkdirat: sprintf(buffer, "mkdirat: dirfd=%d path=%s mode=%x", ARG1, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3); break;	
     case __NR_fchownat: sprintf(buffer, "fchown32: pathname=%X(%s) owner=%d group=%d flags=%d", ARG2, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3, ARG4, ARG5); break;	
     case __NR_fstatat64: sprintf(buffer, "statat64: dirfd=%d path=%s buf=%X flags=%x", ARG1, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3, ARG4); break;
     case __NR_unlinkat: sprintf(buffer, "unlinkat: dirfd=%d path=%s flags=%x", ARG1, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3); break;

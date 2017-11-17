@@ -740,6 +740,10 @@ BOOL isValidReadAddress(struct KThread* thread, U32 address) {
     return thread->process->memory->read[address >> PAGE_SHIFT]!=0;
 }
 
+BOOL isPageInMemory(struct Memory* memory, U32 page) {
+    return memory->mmu[page]!=&invalidPage;
+}
+
 static U32 callbackPage;
 static U8* callbackAddress;
 static int callbackPos;

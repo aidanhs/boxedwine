@@ -138,7 +138,7 @@ BOOL normalizePath(char* path) {
             lastDir = i;
         }
     }
-    if (path[len-1]=='/') {
+    if (path[len-1]=='/' && len>1) {
         path[len-1]=0;
     }
     stringReplace("//", "/", path, MAX_FILEPATH_LEN);
@@ -1243,12 +1243,14 @@ U32 file_setTimes(struct FsNode* node, U64 lastAccessTime, U32 lastAccessTimeNan
     result = utime(node->nativePath1,&settime);
     if (result == 0)
         return 0;
+    return 0;
+    /*
     switch (errno) {
     case EPERM: return -K_EPERM;
     case ENOENT: return -K_ENOENT;
     }
     return -K_EACCES;
-    return 0;
+    */
 }
 
 BOOL isLink(struct FsNode* node) {

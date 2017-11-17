@@ -62,6 +62,7 @@ void mapMappable(struct KThread* thread, U32 page, U32 pageCount, void* p, U32 p
 void unmapMappable(struct KThread* thread, U32 page, U32 pageCount);
 void* allocMappable(struct Memory* memory, U32 pageCount);
 void freeMappable(struct Memory* memory, void* address);
+BOOL isPageInMemory(struct Memory* memory, U32 page);
 
 U32 mapNativeMemory(struct Memory* memory, void* hostAddress, U32 size);
 

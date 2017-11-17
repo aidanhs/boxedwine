@@ -287,9 +287,7 @@ U32 syscall_fstatat64(struct KThread* thread, FD dirfd, U32 address, U32 buf, U3
     return -K_ENOENT;
 }
 
-U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
-    struct FsNode* node = getNode(thread, fileName);
-
+U32 internalAccess(struct KThread* thread, struct FsNode* node, U32 flags) {
     if (node==0 || !node->func->exists(node)) {
         return -K_ENOENT;
     }
@@ -309,6 +307,32 @@ U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
         kwarn("access not fully implemented.  Can't test for executable permission");
     }
     return 0;
+}
+
+U32 syscall_access(struct KThread* thread, U32 fileName, U32 flags) {
+    return internalAccess(thread, getNode(thread, fileName), flags);    
+}
+
+U32 syscall_faccessat(struct KThread* thread, U32 dirfd, U32 pathname, U32 mode, U32 flags) {    
+    const char* currentDirectory = 0;
+    char tmp[MAX_FILEPATH_LEN];
+    char* path = getNativeString(thread, pathname, tmp, sizeof(tmp));
+    U32 result = 0;
+    struct FsNode* node = NULL;
+
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
+
+    if (result)
+        return result;    
+    if (flags & 0x100) { // AT_SYMLINK_NOFOLLOW
+        strcat(path, ".link");
+        node = getNodeFromLocalPath(currentDirectory, path, TRUE);
+    }
+    if (!node) {
+        node = getNodeFromLocalPath(currentDirectory, path, TRUE);
+    }
+    return internalAccess(thread, node, mode);
 }
 
 U32 syscall_ftruncate64(struct KThread* thread, FD fildes, U64 length) {
@@ -672,9 +696,8 @@ U32 syscall_readlink(struct KThread* thread, U32 path, U32 buffer, U32 bufSize) 
     return readlinkInDirectory(thread, thread->process->currentDirectory, path, buffer, bufSize);
 }
 
-U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
-    char tmp[MAX_FILEPATH_LEN];
-    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread, path, tmp, sizeof(tmp)), FALSE);
+U32 mkdiratInternal(struct KThread* thread, const char* currentDirectory, const char* path, U32 mode) {
+    struct FsNode* node = getNodeFromLocalPath(currentDirectory, path, FALSE);
 
     if (!node) {
         kpanic("Oops, syscall_mkdir couldn't find node");
@@ -685,6 +708,25 @@ U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
     if (!node->func->canWrite(thread->process, node) || node->func->makeDir(node)!=0)
         return -K_EACCES;
     return 0;
+}
+
+U32 syscall_mkdir(struct KThread* thread, U32 path, U32 mode) {
+    char tmp[MAX_FILEPATH_LEN];
+    return mkdiratInternal(thread, thread->process->currentDirectory, getNativeString(thread, path, tmp, sizeof(tmp)), mode);
+}
+
+U32 syscall_mkdirat(struct KThread* thread, U32 dirfd, U32 pathname, U32 mode) {
+    const char* currentDirectory = 0;
+    char tmp[MAX_FILEPATH_LEN];
+    const char* path = getNativeString(thread, pathname, tmp, sizeof(tmp));
+    U32 result = 0;
+    
+    if (path[0]!='/')
+        result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
+
+    if (result)
+        return result;
+    return mkdiratInternal(thread, currentDirectory, path, mode);
 }
 
 U32 syscall_rmdir(struct KThread* thread, U32 path) {
@@ -803,22 +845,56 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
     return result;
 }
 
+U32 syscall_utimes(struct KThread* thread, U32 address, U32 times) {
+    char tmp[MAX_FILEPATH_LEN];
+    const char* path = getNativeString(thread, address, tmp, sizeof(tmp));
+    struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, path, TRUE);
+    if (!node || !node->func->exists(node)) {
+        return -K_ENOENT;
+    } else {
+        U64 lastAccessTime = 0;
+        U32 lastAccessTimeNano = 0;
+        U64 lastModifiedTime =  0;
+        U32 lastModifiedTimeNano = 0;
+        if (!times) {
+            lastAccessTime = time(NULL);
+            lastModifiedTime = time(NULL);
+        } else {
+            lastAccessTime = readd(thread, times);
+            lastAccessTimeNano = readd(thread, times+4)*1000;
+            lastModifiedTime = readd(thread, times+8);
+            lastModifiedTimeNano = readd(thread, times+12)*1000;
+        }
+        return node->func->setTimes(node, lastAccessTime, lastAccessTimeNano, lastModifiedTime, lastAccessTimeNano);
+    }
+}
+
 #define K_UTIME_NOW 0x3fffffff
 #define K_UTIME_OMIT 0x3ffffffe
 
 U32 syscall_utimesat(struct KThread* thread, FD dirfd, U32 address, U32 times, U32 flags) {
     const char* currentDirectory=0;
-    struct FsNode* node;	
+    struct FsNode* node = NULL;	
     char tmp[MAX_FILEPATH_LEN];
-    const char* path = getNativeString(thread, address, tmp, sizeof(tmp));
+    char* path = getNativeString(thread, address, tmp, sizeof(tmp));
     U32 result = 0;
     
+    if (!path) {
+        path = tmp;
+        tmp[0]=0;
+    }
     if (path[0]!='/')
         result = getCurrentDirectoryFromDirFD(thread, dirfd, &currentDirectory);
 
     if (result)
         return result;
-    node = getNodeFromLocalPath(currentDirectory, path, TRUE);
+    if (flags & 0x100) { // AT_SYMLINK_NOFOLLOW
+        strcat(path, ".link");
+        node = getNodeFromLocalPath(currentDirectory, path, TRUE);
+    }
+    if (!node) {
+        node = getNodeFromLocalPath(currentDirectory, path, TRUE);
+    }
     if (node && node->func->exists(node)) {
         U64 lastAccessTime = 0;
         U32 lastAccessTimeNano = 0;
@@ -843,8 +919,7 @@ U32 syscall_utimesat(struct KThread* thread, FD dirfd, U32 address, U32 times, U
                 lastModifiedTimeNano = 0;
             }
         }
-        node->func->setTimes(node, lastAccessTime, lastAccessTimeNano, lastModifiedTime, lastAccessTimeNano);
-        return 0;
+        return node->func->setTimes(node, lastAccessTime, lastAccessTimeNano, lastModifiedTime, lastAccessTimeNano);
     }
     return -K_ENOENT;
 }
