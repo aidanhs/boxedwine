@@ -1988,15 +1988,13 @@ void decode0fe(struct DecodeData* data) {
             LOG_E8("DEC", rm, data);
             break;
         case 0x07:
-#ifdef BOXEDWINE64
-        {
+            if (sizeof(data->op->func)==8) {
                 U64 address = FETCH32(data);
                 address |= ((U64)FETCH32(data)) << 32;
                 data->op->func = (OpCallback)address;
-        }
-#else
+            } else {
                 data->op->func = (OpCallback)FETCH32(data);
-#endif
+            }
             return;
         default:
             kpanic("Illegal GRP4 Call %d, ",((rm>>3) & 7));
