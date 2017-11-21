@@ -29,6 +29,7 @@
 #include "devtty.h"
 #include "devurandom.h"
 #include "devnull.h"
+#include "devzero.h"
 #include "ksystem.h"
 #include "meminfo.h"
 #include "bufferaccess.h"
@@ -391,6 +392,9 @@ int main(int argc, char **argv) {
             gensrc = 1;
 		} else if (!strcmp(argv[i], "-nosound")) {
 			sound = 0;
+        } else if (!strcmp(argv[i], "-env")) {
+			ppenv[envc++] = argv[i+1];
+            i++;
         } else if (!strcmp(argv[i], "-resolution")) {
             U32 width;
             U32 height;
@@ -454,7 +458,7 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "USER=username";
     ppenv[envc++] = pwd;
     ppenv[envc++] = "DISPLAY=:0";
-    ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib:/lib/i386-linux-gnu";
+    ppenv[envc++] = "LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib:/lib/i386-linux-gnu";    
     if (userId==0)
         ppenv[envc++] = "PATH=/bin:/usr/bin:/usr/local/bin:/sbin:/usr/sbin";
     else
@@ -472,6 +476,7 @@ int main(int argc, char **argv) {
     addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
     addVirtualFile("/dev/random", &urandomAccess, K__S_IREAD|K__S_IFCHR);
     addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
+    addVirtualFile("/dev/zero", &zeroAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
     addVirtualFile("/proc/meminfo", &meminfoAccess, K__S_IREAD);
     bufferAccess.data = ""; // no kernel arguments
     addVirtualFile("/proc/cmdline", &bufferAccess, K__S_IREAD); // kernel command line

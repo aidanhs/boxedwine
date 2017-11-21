@@ -408,6 +408,7 @@
     <ClCompile Include="..\..\..\..\source\kernel\devs\devnull.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devtty.c" />
     <ClCompile Include="..\..\..\..\source\kernel\devs\devurandom.c" />
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devzero.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kalloc.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kepoll.c" />
     <ClCompile Include="..\..\..\..\source\kernel\kfile.c" />

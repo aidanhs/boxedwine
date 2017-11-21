@@ -152,9 +152,11 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_geteuid32 201
 #define __NR_getegid32 202
 #define __NR_getgroups32 205
+#define __NR_setgroups32 206
 #define __NR_fchown32 207
 #define __NR_setresuid32 208
 #define __NR_getresuid32 209
+#define __NR_setresgid32 210
 #define __NR_getresgid32 211
 #define __NR_chown32 212
 #define __NR_setuid32 213
@@ -201,6 +203,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_utimensat 320
 #define __NR_pipe2 331
 #define __NR_prlimit64 340
+#define __NR_sendmmsg 345
 
 #define ARG1 EBX
 #define ARG2 ECX
@@ -637,13 +640,22 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
             writed(thread, ARG2, process->groupId);
         }
         break;
+    case __NR_setgroups32:
+        if (ARG1) {
+            process->groupId = readd(thread, ARG2);
+        }
+        result = 0;
+        break;
     case __NR_fchown32:
         result = 0;
         break;
-        /*
     case __NR_setresuid32:
+        if (ARG1!=0xFFFFFFFF)
+            process->userId = ARG1;
+        if (ARG2!=0xFFFFFFFF)
+            process->effectiveUserId = ARG2;
+        result = 0;
         break;
-        */
     case __NR_getresuid32:
         if (ARG1)
             writed(thread, ARG1, process->userId);
@@ -652,6 +664,13 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         if (ARG3)
             writed(thread, ARG3, process->userId);
         result=0;
+        break;
+    case __NR_setresgid32:
+        if (ARG1!=0xFFFFFFFF)
+            process->groupId = ARG1;
+        if (ARG2!=0xFFFFFFFF)
+            process->effectiveGroupId = ARG2;
+        result = 0;
         break;
     case __NR_getresgid32:
         if (ARG1)
@@ -837,6 +856,9 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         break;
     case __NR_prlimit64:
         result = syscall_prlimit64(thread, ARG1, ARG2, ARG3, ARG4);
+        break;
+    case __NR_sendmmsg:
+        result = ksendmmsg(thread, ARG1, ARG2, ARG3, ARG4);
         break;
     default:
         kpanic("Unknown syscall %d", EAX);
@@ -1063,6 +1085,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_utimensat: sprintf(buffer, "utimensat dirfd=%d path=%X(%s) times=%X flags=%X", ARG1, ARG2, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3, ARG4); break;
     case __NR_pipe2: sprintf(buffer, "pipe2 fildes=%X", ARG1); break;
     case __NR_prlimit64: sprintf(buffer, "prlimit64 pid=%d resource=%d newlimit=%X oldlimit=%X", ARG1, ARG2, ARG3, ARG4); break;
+    case __NR_sendmmsg: sprintf(buffer, "sendmmsg fd=%d address=%X vlen=%d flags=%X", ARG1, ARG2, ARG3, ARG4); break;
     default: sprintf(buffer, "unknown syscal: %d", EAX); break;
     }
 }

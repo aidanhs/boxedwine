@@ -591,7 +591,7 @@ BOOL isValidReadAddress(struct KThread* thread, U32 address) {
 }
 
 BOOL isPageInMemory(struct Memory* memory, U32 page) {
-    return (thread->process->memory->flags[page] & PAGE_IN_RAM)!=0;
+    return (memory->flags[page] & PAGE_IN_RAM)!=0;
 }
 
 void* allocMappable(struct Memory* memory, U32 pageCount) {

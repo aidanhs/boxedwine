@@ -256,6 +256,9 @@
     <ClCompile Include="..\..\..\..\source\emulation\x64dynamic\x64asm.c">
       <Filter>source\emulation\x64dynamic</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\source\kernel\devs\devzero.c">
+      <Filter>source\kernel\devs</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\include\block.h">

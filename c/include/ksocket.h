@@ -67,6 +67,7 @@ U32 kshutdown(struct KThread* thread, U32 socket, U32 how);
 U32 ksetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 value, U32 len);
 U32 kgetsockopt(struct KThread* thread, U32 socket, U32 level, U32 name, U32 value, U32 len);
 U32 ksendmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags);
+U32 ksendmmsg(struct KThread* thread, U32 socket, U32 address, U32 vlen, U32 flags);
 U32 krecvmsg(struct KThread* thread, U32 socket, U32 msg, U32 flags);
 U32 ksendto(struct KThread* thread, U32 socket, U32 message, U32 length, U32 flags, U32 dest_addr, U32 dest_len);
 U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 flags, U32 address, U32 address_len);

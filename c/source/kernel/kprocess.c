@@ -1179,6 +1179,17 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
             return -K_ESRCH;
     }
     switch (resource) {
+        case 2: // RLIMIT_DATA
+            if (oldlimit!=0) {
+                writeq(thread, oldlimit, MAX_DATA_SIZE);
+                writeq(thread, oldlimit + 8, MAX_DATA_SIZE);
+            }
+#ifdef _DEBUG
+            if (newlimit!=0) {
+                klog("prlimit64 RLIMIT_DATA set=%d ignored", (U32)readq(thread, newlimit));
+            }
+#endif
+            break;
         case 3: // RLIMIT_STACK
             if (oldlimit!=0) {
                 writeq(thread, oldlimit, MAX_STACK_SIZE);
@@ -1198,6 +1209,17 @@ U32 syscall_prlimit64(struct KThread* thread, U32 pid, U32 resource, U32 newlimi
 #ifdef _DEBUG
             if (newlimit!=0) {
                 klog("prlimit64 RLIMIT_CORE set=%d ignored", (U32)readq(thread, newlimit));
+            }
+#endif
+            break;
+        case 5: // RLIMIT_RSS
+            if (oldlimit!=0) {
+                writeq(thread, oldlimit, MAX_DATA_SIZE);
+                writeq(thread, oldlimit + 8, MAX_DATA_SIZE);
+            }
+#ifdef _DEBUG
+            if (newlimit!=0) {
+                klog("prlimit64 RLIMIT_RSS set=%d ignored", (U32)readq(thread, newlimit));
             }
 #endif
             break;
@@ -1327,6 +1349,8 @@ U32 syscall_prctl(struct KThread* thread, U32 option) {
         char tmp[MAX_FILEPATH_LEN];
         safe_strcpy(thread->process->name, getNativeString(thread, ECX, tmp, sizeof(tmp)), sizeof(thread->process->name));
         return -1; // :TODO: why does returning 0 cause WINE to have a stack overflow
+    } else if (option == 38) { // PR_SET_NO_NEW_PRIVS
+        return 0;
     } else {
         kwarn("prctl not implemented");
     }
