@@ -1784,7 +1784,7 @@ U32 ksendmmsg(struct KThread* thread, U32 socket, U32 address, U32 vlen, U32 fla
     U32 i;
 
     for (i=0;i<vlen;i++) {
-        U32 result = ksendmsg(thread, socket, address+i*32, flags);
+        S32 result = (S32)ksendmsg(thread, socket, address+i*32, flags);
         if (result>=0) {
             writed(thread, address+i*32+28, result);
         } else {

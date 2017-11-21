@@ -110,7 +110,7 @@ U32 tty_read(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 l
     return 0;
 }
 
-static char buffer[PAGE_SIZE+1];
+static U8 buffer[PAGE_SIZE+1];
 
 U32 tty_write(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len) {
     if (PAGE_SIZE-(address & (PAGE_SIZE-1)) >= len) {
