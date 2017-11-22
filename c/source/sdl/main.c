@@ -377,7 +377,11 @@ int main(int argc, char **argv) {
             root = argv[i+1];
             i++;
         } else if (!strcmp(argv[i], "-zip") && i+1<argc) {
+#ifdef BOXEDWINE_ZLIB
             zip = argv[i+1];
+#else
+            printf("BoxedWine wasn't compiled with zlib support");
+#endif
             i++;
         } else if (!strcmp(argv[i], "-m") && i+1<argc) {
             mb = atoi(argv[i+1]);

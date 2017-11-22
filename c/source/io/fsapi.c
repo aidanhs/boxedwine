@@ -16,7 +16,9 @@
 #include "kscheduler.h"
 
 #undef OF
+#ifdef BOXEDWINE_ZLIB
 #include "../../lib/zlib/contrib/minizip/unzip.h"
+#endif
 
 #include UTIME
 #include MKDIR_INCLUDE
@@ -25,7 +27,9 @@
 char pathSeperator;
 
 static char rootFileSystem[MAX_FILEPATH_LEN];
+#ifdef BOXEDWINE_ZLIB
 static unzFile *zipfile;
+#endif
 
 //static char tmpPath[MAX_FILEPATH_LEN];
 //static char tmpLocalPath[MAX_FILEPATH_LEN];
@@ -640,9 +644,11 @@ struct FsOpenNodeFunc fileAccess = {openfile_init, openfile_length, openfile_set
 BOOL moveToFileSystem(struct FsNode* node);
 
 void ensurePathIsLocal(struct FsNode* node) {
+#ifdef BOXEDWINE_ZLIB
     if (node && zipfile && !doesPathExist(node->nativePath1)) {
         moveToFileSystem(node);
     }
+#endif
 }
 
 BOOL moveToFileSystem(struct FsNode* node) {
@@ -669,6 +675,7 @@ BOOL moveToFileSystem(struct FsNode* node) {
     return TRUE;
 }
 
+#ifdef BOXEDWINE_ZLIB
 static S64 zipOpenFile_length(struct FsOpenNode* node) {
     return node->node->func->length(node->node);
 }
@@ -795,7 +802,7 @@ U32 zipOpenFile_writeNative(struct FsOpenNode* node, U8* buffer, U32 len) {
 }
 
 struct FsOpenNodeFunc zipFileAccess = {zipOpenFile_init, zipOpenFile_length, zipOpenFile_setLength, zipOpenFile_getFilePointer, zipOpenFile_seek, openfile_read, openfile_write, zipOpenFile_close, zipOpenFile_map, zipOpenFile_canMap, zipOpenFile_ioctl, zipOpenFile_setAsync, zipOpenFile_isAsync, zipOpenFile_waitForEvents, zipOpenFile_isWriteReady, zipOpenFile_isReadReady, zipOpenFile_free, zipOpenFile_getDirectoryEntry, zipOpenFile_getDirectoryEntryCount, zipOpenFile_readNative, zipOpenFile_writeNative};
-
+#endif
 struct DirData {
     S32 pos;
     struct FsNode* nodes[MAX_DIR_LISTING];
@@ -1114,9 +1121,11 @@ struct FsOpenNode* file_open(struct KProcess* process, struct FsNode* node, U32 
     }
     f = open(node->nativePath1, openFlags, 0666);	
     if (!f || f==0xFFFFFFFF) {
+#ifdef BOXEDWINE_ZLIB
         struct FsNode* zipNode = getNodeFromNative(node->nativePath1);
         if (zipNode && zipNode->isZipFile1 && (flags & K_O_ACCMODE)==K_O_RDONLY)
             return allocOpenNode(process, zipNode, 0, flags, &zipFileAccess);
+#endif
         return 0;
     }
     return allocOpenNode(process, node, f, flags, &fileAccess);
@@ -1557,6 +1566,7 @@ BOOL initFileSystem(const char* rootPath, const char* zipPath) {
     initNodes();
     localSkipLinksMap = pblMapNewHashMap();
 
+#ifdef BOXEDWINE_ZLIB
     if (zipPath) {
         unz_global_info global_info;
         U32 i,j;
@@ -1698,7 +1708,7 @@ BOOL initFileSystem(const char* rootPath, const char* zipPath) {
         }
         kfree(zipInfo, 0);
     }
-    
+#endif
     {
         struct FsNode* dir = getNodeFromLocalPath("", "/tmp/del", TRUE);
         if (dir) {
