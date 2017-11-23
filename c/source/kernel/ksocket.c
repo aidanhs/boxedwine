@@ -220,6 +220,7 @@ void waitOnSocketConnect(struct KSocket* s, struct KThread* thread) {
 struct KSocket* waitingNativeSockets;
 fd_set waitingReadset;
 fd_set waitingWriteset;
+fd_set waitingErrorset;
 int maxSocketId;
 
 U32 getWaitingOnReadThreadCount(struct KSocket* s) {
@@ -249,13 +250,28 @@ void updateWaitingList() {
 
     FD_ZERO(&waitingReadset);
     FD_ZERO(&waitingWriteset);
+    FD_ZERO(&waitingErrorset);
 
     s = waitingNativeSockets;
+    maxSocketId = 0;
     while (s) {
-        if (getWaitingOnReadThreadCount(s))
+        BOOL errorSet = 0;
+#ifndef PLATFORM_MSVC
+        if (s->nativeSocket>=FD_SETSIZE) {
+            kpanic("updateWaitingList %s socket is too large to select on", s->nativeSocket);
+            break;
+        }
+#endif
+        if (getWaitingOnReadThreadCount(s)) {
             FD_SET(s->nativeSocket, &waitingReadset);
-        if (getWaitingOnWriteThreadCount(s))
+            FD_SET(s->nativeSocket, &waitingErrorset);
+            errorSet = 1;
+        }
+        if (getWaitingOnWriteThreadCount(s)) {
             FD_SET(s->nativeSocket, &waitingWriteset);
+            if (!errorSet)
+                FD_SET(s->nativeSocket, &waitingErrorset);
+        }
         if (s->nativeSocket>maxSocketId)
             maxSocketId = s->nativeSocket;
         s = s->next;
@@ -295,12 +311,14 @@ U32 checkWaitingNativeSockets(int timeout) {
     t.tv_usec = timeout*1000;
 
     if (waitingNativeSockets) {
-        int result;
+        int result;        
 
         updateWaitingList();       
         
-        result = select(maxSocketId + 1, &waitingReadset, &waitingWriteset, NULL, (timeout?&t:0));
-        if (result>0) {
+        if (maxSocketId==0)
+            return 0;
+        result = select(maxSocketId + 1, &waitingReadset, &waitingWriteset, &waitingErrorset, (timeout>=0?&t:0));
+        if (result) {
             struct KSocket* s = waitingNativeSockets;
             struct KSocket* parent = 0;
 
@@ -313,12 +331,14 @@ U32 checkWaitingNativeSockets(int timeout) {
                 if (FD_ISSET(s->nativeSocket, &waitingWriteset) && wakeAndResetWaitingOnWriteThreads(s)) {
                     found = 1;
                 }
-                if (!found) {
-                    s = s->next;
-                } else {
-                    removeWaitingSocket(s);
-                    break;
+                if (FD_ISSET(s->nativeSocket, &waitingErrorset)) {
+                    wakeAndResetWaitingOnWriteThreads(s);
+                    wakeAndResetWaitingOnReadThreads(s);
+                    found = 1;
                 }
+                if (found)
+                    removeWaitingSocket(s);
+                s = s->next;
             }
         }
         return 1;
@@ -386,11 +406,9 @@ U32 wakeAndResetWaitingOnWriteThreads(struct KSocket* s) {
     return result;
 }
 
-S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write) {
+S32 translateNativeSocketError(int error) {
     S32 result;
-
 #ifdef WIN32
-    int error = WSAGetLastError();
     if (error == WSAENOTCONN)
         result = -K_ENOTCONN;
     else if (error == WSAEWOULDBLOCK)
@@ -413,26 +431,35 @@ S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write
         result =-K_EIO;
 
 #else 
-    if (errno == ENOTCONN)
+    if (error == ENOTCONN)
         result = -K_ENOTCONN;
-    else if (errno == EWOULDBLOCK)
+    else if (error == EWOULDBLOCK)
         result = -K_EWOULDBLOCK;
-    else if (errno == ETIMEDOUT)
+    else if (error == ETIMEDOUT)
         result = -K_ETIMEDOUT;
-    else if (errno == ECONNRESET)
+    else if (error == ECONNRESET)
         result = -K_ECONNRESET;
-    else if (errno == EDESTADDRREQ)
+    else if (error == EDESTADDRREQ)
         result = -K_EDESTADDRREQ;
-    else if (errno == EHOSTUNREACH)
+    else if (error == EHOSTUNREACH)
         result = -K_EHOSTUNREACH;
-    else if (errno == EISCONN)
+    else if (error == EISCONN)
         result = -K_EISCONN;
-    else if (errno == ECONNREFUSED)
+    else if (error == ECONNREFUSED)
         result = -K_ECONNREFUSED;
     else
         result = -K_EIO;
 #endif
-#ifndef BOXEDWINE_VM
+    return result;
+}
+
+S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write) {
+#ifdef WIN32
+    S32 result = translateNativeSocketError(WSAGetLastError());
+#else
+    S32 result = translateNativeSocketError(errno);
+#endif
+    #ifndef BOXEDWINE_VM
     if (result == -K_EWOULDBLOCK) {
         if (write) {
             waitOnSocketWrite(s, thread);
@@ -446,7 +473,6 @@ S32 handleNativeSocketError(struct KThread* thread, struct KSocket* s, U32 write
     s->error = -result;
     return result;
 }
-
 BOOL unixsocket_isDirectory(struct FsNode* node) {
     return FALSE;
 }
@@ -796,10 +822,12 @@ U32 nativesocket_ioctl(struct KThread* thread, struct KObject* obj, U32 request)
     if (request == 0x541b) {
         int value=0;
 #ifdef WIN32
-        ioctlsocket(s->nativeSocket, FIONREAD, &value);
+        U32 result = ioctlsocket(s->nativeSocket, FIONREAD, &value);
 #else        
-        ioctl(s->nativeSocket, FIONREAD, &value);        
+        U32 result = ioctl(s->nativeSocket, FIONREAD, &value);        
 #endif
+        if (result!=0)
+            return handleNativeSocketError(thread, s, 1);
         return value;
     }
     return -K_ENOTTY;
@@ -1221,7 +1249,21 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 removeWaitingSocket(s);
 #endif
                 return 0;
+            } else {
+                int error=0;
+                int len = 4;
+                if (getsockopt(s->nativeSocket, SOL_SOCKET, SO_ERROR, (char*)&error, &len) < 0) {
+                    return -K_EIO;
+                }
+                if (error) {
+                    U32 result = translateNativeSocketError(error);
+                    if (result!=-K_EWOULDBLOCK) {
+                        return result;
+                    }
+                }
             }
+            addWaitingNativeSocket(s); 
+            waitOnSocketWrite(s, thread);
             return -K_WAIT;
         }
         memcopyToNative(thread, address, buffer, len);
@@ -1235,7 +1277,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
             }
             s->connecting = 0;
             return -K_ECONNREFUSED;
-        }        
+        }   
         result = handleNativeSocketError(thread, s, 1);
         if (result == -K_WAIT) {            
             s->connecting = s;
@@ -2045,7 +2087,8 @@ U32 ksendto(struct KThread* thread, U32 socket, U32 message, U32 length, U32 fla
 U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 flags, U32 address, U32 address_len) {
     struct KFileDescriptor* fd = getFileDescriptor(thread->process, socket);
     struct KSocket* s;
-    U32 len=0;
+    U32 inLen=0;
+    U32 outLen=0;
     S32 result;
     int f = 0;
     char fromBuffer[256];
@@ -2053,7 +2096,10 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
     
 
     if (address_len) {
-        len = readd(thread, address_len);
+        inLen = readd(thread, address_len);
+        if (inLen>sizeof(fromBuffer)) {
+            kpanic("krecvfrom fromBuffer tmp is too small");
+        }
     }
     if (!fd) {
         return -K_EBADF;
@@ -2071,21 +2117,22 @@ U32 krecvfrom(struct KThread* thread, U32 socket, U32 buffer, U32 length, U32 fl
     if (flags & (~3)) {
         kwarn("krecvfrom unsupported flags: %d", flags);
     }
-    memcopyToNative(thread, address, (char*)fromBuffer, len);
+    memcopyToNative(thread, address, (char*)fromBuffer, inLen);
+    outLen = inLen;
     // :TODO: what about tmp size
-    result = recvfrom(s->nativeSocket, tmp, length, f, (struct sockaddr*)fromBuffer, &len);
+    result = recvfrom(s->nativeSocket, tmp, length, f, (struct sockaddr*)fromBuffer, &outLen);
     if (result>=0) {
         memcopyFromNative(thread, buffer, tmp, result);
-        memcopyFromNative(thread, address, (char*)fromBuffer, len);
-        writed(thread, address_len, len);
+        memcopyFromNative(thread, address, (char*)fromBuffer, inLen);
+        writed(thread, address_len, outLen);
         s->error = 0;
         return result;
     }
     result = handleNativeSocketError(thread, s, 0);
     if (result == 0) { // WSAEMSGSIZE for example
         result = length;
-        memcopyFromNative(thread, address, (char*)fromBuffer, len);
-        writed(thread, address_len, len);
+        memcopyFromNative(thread, address, (char*)fromBuffer, inLen);
+        writed(thread, address_len, outLen);
         s->error = 0;
         return result;
     } 

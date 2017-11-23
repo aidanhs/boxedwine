@@ -2157,7 +2157,7 @@ DECODER x64Decoder[1024] = {
 
     // 300
     invalidOp, inst32RMSafeG, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
-    invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, invalidOp, keepSame, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 310
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
