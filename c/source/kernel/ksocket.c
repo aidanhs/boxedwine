@@ -175,7 +175,7 @@ void waitOnSocketRead(struct KSocket* s, struct KThread* thread) {
         if (!found) {
             kpanic("%d tried to wait on a socket read, but the socket read queue is full.", thread->id);
         }
-        while (ringbuf_is_empty(s->recvBuffer) && !s->msgs) {
+        while (ringbuf_is_empty(s->recvBuffer) && !s->msgs && !s->inClosed) {
             BOXEDWINE_WAIT(thread, s->bufferCond, s->bufferMutex);
         }
         s->waitingOnReadThread[i] = NULL;
@@ -1240,14 +1240,13 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
         char buffer[1024];
         int result = 0;
 
+#ifndef BOXEDWINE_VM
         if (s->connecting) {
             if (nativesocket_isWriteReady(fd->kobject)) {
                 s->error = 0;
                 s->connecting = 0;
                 s->connected = 1;
-#ifndef BOXEDWINE_VM
                 removeWaitingSocket(s);
-#endif
                 return 0;
             } else {
                 int error=0;
@@ -1266,6 +1265,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
             waitOnSocketWrite(s, thread);
             return -K_WAIT;
         }
+#endif
         memcopyToNative(thread, address, buffer, len);
         if (connect(s->nativeSocket, (struct sockaddr*)buffer, len)==0) {
             int error;
