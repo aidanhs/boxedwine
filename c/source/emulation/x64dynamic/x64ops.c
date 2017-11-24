@@ -408,8 +408,7 @@ static U32 arithR32Id(struct x64_Data* data) {
 
 // XLAT
 static U32 xlat(struct x64_Data* data) {
-    // :TODO: need to adjust EBX to include base
-    kpanic("xlat not implemented");
+    x64_xlat(data);
     return 0;
 }
 
@@ -596,7 +595,7 @@ static U32 aad(struct x64_Data* data) {
 
 // SALC
 static U32 salc(struct x64_Data* data) {
-    kpanic("salc not implemented");
+    x64_salc(data);
     return 0;
 }
 
@@ -1440,6 +1439,16 @@ static U32 keepSame(struct x64_Data* data) {
     return 0;
 }
 
+static U32 rdtsc(struct x64_Data* data) {
+#ifdef LOG_OPS
+    x64_writeToRegFromValue(data, 0, FALSE, 1, 4);
+    x64_writeToRegFromValue(data, 2, FALSE, 0, 4);
+#else
+    x64_writeOp(data);
+#endif
+    return 0;
+}
+
 // TEST AL,Ib
 // MOV AL,Ib
 // MOV CL,Ib
@@ -2067,7 +2076,7 @@ DECODER x64Decoder[1024] = {
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 130
-    invalidOp, keepSame, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, rdtsc, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 140
     inst16RM, inst16RM, inst16RM, inst16RM, inst16RM, inst16RM, inst16RM, inst16RM,
@@ -2165,7 +2174,7 @@ DECODER x64Decoder[1024] = {
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 330
-    invalidOp, keepSame, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
+    invalidOp, rdtsc, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp, invalidOp,
     // 340
     inst32RM, inst32RM, inst32RM, inst32RM, inst32RM, inst32RM, inst32RM, inst32RM,

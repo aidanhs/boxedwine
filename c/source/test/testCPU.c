@@ -43,9 +43,11 @@ static struct Memory* memory;
 static struct CPU* cpu;
 static struct KProcess* process;
 static int didFail;
+static int totalFails;
 
 void failed(const char* msg, ...) {
     didFail = 1;
+    totalFails++;
 }
 
 void assertTrue(int b) {
@@ -146,7 +148,7 @@ void runTestCPU() {
     memset(memory->process->opToAddressPages[CODE_ADDRESS>>PAGE_SHIFT], 0, sizeof(void*)*PAGE_SIZE);
     cpu->memory->x64MemPos = 0;
     cpu->memory->x64AvailableMem = 64*1024;
-    memset(memory->id+CODE_ADDRESS, 0, PAGE_SIZE);
+    memset((U8*)memory->id+CODE_ADDRESS, 0, PAGE_SIZE);
 #else
     struct Block* block;
 
@@ -5155,13 +5157,13 @@ int main(int argc, char **argv) {
     run(testGrp20x0d3, "Grp2 0d3");
     run(testGrp20x2d3, "Grp2 2d3");
 
-#ifndef BOXEDWINE_VM
     run(testSalc0x0d6, "Salc 0d6");
     run(testSalc0x2d6, "Salc 2d6");
 
     run(testXlat0x0d7, "Xlat 0d7");
     run(testXlat0x2d7, "Xlat 2d7");
 
+ #ifndef BOXEDWINE_VM
     run(testFPU0x0d8, "FPU 0d8");
     run(testFPU0x2d8, "FPU 2d8");
 
@@ -5198,6 +5200,7 @@ int main(int argc, char **argv) {
     run(testShrd0x3ac, "SHRD 3ac");
     run(testShrd0x1ad, "SHRD 1ad");
     run(testShrd0x3ad, "SHRD 3ad");
+    printf("%d tests FAILED\n", totalFails);
     SDL_Delay(5000);
     return 0;
 }

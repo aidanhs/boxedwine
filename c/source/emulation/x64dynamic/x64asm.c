@@ -1383,4 +1383,38 @@ void x64_setFlags(struct x64_Data* data, U32 flags, U32 mask) {
     x64_popNativeFlags(data);
     x64_popNative(data, 0, FALSE);
 }
+
+void x64_salc(struct x64_Data* data) {
+    x64_pushNativeFlags(data);
+    // sbb al, al
+    write8(data, 0x18);
+    write8(data, 0xc0);
+    x64_popNativeFlags(data);
+}
+
+void x64_xlat(struct x64_Data* data) {
+    // movzx HOST_TMP, al
+    write8(data, REX_BASE | REX_MOD_REG);
+    write8(data, 0xf);
+    write8(data, 0xb6);
+    write8(data, 0xC0 | (HOST_TMP<<3));
+    
+    if (data->ea16) {
+        // AL = readb(cpu->thread, cpu->segAddress[op->base] + (U16)(BX + AL));
+        x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP, TRUE, 3, FALSE, 0, 0, 2);
+    } else {
+        // AL = readb(cpu->thread, cpu->segAddress[op->base] + EBX + AL);
+        x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP, TRUE, 3, FALSE, 0, 0, 4);
+    }
+    // HOST_TMP = HOST_TMP + DS
+    x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
+
+    // [HOST_MEM + HOST_TMP]
+    writeHostPlusTmp(data, 4, FALSE, TRUE, TRUE);
+
+    // mov al, [HOST_MEM + HOST_TMP]
+    data->op = 0x8a;
+    x64_writeOp(data);
+}
+
 #endif

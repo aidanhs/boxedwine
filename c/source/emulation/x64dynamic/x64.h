@@ -180,6 +180,8 @@ void x64_loopz(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_loopnz(struct x64_Data* data, S8 offset, BOOL ea16);
 void x64_bswapEsp(struct x64_Data* data);
 void x64_retn(struct x64_Data* data);
+void x64_salc(struct x64_Data* data);
+void x64_xlat(struct x64_Data* data);
 
 void x64_writeOp(struct x64_Data* data);
 void x64_writeOp8(struct x64_Data* data, BOOL isG8bit, BOOL isGWritten);

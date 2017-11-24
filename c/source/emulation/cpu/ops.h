@@ -2191,6 +2191,9 @@ void OPCALL jmpNear32_mem32(struct CPU* cpu, struct Op* op) {
 
 void OPCALL rdtsc(struct CPU* cpu, struct Op* op) {
     U64 t = cpu->timeStampCounter+cpu->blockCounter;
+#ifdef LOG_OPS
+    t = 1;
+#endif
     EAX = (U32)t;
     EDX = (U32)(t >> 32);
     CYCLES(1);
@@ -2445,7 +2448,7 @@ void OPCALL dshlclr32r32(struct CPU* cpu, struct Op* op) {
         cpu->src.u32=CL & 0x1f;
         cpu->dst.u32=cpu->reg[op->r1].u32;
         cpu->result.u32=(cpu->dst.u32 << cpu->src.u32);
-        cpu->result.u32|=(cpu->reg[op->r1].u32 >> (32-cpu->src.u32));
+        cpu->result.u32|=(cpu->reg[op->r2].u32 >> (32-cpu->src.u32));
         cpu->reg[op->r1].u32 = cpu->result.u32;	
         cpu->lazyFlags=FLAGS_DSHL32;
     }
@@ -2690,7 +2693,7 @@ void OPCALL dshrclr32r32(struct CPU* cpu, struct Op* op) {
         cpu->src.u32=CL & 0x1f;
         cpu->dst.u32=cpu->reg[op->r1].u32;
         cpu->result.u32=(cpu->dst.u32 >> cpu->src.u32);
-        cpu->result.u32 |= (cpu->reg[op->r1].u32 << (32-cpu->src.u32));
+        cpu->result.u32 |= (cpu->reg[op->r2].u32 << (32-cpu->src.u32));
         cpu->reg[op->r1].u32 = cpu->result.u32;	
         cpu->lazyFlags=FLAGS_DSHR32;
     }
