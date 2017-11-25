@@ -1110,7 +1110,6 @@ U32 syscall_exitgroup(struct KThread* thread, U32 code) {
     return -K_CONTINUE;
 }
 
-// should only be called outside of runCPU (definitely not in a syscall)
 void signalProcess(struct KThread* currentThread, struct KProcess* process, U32 signal) {	
     struct KThread* thread = 0;
     U32 threadIndex = 0;
@@ -1121,7 +1120,7 @@ void signalProcess(struct KThread* currentThread, struct KProcess* process, U32 
     BOXEDWINE_LOCK(currentThread, process->threadsMutex);
     while (process->pendingSignals && getNextObjectFromArray(&process->threads, &threadIndex, (void**)&thread)) {
         if (thread) {
-            runSignals(thread);
+            runSignals(currentThread, thread);
         }
     }
     BOXEDWINE_UNLOCK(currentThread, process->threadsMutex);
@@ -1163,7 +1162,7 @@ void signalIllegalInstruction(struct KThread* thread, int code) {
     process->sigActions[K_SIGILL].sigInfo[2] = code;
     process->sigActions[K_SIGILL].sigInfo[3] = process->id;
     process->sigActions[K_SIGILL].sigInfo[4] = process->userId;
-    runSignal(thread, K_SIGILL, -1, 0);
+    runSignal(thread, thread, K_SIGILL, -1, 0);
 }
 
 #define K_RLIM_INFINITY 0xFFFFFFFF
@@ -1413,7 +1412,7 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
 #ifdef BOXEDWINE_VM
         pauseThread(target);
 #endif
-        runSignal(target, signal, -1, 0);
+        runSignal(thread, target, signal, -1, 0);
         target->waitingForSignalToEnd = thread;
 #ifdef BOXEDWINE_VM
         {

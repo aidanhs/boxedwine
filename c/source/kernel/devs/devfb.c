@@ -27,7 +27,7 @@
 #include "fsapi.h"
 #include "ksystem.h"
 
-static U32 screenBPP=24;
+static U32 screenBPP=32;
 static U32 fullScreen=0;
 U32 updateAvailable;
 U32 paletteChanged;
@@ -414,37 +414,37 @@ void fbSetupScreen() {
 }
 
 #ifndef HAS_64BIT_MMU
-static U8 fb_readb(struct Memory* memory, U32 address) {	
+static U8 fb_readb(struct KThread* thread, U32 address) {	
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
     return 0;
 }
 
-static void fb_writeb(struct Memory* memory, U32 address, U8 value) {
+static void fb_writeb(struct KThread* thread, U32 address, U8 value) {
     updateAvailable=1;
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         ((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS] = value;
 }
 
-static U16 fb_readw(struct Memory* memory, U32 address) {
+static U16 fb_readw(struct KThread* thread, U32 address) {
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1];
     return 0;
 }
 
-static void fb_writew(struct Memory* memory, U32 address, U16 value) {
+static void fb_writew(struct KThread* thread, U32 address, U16 value) {
     updateAvailable=1;
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         ((U16*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>1] = value;
 }
 
-static U32 fb_readd(struct Memory* memory, U32 address) {
+static U32 fb_readd(struct KThread* thread, U32 address) {
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         return ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2];
     return 0;
 }
 
-static void fb_writed(struct Memory* memory, U32 address, U32 value) {
+static void fb_writed(struct KThread* thread, U32 address, U32 value) {
     updateAvailable=1;
     if (!bOpenGL && (address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)<fb_fix_screeninfo.smem_len)
         ((U32*)screenPixels)[(address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS)>>2] = value;
@@ -453,12 +453,12 @@ static void fb_writed(struct Memory* memory, U32 address, U32 value) {
 static void fb_clear(struct Memory* memory, U32 page) {
 }
 
-static U8* fb_physicalAddress(struct Memory* memory, U32 address) {
+static U8* fb_physicalAddress(struct KThread* thread, U32 address) {
     updateAvailable=1;
     return &((U8*)screenPixels)[address-ADDRESS_PROCESS_FRAME_BUFFER_ADDRESS];
 }
 
-//struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
+struct Page fbPage = {fb_readb, fb_writeb, fb_readw, fb_writew, fb_readd, fb_writed, fb_clear, fb_physicalAddress};
 #endif
 
 BOOL fb_init(struct KProcess* process, struct FsOpenNode* node) {
@@ -583,7 +583,7 @@ BOOL fb_isReadReady(struct FsOpenNode* node) {
 }
 
 U32 fb_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
-#if 0
+#ifndef HAS_64BIT_MMU
     U32 pageStart = fb_fix_screeninfo.smem_start >> PAGE_SHIFT;
     U32 pageCount = (len+PAGE_SIZE-1)>>PAGE_SHIFT;
     U32 i;
@@ -595,13 +595,14 @@ U32 fb_map(struct KThread* thread, struct FsOpenNode* node, U32 address, U32 len
         kpanic("Mapping /dev/fb at fixed address not supported");
     }
     for (i=0;i<pageCount;i++) {
-        if (memory->mmu[i+pageStart]!=&invalidPage && memory->mmu[i+pageStart]!=&fbPage) {
+        if (thread->process->memory->mmu[i+pageStart]!=&invalidPage && thread->process->memory->mmu[i+pageStart]!=&fbPage) {
             kpanic("Something else got mapped into the framebuffer address");
         }
-        memory->mmu[i+pageStart]=&fbPage;
+        thread->process->memory->mmu[i+pageStart]=&fbPage;
     }
-#endif
+#else
     kpanic("frame buffer not implemented for HAS_64BIT_MMU");
+#endif
     return fb_fix_screeninfo.smem_start;
 }
 

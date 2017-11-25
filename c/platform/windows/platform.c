@@ -339,7 +339,7 @@ void makeCodePageReadOnly(struct Memory* memory, U32 page) {
     }
 }
 
-void seg_mapper(struct Memory* memory, U32 address) ;
+void seg_mapper(struct KThread* thread, U32 address) ;
 void x64_cmdEntry(struct CPU* cpu);
 
 int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread* thread)
@@ -385,7 +385,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             }
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
-            int ii=0;
+            seg_mapper(thread, (U32)ep->ExceptionRecord->ExceptionInformation[1]);
         }
 #else
         U32 address = getHostAddress(thread, (void*)ep->ExceptionRecord->ExceptionInformation[1]);

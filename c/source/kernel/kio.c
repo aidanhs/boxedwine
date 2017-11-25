@@ -200,7 +200,7 @@ S32 syscall_seek(struct KThread* thread, FD handle, S32 offset, U32 whence) {
     if (whence == 0) {
         pos = offset;
     } else if (whence == 1) {
-        pos = offset + fd->kobject->access->seek(fd->kobject, 0);
+        pos = offset + fd->kobject->access->getPos(fd->kobject);
     } else if (whence == 2) {
         struct FsOpenNode* openNode = fd->kobject->openFile;
         pos = openNode->func->length(openNode) + offset;
@@ -820,7 +820,8 @@ U32 syscall_pread64(struct KThread* thread, FD fildes, U32 address, U32 len, U64
     if (openNode->node->func->isDirectory(openNode->node)) {
         return -K_EISDIR;
     }
-    pos = fd->kobject->access->seek(fd->kobject, offset);
+    pos = fd->kobject->access->getPos(fd->kobject);
+    fd->kobject->access->seek(fd->kobject, offset);
     result = fd->kobject->access->read(thread, fd->kobject, address, len);
     fd->kobject->access->seek(fd->kobject, pos);
     return result;
@@ -839,7 +840,8 @@ U32 syscall_pwrite64(struct KThread* thread, FD fildes, U32 address, U32 len, U6
     if (openNode->node->func->isDirectory(openNode->node)) {
         return -K_EISDIR;
     }
-    pos = fd->kobject->access->seek(fd->kobject, offset);
+    pos = fd->kobject->access->getPos(fd->kobject);
+    fd->kobject->access->seek(fd->kobject, offset);
     result = fd->kobject->access->write(thread, fd->kobject, address, len);
     fd->kobject->access->seek(fd->kobject, pos);
     return result;

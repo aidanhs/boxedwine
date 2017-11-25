@@ -201,6 +201,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_sync_file_range 314
 #define __NR_getcpu 318
 #define __NR_utimensat 320
+#define __NR_signalfd4 327
 #define __NR_pipe2 331
 #define __NR_prlimit64 340
 #define __NR_sendmmsg 345
@@ -874,7 +875,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         EAX = result;
         cpu->eip.u32+=eipCount;
         if (oldEAX == __NR_rt_sigprocmask) {
-            runSignals(thread);
+            runSignals(thread, thread);
         }
     }
 #else
@@ -889,7 +890,7 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         EAX = result;
         cpu->eip.u32+=eipCount;
         if (oldEAX == __NR_rt_sigprocmask) {
-            runSignals(thread);
+            runSignals(thread, thread);
         }
         if (cpu->nextBlock!=&emptyBlock)
             cpu->nextBlock = getBlock(cpu, cpu->eip.u32);

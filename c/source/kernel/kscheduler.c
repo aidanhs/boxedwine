@@ -114,7 +114,7 @@ void BOXEDWINE_WAIT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mutex) {
         SDL_CondWait(cond, mutex);
         if (thread->runSignal) {
             // Keep lock, this thread can re-enter this lock if necessary, this way the caller doesn't have to be way of this
-            runSignals(thread);
+            runSignals(thread, thread);
             if (thread->interrupted) {
                 break;
             }
@@ -141,7 +141,7 @@ U32 BOXEDWINE_WAIT_TIMEOUT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mu
         result = SDL_CondWaitTimeout(cond, mutex, ms-elapsed);
         if (thread->runSignal) {
             // Keep lock, this thread can re-enter this lock if necessary, this way the caller doesn't have to be way of this
-            runSignals(thread);
+            runSignals(thread, thread);
             if (thread->interrupted) {
                 break;
             }

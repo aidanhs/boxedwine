@@ -21,6 +21,7 @@
 
 #include "platform.h"
 
+
 #define PAGE_SIZE 4096
 #define PAGE_MASK 0xFFF
 #define PAGE_SHIFT 12
@@ -105,4 +106,7 @@ U32 getMemoryAllocated(struct Memory* memory);
 void initRAM(U32 pages);
 U32 getPageCount();
 U32 getFreePageCount();
+
+#include "../source/emulation/softmmu/soft_memory.h"
+#include "../source/emulation/softmmu/soft_page.h"
 #endif
