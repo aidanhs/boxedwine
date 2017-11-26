@@ -275,7 +275,7 @@ const char* getFunctionName(const char* name, U32 moduleEip) {
     makeBufferAccess(&out);
     out.data = buffer;
     out.dataLen = 1024;
-    node = addVirtualFile("/dev/tty9", &out, K__S_IWRITE);
+    node = addVirtualFile("/dev/tty9", &out, K__S_IWRITE, (4<<8) | 9);
     process = thread->process;
     fd = openFile(process, "", "/dev/tty9", K_O_WRONLY); 
     if (fd) {

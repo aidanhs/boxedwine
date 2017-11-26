@@ -354,6 +354,8 @@ U32 checkWaitingNativeSockets(int timeout);
 void initWine();
 void initSDL();
 
+#define mdev(x,y) ((x << 8) | y)
+
 int main(int argc, char **argv) {
     int i;
     const char* root = 0;
@@ -475,21 +477,22 @@ int main(int argc, char **argv) {
     ppenv[envc++] = "WINEDLLOVERRIDES=winemenubuilder.exe=d";
     //ppenv[envc++] = "WINEDEBUG=+service";
 
-    addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
-    addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR); // used by XOrg
-    addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR);
-    addVirtualFile("/dev/random", &urandomAccess, K__S_IREAD|K__S_IFCHR);
-    addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
-    addVirtualFile("/dev/zero", &zeroAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
-    addVirtualFile("/proc/meminfo", &meminfoAccess, K__S_IREAD);
+    addVirtualFile("/dev/tty0", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR, mdev(4, 0));
+    addVirtualFile("/dev/tty", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR, mdev(4, 0));
+    addVirtualFile("/dev/tty2", &ttyAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR, mdev(4, 2)); // used by XOrg
+    addVirtualFile("/dev/urandom", &urandomAccess, K__S_IREAD|K__S_IFCHR, mdev(1, 9));
+    addVirtualFile("/dev/random", &urandomAccess, K__S_IREAD|K__S_IFCHR, mdev(1, 8));
+    addVirtualFile("/dev/null", &nullAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR, mdev(1, 3));
+    addVirtualFile("/dev/zero", &zeroAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR, mdev(1, 5));
+    addVirtualFile("/proc/meminfo", &meminfoAccess, K__S_IREAD, mdev(0, 0));
     bufferAccess.data = ""; // no kernel arguments
-    addVirtualFile("/proc/cmdline", &bufferAccess, K__S_IREAD); // kernel command line
-    addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR);
-    addVirtualFile("/dev/input/event3", &touchInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
-    addVirtualFile("/dev/input/event4", &keyboardInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR);
+    addVirtualFile("/proc/cmdline", &bufferAccess, K__S_IREAD, mdev(0, 0)); // kernel command line
+    addVirtualFile("/dev/fb0", &fbAccess, K__S_IREAD|K__S_IWRITE|K__S_IFCHR, mdev(0x1d, 0));
+    addVirtualFile("/dev/input/event3", &touchInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR, mdev(0xd, 0x43));
+    addVirtualFile("/dev/input/event4", &keyboardInputAccess, K__S_IWRITE|K__S_IREAD|K__S_IFCHR, mdev(0xd, 0x44));
 	if (sound) {
-		addVirtualFile("/dev/dsp", &dspAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR);
-		addVirtualFile("/dev/mixer", &mixerAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR);
+		addVirtualFile("/dev/dsp", &dspAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR, mdev(14, 3));
+		addVirtualFile("/dev/mixer", &mixerAccess, K__S_IWRITE | K__S_IREAD | K__S_IFCHR, mdev(14, 0));
 	}
 
     argc = argc-i;

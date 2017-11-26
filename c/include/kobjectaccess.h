@@ -39,8 +39,8 @@ struct KObjectAccess {
     U32  (*setLock)(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread);
     BOOL (*supportsLocks)(struct KObject* obj);
     BOOL (*isOpen)(struct KObject* obj);
-    BOOL (*isReadReady)(struct KObject* obj);
-    BOOL (*isWriteReady)(struct KObject* obj);
+    BOOL (*isReadReady)(struct KThread* thread, struct KObject* obj);
+    BOOL (*isWriteReady)(struct KThread* thread, struct KObject* obj);
     void (*waitForEvents)(struct KObject* obj, struct KThread* thread, U32 events);
     U32  (*write)(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
     U32  (*read)(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);

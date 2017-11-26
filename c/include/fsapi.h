@@ -68,8 +68,8 @@ struct FsOpenNodeFunc {
     void (*setAsync)(struct FsOpenNode* node, struct KProcess* process, FD fd, BOOL isAsync);
     BOOL (*isAsync)(struct FsOpenNode* node, struct KProcess* process);
     void (*waitForEvents)(struct FsOpenNode* node, struct KThread* thread, U32 events);
-    BOOL (*isWriteReady)(struct FsOpenNode* node);
-    BOOL (*isReadReady)(struct FsOpenNode* node);
+    BOOL (*isWriteReady)(struct KThread* thread, struct FsOpenNode* node);
+    BOOL (*isReadReady)(struct KThread* thread, struct FsOpenNode* node);
     void (*free)(struct FsOpenNode* node);
     struct FsNode* (*getDirectoryEntry)(struct FsOpenNode* node, U32 index);
     U32 (*getDirectoryEntryCount)(struct FsOpenNode* node);
@@ -120,7 +120,7 @@ struct FsOpenNode {
 
 BOOL initFileSystem(const char* rootPath, const char* zipPath);
 struct FsNode* getNodeFromLocalPath(const char* currentDirectory, const char* path, BOOL existing);
-struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32 mode);
+struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32 mode, U32 rdev);
 void removeNodeFromCache(struct FsNode* node);
 BOOL isLink(struct FsNode* node);
 BOOL readLink(struct FsNode*, char* buffer, int bufferSize, BOOL makeAbsolute);

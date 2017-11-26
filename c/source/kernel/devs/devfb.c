@@ -574,11 +574,11 @@ void fb_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 event
 }
 
 
-BOOL fb_isWriteReady(struct FsOpenNode* node) {
+BOOL fb_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL fb_isReadReady(struct FsOpenNode* node) {
+BOOL fb_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 

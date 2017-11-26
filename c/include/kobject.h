@@ -26,6 +26,7 @@
 #define KTYPE_FILE 0
 #define KTYPE_SOCK 1
 #define KTYPE_EPOLL 2
+#define KTYPE_SIGNAL 3
 
 struct KObject {
     struct KObjectAccess* access;
@@ -34,6 +35,8 @@ struct KObject {
     struct FsOpenNode* openFile;
     struct KSocket* socket;
     void* data;
+    U32 idata;
+    U32 idata2;
     struct KObject* next; // used for free list
 };
 

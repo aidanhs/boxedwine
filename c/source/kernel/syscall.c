@@ -851,7 +851,12 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         */
     case __NR_utimensat:
         result = syscall_utimesat(thread, ARG1, ARG2, ARG3, ARG4);
-        break;		
+        break;	
+        /*
+    case __NR_signalfd4:
+        result = syscall_signalfd4(thread, (S32)ARG1, ARG2, ARG3);
+        break;
+        */
     case __NR_pipe2:
         result = syscall_pipe2(thread, ARG1, ARG2);
         break;
@@ -1084,6 +1089,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_set_robust_list: sprintf(buffer, "set_robust_list:"); break;
     case __NR_sync_file_range: sprintf(buffer, "sync_file_range:"); break;
     case __NR_utimensat: sprintf(buffer, "utimensat dirfd=%d path=%X(%s) times=%X flags=%X", ARG1, ARG2, getNativeString(thread, ARG2, tmp, sizeof(tmp)), ARG3, ARG4); break;
+    case __NR_signalfd4: sprintf(buffer, "signalfd4 fd=%d mask=%X flags=%X", ARG1, ARG2, ARG3); break;
     case __NR_pipe2: sprintf(buffer, "pipe2 fildes=%X", ARG1); break;
     case __NR_prlimit64: sprintf(buffer, "prlimit64 pid=%d resource=%d newlimit=%X oldlimit=%X", ARG1, ARG2, ARG3, ARG4); break;
     case __NR_sendmmsg: sprintf(buffer, "sendmmsg fd=%d address=%X vlen=%d flags=%X", ARG1, ARG2, ARG3, ARG4); break;

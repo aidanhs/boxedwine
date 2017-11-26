@@ -70,11 +70,11 @@ void null_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 eve
     kpanic("null_waitForEvents not implemented");
 }
 
-BOOL null_isWriteReady(struct FsOpenNode* node) {
+BOOL null_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL null_isReadReady(struct FsOpenNode* node) {
+BOOL null_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 

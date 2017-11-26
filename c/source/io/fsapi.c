@@ -597,11 +597,11 @@ static void openfile_waitForEvents(struct FsOpenNode* node, struct KThread* thre
     kwarn("file_waitForEvents not implemented");
 }
 
-static BOOL openfile_isWriteReady(struct FsOpenNode* node) {
+static BOOL openfile_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-static BOOL openfile_isReadReady(struct FsOpenNode* node) {
+static BOOL openfile_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
@@ -740,11 +740,11 @@ static void zipOpenFile_waitForEvents(struct FsOpenNode* node, struct KThread* t
     kwarn("file_waitForEvents not implemented");
 }
 
-static BOOL zipOpenFile_isWriteReady(struct FsOpenNode* node) {
+static BOOL zipOpenFile_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-static BOOL zipOpenFile_isReadReady(struct FsOpenNode* node) {
+static BOOL zipOpenFile_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 
@@ -920,11 +920,11 @@ void dir_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 even
     kwarn("dir_waitForEvents not implemented");
 }
 
-BOOL dir_isWriteReady(struct FsOpenNode* node) {
+BOOL dir_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return FALSE;
 }
 
-BOOL dir_isReadReady(struct FsOpenNode* node) {
+BOOL dir_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return FALSE;
 }
 
@@ -1344,12 +1344,10 @@ struct FsNode* getNodeFromLocalPath(const char* currentDirectory, const char* pa
             return 0;
     }
     
-    result = allocNode(localPath, nativePath, &fileNodeFunc, 1);	
+    result = allocNode(localPath, nativePath, &fileNodeFunc, 0);	
     result->isLink1 = isLink;
     return result;
 }
-
-static int nextrdev = 100;
 
 BOOL virtual_isDirectory(struct FsNode* node) {
     return FALSE;
@@ -1450,10 +1448,10 @@ void openvirtual_free(struct FsOpenNode* node) {
     freeOpenNode(node);
 }
 
-struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32 mode) {
+struct FsNode* addVirtualFile(const char* path, struct FsOpenNodeFunc* func, U32 mode, U32 rdev) {
     struct FsNode* node = getNodeFromLocalPath(NULL, path, 0);
     node->func = &virtualNodeType;
-    node->rdev = nextrdev++;
+    node->rdev = rdev;
     node->openfunc1 = func;
     node->mode1 = mode;
     if (func->free == 0)

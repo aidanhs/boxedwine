@@ -260,11 +260,11 @@ void tty_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 even
     //kpanic("tty_waitForEvents not implemented");
 }
 
-BOOL tty_isWriteReady(struct FsOpenNode* node) {
+BOOL tty_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL tty_isReadReady(struct FsOpenNode* node) {
+BOOL tty_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return 0;
 }
 

@@ -90,12 +90,12 @@ BOOL kfile_isOpen(struct KObject* obj) {
     return TRUE;
 }
 
-BOOL kfile_isReadReady(struct KObject* obj) {
-    return obj->openFile->func->isReadReady(obj->openFile);
+BOOL kfile_isReadReady(struct KThread* thread, struct KObject* obj) {
+    return obj->openFile->func->isReadReady(thread, obj->openFile);
 }
 
-BOOL kfile_isWriteReady(struct KObject* obj) {
-    return obj->openFile->func->isWriteReady(obj->openFile);
+BOOL kfile_isWriteReady(struct KThread* thread, struct KObject* obj) {
+    return obj->openFile->func->isWriteReady(thread, obj->openFile);
 }
 
 void kfile_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {

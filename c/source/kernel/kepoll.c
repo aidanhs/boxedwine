@@ -82,12 +82,12 @@ void kepoll_waitForEvents(struct KObject* obj, struct KThread* thread, U32 event
     kpanic("kepoll_waitForEvents not implemented yet");
 }
 
-BOOL kepoll_isReadReady(struct KObject* obj) {
+BOOL kepoll_isReadReady(struct KThread* thread, struct KObject* obj) {
     kpanic("kepoll_isReadReady not implemented yet");
     return FALSE;
 }
 
-BOOL kepoll_isWriteReady(struct KObject* obj) {
+BOOL kepoll_isWriteReady(struct KThread* thread, struct KObject* obj) {
     kpanic("kepoll_isWriteReady not implemented yet");
     return FALSE;
 }

@@ -624,12 +624,12 @@ BOOL unixsocket_isOpen(struct KObject* obj) {
     return s->listening || s->connection;
 }
 
-BOOL unixsocket_isReadReady(struct KObject* obj) {
+BOOL unixsocket_isReadReady(struct KThread* thread, struct KObject* obj) {
     struct KSocket* s = obj->socket;
     return s->inClosed || ringbuf_bytes_used(s->recvBuffer) || s->pendingConnectionsCount || s->msgs;
 }
 
-BOOL unixsocket_isWriteReady(struct KObject* obj) {
+BOOL unixsocket_isWriteReady(struct KThread* thread, struct KObject* obj) {
     struct KSocket* s = obj->socket;
     return s->connection!=0;
 }
@@ -905,7 +905,7 @@ BOOL nativesocket_isOpen(struct KObject* obj) {
     return s->listening || s->connected;
 }
 
-BOOL nativesocket_isReadReady(struct KObject* obj) {
+BOOL nativesocket_isReadReady(struct KThread* thread, struct KObject* obj) {
     struct KSocket* s = obj->socket;
     fd_set          sready;
     struct timeval  nowait;
@@ -918,7 +918,7 @@ BOOL nativesocket_isReadReady(struct KObject* obj) {
     return FD_ISSET(s->nativeSocket,&sready);
 }
 
-BOOL nativesocket_isWriteReady(struct KObject* obj) {
+BOOL nativesocket_isWriteReady(struct KThread* thread, struct KObject* obj) {
     struct KSocket* s = obj->socket;
     fd_set          sready;
     struct timeval  nowait;
@@ -1242,7 +1242,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
 
 #ifndef BOXEDWINE_VM
         if (s->connecting) {
-            if (nativesocket_isWriteReady(fd->kobject)) {
+            if (nativesocket_isWriteReady(thread, fd->kobject)) {
                 s->error = 0;
                 s->connecting = 0;
                 s->connected = 1;

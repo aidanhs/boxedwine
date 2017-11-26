@@ -281,11 +281,11 @@ void touch_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 ev
     input_waitForEvents(&touchEvents, node, thread, events);
 }
 
-BOOL touch_isReadReady(struct FsOpenNode* node) {
+BOOL touch_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return input_isReadReady(&touchEvents, node);
 }
 
-BOOL touch_isWriteReady(struct FsOpenNode* node) {
+BOOL touch_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return input_isWriteReady(&touchEvents, node);
 }
 
@@ -377,11 +377,11 @@ void mouse_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 ev
     input_waitForEvents(&mouseEvents, node, thread, events);
 }
 
-BOOL mouse_isReadReady(struct FsOpenNode* node) {
+BOOL mouse_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return input_isReadReady(&mouseEvents, node);
 }
 
-BOOL mouse_isWriteReady(struct FsOpenNode* node) {
+BOOL mouse_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return input_isWriteReady(&mouseEvents, node);
 }
 
@@ -475,11 +475,11 @@ void keyboard_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32
     input_waitForEvents(&keyboardEvents, node, thread, events);
 }
 
-BOOL keyboard_isReadReady(struct FsOpenNode* node) {
+BOOL keyboard_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return input_isReadReady(&keyboardEvents, node);
 }
 
-BOOL keyboard_isWriteReady(struct FsOpenNode* node) {
+BOOL keyboard_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return input_isWriteReady(&keyboardEvents, node);
 }
 

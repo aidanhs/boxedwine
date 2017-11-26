@@ -147,11 +147,11 @@ BOOL mixer_isAsync(struct FsOpenNode* node, struct KProcess* process) {
 void mixer_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 events) {
 }
 
-BOOL mixer_isWriteReady(struct FsOpenNode* node) {
+BOOL mixer_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL mixer_isReadReady(struct FsOpenNode* node) {
+BOOL mixer_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 

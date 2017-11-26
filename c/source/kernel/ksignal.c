@@ -22,6 +22,7 @@
 #include "log.h"
 #include "kthread.h"
 #include "kscheduler.h"
+#include "kobjectaccess.h"
 
 void writeSigAction(struct KThread* thread, struct KSigAction* signal, U32 address) {
     writed(thread, address, signal->handlerAndSigAction);
@@ -115,4 +116,127 @@ U32 syscall_rt_sigsuspend(struct KThread* thread, U32 mask) {
     waitThread(thread);			
 #endif
     return -K_CONTINUE;
+}
+
+void ksignal_onDelete(struct KObject* obj) {
+}
+
+void ksignal_setBlocking(struct KObject* obj, BOOL blocking) {
+    obj->idata2 = blocking;
+}
+
+BOOL ksignal_isBlocking(struct KObject* obj) {
+    return obj->idata2?TRUE:FALSE;
+}
+
+void ksignal_setAsync(struct KObject* obj, struct KProcess* process, FD fd, BOOL isAsync) {
+    if (isAsync)
+        kpanic("ksignal_setAsync not implemented yet");
+}
+
+BOOL ksignal_isAsync(struct KObject* obj, struct KProcess* process) {
+    return FALSE;
+}
+
+struct KFileLock* ksignal_getLock(struct KObject* obj, struct KFileLock* lock) {
+    kwarn("ksignal_getLock not implemented yet");
+    return 0;
+}
+
+U32 ksignal_setLock(struct KObject* obj, struct KFileLock* lock, BOOL wait, struct KThread* thread) {
+    kwarn("ksignal_setLock not implemented yet");
+    return -1;
+}
+
+BOOL ksignal_isOpen(struct KObject* obj) {
+    return TRUE;
+}
+
+void ksignal_waitForEvents(struct KObject* obj, struct KThread* thread, U32 events) {
+    if (events & K_POLLIN) {
+		if (obj->data)
+			kpanic("%d tried to wait on a signal read, but %d is already waiting.", thread->id, ((struct KThread*)obj->data)->id);
+		obj->data = thread;
+		addClearOnWake(thread, (struct KThread**)&obj->data);
+    }
+}
+
+BOOL ksignal_isReadReady(struct KThread* thread, struct KObject* obj) {
+    if (thread->process->pendingSignals & obj->idata)
+        return TRUE;
+    return FALSE;
+}
+
+BOOL ksignal_isWriteReady(struct KThread* thread, struct KObject* obj) {
+    kpanic("ksignal_isWriteReady not implemented yet");
+    return FALSE;
+}
+
+U32 ksignal_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+    kpanic("ksignal_write not implemented yet");
+    return 0;
+}
+
+U32 ksignal_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+    kpanic("ksignal_read not implemented yet");
+    return 0;
+}
+
+U32 ksignal_stat(struct KThread* thread, struct KObject* obj, U32 address, BOOL is64) {
+    kpanic("ksignal_stat not implemented yet");
+    return 0;
+}
+
+U32 ksignal_map(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off) {
+    return 0;
+}
+
+BOOL ksignal_canMap(struct KObject* obj) {
+    return FALSE;
+}
+
+S64 ksignal_seek(struct KObject* obj, S64 pos) {
+    return -K_ESPIPE; // :TODO: is this right?
+}
+
+S64 ksignal_getPos(struct KObject* obj) {
+    return 0;
+}
+
+U32 ksignal_ioctl(struct KThread* thread, struct KObject* obj, U32 request) {
+    return -K_ENOTTY;
+}
+
+BOOL ksignal_supportsLocks(struct KObject* obj) {
+    return FALSE;
+}
+
+S64 ksignal_klength(struct KObject* obj) {
+    return -1;
+}
+
+struct KObjectAccess ksignalAccess = {ksignal_ioctl, ksignal_seek, ksignal_klength, ksignal_getPos, ksignal_onDelete, ksignal_setBlocking, ksignal_isBlocking, ksignal_setAsync, ksignal_isAsync, ksignal_getLock, ksignal_setLock, ksignal_supportsLocks, ksignal_isOpen, ksignal_isReadReady, ksignal_isWriteReady, ksignal_waitForEvents, ksignal_write, ksignal_read, ksignal_stat, ksignal_map, ksignal_canMap};
+
+U32 syscall_signalfd4(struct KThread* thread, S32 fildes, U32 mask, U32 flags) {
+    struct KFileDescriptor* fd;
+
+    if (fildes>=0) {
+        fd = getFileDescriptor(thread->process, fildes);
+        if (!fd)
+            return -K_EBADF;
+        if (fd->kobject->type!=KTYPE_SIGNAL)
+            return -K_EINVAL;
+    } else {
+        struct KObject* o = allocKObject(&ksignalAccess, KTYPE_SIGNAL, 0, 0);
+        fd =  allocFileDescriptor(thread->process, o, K_O_RDONLY, 0, -1, 0);
+    }    
+    if (flags & K_O_CLOEXEC) {
+        fd->descriptorFlags|=FD_CLOEXEC;
+    }
+    if (flags & K_O_NONBLOCK) {
+        fd->accessFlags |= K_O_NONBLOCK;
+    }
+    fd->kobject->idata = readd(thread, mask);
+    fd->kobject->idata2 = fd->accessFlags & K_O_NONBLOCK;
+    return fd->handle;
 }

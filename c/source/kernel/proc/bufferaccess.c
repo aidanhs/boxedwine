@@ -83,11 +83,11 @@ void buffer_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 e
     kpanic("buffer_waitForEvents not implemented");
 }
 
-BOOL buffer_isWriteReady(struct FsOpenNode* node) {
+BOOL buffer_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL buffer_isReadReady(struct FsOpenNode* node) {
+BOOL buffer_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 

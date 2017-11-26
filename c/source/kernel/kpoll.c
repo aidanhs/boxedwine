@@ -49,9 +49,9 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
                 if (!fd->kobject->access->isOpen(fd->kobject)) {
                     data[i].revents = K_POLLHUP;
                 } else {
-                    if ((data[i].events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(fd->kobject)) {
+                    if ((data[i].events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(thread, fd->kobject)) {
                         data[i].revents |= K_POLLIN;
-                    } else if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(fd->kobject)) {
+                    } else if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(thread, fd->kobject)) {
                         data[i].revents |= K_POLLOUT;
                     }
                 }
@@ -89,9 +89,9 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
             if (!fd->kobject->access->isOpen(fd->kobject)) {
                 data->revents = K_POLLHUP;
             } else {
-                if ((data->events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(fd->kobject)) {
+                if ((data->events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(thread, fd->kobject)) {
                     data->revents |= K_POLLIN;
-                } else if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(fd->kobject)) {
+                } else if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(thread, fd->kobject)) {
                     data->revents |= K_POLLOUT;
                 }
             }

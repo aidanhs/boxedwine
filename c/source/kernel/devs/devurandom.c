@@ -91,11 +91,11 @@ void urandom_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 
     kpanic("urandom_waitForEvents not implemented");
 }
 
-BOOL urandom_isWriteReady(struct FsOpenNode* node) {
+BOOL urandom_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL urandom_isReadReady(struct FsOpenNode* node) {
+BOOL urandom_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 

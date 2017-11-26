@@ -88,11 +88,11 @@ void meminfo_waitForEvents(struct FsOpenNode* node, struct KThread* thread, U32 
     kpanic("waiting on meminfo is not implemented");
 }
 
-BOOL meminfo_isWriteReady(struct FsOpenNode* node) {
+BOOL meminfo_isWriteReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_RDONLY;
 }
 
-BOOL meminfo_isReadReady(struct FsOpenNode* node) {
+BOOL meminfo_isReadReady(struct KThread* thread, struct FsOpenNode* node) {
     return (node->flags & K_O_ACCMODE)!=K_O_WRONLY;
 }
 

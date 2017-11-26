@@ -50,7 +50,7 @@ void setupCommandlineNode(struct KProcess* process) {
     sprintf(tmp, "/proc/%d/cmdline", process->id);
 
     // :TODO: this will replace the previous one if it exists and leak memory 
-    process->commandLineNode = addVirtualFile(tmp, &process->commandLineAccess, K__S_IREAD);
+    process->commandLineNode = addVirtualFile(tmp, &process->commandLineAccess, K__S_IREAD, 0);
 }
 
 void initLDT(struct KProcess* process) {
