@@ -452,7 +452,7 @@ static void mainThreadDeleteContext(struct SdlCallback* callback) {
 
 void sdlDeleteContext(struct KThread* thread, U32 context) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         callback->func = mainThreadDeleteContext;
         callback->iArg1 = context;
@@ -699,7 +699,7 @@ static void mainSwapBuffers(struct SdlCallback* callback) {
 
 void sdlSwapBuffers(struct KThread* thread) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         callback->func = mainSwapBuffers;
         BOXEDWINE_LOCK(thread, callback->mutex);
@@ -732,6 +732,9 @@ static SDL_mutex* wndBltMutex;
 #endif
 
 void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
+    if (!sdlRenderer) {
+        return;
+    }
 #ifdef BOXEDWINE_VM
     if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
@@ -863,6 +866,8 @@ static SDL_mutex* drawAllMutex;
 
 void sdlDrawAllWindows(struct KThread* thread, U32 hWnd, int count) {    
     int i;
+    if (!sdlRenderer)
+        return;
 #ifdef BOXEDWINE_VM
     if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
