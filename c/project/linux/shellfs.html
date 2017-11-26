@@ -153,7 +153,7 @@
         <script type='text/javascript'>
         var AUTO_RUN = true;
         var SOUND_ENABLED = true;
-        var ZIP_ENABLED = true;
+        var ZLIB_ENABLED = false;
         var ALLOW_PARAM_OVERRIDE_FROM_URL = true;
         var SHOW_UPLOAD_DOWNLOAD = false;
         var RETRIEVE_REMOTE_DLL_FILES = false;
@@ -170,7 +170,7 @@
         var WorkingDir = getWorkingDirectory(); //MANUAL:"";
         var retrieveDlls = getRetrieveDlls();
         var isSoundEnabled = getSound();
-        var isZipEnabled = getZipParameter();
+        var isZlibEnabled = getZlibParameter();
         var isRunning = false;
         var uniqueDirs = {};
         var timer = null;
@@ -252,19 +252,19 @@
             console.log("setting sound to: "+isSoundEnabled);
             return isSoundEnabled;
         }
-        function getZipParameter(){
-            var isZipEnabled =  getParameter("zip");
+        function getZlibParameter(){
+            var isZlibEnabled =  getParameter("zlib");
             if(!ALLOW_PARAM_OVERRIDE_FROM_URL){
-                isZipEnabled = ZIP_ENABLED;
-            }else if(isZipEnabled == "true") {
-                isZipEnabled = true;
-            }else if(isZipEnabled == "false"){
-                isZipEnabled = false;
+                isZlibEnabled = ZLIB_ENABLED;
+            }else if(isZlibEnabled == "true") {
+                isZlibEnabled = true;
+            }else if(isZlibEnabled == "false"){
+                isZlibEnabled = false;
             }else{
-                isZipEnabled = ZIP_ENABLED;
+                isZlibEnabled = ZLIB_ENABLED;
             }
-            console.log("setting use of internal boxedwine zip filesystem to: "+isZipEnabled);
-            return isZipEnabled;
+            console.log("setting use of internal boxedwine zip filesystem to: "+isZlibEnabled);
+            return isZlibEnabled;
         }
         function getFileDirectory(){
 
@@ -407,7 +407,7 @@
                         if(e){
                             console.log(e);
                         }
-                        if(isZipEnabled) {
+                        if(isZlibEnabled) {
                             Module.FS_createDataFile("/", rootZipFile, contents, true, true);
                             contents = null;
                             buildBrowserFileSystem(writableStorage, isDropBox, homeAdapter, extraFSs);
@@ -491,14 +491,14 @@
         {
             FS.createFolder(FS.root, 'root', true, true);
             var mainfs = null;
-            if(isZipEnabled) {
+            if(isZlibEnabled) {
                 mainfs = new BrowserFS.FileSystem.InMemory();
                 createFolders(mainfs, dirPrefix.substring(ROOT.length).split("/"));
                 createFolders(mainfs, DLL_DIRECTORY.substring(ROOT.length).split("/"));
             }else{
                 mainfs = zipfs;
             }
-            //i do not understand why i need the overlay when isZipEnabled = true
+            //i do not understand why i need the overlay when isZlibEnabled = true
             var rootOverlay = new BrowserFS.FileSystem.OverlayFS(new BrowserFS.FileSystem.InMemory(), mainfs);
             rootOverlay.initialize(function callback(e3){
                 if(e3){
@@ -536,7 +536,7 @@
         {
             var dirPrefixWithoutEndSlash = dirPrefix.substring(0, dirPrefix.length - 1);
             var mfs = new BrowserFS.FileSystem.MountableFileSystem();
-            if(isZipEnabled) {
+            if(isZlibEnabled) {
                 mfs.mount('/root', rootFS);
             }else{
                 mfs.mount('/', rootFS);
@@ -834,7 +834,7 @@
         }
         function getEmulatorParams() {
             var params = ["-root", "/root", "-m", getMemoryAllocation()];
-            if(isZipEnabled) {
+            if(isZlibEnabled) {
                 params.push("-zip");
                 params.push(rootZipFile);
             }

@@ -31,6 +31,7 @@ also possible to:
  - change the program to execute via ?p=/home/username/files/chomp/CHOMP.EXE. surround in quotes if path includes spaces.
  - set the working directory via ?work=chomp. This simplifies p as it can then be relative to the working directory.
  - set an overlay via ?overlay=more.zip;files.zip. Where each zip file contains additional files to add to the root file system. Existing files are overridden.
+ - use c:/ as shorthand for /home/username/.wine/c_drive/
 Some simplifications are possible:
 boxedwine.html?p=notepad - run notepad in the root fs
 boxedwine.html?root=win32&app=chomp&work=chomp&p=CHOMP.EXE - no need to add .zip for root and app zip file name
@@ -48,6 +49,7 @@ This will additionally build dlls.json that should be copied along with the dlls
 Other configuration options:
 AUTO_RUN - indicates if start button is shown or page auto-runs. default true
 ALLOW_PARAM_OVERRIDE_FROM_URL - indicates if url can be appended with params as above for dir, app, m & p.
+ZLIB - boxedwine internally supports zip file systems, however recent builds of emscripten are not compatible. Therefore support for zipped file system is now provided by browserfs and ZLIB is no longer used in the emscripten build.
 
 
 notes on file system modes:
