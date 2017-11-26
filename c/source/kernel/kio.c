@@ -734,9 +734,13 @@ U32 syscall_rmdir(struct KThread* thread, U32 path) {
     struct FsNode* node = getNodeFromLocalPath(thread->process->currentDirectory, getNativeString(thread, path, tmp, sizeof(tmp)), TRUE);
 
     if (!node || !node->func->exists(node)) {
+        strcat(tmp, ".link");
+        node = getNodeFromLocalPath(thread->process->currentDirectory, tmp, TRUE);
+        if (node)
+            return -K_ENOTDIR; 
         return -K_ENOENT;
     }
-    if (!node->func->isDirectory(node)) {
+    if (!node->func->isDirectory(node) || isLink(node)) {
         return -K_ENOTDIR;
     }
     if (!node->func->removeDir(node))
