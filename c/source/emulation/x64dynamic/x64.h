@@ -77,6 +77,7 @@
 #define CMD_CPUID 15
 #define CMD_INVALID_OP 16
 #define CMD_WINE 17
+#define CMD_OPENGL 18
 
 struct x64_Data {
     U32 baseOp;

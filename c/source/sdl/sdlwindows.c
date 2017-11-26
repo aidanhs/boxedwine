@@ -396,6 +396,9 @@ static struct Wnd* getFirstVisibleWnd() {
 SDL_Window *sdlWindow;
 SDL_Renderer *sdlRenderer;
 SDL_GLContext *sdlCurrentContext;
+#ifdef BOXEDWINE_VM
+SDL_GLContext *sdlInitContext;
+#endif
 int contextCount;
 
 static void destroySDL2(struct KThread* thread) {
@@ -421,10 +424,16 @@ static void destroySDL2(struct KThread* thread) {
         SDL_GL_DeleteContext(thread->glContext);
         thread->glContext = 0;
     }
+#ifdef BOXEDWINE_VM
+    if (sdlInitContext) {
+        SDL_GL_DeleteContext(sdlInitContext);
+        sdlInitContext = 0;
+    }
+#endif
     if (sdlWindow) {
         SDL_DestroyWindow(sdlWindow);
         sdlWindow = 0;
-    }
+    }    
     contextCount = 0;
 }
 #else
@@ -480,22 +489,6 @@ static void mainMakeCurrent(struct SdlCallback* callback) {
 #endif
 
 U32 sdlMakeCurrent(struct KThread* thread, U32 arg) {
-#ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
-        struct SdlCallback* callback = allocSdlCallback(thread);
-        U32 result;
-
-        callback->func = mainMakeCurrent;
-        callback->iArg1 = arg;
-        BOXEDWINE_LOCK(thread, callback->mutex);
-        SDL_PushEvent(&callback->sdlEvent);
-        BOXEDWINE_WAIT(thread, callback->cond, callback->mutex);
-        BOXEDWINE_UNLOCK(thread, callback->mutex);
-        result = callback->result;
-        freeSdlCallback(callback);        
-        return result;
-    }
-#endif
 #ifdef SDL2
     if (arg == thread->id) {
         if (SDL_GL_MakeCurrent(sdlWindow, thread->glContext)==0) {
@@ -631,6 +624,9 @@ U32 sdlCreateOpenglWindow(struct KThread* thread, struct Wnd* wnd, int major, in
     }
 
     thread->glContext = SDL_GL_CreateContext(sdlWindow);
+#if BOXEDWINE_VM
+    sdlInitContext = SDL_GL_CreateContext(sdlWindow);
+#endif
     if (!thread->glContext) {
         fprintf(stderr, "Couldn't create context: %s\n", SDL_GetError());
         displayChanged(thread);

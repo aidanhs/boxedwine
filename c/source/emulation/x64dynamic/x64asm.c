@@ -567,18 +567,20 @@ static SDL_mutex* printMutex;
 void x64_cmdEntry(struct CPU* cpu) {
     switch (cpu->cmd) {
     case CMD_PRINT: 
-        if (!printMutex) {
-            printMutex = SDL_CreateMutex();
+        if (cpu->log) {
+            if (!printMutex) {
+                printMutex = SDL_CreateMutex();
+            }
+            BOXEDWINE_LOCK(cpu->thread, printMutex);
+            if (!logFile2[cpu->thread->process->id][cpu->thread->id-6400]) {
+                char buffer[MAX_FILEPATH_LEN];
+                sprintf(buffer, "log_%d_%d.txt", cpu->thread->process->id, cpu->thread->id);
+                logFile2[cpu->thread->process->id][cpu->thread->id-6400] = fopen(buffer, "w");
+            }
+            fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
+            fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
+            BOXEDWINE_UNLOCK(cpu->thread, printMutex);
         }
-        BOXEDWINE_LOCK(cpu->thread, printMutex);
-        if (!logFile2[cpu->thread->process->id][cpu->thread->id-6400]) {
-            char buffer[MAX_FILEPATH_LEN];
-            sprintf(buffer, "log_%d_%d.txt", cpu->thread->process->id, cpu->thread->id);
-            logFile2[cpu->thread->process->id][cpu->thread->id-6400] = fopen(buffer, "w");
-        }
-        fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
-        fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
-        BOXEDWINE_UNLOCK(cpu->thread, printMutex);
         break;
     case CMD_SET_ES:
     case CMD_SET_CS:
@@ -619,6 +621,17 @@ void x64_cmdEntry(struct CPU* cpu) {
         }
         else {
             kpanic("Uknown int 98 call: %d", index);
+        }
+        break;
+    }
+    case CMD_OPENGL:
+    {
+        U32 index = peek32(cpu, 0);
+
+        if (index<int99CallbackSize && int99Callback[index]) {
+            int99Callback[index](cpu);
+        } else {
+            kpanic("Uknown int 99 call: %d", index);
         }
         break;
     }
