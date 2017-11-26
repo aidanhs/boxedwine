@@ -1250,7 +1250,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 return 0;
             } else {
                 int error=0;
-                int len = 4;
+                socklen_t len = 4;
                 if (getsockopt(s->nativeSocket, SOL_SOCKET, SO_ERROR, (char*)&error, &len) < 0) {
                     return -K_EIO;
                 }

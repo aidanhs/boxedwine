@@ -69,6 +69,7 @@ void killThread(struct KThread* thread);
 #define INLINE __inline
 #define OPENGL_CALL_TYPE __stdcall
 #define PACKED( s ) __pragma( pack(push, 1) ) s __pragma( pack(pop) )
+#define socklen_t int
 #else
 #define OPCALL
 #define UNISTD <unistd.h>
