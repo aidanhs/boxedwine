@@ -727,9 +727,13 @@ static void mainWndBlt(struct SdlCallback* callback) {
 }
 #endif
 
+#ifdef BOXEDWINE_VM
+static SDL_mutex* wndBltMutex;
+#endif
+
 void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 width, U32 height, U32 rect) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         callback->func = mainWndBlt;
         callback->iArg1 = hwnd;
@@ -746,6 +750,10 @@ void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 
         freeSdlCallback(callback);        
         return;
     }
+    if (!wndBltMutex) {
+        wndBltMutex = SDL_CreateMutex();
+    }
+    BOXEDWINE_LOCK(thread, wndBltMutex);
 #endif
     {
         struct Wnd* wnd = getWnd(hwnd);
@@ -763,8 +771,7 @@ void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 
         if (!surface)
             return;
     #endif
-        if (!wnd)
-            return;    
+        if (wnd)
     #ifdef SDL2
         {
             SDL_Texture *sdlTexture = NULL;
@@ -838,6 +845,9 @@ void wndBlt(struct KThread* thread, U32 hwnd, U32 bits, S32 xOrg, S32 yOrg, U32 
         }	
     #endif
     }
+#ifdef BOXEDWINE_VM
+    BOXEDWINE_UNLOCK(thread, wndBltMutex);
+#endif
 }
 
 #ifdef BOXEDWINE_VM
@@ -846,10 +856,15 @@ static void mainDrawAllWindows(struct SdlCallback* callback) {
 }
 #endif
 
+#ifdef BOXEDWINE_VM
+static SDL_mutex* drawAllMutex;
+#endif
+
+
 void sdlDrawAllWindows(struct KThread* thread, U32 hWnd, int count) {    
     int i;
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         callback->func = mainDrawAllWindows;
         callback->iArg1 = hWnd;
@@ -861,6 +876,10 @@ void sdlDrawAllWindows(struct KThread* thread, U32 hWnd, int count) {
         freeSdlCallback(callback);        
         return;
     }
+    if (!drawAllMutex) {
+        drawAllMutex = SDL_CreateMutex();
+    }
+    BOXEDWINE_LOCK(thread, drawAllMutex);
 #endif
 #ifdef SDL2
     SDL_SetRenderDrawColor(sdlRenderer, 58, 110, 165, 255 );
@@ -896,6 +915,7 @@ void sdlDrawAllWindows(struct KThread* thread, U32 hWnd, int count) {
         SDL_UpdateRect(surface, 0, 0, 0, 0);
     }
 #endif
+    BOXEDWINE_UNLOCK(thread, drawAllMutex);
 }
 
 struct Wnd* wndCreate(struct KThread* thread, U32 processId, U32 hwnd, U32 windowRect, U32 clientRect) {
