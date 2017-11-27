@@ -521,7 +521,7 @@ static void mainShareLists(struct SdlCallback* callback) {
 
 U32 sdlShareLists(struct KThread* thread, U32 srcContext, U32 destContext) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         U32 result;
 
@@ -963,7 +963,7 @@ static void mainSdlShowWnd(struct SdlCallback* callback) {
 
 void sdlShowWnd(struct KThread* thread, struct Wnd* wnd, U32 bShow) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         callback->func = mainSdlShowWnd;
         callback->pArg1 = wnd;
@@ -1016,7 +1016,7 @@ U32 sdlGetGammaRamp(struct KThread* thread, U32 ramp) {
     U16 b[256];
 
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         U32 result;
 
@@ -1066,7 +1066,7 @@ static void mainGetNearestColor(struct SdlCallback* callback) {
 
 U32 sdlGetNearestColor(struct KThread* thread, U32 color) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         U32 result;
 
@@ -1309,7 +1309,7 @@ static void mainSetCursor(struct SdlCallback* callback) {
 
 U32 sdlSetCursor(struct KThread* thread, char* moduleName, char* resourceName, int resource) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         U32 result;
 
@@ -1346,7 +1346,7 @@ static void mainCreateAndSetCursor(struct SdlCallback* callback) {
 
 void sdlCreateAndSetCursor(struct KThread* thread, char* moduleName, char* resourceName, int resource, U8* and_bits, U8* xor_bits, int width, int height, int hotX, int hotY) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         callback->func = mainCreateAndSetCursor;
         callback->pArg1 = moduleName;
@@ -2095,7 +2095,7 @@ static void mainGetMouseState(struct SdlCallback* callback) {
 
 unsigned int sdlGetMouseState(struct KThread* thread,int* x, int* y) {
 #ifdef BOXEDWINE_VM
-    if (SDL_ThreadID()!=sdlMainThreadId) {
+    if (0) {
         struct SdlCallback* callback = allocSdlCallback(thread);
         U32 result;
 
