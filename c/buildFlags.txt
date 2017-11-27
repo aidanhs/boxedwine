@@ -1,12 +1,18 @@
-SDL2             This will cause SDL2 to be used instead of SDL1.  You will need to link to the correct libraries.
+﻿SDL2             This will cause SDL2 to be used instead of SDL1.  You will need to link to the correct libraries.
 UNALIGNED_MEMORY This is necessary if the host isn't little endian, necessary for emscripten
-USE_MMU          This emulates x86 and is more compatible but slower.  Without this, the linux binaries that run need to be compiled to load at any address.  Also fork will need to be replaced with vfork
+HAS_64BIT_MMU    This will reserve 4GB of memory for each emulated process so that emulated memory can be mapped to host memory with a single offset.  Currently only Win64 build supports this.
+BOXEDWINE_VM     Requires: HAS_64BIT_MMU. Translates x86 machine code to x64 on the fly.  Only supported on the Win64 build.
+BOXEDWINE_ZLIB   Will allow the file system to be in a zip file (-zip command line argument).  This requires that you link against zlib.
+SUPPORTS_SETJMP  Will allow memory exception to be caught, this should be used for all builds.  Emscripten doesn't use it because it slows things down, but this also means some games won't work.
+PLATFORM_MSVC    Should use this on Windows platform
 
-To compile, you need one and only one of the follow 3 flags
+To compile, you need one and only one of the follow 2 flags
 
-MESA Mesa        off screen buffer will be used to render OpenGL.
 BOXEDWINE_ES     SDL OpenGL ES code will be used.  OpenGL calls will be translated to ES.
 BOXEDWINE_SDL    SDL OpenGL context will be used
+
+To compile for Windows it is recommended to use Visual Studio 2013 Community Edition
+https://www.visualstudio.com/en-us/news/releasenotes/vs2013-community-vs
 
 Javascript
 
