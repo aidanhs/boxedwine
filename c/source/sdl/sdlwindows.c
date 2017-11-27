@@ -70,6 +70,7 @@ int default_horz_res = 800;
 int default_vert_res = 600;
 int default_bits_per_pixel = 32;
 static int firstWindowCreated;
+U32 sdlFullScreen;
 
 PblMap* cursors;
 PblMap* hwndToWnd;
@@ -679,7 +680,7 @@ static void displayChanged(struct KThread* thread) {
     firstWindowCreated = 1;
 #ifdef SDL2
     destroySDL2(thread);
-    sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenCx, screenCy, SDL_WINDOW_SHOWN);
+    sdlWindow = SDL_CreateWindow("BoxedWine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screenCx, screenCy, SDL_WINDOW_SHOWN|(sdlFullScreen?SDL_WINDOW_FULLSCREEN:0));
     sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0);	
 #else
     flags = SDL_HWSURFACE;

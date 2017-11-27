@@ -14,9 +14,11 @@ This will load the file system from wine.zip and write the changes to c:\root
 
 -bpp X : Value must be 16 or 32.  Most games are fine with 32-bit.
 
+-fullscreen : if no resolution is passed in via the resolution command line argument then the resolution will be the same as the monitor
+
 -gensrc : This is used for ahead of time (AOT) compiling and requires the source to be build with GENERATE_SOURCE.  With this enabled the user can run the program, then compile the output back into the program for a performance boost.  Currently I don't recommend using this, it should be considered experimental and the out put will not be compatible with future versions of BoxedWine.
 
--m XX : How many megabytes the emulated RAM will have.  The default is 64
+-m XX : How many megabytes the emulated RAM will have.  The default is 64.  This has no affect on the 64-bit windows build.
 
 -nosound : Disable /dev/dsp which will disable sound
 

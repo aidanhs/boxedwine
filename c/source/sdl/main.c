@@ -50,6 +50,7 @@ extern int bits_per_pixel;
 #include CURDIR_INCLUDE
 
 U32 lastTitleUpdate = 0;
+extern U32 sdlFullScreen;
 
 #ifdef BOXEDWINE_VM
 U32 sdlCustomEvent;
@@ -363,11 +364,12 @@ int main(int argc, char **argv) {
     const char* ppenv[32];
     int envc=0;
     int mb=64;
-    int fullscreen = 0;
     int userId = UID;
     char* workingDir = "/home/username";
     char pwd[MAX_FILEPATH_LEN];
 	U32 sound = 1;
+    BOOL resolutionSet = FALSE;
+
     klog("Starting ...");
 
     startMicroCounter();
@@ -401,6 +403,8 @@ int main(int argc, char **argv) {
         } else if (!strcmp(argv[i], "-env")) {
 			ppenv[envc++] = argv[i+1];
             i++;
+        } else if (!strcmp(argv[i], "-fullscreen")) {
+			sdlFullScreen = TRUE;
         } else if (!strcmp(argv[i], "-resolution")) {
             U32 width;
             U32 height;
@@ -423,7 +427,7 @@ int main(int argc, char **argv) {
         } else {
             break;
         }
-    }
+    }    
     if (!root) {
         char* base = getcwd(curdir, sizeof(curdir));
         int len;
@@ -510,6 +514,13 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    if (sdlFullScreen && !resolutionSet) {
+        SDL_DisplayMode mode;
+        if (!SDL_GetCurrentDisplayMode(0, &mode)) {
+            screenCx = mode.w;
+            screenCy = mode.h;
+        }
+    }
     klog("Launching %s", argv[0]);
     if (startProcess(workingDir, argc, (const char**)argv, envc, ppenv, userId)) {
 #ifdef __EMSCRIPTEN__
