@@ -75,6 +75,8 @@ struct KThread {
     SDL_cond* waitingCondition;
     SDL_mutex* waitingMutex;
     U32 waitingMutexReferenceCount;
+    SDL_cond* endCondition;
+    SDL_mutex* endMutex;
     BOOL runSignal;
     BOOL done;
 #else

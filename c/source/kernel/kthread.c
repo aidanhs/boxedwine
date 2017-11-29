@@ -122,8 +122,9 @@ struct futex {
     struct KThread* thread;
     U8* address;
 #ifdef BOXEDWINE_VM    
-    SDL_cond* cond;
-#else
+    SDL_cond* cond;    
+    BOOL pendingWakeUp;
+#else    
     U32 expireTimeInMillies;
     BOOL wake;
 #endif
@@ -176,11 +177,13 @@ void freeFutex(struct futex* f) {
 void threadClearFutexes(struct KThread* thread) {
     U32 i;
 
+    BOXEDWINE_LOCK(thread, mutexFutex);  
     for (i=0;i<MAX_FUTEXES;i++) {
         if (system_futex[i].thread == thread) {
-            system_futex[i].thread = 0;
+            freeFutex(&system_futex[i]);
         }
     }
+    BOXEDWINE_UNLOCK(thread, mutexFutex);  
 }
 
 U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime) {
@@ -206,22 +209,23 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         if (pTime) {
             U32 seconds = readd(thread, pTime);
             U32 nano = readd(thread, pTime + 4);
-            U32 millies = seconds * 1000 + nano / 1000000 + getMilliesSinceStart();
+            U32 millies = seconds * 1000 + nano / 1000000;
             if (BOXEDWINE_WAIT_TIMEOUT(thread, f->cond, mutexFutex, millies)!=0) {
                 result = K_ETIMEDOUT;
-            }
+            }            
         } else {
-            BOXEDWINE_WAIT(thread, f->cond, mutexFutex);
+            BOXEDWINE_WAIT(thread, f->cond, mutexFutex);            
         }
         freeFutex(f);
-        BOXEDWINE_UNLOCK(thread, mutexFutex);
+        BOXEDWINE_UNLOCK(thread, mutexFutex);   
         return result;
     } else if (op==FUTEX_WAKE_PRIVATE || op==FUTEX_WAKE) {
         int i;
         U32 count = 0;
         for (i=0;i<MAX_FUTEXES && count<value;i++) {
             if (system_futex[i].address==ramAddress) {
-                BOXEDWINE_SIGNAL(system_futex[i].cond);
+                wakeThread(thread, system_futex[i].thread);
+                system_futex[i].pendingWakeUp = TRUE;
                 count++;
             }
         }

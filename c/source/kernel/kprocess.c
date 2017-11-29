@@ -111,7 +111,6 @@ void initProcess(struct Memory* memory, struct KProcess* process, U32 argc, cons
 struct KProcess* freeProcesses;
 
 struct KProcess* allocProcess() {
-    struct KProcess* result;
     if (freeProcesses) {
         struct KProcess* result = freeProcesses;
         freeProcesses = freeProcesses->next;
@@ -119,7 +118,6 @@ struct KProcess* allocProcess() {
         return result;
     }
     return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
-    return result;
 }
 
 void cleanupProcess(struct KProcess* process) {
@@ -696,6 +694,7 @@ and is now available for re-use. */
 U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, U32 tls, U32 ctid) {
     U32 vFork = 0;
 
+    BOXEDWINE_LOCK(NULL, mutexProcess);
     if (flags & K_CLONE_VFORK) {
         flags &=~K_CLONE_VFORK;
         vFork = 1;
@@ -740,6 +739,8 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
                 SDL_cond* cond = SDL_CreateCond();
                 SDL_mutex* mutex = SDL_CreateMutex();
                 BOXEDWINE_LOCK(thread, mutex);
+                newThread->endCondition = cond;
+                newThread->endMutex = mutex;
                 startThread(newThread);
                 BOXEDWINE_WAIT(thread, cond, mutex);
                 BOXEDWINE_UNLOCK(thread, mutex);
@@ -754,6 +755,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
             //klog("starting %d/%d", newThread->process->id, newThread->id);            
             startThread(newThread);
         }
+        BOXEDWINE_UNLOCK(NULL, mutexProcess);
         return newProcess->id;
     } else if ((flags & 0xFFFFFF00) == (K_CLONE_THREAD | K_CLONE_VM | K_CLONE_FS | K_CLONE_FILES | K_CLONE_SIGHAND | K_CLONE_SETTLS | K_CLONE_PARENT_SETTID | K_CLONE_CHILD_CLEARTID | K_CLONE_SYSVSEM)) {
         struct KThread* newThread = allocThread();
@@ -775,11 +777,14 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         newThread->cpu.eip.u32 = peek32(&newThread->cpu, 0);
         //klog("starting %d/%d", newThread->process->id, newThread->id);
         startThread(newThread);
+        BOXEDWINE_UNLOCK(NULL, mutexProcess);
         return thread->process->id;
     } else {
         kpanic("sys_clone does not implement flags: %X", flags);
+        BOXEDWINE_UNLOCK(NULL, mutexProcess);
         return 0;
     }
+    BOXEDWINE_UNLOCK(NULL, mutexProcess);
     return -K_ENOSYS;
 }
 

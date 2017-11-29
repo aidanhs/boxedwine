@@ -21,12 +21,22 @@
 #include "kalloc.h"
 #include "ksystem.h"
 #include <string.h>
+#include "kscheduler.h"
 
 static struct KObject* freeKObjects;
+
+#ifdef BOXEDWINE_VM
+SDL_mutex* kobjectMutex;
+#endif
 
 struct KObject* allocKObject(struct KObjectAccess* access, U32 type, struct FsOpenNode* openNode, struct KSocket* socket) {
     struct KObject* result;
 
+#ifdef BOXEDWINE_VM
+    if (!kobjectMutex)
+        kobjectMutex = SDL_CreateMutex();
+#endif
+    BOXEDWINE_LOCK(NULL, kobjectMutex);
     if (freeKObjects) {
         result = freeKObjects;
         freeKObjects = freeKObjects->next;
@@ -34,6 +44,7 @@ struct KObject* allocKObject(struct KObjectAccess* access, U32 type, struct FsOp
     } else {
         result = (struct KObject*)kalloc(sizeof(struct KObject), KALLOC_KOBJECT);
     }
+    BOXEDWINE_UNLOCK(NULL, kobjectMutex);
     result->access = access;
     result->refCount = 1;
     result->openFile = openNode;
@@ -43,12 +54,14 @@ struct KObject* allocKObject(struct KObjectAccess* access, U32 type, struct FsOp
 }
 
 void closeKObject(struct KObject* kobject) {
+    BOXEDWINE_LOCK(NULL, kobjectMutex);
     kobject->refCount--;
     if (kobject->refCount==0) {
         kobject->access->onDelete(kobject);
         kobject->next = freeKObjects;
         freeKObjects = kobject;
     }
+    BOXEDWINE_UNLOCK(NULL, kobjectMutex);
 }
 
  void writeStat(struct KThread* thread, U32 buf, BOOL is64, U64 st_dev, U64 st_ino, U32 st_mode, U64 st_rdev, U64 st_size, U32 st_blksize, U64 st_blocks, U64 mtime, U32 linkCount) {

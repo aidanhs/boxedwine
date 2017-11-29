@@ -26,6 +26,7 @@
 #include "ksystem.h"
 #include "x64dynamic.h"
 #include "kalloc.h"
+#include "kscheduler.h"
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -385,6 +386,32 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             }
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
+            struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
+            U32 i,j,offset;
+            BOOL found = FALSE;
+
+            EAX = ep->ContextRecord->Rax;
+            ECX = ep->ContextRecord->Rcx;
+            EDX = ep->ContextRecord->Rdx;
+            EBX = ep->ContextRecord->Rbx;
+            ESP = ep->ContextRecord->R11;
+            EBP = ep->ContextRecord->Rbp;
+            ESI = ep->ContextRecord->Rsi;
+            EDI = ep->ContextRecord->Rdi;
+            while (!found) {
+                for (i=0;i<NUMBER_OF_PAGES && !found;i++) {
+                    if (thread->process->opToAddressPages[i]) {
+                        for (j=0;j<PAGE_SIZE;j++) {
+                            if (thread->process->opToAddressPages[i][j]==ep->ContextRecord->Rip-offset) {
+                                found = TRUE;
+                                cpu->eip.u32 = (i<<PAGE_SHIFT)+j;
+                                break;
+                            }
+                        }
+                    }
+                }
+                offset++;
+            }
             seg_mapper(thread, (U32)ep->ExceptionRecord->ExceptionInformation[1]);
         }
 #else
@@ -473,7 +500,7 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
     }
 
     // :TODO: hopefully this will eventually go away.  For now this prevents a signal from being generated which isn't handled yet
-    SDL_Delay(100); 
+    SDL_Delay(50); 
     __try {
         StartCPU startCPU = (StartCPU)x64_initCPU(cpu);        
         startCPU();
@@ -481,11 +508,16 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
         thread->cpu.nextBlock = 0;
         thread->cpu.timeStampCounter+=thread->cpu.blockCounter & 0x7FFFFFFF;
     }
+    if (thread->endCondition && thread->endMutex) {
+        BOXEDWINE_LOCK(thread, thread->endMutex);
+        BOXEDWINE_SIGNAL(thread->endCondition);
+        BOXEDWINE_UNLOCK(thread, thread->endMutex);
+    }
     return 0;
 }
 
 void platformStartThread(struct KThread* thread) {
-    thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);
+    thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);        
 }
 
 void* allocExecutable64kBlock(struct Memory* memory) {

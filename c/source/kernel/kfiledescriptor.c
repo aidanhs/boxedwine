@@ -41,9 +41,19 @@ BOOL canWriteFD(struct KFileDescriptor* fd) {
 
 static struct KFileDescriptor* freeFileDescriptors;
 
+#ifdef BOXEDWINE_VM
+SDL_mutex* fdMutex;
+#endif
+
 struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, struct KObject* kobject, U32 accessFlags, U32 descriptorFlags, S32 handle, U32 afterHandle) {
     struct KFileDescriptor* result;
 
+#ifdef BOXEDWINE_VM
+    if (!fdMutex) {
+        fdMutex = SDL_CreateMutex();
+    }
+#endif
+    BOXEDWINE_LOCK(NULL, fdMutex);
     if (freeFileDescriptors) {
         result = freeFileDescriptors;
         freeFileDescriptors = freeFileDescriptors->next;
@@ -51,6 +61,7 @@ struct KFileDescriptor* allocFileDescriptor(struct KProcess* process, struct KOb
     } else {
         result = (struct KFileDescriptor*)kalloc(sizeof(struct KFileDescriptor), KALLOC_KFILEDESCRIPTOR);
     }
+    BOXEDWINE_UNLOCK(NULL, fdMutex);
     BOXEDWINE_LOCK(NULL, process->fdMutex);
     if (handle<0) {
         handle = getNextFileDescriptorHandle(process, afterHandle);
@@ -72,8 +83,10 @@ void closeFD(struct KFileDescriptor* fd) {
     if (!fd->refCount) {
         closeKObject(fd->kobject);
         fd->process->fds[fd->handle] = 0;
+        BOXEDWINE_LOCK(NULL, fdMutex);
         fd->next = freeFileDescriptors;
         freeFileDescriptors = fd;
+        BOXEDWINE_UNLOCK(NULL, fdMutex);
     }
 }
 

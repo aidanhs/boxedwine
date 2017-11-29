@@ -117,7 +117,10 @@ void cloneMemory(struct KThread* toThread, struct KThread* fromThread) {
 
     int i=0;    
     for (i=0;i<0x100000;i++) {
-        if (from->flags[i] & PAGE_IN_RAM) {
+        if (from->flags[i] & PAGE_SHARED) {
+            kpanic("forking a process with shared memory is not supported with HAS_64BIT_MMU");
+        }
+        if (from->flags[i] & PAGE_IN_RAM) {            
             allocNativeMemory(memory, i, 1, from->flags[i]);
             memcpy(getNativeAddress(toThread->process->memory, i << PAGE_SHIFT), getNativeAddress(fromThread->process->memory, i << PAGE_SHIFT), PAGE_SIZE);
         } else {

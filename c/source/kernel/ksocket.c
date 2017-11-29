@@ -558,21 +558,25 @@ void unixsocket_onDelete(struct KObject* obj) {
         BOXEDWINE_LOCK(NULL, pollMutex);
         BOXEDWINE_SIGNAL(pollCond);
         BOXEDWINE_UNLOCK(NULL, pollMutex);
-    }
+    }    
     if (s->connecting) {		
+        BOXEDWINE_LOCK(NULL, s->connecting->connectionMutex);
         for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
             if (s->connecting->pendingConnections[i]==s) {				
                 s->connecting->pendingConnections[i] = 0;
                 s->connecting->pendingConnectionsCount--;
             }
         }
+        BOXEDWINE_UNLOCK(NULL, s->connecting->connectionMutex);
     }
+    BOXEDWINE_LOCK(NULL, s->connectionMutex);
     for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
         if (s->pendingConnections[i]) {				
             s->pendingConnections[i]->connecting = 0;
             s->pendingConnectionsCount--;
         }
     }
+    BOXEDWINE_UNLOCK(NULL, s->connectionMutex);
     if (s->recvBuffer)
         ringbuf_free(&s->recvBuffer);
     while (s->msgs) {
@@ -1326,6 +1330,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 if (!s->connectionCond)
                     s->connectionCond = SDL_CreateCond();
 #endif
+                BOXEDWINE_LOCK(NULL, destination->connectionMutex);
                 for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
                     if (!destination->pendingConnections[i]) {
                         destination->pendingConnections[i] = s;
@@ -1341,6 +1346,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                         break;
                     }
                 }
+                BOXEDWINE_UNLOCK(NULL, destination->connectionMutex);
                 if (!found) {
                     kwarn("connect: destination socket pending connections queue is full");
                     return -K_ECONNREFUSED;
@@ -1447,7 +1453,16 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
         }
         return handleNativeSocketError(thread, s, 0);
     }
+#ifdef BOXEDWINE_VM
+    if (!s->connectionMutex)
+        s->connectionMutex = SDL_CreateMutex();
+    if (!s->connectionCond) {
+        s->connectionCond = SDL_CreateCond();
+    }
+#endif
+    BOXEDWINE_LOCK(NULL, s->connectionMutex);
     if (!s->pendingConnectionsCount) {
+        BOXEDWINE_UNLOCK(NULL, s->connectionMutex);
         if (!s->blocking)
             return -K_EWOULDBLOCK;
         waitOnSocketConnect(s, thread);
@@ -1462,6 +1477,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
             break;
         }
     }
+    BOXEDWINE_UNLOCK(NULL, s->connectionMutex);
     if (!connection) {
         kpanic("socket pending connection count was greater than 0 but could not find a connnection");
     }
