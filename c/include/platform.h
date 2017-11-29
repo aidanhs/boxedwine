@@ -46,6 +46,10 @@ void getRegs(U64* regs);
 void platformRunThreadSlice(struct KThread* thread);
 #endif
 
+#ifdef HAS_64BIT_MMU
+void makeCodePageReadOnly(struct Memory* memory, U32 page);
+#endif
+
 #ifdef BOXEDWINE_VM
 #include <SDL.h>
 #define IS_THREAD_WAITING(thread) thread->waitingMutex

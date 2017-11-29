@@ -60,6 +60,10 @@ void x64_mapAddressInternal(struct x64_Data* data, U32 ip, void* address) {
 
 void x64_commitMappedAddresses(struct x64_Data* data) {
     S32 i;
+    S32 pageCount = (data->ip-data->start+PAGE_MASK) >> PAGE_SHIFT;
+    for (i=0;i<pageCount;i++) {
+        makeCodePageReadOnly(data->cpu->memory, (data->start>>PAGE_SHIFT)+i);
+    }
     for (i=data->ipAddressCount-1;i>=0;i--) {
         x64_mapAddressInternal(data, data->ipAddress[i], data->hostAddress[i]);
     }

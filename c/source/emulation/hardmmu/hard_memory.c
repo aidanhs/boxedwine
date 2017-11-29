@@ -391,8 +391,6 @@ void initCallbacksInProcess(struct KProcess* process) {
 }
 
 PblMap* codeCache;
-void makeCodePageReadOnly(struct Memory* memory, U32 page);
-
 void initBlockCache() {
     codeCache = pblMapNewHashMap();
 }

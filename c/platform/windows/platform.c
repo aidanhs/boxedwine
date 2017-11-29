@@ -239,6 +239,16 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     U32 granCount;
 
     for (i=0;i<pageCount;i++) {
+        DWORD oldProtect;
+
+        if ((process->memory->nativeFlags[page] & NATIVE_FLAG_READONLY)) {
+            if (!VirtualProtect(getNativeAddress(process->memory, (page+i) << PAGE_SHIFT), (1 << PAGE_SHIFT), PAGE_READWRITE, &oldProtect)) {
+                LPSTR messageBuffer = NULL;
+                size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+                kpanic("failed to unprotect memory: %s", messageBuffer);
+            }
+            process->memory->nativeFlags[page] &= ~NATIVE_FLAG_READONLY;
+        }
         clearPageFromBlockCache(process->memory, NULL, page+i);
         process->memory->flags[page+i] = 0;
         process->memory->ids[page+i] = 0;
@@ -387,22 +397,28 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
             struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
-            U32 i,j,offset;
+            U32 i,j,offset=0;
             BOOL found = FALSE;
 
-            EAX = ep->ContextRecord->Rax;
-            ECX = ep->ContextRecord->Rcx;
-            EDX = ep->ContextRecord->Rdx;
-            EBX = ep->ContextRecord->Rbx;
-            ESP = ep->ContextRecord->R11;
-            EBP = ep->ContextRecord->Rbp;
-            ESI = ep->ContextRecord->Rsi;
-            EDI = ep->ContextRecord->Rdi;
+            if ((ep->ExceptionRecord->ExceptionInformation[1] & 0xFFFFFFFF00000000l) == cpu->memory->id) {
+                U32 address = (U32)ep->ExceptionRecord->ExceptionInformation[1];
+                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
+                    kpanic("Self modifying code not supported yet in x64");
+                }
+            }
+            EAX = (U32)ep->ContextRecord->Rax;
+            ECX = (U32)ep->ContextRecord->Rcx;
+            EDX = (U32)ep->ContextRecord->Rdx;
+            EBX = (U32)ep->ContextRecord->Rbx;
+            ESP = (U32)ep->ContextRecord->R11;
+            EBP = (U32)ep->ContextRecord->Rbp;
+            ESI = (U32)ep->ContextRecord->Rsi;
+            EDI = (U32)ep->ContextRecord->Rdi;
             while (!found) {
                 for (i=0;i<NUMBER_OF_PAGES && !found;i++) {
                     if (thread->process->opToAddressPages[i]) {
                         for (j=0;j<PAGE_SIZE;j++) {
-                            if (thread->process->opToAddressPages[i][j]==ep->ContextRecord->Rip-offset) {
+                            if (thread->process->opToAddressPages[i][j]==(void*)(ep->ContextRecord->Rip-offset)) {
                                 found = TRUE;
                                 cpu->eip.u32 = (i<<PAGE_SHIFT)+j;
                                 break;
