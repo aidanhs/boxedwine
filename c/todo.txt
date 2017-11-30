@@ -14,6 +14,12 @@ Future: Not in any particular order
 3) Implemented oss v4, but it can sound scratchy at times, like the intro to Diablo
 11/27/2017 * It could be that emulation isn't fast enough.  This should become more clear once the x64 dynamic recompiler is done
 
+4) Save/Load state (not sure how OpenGL would be handled)
+11/29/2017 * Added
+
+5) Android port (normal core, then maybe ARM64)
+11/29/2017 * Added
+
 Done
 
 * Get OpenGL to work on Windows
