@@ -32,7 +32,7 @@ U32 getMilliesSinceStart() {
     return 0;
 }
 
-#define STACK_ADDRESS 0xE0001000
+#define STACK_ADDRESS 0xE0011000
 #define HEAP_ADDRESS 0xF0000000
 #define CODE_ADDRESS 0xD0000000
 
@@ -68,22 +68,22 @@ void setup() {
         process->memory = memory;
         thread->process = process;
         cpu = &thread->cpu;        
-        initRAM(10);
+        initRAM(51);
 
-        allocPages(thread, (STACK_ADDRESS >> PAGE_SHIFT)-1, 1, PAGE_READ|PAGE_WRITE, 0, 0, 0);
-        allocPages(thread, CODE_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE|PAGE_EXEC, 0, 0, 0);
-        allocPages(thread, HEAP_ADDRESS >> PAGE_SHIFT, 1, PAGE_READ|PAGE_WRITE, 0, 0, 0);
+        allocPages(thread, (STACK_ADDRESS >> PAGE_SHIFT)-17, 17, PAGE_READ|PAGE_WRITE, 0, 0, 0);
+        allocPages(thread, CODE_ADDRESS >> PAGE_SHIFT, 17, PAGE_READ|PAGE_WRITE|PAGE_EXEC, 0, 0, 0);
+        allocPages(thread, HEAP_ADDRESS >> PAGE_SHIFT, 17, PAGE_READ|PAGE_WRITE, 0, 0, 0);
     }
     initCPU(cpu, memory);	
     cpu->thread = thread;
 
     cpu->segAddress[CS] = CODE_ADDRESS;
     cpu->segAddress[DS] = HEAP_ADDRESS;
-    cpu->segAddress[SS] = STACK_ADDRESS-4096;
+    cpu->segAddress[SS] = STACK_ADDRESS-PAGE_SIZE*17;
 
-    zeroMemory(thread, CODE_ADDRESS, 4096);
-    zeroMemory(thread, STACK_ADDRESS-4096, 4096);
-    zeroMemory(thread, HEAP_ADDRESS, 4096);
+    zeroMemory(thread, CODE_ADDRESS, PAGE_SIZE*17);
+    zeroMemory(thread, STACK_ADDRESS-PAGE_SIZE*17, PAGE_SIZE*17);
+    zeroMemory(thread, HEAP_ADDRESS, PAGE_SIZE*17);
 }
 
 void pushCode8(int value) {
@@ -177,16 +177,21 @@ struct Data {
     int useResultvar2;
     int constantWidth;
     BOOL hasOF;
+    int fAF;
+    BOOL hasAF;
+    BOOL hasCF;
 };
 
 #define endData() {0}
-#define allocData(var1, var2, result, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, 0, 0, 0, 0, 0, 1 }
-#define allocDataNoOF(var1, var2, result, flags, fCF) { 1, var1, var2, result, 0, flags, 0, fCF, 0, 0, 0, 0, 0, 0, 0 }
-#define allocDataFlags(var1, var2, fCF, fOF, fSF, fZF) { 1, var1, var2, 0, 0, 0, 0, fCF, fOF, fZF, fSF, 1, 0, 0, 1 }
-#define allocDataConst(var1, var2, result, constant, constantWidth, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, constant, fCF, fOF, 0, 0, 0, 0, constantWidth, 1 }
-#define allocDataConstNoOF(var1, var2, result, constant, constantWidth, flags, fCF) { 1, var1, var2, result, 0, flags, constant, fCF, 0, 0, 0, 0, 0, constantWidth, 0 }
-#define allocDatavar2(var1, var2, resultvar1, resultvar2) { 1, var1, var2, resultvar1, resultvar2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1 }
-#define allocDataConstvar2(var1, var2, result, flags, fCF, fOF, constant, var2Result) { 1, var1, var2, result, var2Result, flags, constant, fCF, fOF, 0, 0, 0, 1, 0, 1 }
+#define allocData(var1, var2, result, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, 0, 0, 0, 0, 0, 1, 1 }
+#define allocDataNoOF(var1, var2, result, flags, fCF) { 1, var1, var2, result, 0, flags, 0, fCF, 0, 0, 0, 0, 0, 0, 0, 1 }
+#define allocDataFlags(var1, var2, fCF, fOF, fSF, fZF) { 1, var1, var2, 0, 0, 0, 0, fCF, fOF, fZF, fSF, 1, 0, 0, 1, 1 }
+#define allocDataFlagsWithAF(var1, var2, result, flags, fCF, fOF, fSF, fZF, fAF, hasOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, fZF, fSF, 0, 0, 0, hasOF, fAF, 1, 1 }
+#define allocDataConst(var1, var2, result, constant, constantWidth, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, constant, fCF, fOF, 0, 0, 0, 0, constantWidth, 1, 1 }
+#define allocDataConstNoOF(var1, var2, result, constant, constantWidth, flags, fCF) { 1, var1, var2, result, 0, flags, constant, fCF, 0, 0, 0, 0, 0, constantWidth, 0, 1 }
+#define allocDatavar2(var1, var2, resultvar1, resultvar2) { 1, var1, var2, resultvar1, resultvar2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1 }
+#define allocDataConstvar2(var1, var2, result, flags, fCF, fOF, constant, var2Result) { 1, var1, var2, result, var2Result, flags, constant, fCF, fOF, 0, 0, 0, 1, 0, 1, 1 }
+#define allocDataNoFlags(var1, var2, result) {1, var1, var2, result, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 void pushConstant(struct Data* data) {
     if (data->constantWidth==8) {
@@ -205,13 +210,17 @@ void assertResult(struct Data* data, struct CPU* cpu, int instruction, U32 resul
     if (!data->dontUseResultAndCheckSFZF && data->result != resultvar1) {
         failed("instruction: %d var1: %d != %d", instruction, resultvar1, data->result);
     }
-    if (getCF(cpu) != data->fCF) {
+    if (data->hasCF && getCF(cpu) != data->fCF) {
         getCF(cpu);
         failed("instruction: %d CF", instruction);
     }
     if (data->hasOF && (getOF(cpu)!=0) != data->fOF) {
         getOF(cpu);
         failed("instruction: %d OF", instruction);
+    }
+    if (data->hasAF && (getAF(cpu)!=0) != data->fAF) {
+        getOF(cpu);
+        failed("instruction: %d AF", instruction);
     }
     if (data->dontUseResultAndCheckSFZF) {
         if ((getSF(cpu)!=0) != data->fSF) {
@@ -759,6 +768,19 @@ void EwRegIw(int instruction, struct Reg* e, int rm, struct Data* data) {
         e->u16 = data->var1;
         runTestCPU();
         assertResult(data, cpu, instruction, e->u16, 0, E(rm), -1, 0, 16);
+        data++;
+    }
+}
+
+void EwRegIb(int instruction, int ew, struct Data* data) {
+    while (data->valid) {
+        struct Reg* e = &cpu->reg[ew];
+        newInstruction(instruction, 0);
+        pushCode8(data->var2);
+        e->u32 = DEFAULT;
+        e->u16 = data->var1;
+        runTestCPU();
+        assertResult(data, cpu, instruction, e->u16, 0, ew, -1, 0, 16);
         data++;
     }
 }
@@ -2177,6 +2199,73 @@ static struct Data andd[] = {
         endData()
 };
 
+static struct Data daa[] = {
+    allocDataFlagsWithAF(0x03, 0, 0x09, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x06, 0, 0x0C, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x07, 0, 0x0D, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x59, 0, 0x5F, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x60, 0, 0x66, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x9F, 0, 0x05, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0xA0, 0, 0x06, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x03, 0, 0x03, 0, 0, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x06, 0, 0x06, 0, 0, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x03, 0, 0x63, CF, true, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x06, 0, 0x66, CF, true, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x03, 0, 0x69, CF|AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x06, 0, 0x6C, CF|AF, true, 0, 0, 0, true, false),    
+    endData()
+};
+
+static struct Data das[] = {
+    allocDataFlagsWithAF(0x03, 0, 0xFD, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x06, 0, 0x00, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x07, 0, 0x01, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x59, 0, 0x53, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x60, 0, 0x5A, AF, 0, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x9F, 0, 0x39, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0xA0, 0, 0x3A, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x03, 0, 0x03, 0, 0, 0, 0, 0 ,0, false),
+    allocDataFlagsWithAF(0x06, 0, 0x06, 0, 0, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x03, 0, 0xA3, CF, true, 0, 0, 0 ,0, false),
+    allocDataFlagsWithAF(0x06, 0, 0xA6, CF, true, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x03, 0, 0x9D, CF|AF, true, 0, 0, 0, true, false),
+    endData()
+};
+
+static struct Data aaa[] = {
+    allocDataFlagsWithAF(0x0205, 0, 0x030B, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x040C, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0500, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0700, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x0205, 0, 0x0205, 0, 0, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x0306, 0, 0, 0, 0, 0, 0, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0500, 0, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0700, 0, true, 0, 0, 0, true, false),
+    endData()
+};
+
+static struct Data aas[] = {
+    allocDataFlagsWithAF(0x0205, 0, 0x000F, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x0200, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0304, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0404, AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x0205, 0, 0x0205, 0, false, 0, 0, 0, false, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x0306, 0, false, 0, 0, 0, false, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0304, 0, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0404, 0, true, 0, 0, 0, true, false),
+    endData()
+};
+
+static struct Data aam[] = {
+    allocDataNoFlags(0x0547, 10, 0x0701),
+    endData()
+};
+
+static struct Data aad[] = {
+    allocDataNoFlags(0x0407, 10, 0x002F),
+    endData()
+};
+
 static struct Data subb[] = {
         allocData(1, 2, 0xFF, 0, true, false),
         allocData(2, 1, 1, 0, false, false),
@@ -3210,6 +3299,9 @@ void testAnd0x224() {cpu->big = true;AlIb(0x24, andb);}
 void testAnd0x025() {cpu->big = false;AxIw(0x25, andw);}
 void testAnd0x225() {cpu->big = true;EaxId(0x25, andd);}
 
+void testDaa0x027() {cpu->big = false;EbReg(0x27, 0, daa);}
+void testDaa0x227() {cpu->big = true;EbReg(0x27, 0, daa);}
+
 void testSub0x028() {cpu->big = false;EbGb(0x28, subb);}
 void testSub0x228() {cpu->big = true;EbGb(0x28, subb);}
 void testSub0x029() {cpu->big = false;EwGw(0x29, subw);}
@@ -3222,6 +3314,9 @@ void testSub0x02c() {cpu->big = false;AlIb(0x2c, subb);}
 void testSub0x22c() {cpu->big = true;AlIb(0x2c, subb);}
 void testSub0x02d() {cpu->big = false;AxIw(0x2d, subw);}
 void testSub0x22d() {cpu->big = true;EaxId(0x2d, subd);}
+
+void testDas0x02f() {cpu->big = false;EbReg(0x2f, 0, das);}
+void testDas0x22f() {cpu->big = true;EbReg(0x2f, 0, das);}
 
 void testXor0x030() {cpu->big = false;EbGb(0x30, xorb);}
 void testXor0x230() {cpu->big = true;EbGb(0x30, xorb);}
@@ -3236,6 +3331,9 @@ void testXor0x234() {cpu->big = true;AlIb(0x34, xorb);}
 void testXor0x035() {cpu->big = false;AxIw(0x35, xorw);}
 void testXor0x235() {cpu->big = true;EaxId(0x35, xord);}
 
+void testAaa0x037() {cpu->big = false;EwReg(0x37, 0, aaa);}
+void testAaa0x237() {cpu->big = true;EwReg(0x37, 0, aaa);}
+
 void testCmp0x038() {cpu->big = false;EbGb(0x38, cmpb);}
 void testCmp0x238() {cpu->big = true;EbGb(0x38, cmpb);}
 void testCmp0x039() {cpu->big = false;EwGw(0x39, cmpw);}
@@ -3248,6 +3346,9 @@ void testCmp0x03c() {cpu->big = false;AlIb(0x3c, cmpb);}
 void testCmp0x23c() {cpu->big = true;AlIb(0x3c, cmpb);}
 void testCmp0x03d() {cpu->big = false;AxIw(0x3d, cmpw);}
 void testCmp0x23d() {cpu->big = true;EaxId(0x3d, cmpd);}
+
+void testAas0x03f() {cpu->big = false;EwReg(0x3f, 0, aas);}
+void testAas0x23f() {cpu->big = true;EwReg(0x3f, 0, aas);}
 
 void testIncAx0x040() {cpu->big = false;EwReg(0x40, 0, incw);}
 void testIncEax0x240() {cpu->big = true;EdReg(0x40, 0, incd);}
@@ -3646,6 +3747,12 @@ void testGrp20x2d3() {
     EdCl(0xD3, 6, shld);
     EdCl(0xD3, 7, sard);
 }
+
+void testAam0x0d4() {cpu->big = false;EwRegIb(0xd4, 0, aam);}
+void testAam0x2d4() {cpu->big = true;EwRegIb(0xd4, 0, aam);}
+
+void testAad0x0d5() {cpu->big = false;EwRegIb(0xd5, 0, aad);}
+void testAad0x2d5() {cpu->big = true;EwRegIb(0xd5, 0, aad);}
 
 void testSalc0x0d6() {cpu->big=false; EbReg(0xd6, 0, salc);}
 void testSalc0x2d6() {cpu->big=true; EbReg(0xd6, 0, salc);}
@@ -4848,7 +4955,298 @@ void run(void (*functionPtr)(), char* name) {
     }
 }
 
+void test32BitMemoryAccess() {
+}
+
+// disp8 is signed, it doesn't matter if disp16 is signed or not because of 16-bit rollover
+// Mod
+// 00 	[DS:BX + SI]           [DS:BX + DI]           [SS:BP + SI]           [SS:BP + DI]           [DS:SI]            [DS:DI]            [DS:disp16]        [DS:BX]
+// 01 	[DS:BX + SI + disp8]   [DS:BX + DI + disp8]   [SS:BP + SI + disp8]   [SS:BP + DI + disp8]   [DS:SI + disp8]    [DS:DI + disp8]    [SS:BP + disp8]    [DS:BX + disp8]
+// 10 	[DS:BX + SI + disp16]  [DS:BX + DI + disp16]  [SS:BP + SI + disp16]  [SS:BP + DI + disp16]  [DS:SI + disp16]   [DS:DI + disp16]   [SS:BP + disp16]   [DS:BX + disp16]
+
+void runLeaGw(int rm, int hasDisp8, int hasDisp16, S16 disp, U16 result, U32 seg) {
+    struct Reg* reg = &cpu->reg[G(rm)];    
+    U16 originalValue = reg->u16;
+
+    // lea Gw
+    cseip=CODE_ADDRESS;
+    cpu->eip.u32=0;   
+    pushCode8(0x8d);
+
+    pushCode8(rm);
+    if (hasDisp8)
+        pushCode8(disp);
+    if (hasDisp16)
+        pushCode16(disp);
+    runTestCPU();
+    assertTrue(reg->u16==result);
+
+    reg->u16 = originalValue;
+    // MOV Gb,Eb
+    writew(thread, cpu->segAddress[seg]+result, 0x3579);
+
+    cseip=CODE_ADDRESS;
+    cpu->eip.u32=0;   
+    pushCode8(0x8b);
+
+    pushCode8(rm);
+    if (hasDisp8)
+        pushCode8(disp);
+    if (hasDisp16)
+        pushCode16(disp);
+    runTestCPU();
+    assertTrue(reg->u16 == 0x3579);
+}
+
+void initMem16() {
+    zeroMemory(thread, CODE_ADDRESS, PAGE_SIZE*17);
+    zeroMemory(thread, STACK_ADDRESS-PAGE_SIZE*17, PAGE_SIZE*17);
+    zeroMemory(thread, HEAP_ADDRESS, PAGE_SIZE*17);
+
+    cpu->big = false;
+    EAX = 0x12345678;
+    EBX = 0x12345678;
+    ECX = 0x12345678;
+    EDX = 0x12345678;
+    ESP = 0x12345678;
+    EBP = 0x12345678;
+    ESI = 0x12345678;
+    EDI = 0x12345678;
+}
+
+void test16BitMemoryAccess() {
+    // Mod 00
+        // [DS:BX + SI]
+        initMem16(); BX = 0;      SI = 0;      runLeaGw(0, 0, 0, 0, 0, DS);
+        initMem16(); BX = 1;      SI = 0;      runLeaGw(1<<3, 0, 0, 0, 1, DS);
+        initMem16(); BX = 0;      SI = 1;      runLeaGw(2<<3, 0, 0, 0, 1, DS);
+        initMem16(); BX = 0xFFFF; SI = 0;      runLeaGw(3<<3, 0, 0, 0, 0xFFFF, DS);
+        initMem16(); BX = 0;      SI = 0xFFFF; runLeaGw(4<<3, 0, 0, 0, 0xFFFF, DS);
+        initMem16(); BX = 0xFFFF; SI = 1;      runLeaGw(5<<3, 0, 0, 0, 0, DS);
+        initMem16(); BX = 1;      SI = 0xFFFF; runLeaGw(6<<3, 0, 0, 0, 0, DS);
+        initMem16(); BX = 0xFFFF; SI = 0xFFFF; runLeaGw(7<<3, 0, 0, 0, 0xFFFE, DS);
+
+        // [DS:BX + DI]
+        initMem16(); BX = 0;      DI = 0;      runLeaGw(0<<3|1, 0, 0, 0, 0, DS);
+        initMem16(); BX = 1;      DI = 0;      runLeaGw(1<<3|1, 0, 0, 0, 1, DS);
+        initMem16(); BX = 0;      DI = 1;      runLeaGw(2<<3|1, 0, 0, 0, 1, DS);
+        initMem16(); BX = 0xFFFF; DI = 0;      runLeaGw(3<<3|1, 0, 0, 0, 0xFFFF, DS);
+        initMem16(); BX = 0;      DI = 0xFFFF; runLeaGw(4<<3|1, 0, 0, 0, 0xFFFF, DS);
+        initMem16(); BX = 0xFFFF; DI = 1;      runLeaGw(5<<3|1, 0, 0, 0, 0, DS);
+        initMem16(); BX = 1;      DI = 0xFFFF; runLeaGw(6<<3|1, 0, 0, 0, 0, DS);
+        initMem16(); BX = 0xFFFF; DI = 0xFFFF; runLeaGw(7<<3|1, 0, 0, 0, 0xFFFE, DS);
+
+        // [SS:BP + SI]  
+        initMem16(); BP = 0;      SI = 0;      runLeaGw(0<<3|2, 0, 0, 0, 0, SS);
+        initMem16(); BP = 1;      SI = 0;      runLeaGw(1<<3|2, 0, 0, 0, 1, SS);
+        initMem16(); BP = 0;      SI = 1;      runLeaGw(2<<3|2, 0, 0, 0, 1, SS);
+        initMem16(); BP = 0xFFFF; SI = 0;      runLeaGw(3<<3|2, 0, 0, 0, 0xFFFF, SS);
+        initMem16(); BP = 0;      SI = 0xFFFF; runLeaGw(4<<3|2, 0, 0, 0, 0xFFFF, SS);
+        initMem16(); BP = 0xFFFF; SI = 1;      runLeaGw(5<<3|2, 0, 0, 0, 0, SS);
+        initMem16(); BP = 1;      SI = 0xFFFF; runLeaGw(6<<3|2, 0, 0, 0, 0, SS);
+        initMem16(); BP = 0xFFFF; SI = 0xFFFF; runLeaGw(7<<3|2, 0, 0, 0, 0xFFFE, SS);
+
+        // [SS:BP + DI]
+        initMem16(); BP = 0;      DI = 0;      runLeaGw(0<<3|3, 0, 0, 0, 0, SS);
+        initMem16(); BP = 1;      DI = 0;      runLeaGw(1<<3|3, 0, 0, 0, 1, SS);
+        initMem16(); BP = 0;      DI = 1;      runLeaGw(2<<3|3, 0, 0, 0, 1, SS);
+        initMem16(); BP = 0xFFFF; DI = 0;      runLeaGw(3<<3|3, 0, 0, 0, 0xFFFF, SS);
+        initMem16(); BP = 0;      DI = 0xFFFF; runLeaGw(4<<3|3, 0, 0, 0, 0xFFFF, SS);
+        initMem16(); BP = 0xFFFF; DI = 1;      runLeaGw(5<<3|3, 0, 0, 0, 0, SS);
+        initMem16(); BP = 1;      DI = 0xFFFF; runLeaGw(6<<3|3, 0, 0, 0, 0, SS);
+        initMem16(); BP = 0xFFFF; DI = 0xFFFF; runLeaGw(7<<3|3, 0, 0, 0, 0xFFFE, SS);
+
+        // [DS:SI]  
+        initMem16(); SI = 0;      runLeaGw(0<<3|4, 0, 0, 0, 0, DS);
+        initMem16(); SI = 1;      runLeaGw(1<<3|4, 0, 0, 0, 1, DS);
+        initMem16(); SI = 0x2468; runLeaGw(2<<3|4, 0, 0, 0, 0x2468, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(3<<3|4, 0, 0, 0, 0xFFFF, DS);
+
+        // [DS:DI]  
+        initMem16(); DI = 0;      runLeaGw(0<<3|5, 0, 0, 0, 0, DS);
+        initMem16(); DI = 1;      runLeaGw(1<<3|5, 0, 0, 0, 1, DS);
+        initMem16(); DI = 0x2468; runLeaGw(2<<3|5, 0, 0, 0, 0x2468, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(3<<3|5, 0, 0, 0, 0xFFFF, DS);
+
+        // [DS:disp16]
+        initMem16(); runLeaGw(0<<3|6, 0, true, 0, 0, DS);
+        initMem16(); runLeaGw(1<<3|6, 0, true, 1, 1, DS);
+        initMem16(); runLeaGw(2<<3|6, 0, true, 0x2468, 0x2468, DS);
+        initMem16(); runLeaGw(3<<3|6, 0, true, 0xFFFF, 0xFFFF, DS);
+
+        // [DS:BX]
+        initMem16(); BX = 0;      runLeaGw(0<<3|7, 0, 0, 0, 0, DS);
+        initMem16(); BX = 1;      runLeaGw(1<<3|7, 0, 0, 0, 1, DS);
+        initMem16(); BX = 0x2468; runLeaGw(2<<3|7, 0, 0, 0, 0x2468, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(3<<3|7, 0, 0, 0, 0xFFFF, DS);
+
+    // Mod 01
+        // [DS:BX + SI + disp8]
+        initMem16(); BX = 0;      SI = 0;      runLeaGw(0|0x40, true, 0, 0, 0, DS);
+        initMem16(); BX = 1;      SI = 0;      runLeaGw(1<<3|0x40, true, 0, 1, 2, DS);
+        initMem16(); BX = 1;      SI = 1;      runLeaGw(2<<3|0x40, true, 0, 1, 3, DS);
+        initMem16(); BX = 0;      SI = 0;      runLeaGw(3<<3|0x40, true, 0, 0xFF, 0xFFFF, DS);
+        initMem16(); BX = 0;      SI = 0xFFFF; runLeaGw(4<<3|0x40, true, 0, 0xFF, 0xFFFE, DS);
+        initMem16(); BX = 0xFFFE; SI = 1;      runLeaGw(5<<3|0x40, true, 0, 1, 0, DS);
+        initMem16(); BX = 1;      SI = 0xFFFF; runLeaGw(6<<3|0x40, true, 0, 1, 1, DS);
+        initMem16(); BX = 0xFFFF; SI = 0xFFFF; runLeaGw(7<<3|0x40, true, 0, 0xFF, 0xFFFD, DS);
+
+        // [DS:BX + DI + disp8]
+        initMem16(); BX = 0;      DI = 0;      runLeaGw(0|0x41, true, 0, 0, 0, DS);
+        initMem16(); BX = 1;      DI = 0;      runLeaGw(1<<3|0x41, true, 0, 1, 2, DS);
+        initMem16(); BX = 1;      DI = 1;      runLeaGw(2<<3|0x41, true, 0, 1, 3, DS);
+        initMem16(); BX = 0;      DI = 0;      runLeaGw(3<<3|0x41, true, 0, 0xFF, 0xFFFF, DS);
+        initMem16(); BX = 0;      DI = 0xFFFF; runLeaGw(4<<3|0x41, true, 0, 0xFF, 0xFFFE, DS);
+        initMem16(); BX = 0xFFFE; DI = 1;      runLeaGw(5<<3|0x41, true, 0, 1, 0, DS);
+        initMem16(); BX = 1;      DI = 0xFFFF; runLeaGw(6<<3|0x41, true, 0, 1, 1, DS);
+        initMem16(); BX = 0xFFFF; DI = 0xFFFF; runLeaGw(7<<3|0x41, true, 0, 0xFF, 0xFFFD, DS);
+
+        // [SS:BP + SI + disp8]
+        initMem16(); BP = 0;      SI = 0;      runLeaGw(0|0x42, true, 0, 0, 0, SS);
+        initMem16(); BP = 1;      SI = 0;      runLeaGw(1<<3|0x42, true, 0, 1, 2, SS);
+        initMem16(); BP = 1;      SI = 1;      runLeaGw(2<<3|0x42, true, 0, 1, 3, SS);
+        initMem16(); BP = 0;      SI = 0;      runLeaGw(3<<3|0x42, true, 0, 0xFF, 0xFFFF, SS);
+        initMem16(); BP = 0;      SI = 0xFFFF; runLeaGw(4<<3|0x42, true, 0, 0xFF, 0xFFFE, SS);
+        initMem16(); BP = 0xFFFE; SI = 1;      runLeaGw(5<<3|0x42, true, 0, 1, 0, SS);
+        initMem16(); BP = 1;      SI = 0xFFFF; runLeaGw(6<<3|0x42, true, 0, 1, 1, SS);
+        initMem16(); BP = 0xFFFF; SI = 0xFFFF; runLeaGw(7<<3|0x42, true, 0, 0xFF, 0xFFFD, SS);
+
+        // [SS:BP + DI + disp8]
+        initMem16(); BP = 0;      DI = 0;      runLeaGw(0|0x43, true, 0, 0, 0, SS);
+        initMem16(); BP = 1;      DI = 0;      runLeaGw(1<<3|0x43, true, 0, 1, 2, SS);
+        initMem16(); BP = 1;      DI = 1;      runLeaGw(2<<3|0x43, true, 0, 1, 3, SS);
+        initMem16(); BP = 0;      DI = 0;      runLeaGw(3<<3|0x43, true, 0, 0xFF, 0xFFFF, SS);
+        initMem16(); BP = 0;      DI = 0xFFFF; runLeaGw(4<<3|0x43, true, 0, 0xFF, 0xFFFE, SS);
+        initMem16(); BP = 0xFFFE; DI = 1;      runLeaGw(5<<3|0x43, true, 0, 1, 0, SS);
+        initMem16(); BP = 1;      DI = 0xFFFF; runLeaGw(6<<3|0x43, true, 0, 1, 1, SS);
+        initMem16(); BP = 0xFFFF; DI = 0xFFFF; runLeaGw(7<<3|0x43, true, 0, 0xFF, 0xFFFD, SS);
+
+        // [DS:SI + disp8]
+        initMem16(); SI = 0;      runLeaGw(0|0x44, true, 0, 0, 0, DS);
+        initMem16(); SI = 0;      runLeaGw(1<<3|0x44, true, 0, 1, 1, DS);
+        initMem16(); SI = 1;      runLeaGw(2<<3|0x44, true, 0, 0, 1, DS);
+        initMem16(); SI = 0;      runLeaGw(3<<3|0x44, true, 0, 0xFF, 0xFFFF, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(4<<3|0x44, true, 0, 0, 0xFFFF, DS);
+        initMem16(); SI = 1;      runLeaGw(5<<3|0x44, true, 0, 0xFF, 0, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(6<<3|0x44, true, 0, 1, 0, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(7<<3|0x44, true, 0, 0xFF, 0xFFFE, DS);
+
+        // [DS:DI + disp8]
+        initMem16(); DI = 0;      runLeaGw(0|0x45, true, 0, 0, 0, DS);
+        initMem16(); DI = 0;      runLeaGw(1<<3|0x45, true, 0, 1, 1, DS);
+        initMem16(); DI = 1;      runLeaGw(2<<3|0x45, true, 0, 0, 1, DS);
+        initMem16(); DI = 0;      runLeaGw(3<<3|0x45, true, 0, 0xFF, 0xFFFF, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(4<<3|0x45, true, 0, 0, 0xFFFF, DS);
+        initMem16(); DI = 1;      runLeaGw(5<<3|0x45, true, 0, 0xFF, 0, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(6<<3|0x45, true, 0, 1, 0, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(7<<3|0x45, true, 0, 0xFF, 0xFFFE, DS);
+
+        // [SS:BP + disp8]
+        initMem16(); BP = 0;      runLeaGw(0|0x46, true, 0, 0, 0, SS);
+        initMem16(); BP = 0;      runLeaGw(1<<3|0x46, true, 0, 1, 1, SS);
+        initMem16(); BP = 1;      runLeaGw(2<<3|0x46, true, 0, 0, 1, SS);
+        initMem16(); BP = 0;      runLeaGw(3<<3|0x46, true, 0, 0xFF, 0xFFFF, SS);
+        initMem16(); BP = 0xFFFF; runLeaGw(4<<3|0x46, true, 0, 0, 0xFFFF, SS);
+        initMem16(); BP = 1;      runLeaGw(5<<3|0x46, true, 0, 0xFF, 0, SS);
+        initMem16(); BP = 0xFFFF; runLeaGw(6<<3|0x46, true, 0, 1, 0, SS);
+        initMem16(); BP = 0xFFFF; runLeaGw(7<<3|0x46, true, 0, 0xFF, 0xFFFE, SS);
+
+        // [DS:BX + disp8]
+        initMem16(); BX = 0;      runLeaGw(0|0x47, true, 0, 0, 0, DS);
+        initMem16(); BX = 0;      runLeaGw(1<<3|0x47, true, 0, 1, 1, DS);
+        initMem16(); BX = 1;      runLeaGw(2<<3|0x47, true, 0, 0, 1, DS);
+        initMem16(); BX = 0;      runLeaGw(3<<3|0x47, true, 0, 0xFF, 0xFFFF, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(4<<3|0x47, true, 0, 0, 0xFFFF, DS);
+        initMem16(); BX = 1;      runLeaGw(5<<3|0x47, true, 0, 0xFF, 0, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(6<<3|0x47, true, 0, 1, 0, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(7<<3|0x47, true, 0, 0xFF, 0xFFFE, DS);
+
+    // Mod 02
+        // [DS:BX + SI + disp16]
+        initMem16(); BX = 0;      SI = 0;      runLeaGw(0|0x80, 0, true, 0, 0, DS);
+        initMem16(); BX = 1;      SI = 0;      runLeaGw(1<<3|0x80, 0, true, 1, 2, DS);
+        initMem16(); BX = 1;      SI = 1;      runLeaGw(2<<3|0x80, 0, true, 1, 3, DS);
+        initMem16(); BX = 0;      SI = 0;      runLeaGw(3<<3|0x80, 0, true, 0xFF, 0xFF, DS);
+        initMem16(); BX = 0;      SI = 0xFFFF; runLeaGw(4<<3|0x80, 0, true, 0xFFFF, 0xFFFE, DS);
+        initMem16(); BX = 0xFFFE; SI = 1;      runLeaGw(5<<3|0x80, 0, true, 1, 0, DS);
+        initMem16(); BX = 1;      SI = 0xFFFF; runLeaGw(6<<3|0x80, 0, true, 1, 1, DS);
+        initMem16(); BX = 0xFFFF; SI = 0xFFFF; runLeaGw(7<<3|0x80, 0, true, 0xFFFF, 0xFFFD, DS);
+
+        // [DS:BX + DI + disp16]
+        initMem16(); BX = 0;      DI = 0;      runLeaGw(0|0x81, 0, true, 0, 0, DS);
+        initMem16(); BX = 1;      DI = 0;      runLeaGw(1<<3|0x81, 0, true, 1, 2, DS);
+        initMem16(); BX = 1;      DI = 1;      runLeaGw(2<<3|0x81, 0, true, 1, 3, DS);
+        initMem16(); BX = 0;      DI = 0;      runLeaGw(3<<3|0x81, 0, true, 0xFF, 0xFF, DS);
+        initMem16(); BX = 0;      DI = 0xFFFF; runLeaGw(4<<3|0x81, 0, true, 0xFFFF, 0xFFFE, DS);
+        initMem16(); BX = 0xFFFE; DI = 1;      runLeaGw(5<<3|0x81, 0, true, 1, 0, DS);
+        initMem16(); BX = 1;      DI = 0xFFFF; runLeaGw(6<<3|0x81, 0, true, 1, 1, DS);
+        initMem16(); BX = 0xFFFF; DI = 0xFFFF; runLeaGw(7<<3|0x81, 0, true, 0xFFFF, 0xFFFD, DS);
+
+        // [SS:BP + SI + disp16]
+        initMem16(); BP = 0;      SI = 0;      runLeaGw(0|0x82, 0, true, 0, 0, SS);
+        initMem16(); BP = 1;      SI = 0;      runLeaGw(1<<3|0x82, 0, true, 1, 2, SS);
+        initMem16(); BP = 1;      SI = 1;      runLeaGw(2<<3|0x82, 0, true, 1, 3, SS);
+        initMem16(); BP = 0;      SI = 0;      runLeaGw(3<<3|0x82, 0, true, 0xFF, 0xFF, SS);
+        initMem16(); BP = 0;      SI = 0xFFFF; runLeaGw(4<<3|0x82, 0, true, 0xFFFF, 0xFFFE, SS);
+        initMem16(); BP = 0xFFFE; SI = 1;      runLeaGw(5<<3|0x82, 0, true, 1, 0, SS);
+        initMem16(); BP = 1;      SI = 0xFFFF; runLeaGw(6<<3|0x82, 0, true, 1, 1, SS);
+        initMem16(); BP = 0xFFFF; SI = 0xFFFF; runLeaGw(7<<3|0x82, 0, true, 0xFFFF, 0xFFFD, SS);
+
+        // [SS:BP + DI + disp16]
+        initMem16(); BP = 0;      DI = 0;      runLeaGw(0|0x83, 0, true, 0, 0, SS);
+        initMem16(); BP = 1;      DI = 0;      runLeaGw(1<<3|0x83, 0, true, 1, 2, SS);
+        initMem16(); BP = 1;      DI = 1;      runLeaGw(2<<3|0x83, 0, true, 1, 3, SS);
+        initMem16(); BP = 0;      DI = 0;      runLeaGw(3<<3|0x83, 0, true, 0xFF, 0xFF, SS);
+        initMem16(); BP = 0;      DI = 0xFFFF; runLeaGw(4<<3|0x83, 0, true, 0xFFFF, 0xFFFE, SS);
+        initMem16(); BP = 0xFFFE; DI = 1;      runLeaGw(5<<3|0x83, 0, true, 1, 0, SS);
+        initMem16(); BP = 1;      DI = 0xFFFF; runLeaGw(6<<3|0x83, 0, true, 1, 1, SS);
+        initMem16(); BP = 0xFFFF; DI = 0xFFFF; runLeaGw(7<<3|0x83, 0, true, 0xFFFF, 0xFFFD, SS);
+
+        // [DS:SI + disp16]
+        initMem16(); SI = 0;      runLeaGw(0|0x84, 0, true, 0, 0, DS);
+        initMem16(); SI = 0;      runLeaGw(1<<3|0x84, 0, true, 1, 1, DS);
+        initMem16(); SI = 1;      runLeaGw(2<<3|0x84, 0, true, 0, 1, DS);
+        initMem16(); SI = 0;      runLeaGw(3<<3|0x84, 0, true, 0xFF, 0xFF, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(4<<3|0x84, 0, true, 0, 0xFFFF, DS);
+        initMem16(); SI = 1;      runLeaGw(5<<3|0x84, 0, true, 0xFFFF, 0, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(6<<3|0x84, 0, true, 1, 0, DS);
+        initMem16(); SI = 0xFFFF; runLeaGw(7<<3|0x84, 0, true, 0xFFFF, 0xFFFE, DS);
+
+        // [DS:DI + disp16]
+        initMem16(); DI = 0;      runLeaGw(0|0x85, 0, true, 0, 0, DS);
+        initMem16(); DI = 0;      runLeaGw(1<<3|0x85, 0, true, 1, 1, DS);
+        initMem16(); DI = 1;      runLeaGw(2<<3|0x85, 0, true, 0, 1, DS);
+        initMem16(); DI = 0;      runLeaGw(3<<3|0x85, 0, true, 0xFF, 0xFF, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(4<<3|0x85, 0, true, 0, 0xFFFF, DS);
+        initMem16(); DI = 1;      runLeaGw(5<<3|0x85, 0, true, 0xFFFF, 0, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(6<<3|0x85, 0, true, 1, 0, DS);
+        initMem16(); DI = 0xFFFF; runLeaGw(7<<3|0x85, 0, true, 0xFFFF, 0xFFFE, DS);
+
+        // [SS:BP + disp16]
+        initMem16(); BP = 0;      runLeaGw(0|0x86, 0, true, 0, 0, SS);
+        initMem16(); BP = 0;      runLeaGw(1<<3|0x86, 0, true, 1, 1, SS);
+        initMem16(); BP = 1;      runLeaGw(2<<3|0x86, 0, true, 0, 1, SS);
+        initMem16(); BP = 0;      runLeaGw(3<<3|0x86, 0, true, 0xFF, 0xFF, SS);
+        initMem16(); BP = 0xFFFF; runLeaGw(4<<3|0x86, 0, true, 0, 0xFFFF, SS);
+        initMem16(); BP = 1;      runLeaGw(5<<3|0x86, 0, true, 0xFFFF, 0, SS);
+        initMem16(); BP = 0xFFFF; runLeaGw(6<<3|0x86, 0, true, 1, 0, SS);
+        initMem16(); BP = 0xFFFF; runLeaGw(7<<3|0x86, 0, true, 0xFFFF, 0xFFFE, SS);
+
+        // [DS:BX + disp16]
+        initMem16(); BX = 0;      runLeaGw(0|0x87, 0, true, 0, 0, DS);
+        initMem16(); BX = 0;      runLeaGw(1<<3|0x87, 0, true, 1, 1, DS);
+        initMem16(); BX = 1;      runLeaGw(2<<3|0x87, 0, true, 0, 1, DS);
+        initMem16(); BX = 0;      runLeaGw(3<<3|0x87, 0, true, 0xFF, 0xFF, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(4<<3|0x87, 0, true, 0, 0xFFFF, DS);
+        initMem16(); BX = 1;      runLeaGw(5<<3|0x87, 0, true, 0xFFFF, 0, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(6<<3|0x87, 0, true, 1, 0, DS);
+        initMem16(); BX = 0xFFFF; runLeaGw(7<<3|0x87, 0, true, 0xFFFF, 0xFFFE, DS);
+}
+
 int main(int argc, char **argv) {	
+    run(test32BitMemoryAccess, "32-bit Memory Access");
+    run(test16BitMemoryAccess, "16-bit Memory Access");
+
     run(testAdd0x000, "Add 000");
     run(testAdd0x200, "Add 200");
     run(testAdd0x001, "Add 001");
@@ -4914,6 +5312,9 @@ int main(int argc, char **argv) {
     run(testAnd0x025, "And 025");
     run(testAnd0x225, "And 225");
 
+    run(testDaa0x027, "DAA 027");
+    run(testDaa0x227, "DAA 227");
+
     run(testSub0x028, "Sub 028");
     run(testSub0x228, "Sub 228");
     run(testSub0x029, "Sub 029");
@@ -4926,6 +5327,9 @@ int main(int argc, char **argv) {
     run(testSub0x22c, "Sub 22c");
     run(testSub0x02d, "Sub 02d");
     run(testSub0x22d, "Sub 22d");
+
+    run(testDas0x02f, "DAS 02f");
+    run(testDas0x22f, "DAS 22f");
 
     run(testXor0x030, "Xor 030");
     run(testXor0x230, "Xor 230");
@@ -4940,6 +5344,9 @@ int main(int argc, char **argv) {
     run(testXor0x035, "Xor 035");
     run(testXor0x235, "Xor 235");
 
+    run(testAaa0x037, "AAA 037");
+    run(testAaa0x237, "AAA 237");
+
     run(testCmp0x038, "Cmp 038");
     run(testCmp0x238, "Cmp 238");
     run(testCmp0x039, "Cmp 039");
@@ -4952,6 +5359,9 @@ int main(int argc, char **argv) {
     run(testCmp0x23c, "Cmp 23c");
     run(testCmp0x03d, "Cmp 03d");
     run(testCmp0x23d, "Cmp 23d");
+
+    run(testAas0x03f, "AAS 03f");
+    run(testAas0x23f, "AAS 23f");
 
     run(testIncAx0x040,  "Inc AX  040");
     run(testIncEax0x240, "Inc EAX 240");
@@ -5156,7 +5566,10 @@ int main(int argc, char **argv) {
     run(testGrp20x2d2, "Grp2 2d2");
     run(testGrp20x0d3, "Grp2 0d3");
     run(testGrp20x2d3, "Grp2 2d3");
-
+    run(testAam0x0d4, "AAM 0d4");
+    run(testAam0x2d4, "AAM 2d4");
+    run(testAad0x0d5, "AAD 0d5");
+    run(testAad0x2d5, "AAD 2d5");
     run(testSalc0x0d6, "Salc 0d6");
     run(testSalc0x2d6, "Salc 2d6");
 

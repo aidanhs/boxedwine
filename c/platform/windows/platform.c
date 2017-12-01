@@ -400,12 +400,6 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             U32 i,j,offset=0;
             BOOL found = FALSE;
 
-            if ((ep->ExceptionRecord->ExceptionInformation[1] & 0xFFFFFFFF00000000l) == cpu->memory->id) {
-                U32 address = (U32)ep->ExceptionRecord->ExceptionInformation[1];
-                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
-                    kpanic("Self modifying code not supported yet in x64");
-                }
-            }
             EAX = (U32)ep->ContextRecord->Rax;
             ECX = (U32)ep->ContextRecord->Rcx;
             EDX = (U32)ep->ContextRecord->Rdx;
@@ -414,6 +408,23 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             EBP = (U32)ep->ContextRecord->Rbp;
             ESI = (U32)ep->ContextRecord->Rsi;
             EDI = (U32)ep->ContextRecord->Rdi;
+
+            if ((ep->ExceptionRecord->ExceptionInformation[1] & 0xFFFFFFFF00000000l) == cpu->memory->id) {
+                U32 address = (U32)ep->ExceptionRecord->ExceptionInformation[1];
+                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
+                    // 1) get instruction
+                    // 2) get value to write
+                    // 3) get address to write to, and width
+                    // 4) unlock (make read/write), what about other threads? check for page boundry and possible unlock 2 pages
+                    // 5) write
+                    // 6) lock (make read only)
+                    // 7) move instruction pointer to next instruction
+                    // 8) get translated instruction address and size
+                    // 9) translate instruction, does it fit, what should I do if it is bigger, if smaller, I guess just nop
+                    kpanic("Self modifying code not supported yet in x64");
+                }
+            }
+            
             while (!found) {
                 for (i=0;i<NUMBER_OF_PAGES && !found;i++) {
                     if (thread->process->opToAddressPages[i]) {

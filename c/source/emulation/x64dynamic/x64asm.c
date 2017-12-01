@@ -61,9 +61,11 @@ void x64_mapAddressInternal(struct x64_Data* data, U32 ip, void* address) {
 void x64_commitMappedAddresses(struct x64_Data* data) {
     S32 i;
     S32 pageCount = (data->ip-data->start+PAGE_MASK) >> PAGE_SHIFT;
+#ifndef __TEST
     for (i=0;i<pageCount;i++) {
         makeCodePageReadOnly(data->cpu->memory, (data->start>>PAGE_SHIFT)+i);
     }
+#endif
     for (i=data->ipAddressCount-1;i>=0;i--) {
         x64_mapAddressInternal(data, data->ipAddress[i], data->hostAddress[i]);
     }
@@ -848,7 +850,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         case 0x01:            
@@ -869,7 +871,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         case 0x02:            
@@ -893,7 +895,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ss), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         case 0x03:            
@@ -917,7 +919,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ss), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         case 0x04:              
@@ -937,7 +939,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         case 0x05:              
@@ -957,7 +959,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         case 0x06:  
@@ -968,13 +970,13 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 if (leaDisp==0) {
                     x64_setRM(data, (G(rm) << 3) | 0x04, checkG, FALSE, isG8bit, FALSE);
                     x64_setSib(data, 0x25, FALSE);
-                    x64_setDisplacement32(data, disp);
+                    x64_setDisplacement32(data, x64_fetch16(data));
                 } else {
                     x64_setRM(data, leaDisp | (G(rm) << 3) | 0x05, checkG, FALSE, isG8bit, FALSE);
                     if (leaDisp==0x40) {
                         x64_setDisplacement8(data, (U8)disp);
                     } else if (leaDisp==0x80) {
-                        x64_setDisplacement32(data, x64_fetch16(data));
+                        x64_setDisplacement32(data, disp);
                     }
                 }
             } else {  
@@ -990,7 +992,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, seg), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         }
@@ -1011,7 +1013,7 @@ void x64_translateMemory(struct x64_Data* data, U32 rm, BOOL checkG, U32 isG8bit
                 x64_addWithLea(data, HOST_TMP, TRUE, HOST_TMP2, TRUE, x64_getRegForSeg(data, data->ds), TRUE, 0, 0, 4);
 
                 // [HOST_MEM + HOST_TMP]
-                writeHostPlusTmp(data, (rm & ~(7)) | 4, checkG, isG8bit, isE8bit);
+                writeHostPlusTmp(data, (rm & (7<<3)) | 4, checkG, isG8bit, isE8bit);
             }
             break;
         }
