@@ -569,14 +569,16 @@ void unixsocket_onDelete(struct KObject* obj) {
         }
         BOXEDWINE_UNLOCK(NULL, s->connecting->connectionMutex);
     }
-    BOXEDWINE_LOCK(NULL, s->connectionMutex);
-    for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
-        if (s->pendingConnections[i]) {				
-            s->pendingConnections[i]->connecting = 0;
-            s->pendingConnectionsCount--;
+    if (s->pendingConnectionsCount) {
+        BOXEDWINE_LOCK(NULL, s->connectionMutex);
+        for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
+            if (s->pendingConnections[i]) {				
+                s->pendingConnections[i]->connecting = 0;
+                s->pendingConnectionsCount--;
+            }
         }
+        BOXEDWINE_UNLOCK(NULL, s->connectionMutex);
     }
-    BOXEDWINE_UNLOCK(NULL, s->connectionMutex);
     if (s->recvBuffer)
         ringbuf_free(&s->recvBuffer);
     while (s->msgs) {
@@ -589,9 +591,11 @@ void unixsocket_onDelete(struct KObject* obj) {
     if (s->waitingOnConnectThread)
         wakeThread(NULL, s->waitingOnConnectThread);
 
-    BOXEDWINE_LOCK(NULL, pollMutex);
-    BOXEDWINE_SIGNAL(pollCond);
-    BOXEDWINE_UNLOCK(NULL, pollMutex);
+    if (pollMutex) {
+        BOXEDWINE_LOCK(NULL, pollMutex);
+        BOXEDWINE_SIGNAL(pollCond);
+        BOXEDWINE_UNLOCK(NULL, pollMutex);
+    }
 }
 
 void unixsocket_setBlocking(struct KObject* obj, BOOL blocking) {
@@ -1325,10 +1329,10 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 BOOL found = FALSE;
 
 #ifdef BOXEDWINE_VM
-                if (!s->connectionMutex)
-                    s->connectionMutex = SDL_CreateMutex();
-                if (!s->connectionCond)
-                    s->connectionCond = SDL_CreateCond();
+                if (!destination->connectionMutex)
+                    destination->connectionMutex = SDL_CreateMutex();
+                if (!destination->connectionCond)
+                    destination->connectionCond = SDL_CreateCond();
 #endif
                 BOXEDWINE_LOCK(NULL, destination->connectionMutex);
                 for (i=0;i<MAX_PENDING_CONNECTIONS;i++) {
@@ -1357,6 +1361,10 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                 // :TODO: what about a time out
                 
 #ifdef BOXEDWINE_VM
+                if (!s->connectionMutex)
+                    s->connectionMutex = SDL_CreateMutex();
+                if (!s->connectionCond)
+                    s->connectionCond = SDL_CreateCond();
                 while (s->connecting) {
                     waitOnSocketConnect(s, thread);
                 }

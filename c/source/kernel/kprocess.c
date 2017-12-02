@@ -75,7 +75,10 @@ void initLDT(struct KProcess* process) {
 void initProcess(struct Memory* memory, struct KProcess* process, U32 argc, const char** args, int userId) {	
     U32 i;
     char* name;
-
+#ifdef BOXEDWINE_VM
+    SDL_mutex* threadsMutex = process->threadsMutex;
+    SDL_mutex* fdMutex = process->fdMutex;
+#endif
     memset(process, 0, sizeof(struct KProcess));	
     process->memory = memory;
     process->id = addProcess(NULL, process);
@@ -103,21 +106,31 @@ void initProcess(struct Memory* memory, struct KProcess* process, U32 argc, cons
 	process->maxFds = 64;
     initLDT(process);
 #ifdef BOXEDWINE_VM
-    process->threadsMutex = SDL_CreateMutex();
-    process->fdMutex = SDL_CreateMutex();
+    process->threadsMutex = threadsMutex;
+    process->fdMutex = fdMutex;
 #endif
 }
 
 struct KProcess* freeProcesses;
 
 struct KProcess* allocProcess() {
+    struct KProcess* result;
     if (freeProcesses) {
         struct KProcess* result = freeProcesses;
         freeProcesses = freeProcesses->next;
         memset(result, 0, sizeof(struct KProcess));
+#ifdef BOXEDWINE_VM
+        result->fdMutex = SDL_CreateMutex();
+        result->threadsMutex = SDL_CreateMutex();
+#endif
         return result;
     }
-    return (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
+    result = (struct KProcess*)kalloc(sizeof(struct KProcess), KALLOC_KPROCESS);		
+#ifdef BOXEDWINE_VM
+    result->fdMutex = SDL_CreateMutex();
+    result->threadsMutex = SDL_CreateMutex();
+#endif
+    return result;
 }
 
 void cleanupProcess(struct KProcess* process) {
@@ -202,7 +215,15 @@ U32 processGetThreadCount(struct KProcess* process) {
 void cloneProcess(struct KThread* thread, struct Memory* memory, struct KProcess* process, struct KProcess* from) {
     U32 i;
 
+#ifdef BOXEDWINE_VM
+    SDL_mutex* threadsMutex = process->threadsMutex;
+    SDL_mutex* fdMutex = process->fdMutex;
+#endif
     memset(process, 0, sizeof(struct KProcess));	
+#ifdef BOXEDWINE_VM
+    process->threadsMutex = threadsMutex;
+    process->fdMutex = fdMutex;
+#endif
     process->memory = memory;
     process->id = addProcess(thread, process);
     initArray(&process->threads, process->id<<THREAD_ID_SHIFT);
@@ -778,6 +799,8 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         //klog("starting %d/%d", newThread->process->id, newThread->id);
         startThread(newThread);
         BOXEDWINE_UNLOCK(NULL, mutexProcess);
+
+        //SDL_Delay(20);
         return thread->process->id;
     } else {
         kpanic("sys_clone does not implement flags: %X", flags);
