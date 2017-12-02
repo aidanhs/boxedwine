@@ -559,7 +559,7 @@ static U32 pop32GS(struct x64_Data* data) {
 
 // DAA
 static U32 daa(struct x64_Data* data) {
-    kpanic("daa not implemented");
+    x64_daa(data);
     return 0;
 }
 

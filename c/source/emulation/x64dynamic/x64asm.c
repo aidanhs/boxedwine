@@ -709,7 +709,7 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
         x64_writeToRegFromMem(data, HOST_SS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_SS_ADDRESS, 4, FALSE);
     }  else if (cmd == CMD_SET_DS) {
         x64_writeToRegFromMem(data, HOST_DS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_DS_ADDRESS, 4, FALSE);
-    }   
+    }  
 }
 
 void x64_pushReg16(struct x64_Data* data, U32 reg, U32 isRegRex) {
@@ -1436,4 +1436,194 @@ void x64_xlat(struct x64_Data* data) {
     x64_writeOp(data);
 }
 
+void x64_setSF_onAL(struct x64_Data* data) {
+    /*
+    if (AL & 0x80)
+        flags|=SF;
+    else
+        flags&=~SF;
+    */
+    // test AL, 0x80
+    write8(data, 0xa8);
+    write8(data, (U8)SF);
+
+    // jz :1
+    write8(data, 0x74);
+    write8(data, 6);
+
+    // or HOST_TMPb, SF
+    write8(data, REX_BASE|REX_MOD_RM);
+    write8(data, 0x80);
+    write8(data, 0xC0 | (1<<3) | HOST_TMP);
+    write8(data, (U8)SF);
+        
+    // jmp Jb
+    write8(data, 0xeb);
+    write8(data, 4);
+
+    // and HOST_TMPb, ~SF
+    write8(data, REX_BASE|REX_MOD_RM);
+    write8(data, 0x80);
+    write8(data, 0xC0 | (4<<3) | HOST_TMP);
+    write8(data, (U8)~(SF));
+}
+
+void x64_setZF_onAL(struct x64_Data* data) {
+    /*
+    if (AL == 0)
+        flags|=ZF;
+    else
+        flags&=~ZF;
+    */
+    // test AL, AL
+    write8(data, 0x84);
+    write8(data, 0xc0);
+
+    // jnz :1
+    write8(data, 0x75);
+    write8(data, 6);
+
+    // or HOST_TMPb, ZF
+    write8(data, REX_BASE|REX_MOD_RM);
+    write8(data, 0x80);
+    write8(data, 0xC0 | (1<<3) | HOST_TMP);
+    write8(data, (U8)ZF);
+        
+    // jmp Jb
+    write8(data, 0xeb);
+    write8(data, 4);
+
+    // and HOST_TMPb, ~ZF
+    write8(data, REX_BASE|REX_MOD_RM);
+    write8(data, 0x80);
+    write8(data, 0xC0 | (4<<3) | HOST_TMP);
+    write8(data, (U8)~(ZF));
+}
+
+void x64_setPF_onAL(struct x64_Data* data) {
+    /*
+    flags &= ~PF;
+    flags |= parity_lookup[AL];
+    */
+
+    // and HOST_TMPb, ~PF
+    write8(data, REX_BASE|REX_MOD_RM);
+    write8(data, 0x80);
+    write8(data, 0xC0 | (4<<3) | HOST_TMP);
+    write8(data, (U8)~(PF));
+
+    // mov HOST_TMP2, parity_lookup
+    write8(data, REX_BASE | REX_64 | REX_MOD_RM);
+    write8(data, 0xb8);
+    write64(data, (U64)parity_lookup);
+    
+    // or HOST_TMPb, byte ptr [HOST_TMP2]
+    write8(data, REX_BASE | REX_MOD_REG | REX_MOD_RM);
+    write8(data, 0x0a);
+    write8(data, (HOST_TMP << 3) | HOST_TMP2);
+}
+
+void x64_daa(struct x64_Data* data) {
+    x64_pushNativeFlags(data);
+    x64_popNative(data, HOST_TMP, TRUE);
+
+    /*
+    if (flags & CF) {
+        AL+=0x60;
+    } else if (AL > 0x99) {
+        AL+=0x60;
+        addFlag(CF);
+    }
+    */
+        // test HOST_TMP, CF
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0xF6);
+        write8(data, 0xC0 | HOST_TMP);
+        write8(data, CF);
+
+        // jnz :1
+        write8(data, 0x75);
+        write8(data, 8);
+
+        // cmp al, 0x99
+        write8(data, 0x3c);
+        write8(data, 0x99);
+        
+        // JBE :2
+        write8(data, 0x76);
+        write8(data, 6);
+
+        // OR HOST_TMP, CF
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0x80);
+        write8(data, 0xC0 | (1<<3) | HOST_TMP);
+        write8(data, CF);
+    
+        // 1:
+        // add al, 0x60
+        write8(data, 0x04);
+        write8(data, 0x60);
+
+        // 2:
+
+    /*
+    if (flags & AF) {
+        AL+=0x06;
+    } else if ((AL & 0x0F)>0x09) {        
+        AL+=0x06;
+        addFlag(AF);
+    }
+    */
+
+        // test HOST_TMP, AF
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0xF6);
+        write8(data, 0xC0 | HOST_TMP);
+        write8(data, (U8)AF);
+
+        // jnz :1
+        write8(data, 0x75);
+        write8(data, 17);
+
+        // mov HOST_TMP2, eax
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0x89);
+        write8(data, 0xC0 | HOST_TMP2);
+
+        // and HOST_TMP2, 0x0F
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0x80);
+        write8(data, 0xC0 | (4<<3) | HOST_TMP2);
+        write8(data, 0xf);
+
+        // cmp HOST_TMP2b, 0x09
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0x80);
+        write8(data, 0xC0 | (7 << 3) | HOST_TMP2);
+        write8(data, 0x09);
+
+        // jbe :2
+        write8(data, 0x76);
+        write8(data, 6);
+
+        // OR HOST_TMP, AF
+        write8(data, REX_BASE | REX_MOD_RM);
+        write8(data, 0x80);
+        write8(data, 0xC0 | (1<<3) | HOST_TMP);
+        write8(data, (U8)AF);
+    
+        // 1:
+        // add al, 0x06
+        write8(data, 0x04);
+        write8(data, 0x06);
+
+        // 2:
+    
+    x64_setSF_onAL(data);
+    x64_setZF_onAL(data);
+    x64_setPF_onAL(data);
+    
+    x64_pushNative(data, HOST_TMP, TRUE);
+    x64_popNativeFlags(data);
+}
 #endif

@@ -375,21 +375,32 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             U32 eip = cpu->eip.u32;
             ep->ContextRecord->Rip+=2;
             EAX = (U32)ep->ContextRecord->Rax;
+            ECX = (U32)ep->ContextRecord->Rcx;
+            EDX = (U32)ep->ContextRecord->Rdx;
+            EBX = (U32)ep->ContextRecord->Rbx;
+            ESP = (U32)ep->ContextRecord->R11;
+            EBP = (U32)ep->ContextRecord->Rbp;
+            ESI = (U32)ep->ContextRecord->Rsi;
+            EDI = (U32)ep->ContextRecord->Rdi;
+            cpu->flags &=~ FMASK_TEST;
+            cpu->flags |= ep->ContextRecord->EFlags & FMASK_TEST;
             x64_cmdEntry(cpu);
             ep->ContextRecord->Rax = EAX;
+            ep->ContextRecord->Rcx = ECX;
+            ep->ContextRecord->Rdx = EDX;
+            ep->ContextRecord->Rbx = EBX;
+            ep->ContextRecord->R11 = ESP;
+            ep->ContextRecord->Rbp = EBP;
+            ep->ContextRecord->Rsi = ESI;
+            ep->ContextRecord->Rdi = EDI;  
+            ep->ContextRecord->EFlags &=~ FMASK_TEST;
+            ep->ContextRecord->EFlags |= (cpu->flags & FMASK_TEST);
             if (cpu->thread->done)
                 return EXCEPTION_EXECUTE_HANDLER;
             if (eip!=cpu->eip.u32) {
                 U32 page = cpu->eip.u32 >> PAGE_SHIFT;
                 U32 offset = cpu->eip.u32 & PAGE_MASK;
-
-                ep->ContextRecord->Rcx = ECX;
-                ep->ContextRecord->Rdx = EDX;
-                ep->ContextRecord->Rbx = EBX;
-                ep->ContextRecord->R11 = ESP;
-                ep->ContextRecord->Rbp = EBP;
-                ep->ContextRecord->Rsi = ESI;
-                ep->ContextRecord->Rdi = EDI;                     
+                                   
                 x64_translateEip(cpu, (page << PAGE_SHIFT) | offset);
                 ep->ContextRecord->Rip = (U64)(cpu->opToAddressPages[page][offset]);                
                 ep->ContextRecord->R10 = (U64)cpu->memory->id;

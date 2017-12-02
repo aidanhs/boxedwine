@@ -180,18 +180,20 @@ struct Data {
     int fAF;
     BOOL hasAF;
     BOOL hasCF;
+    BOOL hasZF;
+    BOOL hasSF;
 };
 
 #define endData() {0}
-#define allocData(var1, var2, result, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, 0, 0, 0, 0, 0, 1, 1 }
-#define allocDataNoOF(var1, var2, result, flags, fCF) { 1, var1, var2, result, 0, flags, 0, fCF, 0, 0, 0, 0, 0, 0, 0, 1 }
-#define allocDataFlags(var1, var2, fCF, fOF, fSF, fZF) { 1, var1, var2, 0, 0, 0, 0, fCF, fOF, fZF, fSF, 1, 0, 0, 1, 1 }
-#define allocDataFlagsWithAF(var1, var2, result, flags, fCF, fOF, fSF, fZF, fAF, hasOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, fZF, fSF, 0, 0, 0, hasOF, fAF, 1, 1 }
-#define allocDataConst(var1, var2, result, constant, constantWidth, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, constant, fCF, fOF, 0, 0, 0, 0, constantWidth, 1, 1 }
-#define allocDataConstNoOF(var1, var2, result, constant, constantWidth, flags, fCF) { 1, var1, var2, result, 0, flags, constant, fCF, 0, 0, 0, 0, 0, constantWidth, 0, 1 }
-#define allocDatavar2(var1, var2, resultvar1, resultvar2) { 1, var1, var2, resultvar1, resultvar2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1 }
-#define allocDataConstvar2(var1, var2, result, flags, fCF, fOF, constant, var2Result) { 1, var1, var2, result, var2Result, flags, constant, fCF, fOF, 0, 0, 0, 1, 0, 1, 1 }
-#define allocDataNoFlags(var1, var2, result) {1, var1, var2, result, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+#define allocData(var1, var2, result, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, 0, 0, 0, 0, 0, 1, 1, 0, 0 }
+#define allocDataNoOF(var1, var2, result, flags, fCF) { 1, var1, var2, result, 0, flags, 0, fCF, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0 }
+#define allocDataFlags(var1, var2, fCF, fOF, fSF, fZF) { 1, var1, var2, 0, 0, 0, 0, fCF, fOF, fZF, fSF, 1, 0, 0, 1, 1, 0, 0 }
+#define allocDataFlagsWithAF(var1, var2, result, flags, fCF, fOF, fSF, fZF, fAF, hasOF, hasZF, hasSF) { 1, var1, var2, result, 0, flags, 0, fCF, fOF, fZF, fSF, 0, 0, 0, hasOF, fAF, 1, 1, hasZF, hasSF }
+#define allocDataConst(var1, var2, result, constant, constantWidth, flags, fCF, fOF) { 1, var1, var2, result, 0, flags, constant, fCF, fOF, 0, 0, 0, 0, constantWidth, 1, 1, 0, 0 }
+#define allocDataConstNoOF(var1, var2, result, constant, constantWidth, flags, fCF) { 1, var1, var2, result, 0, flags, constant, fCF, 0, 0, 0, 0, 0, constantWidth, 0, 1, 0, 0 }
+#define allocDatavar2(var1, var2, resultvar1, resultvar2) { 1, var1, var2, resultvar1, resultvar2, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0 }
+#define allocDataConstvar2(var1, var2, result, flags, fCF, fOF, constant, var2Result) { 1, var1, var2, result, var2Result, flags, constant, fCF, fOF, 0, 0, 0, 1, 0, 1, 1, 0, 0 }
+#define allocDataNoFlags(var1, var2, result) {1, var1, var2, result, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 void pushConstant(struct Data* data) {
     if (data->constantWidth==8) {
@@ -219,8 +221,16 @@ void assertResult(struct Data* data, struct CPU* cpu, int instruction, U32 resul
         failed("instruction: %d OF", instruction);
     }
     if (data->hasAF && (getAF(cpu)!=0) != data->fAF) {
-        getOF(cpu);
+        getAF(cpu);
         failed("instruction: %d AF", instruction);
+    }
+    if (data->hasSF && (getSF(cpu)!=0) != data->fSF) {
+        getSF(cpu);
+        failed("instruction: %d SF", instruction);
+    }
+    if (data->hasZF && (getZF(cpu)!=0) != data->fZF) {
+        getZF(cpu);
+        failed("instruction: %d ZF", instruction);
     }
     if (data->dontUseResultAndCheckSFZF) {
         if ((getSF(cpu)!=0) != data->fSF) {
@@ -2200,59 +2210,61 @@ static struct Data andd[] = {
 };
 
 static struct Data daa[] = {
-    allocDataFlagsWithAF(0x03, 0, 0x09, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x06, 0, 0x0C, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x07, 0, 0x0D, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x59, 0, 0x5F, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x60, 0, 0x66, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x9F, 0, 0x05, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0xA0, 0, 0x06, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x03, 0, 0x03, 0, 0, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x06, 0, 0x06, 0, 0, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x03, 0, 0x63, CF, true, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x06, 0, 0x66, CF, true, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x03, 0, 0x69, CF|AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x06, 0, 0x6C, CF|AF, true, 0, 0, 0, true, false),    
+    allocDataFlagsWithAF(0x00, 0, 0x00, 0, 0, 0, 0, true, false, false, true, true),
+    allocDataFlagsWithAF(0x80, 0, 0x80, 0, 0, 0, true, 0, false, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0x09, AF|ZF|SF, 0, 0, 0, 0, true, false, true, true), // ZF and SF should be cleared
+    allocDataFlagsWithAF(0x06, 0, 0x0C, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x07, 0, 0x0D, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x59, 0, 0x5F, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x60, 0, 0x66, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x9F, 0, 0x05, AF, true, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0xA0, 0, 0x06, AF, true, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0x03, 0, 0, 0, 0, 0, 0, false, true, true),
+    allocDataFlagsWithAF(0x06, 0, 0x06, 0, 0, 0, 0, 0, 0, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0x63, CF, true, 0, 0, 0, 0, false, true, true),
+    allocDataFlagsWithAF(0x06, 0, 0x66, CF, true, 0, 0, 0, 0, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0x69, CF|AF, true, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x06, 0, 0x6C, CF|AF, true, 0, 0, 0, true, false, true, true),    
     endData()
 };
 
 static struct Data das[] = {
-    allocDataFlagsWithAF(0x03, 0, 0xFD, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x06, 0, 0x00, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x07, 0, 0x01, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x59, 0, 0x53, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x60, 0, 0x5A, AF, 0, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x9F, 0, 0x39, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0xA0, 0, 0x3A, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x03, 0, 0x03, 0, 0, 0, 0, 0 ,0, false),
-    allocDataFlagsWithAF(0x06, 0, 0x06, 0, 0, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x03, 0, 0xA3, CF, true, 0, 0, 0 ,0, false),
-    allocDataFlagsWithAF(0x06, 0, 0xA6, CF, true, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x03, 0, 0x9D, CF|AF, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x03, 0, 0xFD, AF, true, 0, true, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x06, 0, 0x00, AF, 0, 0, 0, true, true, false, true, true),
+    allocDataFlagsWithAF(0x07, 0, 0x01, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x59, 0, 0x53, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x60, 0, 0x5A, AF, 0, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x9F, 0, 0x39, AF, true, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0xA0, 0, 0x3A, AF, true, 0, 0, 0, true, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0x03, 0, 0, 0, 0, 0 ,0, false, true, true),
+    allocDataFlagsWithAF(0x06, 0, 0x06, 0, 0, 0, 0, 0, 0, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0xA3, CF, true, 0, true, 0 ,0, false, true, true),
+    allocDataFlagsWithAF(0x06, 0, 0xA6, CF, true, 0, true, 0, 0, false, true, true),
+    allocDataFlagsWithAF(0x03, 0, 0x9D, CF|AF, true, 0, true, 0, true, false, true, true),
     endData()
 };
 
 static struct Data aaa[] = {
-    allocDataFlagsWithAF(0x0205, 0, 0x030B, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x0306, 0, 0x040C, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x040A, 0, 0x0500, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x05FA, 0, 0x0700, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x0205, 0, 0x0205, 0, 0, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x0306, 0, 0x0306, 0, 0, 0, 0, 0, 0, false),
-    allocDataFlagsWithAF(0x040A, 0, 0x0500, 0, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x05FA, 0, 0x0700, 0, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x0205, 0, 0x030B, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x040C, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0500, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0700, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x0205, 0, 0x0205, 0, 0, 0, 0, 0, 0, false, false, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x0306, 0, 0, 0, 0, 0, 0, false, false, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0500, 0, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0700, 0, true, 0, 0, 0, true, false, false, false),
     endData()
 };
 
 static struct Data aas[] = {
-    allocDataFlagsWithAF(0x0205, 0, 0x000F, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x0306, 0, 0x0200, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x040A, 0, 0x0304, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x05FA, 0, 0x0404, AF, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x0205, 0, 0x0205, 0, false, 0, 0, 0, false, false),
-    allocDataFlagsWithAF(0x0306, 0, 0x0306, 0, false, 0, 0, 0, false, false),
-    allocDataFlagsWithAF(0x040A, 0, 0x0304, 0, true, 0, 0, 0, true, false),
-    allocDataFlagsWithAF(0x05FA, 0, 0x0404, 0, true, 0, 0, 0, true, false),
+    allocDataFlagsWithAF(0x0205, 0, 0x000F, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x0200, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0304, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0404, AF, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x0205, 0, 0x0205, 0, false, 0, 0, 0, false, false, false, false),
+    allocDataFlagsWithAF(0x0306, 0, 0x0306, 0, false, 0, 0, 0, false, false, false, false),
+    allocDataFlagsWithAF(0x040A, 0, 0x0304, 0, true, 0, 0, 0, true, false, false, false),
+    allocDataFlagsWithAF(0x05FA, 0, 0x0404, 0, true, 0, 0, 0, true, false, false, false),
     endData()
 };
 
@@ -4955,7 +4967,420 @@ void run(void (*functionPtr)(), char* name) {
     }
 }
 
+// disp8 is signed, it doesn't matter if disp32 is signed or not because of 32-bit rollover
+// Mod
+// 00 	[DS:EAX]           [DS:ECX]           [SS:EDX]           [DS:EBX]           SIB0   [DS:disp32]         [DS:ESI]            [DS:EDI]
+// 01 	[DS:EAX + disp8]   [DS:ECX + disp8]   [SS:EDX + disp8]   [DS:EBX + disp8]   SIB1   [SS:EBP + disp8]    [DS:ESI + disp8]    [DS:EDI + disp8]
+// 10 	[DS:EAS + disp32]  [DS:ECX + disp32]  [SS:EDX + disp32]  [DS:EBX + disp32]  SIB1   [SS:EBP + disp32]   [DS:ESI + disp32]   [DS:EDI + disp32]
+
+void runLeaGd(int rm, int hasSib, U32 sib, int hasDisp8, int hasDisp32, S32 disp, U32 result, U32 seg) {
+    struct Reg* reg = &cpu->reg[G(rm)];    
+    U32 originalValue = reg->u32;
+
+    // lea Gw
+    cseip=CODE_ADDRESS;
+    cpu->eip.u32=0;   
+    pushCode8(0x8d);
+
+    pushCode8(rm);
+    if (hasSib)
+        pushCode8(sib);
+    if (hasDisp8)
+        pushCode8(disp);
+    if (hasDisp32)
+        pushCode32(disp);
+    runTestCPU();
+    assertTrue(reg->u32==result);
+
+    reg->u32 = originalValue;
+    // MOV Gd,Ed
+    writed(thread, cpu->segAddress[seg]+result, 0x35792468);
+
+    cseip=CODE_ADDRESS;
+    cpu->eip.u32=0;   
+    pushCode8(0x8b);
+
+    pushCode8(rm);
+    if (hasSib)
+        pushCode8(sib);
+    if (hasDisp8)
+        pushCode8(disp);
+    if (hasDisp32)
+        pushCode32(disp);
+    runTestCPU();
+    assertTrue(reg->u32 == 0x35792468);
+}
+
+void initMem32() {
+    zeroMemory(thread, CODE_ADDRESS, PAGE_SIZE*17);
+    zeroMemory(thread, STACK_ADDRESS-PAGE_SIZE*17, PAGE_SIZE*17);
+    zeroMemory(thread, HEAP_ADDRESS, PAGE_SIZE*17);
+
+    cpu->big = true;
+    EAX = 0x12345678;
+    EBX = 0x12345678;
+    ECX = 0x12345678;
+    EDX = 0x12345678;
+    ESP = 0x12345678;
+    EBP = 0x12345678;
+    ESI = 0x12345678;
+    EDI = 0x12345678;
+}
+
 void test32BitMemoryAccess() {
+    U32 reg1, reg2;
+
+    // Mod 00
+        // [DS:EAX]
+        initMem32(); EAX = 0;       runLeaGd(0, 0, 0, 0, 0, 0, 0, DS);
+        initMem32(); EAX = 0x10000; runLeaGd(1<<3, 0, 0, 0, 0, 0, 0x10000, DS);
+
+        // [DS:ECX]
+        initMem32(); ECX = 0;       runLeaGd(0|1, 0, 0, 0, 0, 0, 0, DS);
+        initMem32(); ECX = 0x10000; runLeaGd(1<<3|1, 0, 0, 0, 0, 0, 0x10000, DS);
+
+        // [DS:EDX]
+        initMem32(); EDX = 0;       runLeaGd(0|2, 0, 0, 0, 0, 0, 0, DS);
+        initMem32(); EDX = 0x10000; runLeaGd(1<<3|2, 0, 0, 0, 0, 0, 0x10000, DS);
+
+        // [DS:EBX]
+        initMem32(); EBX = 0;       runLeaGd(0|3, 0, 0, 0, 0, 0, 0, DS);
+        initMem32(); EBX = 0x10000; runLeaGd(1<<3|3, 0, 0, 0, 0, 0, 0x10000, DS);
+
+        // SIB0
+        // [DS:reg1+reg2<<0]
+        for (reg1=0;reg1<8;reg1++) {
+            for (reg2=0;reg2<8;reg2++) {
+                U32 seg = DS;
+                if (reg1 == 4) {
+                    seg = SS;
+                }
+                if (reg1==5) { // reg1==5 means reg1 is replaced with disp32
+                    if (reg2==4) { // reg2==4 means reg2 is not used
+                        initMem32(); runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0, seg);
+                        initMem32(); runLeaGd(1<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x10000, 0x10000, seg);
+
+                        // shift should have no effect
+                        initMem32(); runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0x10000, 0x10000, seg);
+                        initMem32(); runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0x10000, 0x10000, seg);
+                        initMem32(); runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0x10000, 0x10000, seg);
+                    } else {
+                        initMem32(); cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0x10000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0;          runLeaGd(2<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x10000, 0x10000, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0x1000;     runLeaGd(3<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x0F000, 0x10000, seg);
+                        initMem32(); cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(4<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x11000, 0x0F000, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(4<<3|4, 1, (reg2<<3)|reg1, 0, 1, -(0x2000), 0x0F000, seg);
+
+                        initMem32(); cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0x08000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0x04000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg2].u32 = 0x02000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0x10000, seg);
+                    }
+                } else {
+                    if (reg2==4) { // reg2==4 means reg2 is not used
+                        initMem32(); cpu->reg[reg1].u32 = 0;       runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000; runLeaGd(1<<3|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x10000, seg);
+
+                        // shifts should have no affect
+                        initMem32(); cpu->reg[reg1].u32 = 0;       runLeaGd(0|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000; runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;       runLeaGd(0|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000; runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;       runLeaGd(0|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000; runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|33<<6, 0, 0, 0, 0x10000, seg);
+                    } else {
+                        if (reg1==reg2) {
+                            initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x80008000; runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x10000, seg);
+
+                            initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x4000; runLeaGd(0|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0x0C000, seg);
+
+                            initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x2000; runLeaGd(0|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0x0A000, seg);
+
+                            initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x1000; runLeaGd(0|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0x09000, seg);
+                        } else {
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(2<<3|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x0F000;   cpu->reg[reg2].u32 = 0x1000;     runLeaGd(3<<3|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(4<<3|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x0F000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(4<<3|4, 1, (reg2<<3)|reg1, 0, 0, 0, 0x0F000, seg);
+
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(2<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x08000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x80000000; runLeaGd(2<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 0, 0, 0x10000, seg);
+
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(2<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x04000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x40000000; runLeaGd(2<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 0, 0, 0x10000, seg);
+
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(2<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x02000;    runLeaGd(1<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0x10000, seg);
+                            initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x20000000; runLeaGd(2<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 0, 0, 0x10000, seg);
+                        }
+                    }
+                }
+            }
+        }
+
+        // [DS:disp32]
+        initMem32(); runLeaGd(0|5, 0, 0, 0, true, 0, 0, DS);
+        initMem32(); runLeaGd(1<<3|5, 0, 0, 0, true, 0x10000, 0x10000, DS);
+
+        // [DS:ESI]
+        initMem32(); ESI = 0;       runLeaGd(0|6, 0, 0, 0, 0, 0, 0, DS);
+        initMem32(); ESI = 0x10000; runLeaGd(1<<3|6, 0, 0, 0, 0, 0, 0x10000, DS);
+
+        // [DS:EDI]
+        initMem32(); EDI = 0;       runLeaGd(0|7, 0, 0, 0, 0, 0, 0, DS);
+        initMem32(); EDI = 0x10000; runLeaGd(1<<3|7, 0, 0, 0, 0, 0, 0x10000, DS);
+
+    // Mod 01
+        // [DS:EAX+disp8]
+        initMem32(); EAX = 0;       runLeaGd(0x40|0, 0, 0, 1, 0, 0, 0, DS);
+        initMem32(); EAX = 0x10000; runLeaGd(0x40|1<<3, 0, 0, 1, 0, 0, 0x10000, DS);
+        initMem32(); EAX = 0x0FFF0; runLeaGd(0x40|1<<3, 0, 0, 1, 0, 0x10, 0x10000, DS);
+        initMem32(); EAX = 0x10010; runLeaGd(0x40|1<<3, 0, 0, 1, 0, -0x10, 0x10000, DS);
+
+        // [DS:ECX+disp8]
+        initMem32(); ECX = 0;       runLeaGd(0x40|0|1, 0, 0, 1, 0, 0, 0, DS);
+        initMem32(); ECX = 0x10000; runLeaGd(0x40|1<<3|1, 0, 0, 1, 0, 0, 0x10000, DS);
+        initMem32(); ECX = 0x0FFF0; runLeaGd(0x40|1<<3|1, 0, 0, 1, 0, 0x10, 0x10000, DS);
+        initMem32(); ECX = 0x10010; runLeaGd(0x40|1<<3|1, 0, 0, 1, 0, -0x10, 0x10000, DS);
+
+        // [DS:EDX+disp8]
+        initMem32(); EDX = 0;       runLeaGd(0x40|0|2, 0, 0, 1, 0, 0, 0, DS);
+        initMem32(); EDX = 0x10000; runLeaGd(0x40|1<<3|2, 0, 0, 1, 0, 0, 0x10000, DS);
+        initMem32(); EDX = 0x0FFF0; runLeaGd(0x40|1<<3|2, 0, 0, 1, 0, 0x10, 0x10000, DS);
+        initMem32(); EDX = 0x10010; runLeaGd(0x40|1<<3|2, 0, 0, 1, 0, -0x10, 0x10000, DS);
+
+        // [DS:EBX+disp8]
+        initMem32(); EBX = 0;       runLeaGd(0x40|0|3, 0, 0, 1, 0, 0, 0, DS);
+        initMem32(); EBX = 0x10000; runLeaGd(0x40|1<<3|3, 0, 0, 1, 0, 0, 0x10000, DS);
+        initMem32(); EBX = 0x0FFF0; runLeaGd(0x40|1<<3|3, 0, 0, 1, 0, 0x10, 0x10000, DS);
+        initMem32(); EBX = 0x10010; runLeaGd(0x40|1<<3|3, 0, 0, 1, 0, -0x10, 0x10000, DS);
+
+        // SIB1
+        // [DS:reg1+reg2<<0+disp8]
+        for (reg1=0;reg1<8;reg1++) {
+            for (reg2=0;reg2<8;reg2++) {
+                U32 seg = DS;
+                if (reg1 == 4 || reg1==5) {
+                    seg = SS;
+                }
+                if (reg2==4) { // reg2==4 means reg2 is not used
+                    initMem32(); cpu->reg[reg1].u32 = 0;       runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10000; runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x0FFF0; runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0x10, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1, 1, 0, -0x10, 0x10000, seg);
+
+                    // shift should have no effect
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, -0x10, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, -0x10, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, -0x10, 0x10000, seg);
+                } else {
+                    if (reg1==reg2) {
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1, 1, 0, -0x10, 0xFFF0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0x10, 0x10010, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x80008000; runLeaGd(0x40|4<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x4000; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, 0x10, 0x0C010, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x2000; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, 0x10, 0x0A010, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x1000; runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, 0x10, 0x09010, seg);
+                    } else {
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1, 1, 0, -0x10, 0xFFF0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0x40, 0x10040, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1, 1, 0, -0x40, 0xFFC0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0x20, 0x10020, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x0F000;   cpu->reg[reg2].u32 = 0x1000;     runLeaGd(0x40|3<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(0x40|4<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x0F000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(0x40|4<<3|4, 1, (reg2<<3)|reg1, 1, 0, -0x30, 0x0EFD0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(0x40|4<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0x70, 0x0F070, seg);
+                        initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(0x40|5<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0, 0x0F000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(0x40|5<<3|4, 1, (reg2<<3)|reg1, 1, 0, -0x10, 0x0EFF0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(0x40|5<<3|4, 1, (reg2<<3)|reg1, 1, 0, 0x50, 0x0F050, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x08000;    runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x80000000; runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1|1<<6, 1, 0, 0, 0x10000, seg);
+
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x04000;    runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x40000000; runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1|2<<6, 1, 0, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|0|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x02000;    runLeaGd(0x40|1<<3|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x20000000; runLeaGd(0x40|2<<3|4, 1, (reg2<<3)|reg1|3<<6, 1, 0, 0, 0x10000, seg);
+                    }
+                }
+            }
+        }
+
+        // [SS:EBP+disp8]
+        initMem32(); EBP = 0;       runLeaGd(0x40|0|5, 0, 0, 1, 0, 0, 0, SS);
+        initMem32(); EBP = 0x10000; runLeaGd(0x40|1<<3|5, 0, 0, 1, 0, 0, 0x10000, SS);
+        initMem32(); EBP = 0x0FFF0; runLeaGd(0x40|1<<3|5, 0, 0, 1, 0, 0x10, 0x10000, SS);
+        initMem32(); EBP = 0x10010; runLeaGd(0x40|1<<3|5, 0, 0, 1, 0, -0x10, 0x10000, SS);
+
+        // [DS:ESI+disp8]
+        initMem32(); ESI = 0;       runLeaGd(0x40|0|6, 0, 0, 1, 0, 0, 0, DS);
+        initMem32(); ESI = 0x10000; runLeaGd(0x40|1<<3|6, 0, 0, 1, 0, 0, 0x10000, DS);
+        initMem32(); ESI = 0x0FFF0; runLeaGd(0x40|1<<3|6, 0, 0, 1, 0, 0x10, 0x10000, DS);
+        initMem32(); ESI = 0x10010; runLeaGd(0x40|1<<3|6, 0, 0, 1, 0, -0x10, 0x10000, DS);
+
+        // [DS:EDI+disp8]
+        initMem32(); EDI = 0;       runLeaGd(0x40|0|7, 0, 0, 1, 0, 0, 0, DS);
+        initMem32(); EDI = 0x10000; runLeaGd(0x40|1<<3|7, 0, 0, 1, 0, 0, 0x10000, DS);
+        initMem32(); EDI = 0x0FFF0; runLeaGd(0x40|1<<3|7, 0, 0, 1, 0, 0x10, 0x10000, DS);
+        initMem32(); EDI = 0x10010; runLeaGd(0x40|1<<3|7, 0, 0, 1, 0, -0x10, 0x10000, DS);
+
+    // Mod 02
+        // [DS:EAX+disp32]
+        initMem32(); EAX = 0;       runLeaGd(0x80|0, 0, 0, 0, 1, 0, 0, DS);
+        initMem32(); EAX = 0x10000; runLeaGd(0x80|1<<3, 0, 0, 0, 1, 0, 0x10000, DS);
+        initMem32(); EAX = 0x0FFF0; runLeaGd(0x80|1<<3, 0, 0, 0, 1, 0x10, 0x10000, DS);
+        initMem32(); EAX = 0x10010; runLeaGd(0x80|1<<3, 0, 0, 0, 1, -0x10, 0x10000, DS);
+        initMem32(); EAX = -0x10; runLeaGd(0x80|1<<3, 0, 0, 0, 1, 0x10010, 0x10000, DS);
+
+        // [DS:ECX+disp32]
+        initMem32(); ECX = 0;       runLeaGd(0x80|0|1, 0, 0, 0, 1, 0, 0, DS);
+        initMem32(); ECX = 0x10000; runLeaGd(0x80|1<<3|1, 0, 0, 0, 1, 0, 0x10000, DS);
+        initMem32(); ECX = 0x0FFF0; runLeaGd(0x80|1<<3|1, 0, 0, 0, 1, 0x10, 0x10000, DS);
+        initMem32(); ECX = 0x10010; runLeaGd(0x80|1<<3|1, 0, 0, 0, 1, -0x10, 0x10000, DS);
+        initMem32(); ECX = -0x10; runLeaGd(0x80|1<<3|1, 0, 0, 0, 1, 0x10010, 0x10000, DS);
+
+        // [DS:EDX+disp32]
+        initMem32(); EDX = 0;       runLeaGd(0x80|0|2, 0, 0, 0, 1, 0, 0, DS);
+        initMem32(); EDX = 0x10000; runLeaGd(0x80|1<<3|2, 0, 0, 0, 1, 0, 0x10000, DS);
+        initMem32(); EDX = 0x0FFF0; runLeaGd(0x80|1<<3|2, 0, 0, 0, 1, 0x10, 0x10000, DS);
+        initMem32(); EDX = 0x10010; runLeaGd(0x80|1<<3|2, 0, 0, 0, 1, -0x10, 0x10000, DS);
+        initMem32(); EDX = -0x10; runLeaGd(0x80|1<<3|2, 0, 0, 0, 1, 0x10010, 0x10000, DS);
+
+        // [DS:EBX+disp32]
+        initMem32(); EBX = 0;       runLeaGd(0x80|0|3, 0, 0, 0, 1, 0, 0, DS);
+        initMem32(); EBX = 0x10000; runLeaGd(0x80|1<<3|3, 0, 0, 0, 1, 0, 0x10000, DS);
+        initMem32(); EBX = 0x0FFF0; runLeaGd(0x80|1<<3|3, 0, 0, 0, 1, 0x10, 0x10000, DS);
+        initMem32(); EBX = 0x10010; runLeaGd(0x80|1<<3|3, 0, 0, 0, 1, -0x10, 0x10000, DS);
+        initMem32(); EBX = -0x10; runLeaGd(0x80|1<<3|3, 0, 0, 0, 1, 0x10010, 0x10000, DS);
+
+        // SIB1
+        // [DS:reg1+reg2<<0+disp32]
+        for (reg1=0;reg1<8;reg1++) {
+            for (reg2=0;reg2<8;reg2++) {
+                U32 seg = DS;
+                if (reg1 == 4 || reg1==5) {
+                    seg = SS;
+                }
+                if (reg2==4) { // reg2==4 means reg2 is not used
+                    initMem32(); cpu->reg[reg1].u32 = 0;       runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10000; runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x0FFF0; runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x10, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1, 0, 1, -0x10, 0x10000, seg);
+
+                    // shift should have no effect
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, -0x10, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, -0x10, 0x10000, seg);
+                    initMem32(); cpu->reg[reg1].u32 = 0x10010; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, -0x10, 0x10000, seg);
+                } else {
+                    if (reg1==reg2) {
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1, 0, 1, -0x10, 0xFFF0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x8000; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x10, 0x10010, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x80008000; runLeaGd(0x80|4<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x4000; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0x10, 0x0C010, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x2000; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0x10, 0x0A010, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;      runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x1000; runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0x10, 0x09010, seg);
+                    } else {
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1, 0, 1, -0x10, 0xFFF0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x10000;    runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x40, 0x10040, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1, 0, 1, -0x40, 0xFFC0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x20, 0x10020, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x0F000;   cpu->reg[reg2].u32 = 0x1000;     runLeaGd(0x80|3<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(0x80|4<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x0F000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(0x80|4<<3|4, 1, (reg2<<3)|reg1, 0, 1, -0x30, 0x0EFD0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x11000;   cpu->reg[reg2].u32 = -(0x2000);  runLeaGd(0x80|4<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x70, 0x0F070, seg);
+                        initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(0x80|5<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0, 0x0F000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(0x80|5<<3|4, 1, (reg2<<3)|reg1, 0, 1, -0x10, 0x0EFF0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = -(0x2000); cpu->reg[reg2].u32 = 0x11000;  runLeaGd(0x80|5<<3|4, 1, (reg2<<3)|reg1, 0, 1, 0x50, 0x0F050, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x08000;    runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x80000000; runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1|1<<6, 0, 1, 0, 0x10000, seg);
+
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x04000;    runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x40000000; runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1|2<<6, 0, 1, 0, 0x10000, seg);
+
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|0|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0;         cpu->reg[reg2].u32 = 0x02000;    runLeaGd(0x80|1<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0;          runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0x10000, seg);
+                        initMem32(); cpu->reg[reg1].u32 = 0x10000;   cpu->reg[reg2].u32 = 0x20000000; runLeaGd(0x80|2<<3|4, 1, (reg2<<3)|reg1|3<<6, 0, 1, 0, 0x10000, seg);
+                    }
+                }
+            }
+        }
+
+        // [SS:EBP+disp32]
+        initMem32(); EBP = 0;       runLeaGd(0x80|0|5, 0, 0, 0, 1, 0, 0, SS);
+        initMem32(); EBP = 0x10000; runLeaGd(0x80|1<<3|5, 0, 0, 0, 1, 0, 0x10000, SS);
+        initMem32(); EBP = 0x0FFF0; runLeaGd(0x80|1<<3|5, 0, 0, 0, 1, 0x10, 0x10000, SS);
+        initMem32(); EBP = 0x10010; runLeaGd(0x80|1<<3|5, 0, 0, 0, 1, -0x10, 0x10000, SS);
+        initMem32(); EBP = -0x10; runLeaGd(0x80|1<<3|5, 0, 0, 0, 1, 0x10010, 0x10000, SS);
+
+        // [DS:ESI+disp32]
+        initMem32(); ESI = 0;       runLeaGd(0x80|0|6, 0, 0, 0, 1, 0, 0, DS);
+        initMem32(); ESI = 0x10000; runLeaGd(0x80|1<<3|6, 0, 0, 0, 1, 0, 0x10000, DS);
+        initMem32(); ESI = 0x0FFF0; runLeaGd(0x80|1<<3|6, 0, 0, 0, 1, 0x10, 0x10000, DS);
+        initMem32(); ESI = 0x10010; runLeaGd(0x80|1<<3|6, 0, 0, 0, 1, -0x10, 0x10000, DS);
+        initMem32(); ESI = -0x10; runLeaGd(0x80|1<<3|6, 0, 0, 0, 1, 0x10010, 0x10000, DS);
+
+        // [DS:EDI+disp32]
+        initMem32(); EDI = 0;       runLeaGd(0x80|0|7, 0, 0, 0, 1, 0, 0, DS);
+        initMem32(); EDI = 0x10000; runLeaGd(0x80|1<<3|7, 0, 0, 0, 1, 0, 0x10000, DS);
+        initMem32(); EDI = 0x0FFF0; runLeaGd(0x80|1<<3|7, 0, 0, 0, 1, 0x10, 0x10000, DS);
+        initMem32(); EDI = 0x10010; runLeaGd(0x80|1<<3|7, 0, 0, 0, 1, -0x10, 0x10000, DS);
+        initMem32(); EDI = -0x10; runLeaGd(0x80|1<<3|7, 0, 0, 0, 1, 0x10010, 0x10000, DS);
 }
 
 // disp8 is signed, it doesn't matter if disp16 is signed or not because of 16-bit rollover
@@ -4982,7 +5407,7 @@ void runLeaGw(int rm, int hasDisp8, int hasDisp16, S16 disp, U16 result, U32 seg
     assertTrue(reg->u16==result);
 
     reg->u16 = originalValue;
-    // MOV Gb,Eb
+    // MOV Gw,Ew
     writew(thread, cpu->segAddress[seg]+result, 0x3579);
 
     cseip=CODE_ADDRESS;

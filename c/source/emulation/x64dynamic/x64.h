@@ -204,6 +204,7 @@ void x64_pushReg32(struct x64_Data* data, U32 reg, U32 isRegRex);
 void x64_popReg32(struct x64_Data* data, U32 reg, U32 isRegRex);
 void x64_incReg(struct x64_Data* data, U32 reg, U32 isRegRex, U32 bytes);
 void x64_decReg(struct x64_Data* data, U32 reg, U32 isRegRex, U32 bytes);
+void x64_daa(struct x64_Data* data);
 
 void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast);
 void x64_jumpConditional(struct x64_Data* data, U32 condition, U32 eip);
