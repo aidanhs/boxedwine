@@ -670,7 +670,6 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     if (s->outClosed || !s->connection)
         return -K_EPIPE;
     BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
-    printf("%d write start %X\n", thread->id, (U32)s->connection);
     if (ringbuf_is_full(s->connection->recvBuffer)) {
         if (!s->blocking) {
             BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
@@ -696,7 +695,6 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
         len-=todo;
         count+=todo;
     }    
-    printf("%d write done %X\n", thread->id, (U32)s->connection);
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
     if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
@@ -741,7 +739,6 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
     if (!s->inClosed && !s->connection)
         return -K_EPIPE;
     BOXEDWINE_LOCK(thread, s->bufferMutex);
-    printf("%d read start %X\n", thread->id, (U32)s);
     if (ringbuf_is_empty(s->recvBuffer)) {
         if (s->inClosed) {
             BOXEDWINE_UNLOCK(thread, s->bufferMutex);
@@ -780,7 +777,6 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
         len -= todo;
     }
 #endif    
-    printf("%d read done %X\n", thread->id, (U32)s);
     BOXEDWINE_UNLOCK(thread, s->bufferMutex);
     if (s->connection)
         wakeAndResetWaitingOnWriteThreads(s->connection);
