@@ -656,7 +656,7 @@ void unixsocket_waitForEvents(struct KObject* obj, struct KThread* thread, U32 e
     }
 }
 
-U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+U32 unixsocket_internal_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     struct KSocket* s = obj->socket;
     U32 count=0;
 
@@ -669,10 +669,9 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     }
     if (s->outClosed || !s->connection)
         return -K_EPIPE;
-    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
+
     if (ringbuf_is_full(s->connection->recvBuffer)) {
         if (!s->blocking) {
-            BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
             return -K_EWOULDBLOCK;
         }
         waitOnSocketWrite(s, thread);
@@ -694,7 +693,46 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
         buffer+=todo;
         len-=todo;
         count+=todo;
-    }    
+    }     
+    return count;
+}
+
+U32 unixsocket_writev(struct KThread* thread, struct KObject* obj, U32 iov, S32 iovcnt) {
+    struct KSocket* s = obj->socket;
+    U32 len=0;
+    S32 i;
+
+    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
+    for (i=0;i<iovcnt;i++) {
+        U32 buf = readd(thread, iov + i * 8);
+        U32 toWrite = readd(thread, iov + i * 8 + 4);
+        S32 result;
+
+        result = unixsocket_internal_write(thread, obj, buf, toWrite);
+        if (result<0) {
+            if (i>0) {
+                kwarn("writev partial fail: TODO file pointer should not change");
+            }
+            return result;
+        }
+        len+=result;
+    }
+    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+    if (s->connection) {
+        wakeAndResetWaitingOnReadThreads(s->connection);
+    }
+    BOXEDWINE_LOCK(thread, pollMutex);
+    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_UNLOCK(thread, pollMutex);  
+    return len;
+}
+
+U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
+    struct KSocket* s = obj->socket;
+    U32 result;
+
+    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
+    result = unixsocket_internal_write(thread, obj, buffer, len);
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
     if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
@@ -702,7 +740,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     BOXEDWINE_LOCK(thread, pollMutex);
     BOXEDWINE_SIGNAL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);    
-    return count;
+    return result;
 }
 
 U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U8 value) {
@@ -822,7 +860,7 @@ S64 unixsocket_klength(struct KObject* obj) {
     return -1;
 }
 
-struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_waitForEvents, unixsocket_write, unixsocket_read, unixsocket_stat, unixsocket_map, unixsocket_canMap};
+struct KObjectAccess unixsocketAccess = {unixsocket_ioctl, unixsocket_seek, unixsocket_klength, unixsocket_getPos, unixsocket_onDelete, unixsocket_setBlocking, unixsocket_isBlocking, unixsocket_setAsync, unixsocket_isAsync, unixsocket_getLock, unixsocket_setLock, unixsocket_supportsLocks, unixsocket_isOpen, unixsocket_isReadReady, unixsocket_isWriteReady, unixsocket_waitForEvents, unixsocket_write, unixsocket_writev, unixsocket_read, unixsocket_stat, unixsocket_map, unixsocket_canMap};
 
 U32 nativesocket_ioctl(struct KThread* thread, struct KObject* obj, U32 request) {
     struct KSocket* s = obj->socket;
@@ -979,6 +1017,28 @@ U32 nativesocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, 
     return handleNativeSocketError(thread, s, 1);
 }
 
+U32 nativesocket_writev(struct KThread* thread, struct KObject* obj, U32 iov, S32 iovcnt) {
+    struct KSocket* s = obj->socket;
+    U32 len=0;
+    S32 i;
+
+    for (i=0;i<iovcnt;i++) {
+        U32 buf = readd(thread, iov + i * 8);
+        U32 toWrite = readd(thread, iov + i * 8 + 4);
+        S32 result;
+
+        result = obj->access->write(thread, obj, buf, toWrite);
+        if (result<0) {
+            if (i>0) {
+                kwarn("writev partial fail: TODO file pointer should not change");
+            }
+            return result;
+        }
+        len+=result;
+    }
+    return len;
+}
+
 U32 nativesocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len) {
     struct KSocket* s = obj->socket;	
     S32 result = 0;
@@ -1019,7 +1079,7 @@ BOOL nativesocket_canMap(struct KObject* obj) {
     return FALSE;
 }
 
-struct KObjectAccess nativesocketAccess = {nativesocket_ioctl, nativesocket_seek, nativesocket_klength, nativesocket_getPos, nativesocket_onDelete, nativesocket_setBlocking, nativesocket_isBlocking, nativesocket_setAsync, nativesocket_isAsync, nativesocket_getLock, nativesocket_setLock, nativesocket_supportsLocks, nativesocket_isOpen, nativesocket_isReadReady, nativesocket_isWriteReady, nativesocket_waitForEvents, nativesocket_write, nativesocket_read, nativesocket_stat, nativesocket_map, nativesocket_canMap};
+struct KObjectAccess nativesocketAccess = {nativesocket_ioctl, nativesocket_seek, nativesocket_klength, nativesocket_getPos, nativesocket_onDelete, nativesocket_setBlocking, nativesocket_isBlocking, nativesocket_setAsync, nativesocket_isAsync, nativesocket_getLock, nativesocket_setLock, nativesocket_supportsLocks, nativesocket_isOpen, nativesocket_isReadReady, nativesocket_isWriteReady, nativesocket_waitForEvents, nativesocket_write, kaccess_default_writev, nativesocket_read, nativesocket_stat, nativesocket_map, nativesocket_canMap};
 
 //char tmpSocketName[32];
 

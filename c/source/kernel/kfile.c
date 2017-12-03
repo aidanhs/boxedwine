@@ -147,7 +147,7 @@ S64 kfile_length(struct KObject* obj) {
     return obj->openFile->func->length(obj->openFile);
 }
 
-struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_waitForEvents, kfile_write, kfile_read, kfile_stat, kfile_map, kfile_canMap};
+struct KObjectAccess kfileAccess = {kfile_ioctl, kfile_seek, kfile_length, kfile_getPos, kfile_onDelete, kfile_setBlocking, kfile_isBlocking, kfile_setAsync, kfile_isAsync, kfile_getLock, kfile_setLock, kfile_supportsLocks, kfile_isOpen, kfile_isReadReady, kfile_isWriteReady, kfile_waitForEvents, kfile_write, kaccess_default_writev, kfile_read, kfile_stat, kfile_map, kfile_canMap};
 
 struct KObject* allocKFile(struct FsOpenNode* node) {
     return allocKObject(&kfileAccess, KTYPE_FILE, node, 0);

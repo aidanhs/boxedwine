@@ -215,7 +215,7 @@ S64 ksignal_klength(struct KObject* obj) {
     return -1;
 }
 
-struct KObjectAccess ksignalAccess = {ksignal_ioctl, ksignal_seek, ksignal_klength, ksignal_getPos, ksignal_onDelete, ksignal_setBlocking, ksignal_isBlocking, ksignal_setAsync, ksignal_isAsync, ksignal_getLock, ksignal_setLock, ksignal_supportsLocks, ksignal_isOpen, ksignal_isReadReady, ksignal_isWriteReady, ksignal_waitForEvents, ksignal_write, ksignal_read, ksignal_stat, ksignal_map, ksignal_canMap};
+struct KObjectAccess ksignalAccess = {ksignal_ioctl, ksignal_seek, ksignal_klength, ksignal_getPos, ksignal_onDelete, ksignal_setBlocking, ksignal_isBlocking, ksignal_setAsync, ksignal_isAsync, ksignal_getLock, ksignal_setLock, ksignal_supportsLocks, ksignal_isOpen, ksignal_isReadReady, ksignal_isWriteReady, ksignal_waitForEvents, ksignal_write, kaccess_default_writev, ksignal_read, ksignal_stat, ksignal_map, ksignal_canMap};
 
 U32 syscall_signalfd4(struct KThread* thread, S32 fildes, U32 mask, U32 flags) {
     struct KFileDescriptor* fd;

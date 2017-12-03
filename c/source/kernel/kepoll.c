@@ -135,7 +135,7 @@ S64 kepoll_klength(struct KObject* obj) {
     return -1;
 }
 
-struct KObjectAccess kepollAccess = {kepoll_ioctl, kepoll_seek, kepoll_klength, kepoll_getPos, kepoll_onDelete, kepoll_setBlocking, kepoll_isBlocking, kepoll_setAsync, kepoll_isAsync, kepoll_getLock, kepoll_setLock, kepoll_supportsLocks, kepoll_isOpen, kepoll_isReadReady, kepoll_isWriteReady, kepoll_waitForEvents, kepoll_write, kepoll_read, kepoll_stat, kepoll_map, kepoll_canMap};
+struct KObjectAccess kepollAccess = {kepoll_ioctl, kepoll_seek, kepoll_klength, kepoll_getPos, kepoll_onDelete, kepoll_setBlocking, kepoll_isBlocking, kepoll_setAsync, kepoll_isAsync, kepoll_getLock, kepoll_setLock, kepoll_supportsLocks, kepoll_isOpen, kepoll_isReadReady, kepoll_isWriteReady, kepoll_waitForEvents, kepoll_write, kaccess_default_writev, kepoll_read, kepoll_stat, kepoll_map, kepoll_canMap};
 
 struct KEpoll* freeEpolls;
 

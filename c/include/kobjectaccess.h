@@ -43,10 +43,13 @@ struct KObjectAccess {
     BOOL (*isWriteReady)(struct KThread* thread, struct KObject* obj);
     void (*waitForEvents)(struct KObject* obj, struct KThread* thread, U32 events);
     U32  (*write)(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
+    U32  (*writev)(struct KThread* thread, struct KObject* obj, U32 iov, S32 iovcnt);
     U32  (*read)(struct KThread* thread, struct KObject* obj, U32 buffer, U32 len);
     U32  (*stat)(struct KThread* thread,  struct KObject* obj, U32 address, BOOL is64);
     U32  (*map)(struct KThread* thread, struct KObject* obj, U32 address, U32 len, S32 prot, S32 flags, U64 off);
     BOOL (*canMap)(struct KObject* obj);
 };
+
+U32 kaccess_default_writev(struct KThread* thread, struct KObject* obj, U32 iov, S32 iovcnt);
 
 #endif
