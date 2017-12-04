@@ -1063,7 +1063,7 @@ void syscallToString(struct CPU* cpu, char* buffer) {
     case __NR_fgetxattr: sprintf(buffer, "fgetxattr:"); break;
     case __NR_flistxattr: sprintf(buffer, "flistxattr:"); break;
     case __NR_futex: sprintf(buffer, "futex: address=%X op=%d", ARG1, ARG2); break;
-    case __NR_sched_getaffinity: sprintf(buffer, "sched_getaffinity: pid=%d cpusetsize=%d mask=%X", ARG1, ARG2, ARG3);
+    case __NR_sched_getaffinity: sprintf(buffer, "sched_getaffinity: pid=%d cpusetsize=%d mask=%X", ARG1, ARG2, ARG3); break;
     case __NR_set_thread_area: sprintf(buffer, "set_thread_area: u_info=%X", ARG1); break;        
     case __NR_exit_group: sprintf(buffer, "exit_group: code=%d", ARG1); break;
     case __NR_epoll_create: sprintf(buffer, "epoll_create: size=%d", ARG1); break;

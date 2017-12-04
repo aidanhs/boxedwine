@@ -172,6 +172,9 @@ struct futex* allocFutex(struct KThread* thread, U8* address, U32 millies) {
 void freeFutex(struct futex* f) {
     f->thread = 0;
     f->address = 0;
+#ifdef BOXEDWINE_VM
+    f->pendingWakeUp = 0;
+#endif
 }
 
 void threadClearFutexes(struct KThread* thread) {
@@ -223,7 +226,7 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         int i;
         U32 count = 0;
         for (i=0;i<MAX_FUTEXES && count<value;i++) {
-            if (system_futex[i].address==ramAddress) {
+            if (system_futex[i].address==ramAddress && !system_futex[i].pendingWakeUp) {
                 wakeThread(thread, system_futex[i].thread);
                 system_futex[i].pendingWakeUp = TRUE;
                 count++;
