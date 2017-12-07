@@ -1680,6 +1680,7 @@ static U32 stringSi(struct x64_Data* data) {
 
     x64_writeOp(data);
     
+    x64_writeToRegFromMem(data, HOST_TMP2, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_NEG_MEM, 8, FALSE);
     x64_addWithLea(data, 6, FALSE, 6, FALSE, HOST_TMP2, TRUE, 0, 0, 8);
     x64_addWithLea(data, 6, FALSE, 6, FALSE, x64_getRegForNegSeg(data, data->ds), TRUE, 0, 0, 4);
     return 0;
