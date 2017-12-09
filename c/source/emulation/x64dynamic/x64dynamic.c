@@ -190,7 +190,6 @@ void x64_link(struct x64_Data* data) {
     }
 }
 void x64_translateData(struct x64_Data* data) {
-    U32 i;
     struct Memory* memory = data->cpu->memory;
 
     while (1) {  

@@ -800,7 +800,7 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         startThread(newThread);
         BOXEDWINE_UNLOCK(NULL, mutexProcess);
 
-        //SDL_Delay(20);
+        SDL_Delay(20);
         return thread->process->id;
     } else {
         kpanic("sys_clone does not implement flags: %X", flags);

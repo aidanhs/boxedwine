@@ -699,7 +699,7 @@ void x64_cmdEntry(struct CPU* cpu) {
                 address-=(ECX-1);
             bytes = ECX;
         } else {
-            kpanic("unhandled self-modifying instruct: %X", op->inst);
+            kpanic("unhandled self-modifying instruction: %X", op->inst);
         }
         page = address >> PAGE_SHIFT;
         pageCount = ((address+bytes-1) >> PAGE_SHIFT) - page + 1;
@@ -739,11 +739,11 @@ void x64_cmdEntry(struct CPU* cpu) {
                 struct x64_Data data;
                 U32 nextTargetEip = targetEip+op->eipCount;
                 U32 targetLen = 0;
-                U64 hostAddress = cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK];
-                U64 nextHostAddress = cpu->thread->process->opToAddressPages[nextTargetEip>>PAGE_SHIFT][nextTargetEip & PAGE_MASK];
+                U64 hostAddress = (U64)cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK];
+                U64 nextHostAddress = (U64)cpu->thread->process->opToAddressPages[nextTargetEip>>PAGE_SHIFT][nextTargetEip & PAGE_MASK];
 
                 if (nextHostAddress) {
-                    targetLen = (nextHostAddress-hostAddress);
+                    targetLen = (U32)(nextHostAddress-hostAddress);
                 }
                 x64_initData(&data, cpu, targetEip);
                 data.memStart = (char*)hostAddress;

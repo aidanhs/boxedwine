@@ -456,7 +456,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
                     S32 currentInstructionLen = (U32)(nextInstructionRip-currentInstructionRip);
                     struct x64_Data data;
                     U32 offset;
-                    U32 i;
+                    S32 i;
 
                     if (currentInstructionLen<5) {
                         kpanic("seh_filter: current instruction modifies code, but it can't be patched because it is less than 5 bytes");

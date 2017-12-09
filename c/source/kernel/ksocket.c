@@ -716,11 +716,12 @@ U32 unixsocket_writev(struct KThread* thread, struct KObject* obj, U32 iov, S32 
             return result;
         }
         len+=result;
-    }
-    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+    }    
     if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
     }
+    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+
     BOXEDWINE_LOCK(thread, pollMutex);
     BOXEDWINE_SIGNAL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);  
@@ -732,11 +733,12 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     U32 result;
 
     BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
-    result = unixsocket_internal_write(thread, obj, buffer, len);
-    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+    result = unixsocket_internal_write(thread, obj, buffer, len);    
     if (s->connection) {
         wakeAndResetWaitingOnReadThreads(s->connection);
     }
+    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+
     BOXEDWINE_LOCK(thread, pollMutex);
     BOXEDWINE_SIGNAL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);    
@@ -759,10 +761,10 @@ U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U
     }
     //printf("SOCKET write len=%d bufferSize=%d pos=%d\n", len, s->connection->recvBufferLen, s->connection->recvBufferWritePos);
     ringbuf_memcpy_into(s->connection->recvBuffer, &value, 1);
-    count++;    
-    BOXEDWINE_UNLOCK(NULL, s->connection->bufferMutex);
+    count++;        
     if (s->connection)
         wakeAndResetWaitingOnReadThreads(s->connection);
+    BOXEDWINE_UNLOCK(NULL, s->connection->bufferMutex);
 
     BOXEDWINE_LOCK(NULL, pollMutex);
     BOXEDWINE_SIGNAL(pollCond);
@@ -814,10 +816,10 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
         count += todo;
         len -= todo;
     }
-#endif    
-    BOXEDWINE_UNLOCK(thread, s->bufferMutex);
+#endif        
     if (s->connection)
         wakeAndResetWaitingOnWriteThreads(s->connection);
+    BOXEDWINE_UNLOCK(thread, s->bufferMutex);
 
     BOXEDWINE_LOCK(thread, pollMutex);
     BOXEDWINE_SIGNAL(pollCond);
