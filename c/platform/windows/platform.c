@@ -27,6 +27,8 @@
 #include "x64dynamic.h"
 #include "kalloc.h"
 #include "kscheduler.h"
+#include "../../source/emulation/x64dynamic/x64.h"
+#include "decoder.h"
 
 LONGLONG PCFreq;
 LONGLONG CounterStart;
@@ -322,6 +324,10 @@ void releaseNativeMemory(struct Memory* memory) {
                 kfree(memory->process->opToAddressPages[i], KALLOC_IP_CACHE);
                 memory->process->opToAddressPages[i] = 0;
             }
+            if (memory->process->hostToEip[i]) {
+                kfree(memory->process->hostToEip[i], KALLOC_IP_CACHE);
+                memory->process->hostToEip[i] = 0;
+            }
         }
     }
     memory->x64Mem = 0;
@@ -348,6 +354,33 @@ void makeCodePageReadOnly(struct Memory* memory, U32 page) {
         }
         memory->nativeFlags[page] |= NATIVE_FLAG_READONLY;
     }
+}
+
+BOOL clearCodePageReadOnly(struct Memory* memory, U32 page) {
+    U32 granPage;
+    DWORD oldProtect;
+    BOOL result = FALSE;
+
+    granPage = page & ~(gran-1);
+    // :TODO: would the granularity ever be more than 4k?  should I check: SYSTEM_INFO System_Info; GetSystemInfo(&System_Info);
+    if (memory->nativeFlags[page] & NATIVE_FLAG_READONLY) {
+        if (!VirtualProtect(getNativeAddress(memory, page << PAGE_SHIFT), (1 << PAGE_SHIFT), PAGE_READWRITE, &oldProtect)) {
+            LPSTR messageBuffer = NULL;
+            size_t size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+            kpanic("failed to unprotect memory: %s", messageBuffer);
+        }
+        memory->nativeFlags[page] &= ~NATIVE_FLAG_READONLY;
+        result = TRUE;
+    }
+    return result;
+}
+
+// for self modifying code this might be a bit slow 0x528f608
+U32 getEmulatedEipFromHostRip(struct KThread* thread, U64 rip) {
+    while (!thread->process->hostToEip[((U32)rip)>>PAGE_SHIFT] || !thread->process->hostToEip[((U32)rip)>>PAGE_SHIFT][rip & PAGE_MASK]) {
+        rip--;
+    }
+    return thread->process->hostToEip[((U32)rip)>>PAGE_SHIFT][rip & PAGE_MASK];
 }
 
 void seg_mapper(struct KThread* thread, U32 address) ;
@@ -382,8 +415,8 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             EBP = (U32)ep->ContextRecord->Rbp;
             ESI = (U32)ep->ContextRecord->Rsi;
             EDI = (U32)ep->ContextRecord->Rdi;
-            cpu->flags &=~ FMASK_TEST;
-            cpu->flags |= ep->ContextRecord->EFlags & FMASK_TEST;
+            cpu->flags &=~ FMASK_X64;
+            cpu->flags |= ep->ContextRecord->EFlags & FMASK_X64;
             x64_cmdEntry(cpu);
             ep->ContextRecord->Rax = EAX;
             ep->ContextRecord->Rcx = ECX;
@@ -393,8 +426,8 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             ep->ContextRecord->Rbp = EBP;
             ep->ContextRecord->Rsi = ESI;
             ep->ContextRecord->Rdi = EDI;  
-            ep->ContextRecord->EFlags &=~ FMASK_TEST;
-            ep->ContextRecord->EFlags |= (cpu->flags & FMASK_TEST);
+            ep->ContextRecord->EFlags &=~ FMASK_X64;
+            ep->ContextRecord->EFlags |= (cpu->flags & FMASK_X64);
             if (cpu->thread->done)
                 return EXCEPTION_EXECUTE_HANDLER;
             if (eip!=cpu->eip.u32) {
@@ -408,9 +441,59 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             return EXCEPTION_CONTINUE_EXECUTION;
         } else {
             struct CPU* cpu = (struct CPU*)ep->ContextRecord->R9;
-            U32 i,j,offset=0;
-            BOOL found = FALSE;
 
+            cpu->eip.u32 = getEmulatedEipFromHostRip(thread, ep->ContextRecord->Rip);
+            if ((ep->ExceptionRecord->ExceptionInformation[1] & 0xFFFFFFFF00000000l) == cpu->memory->id) {
+                U32 address = (U32)ep->ExceptionRecord->ExceptionInformation[1];
+
+                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
+                    struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+                    struct Op* op = block->ops->next;                                        
+                    U64 currentInstructionRip = (U64)(cpu->opToAddressPages[cpu->eip.u32>>PAGE_SHIFT][cpu->eip.u32 & PAGE_MASK]);
+                    U8* currentInstruction = (U8*)currentInstructionRip;
+                    U32 nextInstructionEip = cpu->eip.u32+op->eipCount;
+                    U64 nextInstructionRip = (U64)(cpu->opToAddressPages[nextInstructionEip>>PAGE_SHIFT][nextInstructionEip & PAGE_MASK]);
+                    S32 currentInstructionLen = (U32)(nextInstructionRip-currentInstructionRip);
+                    struct x64_Data data;
+                    U32 offset;
+                    U32 i;
+
+                    if (currentInstructionLen<5) {
+                        kpanic("seh_filter: current instruction modifies code, but it can't be patched because it is less than 5 bytes");
+                    }
+
+
+                    SDL_LockMutex(cpu->memory->executableMemoryMutex);
+                    x64_initData(&data, cpu, cpu->eip.u32);
+                    x64_writeCmd(&data, CMD_SELF_MODIFYING, cpu->eip.u32, TRUE);
+                    x64_retn(&data);
+                    cpu->memory->x64MemPos+=data.memPos;
+                    cpu->memory->x64AvailableMem-=data.memPos;
+                    x64_commitMappedAddresses(&data);
+                    currentInstruction[0] = 0xe8; // call jd
+                    offset = (U32)(data.memStart-currentInstructionRip-5);
+                    currentInstruction[1] = (U8)offset;
+                    currentInstruction[2] = (U8)(offset >> 8);
+                    currentInstruction[3] = (U8)(offset >> 16);
+                    currentInstruction[4] = (U8)(offset >> 24);
+                    for (i=5;i<currentInstructionLen;i++) {
+                        currentInstruction[i]=0x90;
+                    }
+                    SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
+                    ep->ContextRecord->Rip = currentInstructionRip;
+
+                    if (ep->ContextRecord->Rsi >> 32) {
+                        ep->ContextRecord->Rdi+=cpu->negSegAddress[op->base];
+                        ep->ContextRecord->Rdi+=cpu->negMemOffset;
+                    }
+                    if (ep->ContextRecord->Rdi >> 32) {
+                        ep->ContextRecord->Rdi+=cpu->negSegAddress[ES];
+                        ep->ContextRecord->Rdi+=cpu->negMemOffset;
+                    }
+                    return EXCEPTION_CONTINUE_EXECUTION;
+                }
+            }
+             
             EAX = (U32)ep->ContextRecord->Rax;
             ECX = (U32)ep->ContextRecord->Rcx;
             EDX = (U32)ep->ContextRecord->Rdx;
@@ -419,37 +502,6 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             EBP = (U32)ep->ContextRecord->Rbp;
             ESI = (U32)ep->ContextRecord->Rsi;
             EDI = (U32)ep->ContextRecord->Rdi;
-
-            if ((ep->ExceptionRecord->ExceptionInformation[1] & 0xFFFFFFFF00000000l) == cpu->memory->id) {
-                U32 address = (U32)ep->ExceptionRecord->ExceptionInformation[1];
-                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
-                    // 1) get instruction
-                    // 2) get value to write
-                    // 3) get address to write to, and width
-                    // 4) unlock (make read/write), what about other threads? check for page boundry and possible unlock 2 pages
-                    // 5) write
-                    // 6) lock (make read only)
-                    // 7) move instruction pointer to next instruction
-                    // 8) get translated instruction address and size
-                    // 9) translate instruction, does it fit, what should I do if it is bigger, if smaller, I guess just nop
-                    kpanic("Self modifying code not supported yet in x64");
-                }
-            }
-            
-            while (!found) {
-                for (i=0;i<NUMBER_OF_PAGES && !found;i++) {
-                    if (thread->process->opToAddressPages[i]) {
-                        for (j=0;j<PAGE_SIZE;j++) {
-                            if (thread->process->opToAddressPages[i][j]==(void*)(ep->ContextRecord->Rip-offset)) {
-                                found = TRUE;
-                                cpu->eip.u32 = (i<<PAGE_SHIFT)+j;
-                                break;
-                            }
-                        }
-                    }
-                }
-                offset++;
-            }
             seg_mapper(thread, (U32)ep->ExceptionRecord->ExceptionInformation[1]);
         }
 #else

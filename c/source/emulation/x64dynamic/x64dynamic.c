@@ -112,7 +112,7 @@ static void resetDataForNewOp(struct x64_Data* data) {
     data->startOfOpIp = data->ip;
 }
 
-static void initData(struct x64_Data* data, struct CPU* cpu, U32 eip) {
+ void x64_initData(struct x64_Data* data, struct CPU* cpu, U32 eip) {
     struct Memory* memory = cpu->memory;
 
     memset(data, 0, sizeof(struct x64_Data));    
@@ -136,44 +136,34 @@ static void initData(struct x64_Data* data, struct CPU* cpu, U32 eip) {
 }
 
 void OPCALL firstOp(struct CPU* cpu, struct Op* op);
-void x64_translateData(struct x64_Data* data) {
-    U32 i;
-    struct Memory* memory = data->cpu->memory;
-
-    while (1) {           
-        x64_mapAddress(data, data->cpu->segAddress[CS]+data->ip, &data->memStart[data->memPos]);
-        if (0) { // will print out instructions as they are run
-            x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
-            x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
-            x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
-            x64_writeToMemFromReg(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
-            x64_writeToMemFromReg(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
-            x64_writeToMemFromReg(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
-            x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
-            x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
-            x64_writeToMemFromValue(data, (U32)&data->memStart[data->memPos], HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-            x64_writeCmd(data, CMD_PRINT, data->ip, TRUE);
-        }
-        data->opIp = data->ip;        
-        while (1) {            
-            data->op = x64_fetch8(data);            
-            data->inst = data->baseOp + data->op;            
-            if (!x64Decoder[data->inst](data)) {                
-                break;
-            }            
-            if (data->op != 0x66 && data->op!=0x67 && data->op!=0x0F)
-                data->opIp = data->ip;
-        }
-        if (data->done) {
+void x64_translateInstruction(struct x64_Data* data) {
+    if (0) { // will print out instructions as they are run
+        x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+        x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
+        x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
+        x64_writeToMemFromReg(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
+        x64_writeToMemFromReg(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
+        x64_writeToMemFromReg(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
+        x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
+        x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
+        x64_writeToMemFromValue(data, (U32)&data->memStart[data->memPos], HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
+        x64_writeCmd(data, CMD_PRINT, data->ip, TRUE);
+    }    
+    //x64_writeToMemFromValue(data, data->ip, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EIP, 4, FALSE);
+    data->opIp = data->ip;        
+    while (1) {            
+        data->op = x64_fetch8(data);            
+        data->inst = data->baseOp + data->op;            
+        if (!x64Decoder[data->inst](data)) {                
             break;
-        }
-#ifdef __TEST
-        break;
-#endif
-        resetDataForNewOp(data);
-    }   
-    memory->x64MemPos+=data->memPos;
-    memory->x64AvailableMem-=data->memPos;
+        }            
+        if (data->op != 0x66 && data->op!=0x67 && data->op!=0x0F)
+            data->opIp = data->ip;
+    }
+}
+
+void x64_link(struct x64_Data* data) {
+    U32 i;
 
     for (i=0;i<data->jmpTodoCount;i++) {
         U8* translatedOffset = (U8*)x64_translateEipInternal(data, data->cpu, data->jmpTodoEip[i]);
@@ -199,6 +189,25 @@ void x64_translateData(struct x64_Data* data) {
         }
     }
 }
+void x64_translateData(struct x64_Data* data) {
+    U32 i;
+    struct Memory* memory = data->cpu->memory;
+
+    while (1) {  
+        x64_mapAddress(data, data->cpu->segAddress[CS]+data->ip, &data->memStart[data->memPos]);
+        x64_translateInstruction(data);
+        if (data->done) {
+            break;
+        }
+#ifdef __TEST
+        break;
+#endif
+        resetDataForNewOp(data);
+    }   
+    memory->x64MemPos+=data->memPos;
+    memory->x64AvailableMem-=data->memPos;
+    x64_link(data);
+}
 
 void* x64_initCPU(struct CPU* cpu) {
     struct x64_Data data;
@@ -206,7 +215,7 @@ void* x64_initCPU(struct CPU* cpu) {
     struct Memory* memory = cpu->memory;
 
     SDL_LockMutex(cpu->memory->executableMemoryMutex);
-    initData(&data, cpu, cpu->eip.u32);
+    x64_initData(&data, cpu, cpu->eip.u32);
     result = data.memStart;    
 
     x64_writeToRegFromValue(&data, HOST_CPU, TRUE, (U64)cpu, 8);
@@ -216,7 +225,7 @@ void* x64_initCPU(struct CPU* cpu) {
     x64_writeToRegFromValue(&data, HOST_SS, TRUE, (U32)cpu->segAddress[SS], 4);
     x64_writeToRegFromValue(&data, HOST_DS, TRUE, (U32)cpu->segAddress[DS], 4);
 
-    x64_setFlags(&data, cpu->flags, FMASK_TEST);
+    x64_setFlags(&data, cpu->flags, FMASK_X64|DF);
 
     x64_writeToRegFromValue(&data, 0, FALSE, EAX, 4);
     x64_writeToRegFromValue(&data, 1, FALSE, ECX, 4);
@@ -263,7 +272,14 @@ void* x64_translateEipInternal(struct x64_Data* parent, struct CPU* cpu, U32 ip)
             }
             p = p->parent;
         }
-        initData(&data, cpu, ip);
+        if (cpu->opToAddressPages[(address-1) >> PAGE_SHIFT] && cpu->opToAddressPages[(address-1) >> PAGE_SHIFT][(address-1) & PAGE_MASK]) {
+            U8 inst = readb(cpu->thread, address-1);
+            if (inst == 0xf0) {
+                // we tried to jump over a lock instruction, so just ignore this
+                return cpu->opToAddressPages[address >> PAGE_SHIFT][address & PAGE_MASK];
+            }
+        }
+        x64_initData(&data, cpu, ip);
         data.parent = parent;
         x64_translateData(&data);
         if (data.jmpTodoEip!=data.jmpTodoEipBuffer) {
@@ -291,7 +307,7 @@ void* x64_translateEip(struct CPU* cpu, U32 ip) {
 #ifdef __TEST
 void addReturnFromTest(struct CPU* cpu) {
     struct x64_Data data;
-    initData(&data, cpu, cpu->eip.u32);
+    x64_initData(&data, cpu, cpu->eip.u32);
     x64_pushNativeFlags(&data);
     x64_popNative(&data, HOST_TMP, TRUE);
 

@@ -6,6 +6,7 @@
 #include "kthread.h"
 #include "kprocess.h"
 #include "kscheduler.h"
+#include "decoder.h"
 
 #define REX_BASE 0x40
 #define REX_MOD_RM 0x1
@@ -51,11 +52,19 @@ static void write64(struct x64_Data* data, U64 value) {
 
 void x64_mapAddressInternal(struct x64_Data* data, U32 ip, void* address) {
     void** table = data->cpu->opToAddressPages[ip >> PAGE_SHIFT];
+    U32* eipTable = data->cpu->thread->process->hostToEip[((U32)address) >> PAGE_SHIFT];
+
     if (!table) {
         table = kalloc(sizeof(void*)*PAGE_SIZE, KALLOC_IP_CACHE);
         data->cpu->opToAddressPages[ip >> PAGE_SHIFT] = table;
     }
     table[ip & PAGE_MASK] = address;
+
+    if (!eipTable) {
+        eipTable = kalloc(sizeof(U32)*PAGE_SIZE, KALLOC_IP_CACHE);
+        data->cpu->thread->process->hostToEip[((U32)address) >> PAGE_SHIFT] = eipTable;
+    }
+    eipTable[((U32)address) & PAGE_MASK] = ip;
 }
 
 void x64_commitMappedAddresses(struct x64_Data* data) {
@@ -109,7 +118,6 @@ void x64_writeOp(struct x64_Data* data) {
 }
 
 void x64_writeOp8(struct x64_Data* data, BOOL isG8bit, BOOL isGWritten) {
-    // :TODO: map the prefixes to address so that they can be jumped over, libc sometimes jumps over the lock instruction
     U32 g8 = 0;
     U32 g8Temp = 0;
 
@@ -569,6 +577,20 @@ extern Int99Callback* wine_callback;
 extern U32 wine_callbackSize;
 
 static SDL_mutex* printMutex;
+void OPCALL move32r32_32(struct CPU* cpu, struct Op* op);
+void OPCALL move8r8_32(struct CPU* cpu, struct Op* op);
+void OPCALL mov32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL or32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL stosd32_r_op(struct CPU* cpu, struct Op* op);
+void OPCALL movsd32_r_op(struct CPU* cpu, struct Op* op);
+void OPCALL stosb32_r_op(struct CPU* cpu, struct Op* op);
+void OPCALL movsb32_r_op(struct CPU* cpu, struct Op* op);
+
+void OPCALL x64_done_op(struct CPU* cpu, struct Op* op) {
+    cpu->eip.u32+=op->eipCount;
+}
+
+struct Op doneOp = {x64_done_op};
 
 void x64_cmdEntry(struct CPU* cpu) {
     switch (cpu->cmd) {
@@ -641,6 +663,108 @@ void x64_cmdEntry(struct CPU* cpu) {
         }
         break;
     }
+    case CMD_SELF_MODIFYING: {
+        struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+        struct Op* op = block->ops->next;
+        U32 page;
+        U32 pageCount = 1;
+        U32 address;
+        U32 bytes;
+        U32 i;
+        U8 wasReadOnly[256];
+        U32 targetEip = 0;
+        U32 targetFound = FALSE;
+
+        cpu->lazyFlags = FLAGS_NONE;
+        if (op->next != &doneOp) {
+            freeOp(op->next);
+            op->next = &doneOp;
+        }
+        if (op->func==move32r32_32 || op->func==mov32_mem32 || op->func==or32_mem32) {
+            address = eaa32(cpu, op);
+            bytes = 4;
+        } else if (op->func==move8r8_32) {
+            address = eaa32(cpu, op);
+            bytes = 1;
+        } else if (op->func==stosd32_r_op || op->func==movsd32_r_op) {           
+            cpu->df=1-((cpu->flags & DF) >> 9);
+            address = cpu->segAddress[ES]+EDI;
+            if (cpu->df<0)
+                address-=4*(ECX-1);
+            bytes = 4*ECX;
+        } else if (op->func==stosb32_r_op || op->func==movsb32_r_op) {           
+            cpu->df=1-((cpu->flags & DF) >> 9);
+            address = cpu->segAddress[ES]+EDI;
+            if (cpu->df<0)
+                address-=(ECX-1);
+            bytes = ECX;
+        } else {
+            kpanic("unhandled self-modifying instruct: %X", op->inst);
+        }
+        page = address >> PAGE_SHIFT;
+        pageCount = ((address+bytes-1) >> PAGE_SHIFT) - page + 1;
+        for (i=0;i<pageCount;i++) {
+            wasReadOnly[i]=clearCodePageReadOnly(cpu->memory, page+i);
+        }
+
+        op->func(cpu, op);
+        for (i=0;i<pageCount;i++) {
+            if (wasReadOnly[i])
+                makeCodePageReadOnly(cpu->memory, page+i);
+        }
+        fillFlags(cpu);        
+        targetEip = address;
+        for (i=0;i<16;i++) {
+            if (cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT] && cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK]) {
+                targetFound = TRUE;
+                break;
+            }
+            targetEip--;
+        }
+        if (!targetFound) {
+            targetEip = address+1; // +1 because we already checked adddress above
+            for (i=1;i<bytes;i++) {
+                if (cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT] && cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK]) {
+                    targetFound = TRUE;
+                    break;
+                }
+                targetEip++;
+            }
+        }
+        if (targetFound) {            
+            struct Block* block = decodeBlock(cpu, targetEip);
+            struct Op* op = block->ops->next;
+            // is the address actually used in an instruction
+            while (op && targetEip+op->eipCount>address && targetEip<address+bytes) {
+                struct x64_Data data;
+                U32 nextTargetEip = targetEip+op->eipCount;
+                U32 targetLen = 0;
+                U64 hostAddress = cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK];
+                U64 nextHostAddress = cpu->thread->process->opToAddressPages[nextTargetEip>>PAGE_SHIFT][nextTargetEip & PAGE_MASK];
+
+                if (nextHostAddress) {
+                    targetLen = (nextHostAddress-hostAddress);
+                }
+                x64_initData(&data, cpu, targetEip);
+                data.memStart = (char*)hostAddress;
+
+                x64_translateInstruction(&data);
+                x64_link(&data);
+                if (targetLen && data.memPos>targetLen) {
+                    kpanic("x64: couldn't patch self modifying code");
+                }
+                for (i=data.memPos;i<targetLen;i++) {
+                    ((char*)hostAddress)[i]=0x90; // nop
+                }
+                // look to see of any other instructions where affected by the bytes that were changed
+                targetEip+=op->eipCount;
+                op = op->next;
+            }
+        }
+        // :TODO: check if code exists at addresses
+        
+    }
+        break;
     default:
         kpanic("Unknow x64dynamic cmd: %d", cpu->cmd);
         break;
@@ -653,8 +777,11 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
 
     if (fast) {
         x64_pushNativeFlags(data);
+        x64_popNative(data, HOST_TMP, 1);        
+        x64_pushNativeFlags(data);
         x64_pushNative(data, HOST_CPU, TRUE);
 
+        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
         x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
         x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
         x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
@@ -696,6 +823,10 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
         x64_writeToRegFromMem(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
         x64_writeToRegFromMem(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
         x64_writeToRegFromMem(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
+
+        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
+        x64_pushNative(data, HOST_TMP, TRUE);
+        x64_popNativeFlags(data);
 
         // volitile in Win64
         x64_writeToRegFromMem(data, HOST_MEM, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_MEM, 8, FALSE);        
@@ -1225,6 +1356,12 @@ void x64_jumpConditional(struct x64_Data* data, U32 condition, U32 eip) {
 
 void x64_jumpTo(struct x64_Data* data,  U32 eip) {    
     write8(data, 0xE9);
+    write32(data, 0);
+    addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
+}
+
+void x64_callTo(struct x64_Data* data,  U32 eip) {    
+    write8(data, 0xE8);
     write32(data, 0);
     addTodoLinkJump(data, data->memPos-4, eip, 4, FALSE);
 }

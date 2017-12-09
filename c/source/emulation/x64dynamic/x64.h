@@ -15,6 +15,7 @@
 
 #define RAX 0
 
+#define FMASK_X64 (FMASK_TEST|DF)
 #define CPU_OFFSET_ES (U32)(offsetof(struct CPU, segValue[ES]))
 #define CPU_OFFSET_CS (U32)(offsetof(struct CPU, segValue[CS]))
 #define CPU_OFFSET_SS (U32)(offsetof(struct CPU, segValue[SS]))
@@ -78,6 +79,7 @@
 #define CMD_INVALID_OP 16
 #define CMD_WINE 17
 #define CMD_OPENGL 18
+#define CMD_SELF_MODIFYING 19
 
 struct x64_Data {
     U32 baseOp;
@@ -209,6 +211,7 @@ void x64_daa(struct x64_Data* data);
 void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast);
 void x64_jumpConditional(struct x64_Data* data, U32 condition, U32 eip);
 void x64_jumpTo(struct x64_Data* data,  U32 eip);
+void x64_callTo(struct x64_Data* data,  U32 eip);
 void x64_jmpReg(struct x64_Data* data, U32 reg, U32 isRex);
 
 void x64_pushNative(struct x64_Data* data, U32 reg, U32 isRegRex);
@@ -227,4 +230,9 @@ U32 x64_read32Buffer(U8* buffer);
 U8 x64_fetch8(struct x64_Data* data);
 U16 x64_fetch16(struct x64_Data* data);
 U32 x64_fetch32(struct x64_Data* data);
+
+void x64_translateInstruction(struct x64_Data* data);
+void x64_initData(struct x64_Data* data, struct CPU* cpu, U32 eip);
+void x64_link(struct x64_Data* data);
+
 #endif

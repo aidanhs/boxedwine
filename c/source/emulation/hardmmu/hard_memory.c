@@ -512,7 +512,17 @@ void clearPageFromBlockCache(struct Memory* memory, struct KThread* thread, U32 
 #if BOXEDWINE_VM
     {
         void** entries = memory->process->opToAddressPages[page];
+
         if (entries) {
+            U32 i;
+            for (i=0;i<PAGE_SIZE;i++) {
+                if (memory->process->opToAddressPages[page][i]) {
+                    U64 host = (U64)memory->process->opToAddressPages[page][i];
+                    if (memory->process->hostToEip[((U32)host)>>PAGE_SHIFT]) {
+                        memory->process->hostToEip[((U32)host)>>PAGE_SHIFT][host & 0xFFF]=0;
+                    }
+                }
+            }
             memory->process->opToAddressPages[page] = NULL;
             kfree(entries, KALLOC_IP_CACHE);
         }

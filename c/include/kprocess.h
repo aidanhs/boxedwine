@@ -117,6 +117,7 @@ struct KProcess {
     struct KThread* wakeOnExitOrExec;
 #ifdef BOXEDWINE_VM
     void** opToAddressPages[0x100000];
+    U32* hostToEip[0x100000];
     SDL_mutex* threadsMutex;
     SDL_mutex* fdMutex;
 #endif

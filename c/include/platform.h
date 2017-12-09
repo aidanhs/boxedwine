@@ -48,6 +48,7 @@ void platformRunThreadSlice(struct KThread* thread);
 
 #ifdef HAS_64BIT_MMU
 void makeCodePageReadOnly(struct Memory* memory, U32 page);
+BOOL clearCodePageReadOnly(struct Memory* memory, U32 page);
 #endif
 
 #ifdef BOXEDWINE_VM
