@@ -123,7 +123,7 @@ U32 syscall_mmap64(struct KThread* thread, U32 addr, U32 len, S32 prot, S32 flag
                 process->mappedFiles[index].address = pageStart << PAGE_SHIFT;
                 process->mappedFiles[index].len = pageCount << PAGE_SHIFT;
                 process->mappedFiles[index].offset = off;                
-                process->mappedFiles[index].refCount = 0;
+                process->mappedFiles[index].refCount = 1;
                 process->mappedFiles[index].file = fd->kobject;
                 process->mappedFiles[index].file->refCount++;
             }

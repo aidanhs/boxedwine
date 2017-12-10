@@ -117,10 +117,14 @@ void cloneMemory(struct KThread* toThread, struct KThread* fromThread) {
 
     int i=0;    
     for (i=0;i<0x100000;i++) {
-        if (from->flags[i] & PAGE_SHARED) {
-            kpanic("forking a process with shared memory is not supported with HAS_64BIT_MMU");
-        }
         if (from->flags[i] & PAGE_IN_RAM) {            
+            if ((from->flags[i] & PAGE_SHARED) && (from->flags[i] & PAGE_WRITE)) {
+                static U32 shown = 0;
+                if (!shown) {
+                    klog("forking a process with shared memory is not fully supported with HAS_64BIT_MMU");
+                    shown=1;
+                }
+            }
             allocNativeMemory(memory, i, 1, from->flags[i]);
             memcpy(getNativeAddress(toThread->process->memory, i << PAGE_SHIFT), getNativeAddress(fromThread->process->memory, i << PAGE_SHIFT), PAGE_SIZE);
         } else {
@@ -641,6 +645,12 @@ U32 getFreePageCount() {
 }
 
 void closeMemoryMapped(struct MapedFiles* mapped) {
+    mapped->refCount--;
+    if (mapped->refCount == 0) {
+        closeKObject(mapped->file);
+        mapped->file = 0;
+
+    }
 }
 
 #endif
