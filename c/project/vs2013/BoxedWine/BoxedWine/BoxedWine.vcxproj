@@ -171,7 +171,7 @@
       <PreprocessorDefinitions>LOG_SYSCALLS;BOXEDWINE_ZLIB;BOXEDWINE_VM;HAS_64BIT_MMU;SDL2;GLH=&lt;sdl_opengl.h&gt;;BOXEDWINE_SDL;SUPPORTS_SETJMP;GENERATE_SOURCE;_NO_DEBUG_HEAP=0;PLATFORM_MSVC;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..\..\..\..\include</AdditionalIncludeDirectories>
       <DisableSpecificWarnings>4996</DisableSpecificWarnings>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -378,8 +378,6 @@
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Test|x64'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Log|Win32'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug Log|x64'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
-      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='SDL Release|Win32'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='SDL Release|x64'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='SDL MMU Release|Win32'">..\..\..\..\include;..\..\..\..\lib\sdl1\include;..\..\..\..\mesa\src\mesa;..\..\..\..\mesa\include</AdditionalIncludeDirectories>
