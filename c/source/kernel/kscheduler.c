@@ -134,7 +134,7 @@ U32 BOXEDWINE_WAIT_TIMEOUT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mu
     thread->waitingCondition = cond;
     while (1) {
         U32 elapsed = getMilliesSinceStart()-startTime;
-        if (elapsed > ms) {
+        if (elapsed >= ms) {
             result = SDL_CondWaitTimeout(cond, mutex, 0);
             break;
         }
@@ -145,9 +145,9 @@ U32 BOXEDWINE_WAIT_TIMEOUT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mu
             if (thread->interrupted) {
                 break;
             }
+            continue;
         }
-        if (result==0)
-            break;
+        break;
     }    
     thread->waitingCondition = NULL;
     return result;

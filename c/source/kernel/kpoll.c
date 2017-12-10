@@ -33,6 +33,7 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
     S32 result = 0;
     U32 i;
     U32 startTime = getMilliesSinceStart();
+    U32 elapsed;
 
     if (!pollMutex) {
         pollMutex = SDL_CreateMutex();
@@ -60,8 +61,9 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
                 }
             }
         }
+        elapsed = getMilliesSinceStart()-startTime;
         if (!result) {
-            if (getMilliesSinceStart()-startTime>timeout) {
+            if (elapsed>timeout) {
                 BOXEDWINE_UNLOCK(thread, pollMutex);
                 return 0;
             }
@@ -70,7 +72,8 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
             BOXEDWINE_UNLOCK(thread, pollMutex);
             return result;
         }
-        BOXEDWINE_WAIT_TIMEOUT(thread, pollCond, pollMutex, timeout-(getMilliesSinceStart()-startTime));
+        
+        BOXEDWINE_WAIT_TIMEOUT(thread, pollCond, pollMutex, timeout-elapsed);
     } 
 }
 #else
