@@ -648,10 +648,12 @@ void flipFB() {
 
 void flipFBNoCheck() {
 #ifdef SDL2
+    if (sdlTexture) {
         SDL_UpdateTexture(sdlTexture, NULL, screenPixels, fb_fix_screeninfo.line_length);
         SDL_RenderClear(sdlRenderer);
         SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
         SDL_RenderPresent(sdlRenderer);
+    }
 #else
     if (SDL_MUSTLOCK(surface)) {
         SDL_UnlockSurface(surface);

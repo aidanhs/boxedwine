@@ -556,7 +556,7 @@ void unixsocket_onDelete(struct KObject* obj) {
             wakeThread(NULL, s->connection->waitingOnConnectThread);
 
         BOXEDWINE_LOCK(NULL, pollMutex);
-        BOXEDWINE_SIGNAL(pollCond);
+        BOXEDWINE_SIGNAL_ALL(pollCond);
         BOXEDWINE_UNLOCK(NULL, pollMutex);
     }    
     if (s->connecting) {		
@@ -593,7 +593,7 @@ void unixsocket_onDelete(struct KObject* obj) {
 #ifdef BOXEDWINE_VM
     if (pollMutex) {
         BOXEDWINE_LOCK(NULL, pollMutex);
-        BOXEDWINE_SIGNAL(pollCond);
+        BOXEDWINE_SIGNAL_ALL(pollCond);
         BOXEDWINE_UNLOCK(NULL, pollMutex);
     }
 #endif
@@ -723,7 +723,7 @@ U32 unixsocket_writev(struct KThread* thread, struct KObject* obj, U32 iov, S32 
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
 
     BOXEDWINE_LOCK(thread, pollMutex);
-    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_SIGNAL_ALL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);  
     return len;
 }
@@ -740,7 +740,7 @@ U32 unixsocket_write(struct KThread* thread, struct KObject* obj, U32 buffer, U3
     BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
 
     BOXEDWINE_LOCK(thread, pollMutex);
-    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_SIGNAL_ALL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);    
     return result;
 }
@@ -767,7 +767,7 @@ U32 unixsocket_write_native_nowait(struct Memory* memory, struct KObject* obj, U
     BOXEDWINE_UNLOCK(NULL, s->connection->bufferMutex);
 
     BOXEDWINE_LOCK(NULL, pollMutex);
-    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_SIGNAL_ALL(pollCond);
     BOXEDWINE_UNLOCK(NULL, pollMutex);
 
     return count;
@@ -822,7 +822,7 @@ U32 unixsocket_read(struct KThread* thread, struct KObject* obj, U32 buffer, U32
     BOXEDWINE_UNLOCK(thread, s->bufferMutex);
 
     BOXEDWINE_LOCK(thread, pollMutex);
-    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_SIGNAL_ALL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);
 
     return count;
@@ -1406,7 +1406,7 @@ U32 kconnect(struct KThread* thread, U32 socket, U32 address, U32 len) {
                             wakeThread(NULL, destination->waitingOnConnectThread);
 
                         BOXEDWINE_LOCK(NULL, pollMutex);
-                        BOXEDWINE_SIGNAL(pollCond);
+                        BOXEDWINE_SIGNAL_ALL(pollCond);
                         BOXEDWINE_UNLOCK(NULL, pollMutex);
                         found = TRUE;
                         break;
@@ -1572,7 +1572,7 @@ U32 kaccept(struct KThread* thread, U32 socket, U32 address, U32 len) {
         wakeThread(NULL, connection->waitingOnConnectThread);
 
     BOXEDWINE_LOCK(thread, pollMutex);
-    BOXEDWINE_SIGNAL(pollCond);
+    BOXEDWINE_SIGNAL_ALL(pollCond);
     BOXEDWINE_UNLOCK(thread, pollMutex);
 
     return result;

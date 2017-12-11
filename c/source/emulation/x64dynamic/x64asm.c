@@ -585,6 +585,9 @@ void OPCALL stosd32_r_op(struct CPU* cpu, struct Op* op);
 void OPCALL movsd32_r_op(struct CPU* cpu, struct Op* op);
 void OPCALL stosb32_r_op(struct CPU* cpu, struct Op* op);
 void OPCALL movsb32_r_op(struct CPU* cpu, struct Op* op);
+void OPCALL mov8_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL adde32r32_32(struct CPU* cpu, struct Op* op);
+void OPCALL sube32r32_32(struct CPU* cpu, struct Op* op);
 
 void OPCALL x64_done_op(struct CPU* cpu, struct Op* op) {
     cpu->eip.u32+=op->eipCount;
@@ -664,105 +667,111 @@ void x64_cmdEntry(struct CPU* cpu) {
         break;
     }
     case CMD_SELF_MODIFYING: {
-        struct Block* block = decodeBlock(cpu, cpu->eip.u32);
-        struct Op* op = block->ops->next;
-        U32 page;
-        U32 pageCount = 1;
-        U32 address;
-        U32 bytes;
-        U32 i;
-        U8 wasReadOnly[256];
-        U32 targetEip = 0;
-        U32 targetFound = FALSE;
+        static SDL_mutex* m;
+        if (!m)
+            m=SDL_CreateMutex();
+        SDL_LockMutex(m);
+        {
+            struct Block* block = decodeBlock(cpu, cpu->eip.u32);
+            struct Op* op = block->ops->next;
+            U32 page;
+            U32 pageCount = 1;
+            U32 address;
+            U32 bytes;
+            U32 i;
+            U8 wasReadOnly[256];
+            U32 targetEip = 0;
+            U32 targetFound = FALSE;
 
-        cpu->lazyFlags = FLAGS_NONE;
-        if (op->next != &doneOp) {
-            freeOp(op->next);
-            op->next = &doneOp;
-        }
-        if (op->func==move32r32_32 || op->func==mov32_mem32 || op->func==or32_mem32) {
-            address = eaa32(cpu, op);
-            bytes = 4;
-        } else if (op->func==move8r8_32) {
-            address = eaa32(cpu, op);
-            bytes = 1;
-        } else if (op->func==stosd32_r_op || op->func==movsd32_r_op) {           
-            cpu->df=1-((cpu->flags & DF) >> 9);
-            address = cpu->segAddress[ES]+EDI;
-            if (cpu->df<0)
-                address-=4*(ECX-1);
-            bytes = 4*ECX;
-        } else if (op->func==stosb32_r_op || op->func==movsb32_r_op) {           
-            cpu->df=1-((cpu->flags & DF) >> 9);
-            address = cpu->segAddress[ES]+EDI;
-            if (cpu->df<0)
-                address-=(ECX-1);
-            bytes = ECX;
-        } else {
-            kpanic("unhandled self-modifying instruction: %X", op->inst);
-        }
-        page = address >> PAGE_SHIFT;
-        pageCount = ((address+bytes-1) >> PAGE_SHIFT) - page + 1;
-        for (i=0;i<pageCount;i++) {
-            wasReadOnly[i]=clearCodePageReadOnly(cpu->memory, page+i);
-        }
-
-        op->func(cpu, op);
-        for (i=0;i<pageCount;i++) {
-            if (wasReadOnly[i])
-                makeCodePageReadOnly(cpu->memory, page+i);
-        }
-        fillFlags(cpu);        
-        targetEip = address;
-        for (i=0;i<16;i++) {
-            if (cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT] && cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK]) {
-                targetFound = TRUE;
-                break;
+            cpu->lazyFlags = FLAGS_NONE;
+            if (op->next != &doneOp) {
+                freeOp(op->next);
+                op->next = &doneOp;
             }
-            targetEip--;
-        }
-        if (!targetFound) {
-            targetEip = address+1; // +1 because we already checked adddress above
-            for (i=1;i<bytes;i++) {
+            if (op->func==move32r32_32 || op->func==mov32_mem32 || op->func==or32_mem32 || op->func==adde32r32_32 || op->func==sube32r32_32) {
+                address = eaa32(cpu, op);
+                bytes = 4;
+            } else if (op->func==move8r8_32 || op->func==mov8_mem32) {
+                address = eaa32(cpu, op);
+                bytes = 1;
+            } else if (op->func==stosd32_r_op || op->func==movsd32_r_op) {           
+                cpu->df=1-((cpu->flags & DF) >> 9);
+                address = cpu->segAddress[ES]+EDI;
+                if (cpu->df<0)
+                    address-=4*(ECX-1);
+                bytes = 4*ECX;
+            } else if (op->func==stosb32_r_op || op->func==movsb32_r_op) {           
+                cpu->df=1-((cpu->flags & DF) >> 9);
+                address = cpu->segAddress[ES]+EDI;
+                if (cpu->df<0)
+                    address-=(ECX-1);
+                bytes = ECX;
+            } else {
+                kpanic("unhandled self-modifying instruction: %X", op->inst);
+            }
+            page = address >> PAGE_SHIFT;
+            pageCount = ((address+bytes-1) >> PAGE_SHIFT) - page + 1;
+            for (i=0;i<pageCount;i++) {
+                wasReadOnly[i]=clearCodePageReadOnly(cpu->memory, page+i);
+            }
+
+            op->func(cpu, op);
+            for (i=0;i<pageCount;i++) {
+                if (wasReadOnly[i])
+                    makeCodePageReadOnly(cpu->memory, page+i);
+            }
+            fillFlags(cpu);        
+            targetEip = address;
+            for (i=0;i<16;i++) {
                 if (cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT] && cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK]) {
                     targetFound = TRUE;
                     break;
                 }
-                targetEip++;
+                targetEip--;
             }
-        }
-        if (targetFound) {            
-            struct Block* block = decodeBlock(cpu, targetEip);
-            struct Op* op = block->ops->next;
-            // is the address actually used in an instruction
-            while (op && targetEip+op->eipCount>address && targetEip<address+bytes) {
-                struct x64_Data data;
-                U32 nextTargetEip = targetEip+op->eipCount;
-                U32 targetLen = 0;
-                U64 hostAddress = (U64)cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK];
-                U64 nextHostAddress = (U64)cpu->thread->process->opToAddressPages[nextTargetEip>>PAGE_SHIFT][nextTargetEip & PAGE_MASK];
-
-                if (nextHostAddress) {
-                    targetLen = (U32)(nextHostAddress-hostAddress);
+            if (!targetFound) {
+                targetEip = address+1; // +1 because we already checked adddress above
+                for (i=1;i<bytes;i++) {
+                    if (cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT] && cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK]) {
+                        targetFound = TRUE;
+                        break;
+                    }
+                    targetEip++;
                 }
-                x64_initData(&data, cpu, targetEip);
-                data.memStart = (char*)hostAddress;
-
-                x64_translateInstruction(&data);
-                x64_link(&data);
-                if (targetLen && data.memPos>targetLen) {
-                    kpanic("x64: couldn't patch self modifying code");
-                }
-                for (i=data.memPos;i<targetLen;i++) {
-                    ((char*)hostAddress)[i]=0x90; // nop
-                }
-                // look to see of any other instructions where affected by the bytes that were changed
-                targetEip+=op->eipCount;
-                op = op->next;
             }
-        }
+            if (targetFound) {            
+                struct Block* block = decodeBlock(cpu, targetEip);
+                struct Op* op = block->ops->next;
+                // is the address actually used in an instruction
+                while (op && targetEip+op->eipCount>address && targetEip<address+bytes) {
+                    struct x64_Data data;
+                    U32 nextTargetEip = targetEip+op->eipCount;
+                    U32 targetLen = 0;
+                    U64 hostAddress = (U64)cpu->thread->process->opToAddressPages[targetEip>>PAGE_SHIFT][targetEip & PAGE_MASK];
+                    U64 nextHostAddress = (U64)cpu->thread->process->opToAddressPages[nextTargetEip>>PAGE_SHIFT][nextTargetEip & PAGE_MASK];
+
+                    if (nextHostAddress) {
+                        targetLen = (U32)(nextHostAddress-hostAddress);
+                    }
+                    x64_initData(&data, cpu, targetEip);
+                    data.memStart = (char*)hostAddress;
+
+                    x64_translateInstruction(&data);
+                    x64_link(&data);
+                    if (targetLen && data.memPos>targetLen) {
+                        kpanic("x64: couldn't patch self modifying code");
+                    }
+                    for (i=data.memPos;i<targetLen;i++) {
+                        ((char*)hostAddress)[i]=0x90; // nop
+                    }
+                    // look to see of any other instructions where affected by the bytes that were changed
+                    targetEip+=op->eipCount;
+                    op = op->next;
+                }
+            }
         // :TODO: check if code exists at addresses
-        
+        }
+        SDL_UnlockMutex(m);
     }
         break;
     default:
