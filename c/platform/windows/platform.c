@@ -577,8 +577,8 @@ void killThread(struct KThread* thread) {
     kpanic("killThread not implemented yet");
 }
 
-DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
-    struct KThread* thread = (struct KThread*)lpParameter;
+int platformThreadProc(void* data) {
+    struct KThread* thread = (struct KThread*)data;
     struct CPU* cpu = &thread->cpu;
     U32 i;
 
@@ -607,7 +607,8 @@ DWORD WINAPI platformThreadProc(LPVOID lpParameter) {
 }
 
 void platformStartThread(struct KThread* thread) {
-    thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);        
+    thread->nativeHandle = SDL_CreateThread(platformThreadProc, "Thread", thread);
+    //thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);        
 }
 
 void* allocExecutable64kBlock(struct Memory* memory) {
