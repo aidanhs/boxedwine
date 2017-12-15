@@ -7,6 +7,7 @@
 #include "kprocess.h"
 #include "kscheduler.h"
 #include "decoder.h"
+#include "../hardmmu/hard_memory.h"
 
 #define REX_BASE 0x40
 #define REX_MOD_RM 0x1
@@ -581,6 +582,7 @@ void OPCALL move32r32_32(struct CPU* cpu, struct Op* op);
 void OPCALL move8r8_32(struct CPU* cpu, struct Op* op);
 void OPCALL mov32_mem32(struct CPU* cpu, struct Op* op);
 void OPCALL or32_mem32(struct CPU* cpu, struct Op* op);
+void OPCALL and32_mem32(struct CPU* cpu, struct Op* op);
 void OPCALL stosd32_r_op(struct CPU* cpu, struct Op* op);
 void OPCALL movsd32_r_op(struct CPU* cpu, struct Op* op);
 void OPCALL stosb32_r_op(struct CPU* cpu, struct Op* op);
@@ -594,6 +596,8 @@ void OPCALL x64_done_op(struct CPU* cpu, struct Op* op) {
 }
 
 struct Op doneOp = {x64_done_op};
+void log_pf(struct KThread* thread, U32 address);
+void OPCALL firstOp(struct CPU* cpu, struct Op* op);
 
 void x64_cmdEntry(struct CPU* cpu) {
     switch (cpu->cmd) {
@@ -667,13 +671,10 @@ void x64_cmdEntry(struct CPU* cpu) {
         break;
     }
     case CMD_SELF_MODIFYING: {
-        static SDL_mutex* m;
-        if (!m)
-            m=SDL_CreateMutex();
-        SDL_LockMutex(m);
+        SDL_LockMutex(cpu->memory->executableMemoryMutex);
         {
             struct Block* block = decodeBlock(cpu, cpu->eip.u32);
-            struct Op* op = block->ops->next;
+            struct Op* op = block->ops;
             U32 page;
             U32 pageCount = 1;
             U32 address;
@@ -683,12 +684,14 @@ void x64_cmdEntry(struct CPU* cpu) {
             U32 targetEip = 0;
             U32 targetFound = FALSE;
 
+            if (op->func == firstOp) 
+                op = op->next;
             cpu->lazyFlags = FLAGS_NONE;
             if (op->next != &doneOp) {
                 freeOp(op->next);
                 op->next = &doneOp;
             }
-            if (op->func==move32r32_32 || op->func==mov32_mem32 || op->func==or32_mem32 || op->func==adde32r32_32 || op->func==sube32r32_32) {
+            if (op->func==move32r32_32 || op->func==mov32_mem32 || op->func==and32_mem32 || op->func==or32_mem32 || op->func==adde32r32_32 || op->func==sube32r32_32) {
                 address = eaa32(cpu, op);
                 bytes = 4;
             } else if (op->func==move8r8_32 || op->func==mov8_mem32) {
@@ -707,6 +710,8 @@ void x64_cmdEntry(struct CPU* cpu) {
                     address-=(ECX-1);
                 bytes = ECX;
             } else {
+                block = decodeBlock(cpu, cpu->eip.u32);
+                log_pf(cpu->thread, cpu->eip.u32);
                 kpanic("unhandled self-modifying instruction: %X", op->inst);
             }
             page = address >> PAGE_SHIFT;
@@ -771,7 +776,7 @@ void x64_cmdEntry(struct CPU* cpu) {
             }
         // :TODO: check if code exists at addresses
         }
-        SDL_UnlockMutex(m);
+        SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
     }
         break;
     default:
@@ -804,7 +809,7 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
         write8(data, REX_BASE | REX_64);
         write8(data, 0x83);
         write8(data, 0xEC);
-        write8(data, 0x48);
+        write8(data, 0x28);
 
         // mov rcx, HOST_CPU
         x64_writeToRegFromReg(data, 1, FALSE, HOST_CPU, TRUE, 8);
@@ -819,7 +824,7 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
         write8(data, REX_BASE | REX_64);
         write8(data, 0x83);
         write8(data, 0xC4);
-        write8(data, 0x48);
+        write8(data, 0x28);
 
         x64_popNative(data, HOST_CPU, TRUE);
         x64_popNativeFlags(data);

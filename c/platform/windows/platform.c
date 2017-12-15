@@ -445,8 +445,10 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
             cpu->eip.u32 = getEmulatedEipFromHostRip(thread, ep->ContextRecord->Rip);
             if ((ep->ExceptionRecord->ExceptionInformation[1] & 0xFFFFFFFF00000000l) == cpu->memory->id) {
                 U32 address = (U32)ep->ExceptionRecord->ExceptionInformation[1];
+                
+                SDL_LockMutex(cpu->memory->executableMemoryMutex);
 
-                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {
+                if (cpu->memory->nativeFlags[address>>PAGE_SHIFT] & NATIVE_FLAG_READONLY) {               
                     struct Block* block = decodeBlock(cpu, cpu->eip.u32);
                     struct Op* op = block->ops->next;                                        
                     U64 currentInstructionRip = (U64)(cpu->opToAddressPages[cpu->eip.u32>>PAGE_SHIFT][cpu->eip.u32 & PAGE_MASK]);
@@ -461,9 +463,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
                     if (currentInstructionLen<5) {
                         kpanic("seh_filter: current instruction modifies code, but it can't be patched because it is less than 5 bytes");
                     }
-
-
-                    SDL_LockMutex(cpu->memory->executableMemoryMutex);
+                    
                     x64_initData(&data, cpu, cpu->eip.u32);
                     x64_writeCmd(&data, CMD_SELF_MODIFYING, cpu->eip.u32, TRUE);
                     x64_retn(&data);
@@ -478,8 +478,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
                     currentInstruction[4] = (U8)(offset >> 24);
                     for (i=5;i<currentInstructionLen;i++) {
                         currentInstruction[i]=0x90;
-                    }
-                    SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
+                    }                    
                     ep->ContextRecord->Rip = currentInstructionRip;
 
                     if (ep->ContextRecord->Rsi >> 32) {
@@ -490,8 +489,10 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
                         ep->ContextRecord->Rdi+=cpu->negSegAddress[ES];
                         ep->ContextRecord->Rdi+=cpu->negMemOffset;
                     }
+                    SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
                     return EXCEPTION_CONTINUE_EXECUTION;
                 }
+                SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
             }
              
             EAX = (U32)ep->ContextRecord->Rax;
@@ -577,8 +578,8 @@ void killThread(struct KThread* thread) {
     kpanic("killThread not implemented yet");
 }
 
-int platformThreadProc(void* data) {
-    struct KThread* thread = (struct KThread*)data;
+DWORD WINAPI platformThreadProc(LPVOID lpThreadParameter) {
+    struct KThread* thread = (struct KThread*)lpThreadParameter;
     struct CPU* cpu = &thread->cpu;
     U32 i;
 
@@ -607,8 +608,7 @@ int platformThreadProc(void* data) {
 }
 
 void platformStartThread(struct KThread* thread) {
-    thread->nativeHandle = SDL_CreateThread(platformThreadProc, "Thread", thread);
-    //thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);        
+    thread->nativeHandle = (U64)CreateThread(NULL, 0, platformThreadProc, thread, 0, 0);        
 }
 
 void* allocExecutable64kBlock(struct Memory* memory) {

@@ -248,9 +248,7 @@ void cloneProcess(struct KThread* thread, struct Memory* memory, struct KProcess
     for (i=0;i<MAX_MAPPED_FILE;i++) {
         if (process->mappedFiles[i].refCount) {
             process->mappedFiles[i].file->refCount++;
-#ifdef HAS_64BIT_MMU
-            klog("Need to clone memory mapped files");
-#else
+#ifndef HAS_64BIT_MMU            
             process->mappedFiles[i].systemCacheEntry->refCount++;
 #endif
         }
@@ -800,7 +798,10 @@ U32 syscall_clone(struct KThread* thread, U32 flags, U32 child_stack, U32 ptid, 
         startThread(newThread);
         BOXEDWINE_UNLOCK(NULL, mutexProcess);
 
+        // :TODO: need to find out why this is necessary, otherwise services.exe fails to start
+#ifdef BOXEDWINE_VM
         SDL_Delay(20);
+#endif
         return thread->process->id;
     } else {
         kpanic("sys_clone does not implement flags: %X", flags);

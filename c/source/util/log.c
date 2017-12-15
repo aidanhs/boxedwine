@@ -56,9 +56,19 @@ void kwarn(const char* msg, ...) {
 #endif
 }
 
+#ifdef BOXEDWINE_VM
+static SDL_mutex* logMutex;
+#endif
+
 void klog(const char* msg, ...) {
     va_list argptr;
     va_start(argptr, msg);
+#ifdef BOXEDWINE_VM
+    if (!logMutex) {
+        logMutex = SDL_CreateMutex();
+    }
+    SDL_LockMutex(logMutex);
+#endif
     vfprintf(stdout, msg, argptr);
     if (logFile) {
         vfprintf(logFile, msg, argptr);
@@ -68,4 +78,7 @@ void klog(const char* msg, ...) {
     if (logFile) {
         fprintf(logFile, "\n");
     }
+#ifdef BOXEDWINE_VM
+    SDL_UnlockMutex(logMutex);
+#endif
 }
