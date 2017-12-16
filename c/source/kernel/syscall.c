@@ -70,6 +70,7 @@ void logsyscall(const char* fmt, ...) {
 #define __NR_lseek 19
 #define __NR_getpid 20
 #define __NR_getuid 24
+#define __NR_ptrace	26
 #define __NR_alarm 27
 #define __NR_utime 30
 #define __NR_access 33
@@ -288,6 +289,9 @@ void ksyscall(struct CPU* cpu, U32 eipCount) {
         break;
     case __NR_getuid:
         result = process->userId;
+        break;
+    case __NR_ptrace:
+        result = -K_EPERM;
         break;
     case __NR_alarm:
         result = syscall_alarm(thread, ARG1);

@@ -1988,24 +1988,26 @@ U32 ksendmsg(struct KThread* thread, U32 socket, U32 address, U32 flags) {
             }
         }
     }
-    BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
-    if (!s->nativeSocket) {
-        msg->next = 0;
-        if (s->connection) {
-            if (!s->connection->msgs) {
-                s->connection->msgs = msg;
-            }
-            else {
-                next = s->connection->msgs;
-                while (next->next) {
-                    next = next->next;
+    if (s->connection) {
+        BOXEDWINE_LOCK(thread, s->connection->bufferMutex);
+        if (!s->nativeSocket) {
+            msg->next = 0;
+            if (s->connection) {
+                if (!s->connection->msgs) {
+                    s->connection->msgs = msg;
                 }
-                next->next = msg;
-            }            
+                else {
+                    next = s->connection->msgs;
+                    while (next->next) {
+                        next = next->next;
+                    }
+                    next->next = msg;
+                }            
+            }
         }
+        BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
+        wakeAndResetWaitingOnReadThreads(s->connection);
     }
-    BOXEDWINE_UNLOCK(thread, s->connection->bufferMutex);
-    wakeAndResetWaitingOnReadThreads(s->connection);
     return result;
 }
 
