@@ -227,8 +227,8 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
         U32 count = 0;
         for (i=0;i<MAX_FUTEXES && count<value;i++) {
             if (system_futex[i].address==ramAddress && !system_futex[i].pendingWakeUp) {
-                wakeThread(thread, system_futex[i].thread);
                 system_futex[i].pendingWakeUp = TRUE;
+                wakeThread(thread, system_futex[i].thread);                
                 count++;
             }
         }

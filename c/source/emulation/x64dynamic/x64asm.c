@@ -1354,7 +1354,29 @@ static void addTodoLinkJump(struct x64_Data* data, U32 memPos, U32 eip, U8 offse
         return;
     }
     if (data->jmpTodoCount>=data->jmpTodoSize) {
-        kpanic("Need to grow todo jumps");
+        U32 count = data->jmpTodoSize*2;
+        U32* jmpTodoEip = malloc(sizeof(U32)*count);
+        void** jmpTodoAddress = malloc(sizeof(void*)*count);
+        U8* jmpTodoOffsetSize = malloc(sizeof(U8)*count);
+
+        memcpy(jmpTodoEip, data->jmpTodoEip, data->jmpTodoSize*sizeof(U32));
+        memcpy(jmpTodoAddress, data->jmpTodoAddress, data->jmpTodoSize*sizeof(void*));
+        memcpy(jmpTodoOffsetSize, data->jmpTodoOffsetSize, data->jmpTodoSize*sizeof(U8));
+
+        if (data->jmpTodoEip!=data->jmpTodoEipBuffer) {
+            free(data->jmpTodoEip);
+        }
+        if (data->jmpTodoAddress!=data->jmpTodoAddressBuffer) {
+            free(data->jmpTodoAddress);
+        }
+        if (data->jmpTodoOffsetSize!=data->jmpTodoOffsetSizeBuffer) {
+            free(data->jmpTodoOffsetSize);
+        }
+
+        data->jmpTodoEip = jmpTodoEip;
+        data->jmpTodoAddress = jmpTodoAddress;
+        data->jmpTodoOffsetSize = jmpTodoOffsetSize;
+        data->jmpTodoSize*=2;
     }
     data->jmpTodoAddress[data->jmpTodoCount] = &data->memStart[memPos];
     data->jmpTodoEip[data->jmpTodoCount] = eip;
