@@ -160,7 +160,8 @@
         var DEFAULT_MEMORY_ALLOCATION_MB = 64;
         var ROOT = "/root";
         var HOME_DIRECTORY = ROOT + "/home/username/files/";
-        var DLL_DIRECTORY = ROOT + "/usr/lib/i386-linux-gnu/wine/wine";
+        var DLL_DIRECTORY = ROOT + "/usr/lib/wine";
+        var SUPPRESS_WINEBOOT = true; //prevent wine from re-creating .wine directory
         var dirPrefix = getFileDirectory();
         var isAutoRunSet = getAutoRun();
         var extraZipFiles = getZipFileList("overlay"); //MANUAL:"dlls.zip;fonts.zip";
@@ -504,7 +505,9 @@
                 if(e3){
                     console.log(e3);
                 }
-
+                if(!isZlibEnabled && SUPPRESS_WINEBOOT) {
+                   deleteFile(rootOverlay, "/lib/wine/wineboot.exe.so");
+                }
 
                 buildDllFileSystem(function(dllFS) {
                     homeAdapter.initialize(function callback(e){
@@ -577,6 +580,14 @@
                     document.getElementById('sound-checkbox').style.display = "";
                 }
             }        
+        }
+        function deleteFile(fs, pathAndFilename)
+        {
+            try {
+                fs.unlinkSync("/root" + pathAndFilename);
+            }catch(ef) {
+                console.log("Unable to delete:" + "/root" + pathAndFilename + " error:" + ef.message);
+            }
         }
         function createFolders(mainfs, folders)
         {
