@@ -2366,6 +2366,61 @@ void decode301(struct DecodeData* data) {
     }
 }
 
+void OPCALL writePort(struct CPU* cpu, struct Op* op) {
+    NEXT();
+}
+
+void OPCALL readPort8(struct CPU* cpu, struct Op* op) {
+    AL=0xFF;
+    NEXT();
+}
+
+void OPCALL readPort16(struct CPU* cpu, struct Op* op) {
+    AX=0xFFFF;
+    NEXT();
+}
+
+void OPCALL readPort32(struct CPU* cpu, struct Op* op) {
+    EAX=0xFFFFFFFF;
+    NEXT();
+}
+
+void decode0e4(struct DecodeData* data) {
+    data->op->data1=FETCH8(data);
+    data->op->func = writePort;
+    NEXT_OP(data);
+}
+
+void decode0e5(struct DecodeData* data) {
+    data->op->data1=FETCH8(data);
+    data->op->func = readPort8;
+    NEXT_OP(data);
+}
+
+void decode2e5(struct DecodeData* data) {
+    data->op->data1=FETCH8(data);
+    data->op->func = readPort32;
+    NEXT_OP(data);
+}
+
+void decode0e6(struct DecodeData* data) {
+    data->op->data1=FETCH8(data);
+    data->op->func = readPort16;
+    NEXT_OP(data);
+}
+
+void decode0e7(struct DecodeData* data) {
+    data->op->data1=FETCH8(data);
+    data->op->func = writePort;
+    NEXT_OP(data);
+}
+
+void decode2e7(struct DecodeData* data) {
+    data->op->data1=FETCH8(data);
+    data->op->func = writePort;
+    NEXT_OP(data);
+}
+
 DECODER decoder[1024] = {
     decode000, decode001, decode002, decode003, decode004, decode005, decode006, decode007,
     decode008, decode009, decode00a, decode00b, decode00c, decode00d, decode00e, decode00f,
@@ -2395,7 +2450,7 @@ DECODER decoder[1024] = {
     decode0c8, decode0c9, decode0ca, decode0cb, invalidOp, decode0cd, invalidOp, invalidOp,
     decode0d0, decode0d1, decode0d2, decode0d3, decode0d4, decode0d5, decode0d6, decode0d7,
     decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
-    decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
+    decode0e0, decode0e1, decode0e2, decode0e3, decode0e4, decode0e5, decode0e6, decode0e7,
     decode0e8, decode0e9, decode0ea, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
     decode0f0, invalidOp, decode0f2, decode0f3, decode0f4, decode0f5, decode0f6, decode0f7,
     decode0f8, decode0f9, decode0fa, decode0fb, decode0fc, decode0fd, decode0fe, decode0ff,
@@ -2477,7 +2532,7 @@ DECODER decoder[1024] = {
     decode2c8, decode2c9, decode2ca, decode2cb, invalidOp, decode0cd, invalidOp, decode2cf,
     decode0d0, decode2d1, decode0d2, decode2d3, decode0d4, decode0d5, decode0d6, decode0d7,
     decode0d8, decode0d9, decode0da, decode0db, decode0dc, decode0dd, decode0de, decode0df,
-    decode0e0, decode0e1, decode0e2, decode0e3, invalidOp, invalidOp, invalidOp, invalidOp,
+    decode0e0, decode0e1, decode0e2, decode0e3, decode0e4, decode2e5, decode0e6, decode2e7,
     decode2e8, decode2e9, invalidOp, decode0eb, invalidOp, invalidOp, invalidOp, invalidOp,
     decode0f0, invalidOp, decode0f2, decode0f3, decode0f4, decode0f5, decode0f6, decode2f7,
     decode0f8, decode0f9, decode0fa, decode0fb, decode0fc, decode0fd, decode0fe, decode2ff,
