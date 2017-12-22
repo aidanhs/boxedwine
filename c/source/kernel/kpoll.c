@@ -52,7 +52,7 @@ S32 kpoll(struct KThread* thread, struct KPollData* data, U32 count, U32 timeout
                 } else {
                     if ((data[i].events & K_POLLIN) != 0 && fd->kobject->access->isReadReady(thread, fd->kobject)) {
                         data[i].revents |= K_POLLIN;
-                    } else if ((data->events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(thread, fd->kobject)) {
+                    } else if ((data[i].events & K_POLLOUT) != 0 && fd->kobject->access->isWriteReady(thread, fd->kobject)) {
                         data[i].revents |= K_POLLOUT;
                     }
                 }
