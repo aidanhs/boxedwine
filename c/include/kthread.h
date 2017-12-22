@@ -70,6 +70,7 @@ struct KThread {
     U64 waitingForSignalToEndMaskToRestore;    
     struct user_desc tls[TLS_ENTRIES];
     U32     waitType;
+    U32 pendingSignals;
 #ifdef BOXEDWINE_VM
     U64 nativeHandle;
     SDL_cond* waitingCondition;
@@ -77,7 +78,7 @@ struct KThread {
     U32 waitingMutexReferenceCount;
     SDL_cond* endCondition;
     SDL_mutex* endMutex;
-    BOOL runSignal;
+    BOOL runSignals;
     BOOL done;
 #else
     U32     waitSyscall;

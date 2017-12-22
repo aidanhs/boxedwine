@@ -94,6 +94,7 @@ struct CPU {
     U32 cmd;
     U32 cmdArg;
     U32 cmdArg2;
+    U32 cmdEipCount;
 #endif
 };
 

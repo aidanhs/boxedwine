@@ -1027,15 +1027,19 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
     resetMemory(thread->process->memory);
     {
         struct KProcess* process = thread->process;
-        U32 id = thread->id;
+        U32 id = thread->id;        
         U32 log = thread->cpu.log;
 #ifndef BOXEDWINE_VM
         struct KCNode* scheduledNode = thread->scheduledNode;
+#else
+        U64 nativeHandle = thread->nativeHandle;
 #endif
         memset(thread, 0, sizeof(struct KThread));
         thread->id = id;
 #ifndef BOXEDWINE_VM
         thread->scheduledNode = scheduledNode;
+#else
+        thread->nativeHandle = nativeHandle;
 #endif
         thread->process = process;
         initCPU(&thread->cpu, process->memory);
@@ -1101,6 +1105,7 @@ U32 syscall_execve(struct KThread* thread, U32 path, U32 argv, U32 envp) {
         process->wakeOnExitOrExec = 0;
     }
     free(tmp128k);
+
     //klog("%d/%d exec %s (cwd=%s)", thread->id, process->id, process->commandLine, process->currentDirectory);
     return -K_CONTINUE;
 }
@@ -1398,8 +1403,7 @@ U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal) {
     if (signal!=0) {
         struct KThread* processThread = 0;
         U32 threadIndex = 0;
-
-        process->pendingSignals |= (1 << (signal-1));
+        
         while (getNextObjectFromArray(&process->threads, &threadIndex, (void**)&processThread)) {
             if (processThread) {
                 if ((1 << (signal-1)) & ~(processThread->inSignal?processThread->inSigMask:processThread->sigMask)) {
@@ -1407,6 +1411,8 @@ U32 syscall_kill(struct KThread* thread, U32 pid, U32 signal) {
                 }
             }
         }
+        // didn't find a thread that could handle it
+        process->pendingSignals |= (1 << (signal-1));
     }
     return 0;	
 }
@@ -1433,34 +1439,40 @@ U32 syscall_tgkill(struct KThread* thread, U32 threadGroupId, U32 threadId, U32 
     process->sigActions[signal].sigInfo[4] = process->userId;
 
     if ((1 << (signal-1)) & ~(target->inSignal?target->inSigMask:target->sigMask)) {
+#ifdef BOXEDWINE_VM        
+        SDL_mutex* m = target->waitingMutex;
+        SDL_mutex* mutex = SDL_CreateMutex();
+        SDL_cond* cond = SDL_CreateCond();
+
+        BOXEDWINE_LOCK(thread, mutex);
+        target->waitingForSignalToEnd = thread; 
+        target->pendingSignals |= (1 << (signal-1));
+        if (m) {
+            target->runSignals = 1;            
+            BOXEDWINE_LOCK(NULL, m);
+            if (target->waitingCondition && target->runSignals)
+                BOXEDWINE_SIGNAL_ALL(target->waitingCondition); // signal all, just in case it is poll
+            BOXEDWINE_UNLOCK(NULL, m);
+        }      
+        BOXEDWINE_WAIT(thread, cond, mutex);
+        BOXEDWINE_UNLOCK(thread, mutex);
+        SDL_DestroyMutex(mutex);
+        SDL_DestroyCond(cond);
+        return 0;
+#else  
         // don't return -K_WAIT, we don't want to re-enter tgkill, instead we will return 0 once the thread wakes up
 
         // must set CPU state before runSignal since it will be stored
         thread->cpu.reg[0].u32 = 0; 
         thread->cpu.eip.u32+=2;
-#ifdef BOXEDWINE_VM
-        pauseThread(target);
-#endif
+
         runSignal(thread, target, signal, -1, 0);
-        target->waitingForSignalToEnd = thread;
-#ifdef BOXEDWINE_VM
-        {
-            SDL_cond* cond = SDL_CreateCond();
-            SDL_mutex* mutex = SDL_CreateMutex();
-            BOXEDWINE_LOCK(thread, mutex);
-            resumeThread(target);
-            BOXEDWINE_WAIT(thread, cond, mutex);
-            BOXEDWINE_UNLOCK(thread, mutex);
-            SDL_DestroyCond(cond);
-            SDL_DestroyMutex(mutex);
-        }
-        resumeThread(target);
-#else        
+        target->waitingForSignalToEnd = thread;       
         waitThread(thread);			
-#endif
         return -K_CONTINUE;
+#endif
     } else {
-        process->pendingSignals |= (1 << (signal-1));
+        target->pendingSignals |= (1 << (signal-1));
         return 0;
     }
 }

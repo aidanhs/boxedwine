@@ -162,7 +162,7 @@ void ksignal_waitForEvents(struct KObject* obj, struct KThread* thread, U32 even
 }
 
 BOOL ksignal_isReadReady(struct KThread* thread, struct KObject* obj) {
-    if (thread->process->pendingSignals & obj->idata)
+    if ((thread->process->pendingSignals & obj->idata) || (thread->pendingSignals & obj->idata))
         return TRUE;
     return FALSE;
 }

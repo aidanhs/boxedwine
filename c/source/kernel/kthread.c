@@ -300,23 +300,14 @@ U32 syscall_futex(struct KThread* thread, U32 addr, U32 op, U32 value, U32 pTime
 
 BOOL runSignals(struct KThread* currentThread, struct KThread* thread) {
     U32 todo = thread->process->pendingSignals & ~(thread->inSignal?thread->inSigMask:thread->sigMask);
+    todo |= thread->pendingSignals & ~(thread->inSignal?thread->inSigMask:thread->sigMask);
 
     if (todo!=0) {
         U32 i;
 
         for (i=0;i<32;i++) {
             if ((todo & (1 << i))!=0) {
-#ifdef BOXEDWINE_VM
-                if (currentThread!=thread) {
-                    pauseThread(thread);
-                }
                 runSignal(currentThread, thread, i+1, -1, 0);
-                if (currentThread!=thread) {
-                    resumeThread(thread);
-                }
-#else
-                runSignal(currentThread, thread, i+1, -1, 0);
-#endif
                 return 1;
             }
         }
@@ -704,6 +695,7 @@ void runSignal(struct KThread* currentThread, struct KThread* thread, U32 signal
         cpu_setSegment(cpu, ES, 0x17);
         cpu->big = 1;
     }    
-    thread->process->pendingSignals &= ~(1 << (signal - 1));		
+    thread->process->pendingSignals &= ~(1 << (signal - 1));
+    thread->pendingSignals &= ~(1 << (signal - 1));
     threadDone(&thread->cpu);
 }

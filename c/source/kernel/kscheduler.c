@@ -111,8 +111,13 @@ void BOXEDWINE_WAIT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mutex) {
     }
     thread->waitingCondition = cond;
     while (1) {
-        SDL_CondWait(cond, mutex);
-        if (thread->runSignal) {
+        BOOL runSignal = thread->runSignals;
+        if (!runSignal) {
+            SDL_CondWait(cond, mutex);
+            runSignal = thread->runSignals;
+        }
+        if (runSignal) {
+            thread->runSignals = 0;
             // Keep lock, this thread can re-enter this lock if necessary, this way the caller doesn't have to be way of this
             runSignals(thread, thread);
             if (thread->interrupted) {
@@ -134,12 +139,17 @@ U32 BOXEDWINE_WAIT_TIMEOUT(struct KThread* thread, SDL_cond* cond, SDL_mutex* mu
     thread->waitingCondition = cond;
     while (1) {
         U32 elapsed = getMilliesSinceStart()-startTime;
+        BOOL runSignal = thread->runSignals;
         if (elapsed >= ms) {
             result = SDL_CondWaitTimeout(cond, mutex, 0);
             break;
         }
-        result = SDL_CondWaitTimeout(cond, mutex, ms-elapsed);
-        if (thread->runSignal) {
+        if (!runSignal) {
+            result = SDL_CondWaitTimeout(cond, mutex, ms-elapsed);
+            runSignal = thread->runSignals;
+        }
+        if (runSignal) {
+            thread->runSignals = 0;
             // Keep lock, this thread can re-enter this lock if necessary, this way the caller doesn't have to be way of this
             runSignals(thread, thread);
             if (thread->interrupted) {

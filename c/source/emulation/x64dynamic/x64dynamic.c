@@ -147,7 +147,7 @@ void x64_translateInstruction(struct x64_Data* data) {
         x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
         x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
         x64_writeToMemFromValue(data, (U32)&data->memStart[data->memPos], HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_ARG, 4, FALSE);
-        x64_writeCmd(data, CMD_PRINT, data->ip, TRUE);
+        x64_writeCmd(data, CMD_PRINT, data->ip, 0);
     }    
     //x64_writeToMemFromValue(data, data->ip, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EIP, 4, FALSE);
     data->opIp = data->ip;        

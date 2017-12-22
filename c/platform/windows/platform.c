@@ -282,16 +282,14 @@ void freeNativeMemory(struct KProcess* process, U32 page, U32 pageCount) {
     }    
 }
 
-static U64 nextMemoryId = 1;
-
 void* reserveNext4GBMemory() {
     void* p;
+    U64 i=1;
 
-    nextMemoryId++;
-    p = (void*)(nextMemoryId << 32);
+    p = (void*)(i << 32);
     while (VirtualAlloc(p, 0x100000000l, MEM_RESERVE, PAGE_READWRITE)==0) {
-        nextMemoryId++;
-        p = (void*)(nextMemoryId << 32);
+        i++;
+        p = (void*)(i << 32);
     } 
     return p;
 }
@@ -465,7 +463,7 @@ int seh_filter(unsigned int code, struct _EXCEPTION_POINTERS* ep, struct KThread
                     }
                     
                     x64_initData(&data, cpu, cpu->eip.u32);
-                    x64_writeCmd(&data, CMD_SELF_MODIFYING, cpu->eip.u32, TRUE);
+                    x64_writeCmd(&data, CMD_SELF_MODIFYING, cpu->eip.u32, op->eipCount);
                     x64_retn(&data);
                     cpu->memory->x64MemPos+=data.memPos;
                     cpu->memory->x64AvailableMem-=data.memPos;
@@ -560,17 +558,47 @@ typedef void (*StartCPU)();
 
 void pauseThread(struct KThread* thread) {
     DWORD dwVal = SuspendThread((HANDLE)thread->nativeHandle);
+    CONTEXT ctx;
+    struct CPU* cpu = &thread->cpu;
+
 	if (INFINITE == dwVal) {
 	    kpanic("pauseThread failed");
 	}
     // :TODO: capture context
-    //CONTEXT ctx;
-	//ctx.ContextFlags = CONTEXT_CONTROL;
-	//if (GetThreadContext(hThread, &ctx))
+    
+	ctx.ContextFlags = CONTEXT_CONTROL;    
+	GetThreadContext((HANDLE)thread->nativeHandle, &ctx);
+
+    EAX = (U32)ctx.Rax;
+    ECX = (U32)ctx.Rcx;
+    EDX = (U32)ctx.Rdx;
+    EBX = (U32)ctx.Rbx;
+    ESP = (U32)ctx.R11;
+    EBP = (U32)ctx.Rbp;
+    ESI = (U32)ctx.Rsi;
+    EDI = (U32)ctx.Rdi;
+    cpu->flags = ctx.EFlags;
+    if ((ctx.Rip & 0xFFFFFFFF00000000l) != thread->process->memory->id) {
+        kpanic("Pausing a thread in the middle of a cmd/syscall is not supported");
+    }
+    cpu->eip.u32 = getEmulatedEipFromHostRip(thread, ctx.Rip);
 }
 
 void resumeThread(struct KThread* thread) {
-    //SetThreadContext(thread->nativeHandle, &ctx)
+    CONTEXT ctx;
+    struct CPU* cpu = &thread->cpu;
+
+    ctx.Rax = EAX;
+    ctx.Rcx = ECX;
+    ctx.Rdx = EDX;
+    ctx.Rbp = EBX;
+    ctx.Rsp = ESP;
+    ctx.Rbp = EBP;
+    ctx.Rsi = ESI;
+    ctx.Rdi = EDI;
+    ctx.Rip = (U64)x64_translateEip(cpu, cpu->eip.u32);
+    ctx.ContextFlags = CONTEXT_CONTROL;    
+    SetThreadContext((HANDLE)thread->nativeHandle, &ctx);
     ResumeThread((HANDLE)thread->nativeHandle);
 }
 

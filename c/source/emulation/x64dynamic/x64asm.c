@@ -614,17 +614,18 @@ void x64_cmdEntry(struct CPU* cpu) {
             }
             fprintf(logFile2[cpu->thread->process->id][cpu->thread->id-6400], "%.08X/%.06X EAX=%.08X ECX=%.08X EDX=%.08X EBX=%.08X ESP=%.08X EBP=%.08X ESI=%.08X EDI=%.08X\n", cpu->eip.u32, cpu->cmdArg, EAX, ECX, EDX, EBX, ESP, EBP, ESI, EDI); 
             fflush(logFile2[cpu->thread->process->id][cpu->thread->id-6400]);
-            BOXEDWINE_UNLOCK(cpu->thread, printMutex);
+            BOXEDWINE_UNLOCK(cpu->thread, printMutex);            
         }
-        break;
+        return; // don't run signal because of this
     case CMD_SET_ES:
     case CMD_SET_CS:
     case CMD_SET_SS:
     case CMD_SET_DS:
     case CMD_SET_FS:
     case CMD_SET_GS:
-        cpu_setSegment(cpu, cpu->cmd - CMD_SET_ES, cpu->cmdArg);
-        break;
+        if (cpu_setSegment(cpu, cpu->cmd - CMD_SET_ES, cpu->cmdArg))
+            cpu->eip.u32+=cpu->cmdEipCount;
+        return; // don't run signal because of this
     case CMD_LOAD_ES:
     case CMD_LOAD_CS:
     case CMD_LOAD_SS:
@@ -633,17 +634,18 @@ void x64_cmdEntry(struct CPU* cpu) {
     case CMD_LOAD_GS:
         if (cpu_setSegment(cpu, cpu->cmd - CMD_LOAD_ES, readw(cpu->thread, cpu->cmdArg+2))) {
             cpu->reg[cpu->cmdArg2].u16 = readw(cpu->thread, cpu->cmdArg);
+            cpu->eip.u32+=cpu->cmdEipCount;
         }
-        break;
+        return; // don't run signal because of this
     case CMD_CALL_AP_16:
-        cpu_call(cpu, 0, cpu->cmdArg >> 16, cpu->cmdArg & 0xFFFF, cpu->eip.u32 + (cpu->big?6:5));
-        // :TODO: sync back cs:eip -> block -> dynamic address
+        cpu_call(cpu, 0, cpu->cmdArg >> 16, cpu->cmdArg & 0xFFFF, cpu->eip.u32 + cpu->cmdEipCount);
         break;
     case CMD_SYSCALL:
-        ksyscall(cpu, 0);
+        ksyscall(cpu, cpu->cmdEipCount);        
         break;
     case CMD_CPUID:
         cpuid(cpu);
+        cpu->eip.u32+=cpu->cmdEipCount;
         break;
     case CMD_INVALID_OP:
         kpanic("invalid op: %X", cpu->cmdArg2);
@@ -657,6 +659,7 @@ void x64_cmdEntry(struct CPU* cpu) {
         else {
             kpanic("Uknown int 98 call: %d", index);
         }
+        cpu->eip.u32+=cpu->cmdEipCount;
         break;
     }
     case CMD_OPENGL:
@@ -668,6 +671,7 @@ void x64_cmdEntry(struct CPU* cpu) {
         } else {
             kpanic("Uknown int 99 call: %d", index);
         }
+        cpu->eip.u32+=cpu->cmdEipCount;
         break;
     }
     case CMD_SELF_MODIFYING: {
@@ -777,77 +781,104 @@ void x64_cmdEntry(struct CPU* cpu) {
         // :TODO: check if code exists at addresses
         }
         SDL_UnlockMutex(cpu->memory->executableMemoryMutex);
+        cpu->eip.u32+=cpu->cmdEipCount;
     }
         break;
     default:
         kpanic("Unknow x64dynamic cmd: %d", cpu->cmd);
         break;
     }
+    if (cpu->thread->pendingSignals || cpu->thread->process->pendingSignals) {        
+        runSignals(cpu->thread, cpu->thread);
+    }
 }
 
-void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
+void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, U32 eipCount) {   
     x64_writeToMemFromValue(data, cmd, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD, 4, FALSE);
     x64_writeToMemFromValue(data, eip, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EIP, 4, FALSE);
+    x64_writeToMemFromValue(data, eipCount, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_CMD_EIPCOUNT, 4, FALSE);
 
-    if (fast) {
-        x64_pushNativeFlags(data);
-        x64_popNative(data, HOST_TMP, 1);        
-        x64_pushNativeFlags(data);
-        x64_pushNative(data, HOST_CPU, TRUE);
-
-        x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
-        x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
-        x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
-        x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
-        x64_writeToMemFromReg(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
-        x64_writeToMemFromReg(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
-        x64_writeToMemFromReg(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
-        x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
-        x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
-
-        // sub rsp, 32
-        write8(data, REX_BASE | REX_64);
+    if (cmd==CMD_SYSCALL) {
+        // cmp eax, 11 (__NR_execve)
         write8(data, 0x83);
-        write8(data, 0xEC);
-        write8(data, 0x28);
+        write8(data, 0xf8);
+        write8(data, 0x0b);
 
-        // mov rcx, HOST_CPU
-        x64_writeToRegFromReg(data, 1, FALSE, HOST_CPU, TRUE, 8);
+        // jnz 2
+        write8(data, 0x75);
+        write8(data, 0x02);
 
-        // call cpu->enterHost
-        write8(data, REX_BASE | REX_MOD_RM);
-        write8(data, 0xFF);
-        write8(data, 0x91);
-        write32(data, CPU_OFFSET_HOST_ENTRY);
-
-        // add rsp, 20
-        write8(data, REX_BASE | REX_64);
-        write8(data, 0x83);
-        write8(data, 0xC4);
-        write8(data, 0x28);
-
-        x64_popNative(data, HOST_CPU, TRUE);
-        x64_popNativeFlags(data);
-
-        x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
-        x64_writeToRegFromMem(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
-        x64_writeToRegFromMem(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
-        x64_writeToRegFromMem(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
-        x64_writeToRegFromMem(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
-        x64_writeToRegFromMem(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
-        x64_writeToRegFromMem(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
-        x64_writeToRegFromMem(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
-
-        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
-        x64_pushNative(data, HOST_TMP, TRUE);
-        x64_popNativeFlags(data);
-
-        // volitile in Win64
-        x64_writeToRegFromMem(data, HOST_MEM, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_MEM, 8, FALSE);        
-    } else {
         write8(data, 0xcd);
-        write8(data, 0x53);
+        write8(data, 0x53);    
+
+        // cmp eax, 252 (__NR_exit_group)
+        write8(data, 0x3d);
+        write32(data, 252);
+
+        // jnz 2
+        write8(data, 0x75);
+        write8(data, 0x02);
+
+        write8(data, 0xcd);
+        write8(data, 0x53); 
+        // will not return so it doesn't matter what comes after this
     }
+
+    x64_pushNativeFlags(data);
+    x64_popNative(data, HOST_TMP, 1);        
+    x64_pushNativeFlags(data);
+    x64_pushNative(data, HOST_CPU, TRUE);
+
+    x64_writeToMemFromReg(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
+    x64_writeToMemFromReg(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+    x64_writeToMemFromReg(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
+    x64_writeToMemFromReg(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
+    x64_writeToMemFromReg(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
+    x64_writeToMemFromReg(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
+    x64_writeToMemFromReg(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
+    x64_writeToMemFromReg(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
+    x64_writeToMemFromReg(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
+
+    // sub rsp, 32
+    write8(data, REX_BASE | REX_64);
+    write8(data, 0x83);
+    write8(data, 0xEC);
+    write8(data, 0x28);
+
+    // mov rcx, HOST_CPU
+    x64_writeToRegFromReg(data, 1, FALSE, HOST_CPU, TRUE, 8);
+
+    // call cpu->enterHost
+    write8(data, REX_BASE | REX_MOD_RM);
+    write8(data, 0xFF);
+    write8(data, 0x91);
+    write32(data, CPU_OFFSET_HOST_ENTRY);
+
+    // add rsp, 20
+    write8(data, REX_BASE | REX_64);
+    write8(data, 0x83);
+    write8(data, 0xC4);
+    write8(data, 0x28);
+
+    x64_popNative(data, HOST_CPU, TRUE);
+    x64_popNativeFlags(data);
+
+    x64_writeToRegFromMem(data, 0, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EAX, 4, FALSE);
+    x64_writeToRegFromMem(data, 1, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ECX, 4, FALSE);
+    x64_writeToRegFromMem(data, 2, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDX, 4, FALSE);
+    x64_writeToRegFromMem(data, 3, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBX, 4, FALSE);
+    x64_writeToRegFromMem(data, HOST_ESP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESP, 4, FALSE);
+    x64_writeToRegFromMem(data, 5, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EBP, 4, FALSE);
+    x64_writeToRegFromMem(data, 6, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_ESI, 4, FALSE);
+    x64_writeToRegFromMem(data, 7, FALSE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EDI, 4, FALSE);
+
+    x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FLAGS, 4, FALSE);
+    x64_pushNative(data, HOST_TMP, TRUE);
+    x64_popNativeFlags(data);
+
+    // volitile in Win64
+    x64_writeToRegFromMem(data, HOST_MEM, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_MEM, 8, FALSE);        
+
     if (cmd == CMD_SET_FS) {
         x64_writeToRegFromMem(data, HOST_FS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_FS_ADDRESS, 4, FALSE);
     } else if (cmd == CMD_SET_SS) {
@@ -855,6 +886,10 @@ void x64_writeCmd(struct x64_Data* data, U32 cmd, U32 eip, BOOL fast) {
     }  else if (cmd == CMD_SET_DS) {
         x64_writeToRegFromMem(data, HOST_DS, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_DS_ADDRESS, 4, FALSE);
     }  
+    if (eipCount) {
+        x64_writeToRegFromMem(data, HOST_TMP, TRUE, HOST_CPU, TRUE, -1, FALSE, 0, CPU_OFFSET_EIP, 4, FALSE);
+        x64_jmpReg(data, HOST_TMP, TRUE);
+    }
 }
 
 void x64_pushReg16(struct x64_Data* data, U32 reg, U32 isRegRex) {
